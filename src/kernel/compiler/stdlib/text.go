@@ -1,7 +1,6 @@
 package stdlib
 
 import (
-	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
@@ -68,11 +67,11 @@ func textREMatch(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 2 {
 		return nil, objects.ErrWrongNumArguments
 	}
-	s1, err := objects.ToStringArg("first", args[0])
+	s1, err := objects.ToStringArg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
-	s2, err := objects.ToStringArg("second", args[1])
+	s2, err := objects.ToStringArg(1, args[1])
 	if err != nil {
 		return nil, err
 	}
@@ -92,11 +91,11 @@ func textREFind(args ...objects.IObject) (objects.IObject, error) {
 	if numArgs != 2 && numArgs != 3 {
 		return nil, objects.ErrWrongNumArguments
 	}
-	s1, err := objects.ToStringArg("first", args[0])
+	s1, err := objects.ToStringArg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
-	s2, err := objects.ToStringArg("second", args[1])
+	s2, err := objects.ToStringArg(1, args[1])
 	if err != nil {
 		return nil, err
 	}
@@ -119,11 +118,11 @@ func textREFind(args ...objects.IObject) (objects.IObject, error) {
 		}
 		return objects.NewArray([]objects.IObject{arr}), nil
 	}
-	i3, err := objects.ToIntArg("third", args[2])
+	i3, err := objects.ToInt64Arg(2, args[2])
 	if err != nil {
 		return nil, err
 	}
-	mFA := re.FindAllStringSubmatchIndex(s2, i3)
+	mFA := re.FindAllStringSubmatchIndex(s2, int(i3))
 	if mFA == nil {
 		return objects.UndefinedValue, nil
 	}
@@ -149,15 +148,15 @@ func textREReplace(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 3 {
 		return nil, objects.ErrWrongNumArguments
 	}
-	s1, err := objects.ToStringArg("first", args[0])
+	s1, err := objects.ToStringArg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
-	s2, err := objects.ToStringArg("second", args[1])
+	s2, err := objects.ToStringArg(1, args[1])
 	if err != nil {
 		return nil, err
 	}
-	s3, err := objects.ToStringArg("third", args[2])
+	s3, err := objects.ToStringArg(2, args[2])
 	if err != nil {
 		return nil, err
 	}
@@ -181,19 +180,19 @@ func textRESplit(args ...objects.IObject) (objects.IObject, error) {
 	if numArgs != 2 && numArgs != 3 {
 		return nil, objects.ErrWrongNumArguments
 	}
-	s1, ok := objects.ToString(args[0])
-	if !ok {
-		return nil, objects.NewInvalidArgumentError("first", "string(compatible)", args[0].TypeName())
+	s1, err := objects.ToStringArg(0, args[0])
+	if err != nil {
+		return nil, err
 	}
-	s2, ok := objects.ToString(args[1])
-	if !ok {
-		return nil, objects.NewInvalidArgumentError("second", "string(compatible)", args[1].TypeName())
+	s2, err := objects.ToStringArg(1, args[1])
+	if err != nil {
+		return nil, err
 	}
-	var i3 = -1
+	var i3 = int64(-1)
 	if numArgs > 2 {
-		i3, ok = objects.ToInt(args[2])
-		if !ok {
-			return nil, objects.NewInvalidArgumentError("third", "int(compatible)", args[2].TypeName())
+		i3, err = objects.ToInt64Arg(2, args[2])
+		if err != nil {
+			return nil, err
 		}
 	}
 	re, err := regexp.Compile(s1)
@@ -201,7 +200,7 @@ func textRESplit(args ...objects.IObject) (objects.IObject, error) {
 		return objects.NewObjectError(err), nil
 	}
 	arr := &objects.Array{}
-	for _, s := range re.Split(s2, i3) {
+	for _, s := range re.Split(s2, int(i3)) {
 		v, err := objects.NewString(s)
 		if err != nil {
 			return nil, err
@@ -218,7 +217,7 @@ func textRECompile(args ...objects.IObject) (objects.IObject, error) {
 	}
 	s1, ok := objects.ToString(args[0])
 	if !ok {
-		return nil, objects.NewInvalidArgumentError("first", "string(compatible)", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentError(0, "string(compatible)", args[0].TypeName())
 	}
 	re, err := regexp.Compile(s1)
 	if err != nil {
@@ -233,23 +232,23 @@ func textReplace(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 4 {
 		return nil, objects.ErrWrongNumArguments
 	}
-	s1, err := objects.ToStringArg("first", args[0])
+	s1, err := objects.ToStringArg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
-	s2, err := objects.ToStringArg("second", args[1])
+	s2, err := objects.ToStringArg(1, args[1])
 	if err != nil {
 		return nil, err
 	}
-	s3, err := objects.ToStringArg("third", args[2])
+	s3, err := objects.ToStringArg(2, args[2])
 	if err != nil {
 		return nil, err
 	}
-	i4, err := objects.ToIntArg("fourth", args[3])
+	i4, err := objects.ToInt64Arg(3, args[3])
 	if err != nil {
 		return nil, err
 	}
-	s, ok := doTextReplace(s1, s2, s3, i4)
+	s, ok := doTextReplace(s1, s2, s3, int(i4))
 	if !ok {
 		return nil, objects.ErrStringLimit
 	}
@@ -263,18 +262,18 @@ func textSubstring(args ...objects.IObject) (objects.IObject, error) {
 	if argsLen != 2 && argsLen != 3 {
 		return nil, objects.ErrWrongNumArguments
 	}
-	s1, err := objects.ToStringArg("first", args[0])
+	s1, err := objects.ToStringArg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
-	i2, err := objects.ToIntArg("second", args[1])
+	i2, err := objects.ToInt64Arg(1, args[1])
 	if err != nil {
 		return nil, err
 	}
-	strlen := len(s1)
+	strlen := int64(len(s1))
 	i3 := strlen
 	if argsLen == 3 {
-		i3, err = objects.ToIntArg("third", args[2])
+		i3, err = objects.ToInt64Arg(2, args[2])
 		if err != nil {
 			return nil, err
 		}
@@ -303,35 +302,35 @@ func textPadLeft(args ...objects.IObject) (objects.IObject, error) {
 	if argsLen != 2 && argsLen != 3 {
 		return nil, objects.ErrWrongNumArguments
 	}
-	s1, err := objects.ToStringArg("first", args[0])
+	s1, err := objects.ToStringArg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
-	i2, err := objects.ToIntArg("second", args[1])
+	i2, err := objects.ToInt64Arg(1, args[1])
 	if err != nil {
 		return nil, err
 	}
 	if i2 > objects.MaxStringLen {
 		return nil, objects.ErrStringLimit
 	}
-	sLen := len(s1)
+	sLen := int64(len(s1))
 	if sLen >= i2 {
 		return objects.NewString(s1)
 	}
 	s3 := " "
 	if argsLen == 3 {
-		s3, err = objects.ToStringArg("third", args[2])
+		s3, err = objects.ToStringArg(2, args[2])
 		if err != nil {
 			return nil, err
 		}
 	}
-	padStrLen := len(s3)
+	padStrLen := int64(len(s3))
 	if padStrLen == 0 {
 		return objects.NewString(s1)
 	}
 	padCount := ((i2 - padStrLen) / padStrLen) + 1
-	retStr := strings.Repeat(s3, padCount) + s1
-	return objects.NewString(retStr[len(retStr)-i2:])
+	retStr := strings.Repeat(s3, int(padCount)) + s1
+	return objects.NewString(retStr[int64(len(retStr))-i2:])
 }
 
 // textPadRight appends padding characters to the right of a string until it reaches the desired length.
@@ -342,31 +341,31 @@ func textPadRight(args ...objects.IObject) (objects.IObject, error) {
 	if argsLen != 2 && argsLen != 3 {
 		return nil, objects.ErrWrongNumArguments
 	}
-	s1, err := objects.ToStringArg("first", args[0])
+	s1, err := objects.ToStringArg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
-	i2, err := objects.ToIntArg("second", args[1])
+	i2, err := objects.ToInt64Arg(1, args[1])
 	if err != nil {
 		return nil, err
 	}
-	sLen := len(s1)
+	sLen := int64(len(s1))
 	if sLen >= i2 {
 		return objects.NewString(s1)
 	}
 	s3 := " "
 	if argsLen == 3 {
-		s3, err = objects.ToStringArg("third", args[2])
+		s3, err = objects.ToStringArg(2, args[2])
 		if err != nil {
 			return nil, err
 		}
 	}
-	padStrLen := len(s3)
+	padStrLen := int64(len(s3))
 	if padStrLen == 0 {
 		return objects.NewString(s1)
 	}
 	padCount := ((i2 - padStrLen) / padStrLen) + 1
-	retStr := s1 + strings.Repeat(s3, padCount)
+	retStr := s1 + strings.Repeat(s3, int(padCount))
 	return objects.NewString(retStr[:i2])
 }
 
@@ -377,15 +376,15 @@ func textRepeat(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 2 {
 		return nil, objects.ErrWrongNumArguments
 	}
-	s1, err := objects.ToStringArg("first", args[0])
+	s1, err := objects.ToStringArg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
-	i2, err := objects.ToIntArg("second", args[1])
+	i2, err := objects.ToInt64Arg(1, args[1])
 	if err != nil {
 		return nil, err
 	}
-	return objects.NewString(strings.Repeat(s1, i2))
+	return objects.NewString(strings.Repeat(s1, int(i2)))
 }
 
 // textJoin concatenates elements of the first argument (array or immutable-array of strings) using the second argument as a separator.
@@ -399,7 +398,7 @@ func textJoin(args ...objects.IObject) (ret objects.IObject, err error) {
 	switch arg0 := args[0].(type) {
 	case *objects.Array:
 		for idx, a := range arg0.Values() {
-			as, err := objects.ToStringArg(fmt.Sprintf("first[%d]", idx), a)
+			as, err := objects.ToStringArg(idx, a)
 			if err != nil {
 				return nil, err
 			}
@@ -408,7 +407,7 @@ func textJoin(args ...objects.IObject) (ret objects.IObject, err error) {
 		}
 	case *objects.ArrayImmutable:
 		for idx, a := range arg0.Values() {
-			as, err := objects.ToStringArg(fmt.Sprintf("first[%d]", idx), a)
+			as, err := objects.ToStringArg(idx, a)
 			if err != nil {
 				return nil, err
 			}
@@ -416,9 +415,9 @@ func textJoin(args ...objects.IObject) (ret objects.IObject, err error) {
 			ss1 = append(ss1, as)
 		}
 	default:
-		return nil, objects.NewInvalidArgumentError("first", "array", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentError(0, "array", args[0].TypeName())
 	}
-	s2, err := objects.ToStringArg("second", args[1])
+	s2, err := objects.ToStringArg(1, args[1])
 	if err != nil {
 		return nil, err
 	}
@@ -431,7 +430,7 @@ func textFormatBool(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}
-	b1, err := objects.ToBoolArg("first", args[0])
+	b1, err := objects.ToBoolArg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
@@ -448,23 +447,23 @@ func textFormatFloat(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 4 {
 		return nil, objects.ErrWrongNumArguments
 	}
-	f1, err := objects.ToFloat64Arg("first", args[0])
+	f1, err := objects.ToFloat64Arg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
-	s2, err := objects.ToStringArg("second", args[1])
+	s2, err := objects.ToStringArg(1, args[1])
 	if err != nil {
 		return nil, err
 	}
-	i3, err := objects.ToIntArg("third", args[2])
+	i3, err := objects.ToInt64Arg(2, args[2])
 	if err != nil {
 		return nil, err
 	}
-	i4, err := objects.ToIntArg("fourth", args[3])
+	i4, err := objects.ToInt64Arg(3, args[3])
 	if err != nil {
 		return nil, err
 	}
-	return objects.NewString(strconv.FormatFloat(f1, s2[0], i3, i4))
+	return objects.NewString(strconv.FormatFloat(f1, s2[0], int(i3), int(i4)))
 }
 
 // textFormatInt formats an integer to a string using the specified base.
@@ -474,15 +473,15 @@ func textFormatInt(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 2 {
 		return nil, objects.ErrWrongNumArguments
 	}
-	i1, err := objects.ToIntArg("first", args[0])
+	i1, err := objects.ToInt64Arg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
-	i2, err := objects.ToIntArg("second", args[1])
+	i2, err := objects.ToInt64Arg(1, args[1])
 	if err != nil {
 		return nil, err
 	}
-	return objects.NewString(strconv.FormatInt(int64(i1), i2))
+	return objects.NewString(strconv.FormatInt(i1, int(i2)))
 }
 
 // textParseBool parses a string argument into a boolean value and returns it as an IObject.
@@ -495,7 +494,7 @@ func textParseBool(args ...objects.IObject) (ret objects.IObject, err error) {
 	}
 	s1, ok := args[0].(*objects.String)
 	if !ok {
-		err = objects.NewInvalidArgumentError("first", "string", args[0].TypeName())
+		err = objects.NewInvalidArgumentError(0, "string", args[0].TypeName())
 		return
 	}
 	parsed, err := strconv.ParseBool(s1.Value())
@@ -516,15 +515,15 @@ func textParseFloat(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 2 {
 		return nil, objects.ErrWrongNumArguments
 	}
-	s1, err := objects.ToStringArg("first", args[0])
+	s1, err := objects.ToStringArg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
-	i2, err := objects.ToIntArg("second", args[1])
+	i2, err := objects.ToInt64Arg(1, args[1])
 	if err != nil {
 		return nil, err
 	}
-	parsed, err := strconv.ParseFloat(s1, i2)
+	parsed, err := strconv.ParseFloat(s1, int(i2))
 	if err != nil {
 		return objects.NewObjectError(err), nil
 	}
@@ -538,7 +537,7 @@ func textParseNumber(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}
-	s1, err := objects.ToStringArg("first", args[0])
+	s1, err := objects.ToStringArg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
@@ -562,19 +561,19 @@ func textParseInt(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 3 {
 		return nil, objects.ErrWrongNumArguments
 	}
-	s1, err := objects.ToStringArg("first", args[0])
+	s1, err := objects.ToStringArg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
-	i2, err := objects.ToIntArg("second", args[1])
+	i2, err := objects.ToInt64Arg(1, args[1])
 	if err != nil {
 		return nil, err
 	}
-	i3, err := objects.ToIntArg("third", args[2])
+	i3, err := objects.ToInt64Arg(2, args[2])
 	if err != nil {
 		return nil, err
 	}
-	parsed, err := strconv.ParseInt(s1, i2, i3)
+	parsed, err := strconv.ParseInt(s1, int(i2), int(i3))
 	if err != nil {
 		return objects.NewObjectError(err), nil
 	}

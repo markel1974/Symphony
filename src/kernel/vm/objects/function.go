@@ -1,9 +1,5 @@
 package objects
 
-import (
-	"fmt"
-)
-
 // FuncAR converts a no-argument, no-return Go function into a CallableFunc type that can be called with zero arguments.
 // Returns ErrWrongNumArguments if any arguments are passed.
 // Invokes the provided function and returns UndefinedValue upon successful execution.
@@ -46,10 +42,9 @@ func FuncAI64RI64(fn func(int64) int64) CallableFunc {
 		if len(args) != 1 {
 			return nil, ErrWrongNumArguments
 		}
-
-		i1, ok := ToInt64(args[0])
-		if !ok {
-			return nil, NewInvalidArgumentError("first", "int(compatible)", args[0].TypeName())
+		i1, err := ToInt64Arg(0, args[0])
+		if err != nil {
+			return nil, err
 		}
 		return NewInt(fn(i1)), nil
 	}
@@ -61,10 +56,9 @@ func FuncAI64R(fn func(int64)) CallableFunc {
 		if len(args) != 1 {
 			return nil, ErrWrongNumArguments
 		}
-
-		i1, ok := ToInt64(args[0])
-		if !ok {
-			return nil, NewInvalidArgumentError("first", "int(compatible)", args[0].TypeName())
+		i1, err := ToInt64Arg(0, args[0])
+		if err != nil {
+			return nil, err
 		}
 		fn(i1)
 		return UndefinedValue, nil
@@ -206,11 +200,11 @@ func FuncAIRIs(fn func(int) []int) CallableFunc {
 		if len(args) != 1 {
 			return nil, ErrWrongNumArguments
 		}
-		i1, ok := ToInt(args[0])
-		if !ok {
-			return nil, NewInvalidArgumentError("first", "int(compatible)", args[0].TypeName())
+		i1, err := ToInt64Arg(0, args[0])
+		if err != nil {
+			return nil, err
 		}
-		res := fn(i1)
+		res := fn(int(i1))
 		arr := NewArray(nil)
 		for _, v := range res {
 			arr.Append(NewInt(int64(v)))
@@ -227,9 +221,9 @@ func FuncAFRF(fn func(float64) float64) CallableFunc {
 		if len(args) != 1 {
 			return nil, ErrWrongNumArguments
 		}
-		f1, ok := ToFloat64(args[0])
-		if !ok {
-			return nil, NewInvalidArgumentError("first", "float(compatible)", args[0].TypeName())
+		f1, err := ToFloat64Arg(0, args[0])
+		if err != nil {
+			return nil, err
 		}
 		return NewFloat(fn(f1)), nil
 	}
@@ -243,11 +237,11 @@ func FuncAIR(fn func(int)) CallableFunc {
 		if len(args) != 1 {
 			return nil, ErrWrongNumArguments
 		}
-		i1, ok := ToInt(args[0])
-		if !ok {
-			return nil, NewInvalidArgumentError("first", "int(compatible)", args[0].TypeName())
+		i1, err := ToInt64Arg(0, args[0])
+		if err != nil {
+			return nil, err
 		}
-		fn(i1)
+		fn(int(i1))
 		return UndefinedValue, nil
 	}
 }
@@ -260,11 +254,11 @@ func FuncAIRF(fn func(int) float64) CallableFunc {
 		if len(args) != 1 {
 			return nil, ErrWrongNumArguments
 		}
-		i1, ok := ToInt(args[0])
-		if !ok {
-			return nil, NewInvalidArgumentError("first", "int(compatible)", args[0].TypeName())
+		i1, err := ToInt64Arg(0, args[0])
+		if err != nil {
+			return nil, err
 		}
-		return NewFloat(fn(i1)), nil
+		return NewFloat(fn(int(i1))), nil
 	}
 }
 
@@ -275,9 +269,9 @@ func FuncAFRI(fn func(float64) int) CallableFunc {
 		if len(args) != 1 {
 			return nil, ErrWrongNumArguments
 		}
-		f1, ok := ToFloat64(args[0])
-		if !ok {
-			return nil, NewInvalidArgumentError("first", "float(compatible)", args[0].TypeName())
+		f1, err := ToFloat64Arg(0, args[0])
+		if err != nil {
+			return nil, err
 		}
 		return NewInt(int64(fn(f1))), nil
 	}
@@ -290,13 +284,13 @@ func FuncAFFRF(fn func(float64, float64) float64) CallableFunc {
 		if len(args) != 2 {
 			return nil, ErrWrongNumArguments
 		}
-		f1, ok := ToFloat64(args[0])
-		if !ok {
-			return nil, NewInvalidArgumentError("first", "float(compatible)", args[0].TypeName())
+		f1, err := ToFloat64Arg(0, args[0])
+		if err != nil {
+			return nil, err
 		}
-		f2, ok := ToFloat64(args[1])
-		if !ok {
-			return nil, NewInvalidArgumentError("second", "float(compatible)", args[1].TypeName())
+		f2, err := ToFloat64Arg(1, args[1])
+		if err != nil {
+			return nil, err
 		}
 		return NewFloat(fn(f1, f2)), nil
 	}
@@ -309,15 +303,15 @@ func FuncAIFRF(fn func(int, float64) float64) CallableFunc {
 		if len(args) != 2 {
 			return nil, ErrWrongNumArguments
 		}
-		i1, ok := ToInt(args[0])
-		if !ok {
-			return nil, NewInvalidArgumentError("first", "int(compatible)", args[0].TypeName())
+		i1, err := ToInt64Arg(0, args[0])
+		if err != nil {
+			return nil, err
 		}
-		f2, ok := ToFloat64(args[1])
-		if !ok {
-			return nil, NewInvalidArgumentError("second", "float(compatible)", args[1].TypeName())
+		f2, err := ToFloat64Arg(1, args[1])
+		if err != nil {
+			return nil, err
 		}
-		return NewFloat(fn(i1, f2)), nil
+		return NewFloat(fn(int(i1), f2)), nil
 	}
 }
 
@@ -329,15 +323,15 @@ func FuncAFIRF(fn func(float64, int) float64) CallableFunc {
 		if len(args) != 2 {
 			return nil, ErrWrongNumArguments
 		}
-		f1, ok := ToFloat64(args[0])
-		if !ok {
-			return nil, NewInvalidArgumentError("first", "float(compatible)", args[0].TypeName())
+		f1, err := ToFloat64Arg(0, args[0])
+		if err != nil {
+			return nil, err
 		}
-		i2, ok := ToInt(args[1])
-		if !ok {
-			return nil, NewInvalidArgumentError("second", "int(compatible)", args[1].TypeName())
+		i2, err := ToInt64Arg(1, args[1])
+		if err != nil {
+			return nil, err
 		}
-		return NewFloat(fn(f1, i2)), nil
+		return NewFloat(fn(f1, int(i2))), nil
 	}
 }
 
@@ -350,15 +344,15 @@ func FuncAFIRB(fn func(float64, int) bool) CallableFunc {
 		if len(args) != 2 {
 			return nil, ErrWrongNumArguments
 		}
-		f1, ok := ToFloat64(args[0])
-		if !ok {
-			return nil, NewInvalidArgumentError("first", "float(compatible)", args[0].TypeName())
+		f1, err := ToFloat64Arg(0, args[0])
+		if err != nil {
+			return nil, err
 		}
-		i2, ok := ToInt(args[1])
-		if !ok {
-			return nil, NewInvalidArgumentError("second", "int(compatible)", args[1].TypeName())
+		i2, err := ToInt64Arg(1, args[1])
+		if err != nil {
+			return nil, err
 		}
-		if fn(f1, i2) {
+		if fn(f1, int(i2)) {
 			return TrueValue, nil
 		}
 		return FalseValue, nil
@@ -371,9 +365,9 @@ func FuncAFRB(fn func(float64) bool) CallableFunc {
 		if len(args) != 1 {
 			return nil, ErrWrongNumArguments
 		}
-		f1, ok := ToFloat64(args[0])
-		if !ok {
-			return nil, NewInvalidArgumentError("first", "float(compatible)", args[0].TypeName())
+		f1, err := ToFloat64Arg(0, args[0])
+		if err != nil {
+			return nil, err
 		}
 		if fn(f1) {
 			return TrueValue, nil
@@ -388,9 +382,9 @@ func FuncASRS(fn func(string) string) CallableFunc {
 		if len(args) != 1 {
 			return nil, ErrWrongNumArguments
 		}
-		s1, ok := ToString(args[0])
-		if !ok {
-			return nil, NewInvalidArgumentError("first", "string(compatible)", args[0].TypeName())
+		s1, err := ToStringArg(0, args[0])
+		if err != nil {
+			return nil, err
 		}
 		v, err := NewString(fn(s1))
 		if err != nil {
@@ -408,9 +402,9 @@ func FuncASRSs(fn func(string) []string) CallableFunc {
 		if len(args) != 1 {
 			return nil, ErrWrongNumArguments
 		}
-		s1, ok := ToString(args[0])
-		if !ok {
-			return nil, NewInvalidArgumentError("first", "string(compatible)", args[0].TypeName())
+		s1, err := ToStringArg(0, args[0])
+		if err != nil {
+			return nil, err
 		}
 		res := fn(s1)
 		arr := NewArray(nil)
@@ -431,9 +425,9 @@ func FuncASRSE(fn func(string) (string, error)) CallableFunc {
 		if len(args) != 1 {
 			return nil, ErrWrongNumArguments
 		}
-		s1, ok := ToString(args[0])
-		if !ok {
-			return nil, NewInvalidArgumentError("first", "string(compatible)", args[0].TypeName())
+		s1, err := ToStringArg(0, args[0])
+		if err != nil {
+			return nil, err
 		}
 		res, err := fn(s1)
 		if err != nil {
@@ -456,9 +450,9 @@ func FuncASRE(fn func(string) error) CallableFunc {
 		if len(args) != 1 {
 			return nil, ErrWrongNumArguments
 		}
-		s1, ok := ToString(args[0])
-		if !ok {
-			return nil, NewInvalidArgumentError("first", "string(compatible)", args[0].TypeName())
+		s1, err := ToStringArg(0, args[0])
+		if err != nil {
+			return nil, err
 		}
 		return NewObjectError(fn(s1)), nil
 	}
@@ -471,13 +465,13 @@ func FuncASSRE(fn func(string, string) error) CallableFunc {
 		if len(args) != 2 {
 			return nil, ErrWrongNumArguments
 		}
-		s1, ok := ToString(args[0])
-		if !ok {
-			return nil, NewInvalidArgumentError("first", "string(compatible)", args[0].TypeName())
+		s1, err := ToStringArg(0, args[0])
+		if err != nil {
+			return nil, err
 		}
-		s2, ok := ToString(args[1])
-		if !ok {
-			return nil, NewInvalidArgumentError("second", "string(compatible)", args[1].TypeName())
+		s2, err := ToStringArg(1, args[1])
+		if err != nil {
+			return nil, err
 		}
 		return NewObjectError(fn(s1, s2)), nil
 	}
@@ -490,14 +484,13 @@ func FuncASSRSs(fn func(string, string) []string) CallableFunc {
 		if len(args) != 2 {
 			return nil, ErrWrongNumArguments
 		}
-		s1, ok := ToString(args[0])
-		if !ok {
-			return nil, NewInvalidArgumentError("first", "string(compatible)", args[0].TypeName())
+		s1, err := ToStringArg(0, args[0])
+		if err != nil {
+			return nil, err
 		}
-		s2, ok := ToString(args[1])
-		if !ok {
-			return nil, NewInvalidArgumentError("first", "string(compatible)", args[1].TypeName())
-
+		s2, err := ToStringArg(1, args[1])
+		if err != nil {
+			return nil, err
 		}
 		arr := NewArray(nil)
 		for _, res := range fn(s1, s2) {
@@ -519,20 +512,20 @@ func FuncASSIRSs(fn func(string, string, int) []string) CallableFunc {
 		if len(args) != 3 {
 			return nil, ErrWrongNumArguments
 		}
-		s1, ok := ToString(args[0])
-		if !ok {
-			return nil, NewInvalidArgumentError("first", "string(compatible)", args[0].TypeName())
+		s1, err := ToStringArg(0, args[0])
+		if err != nil {
+			return nil, err
 		}
-		s2, ok := ToString(args[1])
-		if !ok {
-			return nil, NewInvalidArgumentError("second", "string(compatible)", args[1].TypeName())
+		s2, err := ToStringArg(1, args[1])
+		if err != nil {
+			return nil, err
 		}
-		i3, ok := ToInt(args[2])
-		if !ok {
-			return nil, NewInvalidArgumentError("third", "int(compatible)", args[2].TypeName())
+		i3, err := ToInt64Arg(2, args[2])
+		if err != nil {
+			return nil, err
 		}
 		arr := NewArray(nil)
-		for _, res := range fn(s1, s2, i3) {
+		for _, res := range fn(s1, s2, int(i3)) {
 			v, err := NewString(res)
 			if err != nil {
 				return nil, err
@@ -552,13 +545,13 @@ func FuncASSRI(fn func(string, string) int) CallableFunc {
 		if len(args) != 2 {
 			return nil, ErrWrongNumArguments
 		}
-		s1, ok := ToString(args[0])
-		if !ok {
-			return nil, NewInvalidArgumentError("first", "string(compatible)", args[0].TypeName())
+		s1, err := ToStringArg(0, args[0])
+		if err != nil {
+			return nil, err
 		}
-		s2, ok := ToString(args[1])
-		if !ok {
-			return nil, NewInvalidArgumentError("second", "string(compatible)", args[0].TypeName())
+		s2, err := ToStringArg(1, args[1])
+		if err != nil {
+			return nil, err
 		}
 		return NewInt(int64(fn(s1, s2))), nil
 	}
@@ -572,13 +565,13 @@ func FuncASSRS(fn func(string, string) string) CallableFunc {
 		if len(args) != 2 {
 			return nil, ErrWrongNumArguments
 		}
-		s1, ok := ToString(args[0])
-		if !ok {
-			return nil, NewInvalidArgumentError("first", "string(compatible)", args[0].TypeName())
+		s1, err := ToStringArg(0, args[0])
+		if err != nil {
+			return nil, err
 		}
-		s2, ok := ToString(args[1])
-		if !ok {
-			return nil, NewInvalidArgumentError("second", "string(compatible)", args[1].TypeName())
+		s2, err := ToStringArg(1, args[1])
+		if err != nil {
+			return nil, err
 		}
 		v, err := NewString(fn(s1, s2))
 		if err != nil {
@@ -598,13 +591,13 @@ func FuncASSRB(fn func(string, string) bool) CallableFunc {
 		if len(args) != 2 {
 			return nil, ErrWrongNumArguments
 		}
-		s1, ok := ToString(args[0])
-		if !ok {
-			return nil, NewInvalidArgumentError("first", "string(compatible)", args[0].TypeName())
+		s1, err := ToStringArg(0, args[0])
+		if err != nil {
+			return nil, err
 		}
-		s2, ok := ToString(args[1])
-		if !ok {
-			return nil, NewInvalidArgumentError("second", "string(compatible)", args[1].TypeName())
+		s2, err := ToStringArg(1, args[1])
+		if err != nil {
+			return nil, err
 		}
 		if fn(s1, s2) {
 			return TrueValue, nil
@@ -623,26 +616,26 @@ func FuncASsSRS(fn func([]string, string) string) CallableFunc {
 		switch arg0 := args[0].(type) {
 		case *Array:
 			for idx, a := range arg0.Values() {
-				as, ok := ToString(a)
-				if !ok {
-					return nil, NewInvalidArgumentError(fmt.Sprintf("first[%d]", idx), "string(compatible)", a.TypeName())
+				as, err := ToStringArg(idx, a)
+				if err != nil {
+					return nil, err
 				}
 				ss1 = append(ss1, as)
 			}
 		case *ArrayImmutable:
 			for idx, a := range arg0.Values() {
-				as, ok := ToString(a)
-				if !ok {
-					return nil, NewInvalidArgumentError(fmt.Sprintf("first[%d]", idx), "string(compatible)", a.TypeName())
+				as, err := ToStringArg(idx, a)
+				if err != nil {
+					return nil, err
 				}
 				ss1 = append(ss1, as)
 			}
 		default:
-			return nil, NewInvalidArgumentError("first", "array", args[0].TypeName())
+			return nil, NewInvalidArgumentError(0, "array", args[0].TypeName())
 		}
-		s2, ok := ToString(args[1])
-		if !ok {
-			return nil, NewInvalidArgumentError("second", "string(compatible)", args[1].TypeName())
+		s2, err := ToStringArg(1, args[1])
+		if err != nil {
+			return nil, err
 		}
 		v, err := NewString(fn(ss1, s2))
 		if err != nil {
@@ -660,13 +653,13 @@ func FuncASI64RE(fn func(string, int64) error) CallableFunc {
 		if len(args) != 2 {
 			return nil, ErrWrongNumArguments
 		}
-		s1, ok := ToString(args[0])
-		if !ok {
-			return nil, NewInvalidArgumentError("first", "string(compatible)", args[0].TypeName())
+		s1, err := ToStringArg(0, args[0])
+		if err != nil {
+			return nil, err
 		}
-		i2, ok := ToInt64(args[1])
-		if !ok {
-			return nil, NewInvalidArgumentError("second", "int(compatible)", args[1].TypeName())
+		i2, err := ToInt64Arg(1, args[1])
+		if err != nil {
+			return nil, err
 		}
 		return NewObjectError(fn(s1, i2)), nil
 	}
@@ -678,15 +671,15 @@ func FuncAIIRE(fn func(int, int) error) CallableFunc {
 		if len(args) != 2 {
 			return nil, ErrWrongNumArguments
 		}
-		i1, ok := ToInt(args[0])
-		if !ok {
-			return nil, NewInvalidArgumentError("first", "int(compatible)", args[0].TypeName())
+		i1, err := ToInt64Arg(0, args[0])
+		if err != nil {
+			return nil, err
 		}
-		i2, ok := ToInt(args[1])
-		if !ok {
-			return nil, NewInvalidArgumentError("second", "int(compatible)", args[1].TypeName())
+		i2, err := ToInt64Arg(1, args[1])
+		if err != nil {
+			return nil, err
 		}
-		return NewObjectError(fn(i1, i2)), nil
+		return NewObjectError(fn(int(i1), int(i2))), nil
 	}
 }
 
@@ -698,15 +691,15 @@ func FuncASIRS(fn func(string, int) string) CallableFunc {
 		if len(args) != 2 {
 			return nil, ErrWrongNumArguments
 		}
-		s1, ok := ToString(args[0])
-		if !ok {
-			return nil, NewInvalidArgumentError("first", "string(compatible)", args[0].TypeName())
+		s1, err := ToStringArg(0, args[0])
+		if err != nil {
+			return nil, err
 		}
-		i2, ok := ToInt(args[1])
-		if !ok {
-			return nil, NewInvalidArgumentError("second", "int(compatible)", args[1].TypeName())
+		i2, err := ToInt64Arg(1, args[1])
+		if err != nil {
+			return nil, err
 		}
-		v, err := NewString(fn(s1, i2))
+		v, err := NewString(fn(s1, int(i2)))
 		if err != nil {
 			return nil, err
 		}
@@ -720,19 +713,19 @@ func FuncASIIRE(fn func(string, int, int) error) CallableFunc {
 		if len(args) != 3 {
 			return nil, ErrWrongNumArguments
 		}
-		s1, ok := ToString(args[0])
-		if !ok {
-			return nil, NewInvalidArgumentError("first", "string(compatible)", args[0].TypeName())
+		s1, err := ToStringArg(0, args[0])
+		if err != nil {
+			return nil, err
 		}
-		i2, ok := ToInt(args[1])
-		if !ok {
-			return nil, NewInvalidArgumentError("second", "int(compatible)", args[1].TypeName())
+		i2, err := ToInt64Arg(1, args[1])
+		if err != nil {
+			return nil, err
 		}
-		i3, ok := ToInt(args[2])
-		if !ok {
-			return nil, NewInvalidArgumentError("third", "int(compatible)", args[2].TypeName())
+		i3, err := ToInt64Arg(2, args[2])
+		if err != nil {
+			return nil, err
 		}
-		return NewObjectError(fn(s1, i2, i3)), nil
+		return NewObjectError(fn(s1, int(i2), int(i3))), nil
 	}
 }
 
@@ -746,11 +739,11 @@ func FuncAYRIE(fn func([]byte) (int, error)) CallableFunc {
 		if len(args) != 1 {
 			return nil, ErrWrongNumArguments
 		}
-		y1, ok := ToByteSlice(args[0])
-		if !ok {
-			return nil, NewInvalidArgumentError("first", "bytes(compatible)", args[0].TypeName())
+		bs1, err := ToByteSliceArg(0, args[0])
+		if err != nil {
+			return nil, err
 		}
-		res, err := fn(y1)
+		res, err := fn(bs1)
 		if err != nil {
 			return NewObjectError(err), nil
 		}
@@ -766,11 +759,11 @@ func FuncAYRS(fn func([]byte) string) CallableFunc {
 		if len(args) != 1 {
 			return nil, ErrWrongNumArguments
 		}
-		y1, ok := ToByteSlice(args[0])
-		if !ok {
-			return nil, NewInvalidArgumentError("first", "bytes(compatible)", args[0].TypeName())
+		bs1, err := ToByteSliceArg(0, args[0])
+		if err != nil {
+			return nil, err
 		}
-		v, err := NewString(fn(y1))
+		v, err := NewString(fn(bs1))
 		if err != nil {
 			return nil, err
 		}
@@ -784,9 +777,9 @@ func FuncASRIE(fn func(string) (int, error)) CallableFunc {
 		if len(args) != 1 {
 			return nil, ErrWrongNumArguments
 		}
-		s1, ok := ToString(args[0])
-		if !ok {
-			return nil, NewInvalidArgumentError("first", "string(compatible)", args[0].TypeName())
+		s1, err := ToStringArg(0, args[0])
+		if err != nil {
+			return nil, err
 		}
 		res, err := fn(s1)
 		if err != nil {
@@ -804,9 +797,9 @@ func FuncASRYE(fn func(string) ([]byte, error)) CallableFunc {
 		if len(args) != 1 {
 			return nil, ErrWrongNumArguments
 		}
-		s1, ok := ToString(args[0])
-		if !ok {
-			return nil, NewInvalidArgumentError("first", "string(compatible)", args[0].TypeName())
+		s1, err := ToStringArg(0, args[0])
+		if err != nil {
+			return nil, err
 		}
 		res, err := fn(s1)
 		if err != nil {
@@ -825,11 +818,11 @@ func FuncAIRSsE(fn func(int) ([]string, error)) CallableFunc {
 		if len(args) != 1 {
 			return nil, ErrWrongNumArguments
 		}
-		i1, ok := ToInt(args[0])
-		if !ok {
-			return nil, NewInvalidArgumentError("first", "int(compatible)", args[0].TypeName())
+		i1, err := ToInt64Arg(0, args[0])
+		if err != nil {
+			return nil, err
 		}
-		res, err := fn(i1)
+		res, err := fn(int(i1))
 		if err != nil {
 			return NewObjectError(err), nil
 		}
@@ -855,11 +848,11 @@ func FuncAIRS(fn func(int) string) CallableFunc {
 		if len(args) != 1 {
 			return nil, ErrWrongNumArguments
 		}
-		i1, ok := ToInt(args[0])
-		if !ok {
-			return nil, NewInvalidArgumentError("first", "int(compatible)", args[0].TypeName())
+		i1, err := ToInt64Arg(0, args[0])
+		if err != nil {
+			return nil, err
 		}
-		s := fn(i1)
+		s := fn(int(i1))
 		v, err := NewString(s)
 		if err != nil {
 			return nil, err

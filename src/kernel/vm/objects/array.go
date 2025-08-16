@@ -141,11 +141,12 @@ func (o *Array) IndexGet(index IObject) (res IObject, err error) {
 
 // IndexSet assigns a given values to the specified index in the array, returning an error if the operation is invalid.
 func (o *Array) IndexSet(index IObject, value IObject) (err error) {
-	intIdx, ok := ToInt(index)
+	idx, ok := ToInt64(index)
 	if !ok {
 		err = ErrInvalidIndexType
 		return
 	}
+	intIdx := int(idx)
 	if intIdx < 0 || intIdx >= len(o.values) {
 		err = ErrIndexOutOfBounds
 		return

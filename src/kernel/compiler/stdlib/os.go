@@ -1,7 +1,6 @@
 package stdlib
 
 import (
-	"fmt"
 	"io"
 	"os"
 	"os/exec"
@@ -86,11 +85,11 @@ func osReadFile(args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}
-	fName, ok := objects.ToString(args[0])
-	if !ok {
-		return nil, objects.NewInvalidArgumentError("first", "string(compatible)", args[0].TypeName())
+	s1, err := objects.ToStringArg(0, args[0])
+	if err != nil {
+		return nil, err
 	}
-	bytes, err := os.ReadFile(fName)
+	bytes, err := os.ReadFile(s1)
 	if err != nil {
 		return objects.NewObjectError(err), nil
 	}
@@ -104,11 +103,11 @@ func osStat(args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}
-	fName, ok := objects.ToString(args[0])
-	if !ok {
-		return nil, objects.NewInvalidArgumentError("first", "string(compatible)", args[0].TypeName())
+	s1, err := objects.ToStringArg(0, args[0])
+	if err != nil {
+		return nil, err
 	}
-	stat, err := os.Stat(fName)
+	stat, err := os.Stat(s1)
 	if err != nil {
 		return objects.NewObjectError(err), nil
 	}
@@ -130,9 +129,9 @@ func osCreate(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}
-	s1, ok := objects.ToString(args[0])
-	if !ok {
-		return nil, objects.NewInvalidArgumentError("first", "string(compatible)", args[0].TypeName())
+	s1, err := objects.ToStringArg(0, args[0])
+	if err != nil {
+		return nil, err
 	}
 	res, err := os.Create(s1)
 	if err != nil {
@@ -145,9 +144,9 @@ func osOpen(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}
-	s1, ok := objects.ToString(args[0])
-	if !ok {
-		return nil, objects.NewInvalidArgumentError("first", "string(compatible)", args[0].TypeName())
+	s1, err := objects.ToStringArg(0, args[0])
+	if err != nil {
+		return nil, err
 	}
 	res, err := os.Open(s1)
 	if err != nil {
@@ -160,19 +159,19 @@ func osOpenFile(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 3 {
 		return nil, objects.ErrWrongNumArguments
 	}
-	s1, ok := objects.ToString(args[0])
-	if !ok {
-		return nil, objects.NewInvalidArgumentError("first", "string(compatible)", args[0].TypeName())
+	s1, err := objects.ToStringArg(0, args[0])
+	if err != nil {
+		return nil, err
 	}
-	i2, ok := objects.ToInt(args[1])
-	if !ok {
-		return nil, objects.NewInvalidArgumentError("second", "int(compatible)", args[1].TypeName())
+	i2, err := objects.ToInt64Arg(1, args[1])
+	if err != nil {
+		return nil, err
 	}
-	i3, ok := objects.ToInt(args[2])
-	if !ok {
-		return nil, objects.NewInvalidArgumentError("third", "int(compatible)", args[2].TypeName())
+	i3, err := objects.ToInt64Arg(2, args[2])
+	if err != nil {
+		return nil, err
 	}
-	res, err := os.OpenFile(s1, i2, os.FileMode(i3))
+	res, err := os.OpenFile(s1, int(i2), os.FileMode(i3))
 	if err != nil {
 		return objects.NewObjectError(err), nil
 	}
@@ -202,13 +201,13 @@ func osFuncASFmRE(name string, fn func(string, os.FileMode) error) *objects.Func
 		if len(args) != 2 {
 			return nil, objects.ErrWrongNumArguments
 		}
-		s1, ok := objects.ToString(args[0])
-		if !ok {
-			return nil, objects.NewInvalidArgumentError("first", "string(compatible)", args[0].TypeName())
+		s1, err := objects.ToStringArg(0, args[0])
+		if err != nil {
+			return nil, err
 		}
-		i2, ok := objects.ToInt64(args[1])
-		if !ok {
-			return nil, objects.NewInvalidArgumentError("second", "int(compatible)", args[1].TypeName())
+		i2, err := objects.ToInt64Arg(1, args[1])
+		if err != nil {
+			return nil, err
 		}
 		return objects.NewObjectError(fn(s1, os.FileMode(i2))), nil
 	})
@@ -218,9 +217,9 @@ func osLookupEnv(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}
-	s1, ok := objects.ToString(args[0])
-	if !ok {
-		return nil, objects.NewInvalidArgumentError("first", "string(compatible)", args[0].TypeName())
+	s1, err := objects.ToStringArg(0, args[0])
+	if err != nil {
+		return nil, err
 	}
 	res, ok := os.LookupEnv(s1)
 	if !ok {
@@ -233,9 +232,9 @@ func osExpandEnv(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}
-	s1, ok := objects.ToString(args[0])
-	if !ok {
-		return nil, objects.NewInvalidArgumentError("first", "string(compatible)", args[0].TypeName())
+	s1, err := objects.ToStringArg(0, args[0])
+	if err != nil {
+		return nil, err
 	}
 	var vLen int
 	var failed bool
@@ -258,30 +257,30 @@ func osExec(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) == 0 {
 		return nil, objects.ErrWrongNumArguments
 	}
-	name, ok := objects.ToString(args[0])
-	if !ok {
-		return nil, objects.NewInvalidArgumentError("first", "string(compatible)", args[0].TypeName())
+	s1, err := objects.ToStringArg(0, args[0])
+	if err != nil {
+		return nil, err
 	}
 	var execArgs []string
 	for idx, arg := range args[1:] {
-		execArg, ok := objects.ToString(arg)
-		if !ok {
-			return nil, objects.NewInvalidArgumentError(fmt.Sprintf("args[%d]", idx), "string(compatible)", args[1+idx].TypeName())
+		execArg, err := objects.ToStringArg(idx, arg)
+		if err != nil {
+			return nil, err
 		}
 		execArgs = append(execArgs, execArg)
 	}
-	return makeOSExecCommand(exec.Command(name, execArgs...)), nil
+	return makeOSExecCommand(exec.Command(s1, execArgs...)), nil
 }
 
 func osFindProcess(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}
-	i1, ok := objects.ToInt(args[0])
-	if !ok {
-		return nil, objects.NewInvalidArgumentError("first", "int(compatible)", args[0].TypeName())
+	i1, err := objects.ToInt64Arg(0, args[0])
+	if err != nil {
+		return nil, err
 	}
-	proc, err := os.FindProcess(i1)
+	proc, err := os.FindProcess(int(i1))
 	if err != nil {
 		return objects.NewObjectError(err), nil
 	}
@@ -292,62 +291,48 @@ func osStartProcess(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 4 {
 		return nil, objects.ErrWrongNumArguments
 	}
-	name, ok := objects.ToString(args[0])
-	if !ok {
-		return nil, objects.NewInvalidArgumentError("first", "string(compatible)", args[0].TypeName())
+	s1, err := objects.ToStringArg(0, args[0])
+	if err != nil {
+		return nil, err
 	}
 	var argv []string
-	var err error
 	switch arg1 := args[1].(type) {
 	case *objects.Array:
-		argv, err = stringArray(arg1.Values(), "second")
+		argv, err = objects.ToStringArrayArg(1, arg1.Values())
 		if err != nil {
 			return nil, err
 		}
 	case *objects.ArrayImmutable:
-		argv, err = stringArray(arg1.Values(), "second")
+		argv, err = objects.ToStringArrayArg(1, arg1.Values())
 		if err != nil {
 			return nil, err
 		}
 	default:
-		return nil, objects.NewInvalidArgumentError("second", "array", arg1.TypeName())
+		return nil, objects.NewInvalidArgumentError(1, "array", arg1.TypeName())
 	}
 
-	dir, ok := objects.ToString(args[2])
-	if !ok {
-		return nil, objects.NewInvalidArgumentError("third", "string(compatible)", args[2].TypeName())
+	s2, err := objects.ToStringArg(2, args[2])
+	if err != nil {
+		return nil, err
 	}
-
 	var env []string
 	switch arg3 := args[3].(type) {
 	case *objects.Array:
-		env, err = stringArray(arg3.Values(), "fourth")
+		env, err = objects.ToStringArrayArg(3, arg3.Values())
 		if err != nil {
 			return nil, err
 		}
 	case *objects.ArrayImmutable:
-		env, err = stringArray(arg3.Values(), "fourth")
+		env, err = objects.ToStringArrayArg(3, arg3.Values())
 		if err != nil {
 			return nil, err
 		}
 	default:
-		return nil, objects.NewInvalidArgumentError("fourth", "array", arg3.TypeName())
+		return nil, objects.NewInvalidArgumentError(3, "array", arg3.TypeName())
 	}
-	proc, err := os.StartProcess(name, argv, &os.ProcAttr{Dir: dir, Env: env})
+	proc, err := os.StartProcess(s1, argv, &os.ProcAttr{Dir: s2, Env: env})
 	if err != nil {
 		return objects.NewObjectError(err), nil
 	}
 	return makeOSProcess(proc), nil
-}
-
-func stringArray(arr []objects.IObject, argName string) ([]string, error) {
-	var sArr []string
-	for idx, elem := range arr {
-		str, ok := elem.(*objects.String)
-		if !ok {
-			return nil, objects.NewInvalidArgumentError(fmt.Sprintf("%s[%d]", argName, idx), "string", elem.TypeName())
-		}
-		sArr = append(sArr, str.Value())
-	}
-	return sArr, nil
 }

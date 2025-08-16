@@ -40,11 +40,11 @@ func doRandRead(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}
-	y1, ok := args[0].(*objects.Bytes)
-	if !ok {
-		return nil, objects.NewInvalidArgumentError("first", "bytes", args[0].TypeName())
+	bs1, err := objects.ToByteSliceArg(0, args[0])
+	if err != nil {
+		return nil, err
 	}
-	res, err := rand.Read(y1.Value())
+	res, err := rand.Read(bs1)
 	if err != nil {
 		return objects.NewObjectError(err), nil
 	}
@@ -57,9 +57,9 @@ func doRandRand(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}
-	i1, ok := objects.ToInt64(args[0])
-	if !ok {
-		return nil, objects.NewInvalidArgumentError("first", "int(compatible)", args[0].TypeName())
+	i1, err := objects.ToInt64Arg(0, args[0])
+	if err != nil {
+		return nil, err
 	}
 	src := rand.NewSource(i1)
 	return randRand(rand.New(src)), nil
@@ -71,11 +71,11 @@ func doRRandRand(r *rand.Rand, args ...objects.IObject) (objects.IObject, error)
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}
-	y1, ok := args[0].(*objects.Bytes)
-	if !ok {
-		return nil, objects.NewInvalidArgumentError("first", "bytes", args[0].TypeName())
+	bs1, err := objects.ToByteSliceArg(0, args[0])
+	if err != nil {
+		return nil, err
 	}
-	res, err := r.Read(y1.Value())
+	res, err := r.Read(bs1)
 	if err != nil {
 		return objects.NewObjectError(err), nil
 	}

@@ -50,7 +50,7 @@ func doTextRegexpMatch(re *regexp.Regexp, args ...objects.IObject) (objects.IObj
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}
-	s1, err := objects.ToStringArg("first", args[0])
+	s1, err := objects.ToStringArg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
@@ -69,7 +69,7 @@ func doTextRegexpFind(re *regexp.Regexp, args ...objects.IObject) (objects.IObje
 	if numArgs != 1 && numArgs != 2 {
 		return nil, objects.ErrWrongNumArguments
 	}
-	s1, err := objects.ToStringArg("first", args[0])
+	s1, err := objects.ToStringArg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
@@ -89,11 +89,11 @@ func doTextRegexpFind(re *regexp.Regexp, args ...objects.IObject) (objects.IObje
 		}
 		return objects.NewArray([]objects.IObject{arr}), nil
 	}
-	i2, err := objects.ToIntArg("second", args[1])
+	i2, err := objects.ToInt64Arg(1, args[1])
 	if err != nil {
 		return nil, err
 	}
-	mRe := re.FindAllStringSubmatchIndex(s1, i2)
+	mRe := re.FindAllStringSubmatchIndex(s1, int(i2))
 	if mRe == nil {
 		return objects.UndefinedValue, nil
 	}
@@ -118,11 +118,11 @@ func doTextRegexpREReplace(re *regexp.Regexp, args ...objects.IObject) (objects.
 	if len(args) != 2 {
 		return nil, objects.ErrWrongNumArguments
 	}
-	s1, err := objects.ToStringArg("first", args[0])
+	s1, err := objects.ToStringArg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
-	s2, err := objects.ToStringArg("second", args[1])
+	s2, err := objects.ToStringArg(1, args[1])
 	if err != nil {
 		return nil, err
 	}
@@ -137,19 +137,19 @@ func doTextRegexpRESplit(re *regexp.Regexp, args ...objects.IObject) (objects.IO
 	if numArgs != 1 && numArgs != 2 {
 		return nil, objects.ErrWrongNumArguments
 	}
-	s1, err := objects.ToStringArg("first", args[0])
+	s1, err := objects.ToStringArg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
-	var i2 = -1
+	var i2 = int64(-1)
 	if numArgs > 1 {
-		i2, err = objects.ToIntArg("second", args[1])
+		i2, err = objects.ToInt64Arg(1, args[1])
 		if err != nil {
 			return nil, err
 		}
 	}
 	arr := objects.NewArray(nil)
-	for _, s := range re.Split(s1, i2) {
+	for _, s := range re.Split(s1, int(i2)) {
 		v, err := objects.NewString(s)
 		if err != nil {
 			return nil, err

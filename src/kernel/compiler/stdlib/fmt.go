@@ -38,7 +38,7 @@ func fmtPrintf(args ...objects.IObject) (ret objects.IObject, err error) {
 	}
 	data, ok := args[0].(*objects.String)
 	if !ok {
-		return nil, objects.NewInvalidArgumentError("format", "string", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentError(0, "string", args[0].TypeName())
 	}
 	if numArgs == 1 {
 		fmt.Print(data)
@@ -72,7 +72,7 @@ func fmtSprint(args ...objects.IObject) (ret objects.IObject, err error) {
 	}
 	data, ok := args[0].(*objects.String)
 	if !ok {
-		return nil, objects.NewInvalidArgumentError("format", "string", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentError(0, "string", args[0].TypeName())
 	}
 	if numArgs == 1 {
 		return data, nil
@@ -92,7 +92,7 @@ func fmtSprintf(args ...objects.IObject) (ret objects.IObject, err error) {
 	}
 	data, ok := args[0].(*objects.String)
 	if !ok {
-		return nil, objects.NewInvalidArgumentError("format", "string", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentError(0, "string", args[0].TypeName())
 	}
 	if numArgs == 1 {
 		// okay to return 'format' directly as String is immutable

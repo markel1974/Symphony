@@ -37,8 +37,8 @@ func (v *Variable) ValueType() string {
 
 // Int converts the value of the Variable to an integer using objects.ToInt and returns the result.
 func (v *Variable) Int() int {
-	c, _ := ToInt(v.value)
-	return c
+	c, _ := ToInt64(v.value)
+	return int(c)
 }
 
 // Int64 converts the value of the Variable to an int64 if possible and returns it.

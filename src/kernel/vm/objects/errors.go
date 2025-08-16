@@ -60,7 +60,8 @@ func Is(err error, target error) bool {
 }
 
 // NewInvalidArgumentError creates an error indicating an argument has an unexpected type, providing its name, expected, and actual types.
-func NewInvalidArgumentError(name string, expected string, found string) error {
+func NewInvalidArgumentError(index int, expected string, found string) error {
+	name := fmt.Sprintf("argument %d", index)
 	return fmt.Errorf("invalid type for argument '%s': expected %s, found %s", name, expected, found)
 }
 

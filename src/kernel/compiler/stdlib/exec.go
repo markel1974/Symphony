@@ -24,9 +24,9 @@ func makeOSExecCommand(cmd *exec.Cmd) *objects.MapImmutable {
 			if len(args) != 1 {
 				return nil, objects.ErrWrongNumArguments
 			}
-			s1, ok := objects.ToString(args[0])
-			if !ok {
-				return nil, objects.NewInvalidArgumentError("first", "string(compatible)", args[0].TypeName())
+			s1, err := objects.ToStringArg(0, args[0])
+			if err != nil {
+				return nil, err
 			}
 			cmd.Path = s1
 			return objects.UndefinedValue, nil
@@ -36,9 +36,9 @@ func makeOSExecCommand(cmd *exec.Cmd) *objects.MapImmutable {
 			if len(args) != 1 {
 				return nil, objects.ErrWrongNumArguments
 			}
-			s1, ok := objects.ToString(args[0])
-			if !ok {
-				return nil, objects.NewInvalidArgumentError("first", "string(compatible)", args[0].TypeName())
+			s1, err := objects.ToStringArg(0, args[0])
+			if err != nil {
+				return nil, err
 			}
 			cmd.Dir = s1
 			return objects.UndefinedValue, nil
@@ -52,17 +52,17 @@ func makeOSExecCommand(cmd *exec.Cmd) *objects.MapImmutable {
 			var err error
 			switch arg0 := args[0].(type) {
 			case *objects.Array:
-				env, err = stringArray(arg0.Values(), "first")
+				env, err = objects.ToStringArrayArg(0, arg0.Values())
 				if err != nil {
 					return nil, err
 				}
 			case *objects.ArrayImmutable:
-				env, err = stringArray(arg0.Values(), "first")
+				env, err = objects.ToStringArrayArg(0, arg0.Values())
 				if err != nil {
 					return nil, err
 				}
 			default:
-				return nil, objects.NewInvalidArgumentError("first", "array", arg0.TypeName())
+				return nil, objects.NewInvalidArgumentError(0, "array", arg0.TypeName())
 			}
 			cmd.Env = env
 			return objects.UndefinedValue, nil

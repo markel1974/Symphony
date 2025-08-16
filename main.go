@@ -19,6 +19,7 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
 	"github.com/markel1974/c64emu/src/kernel/process"
 	"github.com/markel1974/c64emu/src/kernel/vm"
+	"github.com/markel1974/c64emu/src/kernel/vm/bytecode"
 	"github.com/markel1974/c64emu/src/renderers/audio"
 	"github.com/markel1974/c64emu/src/renderers/graphics"
 	"github.com/markel1974/c64emu/src/version"
@@ -137,7 +138,10 @@ func vmTest() {
 	if err != nil {
 		log.Fatalf("compiler error: %s", err)
 	}
-	bc.Print()
+
+	d := bytecode.NewDisassembler(bc)
+	d.Disassemble()
+
 	loader := stdlib.NewLoader()
 	machine, err := vm.NewVM(loader, nil, bc, 100000)
 	if err != nil {

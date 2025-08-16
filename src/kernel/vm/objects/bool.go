@@ -81,10 +81,10 @@ func FromBool(v bool) IObject {
 }
 
 // ToBoolArg converts the given IObject to a boolean if possible or returns an error indicating an invalid argument type.
-func ToBoolArg(name string, o IObject) (bool, error) {
+func ToBoolArg(index int, o IObject) (bool, error) {
 	b1, ok := o.(*Bool)
 	if !ok {
-		return false, NewInvalidArgumentError(name, "bool(compatible)", o.TypeName())
+		return false, NewInvalidArgumentError(index, "bool(compatible)", o.TypeName())
 	}
 	return b1.value, nil
 }

@@ -28,7 +28,7 @@ func jsonDecode(args ...objects.IObject) (ret objects.IObject, err error) {
 		data = []byte(o.Value())
 	}
 	if data == nil {
-		return nil, objects.NewInvalidArgumentError("first", "bytes/string", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentError(0, "bytes/string", args[0].TypeName())
 	}
 	d := make(map[string]interface{})
 	if err = json.Unmarshal(data, &d); err != nil {
@@ -59,13 +59,13 @@ func jsonIndent(args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 3 {
 		return nil, objects.ErrWrongNumArguments
 	}
-	prefix, ok := objects.ToString(args[1])
-	if !ok {
-		return nil, objects.NewInvalidArgumentError("prefix", "string(compatible)", args[1].TypeName())
+	prefix, err := objects.ToStringArg(1, args[1])
+	if err != nil {
+		return nil, err
 	}
-	indent, ok := objects.ToString(args[2])
-	if !ok {
-		return nil, objects.NewInvalidArgumentError("indent", "string(compatible)", args[2].TypeName())
+	indent, err := objects.ToStringArg(2, args[2])
+	if err != nil {
+		return nil, err
 	}
 	switch o := args[0].(type) {
 	case *objects.Bytes:
@@ -83,7 +83,7 @@ func jsonIndent(args ...objects.IObject) (ret objects.IObject, err error) {
 		}
 		return objects.NewBytes(dst.Bytes()), nil
 	default:
-		return nil, objects.NewInvalidArgumentError("first", "bytes/string", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentError(0, "bytes/string", args[0].TypeName())
 	}
 }
 
@@ -103,6 +103,6 @@ func jsonHTMLEscape(args ...objects.IObject) (ret objects.IObject, err error) {
 		json.HTMLEscape(&dst, []byte(o.Value()))
 		return objects.NewBytes(dst.Bytes()), nil
 	default:
-		return nil, objects.NewInvalidArgumentError("first", "bytes/string", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentError(0, "bytes/string", args[0].TypeName())
 	}
 }

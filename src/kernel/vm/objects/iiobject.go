@@ -197,41 +197,14 @@ func FromMap(v map[string]interface{}) map[string]IObject {
 
 // ToInt64 attempts to convert the given IObject to an int64 value.
 // It returns the converted value and a boolean indicating success or failure.
-func ToInt64(o IObject) (v int64, ok bool) {
+func ToInt64(o IObject) (int64, bool) {
 	switch o := o.(type) {
 	case *Int:
-		v = o.value
-		ok = true
+		return o.value, true
 	case *Float:
-		v = int64(o.value)
-		ok = true
+		return int64(o.value), true
 	case *Char:
-		v = int64(o.value)
-		ok = true
-	case *Bool:
-		if o == TrueValue {
-			v = 1
-		}
-		ok = true
-	case *String:
-		c, err := strconv.ParseInt(o.value, 10, 64)
-		if err == nil {
-			v = c
-			ok = true
-		}
-	}
-	return
-}
-
-// ToInt converts an IObject to an integer if possible, returning the integer and a boolean indicating success.
-func ToInt(o IObject) (int, bool) {
-	switch o := o.(type) {
-	case *Int:
-		return int(o.value), true
-	case *Float:
-		return int(o.value), true
-	case *Char:
-		return int(o.value), true
+		return int64(o.value), true
 	case *Bool:
 		if o == TrueValue {
 			return 1, true
@@ -240,7 +213,7 @@ func ToInt(o IObject) (int, bool) {
 	case *String:
 		c, err := strconv.ParseInt(o.value, 10, 64)
 		if err == nil {
-			return int(c), true
+			return c, true
 		}
 		return 0, false
 	default:
@@ -248,20 +221,11 @@ func ToInt(o IObject) (int, bool) {
 	}
 }
 
-// ToIntArg converts an IObject to an integer, returning an error if the conversion is not possible or types mismatch.
-func ToIntArg(name string, o IObject) (int, error) {
-	v, ok := ToInt(o)
-	if !ok {
-		return 0, NewInvalidArgumentError(name, "int(compatible)", o.TypeName())
-	}
-	return v, nil
-}
-
 // ToInt64Arg converts an IObject to an int64, returning an error if the conversion is not possible or the type is invalid.
-func ToInt64Arg(name string, o IObject) (int64, error) {
+func ToInt64Arg(index int, o IObject) (int64, error) {
 	v, ok := ToInt64(o)
 	if !ok {
-		return 0, NewInvalidArgumentError(name, "int(compatible)", o.TypeName())
+		return 0, NewInvalidArgumentError(index, "int(compatible)", o.TypeName())
 	}
 	return v, nil
 }
@@ -294,26 +258,47 @@ func ToString(o IObject) (string, bool) {
 }
 
 // ToStringArg attempts to convert an IObject to a string. Returns an error if conversion fails or type is incompatible.
-func ToStringArg(name string, o IObject) (string, error) {
+func ToStringArg(index int, o IObject) (string, error) {
 	v, ok := ToString(o)
 	if !ok {
-		return "", NewInvalidArgumentError(name, "string(compatible)", o.TypeName())
+		return "", NewInvalidArgumentError(index, "string(compatible)", o.TypeName())
 	}
 	return v, nil
 }
 
+// ToStringArrayArg attempts to convert an array of IObjects to a slice of strings.
+func ToStringArrayArg(index int, arr []IObject) ([]string, error) {
+	var sArr []string
+	for idx, elem := range arr {
+		str, ok := ToString(elem)
+		if !ok {
+			return nil, NewInvalidArgumentError(index, fmt.Sprintf("%d - string array(compatible)", idx), elem.TypeName())
+		}
+		sArr = append(sArr, str)
+	}
+	return sArr, nil
+}
+
 // ToByteSlice converts an IObject to a byte slice if the object is of type *Bytes or *String.
 // It returns the converted byte slice and a boolean indicating success.
-func ToByteSlice(o IObject) (v []byte, ok bool) {
+func ToByteSlice(o IObject) ([]byte, bool) {
 	switch o := o.(type) {
 	case *Bytes:
-		v = o.values
-		ok = true
+		return o.values, true
 	case *String:
-		v = []byte(o.value)
-		ok = true
+		return []byte(o.value), true
+	default:
+		return nil, false
 	}
-	return
+}
+
+// ToByteSliceArg attempts to convert an IObject to a byte slice. Returns an error if the conversion fails or the type is incompatible.
+func ToByteSliceArg(index int, o IObject) ([]byte, error) {
+	b, ok := ToByteSlice(o)
+	if !ok {
+		return nil, NewInvalidArgumentError(index, "byte slice(compatible)", o.TypeName())
+	}
+	return b, nil
 }
 
 // ToFloat64 attempts to convert an IObject to a float64 and returns the values along with a success flag.
@@ -342,30 +327,36 @@ func ToFloat64(o IObject) (float64, bool) {
 }
 
 // ToFloat64Arg converts an IObject to a float64 and returns an error if the conversion fails or the type is incompatible.
-func ToFloat64Arg(name string, o IObject) (float64, error) {
+func ToFloat64Arg(index int, o IObject) (float64, error) {
 	v, ok := ToFloat64(o)
 	if !ok {
-		return 0, NewInvalidArgumentError(name, "float64(compatible)", o.TypeName())
+		return 0, NewInvalidArgumentError(index, "float64(compatible)", o.TypeName())
 	}
 	return v, nil
 }
 
 // ToTime converts an IObject into a time.Time if it is time-compatible (e.g., *Time or *Int). Returns the time and a boolean.
-func ToTime(o IObject) (v time.Time, ok bool) {
+func ToTime(o IObject) (time.Time, bool) {
 	switch o := o.(type) {
 	case *Time:
-		v = o.value
-		ok = true
+		return o.value, true
 	case *Int:
-		v = time.Unix(o.value, 0)
-		ok = true
+		return time.Unix(o.value, 0), true
 	}
-	return
+	return time.Time{}, false
+}
+
+func ToTimeArg(index int, o IObject) (time.Time, error) {
+	v, ok := ToTime(o)
+	if !ok {
+		return time.Time{}, NewInvalidArgumentError(index, "time(compatible)", o.TypeName())
+	}
+	return v, nil
 }
 
 // CountObjects recursively counts the total number of objects contained in the given IObject, including nested structures.
-func CountObjects(in IObject) (c int) {
-	c = 1
+func CountObjects(in IObject) int {
+	c := 1
 	switch o := in.(type) {
 	case *Array:
 		for _, v := range o.Values() {
@@ -386,7 +377,7 @@ func CountObjects(in IObject) (c int) {
 	case *Error:
 		c += CountObjects(o.value)
 	}
-	return
+	return c
 }
 
 // IndexAssign assigns a value to a nested structure, using selectors to determine the target location.

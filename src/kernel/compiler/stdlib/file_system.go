@@ -33,9 +33,9 @@ func makeOSFile(file *os.File) *objects.MapImmutable {
 				if len(args) != 1 {
 					return nil, objects.ErrWrongNumArguments
 				}
-				i1, ok := objects.ToInt64(args[0])
-				if !ok {
-					return nil, objects.NewInvalidArgumentError("first", "int(compatible)", args[0].TypeName())
+				i1, err := objects.ToInt64Arg(0, args[0])
+				if err != nil {
+					return nil, err
 				}
 				return objects.NewObjectError(file.Chmod(os.FileMode(i1))), nil
 			}),
@@ -44,15 +44,15 @@ func makeOSFile(file *os.File) *objects.MapImmutable {
 				if len(args) != 2 {
 					return nil, objects.ErrWrongNumArguments
 				}
-				i1, ok := objects.ToInt64(args[0])
-				if !ok {
-					return nil, objects.NewInvalidArgumentError("first", "int(compatible)", args[0].TypeName())
+				i1, err := objects.ToInt64Arg(0, args[0])
+				if err != nil {
+					return nil, err
 				}
-				i2, ok := objects.ToInt(args[1])
-				if !ok {
-					return nil, objects.NewInvalidArgumentError("second", "int(compatible)", args[1].TypeName())
+				i2, err := objects.ToInt64Arg(1, args[1])
+				if err != nil {
+					return nil, err
 				}
-				res, err := file.Seek(i1, i2)
+				res, err := file.Seek(i1, int(i2))
 				if err != nil {
 					return objects.NewObjectError(err), nil
 				}

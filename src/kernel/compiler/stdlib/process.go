@@ -26,7 +26,7 @@ func makeOSProcess(proc *os.Process) *objects.MapImmutable {
 			if len(args) != 1 {
 				return nil, objects.ErrWrongNumArguments
 			}
-			i1, err := objects.ToInt64Arg("first", args[0])
+			i1, err := objects.ToInt64Arg(0, args[0])
 			if err != nil {
 				return nil, err
 			}
