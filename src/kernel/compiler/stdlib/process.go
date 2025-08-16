@@ -10,18 +10,18 @@ import (
 func makeOSProcessState(state *os.ProcessState) *objects.MapImmutable {
 	return objects.NewMapImmutable(
 		map[string]objects.IObject{
-			"Exited":  objects.NewFunctionUser("Exited", objects.FuncARB(state.Exited)),
-			"Pid":     objects.NewFunctionUser("Pid", objects.FuncARI(state.Pid)),
-			"String":  objects.NewFunctionUser("String", objects.FuncARS(state.String)),
-			"Success": objects.NewFunctionUser("Success", objects.FuncARB(state.Success)),
+			"Exited":  objects.NewFunctionUser("Exited", objects.FuncInOb(state.Exited)),
+			"Pid":     objects.NewFunctionUser("Pid", objects.FuncInOi(state.Pid)),
+			"String":  objects.NewFunctionUser("String", objects.FuncInOs(state.String)),
+			"Success": objects.NewFunctionUser("Success", objects.FuncInOb(state.Success)),
 		},
 	)
 }
 
 func makeOSProcess(proc *os.Process) *objects.MapImmutable {
 	return objects.NewMapImmutable(map[string]objects.IObject{
-		"Kill":    objects.NewFunctionUser("Kill", objects.FuncARE(proc.Kill)),
-		"Release": objects.NewFunctionUser("Release", objects.FuncARE(proc.Release)),
+		"Kill":    objects.NewFunctionUser("Kill", objects.FuncInOe(proc.Kill)),
+		"Release": objects.NewFunctionUser("Release", objects.FuncInOe(proc.Release)),
 		"Signal": objects.NewFunctionUser("Signal", func(args ...objects.IObject) (objects.IObject, error) {
 			if len(args) != 1 {
 				return nil, objects.ErrWrongNumArguments

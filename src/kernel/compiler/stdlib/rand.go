@@ -8,13 +8,13 @@ import (
 
 // randModule is a map containing random-related utility functions for generating numbers, seeding, permutations, and more.
 var _randModule = map[string]objects.IObject{
-	"Int63":       objects.NewFunctionUser("Int63", objects.FuncARI64(rand.Int63)),
-	"Float64":     objects.NewFunctionUser("Float64", objects.FuncARF(rand.Float64)),
-	"Int63n":      objects.NewFunctionUser("Int63n", objects.FuncAI64RI64(rand.Int63n)),
-	"ExpFloat64":  objects.NewFunctionUser("ExpFloat64", objects.FuncARF(rand.ExpFloat64)),
-	"NormFloat64": objects.NewFunctionUser("NormFloat64", objects.FuncARF(rand.NormFloat64)),
-	"Perm":        objects.NewFunctionUser("Perm", objects.FuncAIRIs(rand.Perm)),
-	"Seed":        objects.NewFunctionUser("Seed", objects.FuncAI64R(rand.Seed)),
+	"Int63":       objects.NewFunctionUser("Int63", objects.FuncInOi64(rand.Int63)),
+	"Float64":     objects.NewFunctionUser("Float64", objects.FuncInOf64(rand.Float64)),
+	"Int63n":      objects.NewFunctionUser("Int63n", objects.FuncIi64Oi64(rand.Int63n)),
+	"ExpFloat64":  objects.NewFunctionUser("ExpFloat64", objects.FuncInOf64(rand.ExpFloat64)),
+	"NormFloat64": objects.NewFunctionUser("NormFloat64", objects.FuncInOf64(rand.NormFloat64)),
+	"Perm":        objects.NewFunctionUser("Perm", objects.FuncIiOiS(rand.Perm)),
+	"Seed":        objects.NewFunctionUser("Seed", objects.FuncIi64On(rand.Seed)),
 	"Read":        objects.NewFunctionUser("Read", doRandRead),
 	"Rand":        objects.NewFunctionUser("Rand", doRandRand),
 }
@@ -23,13 +23,13 @@ var _randModule = map[string]objects.IObject{
 func randRand(r *rand.Rand) *objects.MapImmutable {
 	return objects.NewMapImmutable(
 		map[string]objects.IObject{
-			"Int63":       objects.NewFunctionUser("Int63", objects.FuncARI64(r.Int63)),
-			"Float64":     objects.NewFunctionUser("Float64", objects.FuncARF(r.Float64)),
-			"Int63n":      objects.NewFunctionUser("Int63n", objects.FuncAI64RI64(r.Int63n)),
-			"ExpFloat64":  objects.NewFunctionUser("ExpFloat64", objects.FuncARF(r.ExpFloat64)),
-			"NormFloat64": objects.NewFunctionUser("NormFloat64", objects.FuncARF(r.NormFloat64)),
-			"Perm":        objects.NewFunctionUser("Perm", objects.FuncAIRIs(r.Perm)),
-			"Seed":        objects.NewFunctionUser("Seed", objects.FuncAI64R(r.Seed)),
+			"Int63":       objects.NewFunctionUser("Int63", objects.FuncInOi64(r.Int63)),
+			"Float64":     objects.NewFunctionUser("Float64", objects.FuncInOf64(r.Float64)),
+			"Int63n":      objects.NewFunctionUser("Int63n", objects.FuncIi64Oi64(r.Int63n)),
+			"ExpFloat64":  objects.NewFunctionUser("ExpFloat64", objects.FuncInOf64(r.ExpFloat64)),
+			"NormFloat64": objects.NewFunctionUser("NormFloat64", objects.FuncInOf64(r.NormFloat64)),
+			"Perm":        objects.NewFunctionUser("Perm", objects.FuncIiOiS(r.Perm)),
+			"Seed":        objects.NewFunctionUser("Seed", objects.FuncIi64On(r.Seed)),
 			"Read":        objects.NewFunctionUser("Read", func(args ...objects.IObject) (objects.IObject, error) { return doRRandRand(r, args...) }),
 		})
 }

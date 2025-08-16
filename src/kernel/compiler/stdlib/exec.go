@@ -10,15 +10,15 @@ import (
 func makeOSExecCommand(cmd *exec.Cmd) *objects.MapImmutable {
 	return objects.NewMapImmutable(map[string]objects.IObject{
 		// combined_output() => bytes/error
-		"CombinedOutput": objects.NewFunctionUser("CombinedOutput", objects.FuncARYE(cmd.CombinedOutput)),
+		"CombinedOutput": objects.NewFunctionUser("CombinedOutput", objects.FuncInObSe(cmd.CombinedOutput)),
 		// output() => bytes/error
-		"Output": objects.NewFunctionUser("Output", objects.FuncARYE(cmd.Output)), //
+		"Output": objects.NewFunctionUser("Output", objects.FuncInObSe(cmd.Output)), //
 		// run() => error
-		"Run": objects.NewFunctionUser("Run", objects.FuncARE(cmd.Run)), //
+		"Run": objects.NewFunctionUser("Run", objects.FuncInOe(cmd.Run)), //
 		// start() => error
-		"Start": objects.NewFunctionUser("Start", objects.FuncARE(cmd.Start)), //
+		"Start": objects.NewFunctionUser("Start", objects.FuncInOe(cmd.Start)), //
 		// wait() => error
-		"Wait": objects.NewFunctionUser("Wait", objects.FuncARE(cmd.Wait)), //
+		"Wait": objects.NewFunctionUser("Wait", objects.FuncInOe(cmd.Wait)), //
 		// set_path(path string)
 		"SetPath": objects.NewFunctionUser("SetPath", func(args ...objects.IObject) (objects.IObject, error) {
 			if len(args) != 1 {
