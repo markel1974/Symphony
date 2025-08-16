@@ -4,107 +4,71 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/bytecode"
 )
 
-// Sequencer is a type that provides functionality to create a sequence of operations for a virtual machine.
+// Sequencer is a type that manages a collection of IOpExecutor instances organized by their opcodes.
+// It provides methods for creating and populating the sequencer with specific opcode implementations.
+// The container field stores the IOpExecutor instances, indexed by their opcode with masking applied for efficiency.
 type Sequencer struct {
+	container []IOpExecutor
 }
 
+// NewSequencer initializes and returns a new instance of Sequencer.
 func NewSequencer() *Sequencer {
 	return &Sequencer{}
 }
 
-// Create initializes a sequencer array with operation functions mapped to their corresponding opcodes.
+// Create initializes the internal container with default operation executors and returns it.
 func (ds *Sequencer) Create() []IOpExecutor {
-	opUnknown := &OpUnknown{}
-	opConstant := &OpConstant{}
-	opNull := &OpNull{}
-	opBinary := &OpBinary{}
-	opReferences := &OpReferences{}
-	opEqual := &OpEqual{}
-	opNotEqual := &OpNotEqual{}
-	opPop := &OpPop{}
-	opTrue := &OpTrue{}
-	opFalse := &OpFalse{}
-	opLNot := &OpLNot{}
-	opBComplement := &OpBComplement{}
-	opMinus := &OpMinus{}
-	opJumpFalsy := &OpJumpFalsy{}
-	opAndJump := &OpAndJump{}
-	opOrJump := &OpOrJump{}
-	opJump := &OpJump{}
-	opSetGlobal := &OpSetGlobal{}
-	opSetSelGlobal := &OpSetSelGlobal{}
-	opGetGlobal := &OpGetGlobal{}
-	opArray := &OpArray{}
-	opMap := &OpMap{}
-	opError := &OpError{}
-	opImmutable := &OpImmutable{}
-	opIndex := &OpIndex{}
-	opSliceIndex := &OpSliceIndex{}
-	opCall := &OpCall{}
-	opReturn := &OpReturn{}
-	opDefineLocal := &OpDefineLocal{}
-	opSetLocal := &OpSetLocal{}
-	opSetSelLocal := &OpSetSelLocal{}
-	opGetLocal := &OpGetLocal{}
-	opGetBuiltin := &OpGetBuiltin{}
-	opClosure := &OpClosure{}
-	opGetFreePtr := &OpGetFreePtr{}
-	opGetFree := &OpGetFree{}
-	opSetFree := &OpSetFree{}
-	opGetLocalPtr := &OpGetLocalPtr{}
-	opSetSelFree := &OpSetSelFree{}
-	opIteratorInit := &OpIteratorInit{}
-	opIteratorNext := &OpIteratorNext{}
-	opIteratorKey := &OpIteratorKey{}
-	opIteratorValue := &OpIteratorValue{}
-	opSuspend := &OpSuspend{}
-
-	sequencer := make([]IOpExecutor, sequenceLen)
-	for idx := range sequencer {
-		sequencer[idx] = opUnknown
+	ds.container = make([]IOpExecutor, bytecode.OpcodesLen)
+	for idx := range ds.container {
+		ds.container[idx] = NewOpUnknown()
 	}
-	sequencer[bytecode.OpConstant] = opConstant
-	sequencer[bytecode.OpNull] = opNull
-	sequencer[bytecode.OpBinaryOp] = opBinary
-	sequencer[bytecode.OpReferences] = opReferences
-	sequencer[bytecode.OpEqual] = opEqual
-	sequencer[bytecode.OpNotEqual] = opNotEqual
-	sequencer[bytecode.OpPop] = opPop
-	sequencer[bytecode.OpTrue] = opTrue
-	sequencer[bytecode.OpFalse] = opFalse
-	sequencer[bytecode.OpLNot] = opLNot
-	sequencer[bytecode.OpBComplement] = opBComplement
-	sequencer[bytecode.OpMinus] = opMinus
-	sequencer[bytecode.OpJumpFalsy] = opJumpFalsy
-	sequencer[bytecode.OpAndJump] = opAndJump
-	sequencer[bytecode.OpOrJump] = opOrJump
-	sequencer[bytecode.OpJump] = opJump
-	sequencer[bytecode.OpSetGlobal] = opSetGlobal
-	sequencer[bytecode.OpSetSelGlobal] = opSetSelGlobal
-	sequencer[bytecode.OpGetGlobal] = opGetGlobal
-	sequencer[bytecode.OpArray] = opArray
-	sequencer[bytecode.OpMap] = opMap
-	sequencer[bytecode.OpError] = opError
-	sequencer[bytecode.OpImmutable] = opImmutable
-	sequencer[bytecode.OpIndex] = opIndex
-	sequencer[bytecode.OpSliceIndex] = opSliceIndex
-	sequencer[bytecode.OpCall] = opCall
-	sequencer[bytecode.OpReturn] = opReturn
-	sequencer[bytecode.OpDefineLocal] = opDefineLocal
-	sequencer[bytecode.OpSetLocal] = opSetLocal
-	sequencer[bytecode.OpSetSelLocal] = opSetSelLocal
-	sequencer[bytecode.OpGetLocal] = opGetLocal
-	sequencer[bytecode.OpGetBuiltin] = opGetBuiltin
-	sequencer[bytecode.OpClosure] = opClosure
-	sequencer[bytecode.OpGetFreePtr] = opGetFreePtr
-	sequencer[bytecode.OpGetFree] = opGetFree
-	sequencer[bytecode.OpSetFree] = opSetFree
-	sequencer[bytecode.OpGetLocalPtr] = opGetLocalPtr
-	sequencer[bytecode.OpSetSelFree] = opSetSelFree
-	sequencer[bytecode.OpIteratorInit] = opIteratorInit
-	sequencer[bytecode.OpIteratorNext] = opIteratorNext
-	sequencer[bytecode.OpIteratorKey] = opIteratorKey
-	sequencer[bytecode.OpIteratorValue] = opIteratorValue
-	sequencer[bytecode.OpSuspend] = opSuspend
-	return sequencer
+	ds.setSequence(NewOpConstant())
+	ds.setSequence(NewOpNull())
+	ds.setSequence(NewOpBinary())
+	ds.setSequence(NewOpReferences())
+	ds.setSequence(NewOpEqual())
+	ds.setSequence(NewOpNotEqual())
+	ds.setSequence(NewOpPop())
+	ds.setSequence(NewOpTrue())
+	ds.setSequence(NewOpFalse())
+	ds.setSequence(NewOpLNot())
+	ds.setSequence(NewOpBComplement())
+	ds.setSequence(NewOpMinus())
+	ds.setSequence(NewOpJumpFalsy())
+	ds.setSequence(NewOpAndJump())
+	ds.setSequence(NewOpOrJump())
+	ds.setSequence(NewOpJump())
+	ds.setSequence(NewOpSetGlobal())
+	ds.setSequence(NewOpSetSelGlobal())
+	ds.setSequence(NewOpGetGlobal())
+	ds.setSequence(NewOpArray())
+	ds.setSequence(NewOpMap())
+	ds.setSequence(NewOpError())
+	ds.setSequence(NewOpImmutable())
+	ds.setSequence(NewOpIndex())
+	ds.setSequence(NewOpSliceIndex())
+	ds.setSequence(NewOpCall())
+	ds.setSequence(NewOpReturn())
+	ds.setSequence(NewOpDefineLocal())
+	ds.setSequence(NewOpSetLocal())
+	ds.setSequence(NewOpSetSelLocal())
+	ds.setSequence(NewOpGetLocal())
+	ds.setSequence(NewOpGetBuiltin())
+	ds.setSequence(NewOpClosure())
+	ds.setSequence(NewOpGetFreePtr())
+	ds.setSequence(NewOpGetFree())
+	ds.setSequence(NewOpSetFree())
+	ds.setSequence(NewOpGetLocalPtr())
+	ds.setSequence(NewOpSetSelFree())
+	ds.setSequence(NewOpIteratorInit())
+	ds.setSequence(NewOpIteratorNext())
+	ds.setSequence(NewOpIteratorKey())
+	ds.setSequence(NewOpIteratorValue())
+	ds.setSequence(NewOpSuspend())
+	return ds.container
+}
+
+// setSequence assigns a specific IOpExecutor implementation to its corresponding opcode index in the container.
+func (ds *Sequencer) setSequence(seq IOpExecutor) {
+	ds.container[seq.Opcode()&bytecode.OpcodesMask] = seq
 }

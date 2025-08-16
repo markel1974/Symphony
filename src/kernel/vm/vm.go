@@ -21,13 +21,6 @@ const (
 	maxFrames = 1024
 )
 
-// sequenceLen defines the length of a sequence using a bitwise left shift operation.
-// sequenceMask is a bitmask derived from sequenceLen to restrict sequence values within the specified range.
-const (
-	sequenceLen  = 1 << 8
-	sequenceMask = sequenceLen - 1
-)
-
 // ISequencer defines an interface to generate a sequence of functions for a given Virtual Machine instance.
 type ISequencer interface {
 	Create() []IOpExecutor
@@ -135,7 +128,7 @@ func (v *VM) run() {
 	for {
 		v.ip++
 		inst := v.currFrame.Get(v.ip)
-		opcode := bytecode.Opcode(inst & sequenceMask)
+		opcode := bytecode.Opcode(inst & bytecode.OpcodesMask)
 		log.Println("Executing instruction ", opcode, bytecode.OpcodeNames(opcode))
 		v.sequencer[opcode](v)
 		if v.shutdown {

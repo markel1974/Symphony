@@ -378,11 +378,11 @@ func (c *Compiler) doIncDecStmt(node *ast.IncDecStmt) error {
 		return err
 	}
 	if node.Tok == token.INC {
-		if _, err := c.scopes.Emit(bytecode.OpBinaryOp, int(objects.OperatorAdd)); err != nil {
+		if _, err := c.scopes.Emit(bytecode.OpBinary, int(objects.OperatorAdd)); err != nil {
 			return err
 		}
 	} else if node.Tok == token.DEC {
-		if _, err := c.scopes.Emit(bytecode.OpBinaryOp, int(objects.OperatorSub)); err != nil {
+		if _, err := c.scopes.Emit(bytecode.OpBinary, int(objects.OperatorSub)); err != nil {
 			return err
 		}
 	} else {

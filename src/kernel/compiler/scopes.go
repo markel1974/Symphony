@@ -317,19 +317,19 @@ func (c *Scopes) EmitSymbolGet(s *Symbol) error {
 func (c *Scopes) EmitBinaryOp(op token.Token) error {
 	switch op {
 	case token.ADD:
-		if _, err := c.Emit(bytecode.OpBinaryOp, int(objects.OperatorAdd)); err != nil {
+		if _, err := c.Emit(bytecode.OpBinary, int(objects.OperatorAdd)); err != nil {
 			return err
 		}
 	case token.SUB:
-		if _, err := c.Emit(bytecode.OpBinaryOp, int(objects.OperatorSub)); err != nil {
+		if _, err := c.Emit(bytecode.OpBinary, int(objects.OperatorSub)); err != nil {
 			return err
 		}
 	case token.MUL:
-		if _, err := c.Emit(bytecode.OpBinaryOp, int(objects.OperatorMul)); err != nil {
+		if _, err := c.Emit(bytecode.OpBinary, int(objects.OperatorMul)); err != nil {
 			return err
 		}
 	case token.QUO:
-		if _, err := c.Emit(bytecode.OpBinaryOp, int(objects.OperatorQuo)); err != nil {
+		if _, err := c.Emit(bytecode.OpBinary, int(objects.OperatorQuo)); err != nil {
 			return err
 		}
 	case token.EQL:
@@ -337,11 +337,11 @@ func (c *Scopes) EmitBinaryOp(op token.Token) error {
 			return err
 		}
 	case token.LSS:
-		if _, err := c.Emit(bytecode.OpBinaryOp, int(objects.OperatorLess)); err != nil {
+		if _, err := c.Emit(bytecode.OpBinary, int(objects.OperatorLess)); err != nil {
 			return err
 		}
 	case token.GTR:
-		if _, err := c.Emit(bytecode.OpBinaryOp, int(objects.OperatorGreater)); err != nil {
+		if _, err := c.Emit(bytecode.OpBinary, int(objects.OperatorGreater)); err != nil {
 			return err
 		}
 	default:
