@@ -62,7 +62,7 @@ func (o *Struct) Copy() IObject {
 	for k, v := range o.values {
 		c[k] = v.Copy()
 	}
-	return NewMap(c)
+	return NewStruct(c)
 }
 
 // Boolean returns true if the Struct contains no values, otherwise false.
