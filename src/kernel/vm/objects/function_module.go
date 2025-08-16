@@ -12,9 +12,8 @@ const (
 // EncodingID is an identifier used for serialization or external encoding purposes.
 type FunctionUser struct {
 	Object
-	name       string
-	value      CallableFunc
-	encodingID string
+	name  string
+	value CallableFunc
 }
 
 // NewFunctionModule creates a new FunctionUser instance with the specified ID and callable function.
