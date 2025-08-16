@@ -4,7 +4,6 @@ import (
 	"encoding/gob"
 	"fmt"
 	"io"
-	"log"
 	"reflect"
 
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
@@ -43,20 +42,6 @@ type Bytecode struct {
 func NewBytecode() *Bytecode {
 	return &Bytecode{
 		files: NewFiles(),
-	}
-}
-
-// Print logs the bytecode object count, formatted constants, and formatted references to the standard logger.
-func (b *Bytecode) Print() {
-	log.Println("--- Object Count ---")
-	log.Println(b.CountObjects())
-	log.Println("--- Constants ---")
-	for idx, v := range b.FormatConstants() {
-		log.Printf("%04d => %s\n", idx, v)
-	}
-	log.Println("--- References ---")
-	for idx, v := range b.FormatReferences() {
-		log.Printf("%04d => %s\n", idx, v)
 	}
 }
 
@@ -112,56 +97,8 @@ func (b *Bytecode) Encode(w io.Writer) error {
 	return nil
 }
 
-// CountObjects calculates the total number of objects in constants and references, including nested objects.
-func (b *Bytecode) CountObjects() int {
-	n := 0
-	for _, c := range b.constants {
-		n += objects.CountObjects(c)
-	}
-	for _, c := range b.references {
-		n += objects.CountObjects(c)
-	}
-	return n
-}
-
-// FormatConstants returns a slice of formatted strings representing the constants within the Bytecode instance.
-func (b *Bytecode) FormatConstants() []string {
-	var output []string
-	for cIdx, constant := range b.constants {
-		output = append(output, b.formatObject(cIdx, constant)...)
-	}
-	return output
-}
-
-// FormatReferences processes and formats the references in the Bytecode structure into a slice of formatted strings.
-func (b *Bytecode) FormatReferences() []string {
-	var output []string
-	for cIdx, constant := range b.references {
-		output = append(output, b.formatObject(cIdx, constant)...)
-	}
-	return output
-}
-
-// formatObject formats a constant object, producing a slice of strings with its details for display or debugging.
-func (b *Bytecode) formatObject(cIdx int, constant objects.IObject) []string {
-	var output []string
-	switch cn := constant.(type) {
-	case *objects.FunctionCompiled:
-		output = append(output, fmt.Sprintf("[% 3d] %s (Compiled Function|%p)", cIdx, cn.Name(), &cn))
-		for _, l := range FormatInstructions(cn.Data(), 0) {
-			output = append(output, fmt.Sprintf("\t\t%s", l))
-		}
-	default:
-		output = append(output, fmt.Sprintf("[% 3d] %s (%s|%p)", cIdx, cn, reflect.TypeOf(cn).Elem().Name(), &cn))
-	}
-	return output
-}
-
 // Decode deserializes the bytecode from the given io.Reader and resolves its components using the provided modules.
 func (b *Bytecode) Decode(r io.Reader, loader ILoader) error {
-	//if mods == nil {
-	//	mods = modules.NewModules()
-	//}
 	dec := gob.NewDecoder(r)
 	if err := dec.Decode(&b.files); err != nil {
 		return err
@@ -361,7 +298,7 @@ func updateConstIndexes(instances []byte, indexMap map[int]int) error {
 			if !ok {
 				return fmt.Errorf("constant index not found: %d", curIdx)
 			}
-			copy(instances[i:], MakeInstruction(op, newIdx))
+			copy(instances[i:], CompileInstruction(op, newIdx))
 		case OpClosure:
 			curIdx := int(instances[i+2]) | int(instances[i+1])<<8
 			numFree := int(instances[i+3])
@@ -369,7 +306,7 @@ func updateConstIndexes(instances []byte, indexMap map[int]int) error {
 			if !ok {
 				return fmt.Errorf("constant index not found: %d", curIdx)
 			}
-			copy(instances[i:], MakeInstruction(op, newIdx, numFree))
+			copy(instances[i:], CompileInstruction(op, newIdx, numFree))
 		default:
 			return fmt.Errorf("unsupported opcode: %s", OpcodeNames(op))
 		}
