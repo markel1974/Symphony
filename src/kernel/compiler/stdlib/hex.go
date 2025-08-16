@@ -7,6 +7,6 @@ import (
 )
 
 var _hexModule = map[string]objects.IObject{
-	"encode": objects.NewFunctionModule(objects.FunctionModuleDef, "encode", objects.FuncIbSOs(hex.EncodeToString)),
-	"decode": objects.NewFunctionModule(objects.FunctionModuleDef, "decode", objects.FuncIsObSe(hex.DecodeString)),
+	"EncodeToString": objects.NewFunctionModule(objects.FunctionModuleDef, "EncodeToString", objects.FuncIbSOs(hex.EncodeToString)),
+	"DecodeString":   objects.NewFunctionModule(objects.FunctionModuleDef, "DecodeString", objects.FuncIsObSe(hex.DecodeString)),
 }

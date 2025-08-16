@@ -9,14 +9,14 @@ import (
 
 // jsonModule is a map of JSON-related functions (decode, encode, indent, html_escape) implementing the IObject interface.
 var _jsonModule = map[string]objects.IObject{
-	"decode":      objects.NewFunctionModule(objects.FunctionModuleDef, "decode", jsonDecode),
-	"encode":      objects.NewFunctionModule(objects.FunctionModuleDef, "encode", jsonEncode),
-	"indent":      objects.NewFunctionModule(objects.FunctionModuleDef, "encode", jsonIndent),
-	"html_escape": objects.NewFunctionModule(objects.FunctionModuleDef, "html_escape", jsonHTMLEscape),
+	"Unmarshal":  objects.NewFunctionModule(objects.FunctionModuleDef, "Unmarshal", jsonUnmarshal),
+	"Marshal":    objects.NewFunctionModule(objects.FunctionModuleDef, "Marshal", jsonMarshal),
+	"Indent":     objects.NewFunctionModule(objects.FunctionModuleDef, "Indent", jsonIndent),
+	"HTMLEscape": objects.NewFunctionModule(objects.FunctionModuleDef, "html_escape", jsonHTMLEscape),
 }
 
-// jsonDecode parses a JSON-encoded bytes or string argument into a map-like object or returns an error if decoding fails.
-func jsonDecode(args ...objects.IObject) (ret objects.IObject, err error) {
+// jsonUnmarshal parses a JSON-encoded bytes or string argument into a map-like object or returns an error if decoding fails.
+func jsonUnmarshal(args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}
@@ -38,10 +38,10 @@ func jsonDecode(args ...objects.IObject) (ret objects.IObject, err error) {
 	return result, nil
 }
 
-// jsonEncode serializes an IObject into its JSON-encoded byte representation and returns it as a Bytes object.
-// jsonEncode expects exactly one argument; otherwise, it returns an error for incorrect argument count.
-// jsonEncode returns a serialized result or an error object if JSON marshalling fails.
-func jsonEncode(args ...objects.IObject) (ret objects.IObject, err error) {
+// jsonMarshal serializes an IObject into its JSON-encoded byte representation and returns it as a Bytes object.
+// jsonMarshal expects exactly one argument; otherwise, it returns an error for incorrect argument count.
+// jsonMarshal returns a serialized result or an error object if JSON marshalling fails.
+func jsonMarshal(args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}

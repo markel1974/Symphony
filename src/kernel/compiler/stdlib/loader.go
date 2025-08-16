@@ -10,14 +10,14 @@ import (
 var _builtinModules = map[string]map[string]objects.IObject{
 	//"os":   osModule,
 	//"fmt":    _fmtSafeModule,
-	"fmt":    _fmtModule,
-	"math":   _mathModule,
-	"text":   _textModule,
-	"times":  _timesModule,
-	"rand":   _randModule,
-	"json":   _jsonModule,
-	"base64": _base64Module,
-	"hex":    _hexModule,
+	"fmt":     _fmtModule,
+	"math":    _mathModule,
+	"strings": _stringsModule,
+	"time":    _timeModule,
+	"rand":    _randModule,
+	"json":    _jsonModule,
+	"base64":  _base64Module,
+	"hex":     _hexModule,
 }
 
 // Module represents a module with predefined attributes that can be imported or accessed at runtime.

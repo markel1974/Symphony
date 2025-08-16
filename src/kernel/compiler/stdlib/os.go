@@ -10,76 +10,76 @@ import (
 
 // osModule provides a mapping of OS-related constants and functions to their respective object representations or operations.
 var osModule = map[string]objects.IObject{
-	"o_rdonly":            objects.NewInt(int64(os.O_RDONLY)),
-	"o_wronly":            objects.NewInt(int64(os.O_WRONLY)),
-	"o_rdwr":              objects.NewInt(int64(os.O_RDWR)),
-	"o_append":            objects.NewInt(int64(os.O_APPEND)),
-	"o_create":            objects.NewInt(int64(os.O_CREATE)),
-	"o_excl":              objects.NewInt(int64(os.O_EXCL)),
-	"o_sync":              objects.NewInt(int64(os.O_SYNC)),
-	"o_trunc":             objects.NewInt(int64(os.O_TRUNC)),
-	"mode_dir":            objects.NewInt(int64(os.ModeDir)),
-	"mode_append":         objects.NewInt(int64(os.ModeAppend)),
-	"mode_exclusive":      objects.NewInt(int64(os.ModeExclusive)),
-	"mode_temporary":      objects.NewInt(int64(os.ModeTemporary)),
-	"mode_symlink":        objects.NewInt(int64(os.ModeSymlink)),
-	"mode_device":         objects.NewInt(int64(os.ModeDevice)),
-	"mode_named_pipe":     objects.NewInt(int64(os.ModeNamedPipe)),
-	"mode_socket":         objects.NewInt(int64(os.ModeSocket)),
-	"mode_setuid":         objects.NewInt(int64(os.ModeSetuid)),
-	"mode_setgui":         objects.NewInt(int64(os.ModeSetgid)),
-	"mode_char_device":    objects.NewInt(int64(os.ModeCharDevice)),
-	"mode_sticky":         objects.NewInt(int64(os.ModeSticky)),
-	"mode_type":           objects.NewInt(int64(os.ModeType)),
-	"mode_perm":           objects.NewInt(int64(os.ModePerm)),
-	"path_separator":      objects.NewChar(os.PathSeparator),
-	"path_list_separator": objects.NewChar(os.PathListSeparator),
-	"dev_null":            objects.NewStringNoSize(os.DevNull),
-	"seek_set":            objects.NewInt(int64(io.SeekStart)),
-	"seek_cur":            objects.NewInt(int64(io.SeekCurrent)),
-	"seek_end":            objects.NewInt(int64(io.SeekEnd)),
-	"args":                objects.NewFunctionModule(objects.FunctionModuleDef, "args", osArgs),                                     // args() => array(string)
-	"chdir":               objects.NewFunctionModule(objects.FunctionModuleDef, "chdir", objects.FuncIsOe(os.Chdir)),                // chdir(dir string) => error
-	"chmod":               osFuncASFmRE("chmod", os.Chmod),                                                                          // chmod(name string, mode int) => error
-	"chown":               objects.NewFunctionModule(objects.FunctionModuleDef, "chown", objects.FuncIsiiOe(os.Chown)),              // chown(name string, uid int, gid int) => error
-	"clearenv":            objects.NewFunctionModule(objects.FunctionModuleDef, "clearenv", objects.FuncInOn(os.Clearenv)),          // clearenv()
-	"environ":             objects.NewFunctionModule(objects.FunctionModuleDef, "environ", objects.FuncInOsS(os.Environ)),           // environ() => array(string)
-	"exit":                objects.NewFunctionModule(objects.FunctionModuleDef, "exit", objects.FuncIiOn(os.Exit)),                  // exit(code int)
-	"expand_env":          objects.NewFunctionModule(objects.FunctionModuleDef, "expand_env", osExpandEnv),                          // expand_env(s string) => string
-	"getegid":             objects.NewFunctionModule(objects.FunctionModuleDef, "getegid", objects.FuncInOi(os.Getegid)),            // getegid() => int
-	"getenv":              objects.NewFunctionModule(objects.FunctionModuleDef, "getenv", objects.FuncIsOs(os.Getenv)),              // getenv(s string) => string
-	"geteuid":             objects.NewFunctionModule(objects.FunctionModuleDef, "geteuid", objects.FuncInOi(os.Geteuid)),            // geteuid() => int
-	"getgid":              objects.NewFunctionModule(objects.FunctionModuleDef, "getgid", objects.FuncInOi(os.Getgid)),              // getgid() => int
-	"getgroups":           objects.NewFunctionModule(objects.FunctionModuleDef, "getgroups", objects.FuncInOiSe(os.Getgroups)),      // getgroups() => array(string)/error
-	"getpagesize":         objects.NewFunctionModule(objects.FunctionModuleDef, "getpagesize", objects.FuncInOi(os.Getpagesize)),    // getpagesize() => int
-	"getpid":              objects.NewFunctionModule(objects.FunctionModuleDef, "getpid", objects.FuncInOi(os.Getpid)),              // getpid() => int
-	"getppid":             objects.NewFunctionModule(objects.FunctionModuleDef, "getppid", objects.FuncInOi(os.Getppid)),            // getppid() => int
-	"getuid":              objects.NewFunctionModule(objects.FunctionModuleDef, "getuid", objects.FuncInOi(os.Getuid)),              // getuid() => int
-	"getwd":               objects.NewFunctionModule(objects.FunctionModuleDef, "getwd", objects.FuncInOse(os.Getwd)),               // getwd() => string/error
-	"hostname":            objects.NewFunctionModule(objects.FunctionModuleDef, "hostname", objects.FuncInOse(os.Hostname)),         // hostname() => string/error
-	"lchown":              objects.NewFunctionModule(objects.FunctionModuleDef, "lchown", objects.FuncIsiiOe(os.Lchown)),            // lchown(name string, uid int, gid int) => error
-	"link":                objects.NewFunctionModule(objects.FunctionModuleDef, "link", objects.FuncIssOe(os.Link)),                 // link(oldname string, newname string) => error
-	"lookup_env":          objects.NewFunctionModule(objects.FunctionModuleDef, "lookup_env", osLookupEnv),                          // lookup_env(key string) => string/false
-	"mkdir":               osFuncASFmRE("mkdir", os.Mkdir),                                                                          // mkdir(name string, perm int) => error
-	"mkdir_all":           osFuncASFmRE("mkdir_all", os.MkdirAll),                                                                   // mkdir_all(name string, perm int) => error
-	"readlink":            objects.NewFunctionModule(objects.FunctionModuleDef, "readlink", objects.FuncIsOse(os.Readlink)),         // readlink(name string) => string/error
-	"remove":              objects.NewFunctionModule(objects.FunctionModuleDef, "remove", objects.FuncIsOe(os.Remove)),              // remove(name string) => error
-	"remove_all":          objects.NewFunctionModule(objects.FunctionModuleDef, "remove_all", objects.FuncIsOe(os.RemoveAll)),       // remove_all(name string) => error
-	"rename":              objects.NewFunctionModule(objects.FunctionModuleDef, "rename", objects.FuncIssOe(os.Rename)),             // rename(oldpath string, newpath string) => error
-	"setenv":              objects.NewFunctionModule(objects.FunctionModuleDef, "setenv", objects.FuncIssOe(os.Setenv)),             // setenv(key string, value string) => error
-	"symlink":             objects.NewFunctionModule(objects.FunctionModuleDef, "symlink", objects.FuncIssOe(os.Symlink)),           // symlink(oldname string newname string) => error
-	"temp_dir":            objects.NewFunctionModule(objects.FunctionModuleDef, "temp_dir", objects.FuncInOs(os.TempDir)),           // temp_dir() => string
-	"truncate":            objects.NewFunctionModule(objects.FunctionModuleDef, "truncate", objects.FuncIsi64Oe(os.Truncate)),       // truncate(name string, size int) => error
-	"unsetenv":            objects.NewFunctionModule(objects.FunctionModuleDef, "unsetenv", objects.FuncIsOe(os.Unsetenv)),          // unsetenv(key string) => error
-	"create":              objects.NewFunctionModule(objects.FunctionModuleDef, "create", osCreate),                                 // create(name string) => imap(file)/error
-	"open":                objects.NewFunctionModule(objects.FunctionModuleDef, "open", osOpen),                                     // open(name string) => imap(file)/error
-	"open_file":           objects.NewFunctionModule(objects.FunctionModuleDef, "open_file", osOpenFile),                            // open_file(name string, flag int, perm int) => imap(file)/error
-	"find_process":        objects.NewFunctionModule(objects.FunctionModuleDef, "find_process", osFindProcess),                      // find_process(pid int) => imap(process)/error
-	"start_process":       objects.NewFunctionModule(objects.FunctionModuleDef, "start_process", osStartProcess),                    // start_process(name string, argv array(string), dir string, env array(string)) => imap(process)/error
-	"exec_look_path":      objects.NewFunctionModule(objects.FunctionModuleDef, "exec_look_path", objects.FuncIsOse(exec.LookPath)), // exec_look_path(file) => string/error
-	"exec":                objects.NewFunctionModule(objects.FunctionModuleDef, "exec", osExec),                                     // exec(name, args...) => command
-	"stat":                objects.NewFunctionModule(objects.FunctionModuleDef, "stat", osStat),                                     // stat(name) => imap(fileinfo)/error
-	"read_file":           objects.NewFunctionModule(objects.FunctionModuleDef, "read_file", osReadFile),                            // readfile(name) => array(byte)/error
+	"O_RDONLY":          objects.NewInt(int64(os.O_RDONLY)),
+	"O_WRONLY":          objects.NewInt(int64(os.O_WRONLY)),
+	"O_RDWR":            objects.NewInt(int64(os.O_RDWR)),
+	"O_APPEND":          objects.NewInt(int64(os.O_APPEND)),
+	"O_CREATE":          objects.NewInt(int64(os.O_CREATE)),
+	"O_EXCL":            objects.NewInt(int64(os.O_EXCL)),
+	"O_SYNC":            objects.NewInt(int64(os.O_SYNC)),
+	"O_TRUNC":           objects.NewInt(int64(os.O_TRUNC)),
+	"ModeDir":           objects.NewInt(int64(os.ModeDir)),
+	"ModeAppend":        objects.NewInt(int64(os.ModeAppend)),
+	"ModeExclusive":     objects.NewInt(int64(os.ModeExclusive)),
+	"ModeTemporary":     objects.NewInt(int64(os.ModeTemporary)),
+	"ModeSymlink":       objects.NewInt(int64(os.ModeSymlink)),
+	"ModeDevice":        objects.NewInt(int64(os.ModeDevice)),
+	"ModeNamedPipe":     objects.NewInt(int64(os.ModeNamedPipe)),
+	"ModeSocket":        objects.NewInt(int64(os.ModeSocket)),
+	"ModeSetuid":        objects.NewInt(int64(os.ModeSetuid)),
+	"ModeSetgid":        objects.NewInt(int64(os.ModeSetgid)),
+	"ModeCharDevice":    objects.NewInt(int64(os.ModeCharDevice)),
+	"ModeSticky":        objects.NewInt(int64(os.ModeSticky)),
+	"ModeType":          objects.NewInt(int64(os.ModeType)),
+	"ModePerm":          objects.NewInt(int64(os.ModePerm)),
+	"PathSeparator":     objects.NewChar(os.PathSeparator),
+	"PathListSeparator": objects.NewChar(os.PathListSeparator),
+	"DevNull":           objects.NewStringNoSize(os.DevNull),
+	"SeekStart":         objects.NewInt(int64(io.SeekStart)),
+	"SeekCurrent":       objects.NewInt(int64(io.SeekCurrent)),
+	"SeekEnd":           objects.NewInt(int64(io.SeekEnd)),
+	"Args":              objects.NewFunctionModule(objects.FunctionModuleDef, "Args", osArgs),                                   // args() => array(string)
+	"Chdir":             objects.NewFunctionModule(objects.FunctionModuleDef, "Chdir", objects.FuncIsOe(os.Chdir)),              // chdir(dir string) => error
+	"Chmod":             osFuncASFmRE("Chmod", os.Chmod),                                                                        // chmod(name string, mode int) => error
+	"Chown":             objects.NewFunctionModule(objects.FunctionModuleDef, "Chown", objects.FuncIsiiOe(os.Chown)),            // chown(name string, uid int, gid int) => error
+	"Clearenv":          objects.NewFunctionModule(objects.FunctionModuleDef, "Clearenv", objects.FuncInOn(os.Clearenv)),        // clearenv()
+	"Environ":           objects.NewFunctionModule(objects.FunctionModuleDef, "Environ", objects.FuncInOsS(os.Environ)),         // environ() => array(string)
+	"Exit":              objects.NewFunctionModule(objects.FunctionModuleDef, "Exit", objects.FuncIiOn(os.Exit)),                // exit(code int)
+	"osExpandEnv":       objects.NewFunctionModule(objects.FunctionModuleDef, "osExpandEnv", osExpandEnv),                       // expand_env(s string) => string
+	"getegid":           objects.NewFunctionModule(objects.FunctionModuleDef, "Getegid", objects.FuncInOi(os.Getegid)),          // getegid() => int
+	"Getenv":            objects.NewFunctionModule(objects.FunctionModuleDef, "Getenv", objects.FuncIsOs(os.Getenv)),            // getenv(s string) => string
+	"geteuid":           objects.NewFunctionModule(objects.FunctionModuleDef, "Geteuid", objects.FuncInOi(os.Geteuid)),          // geteuid() => int
+	"Getgid":            objects.NewFunctionModule(objects.FunctionModuleDef, "Getgid", objects.FuncInOi(os.Getgid)),            // getgid() => int
+	"Getgroups":         objects.NewFunctionModule(objects.FunctionModuleDef, "Getgroups", objects.FuncInOiSe(os.Getgroups)),    // getgroups() => array(string)/error
+	"Getpagesize":       objects.NewFunctionModule(objects.FunctionModuleDef, "Getpagesize", objects.FuncInOi(os.Getpagesize)),  // getpagesize() => int
+	"Getpid":            objects.NewFunctionModule(objects.FunctionModuleDef, "Getpid", objects.FuncInOi(os.Getpid)),            // getpid() => int
+	"Getppid":           objects.NewFunctionModule(objects.FunctionModuleDef, "Getppid", objects.FuncInOi(os.Getppid)),          // getppid() => int
+	"Getuid":            objects.NewFunctionModule(objects.FunctionModuleDef, "Getuid", objects.FuncInOi(os.Getuid)),            // getuid() => int
+	"Getwd":             objects.NewFunctionModule(objects.FunctionModuleDef, "Getwd", objects.FuncInOse(os.Getwd)),             // getwd() => string/error
+	"Hostname":          objects.NewFunctionModule(objects.FunctionModuleDef, "Hostname", objects.FuncInOse(os.Hostname)),       // hostname() => string/error
+	"Lchown":            objects.NewFunctionModule(objects.FunctionModuleDef, "Lchown", objects.FuncIsiiOe(os.Lchown)),          // lchown(name string, uid int, gid int) => error
+	"Link":              objects.NewFunctionModule(objects.FunctionModuleDef, "Link", objects.FuncIssOe(os.Link)),               // link(oldname string, newname string) => error
+	"LookupEnv":         objects.NewFunctionModule(objects.FunctionModuleDef, "LookupEnv", osLookupEnv),                         // lookup_env(key string) => string/false
+	"Mkdir":             osFuncASFmRE("Mkdir", os.Mkdir),                                                                        // mkdir(name string, perm int) => error
+	"MkdirAll":          osFuncASFmRE("MkdirAll", os.MkdirAll),                                                                  // mkdir_all(name string, perm int) => error
+	"Readlink":          objects.NewFunctionModule(objects.FunctionModuleDef, "Readlink", objects.FuncIsOse(os.Readlink)),       // readlink(name string) => string/error
+	"Remove":            objects.NewFunctionModule(objects.FunctionModuleDef, "Remove", objects.FuncIsOe(os.Remove)),            // remove(name string) => error
+	"RemoveAll":         objects.NewFunctionModule(objects.FunctionModuleDef, "RemoveAll", objects.FuncIsOe(os.RemoveAll)),      // remove_all(name string) => error
+	"Rename":            objects.NewFunctionModule(objects.FunctionModuleDef, "Rename", objects.FuncIssOe(os.Rename)),           // rename(oldpath string, newpath string) => error
+	"Setenv":            objects.NewFunctionModule(objects.FunctionModuleDef, "Setenv", objects.FuncIssOe(os.Setenv)),           // setenv(key string, value string) => error
+	"Symlink":           objects.NewFunctionModule(objects.FunctionModuleDef, "Symlink", objects.FuncIssOe(os.Symlink)),         // symlink(oldname string newname string) => error
+	"TempDir":           objects.NewFunctionModule(objects.FunctionModuleDef, "TempDir", objects.FuncInOs(os.TempDir)),          // temp_dir() => string
+	"Truncate":          objects.NewFunctionModule(objects.FunctionModuleDef, "Truncate", objects.FuncIsi64Oe(os.Truncate)),     // truncate(name string, size int) => error
+	"Unsetenv":          objects.NewFunctionModule(objects.FunctionModuleDef, "Unsetenv", objects.FuncIsOe(os.Unsetenv)),        // unsetenv(key string) => error
+	"Create":            objects.NewFunctionModule(objects.FunctionModuleDef, "Create", osCreate),                               // create(name string) => imap(file)/error
+	"Open":              objects.NewFunctionModule(objects.FunctionModuleDef, "Open", osOpen),                                   // open(name string) => imap(file)/error
+	"OpenFile":          objects.NewFunctionModule(objects.FunctionModuleDef, "OpenFile", osOpenFile),                           // open_file(name string, flag int, perm int) => imap(file)/error
+	"FindProcess":       objects.NewFunctionModule(objects.FunctionModuleDef, "FindProcess", osFindProcess),                     // find_process(pid int) => imap(process)/error
+	"StartProcess":      objects.NewFunctionModule(objects.FunctionModuleDef, "StartProcess", osStartProcess),                   // start_process(name string, argv array(string), dir string, env array(string)) => imap(process)/error
+	"ExecLookPath":      objects.NewFunctionModule(objects.FunctionModuleDef, "ExecLookPath", objects.FuncIsOse(exec.LookPath)), // exec_look_path(file) => string/error
+	"Exec":              objects.NewFunctionModule(objects.FunctionModuleDef, "Exec", osExec),                                   // exec(name, args...) => command
+	"Stat":              objects.NewFunctionModule(objects.FunctionModuleDef, "Stat", osStat),                                   // stat(name) => imap(fileinfo)/error
+	"ReadFile":          objects.NewFunctionModule(objects.FunctionModuleDef, "ReadFile", osReadFile),                           // readfile(name) => array(byte)/error
 }
 
 // osReadFile reads the content of a file specified by its path and returns the content as an IObject or an error.
