@@ -63,7 +63,7 @@ const (
 	OpEqual                       // Equal ==
 	OpNotEqual                    // Not equal !=
 	OpMinus                       // Minus -
-	OpLNot                        // Logical not !
+	OpLNot                        // Logical not
 	OpJumpFalsy                   // Jump if falsy
 	OpAndJump                     // Logical AND jump
 	OpOrJump                      // Logical OR jump
@@ -128,7 +128,7 @@ func (od *OpcodeDetails) Name() string {
 	return od.name
 }
 
-// Operands retrieves the list of integer operands associated with the OpcodeDetails instance.
+// Operands retrieve the list of integer operands associated with the OpcodeDetails instance.
 func (od *OpcodeDetails) Operands() []int {
 	return od.operands
 }
