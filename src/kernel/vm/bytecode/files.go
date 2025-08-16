@@ -14,38 +14,15 @@ type Files struct {
 
 // NewFiles creates and returns a new instance of Files initialized with a base offset of 1.
 func NewFiles() *Files {
-	return &Files{
-		base: 1,
-	}
+	return &Files{base: 1}
 }
 
 // AddFile adds a new source file with the specified filename, base offset, and size to the Files.
 // Returns a pointer to the created SourceFile. Panics if base or size is invalid or if offset overflows.
 func (s *Files) AddFile(f IFile) error {
-	/*
-		if base < 0 {
-			base = s.base
-		}
-		if base < s.base || size < 0 {
-			panic("illegal base or size")
-		}
-		f := &compiler.SourceFile{
-			set:   s,
-			name:  filename,
-			base:  base,
-			size:  size,
-			lines: []int{0},
-		}
-		base += size + 1
-		if base < 0 {
-			panic("offset overflow (> 2G of source code in file set)")
-		}
-	*/
-
 	if f.Base() < 0 {
 		return fmt.Errorf("offset overflow (> 2G of source code in file set)")
 	}
-
 	s.base = f.Base()
 	s.files = append(s.files, f)
 	s.lastFile = f

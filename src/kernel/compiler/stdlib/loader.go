@@ -86,10 +86,10 @@ func (l *Loader) ResolveSymbols(symbols []objects.IObject) ([]objects.IObject, e
 }
 
 // ResolveBuiltinSymbols resolves a list of IObject symbols into their corresponding built-in functions, returning an error if any fail.
-func (l *Loader) ResolveBuiltinSymbols(symbols []objects.IObject) ([]*objects.FunctionBuiltin, error) {
+func (l *Loader) ResolveBuiltinFunction(symbols []objects.IObject) ([]*objects.FunctionBuiltin, error) {
 	builtin := make([]*objects.FunctionBuiltin, len(symbols))
 	for i := range symbols {
-		v := l.GetBuiltinSymbol(i)
+		v := l.GetBuiltinFunction(i)
 		if v == nil {
 			return nil, fmt.Errorf("can't load builtin symbols, invalid reference %d", i)
 		}
@@ -99,7 +99,7 @@ func (l *Loader) ResolveBuiltinSymbols(symbols []objects.IObject) ([]*objects.Fu
 }
 
 // GetBuiltinSymbol retrieves a built-in function by its index and returns it as a FunctionBuiltin instance.
-func (l *Loader) GetBuiltinSymbol(idx int) *objects.FunctionBuiltin {
+func (l *Loader) GetBuiltinFunction(idx int) *objects.FunctionBuiltin {
 	if idx < 0 || idx >= len(_builtinFunctions) {
 		return nil
 	}

@@ -769,7 +769,7 @@ func NewOpGetBuiltin() *OpGetBuiltin {
 func (op *OpGetBuiltin) Execute(v *VM) {
 	v.ip++
 	builtinIndex := v.currFrame.Get(v.ip)
-	symbol := v.loader.GetBuiltinSymbol(builtinIndex)
+	symbol := v.loader.GetBuiltinFunction(builtinIndex)
 	if symbol == nil {
 		v.setError(fmt.Errorf("unkown builtin index: %d", builtinIndex))
 		return
