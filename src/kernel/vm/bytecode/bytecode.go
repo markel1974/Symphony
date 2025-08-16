@@ -16,7 +16,6 @@ const (
 // init registers various types with the gob package to enable serialization and deserialization.
 func init() {
 	gob.Register(&Files{})
-	//gob.Register(&compiler.SourceFile{})
 	gob.Register(&objects.Array{})
 	gob.Register(&objects.Bool{})
 	gob.Register(&objects.Bytes{})
