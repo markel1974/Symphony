@@ -346,6 +346,7 @@ func ToTime(o IObject) (time.Time, bool) {
 	return time.Time{}, false
 }
 
+// ToTimeArg attempts to convert an IObject to a time.Time. Returns an error if the conversion fails or the type is incompatible.
 func ToTimeArg(index int, o IObject) (time.Time, error) {
 	v, ok := ToTime(o)
 	if !ok {
