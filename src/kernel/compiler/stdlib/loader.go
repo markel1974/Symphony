@@ -3,6 +3,7 @@ package stdlib
 import (
 	"fmt"
 
+	"github.com/markel1974/c64emu/src/kernel/vm/bytecode"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
@@ -26,27 +27,6 @@ type Module struct {
 	attrs map[string]objects.IObject
 }
 
-// NewModule creates and returns a new instance of ModuleBuiltin with the given attributes.
-func NewModule(attrs map[string]objects.IObject) *Module {
-	return &Module{attrs: attrs}
-}
-
-// CompileModule transforms the ModuleBuiltin's attributes into an immutable map, embedding the given module name.
-func (m *Module) CompileModule(moduleName string) *objects.MapImmutable {
-	attrs := make(map[string]objects.IObject, len(m.attrs))
-	for k, v := range m.attrs {
-		attrs[k] = v.Copy()
-	}
-	attrs["__module_name__"] = objects.NewStringNoSize(moduleName)
-	return objects.NewMapImmutable(attrs)
-}
-
-// Symbol returns the value of the attribute with the given name, if it exists.
-func (m *Module) Symbol(name string) (objects.IObject, bool) {
-	v, ok := m.attrs[name]
-	return v, ok
-}
-
 // Loader is responsible for managing modules and resolving symbols within those modules.
 // It provides functionality for accessing and resolving both regular and built-in symbols.
 // The mod field holds a collection of modules, allowing for import and retrieval of symbols.
@@ -59,7 +39,7 @@ type Loader struct {
 func NewLoader() *Loader {
 	modules := make(map[string]*Module)
 	for name, mod := range _builtinModules {
-		modules[name] = NewModule(mod)
+		modules[name] = &Module{attrs: mod}
 	}
 	return &Loader{
 		modules:          modules,
@@ -128,19 +108,24 @@ func (l *Loader) GetSymbol(in objects.IObject) (objects.IObject, bool) {
 	if !ok {
 		return nil, false
 	}
-	mod, ok := l.modules[packageName.Value()]
+	module, ok := l.modules[packageName.Value()]
 	if !ok {
 		return nil, false
 	}
-	sym, ok := mod.Symbol(symbolName.Value())
-	return sym, ok
+	v, ok := module.attrs[symbolName.Value()]
+	return v, ok
 }
 
 // CompileModule compiles the specified module by its name, returning an immutable map of its attributes or an error if not found.
 func (l *Loader) CompileModule(name string) (*objects.MapImmutable, error) {
-	m, ok := l.modules[name]
+	module, ok := l.modules[name]
 	if !ok {
 		return nil, fmt.Errorf("module %s not found", name)
 	}
-	return m.CompileModule(name), nil
+	attrs := make(map[string]objects.IObject, len(module.attrs))
+	for k, v := range module.attrs {
+		attrs[k] = v.Copy()
+	}
+	attrs[bytecode.ModuleKey] = objects.NewStringNoSize(name)
+	return objects.NewMapImmutable(attrs), nil
 }

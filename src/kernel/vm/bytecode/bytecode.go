@@ -9,6 +9,10 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
+const (
+	ModuleKey = "__module_name__"
+)
+
 // init registers various types with the gob package to enable serialization and deserialization.
 func init() {
 	gob.Register(&Files{})
@@ -28,6 +32,31 @@ func init() {
 	gob.Register(&objects.Time{})
 	gob.Register(&objects.Undefined{})
 	gob.Register(&objects.FunctionModule{})
+}
+
+// CompileInstruction returns a bytecode for an opcode and the operands.
+func CompileInstruction(opcode Opcode, operands ...int) []byte {
+	numOperands := OpcodeToOperands(opcode)
+	totalLen := 1
+	for _, w := range numOperands {
+		totalLen += w
+	}
+	instruction := make([]byte, totalLen)
+	instruction[0] = opcode
+	offset := 1
+	for i, o := range operands {
+		width := numOperands[i]
+		switch width {
+		case 1:
+			instruction[offset] = byte(o)
+		case 2:
+			n := uint16(o)
+			instruction[offset] = byte(n >> 8)
+			instruction[offset+1] = byte(n)
+		}
+		offset += width
+	}
+	return instruction
 }
 
 // Bytecode represents a construct that encapsulates compiled code, associated constants, and object references.
@@ -107,7 +136,7 @@ func (b *Bytecode) Decode(r io.Reader, loader ILoader) error {
 		return err
 	}
 	for i, v := range b.constants {
-		fv, err := fixDecodedObject(v, loader)
+		fv, err := b.fixDecodedObject(v, loader)
 		if err != nil {
 			return err
 		}
@@ -117,7 +146,7 @@ func (b *Bytecode) Decode(r io.Reader, loader ILoader) error {
 		return err
 	}
 	for i, v := range b.references {
-		fv, err := fixDecodedObject(v, loader)
+		fv, err := b.fixDecodedObject(v, loader)
 		if err != nil {
 			return err
 		}
@@ -138,7 +167,7 @@ func (b *Bytecode) RemoveDuplicates() error {
 	for _, in := range b.constants {
 		switch c := in.(type) {
 		case *objects.FunctionCompiled:
-			if err = updateConstIndexes(c.Data(), constantsIndexMap); err != nil {
+			if err = b.updateConstIndexes(c.Data(), constantsIndexMap); err != nil {
 				return err
 			}
 		}
@@ -170,7 +199,7 @@ func (b *Bytecode) removeDuplicates(container []objects.IObject) ([]objects.IObj
 				deDuped = append(deDuped, c)
 			}
 		case *objects.MapImmutable:
-			modName, err := inferModuleName(c)
+			modName, err := b.inferModuleName(c)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -226,35 +255,10 @@ func (b *Bytecode) removeDuplicates(container []objects.IObject) ([]objects.IObj
 	return deDuped, indexMap, nil
 }
 
-// CompileInstruction returns a bytecode for an opcode and the operands.
-func CompileInstruction(opcode Opcode, operands ...int) []byte {
-	numOperands := OpcodeToOperands(opcode)
-	totalLen := 1
-	for _, w := range numOperands {
-		totalLen += w
-	}
-	instruction := make([]byte, totalLen)
-	instruction[0] = opcode
-	offset := 1
-	for i, o := range operands {
-		width := numOperands[i]
-		switch width {
-		case 1:
-			instruction[offset] = byte(o)
-		case 2:
-			n := uint16(o)
-			instruction[offset] = byte(n >> 8)
-			instruction[offset+1] = byte(n)
-		}
-		offset += width
-	}
-	return instruction
-}
-
 // fixDecodedObject ensures that a decoded object is properly reconstructed and compatible with the runtime environment.
 // It recursively processes composite objects like arrays and maps, fixing or transforming their elements if necessary.
 // Returns the modified object or an error if reconstruction fails.
-func fixDecodedObject(o objects.IObject, loader ILoader) (objects.IObject, error) {
+func (b *Bytecode) fixDecodedObject(o objects.IObject, loader ILoader) (objects.IObject, error) {
 	switch o := o.(type) {
 	case *objects.Bool:
 		if o.Boolean() {
@@ -265,7 +269,7 @@ func fixDecodedObject(o objects.IObject, loader ILoader) (objects.IObject, error
 		return objects.UndefinedValue, nil
 	case *objects.Array:
 		for i, v := range o.Values() {
-			fv, err := fixDecodedObject(v, loader)
+			fv, err := b.fixDecodedObject(v, loader)
 			if err != nil {
 				return nil, err
 			}
@@ -273,7 +277,7 @@ func fixDecodedObject(o objects.IObject, loader ILoader) (objects.IObject, error
 		}
 	case *objects.ArrayImmutable:
 		for i, v := range o.Values() {
-			fv, err := fixDecodedObject(v, loader)
+			fv, err := b.fixDecodedObject(v, loader)
 			if err != nil {
 				return nil, err
 			}
@@ -281,14 +285,14 @@ func fixDecodedObject(o objects.IObject, loader ILoader) (objects.IObject, error
 		}
 	case *objects.Map:
 		for k, v := range o.Values() {
-			fv, err := fixDecodedObject(v, loader)
+			fv, err := b.fixDecodedObject(v, loader)
 			if err != nil {
 				return nil, err
 			}
 			o.Set(k, fv)
 		}
 	case *objects.MapImmutable:
-		modName, err := inferModuleName(o)
+		modName, err := b.inferModuleName(o)
 		if err != nil {
 			return nil, err
 		}
@@ -299,7 +303,7 @@ func fixDecodedObject(o objects.IObject, loader ILoader) (objects.IObject, error
 			if _, isUserFunction := v.(*objects.FunctionModule); isUserFunction {
 				return nil, fmt.Errorf("user function not decodable")
 			}
-			fv, err := fixDecodedObject(v, loader)
+			fv, err := b.fixDecodedObject(v, loader)
 			if err != nil {
 				return nil, err
 			}
@@ -311,7 +315,7 @@ func fixDecodedObject(o objects.IObject, loader ILoader) (objects.IObject, error
 
 // updateConstIndexes modifies bytecode instructions to remap constant indexes based on the provided index map.
 // It updates OpConstant and OpClosure instructions with new constant indexes or returns an error if mapping fails.
-func updateConstIndexes(instances []byte, indexMap map[int]int) error {
+func (b *Bytecode) updateConstIndexes(instances []byte, indexMap map[int]int) error {
 	i := 0
 	for i < len(instances) {
 		op := instances[i]
@@ -340,16 +344,16 @@ func updateConstIndexes(instances []byte, indexMap map[int]int) error {
 	return nil
 }
 
-// inferModuleName extracts the value of the __module_name__ key from the given MapImmutable if it exists and is a String.
-// Returns the extracted string on success or an error if the key is missing or its value is not of type String.
-func inferModuleName(mod *objects.MapImmutable) (string, error) {
-	m, ok := mod.GetValue("__module_name__")
+// inferModuleName retrieves the module name from a given MapImmutable object by using a predefined key.
+// Returns the module name as a string or an error if the key is missing or its value is of an unexpected type.
+func (b *Bytecode) inferModuleName(mod *objects.MapImmutable) (string, error) {
+	m, ok := mod.GetValue(ModuleKey)
 	if !ok {
-		return "", fmt.Errorf("missing __module_name__ key")
+		return "", fmt.Errorf("missing %s key", ModuleKey)
 	}
 	modName, ok := m.(*objects.String)
 	if !ok {
-		return "", fmt.Errorf("invalid __module_name__ value: %s", m.TypeName())
+		return "", fmt.Errorf("invalid %s value: %s", ModuleKey, m.TypeName())
 	}
 	return modName.Value(), nil
 }
