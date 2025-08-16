@@ -17,8 +17,8 @@ type Struct struct {
 }
 
 // NewStruct creates a new instance of MapImmutable with the provided map of string keys and IObject values.
-func NewStruct(value map[string]IObject) *MapImmutable {
-	return &MapImmutable{values: value}
+func NewStruct(value map[string]IObject) *Struct {
+	return &Struct{values: value}
 }
 
 // Values returns the underlying map of string keys to IObject values contained within the Struct.
