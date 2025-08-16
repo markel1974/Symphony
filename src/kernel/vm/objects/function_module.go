@@ -1,55 +1,61 @@
 package objects
 
 const (
-	FunctionUserDef   = "function_user"
-	FunctionUserLabel = "<" + FunctionUserDef + ">"
+	FunctionBuiltinDef = "function_builtin"
+	FunctionModuleDef  = "function_module"
 )
 
-// FunctionUser represents a user-defined callable function object.
-// It embeds Object to inherit default behavior and implements a callable interface.
-// Name is the identifier for the function.
-// Value holds the callable logic of the function as a CallableFunc.
-// EncodingID is an identifier used for serialization or external encoding purposes.
-type FunctionUser struct {
+// CallableFunc is a type alias for a function that takes a variadic list of IObject arguments and returns an IObject and an error.
+type CallableFunc = func(args ...IObject) (ret IObject, err error)
+
+// FunctionModule is a callable object type that encapsulates a function and provides execution context information.
+type FunctionModule struct {
 	Object
+	kind  string
 	name  string
 	value CallableFunc
 }
 
-// NewFunctionModule creates a new FunctionUser instance with the specified ID and callable function.
-func NewFunctionModule(id string, fn CallableFunc) *FunctionUser {
-	return &FunctionUser{
-		name:  id,
+// NewFunctionModule creates a new FunctionModule instance with the specified ID and callable function.
+func NewFunctionModule(kind string, name string, fn CallableFunc) *FunctionModule {
+	return &FunctionModule{
+		kind:  kind,
+		name:  name,
 		value: fn,
 	}
 }
 
-// TypeName returns the type name of the FunctionUser as a string.
-func (o *FunctionUser) TypeName() string {
-	return FunctionUserDef + ":" + o.name
+// Name returns the name of the FunctionModule as a string.
+func (o *FunctionModule) Name() string {
+	return o.name
 }
 
-// String returns the string representation of a FunctionUser object.
-func (o *FunctionUser) String() string {
-	return FunctionUserLabel
+// TypeName returns the type name of the FunctionModule as a string.
+func (o *FunctionModule) TypeName() string {
+	return o.kind + ":" + o.name
 }
 
-// Copy creates and returns a new FunctionUser instance with the same Value field as the original object.
-func (o *FunctionUser) Copy() IObject {
-	return &FunctionUser{value: o.value}
+// String returns the string representation of a FunctionModule object.
+func (o *FunctionModule) String() string {
+	return "<" + o.kind + ">"
 }
 
-// Equals checks whether the current FunctionUser is equal to another object of type IObject. Always returns false.
-func (o *FunctionUser) Equals(_ IObject) bool {
+// Copy creates and returns a new FunctionModule instance with the same Value field as the original object.
+func (o *FunctionModule) Copy() IObject {
+	return &FunctionModule{value: o.value}
+}
+
+// Equals checks whether the current FunctionModule is equal to another object of type IObject. Always returns false.
+func (o *FunctionModule) Equals(_ IObject) bool {
 	return false
 }
 
-// Call invokes the function encapsulated within the FunctionUser with the provided arguments and returns the result or an error.
-func (o *FunctionUser) Call(args ...IObject) (IObject, error) {
+// Call invokes the function encapsulated within the FunctionModule with the provided arguments and returns the result or an error.
+func (o *FunctionModule) Call(args ...IObject) (IObject, error) {
 	return o.value(args...)
 }
 
-// CanCall checks whether the FunctionUser instance can be invoked as a callable function. Always returns true.
-func (o *FunctionUser) CanCall() bool {
+// CanCall checks whether the FunctionModule instance can be invoked as a callable function. Always returns true.
+func (o *FunctionModule) CanCall() bool {
 	return true
 }

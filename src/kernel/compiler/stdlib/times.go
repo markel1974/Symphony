@@ -41,41 +41,41 @@ var _timesModule = map[string]objects.IObject{
 	"october":              objects.NewInt(int64(time.October)),
 	"november":             objects.NewInt(int64(time.November)),
 	"december":             objects.NewInt(int64(time.December)),
-	"sleep":                objects.NewFunctionModule("sleep", timesSleep),                              // sleep(int)
-	"parse_duration":       objects.NewFunctionModule("parse_duration", timesParseDuration),             // parse_duration(str) => int
-	"since":                objects.NewFunctionModule("since", timesSince),                              // since(time) => int
-	"until":                objects.NewFunctionModule("until", timesUntil),                              // until(time) => int
-	"duration_hours":       objects.NewFunctionModule("duration_hours", timesDurationHours),             // duration_hours(int) => float
-	"duration_minutes":     objects.NewFunctionModule("duration_minutes", timesDurationMinutes),         // duration_minutes(int) => float
-	"duration_nanoseconds": objects.NewFunctionModule("duration_nanoseconds", timesDurationNanoseconds), // duration_nanoseconds(int) => int
-	"duration_seconds":     objects.NewFunctionModule("duration_seconds", timesDurationSeconds),         // duration_seconds(int) => float
-	"duration_string":      objects.NewFunctionModule("duration_string", timesDurationString),           // duration_string(int) => string
-	"month_string":         objects.NewFunctionModule("month_string", timesMonthString),                 // month_string(int) => string
-	"date":                 objects.NewFunctionModule("date", timesDate),                                // date(year, month, day, hour, min, sec, nsec) => time
-	"now":                  objects.NewFunctionModule("now", timesNow),                                  // now() => time
-	"parse":                objects.NewFunctionModule("parse", timesParse),                              // parse(format, str) => time
-	"unix":                 objects.NewFunctionModule("unix", timesUnix),                                // unix(sec, nsec) => time
-	"add":                  objects.NewFunctionModule("add", timesAdd),                                  // add(time, int) => time
-	"add_date":             objects.NewFunctionModule("add_date", timesAddDate),                         // add_date(time, years, months, days) => time
-	"sub":                  objects.NewFunctionModule("sub", timesSub),                                  // sub(t time, u time) => int
-	"after":                objects.NewFunctionModule("after", timesAfter),                              // after(t time, u time) => bool
-	"before":               objects.NewFunctionModule("before", timesBefore),                            // before(t time, u time) => bool
-	"time_year":            objects.NewFunctionModule("time_year", timesTimeYear),                       // time_year(time) => int
-	"time_month":           objects.NewFunctionModule("time_month", timesTimeMonth),                     // time_month(time) => int
-	"time_day":             objects.NewFunctionModule("time_day", timesTimeDay),                         // time_day(time) => int
-	"time_weekday":         objects.NewFunctionModule("time_weekday", timesTimeWeekday),                 // time_weekday(time) => int
-	"time_hour":            objects.NewFunctionModule("time_hour", timesTimeHour),                       // time_hour(time) => int
-	"time_minute":          objects.NewFunctionModule("time_minute", timesTimeMinute),                   // time_minute(time) => int
-	"time_second":          objects.NewFunctionModule("time_second", timesTimeSecond),                   // time_second(time) => int
-	"time_nanosecond":      objects.NewFunctionModule("time_nanosecond", timesTimeNanosecond),           // time_nanosecond(time) => int
-	"time_unix":            objects.NewFunctionModule("time_unix", timesTimeUnix),                       // time_unix(time) => int
-	"time_unix_nano":       objects.NewFunctionModule("time_unix_nano", timesTimeUnixNano),              // time_unix_nano(time) => int
-	"time_format":          objects.NewFunctionModule("time_format", timesTimeFormat),                   // time_format(time, format) => string
-	"time_location":        objects.NewFunctionModule("time_location", timesTimeLocation),               // time_location(time) => string
-	"time_string":          objects.NewFunctionModule("time_string", timesTimeString),                   // time_string(time) => string
-	"is_zero":              objects.NewFunctionModule("is_zero", timesIsZero),                           // is_zero(time) => bool
-	"to_local":             objects.NewFunctionModule("to_local", timesToLocal),                         // to_local(time) => time
-	"to_utc":               objects.NewFunctionModule("to_utc", timesToUTC),                             // to_utc(time) => time
+	"sleep":                objects.NewFunctionModule(objects.FunctionModuleDef, "sleep", timesSleep),                              // sleep(int)
+	"parse_duration":       objects.NewFunctionModule(objects.FunctionModuleDef, "parse_duration", timesParseDuration),             // parse_duration(str) => int
+	"since":                objects.NewFunctionModule(objects.FunctionModuleDef, "since", timesSince),                              // since(time) => int
+	"until":                objects.NewFunctionModule(objects.FunctionModuleDef, "until", timesUntil),                              // until(time) => int
+	"duration_hours":       objects.NewFunctionModule(objects.FunctionModuleDef, "duration_hours", timesDurationHours),             // duration_hours(int) => float
+	"duration_minutes":     objects.NewFunctionModule(objects.FunctionModuleDef, "duration_minutes", timesDurationMinutes),         // duration_minutes(int) => float
+	"duration_nanoseconds": objects.NewFunctionModule(objects.FunctionModuleDef, "duration_nanoseconds", timesDurationNanoseconds), // duration_nanoseconds(int) => int
+	"duration_seconds":     objects.NewFunctionModule(objects.FunctionModuleDef, "duration_seconds", timesDurationSeconds),         // duration_seconds(int) => float
+	"duration_string":      objects.NewFunctionModule(objects.FunctionModuleDef, "duration_string", timesDurationString),           // duration_string(int) => string
+	"month_string":         objects.NewFunctionModule(objects.FunctionModuleDef, "month_string", timesMonthString),                 // month_string(int) => string
+	"date":                 objects.NewFunctionModule(objects.FunctionModuleDef, "date", timesDate),                                // date(year, month, day, hour, min, sec, nsec) => time
+	"now":                  objects.NewFunctionModule(objects.FunctionModuleDef, "now", timesNow),                                  // now() => time
+	"parse":                objects.NewFunctionModule(objects.FunctionModuleDef, "parse", timesParse),                              // parse(format, str) => time
+	"unix":                 objects.NewFunctionModule(objects.FunctionModuleDef, "unix", timesUnix),                                // unix(sec, nsec) => time
+	"add":                  objects.NewFunctionModule(objects.FunctionModuleDef, "add", timesAdd),                                  // add(time, int) => time
+	"add_date":             objects.NewFunctionModule(objects.FunctionModuleDef, "add_date", timesAddDate),                         // add_date(time, years, months, days) => time
+	"sub":                  objects.NewFunctionModule(objects.FunctionModuleDef, "sub", timesSub),                                  // sub(t time, u time) => int
+	"after":                objects.NewFunctionModule(objects.FunctionModuleDef, "after", timesAfter),                              // after(t time, u time) => bool
+	"before":               objects.NewFunctionModule(objects.FunctionModuleDef, "before", timesBefore),                            // before(t time, u time) => bool
+	"time_year":            objects.NewFunctionModule(objects.FunctionModuleDef, "time_year", timesTimeYear),                       // time_year(time) => int
+	"time_month":           objects.NewFunctionModule(objects.FunctionModuleDef, "time_month", timesTimeMonth),                     // time_month(time) => int
+	"time_day":             objects.NewFunctionModule(objects.FunctionModuleDef, "time_day", timesTimeDay),                         // time_day(time) => int
+	"time_weekday":         objects.NewFunctionModule(objects.FunctionModuleDef, "time_weekday", timesTimeWeekday),                 // time_weekday(time) => int
+	"time_hour":            objects.NewFunctionModule(objects.FunctionModuleDef, "time_hour", timesTimeHour),                       // time_hour(time) => int
+	"time_minute":          objects.NewFunctionModule(objects.FunctionModuleDef, "time_minute", timesTimeMinute),                   // time_minute(time) => int
+	"time_second":          objects.NewFunctionModule(objects.FunctionModuleDef, "time_second", timesTimeSecond),                   // time_second(time) => int
+	"time_nanosecond":      objects.NewFunctionModule(objects.FunctionModuleDef, "time_nanosecond", timesTimeNanosecond),           // time_nanosecond(time) => int
+	"time_unix":            objects.NewFunctionModule(objects.FunctionModuleDef, "time_unix", timesTimeUnix),                       // time_unix(time) => int
+	"time_unix_nano":       objects.NewFunctionModule(objects.FunctionModuleDef, "time_unix_nano", timesTimeUnixNano),              // time_unix_nano(time) => int
+	"time_format":          objects.NewFunctionModule(objects.FunctionModuleDef, "time_format", timesTimeFormat),                   // time_format(time, format) => string
+	"time_location":        objects.NewFunctionModule(objects.FunctionModuleDef, "time_location", timesTimeLocation),               // time_location(time) => string
+	"time_string":          objects.NewFunctionModule(objects.FunctionModuleDef, "time_string", timesTimeString),                   // time_string(time) => string
+	"is_zero":              objects.NewFunctionModule(objects.FunctionModuleDef, "is_zero", timesIsZero),                           // is_zero(time) => bool
+	"to_local":             objects.NewFunctionModule(objects.FunctionModuleDef, "to_local", timesToLocal),                         // to_local(time) => time
+	"to_utc":               objects.NewFunctionModule(objects.FunctionModuleDef, "to_utc", timesToUTC),                             // to_utc(time) => time
 }
 
 // timesSleep pauses execution for the specified duration, given in nanoseconds, as an integer argument.

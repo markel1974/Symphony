@@ -27,7 +27,7 @@ func init() {
 	gob.Register(&objects.String{})
 	gob.Register(&objects.Time{})
 	gob.Register(&objects.Undefined{})
-	gob.Register(&objects.FunctionUser{})
+	gob.Register(&objects.FunctionModule{})
 }
 
 // Bytecode represents a construct that encapsulates compiled code, associated constants, and object references.
@@ -296,7 +296,7 @@ func fixDecodedObject(o objects.IObject, loader ILoader) (objects.IObject, error
 			return mod, nil
 		}
 		for k, v := range o.Values() {
-			if _, isUserFunction := v.(*objects.FunctionUser); isUserFunction {
+			if _, isUserFunction := v.(*objects.FunctionModule); isUserFunction {
 				return nil, fmt.Errorf("user function not decodable")
 			}
 			fv, err := fixDecodedObject(v, loader)

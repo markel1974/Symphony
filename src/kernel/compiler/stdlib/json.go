@@ -9,10 +9,10 @@ import (
 
 // jsonModule is a map of JSON-related functions (decode, encode, indent, html_escape) implementing the IObject interface.
 var _jsonModule = map[string]objects.IObject{
-	"decode":      objects.NewFunctionModule("decode", jsonDecode),
-	"encode":      objects.NewFunctionModule("encode", jsonEncode),
-	"indent":      objects.NewFunctionModule("encode", jsonIndent),
-	"html_escape": objects.NewFunctionModule("html_escape", jsonHTMLEscape),
+	"decode":      objects.NewFunctionModule(objects.FunctionModuleDef, "decode", jsonDecode),
+	"encode":      objects.NewFunctionModule(objects.FunctionModuleDef, "encode", jsonEncode),
+	"indent":      objects.NewFunctionModule(objects.FunctionModuleDef, "encode", jsonIndent),
+	"html_escape": objects.NewFunctionModule(objects.FunctionModuleDef, "html_escape", jsonHTMLEscape),
 }
 
 // jsonDecode parses a JSON-encoded bytes or string argument into a map-like object or returns an error if decoding fails.

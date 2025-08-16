@@ -11,15 +11,15 @@ func makeTextRegexp(re *regexp.Regexp) *objects.MapImmutable {
 	return objects.NewMapImmutable(
 		map[string]objects.IObject{
 			// match(text) => bool
-			"match": objects.NewFunctionModule("match", func(args ...objects.IObject) (objects.IObject, error) { return doTextRegexpMatch(re, args...) }),
+			"match": objects.NewFunctionModule(objects.FunctionModuleDef, "match", func(args ...objects.IObject) (objects.IObject, error) { return doTextRegexpMatch(re, args...) }),
 			// find(text) 			=> array(array({text:,begin:,end:}))/undefined
 			// find(text, maxCount) => array(array({text:,begin:,end:}))/undefined
-			"find": objects.NewFunctionModule("find", func(args ...objects.IObject) (objects.IObject, error) { return doTextRegexpFind(re, args...) }),
+			"find": objects.NewFunctionModule(objects.FunctionModuleDef, "find", func(args ...objects.IObject) (objects.IObject, error) { return doTextRegexpFind(re, args...) }),
 			// replace(src, repl) => string
-			"replace": objects.NewFunctionModule("replace", func(args ...objects.IObject) (objects.IObject, error) { return doTextRegexpREReplace(re, args...) }),
+			"replace": objects.NewFunctionModule(objects.FunctionModuleDef, "replace", func(args ...objects.IObject) (objects.IObject, error) { return doTextRegexpREReplace(re, args...) }),
 			// split(text) 			 => array(string)
 			// split(text, maxCount) => array(string)
-			"split": objects.NewFunctionModule("split", func(args ...objects.IObject) (objects.IObject, error) { return doTextRegexpRESplit(re, args...) }),
+			"split": objects.NewFunctionModule(objects.FunctionModuleDef, "split", func(args ...objects.IObject) (objects.IObject, error) { return doTextRegexpRESplit(re, args...) }),
 		},
 	)
 }

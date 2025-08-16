@@ -52,7 +52,7 @@ func (m *Module) Symbol(name string) (objects.IObject, bool) {
 // The mod field holds a collection of modules, allowing for import and retrieval of symbols.
 type Loader struct {
 	modules          map[string]*Module
-	builtinFunctions []*objects.FunctionBuiltin
+	builtinFunctions []*objects.FunctionModule
 }
 
 // NewLoader initializes and returns a new Loader instance with built-in modules preloaded.
@@ -63,12 +63,12 @@ func NewLoader() *Loader {
 	}
 	return &Loader{
 		modules:          modules,
-		builtinFunctions: append([]*objects.FunctionBuiltin{}, _builtinFunctions...),
+		builtinFunctions: append([]*objects.FunctionModule{}, _builtinFunctions...),
 	}
 }
 
 // GetBuiltinFunctions returns a slice containing all registered builtin functions.
-func (l *Loader) GetBuiltinFunctions() []*objects.FunctionBuiltin {
+func (l *Loader) GetBuiltinFunctions() []*objects.FunctionModule {
 	return l.builtinFunctions
 }
 
@@ -85,9 +85,9 @@ func (l *Loader) ResolveSymbols(symbols []objects.IObject) ([]objects.IObject, e
 	return references, nil
 }
 
-// ResolveBuiltinSymbols resolves a list of IObject symbols into their corresponding built-in functions, returning an error if any fail.
-func (l *Loader) ResolveBuiltinFunction(symbols []objects.IObject) ([]*objects.FunctionBuiltin, error) {
-	builtin := make([]*objects.FunctionBuiltin, len(symbols))
+// ResolveBuiltinFunction resolves a list of IObject symbols into their corresponding built-in functions, returning an error if any fail.
+func (l *Loader) ResolveBuiltinFunction(symbols []objects.IObject) ([]*objects.FunctionModule, error) {
+	builtin := make([]*objects.FunctionModule, len(symbols))
 	for i := range symbols {
 		v := l.GetBuiltinFunction(i)
 		if v == nil {
@@ -98,8 +98,8 @@ func (l *Loader) ResolveBuiltinFunction(symbols []objects.IObject) ([]*objects.F
 	return builtin, nil
 }
 
-// GetBuiltinSymbol retrieves a built-in function by its index and returns it as a FunctionBuiltin instance.
-func (l *Loader) GetBuiltinFunction(idx int) *objects.FunctionBuiltin {
+// GetBuiltinFunction retrieves a built-in function by its index and returns it as a FunctionBuiltin instance.
+func (l *Loader) GetBuiltinFunction(idx int) *objects.FunctionModule {
 	if idx < 0 || idx >= len(_builtinFunctions) {
 		return nil
 	}

@@ -10,19 +10,19 @@ import (
 func makeOSProcessState(state *os.ProcessState) *objects.MapImmutable {
 	return objects.NewMapImmutable(
 		map[string]objects.IObject{
-			"Exited":  objects.NewFunctionModule("Exited", objects.FuncInOb(state.Exited)),
-			"Pid":     objects.NewFunctionModule("Pid", objects.FuncInOi(state.Pid)),
-			"String":  objects.NewFunctionModule("String", objects.FuncInOs(state.String)),
-			"Success": objects.NewFunctionModule("Success", objects.FuncInOb(state.Success)),
+			"Exited":  objects.NewFunctionModule(objects.FunctionModuleDef, "Exited", objects.FuncInOb(state.Exited)),
+			"Pid":     objects.NewFunctionModule(objects.FunctionModuleDef, "Pid", objects.FuncInOi(state.Pid)),
+			"String":  objects.NewFunctionModule(objects.FunctionModuleDef, "String", objects.FuncInOs(state.String)),
+			"Success": objects.NewFunctionModule(objects.FunctionModuleDef, "Success", objects.FuncInOb(state.Success)),
 		},
 	)
 }
 
 func makeOSProcess(proc *os.Process) *objects.MapImmutable {
 	return objects.NewMapImmutable(map[string]objects.IObject{
-		"Kill":    objects.NewFunctionModule("Kill", objects.FuncInOe(proc.Kill)),
-		"Release": objects.NewFunctionModule("Release", objects.FuncInOe(proc.Release)),
-		"Signal": objects.NewFunctionModule("Signal", func(args ...objects.IObject) (objects.IObject, error) {
+		"Kill":    objects.NewFunctionModule(objects.FunctionModuleDef, "Kill", objects.FuncInOe(proc.Kill)),
+		"Release": objects.NewFunctionModule(objects.FunctionModuleDef, "Release", objects.FuncInOe(proc.Release)),
+		"Signal": objects.NewFunctionModule(objects.FunctionModuleDef, "Signal", func(args ...objects.IObject) (objects.IObject, error) {
 			if len(args) != 1 {
 				return nil, objects.ErrWrongNumArguments
 			}
@@ -32,7 +32,7 @@ func makeOSProcess(proc *os.Process) *objects.MapImmutable {
 			}
 			return objects.NewObjectError(proc.Signal(syscall.Signal(i1))), nil
 		}),
-		"Wait": objects.NewFunctionModule("Wait", func(args ...objects.IObject) (objects.IObject, error) {
+		"Wait": objects.NewFunctionModule(objects.FunctionModuleDef, "Wait", func(args ...objects.IObject) (objects.IObject, error) {
 			if len(args) != 0 {
 				return nil, objects.ErrWrongNumArguments
 			}

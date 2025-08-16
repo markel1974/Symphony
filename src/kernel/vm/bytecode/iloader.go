@@ -10,11 +10,11 @@ import "github.com/markel1974/c64emu/src/kernel/vm/objects"
 // GetBuiltinFunctions returns a slice of built-in functions.
 // CompileModule compiles a module and returns a map of its symbols.
 type ILoader interface {
-	GetBuiltinFunction(idx int) *objects.FunctionBuiltin
+	GetBuiltinFunction(idx int) *objects.FunctionModule
 
-	ResolveBuiltinFunction([]objects.IObject) ([]*objects.FunctionBuiltin, error)
+	ResolveBuiltinFunction([]objects.IObject) ([]*objects.FunctionModule, error)
 
-	GetBuiltinFunctions() []*objects.FunctionBuiltin
+	GetBuiltinFunctions() []*objects.FunctionModule
 
 	GetSymbol(definition objects.IObject) (objects.IObject, bool)
 

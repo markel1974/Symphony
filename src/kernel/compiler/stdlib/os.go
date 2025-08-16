@@ -38,48 +38,48 @@ var osModule = map[string]objects.IObject{
 	"seek_set":            objects.NewInt(int64(io.SeekStart)),
 	"seek_cur":            objects.NewInt(int64(io.SeekCurrent)),
 	"seek_end":            objects.NewInt(int64(io.SeekEnd)),
-	"args":                objects.NewFunctionModule("args", osArgs),                                     // args() => array(string)
-	"chdir":               objects.NewFunctionModule("chdir", objects.FuncIsOe(os.Chdir)),                // chdir(dir string) => error
-	"chmod":               osFuncASFmRE("chmod", os.Chmod),                                               // chmod(name string, mode int) => error
-	"chown":               objects.NewFunctionModule("chown", objects.FuncIsiiOe(os.Chown)),              // chown(name string, uid int, gid int) => error
-	"clearenv":            objects.NewFunctionModule("clearenv", objects.FuncInOn(os.Clearenv)),          // clearenv()
-	"environ":             objects.NewFunctionModule("environ", objects.FuncInOsS(os.Environ)),           // environ() => array(string)
-	"exit":                objects.NewFunctionModule("exit", objects.FuncIiOn(os.Exit)),                  // exit(code int)
-	"expand_env":          objects.NewFunctionModule("expand_env", osExpandEnv),                          // expand_env(s string) => string
-	"getegid":             objects.NewFunctionModule("getegid", objects.FuncInOi(os.Getegid)),            // getegid() => int
-	"getenv":              objects.NewFunctionModule("getenv", objects.FuncIsOs(os.Getenv)),              // getenv(s string) => string
-	"geteuid":             objects.NewFunctionModule("geteuid", objects.FuncInOi(os.Geteuid)),            // geteuid() => int
-	"getgid":              objects.NewFunctionModule("getgid", objects.FuncInOi(os.Getgid)),              // getgid() => int
-	"getgroups":           objects.NewFunctionModule("getgroups", objects.FuncInOiSe(os.Getgroups)),      // getgroups() => array(string)/error
-	"getpagesize":         objects.NewFunctionModule("getpagesize", objects.FuncInOi(os.Getpagesize)),    // getpagesize() => int
-	"getpid":              objects.NewFunctionModule("getpid", objects.FuncInOi(os.Getpid)),              // getpid() => int
-	"getppid":             objects.NewFunctionModule("getppid", objects.FuncInOi(os.Getppid)),            // getppid() => int
-	"getuid":              objects.NewFunctionModule("getuid", objects.FuncInOi(os.Getuid)),              // getuid() => int
-	"getwd":               objects.NewFunctionModule("getwd", objects.FuncInOse(os.Getwd)),               // getwd() => string/error
-	"hostname":            objects.NewFunctionModule("hostname", objects.FuncInOse(os.Hostname)),         // hostname() => string/error
-	"lchown":              objects.NewFunctionModule("lchown", objects.FuncIsiiOe(os.Lchown)),            // lchown(name string, uid int, gid int) => error
-	"link":                objects.NewFunctionModule("link", objects.FuncIssOe(os.Link)),                 // link(oldname string, newname string) => error
-	"lookup_env":          objects.NewFunctionModule("lookup_env", osLookupEnv),                          // lookup_env(key string) => string/false
-	"mkdir":               osFuncASFmRE("mkdir", os.Mkdir),                                               // mkdir(name string, perm int) => error
-	"mkdir_all":           osFuncASFmRE("mkdir_all", os.MkdirAll),                                        // mkdir_all(name string, perm int) => error
-	"readlink":            objects.NewFunctionModule("readlink", objects.FuncIsOse(os.Readlink)),         // readlink(name string) => string/error
-	"remove":              objects.NewFunctionModule("remove", objects.FuncIsOe(os.Remove)),              // remove(name string) => error
-	"remove_all":          objects.NewFunctionModule("remove_all", objects.FuncIsOe(os.RemoveAll)),       // remove_all(name string) => error
-	"rename":              objects.NewFunctionModule("rename", objects.FuncIssOe(os.Rename)),             // rename(oldpath string, newpath string) => error
-	"setenv":              objects.NewFunctionModule("setenv", objects.FuncIssOe(os.Setenv)),             // setenv(key string, value string) => error
-	"symlink":             objects.NewFunctionModule("symlink", objects.FuncIssOe(os.Symlink)),           // symlink(oldname string newname string) => error
-	"temp_dir":            objects.NewFunctionModule("temp_dir", objects.FuncInOs(os.TempDir)),           // temp_dir() => string
-	"truncate":            objects.NewFunctionModule("truncate", objects.FuncIsi64Oe(os.Truncate)),       // truncate(name string, size int) => error
-	"unsetenv":            objects.NewFunctionModule("unsetenv", objects.FuncIsOe(os.Unsetenv)),          // unsetenv(key string) => error
-	"create":              objects.NewFunctionModule("create", osCreate),                                 // create(name string) => imap(file)/error
-	"open":                objects.NewFunctionModule("open", osOpen),                                     // open(name string) => imap(file)/error
-	"open_file":           objects.NewFunctionModule("open_file", osOpenFile),                            // open_file(name string, flag int, perm int) => imap(file)/error
-	"find_process":        objects.NewFunctionModule("find_process", osFindProcess),                      // find_process(pid int) => imap(process)/error
-	"start_process":       objects.NewFunctionModule("start_process", osStartProcess),                    // start_process(name string, argv array(string), dir string, env array(string)) => imap(process)/error
-	"exec_look_path":      objects.NewFunctionModule("exec_look_path", objects.FuncIsOse(exec.LookPath)), // exec_look_path(file) => string/error
-	"exec":                objects.NewFunctionModule("exec", osExec),                                     // exec(name, args...) => command
-	"stat":                objects.NewFunctionModule("stat", osStat),                                     // stat(name) => imap(fileinfo)/error
-	"read_file":           objects.NewFunctionModule("read_file", osReadFile),                            // readfile(name) => array(byte)/error
+	"args":                objects.NewFunctionModule(objects.FunctionModuleDef, "args", osArgs),                                     // args() => array(string)
+	"chdir":               objects.NewFunctionModule(objects.FunctionModuleDef, "chdir", objects.FuncIsOe(os.Chdir)),                // chdir(dir string) => error
+	"chmod":               osFuncASFmRE("chmod", os.Chmod),                                                                          // chmod(name string, mode int) => error
+	"chown":               objects.NewFunctionModule(objects.FunctionModuleDef, "chown", objects.FuncIsiiOe(os.Chown)),              // chown(name string, uid int, gid int) => error
+	"clearenv":            objects.NewFunctionModule(objects.FunctionModuleDef, "clearenv", objects.FuncInOn(os.Clearenv)),          // clearenv()
+	"environ":             objects.NewFunctionModule(objects.FunctionModuleDef, "environ", objects.FuncInOsS(os.Environ)),           // environ() => array(string)
+	"exit":                objects.NewFunctionModule(objects.FunctionModuleDef, "exit", objects.FuncIiOn(os.Exit)),                  // exit(code int)
+	"expand_env":          objects.NewFunctionModule(objects.FunctionModuleDef, "expand_env", osExpandEnv),                          // expand_env(s string) => string
+	"getegid":             objects.NewFunctionModule(objects.FunctionModuleDef, "getegid", objects.FuncInOi(os.Getegid)),            // getegid() => int
+	"getenv":              objects.NewFunctionModule(objects.FunctionModuleDef, "getenv", objects.FuncIsOs(os.Getenv)),              // getenv(s string) => string
+	"geteuid":             objects.NewFunctionModule(objects.FunctionModuleDef, "geteuid", objects.FuncInOi(os.Geteuid)),            // geteuid() => int
+	"getgid":              objects.NewFunctionModule(objects.FunctionModuleDef, "getgid", objects.FuncInOi(os.Getgid)),              // getgid() => int
+	"getgroups":           objects.NewFunctionModule(objects.FunctionModuleDef, "getgroups", objects.FuncInOiSe(os.Getgroups)),      // getgroups() => array(string)/error
+	"getpagesize":         objects.NewFunctionModule(objects.FunctionModuleDef, "getpagesize", objects.FuncInOi(os.Getpagesize)),    // getpagesize() => int
+	"getpid":              objects.NewFunctionModule(objects.FunctionModuleDef, "getpid", objects.FuncInOi(os.Getpid)),              // getpid() => int
+	"getppid":             objects.NewFunctionModule(objects.FunctionModuleDef, "getppid", objects.FuncInOi(os.Getppid)),            // getppid() => int
+	"getuid":              objects.NewFunctionModule(objects.FunctionModuleDef, "getuid", objects.FuncInOi(os.Getuid)),              // getuid() => int
+	"getwd":               objects.NewFunctionModule(objects.FunctionModuleDef, "getwd", objects.FuncInOse(os.Getwd)),               // getwd() => string/error
+	"hostname":            objects.NewFunctionModule(objects.FunctionModuleDef, "hostname", objects.FuncInOse(os.Hostname)),         // hostname() => string/error
+	"lchown":              objects.NewFunctionModule(objects.FunctionModuleDef, "lchown", objects.FuncIsiiOe(os.Lchown)),            // lchown(name string, uid int, gid int) => error
+	"link":                objects.NewFunctionModule(objects.FunctionModuleDef, "link", objects.FuncIssOe(os.Link)),                 // link(oldname string, newname string) => error
+	"lookup_env":          objects.NewFunctionModule(objects.FunctionModuleDef, "lookup_env", osLookupEnv),                          // lookup_env(key string) => string/false
+	"mkdir":               osFuncASFmRE("mkdir", os.Mkdir),                                                                          // mkdir(name string, perm int) => error
+	"mkdir_all":           osFuncASFmRE("mkdir_all", os.MkdirAll),                                                                   // mkdir_all(name string, perm int) => error
+	"readlink":            objects.NewFunctionModule(objects.FunctionModuleDef, "readlink", objects.FuncIsOse(os.Readlink)),         // readlink(name string) => string/error
+	"remove":              objects.NewFunctionModule(objects.FunctionModuleDef, "remove", objects.FuncIsOe(os.Remove)),              // remove(name string) => error
+	"remove_all":          objects.NewFunctionModule(objects.FunctionModuleDef, "remove_all", objects.FuncIsOe(os.RemoveAll)),       // remove_all(name string) => error
+	"rename":              objects.NewFunctionModule(objects.FunctionModuleDef, "rename", objects.FuncIssOe(os.Rename)),             // rename(oldpath string, newpath string) => error
+	"setenv":              objects.NewFunctionModule(objects.FunctionModuleDef, "setenv", objects.FuncIssOe(os.Setenv)),             // setenv(key string, value string) => error
+	"symlink":             objects.NewFunctionModule(objects.FunctionModuleDef, "symlink", objects.FuncIssOe(os.Symlink)),           // symlink(oldname string newname string) => error
+	"temp_dir":            objects.NewFunctionModule(objects.FunctionModuleDef, "temp_dir", objects.FuncInOs(os.TempDir)),           // temp_dir() => string
+	"truncate":            objects.NewFunctionModule(objects.FunctionModuleDef, "truncate", objects.FuncIsi64Oe(os.Truncate)),       // truncate(name string, size int) => error
+	"unsetenv":            objects.NewFunctionModule(objects.FunctionModuleDef, "unsetenv", objects.FuncIsOe(os.Unsetenv)),          // unsetenv(key string) => error
+	"create":              objects.NewFunctionModule(objects.FunctionModuleDef, "create", osCreate),                                 // create(name string) => imap(file)/error
+	"open":                objects.NewFunctionModule(objects.FunctionModuleDef, "open", osOpen),                                     // open(name string) => imap(file)/error
+	"open_file":           objects.NewFunctionModule(objects.FunctionModuleDef, "open_file", osOpenFile),                            // open_file(name string, flag int, perm int) => imap(file)/error
+	"find_process":        objects.NewFunctionModule(objects.FunctionModuleDef, "find_process", osFindProcess),                      // find_process(pid int) => imap(process)/error
+	"start_process":       objects.NewFunctionModule(objects.FunctionModuleDef, "start_process", osStartProcess),                    // start_process(name string, argv array(string), dir string, env array(string)) => imap(process)/error
+	"exec_look_path":      objects.NewFunctionModule(objects.FunctionModuleDef, "exec_look_path", objects.FuncIsOse(exec.LookPath)), // exec_look_path(file) => string/error
+	"exec":                objects.NewFunctionModule(objects.FunctionModuleDef, "exec", osExec),                                     // exec(name, args...) => command
+	"stat":                objects.NewFunctionModule(objects.FunctionModuleDef, "stat", osStat),                                     // stat(name) => imap(fileinfo)/error
+	"read_file":           objects.NewFunctionModule(objects.FunctionModuleDef, "read_file", osReadFile),                            // readfile(name) => array(byte)/error
 }
 
 // osReadFile reads the content of a file specified by its path and returns the content as an IObject or an error.
@@ -210,11 +210,11 @@ func osArgs(args ...objects.IObject) (objects.IObject, error) {
 	return arr, nil
 }
 
-// osFuncASFmRE creates a FunctionUser object that wraps the provided name and a function processing string and FileMode.
+// osFuncASFmRE creates a FunctionModule object that wraps the provided name and a function processing string and FileMode.
 // The wrapped function converts its arguments to string and FileMode, calls the passed function, and returns an error object.
 // Returns an error if the number of arguments is not exactly 2 or if argument conversions fail.
-func osFuncASFmRE(name string, fn func(string, os.FileMode) error) *objects.FunctionUser {
-	return objects.NewFunctionModule(name, func(args ...objects.IObject) (objects.IObject, error) {
+func osFuncASFmRE(name string, fn func(string, os.FileMode) error) *objects.FunctionModule {
+	return objects.NewFunctionModule(objects.FunctionModuleDef, name, func(args ...objects.IObject) (objects.IObject, error) {
 		if len(args) != 2 {
 			return nil, objects.ErrWrongNumArguments
 		}

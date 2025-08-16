@@ -181,7 +181,7 @@ func FromInterface(in interface{}) IObject {
 	case IObject:
 		return v
 	case CallableFunc:
-		return NewFunctionModule("CallableFunc", v)
+		return NewFunctionModule(FunctionModuleDef, "CallableFunc", v)
 	}
 	return UndefinedValue
 }

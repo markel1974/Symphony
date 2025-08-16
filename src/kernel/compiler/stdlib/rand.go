@@ -8,29 +8,29 @@ import (
 
 // randModule is a map containing random-related utility functions for generating numbers, seeding, permutations, and more.
 var _randModule = map[string]objects.IObject{
-	"Int63":       objects.NewFunctionModule("Int63", objects.FuncInOi64(rand.Int63)),
-	"Float64":     objects.NewFunctionModule("Float64", objects.FuncInOf64(rand.Float64)),
-	"Int63n":      objects.NewFunctionModule("Int63n", objects.FuncIi64Oi64(rand.Int63n)),
-	"ExpFloat64":  objects.NewFunctionModule("ExpFloat64", objects.FuncInOf64(rand.ExpFloat64)),
-	"NormFloat64": objects.NewFunctionModule("NormFloat64", objects.FuncInOf64(rand.NormFloat64)),
-	"Perm":        objects.NewFunctionModule("Perm", objects.FuncIiOiS(rand.Perm)),
-	"Seed":        objects.NewFunctionModule("Seed", objects.FuncIi64On(rand.Seed)),
-	"Read":        objects.NewFunctionModule("Read", doRandRead),
-	"Rand":        objects.NewFunctionModule("Rand", doRandRand),
+	"Int63":       objects.NewFunctionModule(objects.FunctionModuleDef, "Int63", objects.FuncInOi64(rand.Int63)),
+	"Float64":     objects.NewFunctionModule(objects.FunctionModuleDef, "Float64", objects.FuncInOf64(rand.Float64)),
+	"Int63n":      objects.NewFunctionModule(objects.FunctionModuleDef, "Int63n", objects.FuncIi64Oi64(rand.Int63n)),
+	"ExpFloat64":  objects.NewFunctionModule(objects.FunctionModuleDef, "ExpFloat64", objects.FuncInOf64(rand.ExpFloat64)),
+	"NormFloat64": objects.NewFunctionModule(objects.FunctionModuleDef, "NormFloat64", objects.FuncInOf64(rand.NormFloat64)),
+	"Perm":        objects.NewFunctionModule(objects.FunctionModuleDef, "Perm", objects.FuncIiOiS(rand.Perm)),
+	"Seed":        objects.NewFunctionModule(objects.FunctionModuleDef, "Seed", objects.FuncIi64On(rand.Seed)),
+	"Read":        objects.NewFunctionModule(objects.FunctionModuleDef, "Read", doRandRead),
+	"Rand":        objects.NewFunctionModule(objects.FunctionModuleDef, "Rand", doRandRand),
 }
 
 // randRand generates an immutable map containing random-related functions derived from the provided rand.Rand instance.
 func randRand(r *rand.Rand) *objects.MapImmutable {
 	return objects.NewMapImmutable(
 		map[string]objects.IObject{
-			"Int63":       objects.NewFunctionModule("Int63", objects.FuncInOi64(r.Int63)),
-			"Float64":     objects.NewFunctionModule("Float64", objects.FuncInOf64(r.Float64)),
-			"Int63n":      objects.NewFunctionModule("Int63n", objects.FuncIi64Oi64(r.Int63n)),
-			"ExpFloat64":  objects.NewFunctionModule("ExpFloat64", objects.FuncInOf64(r.ExpFloat64)),
-			"NormFloat64": objects.NewFunctionModule("NormFloat64", objects.FuncInOf64(r.NormFloat64)),
-			"Perm":        objects.NewFunctionModule("Perm", objects.FuncIiOiS(r.Perm)),
-			"Seed":        objects.NewFunctionModule("Seed", objects.FuncIi64On(r.Seed)),
-			"Read":        objects.NewFunctionModule("Read", func(args ...objects.IObject) (objects.IObject, error) { return doRRandRand(r, args...) }),
+			"Int63":       objects.NewFunctionModule(objects.FunctionModuleDef, "Int63", objects.FuncInOi64(r.Int63)),
+			"Float64":     objects.NewFunctionModule(objects.FunctionModuleDef, "Float64", objects.FuncInOf64(r.Float64)),
+			"Int63n":      objects.NewFunctionModule(objects.FunctionModuleDef, "Int63n", objects.FuncIi64Oi64(r.Int63n)),
+			"ExpFloat64":  objects.NewFunctionModule(objects.FunctionModuleDef, "ExpFloat64", objects.FuncInOf64(r.ExpFloat64)),
+			"NormFloat64": objects.NewFunctionModule(objects.FunctionModuleDef, "NormFloat64", objects.FuncInOf64(r.NormFloat64)),
+			"Perm":        objects.NewFunctionModule(objects.FunctionModuleDef, "Perm", objects.FuncIiOiS(r.Perm)),
+			"Seed":        objects.NewFunctionModule(objects.FunctionModuleDef, "Seed", objects.FuncIi64On(r.Seed)),
+			"Read":        objects.NewFunctionModule(objects.FunctionModuleDef, "Read", func(args ...objects.IObject) (objects.IObject, error) { return doRRandRand(r, args...) }),
 		})
 }
 
