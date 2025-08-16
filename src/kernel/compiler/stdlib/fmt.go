@@ -8,16 +8,16 @@ import (
 
 // fmtSafeModule is a map containing predefined functions from the fmt package wrapped as IObjects, like "sprintf".
 var _fmtSafeModule = map[string]objects.IObject{
-	"Sprintf": objects.NewFunctionUser("Sprintf", fmtSprintf),
+	"Sprintf": objects.NewFunctionModule("Sprintf", fmtSprintf),
 }
 
 // fmtModule is a map that associates string keys with user-defined function objects for various formatted output operations.
 var _fmtModule = map[string]objects.IObject{
-	"Print":   objects.NewFunctionUser("Print", fmtPrint),
-	"Printf":  objects.NewFunctionUser("Printf", fmtPrintf),
-	"Println": objects.NewFunctionUser("Println", fmtPrintln),
-	"Sprint":  objects.NewFunctionUser("Sprintf", fmtSprint),
-	"Sprintf": objects.NewFunctionUser("Sprintf", fmtSprintf),
+	"Print":   objects.NewFunctionModule("Print", fmtPrint),
+	"Printf":  objects.NewFunctionModule("Printf", fmtPrintf),
+	"Println": objects.NewFunctionModule("Println", fmtPrintln),
+	"Sprint":  objects.NewFunctionModule("Sprintf", fmtSprint),
+	"Sprintf": objects.NewFunctionModule("Sprintf", fmtSprintf),
 }
 
 // fmtPrint prints the string representations of the provided IObject arguments without a newline.

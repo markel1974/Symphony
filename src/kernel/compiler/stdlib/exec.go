@@ -10,17 +10,17 @@ import (
 func makeOSExecCommand(cmd *exec.Cmd) *objects.MapImmutable {
 	return objects.NewMapImmutable(map[string]objects.IObject{
 		// combined_output() => bytes/error
-		"CombinedOutput": objects.NewFunctionUser("CombinedOutput", objects.FuncInObSe(cmd.CombinedOutput)),
+		"CombinedOutput": objects.NewFunctionModule("CombinedOutput", objects.FuncInObSe(cmd.CombinedOutput)),
 		// output() => bytes/error
-		"Output": objects.NewFunctionUser("Output", objects.FuncInObSe(cmd.Output)), //
+		"Output": objects.NewFunctionModule("Output", objects.FuncInObSe(cmd.Output)), //
 		// run() => error
-		"Run": objects.NewFunctionUser("Run", objects.FuncInOe(cmd.Run)), //
+		"Run": objects.NewFunctionModule("Run", objects.FuncInOe(cmd.Run)), //
 		// start() => error
-		"Start": objects.NewFunctionUser("Start", objects.FuncInOe(cmd.Start)), //
+		"Start": objects.NewFunctionModule("Start", objects.FuncInOe(cmd.Start)), //
 		// wait() => error
-		"Wait": objects.NewFunctionUser("Wait", objects.FuncInOe(cmd.Wait)), //
+		"Wait": objects.NewFunctionModule("Wait", objects.FuncInOe(cmd.Wait)), //
 		// set_path(path string)
-		"SetPath": objects.NewFunctionUser("SetPath", func(args ...objects.IObject) (objects.IObject, error) {
+		"SetPath": objects.NewFunctionModule("SetPath", func(args ...objects.IObject) (objects.IObject, error) {
 			if len(args) != 1 {
 				return nil, objects.ErrWrongNumArguments
 			}
@@ -32,7 +32,7 @@ func makeOSExecCommand(cmd *exec.Cmd) *objects.MapImmutable {
 			return objects.UndefinedValue, nil
 		}),
 		// set_dir(dir string)
-		"SetDir": objects.NewFunctionUser("SetDir", func(args ...objects.IObject) (objects.IObject, error) {
+		"SetDir": objects.NewFunctionModule("SetDir", func(args ...objects.IObject) (objects.IObject, error) {
 			if len(args) != 1 {
 				return nil, objects.ErrWrongNumArguments
 			}
@@ -44,7 +44,7 @@ func makeOSExecCommand(cmd *exec.Cmd) *objects.MapImmutable {
 			return objects.UndefinedValue, nil
 		}),
 		// set_env(env array(string))
-		"SetEnv": objects.NewFunctionUser("SetEnv", func(args ...objects.IObject) (objects.IObject, error) {
+		"SetEnv": objects.NewFunctionModule("SetEnv", func(args ...objects.IObject) (objects.IObject, error) {
 			if len(args) != 1 {
 				return nil, objects.ErrWrongNumArguments
 			}
@@ -68,7 +68,7 @@ func makeOSExecCommand(cmd *exec.Cmd) *objects.MapImmutable {
 			return objects.UndefinedValue, nil
 		}),
 		// process() => imap(process)
-		"Process": objects.NewFunctionUser("Process", func(args ...objects.IObject) (objects.IObject, error) {
+		"Process": objects.NewFunctionModule("Process", func(args ...objects.IObject) (objects.IObject, error) {
 			if len(args) != 0 {
 				return nil, objects.ErrWrongNumArguments
 			}

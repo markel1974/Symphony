@@ -17,8 +17,8 @@ type FunctionUser struct {
 	encodingID string
 }
 
-// NewFunctionUser creates a new FunctionUser instance with the specified ID and callable function.
-func NewFunctionUser(id string, fn CallableFunc) *FunctionUser {
+// NewFunctionModule creates a new FunctionUser instance with the specified ID and callable function.
+func NewFunctionModule(id string, fn CallableFunc) *FunctionUser {
 	return &FunctionUser{
 		name:  id,
 		value: fn,
