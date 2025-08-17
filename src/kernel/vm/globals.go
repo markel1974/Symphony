@@ -22,7 +22,7 @@ func NewGlobals(globals []objects.IObject, errSignal func(err error)) *Globals {
 
 // Get retrieves the object from the globals pool at the specified index. Returns UndefinedValue if the index is invalid.
 func (g *Globals) Get(index uint) objects.IObject {
-	if index > uint(len(g.globals)) {
+	if index >= uint(len(g.globals)) {
 		g.errSignal(fmt.Errorf("invalid constant index: %d", index))
 		return objects.UndefinedValue
 	}

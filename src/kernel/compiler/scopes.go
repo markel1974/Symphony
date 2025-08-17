@@ -51,13 +51,18 @@ func (c *Scopes) ReferencesRetrieve() []objects.IObject {
 }
 
 // ConstantsAdd adds a constant object with the given id to the scope and returns its internal index.
-func (c *Scopes) ConstantsAdd(obj objects.IObject) int {
-	return c.constants.Add("", obj)
+func (c *Scopes) ConstantsAdd(id string, obj objects.IObject) int {
+	return c.constants.Add(id, obj)
 }
 
 // ConstantsAddOrGet retrieves the index of the constant if it exists or adds it to the constants pool and returns the index.
 func (c *Scopes) ConstantsAddOrGet(obj objects.IObject) int {
 	return c.constants.AddOrGet("", obj)
+}
+
+// ConstantsGet retrieves the constant identified by the provided id and returns its value along with a boolean for existence.
+func (c *Scopes) ConstantsGet(id string) (int, bool) {
+	return c.constants.Get(id)
 }
 
 // ConstantsSetIndex sets the object at the specified index in the constant collection and returns an error if it fails.
@@ -233,12 +238,12 @@ func (c *Scopes) EmitLiteral(node *ast.BasicLit) error {
 	switch node.Kind {
 	case token.INT:
 		val, _ := strconv.ParseInt(node.Value, 0, 64)
-		if _, err := c.Emit(bytecode.OpConstant, c.ConstantsAdd(objects.NewInt(val))); err != nil {
+		if _, err := c.Emit(bytecode.OpConstant, c.ConstantsAdd("", objects.NewInt(val))); err != nil {
 			return err
 		}
 	case token.FLOAT:
 		val, _ := strconv.ParseFloat(node.Value, 64)
-		if _, err := c.Emit(bytecode.OpConstant, c.ConstantsAdd(objects.NewFloat(val))); err != nil {
+		if _, err := c.Emit(bytecode.OpConstant, c.ConstantsAdd("", objects.NewFloat(val))); err != nil {
 			return err
 		}
 	case token.STRING:
@@ -247,7 +252,7 @@ func (c *Scopes) EmitLiteral(node *ast.BasicLit) error {
 		if err != nil {
 			return err
 		}
-		if _, err = c.Emit(bytecode.OpConstant, c.ConstantsAdd(s)); err != nil {
+		if _, err = c.Emit(bytecode.OpConstant, c.ConstantsAdd("", s)); err != nil {
 			return err
 		}
 	default:

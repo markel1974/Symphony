@@ -175,7 +175,7 @@ func (c *Compiler) doFile(node *ast.File) error {
 			}
 			mangledName := GetMangledName(typeName, methodName)
 			placeholder := objects.NewFunctionCompiled(mangledName, nil, 0, 0, false, nil, nil)
-			fnIndex := c.scopes.ConstantsAdd(placeholder)
+			fnIndex := c.scopes.ConstantsAdd(mangledName, placeholder)
 			symbol.Methods[methodName] = fnIndex
 			funcIndexes[mangledName] = fnIndex
 		} else {
@@ -183,7 +183,7 @@ func (c *Compiler) doFile(node *ast.File) error {
 			funcName := fn.Name.Name
 			symbol = c.scopes.SymbolDefine(funcName, UnknownScope)
 			placeholder := objects.NewFunctionCompiled(funcName, nil, 0, 0, false, nil, nil)
-			fnIndex := c.scopes.ConstantsAdd(placeholder)
+			fnIndex := c.scopes.ConstantsAdd(funcName, placeholder)
 			funcIndexes[funcName] = fnIndex
 		}
 		if symbol == nil {
@@ -433,8 +433,16 @@ func (c *Compiler) doCallExpr(node *ast.CallExpr) error {
 		return nil
 	}
 
-	// normal function call
-	if err := c.compile(node.Fun); err != nil {
+	z, ok := node.Fun.(*ast.Ident)
+	if !ok {
+		return fmt.Errorf("unsupported function call: %T", node.Fun)
+	}
+	//keyConst := c.scopes.ConstantsAddOrGet(objects.NewStringNoSize(z.Name))
+	index, ok := c.scopes.ConstantsGet(z.Name)
+	if !ok {
+		return fmt.Errorf("undefined function: %s", z.Name)
+	}
+	if _, err := c.scopes.Emit(bytecode.OpConstant, index); err != nil {
 		return err
 	}
 	for _, arg := range node.Args {
@@ -445,6 +453,20 @@ func (c *Compiler) doCallExpr(node *ast.CallExpr) error {
 	if _, err := c.scopes.Emit(bytecode.OpCall, len(node.Args), 0); err != nil {
 		return err
 	}
+
+	// normal function call
+	//TODO la funzione è gia stata compilata, dobbiamo solo prendere id dal nome e metterla sullo stack
+	//if err := c.compile(node.Fun); err != nil {
+	//	return err
+	//}
+	//for _, arg := range node.Args {
+	//	if err := c.compile(arg); err != nil {
+	//		return err
+	//	}
+	//}
+	//if _, err := c.scopes.Emit(bytecode.OpCall, len(node.Args), 0); err != nil {
+	//	return err
+	//}
 	return nil
 }
 
@@ -718,7 +740,7 @@ func (c *Compiler) doIncDecStmt(node *ast.IncDecStmt) error {
 		return err
 	}
 	// 3. Aggiunge la costante '1' allo stack
-	constIndex := c.scopes.ConstantsAdd(objects.NewInt(1))
+	constIndex := c.scopes.ConstantsAdd("", objects.NewInt(1))
 	if _, err := c.scopes.Emit(bytecode.OpConstant, constIndex); err != nil {
 		return err
 	}

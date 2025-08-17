@@ -33,15 +33,15 @@ type SymbolTable struct {
 	container      map[string]*Symbol
 	numDefinitions int
 	freeSymbols    []*Symbol
-	symbolsCounter int
+	uniqueCounter  int
 }
 
 // NewSymbolTable initializes and returns a new instance of SymbolTable with an empty container and counter set to zero.
 func NewSymbolTable() *SymbolTable {
 	s := make(map[string]*Symbol)
 	return &SymbolTable{
-		container:      s,
-		symbolsCounter: 0,
+		container:     s,
+		uniqueCounter: 0,
 	}
 }
 
@@ -91,8 +91,8 @@ func (s *SymbolTable) FreeSymbolsLen() int {
 
 // DefineUnique generates a unique symbol name using a provided base name and counter, then defines and returns the symbol.
 func (s *SymbolTable) DefineUnique(name string, scope SymbolScope) *Symbol {
-	uniqueName := name + strconv.Itoa(s.symbolsCounter)
-	s.symbolsCounter++
+	uniqueName := name + strconv.Itoa(s.uniqueCounter)
+	s.uniqueCounter++
 	return s.Define(uniqueName, scope)
 }
 
@@ -112,10 +112,11 @@ func (s *SymbolTable) Define(name string, scope SymbolScope) *Symbol {
 }
 
 // DefineBuiltin adds a built-in symbol to the symbol table with the specified name and index, returning the new symbol.
-func (s *SymbolTable) DefineBuiltin(name string, index int) *Symbol {
+func (s *SymbolTable) DefineBuiltin(name string, index int) {
+	fmt.Println("[WARNING] BULTING DISABLED", name)
+	return
 	symbol := NewSymbol(name, index, BuiltinScope)
 	s.container[name] = symbol
-	return symbol
 }
 
 // Resolve attempts to look up a symbol by name in the current SymbolTable and outer scopes, if applicable.

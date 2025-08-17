@@ -574,7 +574,8 @@ func (op *OpCall) Execute(v *VM) {
 		v.setError(fmt.Errorf("%s is not callable: %s", value.String(), value.TypeName()))
 		return
 	}
-	if spread := v.currFrame.Get(v.ip + 2); spread == 1 {
+	spread := v.currFrame.Get(v.ip + 2)
+	if spread == 1 {
 		arrObj := v.stack.Pop()
 		switch z := arrObj.(type) {
 		case *objects.Array:
