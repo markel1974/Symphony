@@ -47,17 +47,19 @@ type Symbol struct {
 	Scope  SymbolScope
 	Index  int
 	Fields []*FieldDef
-	Object string
+	object string
 	kind   string
 }
 
 // NewSymbol constructs and returns a new Symbol with the given name, index, and scope, initializing its fields as empty.
-func NewSymbol(name string, index int, scope SymbolScope) *Symbol {
+func NewSymbol(name string, index int, scope SymbolScope, obj string) *Symbol {
 	symbol := &Symbol{
 		Name:   name,
 		Index:  index,
 		Scope:  scope,
 		Fields: []*FieldDef{},
+		object: obj,
+		kind:   "",
 	}
 	return symbol
 }
@@ -73,4 +75,8 @@ func (s *Symbol) SetType(t string) {
 // Type returns the type of the symbol as a string.
 func (s *Symbol) Type() string {
 	return s.kind
+}
+
+func (s *Symbol) Object() string {
+	return s.object
 }

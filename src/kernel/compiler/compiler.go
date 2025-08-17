@@ -399,12 +399,11 @@ func (c *Compiler) doCallExpr(node *ast.CallExpr) error {
 			kind := receiverSymbol.Type()
 			typeSymbol, ok := c.scopes.SymbolResolve(kind)
 			if !ok {
-				return fmt.Errorf("undefined type: %s", receiverSymbol.Object)
+				return fmt.Errorf("undefined type: %s", kind)
 			}
 			methodName := selExpr.Sel.Name
 			fnName = GetMangledName(typeSymbol.Name, methodName)
 			fnIndex, ok = c.scopes.ConstantsGet(fnName)
-			//nameIndex, ok = typeSymbol.Methods[methodName]
 			if !ok {
 				return fmt.Errorf("undefined method '%s' for type '%s'", methodName, typeSymbol.Name)
 			}
@@ -543,7 +542,7 @@ func (c *Compiler) doCompositeLit(node *ast.CompositeLit) error {
 				}
 				providedFields[keyIdent.Name] = kvExpr.Value
 			}
-			for idx, _ := range symbol.Fields {
+			for idx := range symbol.Fields {
 				if valueExpr, ok := providedFields[symbol.Fields[idx].Name()]; ok {
 					symbol.Fields[idx].SetNode(valueExpr)
 				}
@@ -1007,7 +1006,7 @@ func (c *Compiler) doSelectorExpr(node *ast.SelectorExpr) error {
 		if _, err := c.scopes.Emit(bytecode.OpReferences, nameIndex); err != nil {
 			return err
 		}
-	} else if len(receiverSymbol.Object) > 0 { // struct
+	} else if len(receiverSymbol.Object()) > 0 { // struct
 		if err := c.compile(node.X); err != nil {
 			return err
 		}
@@ -1025,6 +1024,6 @@ func (c *Compiler) doSelectorExpr(node *ast.SelectorExpr) error {
 }
 
 // doFuncDecl processes the function declaration node and compiles its structure into the appropriate bytecode.
-func (c *Compiler) doFuncDecl(node *ast.FuncDecl) error {
+func (c *Compiler) doFuncDecl(_ *ast.FuncDecl) error {
 	return nil
 }

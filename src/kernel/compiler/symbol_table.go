@@ -107,8 +107,7 @@ func (s *SymbolTable) Define(name string, scope SymbolScope) *Symbol {
 			scope = LocalScope
 		}
 	}
-	symbol := NewSymbol(name, s.numDefinitions, scope)
-	symbol.Object = s.obj
+	symbol := NewSymbol(name, s.numDefinitions, scope, s.obj)
 	s.container[name] = symbol
 	s.numDefinitions++
 	return symbol
@@ -116,7 +115,7 @@ func (s *SymbolTable) Define(name string, scope SymbolScope) *Symbol {
 
 // DefineBuiltin adds a built-in symbol to the symbol table with the specified name and index, returning the new symbol.
 func (s *SymbolTable) DefineBuiltin(name string, index int) {
-	symbol := NewSymbol(name, index, BuiltinScope)
+	symbol := NewSymbol(name, index, BuiltinScope, s.obj)
 	s.container[name] = symbol
 }
 
@@ -144,7 +143,7 @@ func (s *SymbolTable) Resolve(name string) (*Symbol, bool) {
 
 func (s *SymbolTable) defineFree(original *Symbol) *Symbol {
 	s.freeSymbols = append(s.freeSymbols, original)
-	symbol := NewSymbol(original.Name, len(s.freeSymbols)-1, FreeScope)
+	symbol := NewSymbol(original.Name, len(s.freeSymbols)-1, FreeScope, s.obj)
 	s.container[original.Name] = symbol
 	return symbol
 }
