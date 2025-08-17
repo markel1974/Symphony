@@ -21,7 +21,9 @@ func NewHome() *Home {
 
 func (h *Home) test() {
 	h.Name = "Alfio"
-	//h.Age = h.Age + 20
+	//z := h.Age + 5
+	//h.Age = z
+	h.Age = h.Age + 5
 	fmt.Println("home", h.Name, h.Age, h.Address)
 }
 

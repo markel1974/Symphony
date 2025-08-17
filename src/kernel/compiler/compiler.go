@@ -321,13 +321,16 @@ func (c *Compiler) doAssignStmt(node *ast.AssignStmt) error {
 				return fmt.Errorf("undefined variable: %s", name)
 			}
 		}
-
 		// Aggiorna il tipo del simbolo in entrambi i casi (:= e =)
 		if len(assignedTypeName) > 0 {
 			symbol.SetType(assignedTypeName)
 		}
-
 		if err := c.scopes.EmitSymbolSet(symbol); err != nil {
+			return err
+		}
+		// L'OpPop è necessario solo per le assegnazioni a variabili semplici,
+		// perché OpSetLocal/Global non puliscono lo stack.
+		if _, err := c.scopes.Emit(bytecode.OpPop); err != nil {
 			return err
 		}
 	case *ast.SelectorExpr:
@@ -360,9 +363,6 @@ func (c *Compiler) doAssignStmt(node *ast.AssignStmt) error {
 		return fmt.Errorf("unsupported left-hand side in assignment: %T", node.Lhs[0])
 	}
 
-	if _, err := c.scopes.Emit(bytecode.OpPop); err != nil {
-		return err
-	}
 	return nil
 }
 
