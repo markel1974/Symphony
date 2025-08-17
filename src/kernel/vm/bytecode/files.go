@@ -53,10 +53,10 @@ func (s *Files) Position(p int) (*FilePos, error) {
 // file retrieves the SourceFile corresponding to the specified Pos from the Files or nil if not found.
 func (s *Files) file(p int) IFile {
 	lf := s.lastFile
-	if lf != nil && lf.Base() <= int(p) && int(p) <= lf.Base()+lf.Size() {
+	if lf != nil && lf.Base() <= p && p <= lf.Base()+lf.Size() {
 		return lf
 	}
-	if i := searchFiles(s.files, int(p)); i >= 0 {
+	if i := searchFiles(s.files, p); i >= 0 {
 		f := s.files[i]
 		if p <= f.Base()+f.Size() {
 			s.lastFile = f

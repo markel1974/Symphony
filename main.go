@@ -134,7 +134,7 @@ func BuildDrives(d string) ([]*config.Drive, error) {
 
 func vmTest() {
 	comp := compiler.New()
-	bc, err := comp.Compile("example.go", stub.Source1)
+	bc, err := comp.Compile("example.go", stub.Source3)
 	if err != nil {
 		log.Fatalf("compiler error: %s", err)
 	}

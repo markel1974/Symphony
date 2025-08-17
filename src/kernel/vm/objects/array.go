@@ -25,7 +25,7 @@ func (o *Array) TypeName() string {
 	return ArrayType
 }
 
-// Values returns the slice of IObject elements stored in the Array.
+// Values return the slice of IObject elements stored in the Array.
 func (o *Array) Values() []IObject {
 	return o.values
 }
