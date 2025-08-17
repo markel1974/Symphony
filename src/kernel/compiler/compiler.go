@@ -380,64 +380,60 @@ func (c *Compiler) doCallExpr(node *ast.CallExpr) error {
 		if !ok {
 			return fmt.Errorf("undefined variable: %s", receiverIdent.Name)
 		}
-
-		//è una funzione di un package?
+		hasReference := false
+		nameIndex := -1
+		var args []ast.Node
 		if receiverSymbol.Scope == ImportScope {
+			found := false
+			hasReference = true
 			mName := receiverIdent.Name
 			sName := selExpr.Sel.Name
 			cacheKey := "selector:" + mName + "." + sName
-			nameIndex, found := c.scopes.ReferencesGet(cacheKey)
+			nameIndex, found = c.scopes.ReferencesGet(cacheKey)
 			if !found {
 				attrArray := objects.NewArray([]objects.IObject{objects.NewStringNoSize(mName), objects.NewStringNoSize(sName)})
 				nameIndex = c.scopes.ReferencesAdd(cacheKey, attrArray)
 			}
-			// Pusha la referenza alla funzione del package.
-			if _, err := c.scopes.Emit(bytecode.OpReferences, nameIndex); err != nil {
-				return err
-			}
-			// Ora la funzione è sullo stack, possiamo compilare gli argomenti e chiamare.
 			for _, arg := range node.Args {
-				if err := c.compile(arg); err != nil {
-					return err
-				}
+				args = append(args, arg)
 			}
-			if _, err := c.scopes.Emit(bytecode.OpCall, len(node.Args), 0); err != nil {
-				return err
-			}
-			return nil
-		}
-		if len(receiverSymbol.Type) > 0 { // CASO 1: È un metodo di una struct?
+		} else if len(receiverSymbol.Type) > 0 {
+			// struct method
 			typeSymbol, _ := c.scopes.SymbolResolve(receiverSymbol.Type)
 			methodName := selExpr.Sel.Name
-			methodIndex, ok := typeSymbol.Methods[methodName]
+			nameIndex, ok = typeSymbol.Methods[methodName]
 			if !ok {
 				return fmt.Errorf("undefined method '%s' for type '%s'", methodName, typeSymbol.Name)
 			}
-			if _, err := c.scopes.Emit(bytecode.OpConstant, methodIndex); err != nil {
-				return err
-			}
-			// Ordine corretto per la VM: [ricevitore, arg1, ..., funzione]
-			if err := c.compile(selExpr.X); err != nil {
-				return err
-			}
+			args = append(args, selExpr.X)
 			for _, arg := range node.Args {
-				if err := c.compile(arg); err != nil {
-					return err
-				}
+				args = append(args, arg)
 			}
-
-			numArgs := 1 + len(node.Args) // ricevitore + argomenti
-			if _, err := c.scopes.Emit(bytecode.OpCall, numArgs, 0); err != nil {
+		}
+		if nameIndex < 0 {
+			return fmt.Errorf("cannot call method on untyped variable or undefined package '%s'", receiverIdent.Name)
+		}
+		if hasReference {
+			if _, err := c.scopes.Emit(bytecode.OpReferences, nameIndex); err != nil {
 				return err
 			}
-			return nil
+		} else {
+			if _, err := c.scopes.Emit(bytecode.OpConstant, nameIndex); err != nil {
+				return err
+			}
 		}
-
-		// Se non è nessuno dei due, è un errore.
-		return fmt.Errorf("cannot call method on untyped variable or undefined package '%s'", receiverIdent.Name)
+		for _, arg := range args {
+			if err := c.compile(arg); err != nil {
+				return err
+			}
+		}
+		if _, err := c.scopes.Emit(bytecode.OpCall, len(args), 0); err != nil {
+			return err
+		}
+		return nil
 	}
 
-	// --- CASO 3: FUNZIONE NORMALE ---
+	// normal function call
 	if err := c.compile(node.Fun); err != nil {
 		return err
 	}
