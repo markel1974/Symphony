@@ -71,6 +71,7 @@ const (
 	OpNull                        // Push null
 	OpArray                       // Array object
 	OpMap                         // Map object
+	OpStruct                      // Struct object
 	OpImmutable                   // Immutable object
 	OpIndex                       // Index operation
 	OpSliceIndex                  // Slice operation
@@ -161,6 +162,7 @@ func init() {
 	createOpcodeDetails(OpSetSelGlobal, []int{2, 1}, "OpSetSelGlobal")
 	createOpcodeDetails(OpArray, []int{2}, "OpArray")
 	createOpcodeDetails(OpMap, []int{2}, "OpMap")
+	createOpcodeDetails(OpStruct, []int{2}, "OpStruct")
 	createOpcodeDetails(OpImmutable, []int{}, "OpImmutable")
 	createOpcodeDetails(OpIndex, []int{}, "OpIndex")
 	createOpcodeDetails(OpSliceIndex, []int{}, "OpSliceIndex")

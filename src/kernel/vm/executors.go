@@ -424,6 +424,24 @@ func (op *OpMap) Execute(v *VM) {
 	v.stack.Push(objects.NewMap(mElem))
 }
 
+// OpStruct is a wrapper around bytecode.OpcodeDetails, representing a struct creation operation in bytecode execution.
+type OpStruct struct {
+	*bytecode.OpcodeDetails
+}
+
+// NewOpStruct initializes and returns a new instance of OpStruct with its OpcodeDetails set to OpMap details.
+func NewOpStruct() *OpStruct {
+	return &OpStruct{OpcodeDetails: bytecode.OpcodeToDetails(bytecode.OpStruct)}
+}
+
+// Execute processes the OpMap instruction, adjusts the instruction pointer, and pushes a new map object onto the stack.
+func (op *OpStruct) Execute(v *VM) {
+	v.ip += 2
+	numElements := v.currFrame.Pos(v.ip, v.ip-1)
+	mElem := v.stack.PopMapElements(numElements)
+	v.stack.Push(objects.NewMap(mElem))
+}
+
 // OpError represents an operation that creates and assigns an error object in a virtual machine's runtime environment.
 type OpError struct {
 	*bytecode.OpcodeDetails
@@ -553,7 +571,7 @@ func (op *OpCall) Execute(v *VM) {
 	v.ip += 2
 	value := v.stack.PeekOffset(-1 - numArgs)
 	if !value.CanCall() {
-		v.setError(fmt.Errorf("not callable: %s", value.TypeName()))
+		v.setError(fmt.Errorf("%s is not callable: %s", value.String(), value.TypeName()))
 		return
 	}
 	if spread := v.currFrame.Get(v.ip + 2); spread == 1 {
@@ -585,7 +603,7 @@ func (op *OpCall) Execute(v *VM) {
 			if callee.VarArgs() {
 				numParams--
 			}
-			v.setError(fmt.Errorf("wrong number of arguments: want>=%d, got=%d", numParams, numArgs))
+			v.setError(fmt.Errorf("%s wrong number of arguments: want>=%d, got=%d", callee.Name(), numParams, numArgs))
 			return
 		}
 		// Frame setup

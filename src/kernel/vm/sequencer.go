@@ -43,6 +43,7 @@ func (ds *Sequencer) Create() []IOpExecutor {
 	ds.setSequence(NewOpGetGlobal())
 	ds.setSequence(NewOpArray())
 	ds.setSequence(NewOpMap())
+	ds.setSequence(NewOpStruct())
 	ds.setSequence(NewOpError())
 	ds.setSequence(NewOpImmutable())
 	ds.setSequence(NewOpIndex())

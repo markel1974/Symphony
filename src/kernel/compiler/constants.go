@@ -20,6 +20,12 @@ func NewConstants() *Constants {
 	}
 }
 
+func (c *Constants) Print() {
+	for idx, v := range c.constants {
+		fmt.Println(idx, v.String())
+	}
+}
+
 // Add appends the given object to the constants slice and returns its index; caches the index if an ID is provided.
 func (c *Constants) Add(id string, obj objects.IObject) int {
 	c.constants = append(c.constants, obj)
@@ -28,6 +34,17 @@ func (c *Constants) Add(id string, obj objects.IObject) int {
 		c.cache[id] = nameIndex
 	}
 	return nameIndex
+}
+
+// AddOrGet adds a new constant to the pool or returns the index of an existing identical constant.
+// This prevents duplicating constants in the bytecode.
+func (c *Constants) AddOrGet(id string, obj objects.IObject) int {
+	for i, constant := range c.constants {
+		if obj.Equals(constant) {
+			return i
+		}
+	}
+	return c.Add(id, obj)
 }
 
 // Get retrieves the index of the constant associated with the given id from the cache.

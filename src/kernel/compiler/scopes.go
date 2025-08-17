@@ -55,6 +55,11 @@ func (c *Scopes) ConstantsAdd(obj objects.IObject) int {
 	return c.constants.Add("", obj)
 }
 
+// ConstantsAddOrGet retrieves the index of the constant if it exists or adds it to the constants pool and returns the index.
+func (c *Scopes) ConstantsAddOrGet(obj objects.IObject) int {
+	return c.constants.AddOrGet("", obj)
+}
+
 // ConstantsSetIndex sets the object at the specified index in the constant collection and returns an error if it fails.
 func (c *Scopes) ConstantsSetIndex(index int, object objects.IObject) error {
 	return c.constants.SetIndex(index, object)
@@ -66,13 +71,13 @@ func (c *Scopes) ConstantsRetrieve() []objects.IObject {
 }
 
 // SymbolDefineUnique defines a new symbol in the current scope and adds it to the symbol table. Returns the defined Symbol.
-func (c *Scopes) SymbolDefineUnique(symbol string) *Symbol {
-	return c.symbolTable.DefineUnique(symbol)
+func (c *Scopes) SymbolDefineUnique(symbol string, scope SymbolScope) *Symbol {
+	return c.symbolTable.DefineUnique(symbol, scope)
 }
 
 // SymbolDefine defines a new symbol in the current scope and adds it to the symbol table. Returns the defined Symbol.
-func (c *Scopes) SymbolDefine(symbol string) *Symbol {
-	return c.symbolTable.Define(symbol)
+func (c *Scopes) SymbolDefine(symbol string, scope SymbolScope) *Symbol {
+	return c.symbolTable.Define(symbol, scope)
 }
 
 // SymbolResolve attempts to find a symbol in the current scope and returns it along with a boolean indicating success.
@@ -173,25 +178,25 @@ func (c *Scopes) Enter() error {
 		return fmt.Errorf("maximum scope depth exceeded: %d", maxScope)
 	}
 	scope := NewCompilationScope()
+	c.symbolTable = NewEnclosedSymbolTable(c.symbolTable)
 	c.scopes = append(c.scopes, scope)
 	c.scopeIndex++
-	c.symbolTable = NewEnclosedSymbolTable(c.symbolTable)
 	return nil
 }
 
 // Leave removes the current scope and reverts to the previous one, returning the instructions of the removed scope.
 func (c *Scopes) Leave() ([]byte, error) {
-	scopesL := len(c.scopes)
-	if scopesL <= 0 {
+	scopesLen := len(c.scopes)
+	if scopesLen <= 0 {
 		return nil, errors.New("no scopes to leave")
 	}
 	scope, err := c.Current()
 	if err != nil {
 		return nil, err
 	}
-	c.scopes = c.scopes[:scopesL-1]
-	c.scopeIndex--
 	c.symbolTable = c.symbolTable.Outer()
+	c.scopes = c.scopes[:scopesLen-1]
+	c.scopeIndex--
 	return scope.Instructions(), nil
 }
 
@@ -365,4 +370,14 @@ func (c *Scopes) EmitUnaryOp(op token.Token) error {
 		return fmt.Errorf("unhandled unary op: %s", op)
 	}
 	return nil
+}
+
+func (c *Scopes) Print() {
+	fmt.Println("----- Constants -----")
+	c.constants.Print()
+	fmt.Println("----- References -----")
+	c.references.Print()
+	fmt.Println("----- Symbols -----")
+	c.symbolTable.Print()
+	fmt.Println("--------------------")
 }

@@ -145,9 +145,14 @@ func (v *Stack) PopArrayElements(numElements int) []objects.IObject {
 func (v *Stack) PopMapElements(numElements int) map[string]objects.IObject {
 	kv := make(map[string]objects.IObject, numElements)
 	for i := v.sp - numElements; i < v.sp; i += 2 {
-		key := v.stack[i]
+		k := v.stack[i]
 		value := v.stack[i+1]
-		kv[key.(*objects.String).Value()] = value
+		key, ok := k.(*objects.String)
+		if !ok {
+			v.errSignal(fmt.Errorf("expected key to be of type String, got %T (value is %v)", k, value))
+			return nil
+		}
+		kv[key.Value()] = value
 	}
 	v.sp -= numElements
 	return kv

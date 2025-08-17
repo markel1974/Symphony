@@ -1,6 +1,8 @@
 package compiler
 
-import "fmt"
+import (
+	"fmt"
+)
 
 // CompilationScope represents a compilation context for bytecode with instructions and metadata about emissions.
 type CompilationScope struct {

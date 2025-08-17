@@ -5,7 +5,12 @@ package main
 
 import "fmt"
 
+func test() {
+	fmt.Println("home")
+}
+
 func main() {
+	test()
 	x := "home"
 	a := 0
 	for idx, v := range x {
