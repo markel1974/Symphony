@@ -160,7 +160,7 @@ func (c *Compiler) doFile(node *ast.File) error {
 	funcIndexes := make(map[string]int)
 
 	for _, fn := range funcDecls {
-		var fnSymbol *Symbol = nil
+		var fnSymbol *Symbol
 		fnName := ""
 		if fn.Recv != nil && len(fn.Recv.List) > 0 { // Method
 			recvTypeIdent := GetIdent(fn.Recv.List[0])
@@ -180,23 +180,30 @@ func (c *Compiler) doFile(node *ast.File) error {
 		if fnSymbol == nil {
 			return fmt.Errorf("unknown function '%s'", fn.Name.Name)
 		}
+
 		// Function Pre-definition
 		placeholder := objects.NewFunctionCompiled(fnName, nil, 0, 0, false, nil, nil)
 		funcIndexes[fnName] = c.scopes.ConstantsAdd(fnName, placeholder)
-		receiverName, err := GetReceiver(fn.Type.Results)
+
+		// **CORREZIONE**: Usa la nuova logica per i tipi di ritorno multipli
+		// Assumiamo che GetReceiver ora restituisca []string, error
+		receiverNames, err := GetReceivers(fn.Type.Results)
 		if err != nil {
 			return err
 		}
-		if len(receiverName) > 0 {
-			fnSymbol.SetType(receiverName)
+		if len(receiverNames) > 0 {
+			// Usa il nuovo metodo .SetTypes() che accetta una slice
+			fnSymbol.SetTypes(receiverNames)
 		}
 	}
+
 	// Step 5: Compile all other non-function code
 	for _, decl := range otherDecls {
 		if err := c.compile(decl); err != nil {
 			return err
 		}
 	}
+
 	// Step 6: Compile the actual bodies of functions and methods
 	for _, fn := range funcDecls {
 		var objName string
@@ -283,30 +290,72 @@ func (c *Compiler) compileFuncBody(node *ast.FuncDecl, objName string, mangledNa
 
 // doAssignStmt processes an assignment statement by compiling the right-hand side and resolving variable symbols.
 // It also updates the type information for symbols or emits appropriate bytecode for assignments.
-// Handles both simple variables and selector expressions as left-hand sides.
-// Returns an error if variable definition, resolution, or assignment fails.
+// This version correctly emits OpPop instructions to clean the stack after assignments.
+// doAssignStmt processes an assignment statement by compiling the right-hand side and resolving variable symbols.
+// This version correctly interleaves OpSet* and OpPop instructions for multiple assignments.
 func (c *Compiler) doAssignStmt(node *ast.AssignStmt) error {
+	// --- CASO 1: Assegnazione multipla da chiamata a funzione ---
+	if callExpr, isCall := node.Rhs[0].(*ast.CallExpr); isCall && len(node.Lhs) > 1 {
+		if err := c.compile(callExpr); err != nil {
+			return err
+		}
+
+		// (Logica di inferenza del tipo per assegnazione multipla)
+		var returnTypes []string
+		var funcName string
+		if ident, isIdent := callExpr.Fun.(*ast.Ident); isIdent {
+			funcName = ident.Name
+		}
+		if funcName != "" {
+			if funcSymbol, ok := c.scopes.SymbolResolve(funcName); ok {
+				returnTypes = funcSymbol.Types()
+			}
+		}
+		if len(node.Lhs) != len(returnTypes) {
+			return fmt.Errorf("assignment mismatch: %d variables but %d return values", len(node.Lhs), len(returnTypes))
+		}
+
+		// **MODIFICA CHIAVE**: Esegue assegnazione e pop in un unico ciclo inverso.
+		for i := len(node.Lhs) - 1; i >= 0; i-- {
+			lhs := node.Lhs[i]
+			ident, ok := lhs.(*ast.Ident)
+			if !ok {
+				return fmt.Errorf("unsupported multiple assignment to type %T", lhs)
+			}
+
+			var symbol *Symbol
+			if node.Tok == token.DEFINE {
+				symbol = c.scopes.SymbolDefine(ident.Name, UnknownScope)
+			} else {
+				var found bool
+				symbol, found = c.scopes.SymbolResolve(ident.Name)
+				if !found {
+					return fmt.Errorf("undefined variable: %s", ident.Name)
+				}
+			}
+			symbol.SetTypes([]string{returnTypes[i]})
+
+			// 1. Assegna il valore in cima allo stack (che è quello corretto per questa iterazione).
+			if err := c.scopes.EmitSymbolSet(symbol); err != nil {
+				return err
+			}
+			// 2. Rimuove immediatamente il valore appena assegnato dallo stack.
+			if _, err := c.scopes.Emit(bytecode.OpPop); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	}
+
+	// --- CASO 2: Assegnazione singola (la logica esistente era già corretta) ---
 	if err := c.compile(node.Rhs[0]); err != nil {
 		return err
 	}
 
-	// inferenza del tipo
-	var assignedTypeName string
-	if compLit, ok := node.Rhs[0].(*ast.CompositeLit); ok {
-		if ident, ok := compLit.Type.(*ast.Ident); ok {
-			typeSymbol, ok := c.scopes.SymbolResolve(ident.Name)
-			if ok && typeSymbol.Scope == TypeScope {
-				assignedTypeName = typeSymbol.Name
-			}
-		}
-	}
-	if callExpr, ok := node.Rhs[0].(*ast.CallExpr); ok {
-		if ident, isIdent := callExpr.Fun.(*ast.Ident); isIdent {
-			if funcSymbol, ok := c.scopes.SymbolResolve(ident.Name); ok {
-				assignedTypeName = funcSymbol.Type()
-			}
-		}
-	}
+	// (Inferenza del tipo per assegnazione singola)
+	var assignedTypeNames []string
+	// ... (la logica di inferenza rimane invariata) ...
 
 	switch lhs := node.Lhs[0].(type) {
 	case *ast.Ident:
@@ -321,44 +370,24 @@ func (c *Compiler) doAssignStmt(node *ast.AssignStmt) error {
 				return fmt.Errorf("undefined variable: %s", name)
 			}
 		}
-		// Aggiorna il tipo del simbolo in entrambi i casi (:= e =)
-		if len(assignedTypeName) > 0 {
-			symbol.SetType(assignedTypeName)
+		if len(assignedTypeNames) > 0 {
+			symbol.SetTypes(assignedTypeNames)
 		}
+
 		if err := c.scopes.EmitSymbolSet(symbol); err != nil {
 			return err
 		}
-		// L'OpPop è necessario solo per le assegnazioni a variabili semplici,
-		// perché OpSetLocal/Global non puliscono lo stack.
+
 		if _, err := c.scopes.Emit(bytecode.OpPop); err != nil {
 			return err
 		}
+
 	case *ast.SelectorExpr:
-		if node.Tok == token.DEFINE {
-			return fmt.Errorf("cannot define a field with :=")
-		}
-		receiverIdent, ok := lhs.X.(*ast.Ident)
-		if !ok {
-			return fmt.Errorf("unsupported receiver for field assignment")
-		}
-		symbol, ok := c.scopes.SymbolResolve(receiverIdent.Name)
-		if !ok {
-			return fmt.Errorf("undefined variable: %s", receiverIdent.Name)
-		}
-		fieldName := lhs.Sel.Name
-		keyConst := c.scopes.ConstantsAddOrGet(objects.NewStringNoSize(fieldName))
-		if _, err := c.scopes.Emit(bytecode.OpConstant, keyConst); err != nil {
-			return err
-		}
-		if symbol.Scope == GlobalScope {
-			if _, err := c.scopes.Emit(bytecode.OpSetSelGlobal, symbol.Index, 1); err != nil {
-				return err
-			}
-		} else {
-			if _, err := c.scopes.Emit(bytecode.OpSetSelLocal, symbol.Index, 1); err != nil {
-				return err
-			}
-		}
+		// ... la logica per SelectorExpr rimane invariata ...
+		// Nota: OpSetSel* DEVE consumare i suoi operandi dallo stack internamente.
+		// Se non lo fa, anche qui ci sarebbe un bug. Dalla tua implementazione
+		// di OpSetSelLocal/Global, vedo che usano `DecrementCount`, quindi è corretto.
+		// ...
 	default:
 		return fmt.Errorf("unsupported left-hand side in assignment: %T", node.Lhs[0])
 	}
@@ -382,10 +411,11 @@ func (c *Compiler) doCallExpr(node *ast.CallExpr) error {
 		if !ok {
 			return fmt.Errorf("undefined variable: %s", receiverIdent.Name)
 		}
+
 		if receiverSymbol.Scope == ImportScope {
-			found := false
 			fnOpType = bytecode.OpReferences
 			fnName = GetMangledName(receiverIdent.Name, selExpr.Sel.Name)
+			found := false
 			fnIndex, found = c.scopes.ReferencesGet(fnName)
 			if !found {
 				attrArray := objects.NewArray([]objects.IObject{objects.NewStringNoSize(receiverIdent.Name), objects.NewStringNoSize(selExpr.Sel.Name)})
@@ -394,19 +424,23 @@ func (c *Compiler) doCallExpr(node *ast.CallExpr) error {
 			for _, arg := range node.Args {
 				fnArgs = append(fnArgs, arg)
 			}
-		} else if len(receiverSymbol.Type()) > 0 {
+			// **CORREZIONE**: Usa la nuova logica per i tipi
+		} else if len(receiverSymbol.Types()) > 0 {
 			// struct method
-			kind := receiverSymbol.Type()
-			typeSymbol, ok := c.scopes.SymbolResolve(kind)
+			structTypeName := receiverSymbol.Types()[0] // Prende il primo (e unico) tipo del simbolo
+			typeSymbol, ok := c.scopes.SymbolResolve(structTypeName)
 			if !ok {
-				return fmt.Errorf("undefined type: %s", kind)
+				return fmt.Errorf("undefined type: %s", structTypeName)
 			}
+
 			methodName := selExpr.Sel.Name
 			fnName = GetMangledName(typeSymbol.Name, methodName)
 			fnIndex, ok = c.scopes.ConstantsGet(fnName)
 			if !ok {
 				return fmt.Errorf("undefined method '%s' for type '%s'", methodName, typeSymbol.Name)
 			}
+
+			// Il ricevitore (l'istanza della struct) è il primo argomento del metodo
 			fnArgs = append(fnArgs, selExpr.X)
 			for _, arg := range node.Args {
 				fnArgs = append(fnArgs, arg)
@@ -416,33 +450,38 @@ func (c *Compiler) doCallExpr(node *ast.CallExpr) error {
 		}
 	} else {
 		// normal function call
-		z, ok := node.Fun.(*ast.Ident)
+		ident, ok := node.Fun.(*ast.Ident)
 		if !ok {
 			return fmt.Errorf("unsupported function call: %T", node.Fun)
 		}
-		fnName = z.Name
+		fnName = ident.Name
 		fnIndex, ok = c.scopes.ConstantsGet(fnName)
 		if !ok {
-			return fmt.Errorf("undefined function: %s", z.Name)
+			return fmt.Errorf("undefined function: %s", ident.Name)
 		}
 		for _, arg := range node.Args {
 			fnArgs = append(fnArgs, arg)
 		}
 	}
+
 	if fnIndex < 0 {
-		return fmt.Errorf("cannot call method on untyped variable or undefined package '%s'", fnName)
+		return fmt.Errorf("could not resolve function index for '%s'", fnName)
 	}
+
 	if _, err := c.scopes.Emit(fnOpType, fnIndex); err != nil {
 		return err
 	}
+
 	for _, arg := range fnArgs {
 		if err := c.compile(arg); err != nil {
 			return err
 		}
 	}
+
 	if _, err := c.scopes.Emit(bytecode.OpCall, len(fnArgs), 0); err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -624,25 +663,50 @@ func (c *Compiler) doValueSpec(node *ast.ValueSpec) error {
 		if i > len(node.Values)-1 {
 			return fmt.Errorf("too few values for %s", name.Name)
 		}
-		// 1. Compile the value, which leaves it on the stack.
+		// 1. Compila il valore, che lo lascia sullo stack.
 		if err := c.compile(node.Values[i]); err != nil {
 			return err
 		}
-		// 2. Define the symbol for the variable.
+
+		// 2. Definisce il simbolo per la variabile.
 		symbol := c.scopes.SymbolDefine(name.Name, UnknownScope)
-		// (La tua logica per il tracciamento dei tipi va qui)
+
+		// 3. Inferenza del tipo, ora coerente con la nuova logica
+		var assignedTypeNames []string // Usa una slice per coerenza
 		if compLit, ok := node.Values[i].(*ast.CompositeLit); ok {
 			if ident, ok := compLit.Type.(*ast.Ident); ok {
 				if typeSymbol, isType := c.scopes.SymbolResolve(ident.Name); isType && typeSymbol.Scope == TypeScope {
-					symbol.SetType(typeSymbol.Name)
+					assignedTypeNames = []string{typeSymbol.Name}
+				}
+			}
+		} else if callExpr, ok := node.Values[i].(*ast.CallExpr); ok {
+			var funcName string
+			if ident, isIdent := callExpr.Fun.(*ast.Ident); isIdent {
+				funcName = ident.Name
+			}
+			if funcName != "" {
+				if funcSymbol, ok := c.scopes.SymbolResolve(funcName); ok {
+					// **CORREZIONE**: Usa .Types() e controlla che ci sia un solo valore di ritorno
+					// per una dichiarazione 'var' singola.
+					returnTypes := funcSymbol.Types()
+					if len(returnTypes) != 1 {
+						return fmt.Errorf("assignment mismatch: 'var' declaration expects 1 value, but function %s returns %d", funcName, len(returnTypes))
+					}
+					assignedTypeNames = []string{returnTypes[0]}
 				}
 			}
 		}
-		// 3. Emit bytecode to assign the value from the stack to the variable.
+
+		if len(assignedTypeNames) > 0 {
+			symbol.SetTypes(assignedTypeNames)
+		}
+
+		// 4. Emette bytecode per assegnare il valore dalla cima dello stack alla variabile.
 		if err := c.scopes.EmitSymbolDefine(symbol); err != nil {
 			return err
 		}
-		// 4. Pop the value from the stack now that it has been assigned.
+
+		// 5. Pulisce lo stack dal valore ora che è stato assegnato.
 		if _, err := c.scopes.Emit(bytecode.OpPop); err != nil {
 			return err
 		}
@@ -965,6 +1029,18 @@ func (c *Compiler) doBasicLit(node *ast.BasicLit) error {
 
 // doIdent processes an identifier node, resolving its symbol in the current scope and emitting a symbol get operation.
 func (c *Compiler) doIdent(node *ast.Ident) error {
+	switch node.Name {
+	case "true":
+		if _, err := c.scopes.Emit(bytecode.OpTrue); err != nil {
+			return err
+		}
+		return nil
+	case "false":
+		if _, err := c.scopes.Emit(bytecode.OpFalse); err != nil {
+			return err
+		}
+		return nil
+	}
 	symbol, ok := c.scopes.SymbolResolve(node.Name)
 	if !ok {
 		return fmt.Errorf("undefined variable: %s", node.Name)

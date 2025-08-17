@@ -1,7 +1,6 @@
 package compiler
 
 import (
-	"fmt"
 	"go/ast"
 )
 
@@ -48,7 +47,7 @@ type Symbol struct {
 	Index  int
 	Fields []*FieldDef
 	object string
-	kind   string
+	types  []string
 }
 
 // NewSymbol constructs and returns a new Symbol with the given name, index, and scope, initializing its fields as empty.
@@ -59,22 +58,19 @@ func NewSymbol(name string, index int, scope SymbolScope, obj string) *Symbol {
 		Scope:  scope,
 		Fields: []*FieldDef{},
 		object: obj,
-		kind:   "",
+		types:  []string{},
 	}
 	return symbol
 }
 
-// SetType assigns a type to the Symbol, emitting a warning if the Symbol already has a type.
-func (s *Symbol) SetType(t string) {
-	if s.kind != "" {
-		fmt.Println("Symbol already has a type:", s.kind)
-	}
-	s.kind = t
+// SetTypes assigns a type to the Symbol, emitting a warning if the Symbol already has a type.
+func (s *Symbol) SetTypes(t []string) {
+	s.types = t
 }
 
-// Type returns the type of the symbol as a string.
-func (s *Symbol) Type() string {
-	return s.kind
+// Types returns the type of the symbol as a string.
+func (s *Symbol) Types() []string {
+	return s.types
 }
 
 func (s *Symbol) Object() string {

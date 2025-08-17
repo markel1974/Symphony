@@ -655,12 +655,18 @@ func NewOpReturn() *OpReturn {
 // Execute performs the return operation for the current frame, manages the stack, and transitions between frames in the VM.
 func (op *OpReturn) Execute(v *VM) {
 	v.ip++
-	var retVal objects.IObject
-	if opcode := v.currFrame.Get(v.ip); opcode == 1 {
-		retVal = v.stack.Peek()
-	} else {
-		retVal = objects.UndefinedValue
+
+	// 1. Legge il numero di valori di ritorno dall'operando del bytecode.
+	numReturnVals := v.currFrame.Get(v.ip)
+
+	// 2. Colleziona i valori di ritorno dallo stack usando Pop().
+	// Questo è necessario per scoprire i valori sottostanti.
+	returnValues := make([]objects.IObject, numReturnVals)
+	for i := 0; i < numReturnVals; i++ {
+		returnValues[i] = v.stack.Pop()
 	}
+
+	// 3. Gestisce il cambio di frame.
 	if v.frames.Index() > 1 {
 		leavingFrameBasePointer := v.currFrame.BasePointer()
 		prevIp := v.currFrame.StartIP()
@@ -668,7 +674,16 @@ func (op *OpReturn) Execute(v *VM) {
 		v.currFrame = v.frames.GetPrev()
 		v.ip = prevIp
 		v.stack.SetStackPointer(leavingFrameBasePointer)
-		v.stack.Push(retVal)
+
+		// 4. Esegue il push dei valori di ritorno sul nuovo stack (quello del chiamante).
+		if numReturnVals == 0 {
+			v.stack.Push(objects.UndefinedValue)
+		} else {
+			// Itera sulla slice al contrario per ripristinare l'ordine originale.
+			for i := numReturnVals - 1; i >= 0; i-- {
+				v.stack.Push(returnValues[i])
+			}
+		}
 	} else {
 		log.Println("returning from the root frame")
 		log.Println("stack:")
