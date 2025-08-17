@@ -34,20 +34,22 @@ type SymbolTable struct {
 	numDefinitions int
 	freeSymbols    []*Symbol
 	uniqueCounter  int
+	obj            string
 }
 
 // NewSymbolTable initializes and returns a new instance of SymbolTable with an empty container and counter set to zero.
-func NewSymbolTable() *SymbolTable {
+func NewSymbolTable(obj string) *SymbolTable {
 	s := make(map[string]*Symbol)
 	return &SymbolTable{
+		obj:           obj,
 		container:     s,
 		uniqueCounter: 0,
 	}
 }
 
 // NewEnclosedSymbolTable creates a new symbol table enclosed by the provided outer symbol table.
-func NewEnclosedSymbolTable(outer *SymbolTable) *SymbolTable {
-	s := NewSymbolTable()
+func NewEnclosedSymbolTable(obj string, outer *SymbolTable) *SymbolTable {
+	s := NewSymbolTable(obj)
 	s.outer = outer
 	return s
 }
@@ -61,10 +63,10 @@ func (s *SymbolTable) Print() {
 		if v.Scope == BuiltinScope {
 			continue
 		}
-		fmt.Println(k, v.Name, v.Scope, v.Index, v.Fields, v.Methods)
+		fmt.Println(k, v.Name, v.Scope, v.Index, v.Fields)
 	}
 	for _, v := range s.freeSymbols {
-		fmt.Println(v.Name, v.Scope, v.Index, v.Fields, v.Methods)
+		fmt.Println(v.Name, v.Scope, v.Index, v.Fields)
 	}
 }
 
@@ -106,6 +108,7 @@ func (s *SymbolTable) Define(name string, scope SymbolScope) *Symbol {
 		}
 	}
 	symbol := NewSymbol(name, s.numDefinitions, scope)
+	symbol.Object = s.obj
 	s.container[name] = symbol
 	s.numDefinitions++
 	return symbol

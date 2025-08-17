@@ -22,7 +22,7 @@ type Scopes struct {
 
 // NewScopes initializes and returns a Scopes structure with a new symbol table, main compilation scope, and scope index set to 0.
 func NewScopes(loader bytecode.ILoader) *Scopes {
-	symbolTable := NewSymbolTable()
+	symbolTable := NewSymbolTable("")
 	for i, fn := range loader.GetBuiltinFunctions() {
 		symbolTable.DefineBuiltin(fn.Name(), i)
 	}
@@ -178,12 +178,12 @@ func (c *Scopes) InstructionGet(pos int) (byte, error) {
 }
 
 // Enter creates a new compilation scope, updates the symbol table to be enclosed, and increments the scope index.
-func (c *Scopes) Enter() error {
+func (c *Scopes) Enter(obj string) error {
 	if c.scopeIndex > maxScope {
 		return fmt.Errorf("maximum scope depth exceeded: %d", maxScope)
 	}
 	scope := NewCompilationScope()
-	c.symbolTable = NewEnclosedSymbolTable(c.symbolTable)
+	c.symbolTable = NewEnclosedSymbolTable(obj, c.symbolTable)
 	c.scopes = append(c.scopes, scope)
 	c.scopeIndex++
 	return nil

@@ -12,26 +12,25 @@ type Home struct {
 }
 
 func Beta() {
-	//fmt.Println("test")
+	fmt.Println("test", 5 + 6)
 }
 
-//func NewHome() Home {
-//	return Home{Name: "Mario", Age: 20, Address: "Shanghai"}
-//}
+func NewHome() *Home {
+	return &Home{Name: "Mario", Age: 20 + 5, Address: "Shanghai"}
+}
 
-//func (h *Home) test() {
-	//z := NewHome()
-	//Test()
-	//h.Name = "Alfa"
-	//fmt.Println("home", h)
-//}
+func (h *Home) test() {
+	h.Name = "Alfio"
+	//h.Age = h.Age + 20
+	fmt.Println("home", h.Name, h.Age, h.Address)
+}
 
 func main() {
 	//h := Home{Name:"Alfa", Age: 20, Address: "Shanghai"}
 	//a:="prova"
 	//fmt.Println(a)
-	//h := NewHome()
-	//h.test()
+	home := NewHome()
+	home.test()
 	Beta()
 }
 `
