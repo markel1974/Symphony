@@ -113,8 +113,6 @@ func (s *SymbolTable) Define(name string, scope SymbolScope) *Symbol {
 
 // DefineBuiltin adds a built-in symbol to the symbol table with the specified name and index, returning the new symbol.
 func (s *SymbolTable) DefineBuiltin(name string, index int) {
-	fmt.Println("[WARNING] BULTING DISABLED", name)
-	return
 	symbol := NewSymbol(name, index, BuiltinScope)
 	s.container[name] = symbol
 }

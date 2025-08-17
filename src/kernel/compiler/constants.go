@@ -51,10 +51,7 @@ func (c *Constants) AddOrGet(id string, obj objects.IObject) int {
 // It returns the index and true if found, otherwise 0 and false.
 func (c *Constants) Get(id string) (int, bool) {
 	index, ok := c.cache[id]
-	if ok {
-		return 0, false
-	}
-	return index, true
+	return index, ok
 }
 
 // SetIndex updates an object at a specific index.
