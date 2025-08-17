@@ -332,11 +332,31 @@ func (c *Compiler) doAssignStmt(node *ast.AssignStmt) error {
 		}
 		return nil
 	}
+
 	//single assignment
 	if err := c.compile(node.Rhs[0]); err != nil {
 		return err
 	}
-	var assignedTypeNames []string
+	//inferenza del tipo
+	var assignedTypeName []string
+	if compLit, ok := node.Rhs[0].(*ast.CompositeLit); ok {
+		if ident, ok := compLit.Type.(*ast.Ident); ok {
+			typeSymbol, ok := c.scopes.SymbolResolve(ident.Name)
+			if ok && typeSymbol.Scope == TypeScope {
+				assignedTypeName = []string{typeSymbol.Name}
+			}
+		}
+	}
+	if callExpr, ok := node.Rhs[0].(*ast.CallExpr); ok {
+		if ident, isIdent := callExpr.Fun.(*ast.Ident); isIdent {
+			if funcSymbol, ok := c.scopes.SymbolResolve(ident.Name); ok {
+				if len(funcSymbol.Types()) > 0 {
+					assignedTypeName = []string{funcSymbol.Types()[0]}
+				}
+			}
+		}
+	}
+
 	switch lhs := node.Lhs[0].(type) {
 	case *ast.Ident:
 		name := lhs.Name
@@ -350,15 +370,19 @@ func (c *Compiler) doAssignStmt(node *ast.AssignStmt) error {
 				return fmt.Errorf("undefined variable: %s", name)
 			}
 		}
-		if len(assignedTypeNames) > 0 {
-			symbol.SetTypes(assignedTypeNames)
+		// Aggiorna il tipo del simbolo in entrambi i casi (:= e =)
+		if len(assignedTypeName) > 0 {
+			symbol.SetTypes(assignedTypeName)
 		}
 		if err := c.scopes.EmitSymbolSet(symbol); err != nil {
 			return err
 		}
+		// L'OpPop è necessario solo per le assegnazioni a variabili semplici,
+		// perché OpSetLocal/Global non puliscono lo stack.
 		if _, err := c.scopes.Emit(bytecode.OpPop); err != nil {
 			return err
 		}
+		return nil
 	case *ast.SelectorExpr:
 		if node.Tok == token.DEFINE {
 			return fmt.Errorf("cannot define a field with :=")
@@ -385,11 +409,10 @@ func (c *Compiler) doAssignStmt(node *ast.AssignStmt) error {
 				return err
 			}
 		}
+		return nil
 	default:
 		return fmt.Errorf("unsupported left-hand side in assignment: %T", node.Lhs[0])
 	}
-
-	return nil
 }
 
 // doCallExpr compiles a call expression node into bytecode, handling method calls, package functions, or standalone functions.
@@ -426,7 +449,6 @@ func (c *Compiler) doCallExpr(node *ast.CallExpr) error {
 			if !ok {
 				return fmt.Errorf("undefined type: %s", structTypeName)
 			}
-
 			methodName := selExpr.Sel.Name
 			fnName = GetMangledName(typeSymbol.Name, methodName)
 			fnIndex, ok = c.scopes.ConstantsGet(fnName)
