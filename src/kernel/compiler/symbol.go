@@ -5,23 +5,43 @@ import (
 	"go/ast"
 )
 
-// FieldDef represents a definition of a field within a struct, including its name, type, and associated AST node.
+// FieldDef represents a definition of a field with a name, type, and associated AST node.
 type FieldDef struct {
-	Name string
+	name string
 	kind string
-	Node ast.Node
+	node ast.Node
 }
 
-// NewFieldDef creates and returns a new FieldDef instance with the specified name, kind, and associated AST node.
+// NewFieldDef creates and returns a new instance of FieldDef with the specified name, type kind, and associated AST node.
 func NewFieldDef(name string, kind string, node ast.Node) *FieldDef {
 	return &FieldDef{
-		Name: name,
+		name: name,
 		kind: kind,
-		Node: node,
+		node: node,
 	}
 }
 
-// Symbol represents a named entity within a specific scope of a program, such as a variable, function, or type.
+// Name returns the name of the field defined in FieldDef.
+func (f *FieldDef) Name() string {
+	return f.name
+}
+
+// Type returns the kind of the field as a string.
+func (f *FieldDef) Type() string {
+	return f.kind
+}
+
+// Node returns the associated AST node for the FieldDef instance.
+func (f *FieldDef) Node() ast.Node {
+	return f.node
+}
+
+// SetNode assigns the provided AST node to the FieldDef. It updates the internal `node` field with the given value.
+func (f *FieldDef) SetNode(node ast.Node) {
+	f.node = node
+}
+
+// Symbol represents a named entity with a specific scope, type, index, and optional metadata like fields or kind.
 type Symbol struct {
 	Name   string
 	Scope  SymbolScope
@@ -31,7 +51,7 @@ type Symbol struct {
 	kind   string
 }
 
-// NewSymbol creates and returns a new Symbol with the provided name, index, and scope, initializing its Fields as an empty slice.
+// NewSymbol constructs and returns a new Symbol with the given name, index, and scope, initializing its fields as empty.
 func NewSymbol(name string, index int, scope SymbolScope) *Symbol {
 	symbol := &Symbol{
 		Name:   name,
@@ -42,7 +62,7 @@ func NewSymbol(name string, index int, scope SymbolScope) *Symbol {
 	return symbol
 }
 
-// SetType assigns a type to the Symbol if it doesn't already have one, otherwise logs the existing type without updating.
+// SetType assigns a type to the Symbol, emitting a warning if the Symbol already has a type.
 func (s *Symbol) SetType(t string) {
 	if s.kind != "" {
 		fmt.Println("Symbol already has a type:", s.kind)
@@ -50,7 +70,7 @@ func (s *Symbol) SetType(t string) {
 	s.kind = t
 }
 
-// Type returns the type of the Symbol as a string.
+// Type returns the type of the symbol as a string.
 func (s *Symbol) Type() string {
 	return s.kind
 }

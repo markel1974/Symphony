@@ -158,54 +158,37 @@ func (c *Compiler) doFile(node *ast.File) error {
 
 	// Step 4: Pre-define all functions AND methods, including their return types.
 	funcIndexes := make(map[string]int)
+
 	for _, fn := range funcDecls {
-		var symbol *Symbol = nil
-		if fn.Recv != nil && len(fn.Recv.List) > 0 {
-			// Method Pre-definition
+		var fnSymbol *Symbol = nil
+		fnName := ""
+		if fn.Recv != nil && len(fn.Recv.List) > 0 { // Method
 			recvTypeIdent := GetIdent(fn.Recv.List[0])
 			if recvTypeIdent == nil {
 				return fmt.Errorf("unsupported method receiver type")
 			}
-			typeName := recvTypeIdent.Name
-			methodName := fn.Name.Name
-			mangledName := GetMangledName(typeName, methodName)
-
-			var ok bool
-			symbol, ok = c.scopes.SymbolResolve(typeName)
+			fnName = GetMangledName(recvTypeIdent.Name, fn.Name.Name)
+			symbol, ok := c.scopes.SymbolResolve(recvTypeIdent.Name)
 			if !ok || symbol.Scope != TypeScope {
-				return fmt.Errorf("unknown type '%s' for method receiver", typeName)
+				return fmt.Errorf("unknown type '%s' for method receiver", recvTypeIdent.Name)
 			}
-
-			placeholder := objects.NewFunctionCompiled(mangledName, nil, 0, 0, false, nil, nil)
-			fnIndex := c.scopes.ConstantsAdd(mangledName, placeholder)
-			funcIndexes[mangledName] = fnIndex
-		} else {
-			// Function Pre-definition
-			funcName := fn.Name.Name
-			symbol = c.scopes.SymbolDefine(funcName, UnknownScope)
-
-			placeholder := objects.NewFunctionCompiled(funcName, nil, 0, 0, false, nil, nil)
-			fnIndex := c.scopes.ConstantsAdd(funcName, placeholder)
-			funcIndexes[funcName] = fnIndex
+			fnSymbol = symbol
+		} else { // Function
+			fnName = fn.Name.Name
+			fnSymbol = c.scopes.SymbolDefine(fnName, UnknownScope)
 		}
-		if symbol == nil {
+		if fnSymbol == nil {
 			return fmt.Errorf("unknown function '%s'", fn.Name.Name)
 		}
-		// Analizza e salva il tipo di ritorno ORA, nel passo di pre-definizione.
-		if fn.Type.Results != nil && len(fn.Type.Results.List) > 0 {
-			switch v := fn.Type.Results.List[0].Type.(type) {
-			case *ast.Ident:
-				symbol.SetType(v.Name)
-			case *ast.StarExpr:
-				if ident, ok := v.X.(*ast.Ident); ok {
-					symbol.SetType(ident.Name)
-				} else {
-					// Questo caso gestirebbe tipi più complessi come '*[]Home'
-					return fmt.Errorf("unsupported pointer return type: *%T", v.X)
-				}
-			default:
-				return fmt.Errorf("unsupported return type %T", fn.Type.Results.List[0].Type)
-			}
+		// Function Pre-definition
+		placeholder := objects.NewFunctionCompiled(fnName, nil, 0, 0, false, nil, nil)
+		funcIndexes[fnName] = c.scopes.ConstantsAdd(fnName, placeholder)
+		receiverName, err := GetReceiver(fn.Type.Results)
+		if err != nil {
+			return err
+		}
+		if len(receiverName) > 0 {
+			fnSymbol.SetType(receiverName)
 		}
 	}
 	// Step 5: Compile all other non-function code
@@ -538,7 +521,7 @@ func (c *Compiler) doCompositeLit(node *ast.CompositeLit) error {
 			return fmt.Errorf("too many values in positional struct literal for type '%s'", symbol.Name)
 		}
 		for idx := range symbol.Fields {
-			symbol.Fields[idx].Node = nil
+			symbol.Fields[idx].SetNode(nil)
 		}
 		isKeyed := false
 		if len(node.Elts) > 0 {
@@ -561,20 +544,20 @@ func (c *Compiler) doCompositeLit(node *ast.CompositeLit) error {
 				providedFields[keyIdent.Name] = kvExpr.Value
 			}
 			for idx, _ := range symbol.Fields {
-				if valueExpr, ok := providedFields[symbol.Fields[idx].Name]; ok {
-					symbol.Fields[idx].Node = valueExpr
+				if valueExpr, ok := providedFields[symbol.Fields[idx].Name()]; ok {
+					symbol.Fields[idx].SetNode(valueExpr)
 				}
 			}
 		} else {
 			// --- CASO 2: Literal posizionale (es. Home{"Alfa", 20, "Shanghai"}) ---
 			for i, elt := range node.Elts {
-				symbol.Fields[i].Node = elt
+				symbol.Fields[i].SetNode(elt)
 			}
 		}
 
 		for idx := range symbol.Fields {
-			fieldName := symbol.Fields[idx].Name
-			fieldNode := symbol.Fields[idx].Node
+			fieldName := symbol.Fields[idx].Name()
+			fieldNode := symbol.Fields[idx].Node()
 			keyConst := c.scopes.ConstantsAddOrGet(objects.NewStringNoSize(fieldName))
 			if _, err := c.scopes.Emit(bytecode.OpConstant, keyConst); err != nil {
 				return err
@@ -673,16 +656,16 @@ func (c *Compiler) doIfStmt(node *ast.IfStmt) error {
 	if err := c.compile(node.Cond); err != nil {
 		return err
 	}
-	// Emit conditional jump with temporary address
+	// emit conditional jump with temporary address
 	jumpNotTruthyPos, err := c.scopes.Emit(bytecode.OpJumpFalsy, 9999)
 	if err != nil {
 		return err
 	}
-	// Compile 'then' block
+	// compile 'then' block
 	if err = c.compile(node.Body); err != nil {
 		return err
 	}
-	// If there's an 'else' block, emit jump to skip it
+	// if there's an 'else' block, emit jump to skip it
 	jumpToEndPos := 0
 	if node.Else != nil {
 		jumpToEndPos, err = c.scopes.Emit(bytecode.OpJump, 9999)
@@ -694,11 +677,11 @@ func (c *Compiler) doIfStmt(node *ast.IfStmt) error {
 	if err != nil {
 		return err
 	}
-	// Update conditional jump address
+	// update conditional jump address
 	if err = c.scopes.ChangeOperand(jumpNotTruthyPos, scope.InstructionsLen()); err != nil {
 		return err
 	}
-	// Compile 'else' block if it exists
+	// compile 'else' block if it exists
 	if node.Else != nil {
 		if err = c.compile(node.Else); err != nil {
 			return err
@@ -707,7 +690,7 @@ func (c *Compiler) doIfStmt(node *ast.IfStmt) error {
 		if err != nil {
 			return err
 		}
-		// Update jump address to skip else
+		// update jump address to skip else
 		if err = c.scopes.ChangeOperand(jumpToEndPos, scope.InstructionsLen()); err != nil {
 			return err
 		}
@@ -728,7 +711,7 @@ func (c *Compiler) doIncDecStmt(node *ast.IncDecStmt) error {
 	if err := c.scopes.EmitSymbolGet(symbol); err != nil {
 		return err
 	}
-	// 3. Aggiunge la costante '1' allo stack
+	// aggiunge la costante '1' allo stack
 	constIndex := c.scopes.ConstantsAdd("", objects.NewInt(1))
 	if _, err := c.scopes.Emit(bytecode.OpConstant, constIndex); err != nil {
 		return err
@@ -747,7 +730,7 @@ func (c *Compiler) doIncDecStmt(node *ast.IncDecStmt) error {
 	if err := c.scopes.EmitSymbolSet(symbol); err != nil {
 		return err
 	}
-	// L'operazione di incremento/decremento lascia il risultato sullo stack. Dato che è un'istruzione, dobbiamo pulire questo valore.
+	// l'operazione di incremento/decremento lascia il risultato sullo stack. Dato che è un'istruzione, dobbiamo pulire questo valore.
 	if _, err := c.scopes.Emit(bytecode.OpPop); err != nil {
 		return err
 	}
@@ -923,12 +906,12 @@ func (c *Compiler) doUnaryExpr(node *ast.UnaryExpr) error {
 	if node.Op == token.AND {
 		switch operand := node.X.(type) {
 		case *ast.Ident:
-			// CASO 1: Prendere l'indirizzo di una variabile esistente (es. '&h').
+			// prendere l'indirizzo di una variabile esistente (es. '&h').
 			symbol, ok := c.scopes.SymbolResolve(operand.Name)
 			if !ok {
 				return fmt.Errorf("undefined variable: %s", operand.Name)
 			}
-			// Emetti l'opcode corretto in base allo scope.
+			// emettere l'opcode corretto in base allo scope.
 			switch symbol.Scope {
 			case LocalScope:
 				if _, err := c.scopes.Emit(bytecode.OpGetLocalPtr, symbol.Index); err != nil {
@@ -958,7 +941,6 @@ func (c *Compiler) doUnaryExpr(node *ast.UnaryExpr) error {
 			if _, err := c.scopes.Emit(bytecode.OpGetLocalPtr, tempSymbol.Index); err != nil {
 				return err
 			}
-
 		default:
 			return fmt.Errorf("cannot take the address of %T", node.X)
 		}
