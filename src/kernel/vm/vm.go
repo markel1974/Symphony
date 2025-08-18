@@ -2,6 +2,7 @@ package vm
 
 import (
 	"fmt"
+	"io"
 	"log"
 
 	"github.com/markel1974/c64emu/src/kernel/vm/bytecode"
@@ -95,6 +96,11 @@ func NewVM(loader bytecode.ILoader, sequencer ISequencer, bc *bytecode.Bytecode,
 // Shutdown gracefully shuts down the virtual machine by setting its internal state to signify termination.
 func (v *VM) Shutdown() {
 	v.shutdown = true
+}
+
+// Print prints the current state of the virtual machine's stack to the console.'
+func (v *VM) Print(writer io.Writer) {
+	v.stack.Print(writer)
 }
 
 // Reset reinitializes the virtual machine's state, clears the stack and frames, and resets execution-related variables.

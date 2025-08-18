@@ -2,6 +2,7 @@ package vm
 
 import (
 	"fmt"
+	"io"
 
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
@@ -198,8 +199,10 @@ func (v *Stack) PeekArrayObject(numArgs int) []objects.IObject {
 }
 
 // Print outputs each element in the stack from the bottom to the current stack pointer.
-func (v *Stack) Print() {
+func (v *Stack) Print(writer io.Writer) {
+	_, _ = fmt.Fprintln(writer, "------------- Stack -------------")
 	for x := 0; x < v.sp; x++ {
-		fmt.Printf("%v\n", v.stack[x])
+		_, _ = fmt.Fprintf(writer, "%v\n", v.stack[x])
 	}
+	_, _ = fmt.Fprintln(writer, "--------------------------------")
 }

@@ -7,6 +7,7 @@ import (
 	"go/parser"
 	"go/printer"
 	"go/token"
+	"io"
 	"strings"
 
 	"github.com/markel1974/c64emu/src/kernel/compiler/sdk"
@@ -52,8 +53,13 @@ func (c *Compiler) Compile(filename string, source any) (*bytecode.Bytecode, err
 	if err = c.compile(astFile); err != nil {
 		return nil, err
 	}
-	c.scopes.Print()
+
 	return c.bytecode()
+}
+
+// Print writes the content of the internal scopes to the provided writer, typically for debugging or inspection.
+func (c *Compiler) Print(writer io.Writer) {
+	c.scopes.Print(writer)
 }
 
 // compile traverses the provided AST node and compiles it into bytecode, handling various node types in a switch block.

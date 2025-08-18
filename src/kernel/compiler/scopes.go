@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"go/ast"
 	"go/token"
+	"io"
 	"strconv"
 
 	"github.com/markel1974/c64emu/src/kernel/vm/bytecode"
@@ -323,65 +324,35 @@ func (c *Scopes) EmitSymbolGet(s *Symbol) error {
 
 // EmitBinaryOp compiles a binary operation by emitting the corresponding bytecode based on the provided token operator.
 func (c *Scopes) EmitBinaryOp(op token.Token) error {
-	switch op {
-	case token.ADD:
-		if _, err := c.Emit(bytecode.OpBinary, int(objects.OperatorAdd)); err != nil {
-			return err
-		}
-	case token.SUB:
-		if _, err := c.Emit(bytecode.OpBinary, int(objects.OperatorSub)); err != nil {
-			return err
-		}
-	case token.MUL:
-		if _, err := c.Emit(bytecode.OpBinary, int(objects.OperatorMul)); err != nil {
-			return err
-		}
-	case token.QUO:
-		if _, err := c.Emit(bytecode.OpBinary, int(objects.OperatorQuo)); err != nil {
-			return err
-		}
-	case token.EQL:
-		if _, err := c.Emit(bytecode.OpEqual); err != nil {
-			return err
-		}
-	case token.LSS:
-		if _, err := c.Emit(bytecode.OpBinary, int(objects.OperatorLess)); err != nil {
-			return err
-		}
-	case token.GTR:
-		if _, err := c.Emit(bytecode.OpBinary, int(objects.OperatorGreater)); err != nil {
-			return err
-		}
-	default:
+	z, ok := BinaryAdapterFor(op)
+	if !ok {
 		return fmt.Errorf("unhandled binary op: %s", op)
+	}
+	if _, err := c.Emit(z.op, z.arguments...); err != nil {
+		return err
 	}
 	return nil
 }
 
 // EmitUnaryOp compiles unary operations by emitting the corresponding bytecode for the given operator.
 func (c *Scopes) EmitUnaryOp(op token.Token) error {
-	switch op {
-	case token.SUB:
-		if _, err := c.Emit(bytecode.OpMinus); err != nil {
-			return err
-		}
-	case token.NOT: // !
-		if _, err := c.Emit(bytecode.OpLNot); err != nil {
-			return err
-		}
-	default:
+	z, ok := UnaryAdapterFor(op)
+	if !ok {
 		return fmt.Errorf("unhandled unary op: %s", op)
+	}
+	if _, err := c.Emit(z.op, z.arguments...); err != nil {
+		return err
 	}
 	return nil
 }
 
 // Print prints the contents of the Scopes structure to the console.
-func (c *Scopes) Print() {
-	fmt.Println("----- Constants -----")
-	c.constants.Print()
-	fmt.Println("----- References -----")
-	c.references.Print()
-	fmt.Println("----- Symbols -----")
-	c.symbolTable.Print()
-	fmt.Println("--------------------")
+func (c *Scopes) Print(writer io.Writer) {
+	_, _ = fmt.Fprintf(writer, "----- Constants -----")
+	c.constants.Print(writer)
+	_, _ = fmt.Fprintf(writer, "----- References -----")
+	c.references.Print(writer)
+	_, _ = fmt.Fprintf(writer, "----- Symbols -----")
+	c.symbolTable.Print(writer)
+	_, _ = fmt.Fprintf(writer, "--------------------")
 }

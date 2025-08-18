@@ -2,6 +2,7 @@ package compiler
 
 import (
 	"fmt"
+	"io"
 	"strconv"
 
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
@@ -59,15 +60,15 @@ func NewEnclosedSymbolTable(outer *SymbolTable, obj string) *SymbolTable {
 }
 
 // Print displays the symbols stored in the SymbolTable, excluding those with the "BUILTIN" scope.
-func (s *SymbolTable) Print() {
+func (s *SymbolTable) Print(writer io.Writer) {
 	if s.outer != nil {
-		s.outer.Print()
+		s.outer.Print(writer)
 	}
 	for k, v := range s.symbols {
-		fmt.Println(k, v.Name, v.Scope, v.Index, v.Fields)
+		_, _ = fmt.Fprintf(writer, "%s %s %v %d %v", k, v.Name, v.Scope, v.Index, v.Fields)
 	}
-	for _, v := range s.freeSymbols {
-		fmt.Println(v.Name, v.Scope, v.Index, v.Fields)
+	for idx, v := range s.freeSymbols {
+		_, _ = fmt.Fprintf(writer, "%d %s %v %d %v", idx, v.Name, v.Scope, v.Index, v.Fields)
 	}
 }
 

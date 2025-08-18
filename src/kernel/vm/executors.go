@@ -2,7 +2,6 @@ package vm
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/markel1974/c64emu/src/kernel/vm/bytecode"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
@@ -95,9 +94,9 @@ func NewOpEqual() *OpEqual {
 func (op *OpEqual) Execute(v *VM) {
 	right := v.stack.Pop()
 	left := v.stack.Pop()
-	val := objects.FalseValue
+	val := objects.TrueValue
 	if left.Equals(right) {
-		val = objects.TrueValue
+		val = objects.FalseValue
 	}
 	v.stack.Push(val)
 }
@@ -117,9 +116,9 @@ func NewOpNotEqual() *OpNotEqual {
 func (op *OpNotEqual) Execute(v *VM) {
 	right := v.stack.Pop()
 	left := v.stack.Pop()
-	val := objects.TrueValue
+	val := objects.FalseValue
 	if left.Equals(right) {
-		val = objects.FalseValue
+		val = objects.TrueValue
 	}
 	v.stack.Push(val)
 }
@@ -688,9 +687,6 @@ func (op *OpReturn) Execute(v *VM) {
 			}
 		}
 	} else {
-		log.Println("returning from the root frame")
-		log.Println("stack:")
-		v.stack.Print()
 		v.Shutdown()
 	}
 }

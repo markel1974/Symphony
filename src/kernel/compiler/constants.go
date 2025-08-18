@@ -2,6 +2,7 @@ package compiler
 
 import (
 	"fmt"
+	"io"
 
 	"github.com/markel1974/c64emu/src/kernel/vm/bytecode"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
@@ -32,9 +33,10 @@ func NewConstants(loader bytecode.ILoader) *Constants {
 	return c
 }
 
-func (c *Constants) Print() {
+// Print prints the constants to the provided writer.
+func (c *Constants) Print(writer io.Writer) {
 	for idx, v := range c.constants {
-		fmt.Println(idx, v.String())
+		_, _ = fmt.Fprintf(writer, "%d => %s", idx, v.String())
 	}
 }
 

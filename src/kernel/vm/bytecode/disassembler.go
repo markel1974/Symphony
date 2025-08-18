@@ -2,7 +2,7 @@ package bytecode
 
 import (
 	"fmt"
-	"log"
+	"io"
 	"reflect"
 
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
@@ -21,16 +21,16 @@ func NewDisassembler(b *Bytecode) *Disassembler {
 }
 
 // Disassemble parses and logs details of objects, constants, and references within the associated bytecode.
-func (d *Disassembler) Disassemble() {
-	log.Println("--- Object Count ---")
-	log.Println(d.CountObjects())
-	log.Println("--- Constants ---")
+func (d *Disassembler) Disassemble(writer io.Writer) {
+	_, _ = fmt.Fprintf(writer, "--- Object Count ---")
+	_, _ = fmt.Fprintf(writer, "%d", d.CountObjects())
+	_, _ = fmt.Fprintf(writer, "--- Constants ---")
 	for idx, v := range d.disassembleConstants() {
-		log.Printf("%04d => %s\n", idx, v)
+		_, _ = fmt.Fprintf(writer, "%04d => %s\n", idx, v)
 	}
-	log.Println("--- References ---")
+	_, _ = fmt.Fprintf(writer, "--- References ---")
 	for idx, v := range d.disassembleReferences() {
-		log.Printf("%04d => %s\n", idx, v)
+		_, _ = fmt.Fprintf(writer, "%04d => %s\n", idx, v)
 	}
 }
 
