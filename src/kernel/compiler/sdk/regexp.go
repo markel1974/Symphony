@@ -17,27 +17,21 @@ const (
 
 // Regexp represents a structure providing regular expression functionality through associated operations and methods.
 type Regexp struct {
-	*Module
+	*Package
 }
 
 // NewRegexp creates and returns a new instance of the Regexp struct with initialized module functions.
 func NewRegexp() *Regexp {
-	r := &Regexp{
-		Module: NewModule(),
+	r := &Regexp{}
+	container := []*objects.FuncPackage{
+		objects.NewFuncPackage(objects.FuncPackageDef, "Match", r.Match),
+		objects.NewFuncPackage(objects.FuncPackageDef, "Find", r.Find),
+		objects.NewFuncPackage(objects.FuncPackageDef, "Replace", r.Replace),
+		objects.NewFuncPackage(objects.FuncPackageDef, "Split", r.Split),
+		objects.NewFuncPackage(objects.FuncPackageDef, "Compile", r.Compile),
 	}
-	r.attrs = map[string]objects.IObject{
-		"Match":   objects.NewFunctionModule(objects.FunctionModuleDef, "Match", r.Match),
-		"Find":    objects.NewFunctionModule(objects.FunctionModuleDef, "Find", r.Find),
-		"Replace": objects.NewFunctionModule(objects.FunctionModuleDef, "Replace", r.Replace),
-		"Split":   objects.NewFunctionModule(objects.FunctionModuleDef, "Split", r.Split),
-		"Compile": objects.NewFunctionModule(objects.FunctionModuleDef, "Compile", r.Compile),
-	}
+	r.Package = NewPackage("regexp", container, nil)
 	return r
-}
-
-// Name returns the name of Regexp module.
-func (r *Regexp) Name() string {
-	return "regexp"
 }
 
 // Match checks whether the second string argument matches the pattern defined by the first string argument.
@@ -208,15 +202,15 @@ func (r *Regexp) CompileOptions(re *regexp.Regexp) *objects.MapImmutable {
 	return objects.NewMapImmutable(
 		map[string]objects.IObject{
 			// match(text) => bool
-			"Match": objects.NewFunctionModule(objects.FunctionModuleDef, "Match", func(args ...objects.IObject) (objects.IObject, error) { return r.CompileOptionMatch(re, args...) }),
+			"Match": objects.NewFuncPackage(objects.FuncPackageDef, "Match", func(args ...objects.IObject) (objects.IObject, error) { return r.CompileOptionMatch(re, args...) }),
 			// find(text) 			=> array(array({text:,begin:,end:}))/undefined
 			// find(text, maxCount) => array(array({text:,begin:,end:}))/undefined
-			"Find": objects.NewFunctionModule(objects.FunctionModuleDef, "Find", func(args ...objects.IObject) (objects.IObject, error) { return r.CompileOptionFind(re, args...) }),
+			"Find": objects.NewFuncPackage(objects.FuncPackageDef, "Find", func(args ...objects.IObject) (objects.IObject, error) { return r.CompileOptionFind(re, args...) }),
 			// replace(src, repl) => string
-			"Replace": objects.NewFunctionModule(objects.FunctionModuleDef, "Replace", func(args ...objects.IObject) (objects.IObject, error) { return r.CompileOptionReplace(re, args...) }),
+			"Replace": objects.NewFuncPackage(objects.FuncPackageDef, "Replace", func(args ...objects.IObject) (objects.IObject, error) { return r.CompileOptionReplace(re, args...) }),
 			// split(text) 			 => array(string)
 			// split(text, maxCount) => array(string)
-			"Split": objects.NewFunctionModule(objects.FunctionModuleDef, "Split", func(args ...objects.IObject) (objects.IObject, error) { return r.CompileOptionSplit(re, args...) }),
+			"Split": objects.NewFuncPackage(objects.FuncPackageDef, "Split", func(args ...objects.IObject) (objects.IObject, error) { return r.CompileOptionSplit(re, args...) }),
 		},
 	)
 }

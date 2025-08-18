@@ -8,28 +8,22 @@ import (
 
 // Fmt represents a struct that provides formatted output methods using a map of predefined functions.
 type Fmt struct {
-	*Module
+	*Package
 }
 
 // NewFmt initializes and returns a new Fmt instance with predefined formatting functions as module properties.
 func NewFmt() *Fmt {
-	f := &Fmt{
-		Module: NewModule(),
+	f := &Fmt{}
+	container := []*objects.FuncPackage{
+		objects.NewFuncPackage(objects.FuncPackageDef, "Print", f.Print),
+		objects.NewFuncPackage(objects.FuncPackageDef, "Printf", f.Printf),
+		objects.NewFuncPackage(objects.FuncPackageDef, "Println", f.Println),
+		objects.NewFuncPackage(objects.FuncPackageDef, "Sprintf", f.Sprint),
+		objects.NewFuncPackage(objects.FuncPackageDef, "Sprintf", f.Sprintf),
+		objects.NewFuncPackage(objects.FuncPackageDef, "Errorf", f.Errorf),
 	}
-	f.attrs = map[string]objects.IObject{
-		"Print":   objects.NewFunctionModule(objects.FunctionModuleDef, "Print", f.Print),
-		"Printf":  objects.NewFunctionModule(objects.FunctionModuleDef, "Printf", f.Printf),
-		"Println": objects.NewFunctionModule(objects.FunctionModuleDef, "Println", f.Println),
-		"Sprint":  objects.NewFunctionModule(objects.FunctionModuleDef, "Sprintf", f.Sprint),
-		"Sprintf": objects.NewFunctionModule(objects.FunctionModuleDef, "Sprintf", f.Sprintf),
-		"Errorf":  objects.NewFunctionModule(objects.FunctionModuleDef, "Errorf", f.Errorf),
-	}
+	f.Package = NewPackage("fmt", container, nil)
 	return f
-}
-
-// Name returns the name of Fmt module.
-func (f *Fmt) Name() string {
-	return "fmt"
 }
 
 // Print writes the string representations of the provided arguments to the standard output without appending a newline.

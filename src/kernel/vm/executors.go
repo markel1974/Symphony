@@ -596,7 +596,7 @@ func (op *OpCall) Execute(v *VM) {
 		}
 	}
 
-	if callee, ok := value.(*objects.FunctionCompiled); ok {
+	if callee, ok := value.(*objects.FuncCompiled); ok {
 		if callee.VarArgs() {
 			v.stack.PushVarArgs(numArgs, callee.NumParameters()-1)
 			numArgs = callee.NumParameters()
@@ -804,7 +804,7 @@ func (op *OpClosure) Execute(v *VM) {
 	constIndex := v.currFrame.Pos(v.ip-1, v.ip-2)
 	numFree := v.currFrame.Get(v.ip)
 	glObj := v.constants.Get(uint(constIndex))
-	fn, ok := glObj.(*objects.FunctionCompiled)
+	fn, ok := glObj.(*objects.FuncCompiled)
 	if !ok {
 		v.SetError(fmt.Errorf("not a function: %s", fn.TypeName()))
 		return

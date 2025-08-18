@@ -8,46 +8,45 @@ import (
 
 // BuiltinFunctions is a structure that encapsulates and provides access to predefined built-in function modules.
 type BuiltinFunctions struct {
-	module []*objects.FunctionModule
+	pkg []*objects.FuncPackage
 }
 
 // NewBuiltinFunctions initializes a new BuiltinFunctions instance with predefined standard functions.
 // It returns a pointer to the newly created BuiltinFunctions object.
 func NewBuiltinFunctions() *BuiltinFunctions {
 	b := &BuiltinFunctions{}
-	b.module = []*objects.FunctionModule{
-		objects.NewFunctionModule(objects.FunctionBuiltinDef, "len", b.Len),
-		objects.NewFunctionModule(objects.FunctionBuiltinDef, "copy", b.Copy),
-		objects.NewFunctionModule(objects.FunctionBuiltinDef, "append", b.Append),
-		objects.NewFunctionModule(objects.FunctionBuiltinDef, "delete", b.Delete),
-		objects.NewFunctionModule(objects.FunctionBuiltinDef, "splice", b.Splice),
-		objects.NewFunctionModule(objects.FunctionBuiltinDef, "format", b.Format),
-		objects.NewFunctionModule(objects.FunctionBuiltinDef, "string", b.String),
-		objects.NewFunctionModule(objects.FunctionBuiltinDef, "int", b.Int),
-		objects.NewFunctionModule(objects.FunctionBuiltinDef, "bool", b.Bool),
-		objects.NewFunctionModule(objects.FunctionBuiltinDef, "float", b.Float),
-		objects.NewFunctionModule(objects.FunctionBuiltinDef, "char", b.Char),
-		objects.NewFunctionModule(objects.FunctionBuiltinDef, "bytes", b.Bytes),
-		objects.NewFunctionModule(objects.FunctionBuiltinDef, "time", b.Time),
-		objects.NewFunctionModule(objects.FunctionBuiltinDef, "type_name", b.TypeName),
-		objects.NewFunctionModule(objects.FunctionBuiltinDef, "is_int", b.IsInt),
-		objects.NewFunctionModule(objects.FunctionBuiltinDef, "is_float", b.IsFloat),
-		objects.NewFunctionModule(objects.FunctionBuiltinDef, "is_string", b.IsString),
-		objects.NewFunctionModule(objects.FunctionBuiltinDef, "is_bool", b.IsBool),
-		objects.NewFunctionModule(objects.FunctionBuiltinDef, "is_char", b.IsChar),
-		objects.NewFunctionModule(objects.FunctionBuiltinDef, "is_bytes", b.IsBytes),
-		objects.NewFunctionModule(objects.FunctionBuiltinDef, "is_array", b.IsArray),
-		objects.NewFunctionModule(objects.FunctionBuiltinDef, "is_immutable_array", b.IsImmutableArray),
-		objects.NewFunctionModule(objects.FunctionBuiltinDef, "is_map", b.IsMap),
-		objects.NewFunctionModule(objects.FunctionBuiltinDef, "is_immutable_map", b.IsImmutableMap),
-		objects.NewFunctionModule(objects.FunctionBuiltinDef, "is_iterable", b.IsIterable),
-		objects.NewFunctionModule(objects.FunctionBuiltinDef, "is_time", b.IsTime),
-		objects.NewFunctionModule(objects.FunctionBuiltinDef, "is_error", b.IsError),
-		objects.NewFunctionModule(objects.FunctionBuiltinDef, "is_undefined", b.IsUndefined),
-		objects.NewFunctionModule(objects.FunctionBuiltinDef, "is_function", b.IsFunction),
-		objects.NewFunctionModule(objects.FunctionBuiltinDef, "is_callable", b.IsCallable),
+	b.pkg = []*objects.FuncPackage{
+		objects.NewFuncPackage(objects.FuncBuiltinDef, "len", b.Len),
+		objects.NewFuncPackage(objects.FuncBuiltinDef, "copy", b.Copy),
+		objects.NewFuncPackage(objects.FuncBuiltinDef, "append", b.Append),
+		objects.NewFuncPackage(objects.FuncBuiltinDef, "delete", b.Delete),
+		objects.NewFuncPackage(objects.FuncBuiltinDef, "splice", b.Splice),
+		objects.NewFuncPackage(objects.FuncBuiltinDef, "format", b.Format),
+		objects.NewFuncPackage(objects.FuncBuiltinDef, "string", b.String),
+		objects.NewFuncPackage(objects.FuncBuiltinDef, "int", b.Int),
+		objects.NewFuncPackage(objects.FuncBuiltinDef, "bool", b.Bool),
+		objects.NewFuncPackage(objects.FuncBuiltinDef, "float", b.Float),
+		objects.NewFuncPackage(objects.FuncBuiltinDef, "char", b.Char),
+		objects.NewFuncPackage(objects.FuncBuiltinDef, "bytes", b.Bytes),
+		objects.NewFuncPackage(objects.FuncBuiltinDef, "time", b.Time),
+		objects.NewFuncPackage(objects.FuncBuiltinDef, "type_name", b.TypeName),
+		objects.NewFuncPackage(objects.FuncBuiltinDef, "is_int", b.IsInt),
+		objects.NewFuncPackage(objects.FuncBuiltinDef, "is_float", b.IsFloat),
+		objects.NewFuncPackage(objects.FuncBuiltinDef, "is_string", b.IsString),
+		objects.NewFuncPackage(objects.FuncBuiltinDef, "is_bool", b.IsBool),
+		objects.NewFuncPackage(objects.FuncBuiltinDef, "is_char", b.IsChar),
+		objects.NewFuncPackage(objects.FuncBuiltinDef, "is_bytes", b.IsBytes),
+		objects.NewFuncPackage(objects.FuncBuiltinDef, "is_array", b.IsArray),
+		objects.NewFuncPackage(objects.FuncBuiltinDef, "is_immutable_array", b.IsImmutableArray),
+		objects.NewFuncPackage(objects.FuncBuiltinDef, "is_map", b.IsMap),
+		objects.NewFuncPackage(objects.FuncBuiltinDef, "is_immutable_map", b.IsImmutableMap),
+		objects.NewFuncPackage(objects.FuncBuiltinDef, "is_iterable", b.IsIterable),
+		objects.NewFuncPackage(objects.FuncBuiltinDef, "is_time", b.IsTime),
+		objects.NewFuncPackage(objects.FuncBuiltinDef, "is_error", b.IsError),
+		objects.NewFuncPackage(objects.FuncBuiltinDef, "is_undefined", b.IsUndefined),
+		objects.NewFuncPackage(objects.FuncBuiltinDef, "is_function", b.IsFunction),
+		objects.NewFuncPackage(objects.FuncBuiltinDef, "is_callable", b.IsCallable),
 	}
-
 	return b
 }
 
@@ -56,9 +55,9 @@ func (h *BuiltinFunctions) Name() string {
 	return "builtin"
 }
 
-// Module returns a slice of pointers to FunctionModule objects representing the built-in function modules.
-func (h *BuiltinFunctions) Module() []*objects.FunctionModule {
-	return h.module
+// Package returns a slice of pointers to FuncPackage objects representing the built-in function modules.
+func (h *BuiltinFunctions) Package() []*objects.FuncPackage {
+	return h.pkg
 }
 
 // TypeName returns the type name of the provided object as a string. It expects a single argument and returns an error if the argument count is invalid.
@@ -219,7 +218,7 @@ func (h *BuiltinFunctions) IsFunction(args ...objects.IObject) (objects.IObject,
 		return nil, objects.ErrWrongNumArguments
 	}
 	switch args[0].(type) {
-	case *objects.FunctionCompiled:
+	case *objects.FuncCompiled:
 		return objects.TrueValue, nil
 	}
 	return objects.FalseValue, nil

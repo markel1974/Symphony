@@ -6,23 +6,17 @@ import (
 
 // Errors is a type that encapsulates a map of module functions accessible as objects.
 type Errors struct {
-	*Module
+	*Package
 }
 
 // NewErrors initializes and returns a new Errors instance with pre-defined function modules.
 func NewErrors() *Errors {
-	e := &Errors{
-		Module: NewModule(),
+	e := &Errors{}
+	container := []*objects.FuncPackage{
+		objects.NewFuncPackage(objects.FuncPackageDef, "New", e.New),
 	}
-	e.attrs = map[string]objects.IObject{
-		"New": objects.NewFunctionModule(objects.FunctionModuleDef, "New", e.New),
-	}
+	e.Package = NewPackage("errors", container, nil)
 	return e
-}
-
-// Name returns the name of the Errors instance.
-func (e *Errors) Name() string {
-	return "errors"
 }
 
 // New creates a new error object from the provided argument, ensuring it is a valid string and returning an error if not.

@@ -10,54 +10,48 @@ import (
 // Strings provides a collection of string operations and functionality wrapped in a module.
 // It includes functions for manipulation, comparison, trimming, padding, splitting, and other string-related utilities.
 type Strings struct {
-	*Module
+	*Package
 }
 
 // NewStrings creates and returns a new instance of Strings with a preconfigured map of string utility functions.
 func NewStrings() *Strings {
-	s := &Strings{
-		Module: NewModule(),
+	s := &Strings{}
+	container := []*objects.FuncPackage{
+		objects.NewFuncPackage(objects.FuncPackageDef, "Compare", objects.FuncIssOi(strings.Compare)),
+		objects.NewFuncPackage(objects.FuncPackageDef, "Contains", objects.FuncIssOb(strings.Contains)),
+		objects.NewFuncPackage(objects.FuncPackageDef, "ContainsAny", objects.FuncIssOb(strings.ContainsAny)),
+		objects.NewFuncPackage(objects.FuncPackageDef, "Count", objects.FuncIssOi(strings.Count)),
+		objects.NewFuncPackage(objects.FuncPackageDef, "EqualFold", objects.FuncIssOb(strings.EqualFold)),
+		objects.NewFuncPackage(objects.FuncPackageDef, "Fields", objects.FuncIsOsS(strings.Fields)),
+		objects.NewFuncPackage(objects.FuncPackageDef, "HasPrefix", objects.FuncIssOb(strings.HasPrefix)),
+		objects.NewFuncPackage(objects.FuncPackageDef, "HasSuffix", objects.FuncIssOb(strings.HasSuffix)),
+		objects.NewFuncPackage(objects.FuncPackageDef, "Index", objects.FuncIssOi(strings.Index)),
+		objects.NewFuncPackage(objects.FuncPackageDef, "IndexAny", objects.FuncIssOi(strings.IndexAny)),
+		objects.NewFuncPackage(objects.FuncPackageDef, "Join", s.Join),
+		objects.NewFuncPackage(objects.FuncPackageDef, "LastIndex", objects.FuncIssOi(strings.LastIndex)),
+		objects.NewFuncPackage(objects.FuncPackageDef, "LastIndexAny", objects.FuncIssOi(strings.LastIndexAny)),
+		objects.NewFuncPackage(objects.FuncPackageDef, "Repeat", s.Repeat),
+		objects.NewFuncPackage(objects.FuncPackageDef, "Replace", s.Replace),
+		objects.NewFuncPackage(objects.FuncPackageDef, "Substring", s.Substring),
+		objects.NewFuncPackage(objects.FuncPackageDef, "Split", objects.FuncIssOsS(strings.Split)),
+		objects.NewFuncPackage(objects.FuncPackageDef, "SplitAfter", objects.FuncIssOsS(strings.SplitAfter)),
+		objects.NewFuncPackage(objects.FuncPackageDef, "SplitAfterN", objects.FuncIssiOsS(strings.SplitAfterN)),
+		objects.NewFuncPackage(objects.FuncPackageDef, "SplitN", objects.FuncIssiOsS(strings.SplitN)),
+		objects.NewFuncPackage(objects.FuncPackageDef, "Title", objects.FuncIsOs(strings.Title)),
+		objects.NewFuncPackage(objects.FuncPackageDef, "ToLower", objects.FuncIsOs(strings.ToLower)),
+		objects.NewFuncPackage(objects.FuncPackageDef, "ToTitle", objects.FuncIsOs(strings.ToTitle)),
+		objects.NewFuncPackage(objects.FuncPackageDef, "ToUpper", objects.FuncIsOs(strings.ToUpper)),
+		objects.NewFuncPackage(objects.FuncPackageDef, "PadLeft", s.PadLeft),
+		objects.NewFuncPackage(objects.FuncPackageDef, "PadRight", s.PadRight),
+		objects.NewFuncPackage(objects.FuncPackageDef, "Trim", objects.FuncIssOs(strings.Trim)),
+		objects.NewFuncPackage(objects.FuncPackageDef, "TrimLeft", objects.FuncIssOs(strings.TrimLeft)),
+		objects.NewFuncPackage(objects.FuncPackageDef, "TrimPrefix", objects.FuncIssOs(strings.TrimPrefix)),
+		objects.NewFuncPackage(objects.FuncPackageDef, "TrimRight", objects.FuncIssOs(strings.TrimRight)),
+		objects.NewFuncPackage(objects.FuncPackageDef, "TrimSpace", objects.FuncIsOs(strings.TrimSpace)),
+		objects.NewFuncPackage(objects.FuncPackageDef, "TrimSuffix", objects.FuncIssOs(strings.TrimSuffix)),
 	}
-	s.attrs = map[string]objects.IObject{
-		"Compare":      objects.NewFunctionModule(objects.FunctionModuleDef, "Compare", objects.FuncIssOi(strings.Compare)),
-		"Contains":     objects.NewFunctionModule(objects.FunctionModuleDef, "Contains", objects.FuncIssOb(strings.Contains)),
-		"ContainsAny":  objects.NewFunctionModule(objects.FunctionModuleDef, "ContainsAny", objects.FuncIssOb(strings.ContainsAny)),
-		"Count":        objects.NewFunctionModule(objects.FunctionModuleDef, "Count", objects.FuncIssOi(strings.Count)),
-		"EqualFold":    objects.NewFunctionModule(objects.FunctionModuleDef, "EqualFold", objects.FuncIssOb(strings.EqualFold)),
-		"Fields":       objects.NewFunctionModule(objects.FunctionModuleDef, "Fields", objects.FuncIsOsS(strings.Fields)),
-		"HasPrefix":    objects.NewFunctionModule(objects.FunctionModuleDef, "HasPrefix", objects.FuncIssOb(strings.HasPrefix)),
-		"HasSuffix":    objects.NewFunctionModule(objects.FunctionModuleDef, "HasSuffix", objects.FuncIssOb(strings.HasSuffix)),
-		"Index":        objects.NewFunctionModule(objects.FunctionModuleDef, "Index", objects.FuncIssOi(strings.Index)),
-		"IndexAny":     objects.NewFunctionModule(objects.FunctionModuleDef, "IndexAny", objects.FuncIssOi(strings.IndexAny)),
-		"Join":         objects.NewFunctionModule(objects.FunctionModuleDef, "Join", s.Join),
-		"LastIndex":    objects.NewFunctionModule(objects.FunctionModuleDef, "LastIndex", objects.FuncIssOi(strings.LastIndex)),
-		"LastIndexAny": objects.NewFunctionModule(objects.FunctionModuleDef, "LastIndexAny", objects.FuncIssOi(strings.LastIndexAny)),
-		"Repeat":       objects.NewFunctionModule(objects.FunctionModuleDef, "Repeat", s.Repeat),
-		"Replace":      objects.NewFunctionModule(objects.FunctionModuleDef, "Replace", s.Replace),
-		"Substring":    objects.NewFunctionModule(objects.FunctionModuleDef, "Substring", s.Substring),
-		"Split":        objects.NewFunctionModule(objects.FunctionModuleDef, "Split", objects.FuncIssOsS(strings.Split)),
-		"SplitAfter":   objects.NewFunctionModule(objects.FunctionModuleDef, "SplitAfter", objects.FuncIssOsS(strings.SplitAfter)),
-		"SplitAfterN":  objects.NewFunctionModule(objects.FunctionModuleDef, "SplitAfterN", objects.FuncIssiOsS(strings.SplitAfterN)),
-		"SplitN":       objects.NewFunctionModule(objects.FunctionModuleDef, "SplitN", objects.FuncIssiOsS(strings.SplitN)),
-		"Title":        objects.NewFunctionModule(objects.FunctionModuleDef, "Title", objects.FuncIsOs(strings.Title)),
-		"ToLower":      objects.NewFunctionModule(objects.FunctionModuleDef, "ToLower", objects.FuncIsOs(strings.ToLower)),
-		"ToTitle":      objects.NewFunctionModule(objects.FunctionModuleDef, "ToTitle", objects.FuncIsOs(strings.ToTitle)),
-		"ToUpper":      objects.NewFunctionModule(objects.FunctionModuleDef, "ToUpper", objects.FuncIsOs(strings.ToUpper)),
-		"PadLeft":      objects.NewFunctionModule(objects.FunctionModuleDef, "PadLeft", s.PadLeft),
-		"PadRight":     objects.NewFunctionModule(objects.FunctionModuleDef, "PadRight", s.PadRight),
-		"Trim":         objects.NewFunctionModule(objects.FunctionModuleDef, "Trim", objects.FuncIssOs(strings.Trim)),
-		"TrimLeft":     objects.NewFunctionModule(objects.FunctionModuleDef, "TrimLeft", objects.FuncIssOs(strings.TrimLeft)),
-		"TrimPrefix":   objects.NewFunctionModule(objects.FunctionModuleDef, "TrimPrefix", objects.FuncIssOs(strings.TrimPrefix)),
-		"TrimRight":    objects.NewFunctionModule(objects.FunctionModuleDef, "TrimRight", objects.FuncIssOs(strings.TrimRight)),
-		"TrimSpace":    objects.NewFunctionModule(objects.FunctionModuleDef, "TrimSpace", objects.FuncIsOs(strings.TrimSpace)),
-		"TrimSuffix":   objects.NewFunctionModule(objects.FunctionModuleDef, "TrimSuffix", objects.FuncIssOs(strings.TrimSuffix)),
-	}
+	s.Package = NewPackage("strings", container, nil)
 	return s
-}
-
-// Name returns the name of Strings module.
-func (s *Strings) Name() string {
-	return "strings"
 }
 
 // Replace replaces occurrences of a substring within a string with the specified replacement string up to a given limit.

@@ -7,7 +7,7 @@ import (
 // Frame represents a structure used for maintaining function call frames in a virtual machine execution context.
 // It encapsulates the execution state, free variables, instruction pointer, and base pointer of a function call.
 type Frame struct {
-	compiledFunction *objects.FunctionCompiled
+	compiledFunction *objects.FuncCompiled
 	freeVars         []*objects.ObjectPointer
 	ip               int
 	basePointer      int
@@ -24,7 +24,7 @@ func NewFunctionCallFrame(errSignal func(err error)) *Frame {
 }
 
 // Bind initializes the frame with the given instruction pointer, compiled function, and base pointer values.
-func (f *Frame) Bind(startIp int, compiledFunction *objects.FunctionCompiled, basePointer int) {
+func (f *Frame) Bind(startIp int, compiledFunction *objects.FuncCompiled, basePointer int) {
 	f.ip = startIp
 	f.basePointer = basePointer
 	f.compiledFunction = compiledFunction
@@ -72,8 +72,8 @@ func (f *Frame) SourcePos(ip int) int {
 	return f.compiledFunction.SourcePos(ip)
 }
 
-// SameFunction compares the given FunctionCompiled with the Frame's compiled function and returns true if they are the same.
-func (f *Frame) SameFunction(callee *objects.FunctionCompiled) bool {
+// SameFunction compares the given FuncCompiled with the Frame's compiled function and returns true if they are the same.
+func (f *Frame) SameFunction(callee *objects.FuncCompiled) bool {
 	return f.compiledFunction == callee
 }
 

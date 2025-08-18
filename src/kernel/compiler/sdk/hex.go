@@ -8,22 +8,16 @@ import (
 
 // Hex represents a structure encapsulating a module of named IObject functions, typically for hex operations.
 type Hex struct {
-	*Module
+	*Package
 }
 
 // NewHex initializes and returns a new Hex instance with a predefined module containing encoding and decoding functions.
 func NewHex() *Hex {
-	h := &Hex{
-		Module: NewModule(),
+	h := &Hex{}
+	container := []*objects.FuncPackage{
+		objects.NewFuncPackage(objects.FuncPackageDef, "EncodeToString", objects.FuncIbSOs(hex.EncodeToString)),
+		objects.NewFuncPackage(objects.FuncPackageDef, "DecodeString", objects.FuncIsObSe(hex.DecodeString)),
 	}
-	h.attrs = map[string]objects.IObject{
-		"EncodeToString": objects.NewFunctionModule(objects.FunctionModuleDef, "EncodeToString", objects.FuncIbSOs(hex.EncodeToString)),
-		"DecodeString":   objects.NewFunctionModule(objects.FunctionModuleDef, "DecodeString", objects.FuncIsObSe(hex.DecodeString)),
-	}
+	h.Package = NewPackage("hex", container, nil)
 	return h
-}
-
-// Name returns the name of Hex module.
-func (h *Hex) Name() string {
-	return "hex"
 }

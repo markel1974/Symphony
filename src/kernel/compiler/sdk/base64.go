@@ -8,28 +8,22 @@ import (
 
 // Base64 represents a type that provides a module map for Base64-related encoding and decoding operations.
 type Base64 struct {
-	*Module
+	*Package
 }
 
 // NewBase64 initializes a new Base64 instance with predefined encoding and decoding functions in the module map.
 func NewBase64() *Base64 {
-	b := &Base64{
-		Module: NewModule(),
+	b := &Base64{}
+	container := []*objects.FuncPackage{
+		objects.NewFuncPackage(objects.FuncPackageDef, "EncodeToString", objects.FuncIbSOs(base64.StdEncoding.EncodeToString)),
+		objects.NewFuncPackage(objects.FuncPackageDef, "EncodeToString", objects.FuncIsObSe(base64.StdEncoding.DecodeString)),
+		objects.NewFuncPackage(objects.FuncPackageDef, "RawEncode", objects.FuncIbSOs(base64.RawStdEncoding.EncodeToString)),
+		objects.NewFuncPackage(objects.FuncPackageDef, "RawDecode", objects.FuncIsObSe(base64.RawStdEncoding.DecodeString)),
+		objects.NewFuncPackage(objects.FuncPackageDef, "UrlEncode", objects.FuncIbSOs(base64.URLEncoding.EncodeToString)),
+		objects.NewFuncPackage(objects.FuncPackageDef, "UrlDecode", objects.FuncIsObSe(base64.URLEncoding.DecodeString)),
+		objects.NewFuncPackage(objects.FuncPackageDef, "RawUrlEncode", objects.FuncIbSOs(base64.RawURLEncoding.EncodeToString)),
+		objects.NewFuncPackage(objects.FuncPackageDef, "rawUrlDecode", objects.FuncIsObSe(base64.RawURLEncoding.DecodeString)),
 	}
-	b.attrs = map[string]objects.IObject{
-		"EncodeToString":       objects.NewFunctionModule(objects.FunctionModuleDef, "EncodeToString", objects.FuncIbSOs(base64.StdEncoding.EncodeToString)),
-		"DecodeString":         objects.NewFunctionModule(objects.FunctionModuleDef, "EncodeToString", objects.FuncIsObSe(base64.StdEncoding.DecodeString)),
-		"RawEncodeToString":    objects.NewFunctionModule(objects.FunctionModuleDef, "RawEncode", objects.FuncIbSOs(base64.RawStdEncoding.EncodeToString)),
-		"RawDecodeString":      objects.NewFunctionModule(objects.FunctionModuleDef, "RawDecode", objects.FuncIsObSe(base64.RawStdEncoding.DecodeString)),
-		"UrlEncodeToString":    objects.NewFunctionModule(objects.FunctionModuleDef, "UrlEncode", objects.FuncIbSOs(base64.URLEncoding.EncodeToString)),
-		"UrlDecodeString":      objects.NewFunctionModule(objects.FunctionModuleDef, "UrlDecode", objects.FuncIsObSe(base64.URLEncoding.DecodeString)),
-		"RawUrlEncodeToString": objects.NewFunctionModule(objects.FunctionModuleDef, "RawUrlEncode", objects.FuncIbSOs(base64.RawURLEncoding.EncodeToString)),
-		"rawUrlDecodeStringe":  objects.NewFunctionModule(objects.FunctionModuleDef, "rawUrlDecode", objects.FuncIsObSe(base64.RawURLEncoding.DecodeString)),
-	}
+	b.Package = NewPackage("base64", container, nil)
 	return b
-}
-
-// Name returns the name of the Base64 module.
-func (b *Base64) Name() string {
-	return "base64"
 }

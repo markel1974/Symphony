@@ -98,7 +98,7 @@ func (v *VM) Run(loader bytecode.ILoader, bc *bytecode.Bytecode, mainId string, 
 	if err != nil {
 		return err
 	}
-	var mainFn *objects.FunctionCompiled
+	var mainFn *objects.FuncCompiled
 	constants := make([]objects.IObject, len(bc.Constants()))
 	for idx, constant := range bc.Constants() {
 		constants[idx] = constant
@@ -109,7 +109,7 @@ func (v *VM) Run(loader bytecode.ILoader, bc *bytecode.Bytecode, mainId string, 
 				return fmt.Errorf("builtin symbol not found: %s", c.Name())
 			}
 			constants[idx] = symbol
-		case *objects.FunctionCompiled:
+		case *objects.FuncCompiled:
 			if mainId == c.Name() {
 				mainFn = c
 			}

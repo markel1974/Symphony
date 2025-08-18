@@ -8,91 +8,86 @@ import (
 
 // Time represents a structure that manages a collection of modules implementing the IObject interface.
 type Time struct {
-	*Module
+	*Package
 }
 
 // NewTime initializes and returns a new instance of Time with predefined constants and functions mapped to the module.
 func NewTime() *Time {
-	t := &Time{
-		Module: NewModule(),
+	t := &Time{}
+	constants := map[string]objects.IObject{
+		"ANSIC":       objects.NewStringNoSize(time.ANSIC),
+		"UnixDate":    objects.NewStringNoSize(time.UnixDate),
+		"RubyDate":    objects.NewStringNoSize(time.RubyDate),
+		"RFC822":      objects.NewStringNoSize(time.RFC822),
+		"RFC822Z":     objects.NewStringNoSize(time.RFC822Z),
+		"RFC850":      objects.NewStringNoSize(time.RFC850),
+		"RFC1123":     objects.NewStringNoSize(time.RFC1123),
+		"RFC1123Z":    objects.NewStringNoSize(time.RFC1123Z),
+		"RFC3339":     objects.NewStringNoSize(time.RFC3339),
+		"RFC3339Nano": objects.NewStringNoSize(time.RFC3339Nano),
+		"Kitchen":     objects.NewStringNoSize(time.Kitchen),
+		"Stamp":       objects.NewStringNoSize(time.Stamp),
+		"StampMilli":  objects.NewStringNoSize(time.StampMilli),
+		"StampMicro":  objects.NewStringNoSize(time.StampMicro),
+		"StampNano":   objects.NewStringNoSize(time.StampNano),
+		"Nanosecond":  objects.NewInt(int64(time.Nanosecond)),
+		"Microsecond": objects.NewInt(int64(time.Microsecond)),
+		"Millisecond": objects.NewInt(int64(time.Millisecond)),
+		"Second":      objects.NewInt(int64(time.Second)),
+		"Minute":      objects.NewInt(int64(time.Minute)),
+		"Hour":        objects.NewInt(int64(time.Hour)),
+		"January":     objects.NewInt(int64(time.January)),
+		"February":    objects.NewInt(int64(time.February)),
+		"March":       objects.NewInt(int64(time.March)),
+		"April":       objects.NewInt(int64(time.April)),
+		"May":         objects.NewInt(int64(time.May)),
+		"June":        objects.NewInt(int64(time.June)),
+		"July":        objects.NewInt(int64(time.July)),
+		"August":      objects.NewInt(int64(time.August)),
+		"September":   objects.NewInt(int64(time.September)),
+		"October":     objects.NewInt(int64(time.October)),
+		"November":    objects.NewInt(int64(time.November)),
+		"December":    objects.NewInt(int64(time.December)),
 	}
-	t.attrs = map[string]objects.IObject{
-		"ANSIC":               objects.NewStringNoSize(time.ANSIC),
-		"UnixDate":            objects.NewStringNoSize(time.UnixDate),
-		"RubyDate":            objects.NewStringNoSize(time.RubyDate),
-		"RFC822":              objects.NewStringNoSize(time.RFC822),
-		"RFC822Z":             objects.NewStringNoSize(time.RFC822Z),
-		"RFC850":              objects.NewStringNoSize(time.RFC850),
-		"RFC1123":             objects.NewStringNoSize(time.RFC1123),
-		"RFC1123Z":            objects.NewStringNoSize(time.RFC1123Z),
-		"RFC3339":             objects.NewStringNoSize(time.RFC3339),
-		"RFC3339Nano":         objects.NewStringNoSize(time.RFC3339Nano),
-		"Kitchen":             objects.NewStringNoSize(time.Kitchen),
-		"Stamp":               objects.NewStringNoSize(time.Stamp),
-		"StampMilli":          objects.NewStringNoSize(time.StampMilli),
-		"StampMicro":          objects.NewStringNoSize(time.StampMicro),
-		"StampNano":           objects.NewStringNoSize(time.StampNano),
-		"Nanosecond":          objects.NewInt(int64(time.Nanosecond)),
-		"Microsecond":         objects.NewInt(int64(time.Microsecond)),
-		"Millisecond":         objects.NewInt(int64(time.Millisecond)),
-		"Second":              objects.NewInt(int64(time.Second)),
-		"Minute":              objects.NewInt(int64(time.Minute)),
-		"Hour":                objects.NewInt(int64(time.Hour)),
-		"January":             objects.NewInt(int64(time.January)),
-		"February":            objects.NewInt(int64(time.February)),
-		"March":               objects.NewInt(int64(time.March)),
-		"April":               objects.NewInt(int64(time.April)),
-		"May":                 objects.NewInt(int64(time.May)),
-		"June":                objects.NewInt(int64(time.June)),
-		"July":                objects.NewInt(int64(time.July)),
-		"August":              objects.NewInt(int64(time.August)),
-		"September":           objects.NewInt(int64(time.September)),
-		"October":             objects.NewInt(int64(time.October)),
-		"November":            objects.NewInt(int64(time.November)),
-		"December":            objects.NewInt(int64(time.December)),
-		"Sleep":               objects.NewFunctionModule(objects.FunctionModuleDef, "Sleep", t.Sleep),                             // sleep(int)
-		"ParseDuration":       objects.NewFunctionModule(objects.FunctionModuleDef, "ParseDuration", t.ParseDuration),             // parse_duration(str) => int
-		"Since":               objects.NewFunctionModule(objects.FunctionModuleDef, "Since", t.Since),                             // since(time) => int
-		"Until":               objects.NewFunctionModule(objects.FunctionModuleDef, "Until", t.Until),                             // until(time) => int
-		"DurationHours":       objects.NewFunctionModule(objects.FunctionModuleDef, "DurationHours", t.DurationHours),             // duration_hours(int) => float
-		"DurationMinutes":     objects.NewFunctionModule(objects.FunctionModuleDef, "DurationMinutes", t.DurationMinutes),         // duration_minutes(int) => float
-		"DurationNanoseconds": objects.NewFunctionModule(objects.FunctionModuleDef, "DurationNanoseconds", t.DurationNanoseconds), // duration_nanoseconds(int) => int
-		"DurationSeconds":     objects.NewFunctionModule(objects.FunctionModuleDef, "DurationSeconds", t.DurationSeconds),         // duration_seconds(int) => float
-		"DurationString":      objects.NewFunctionModule(objects.FunctionModuleDef, "DurationString", t.DurationString),           // duration_string(int) => string
-		"MonthString":         objects.NewFunctionModule(objects.FunctionModuleDef, "MonthString", t.MonthString),                 // month_string(int) => string
-		"Date":                objects.NewFunctionModule(objects.FunctionModuleDef, "Date", t.Date),                               // date(year, month, day, hour, min, sec, nsec) => time
-		"Now":                 objects.NewFunctionModule(objects.FunctionModuleDef, "Now", t.Now),                                 // now() => time
-		"Parse":               objects.NewFunctionModule(objects.FunctionModuleDef, "Parse", t.Parse),                             // parse(format, str) => time
-		"Unix":                objects.NewFunctionModule(objects.FunctionModuleDef, "Unix", t.Unix),                               // unix(sec, nsec) => time
-		"Add":                 objects.NewFunctionModule(objects.FunctionModuleDef, "Add", t.Add),                                 // add(time, int) => time
-		"AddDate":             objects.NewFunctionModule(objects.FunctionModuleDef, "AddDate", t.AddDate),                         // add_date(time, years, months, days) => time
-		"Sub":                 objects.NewFunctionModule(objects.FunctionModuleDef, "Sub", t.Sub),                                 // sub(t time, u time) => int
-		"After":               objects.NewFunctionModule(objects.FunctionModuleDef, "After", t.After),                             // after(t time, u time) => bool
-		"Before":              objects.NewFunctionModule(objects.FunctionModuleDef, "Before", t.Before),                           // before(t time, u time) => bool
-		"TimeYear":            objects.NewFunctionModule(objects.FunctionModuleDef, "TimeYear", t.TimeYear),                       // time_year(time) => int
-		"TimeMonth":           objects.NewFunctionModule(objects.FunctionModuleDef, "TimeMonth", t.TimeMonth),                     // time_month(time) => int
-		"TimeDay":             objects.NewFunctionModule(objects.FunctionModuleDef, "TimeDay", t.TimeDay),                         // time_day(time) => int
-		"TimeWeekday":         objects.NewFunctionModule(objects.FunctionModuleDef, "TimeWeekday", t.TimeWeekday),                 // time_weekday(time) => int
-		"TimeHour":            objects.NewFunctionModule(objects.FunctionModuleDef, "TimeHour", t.TimeHour),                       // time_hour(time) => int
-		"TimeMinute":          objects.NewFunctionModule(objects.FunctionModuleDef, "TimeMinute", t.TimeMinute),                   // time_minute(time) => int
-		"TimeSecond":          objects.NewFunctionModule(objects.FunctionModuleDef, "TimeSecond", t.TimeSecond),                   // time_second(time) => int
-		"TimeNanosecond":      objects.NewFunctionModule(objects.FunctionModuleDef, "TimeNanosecond", t.TimeNanosecond),           // time_nanosecond(time) => int
-		"TimeUnix":            objects.NewFunctionModule(objects.FunctionModuleDef, "TimeUnix", t.TimeUnix),                       // time_unix(time) => int
-		"TimeUnixNano":        objects.NewFunctionModule(objects.FunctionModuleDef, "TimeUnixNano", t.TimeUnixNano),               // time_unix_nano(time) => int
-		"TimeFormat":          objects.NewFunctionModule(objects.FunctionModuleDef, "TimeFormat", t.TimeFormat),                   // time_format(time, format) => string
-		"TimeLocation":        objects.NewFunctionModule(objects.FunctionModuleDef, "TimeLocation", t.TimeLocation),               // time_location(time) => string
-		"TimeString":          objects.NewFunctionModule(objects.FunctionModuleDef, "TimeString", t.TimeString),                   // time_string(time) => string
-		"IsZero":              objects.NewFunctionModule(objects.FunctionModuleDef, "is_zero", t.IsZero),                          // is_zero(time) => bool
-		"ToLocal":             objects.NewFunctionModule(objects.FunctionModuleDef, "to_local", t.ToLocal),                        // to_local(time) => time
-		"ToUTC":               objects.NewFunctionModule(objects.FunctionModuleDef, "to_utc", t.ToUTC),                            // to_utc(time) => time
+	container := []*objects.FuncPackage{
+		objects.NewFuncPackage(objects.FuncPackageDef, "Sleep", t.Sleep),
+		objects.NewFuncPackage(objects.FuncPackageDef, "ParseDuration", t.ParseDuration),
+		objects.NewFuncPackage(objects.FuncPackageDef, "Since", t.Since),
+		objects.NewFuncPackage(objects.FuncPackageDef, "Until", t.Until),
+		objects.NewFuncPackage(objects.FuncPackageDef, "DurationHours", t.DurationHours),
+		objects.NewFuncPackage(objects.FuncPackageDef, "DurationMinutes", t.DurationMinutes),
+		objects.NewFuncPackage(objects.FuncPackageDef, "DurationNanoseconds", t.DurationNanoseconds),
+		objects.NewFuncPackage(objects.FuncPackageDef, "DurationSeconds", t.DurationSeconds),
+		objects.NewFuncPackage(objects.FuncPackageDef, "DurationString", t.DurationString),
+		objects.NewFuncPackage(objects.FuncPackageDef, "MonthString", t.MonthString),
+		objects.NewFuncPackage(objects.FuncPackageDef, "Date", t.Date),
+		objects.NewFuncPackage(objects.FuncPackageDef, "Now", t.Now),
+		objects.NewFuncPackage(objects.FuncPackageDef, "Parse", t.Parse),
+		objects.NewFuncPackage(objects.FuncPackageDef, "Unix", t.Unix),
+		objects.NewFuncPackage(objects.FuncPackageDef, "Add", t.Add),
+		objects.NewFuncPackage(objects.FuncPackageDef, "AddDate", t.AddDate),
+		objects.NewFuncPackage(objects.FuncPackageDef, "Sub", t.Sub),
+		objects.NewFuncPackage(objects.FuncPackageDef, "After", t.After),
+		objects.NewFuncPackage(objects.FuncPackageDef, "Before", t.Before),
+		objects.NewFuncPackage(objects.FuncPackageDef, "TimeYear", t.TimeYear),
+		objects.NewFuncPackage(objects.FuncPackageDef, "TimeMonth", t.TimeMonth),
+		objects.NewFuncPackage(objects.FuncPackageDef, "TimeDay", t.TimeDay),
+		objects.NewFuncPackage(objects.FuncPackageDef, "TimeWeekday", t.TimeWeekday),
+		objects.NewFuncPackage(objects.FuncPackageDef, "TimeHour", t.TimeHour),
+		objects.NewFuncPackage(objects.FuncPackageDef, "TimeMinute", t.TimeMinute),
+		objects.NewFuncPackage(objects.FuncPackageDef, "TimeSecond", t.TimeSecond),
+		objects.NewFuncPackage(objects.FuncPackageDef, "TimeNanosecond", t.TimeNanosecond),
+		objects.NewFuncPackage(objects.FuncPackageDef, "TimeUnix", t.TimeUnix),
+		objects.NewFuncPackage(objects.FuncPackageDef, "TimeUnixNano", t.TimeUnixNano),
+		objects.NewFuncPackage(objects.FuncPackageDef, "TimeFormat", t.TimeFormat),
+		objects.NewFuncPackage(objects.FuncPackageDef, "TimeLocation", t.TimeLocation),
+		objects.NewFuncPackage(objects.FuncPackageDef, "TimeString", t.TimeString),
+		objects.NewFuncPackage(objects.FuncPackageDef, "is_zero", t.IsZero),
+		objects.NewFuncPackage(objects.FuncPackageDef, "to_local", t.ToLocal),
+		objects.NewFuncPackage(objects.FuncPackageDef, "to_utc", t.ToUTC),
 	}
-
+	t.Package = NewPackage("time", container, constants)
 	return t
-}
-
-// Name returns the name of Time module.
-func (t *Time) Name() string {
-	return "time"
 }
 
 // Sleep pauses the execution for a specified duration provided as an argument in nanoseconds.

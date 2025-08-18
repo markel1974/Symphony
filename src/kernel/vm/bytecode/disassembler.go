@@ -56,7 +56,7 @@ func (d *Disassembler) disassembleReferences() []string {
 func (d *Disassembler) disassembleObject(cIdx int, constant objects.IObject) []string {
 	var output []string
 	switch cn := constant.(type) {
-	case *objects.FunctionCompiled:
+	case *objects.FuncCompiled:
 		output = append(output, fmt.Sprintf("[% 3d] %s (Compiled Function|%p)", cIdx, cn.Name(), &cn))
 		for _, l := range d.disassembleInstructions(cn.Data(), 0) {
 			output = append(output, fmt.Sprintf("\t\t%s", l))

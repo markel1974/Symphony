@@ -516,7 +516,7 @@ func (t *Process) handleMessageProcessStart(msg interfaces.IMessage) {
 		}
 		if t.loader == nil {
 			t.loader = sdk.NewLoader()
-			t.loader.AddModule("kernel", NewLibrary(t).Module())
+			t.loader.AddPackage("kernel", NewLibrary(t).Package())
 		}
 		if t.vm == nil {
 			t.vm = vm.New(nil, 1024)

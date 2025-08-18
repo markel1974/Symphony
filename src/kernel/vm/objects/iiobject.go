@@ -168,8 +168,8 @@ func FromInterface(in interface{}) IObject {
 		return &Time{value: v}
 	case IObject:
 		return v
-	case CallableFunc:
-		return NewFunctionModule(FunctionModuleDef, "CallableFunc", v)
+	case FuncCallable:
+		return NewFuncPackage(FuncPackageDef, "FuncCallable", v)
 	}
 	return UndefinedValue
 }

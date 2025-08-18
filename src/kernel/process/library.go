@@ -11,64 +11,63 @@ import (
 // Library represents a collection of modules that interact with system processes and provide various functionalities.
 // It contains a reference to a Process and a map of module names to their respective objects.
 type Library struct {
-	p      *Process
-	module map[string]objects.IObject
+	process *Process
+	pkg     map[string]objects.IObject
 }
 
 // NewLibrary creates and initializes a new Library instance with the provided Process.
-func NewLibrary(p *Process) *Library {
+func NewLibrary(process *Process) *Library {
 	l := &Library{
-		p: p,
+		process: process,
+		pkg:     make(map[string]objects.IObject),
 	}
-	l.setup()
+	container := []*objects.FuncPackage{
+		objects.NewFuncPackage(objects.FuncPackageDef, "SetContext", l.doSetContext),
+		objects.NewFuncPackage(objects.FuncPackageDef, "GetContext", l.doGetContext),
+		objects.NewFuncPackage(objects.FuncPackageDef, "Printf", l.doPrintf),
+		objects.NewFuncPackage(objects.FuncPackageDef, "CreateTimer", l.doCreateTimer),
+		objects.NewFuncPackage(objects.FuncPackageDef, "IsActive", l.doIsActive),
+		objects.NewFuncPackage(objects.FuncPackageDef, "Kill", l.doKill),
+		objects.NewFuncPackage(objects.FuncPackageDef, "KillForeground", l.doKillForeground),
+		objects.NewFuncPackage(objects.FuncPackageDef, "KillAll", l.doKillAll),
+		objects.NewFuncPackage(objects.FuncPackageDef, "CWDSet", l.doCWDSet),
+		objects.NewFuncPackage(objects.FuncPackageDef, "CWDName", l.doCWDName),
+		objects.NewFuncPackage(objects.FuncPackageDef, "CWDPath", l.doCWDPath),
+		objects.NewFuncPackage(objects.FuncPackageDef, "CWDDirectoryListing", l.doCWDDirectoryListing),
+		objects.NewFuncPackage(objects.FuncPackageDef, "GetScreenSize", l.doGetScreenSize),
+		objects.NewFuncPackage(objects.FuncPackageDef, "PaintRequest", l.doPaintRequest),
+		objects.NewFuncPackage(objects.FuncPackageDef, "ProcessExec", l.doProcessExec),
+		objects.NewFuncPackage(objects.FuncPackageDef, "WindowsSelectionBegin", l.doWindowsSelectionBegin),
+		objects.NewFuncPackage(objects.FuncPackageDef, "CWDSet", l.doWindowsSelectionEnd),
+		objects.NewFuncPackage(objects.FuncPackageDef, "WindowsSelectionOptions", l.doWindowsSelectionOptions),
+		objects.NewFuncPackage(objects.FuncPackageDef, "WindowsSelectionNext", l.doWindowsSelectionNext),
+		objects.NewFuncPackage(objects.FuncPackageDef, "WindowsSelectionPrevious", l.doWindowsSelectionPrevious),
+		objects.NewFuncPackage(objects.FuncPackageDef, "ProcessList", l.doProcessList),
+		objects.NewFuncPackage(objects.FuncPackageDef, "ProcessSetForeground", l.doProcessSetForeground),
+		objects.NewFuncPackage(objects.FuncPackageDef, "ProcessSetSelfForeground", l.doProcessSetSelfForeground),
+		objects.NewFuncPackage(objects.FuncPackageDef, "Write", l.doWrite),
+		objects.NewFuncPackage(objects.FuncPackageDef, "WritePromptEOL", l.doWritePromptEOL),
+		objects.NewFuncPackage(objects.FuncPackageDef, "WritePromptLine", l.doWritePromptLine),
+		objects.NewFuncPackage(objects.FuncPackageDef, "WriteColor", l.doWriteColor),
+		objects.NewFuncPackage(objects.FuncPackageDef, "WriteForeground", l.doWriteForeground),
+		objects.NewFuncPackage(objects.FuncPackageDef, "MoveCursorLeft", l.doMoveCursorLeft),
+		objects.NewFuncPackage(objects.FuncPackageDef, "MoveCursorRight", l.doMoveCursorRight),
+		objects.NewFuncPackage(objects.FuncPackageDef, "SaveCursor", l.doSaveCursor),
+		objects.NewFuncPackage(objects.FuncPackageDef, "RestoreCursor", l.doRestoreCursor),
+		objects.NewFuncPackage(objects.FuncPackageDef, "ClearScreen", l.doClearScreen),
+		objects.NewFuncPackage(objects.FuncPackageDef, "SetExit", l.doSetExit),
+		objects.NewFuncPackage(objects.FuncPackageDef, "Suggestion", l.doSuggestion),
+		objects.NewFuncPackage(objects.FuncPackageDef, "Help", l.doHelp),
+	}
+	for _, v := range container {
+		l.pkg[v.Name()] = v
+	}
 	return l
 }
 
-// setup initializes the Library by mapping function names to their respective FunctionModule implementations.
-func (l *Library) setup() {
-	l.module = map[string]objects.IObject{
-		"SetContext":               objects.NewFunctionModule(objects.FunctionModuleDef, "SetContext", l.doSetContext),
-		"GetContext":               objects.NewFunctionModule(objects.FunctionModuleDef, "GetContext", l.doGetContext),
-		"Printf":                   objects.NewFunctionModule(objects.FunctionModuleDef, "Printf", l.doPrintf),
-		"CreateTimer":              objects.NewFunctionModule(objects.FunctionModuleDef, "CreateTimer", l.doCreateTimer),
-		"IsActive":                 objects.NewFunctionModule(objects.FunctionModuleDef, "IsActive", l.doIsActive),
-		"Kill":                     objects.NewFunctionModule(objects.FunctionModuleDef, "Kill", l.doKill),
-		"KillForeground":           objects.NewFunctionModule(objects.FunctionModuleDef, "KillForeground", l.doKillForeground),
-		"KillAll":                  objects.NewFunctionModule(objects.FunctionModuleDef, "KillAll", l.doKillAll),
-		"CWDSet":                   objects.NewFunctionModule(objects.FunctionModuleDef, "CWDSet", l.doCWDSet),
-		"CWDName":                  objects.NewFunctionModule(objects.FunctionModuleDef, "CWDName", l.doCWDName),
-		"CWDPath":                  objects.NewFunctionModule(objects.FunctionModuleDef, "CWDPath", l.doCWDPath),
-		"CWDDirectoryListing":      objects.NewFunctionModule(objects.FunctionModuleDef, "CWDDirectoryListing", l.doCWDDirectoryListing),
-		"GetScreenSize":            objects.NewFunctionModule(objects.FunctionModuleDef, "GetScreenSize", l.doGetScreenSize),
-		"PaintRequest":             objects.NewFunctionModule(objects.FunctionModuleDef, "PaintRequest", l.doPaintRequest),
-		"ProcessExec":              objects.NewFunctionModule(objects.FunctionModuleDef, "ProcessExec", l.doProcessExec),
-		"WindowsSelectionBegin":    objects.NewFunctionModule(objects.FunctionModuleDef, "WindowsSelectionBegin", l.doWindowsSelectionBegin),
-		"WindowsSelectionEnd":      objects.NewFunctionModule(objects.FunctionModuleDef, "CWDSet", l.doWindowsSelectionEnd),
-		"WindowsSelectionOptions":  objects.NewFunctionModule(objects.FunctionModuleDef, "WindowsSelectionOptions", l.doWindowsSelectionOptions),
-		"WindowsSelectionNext":     objects.NewFunctionModule(objects.FunctionModuleDef, "WindowsSelectionNext", l.doWindowsSelectionNext),
-		"WindowsSelectionPrevious": objects.NewFunctionModule(objects.FunctionModuleDef, "WindowsSelectionPrevious", l.doWindowsSelectionPrevious),
-		"ProcessList":              objects.NewFunctionModule(objects.FunctionModuleDef, "ProcessList", l.doProcessList),
-		"ProcessSetForeground":     objects.NewFunctionModule(objects.FunctionModuleDef, "ProcessSetForeground", l.doProcessSetForeground),
-		"ProcessSetSelfForeground": objects.NewFunctionModule(objects.FunctionModuleDef, "ProcessSetSelfForeground", l.doProcessSetSelfForeground),
-		"Write":                    objects.NewFunctionModule(objects.FunctionModuleDef, "Write", l.doWrite),
-		"WritePromptEOL":           objects.NewFunctionModule(objects.FunctionModuleDef, "WritePromptEOL", l.doWritePromptEOL),
-		"WritePromptLine":          objects.NewFunctionModule(objects.FunctionModuleDef, "WritePromptLine", l.doWritePromptLine),
-		"WriteColor":               objects.NewFunctionModule(objects.FunctionModuleDef, "WriteColor", l.doWriteColor),
-		"WriteForeground":          objects.NewFunctionModule(objects.FunctionModuleDef, "WriteForeground", l.doWriteForeground),
-		"MoveCursorLeft":           objects.NewFunctionModule(objects.FunctionModuleDef, "MoveCursorLeft", l.doMoveCursorLeft),
-		"MoveCursorRight":          objects.NewFunctionModule(objects.FunctionModuleDef, "MoveCursorRight", l.doMoveCursorRight),
-		"SaveCursor":               objects.NewFunctionModule(objects.FunctionModuleDef, "SaveCursor", l.doSaveCursor),
-		"RestoreCursor":            objects.NewFunctionModule(objects.FunctionModuleDef, "RestoreCursor", l.doRestoreCursor),
-		"ClearScreen":              objects.NewFunctionModule(objects.FunctionModuleDef, "ClearScreen", l.doClearScreen),
-		"SetExit":                  objects.NewFunctionModule(objects.FunctionModuleDef, "SetExit", l.doSetExit),
-		"Suggestion":               objects.NewFunctionModule(objects.FunctionModuleDef, "Suggestion", l.doSuggestion),
-		"Help":                     objects.NewFunctionModule(objects.FunctionModuleDef, "Help", l.doHelp),
-	}
-}
-
-// Module returns a map of strings to objects implementing the IObject interface, representing the module's content.
-func (l *Library) Module() map[string]objects.IObject {
-	return l.module
+// Package returns a map where keys are strings and values implement the IObject interface, representing the library's package.
+func (l *Library) Package() map[string]objects.IObject {
+	return l.pkg
 }
 
 // doGetContext retrieves the current execution context within the library. Returns an error if arguments are provided.
@@ -76,7 +75,7 @@ func (l *Library) doGetContext(args ...objects.IObject) (ret objects.IObject, er
 	if len(args) != 0 {
 		return nil, errors.New("invalid number of arguments")
 	}
-	_ = l.p.GetContext()
+	_ = l.process.GetContext()
 	//TODO implement
 	return nil, nil
 }
@@ -98,7 +97,7 @@ func (l *Library) doCreateTimer(args ...objects.IObject) (ret objects.IObject, e
 	if err != nil {
 		return nil, err
 	}
-	l.p.CreateTimer(int(i1), int(i2), int(i3))
+	l.process.CreateTimer(int(i1), int(i2), int(i3))
 	return nil, nil
 }
 
@@ -122,7 +121,7 @@ func (l *Library) doPrintf(args ...objects.IObject) (ret objects.IObject, err er
 		}
 		val = fmt.Sprintf(s1, ar...)
 	}
-	l.p.Write(val, true)
+	l.process.Write(val, true)
 	return nil, nil
 }
 
@@ -134,7 +133,7 @@ func (l *Library) doIsActive(args ...objects.IObject) (ret objects.IObject, err 
 	if err != nil {
 		return nil, err
 	}
-	v := l.p.IsActive(int(i1))
+	v := l.process.IsActive(int(i1))
 	return objects.FromBool(v), nil
 }
 
@@ -147,7 +146,7 @@ func (l *Library) doKill(args ...objects.IObject) (ret objects.IObject, err erro
 	if err != nil {
 		return nil, err
 	}
-	l.p.Kill(int(i1))
+	l.process.Kill(int(i1))
 	return nil, nil
 }
 
@@ -156,7 +155,7 @@ func (l *Library) doKillForeground(args ...objects.IObject) (ret objects.IObject
 	if len(args) != 0 {
 		return nil, errors.New("invalid number of arguments")
 	}
-	l.p.KillForeground()
+	l.process.KillForeground()
 	return nil, nil
 }
 
@@ -173,7 +172,7 @@ func (l *Library) doKillAll(args ...objects.IObject) (ret objects.IObject, err e
 	if err != nil {
 		return nil, err
 	}
-	l.p.KillAll(s1)
+	l.process.KillAll(s1)
 	return nil, nil
 }
 
@@ -182,7 +181,7 @@ func (l *Library) doWindowsSelectionEnd(args ...objects.IObject) (ret objects.IO
 	if len(args) != 0 {
 		return nil, errors.New("invalid number of arguments")
 	}
-	l.p.WindowsSelectionEnd()
+	l.process.WindowsSelectionEnd()
 	return nil, nil
 }
 
@@ -192,7 +191,7 @@ func (l *Library) doWindowsSelectionBegin(args ...objects.IObject) (ret objects.
 	if len(args) != 0 {
 		return nil, errors.New("invalid number of arguments")
 	}
-	l.p.WindowsSelectionBegin()
+	l.process.WindowsSelectionBegin()
 	return nil, nil
 }
 
@@ -205,7 +204,7 @@ func (l *Library) doProcessExec(args ...objects.IObject) (ret objects.IObject, e
 	if err != nil {
 		return nil, err
 	}
-	l.p.ProcessExec(s1)
+	l.process.ProcessExec(s1)
 	return nil, nil
 }
 
@@ -216,7 +215,7 @@ func (l *Library) doPaintRequest(args ...objects.IObject) (ret objects.IObject, 
 	if len(args) != 0 {
 		return nil, errors.New("invalid number of arguments")
 	}
-	l.p.PaintRequest()
+	l.process.PaintRequest()
 	return nil, nil
 }
 
@@ -225,7 +224,7 @@ func (l *Library) doGetScreenSize(args ...objects.IObject) (ret objects.IObject,
 	if len(args) != 0 {
 		return nil, errors.New("invalid number of arguments")
 	}
-	w, h := l.p.GetScreenSize()
+	w, h := l.process.GetScreenSize()
 	return objects.NewMap(map[string]objects.IObject{
 		"width":  objects.NewInt(int64(w)),
 		"height": objects.NewInt(int64(h)),
@@ -238,7 +237,7 @@ func (l *Library) doCWDDirectoryListing(args ...objects.IObject) (ret objects.IO
 	if len(args) != 0 {
 		return nil, errors.New("invalid number of arguments")
 	}
-	v := l.p.CWDDirectoryListing()
+	v := l.process.CWDDirectoryListing()
 	return objects.FromStringArray(v)
 }
 
@@ -251,7 +250,7 @@ func (l *Library) doCWDSet(args ...objects.IObject) (ret objects.IObject, err er
 	if err != nil {
 		return nil, err
 	}
-	v := l.p.CWDSet(s1)
+	v := l.process.CWDSet(s1)
 	return objects.FromBool(v), nil
 }
 
@@ -260,7 +259,7 @@ func (l *Library) doCWDPath(args ...objects.IObject) (ret objects.IObject, err e
 	if len(args) != 0 {
 		return nil, errors.New("invalid number of arguments")
 	}
-	v := l.p.CWDPath()
+	v := l.process.CWDPath()
 	return objects.NewString(v)
 }
 
@@ -269,7 +268,7 @@ func (l *Library) doCWDName(args ...objects.IObject) (ret objects.IObject, err e
 	if len(args) != 0 {
 		return nil, errors.New("invalid number of arguments")
 	}
-	v := l.p.CWDName()
+	v := l.process.CWDName()
 	return objects.NewString(v)
 }
 
@@ -278,7 +277,7 @@ func (l *Library) doSetContext(args ...objects.IObject) (ret objects.IObject, er
 	if len(args) != 1 {
 		return nil, errors.New("invalid number of arguments")
 	}
-	l.p.SetContext(args[0])
+	l.process.SetContext(args[0])
 	return nil, nil
 }
 
@@ -291,7 +290,7 @@ func (l *Library) doHelp(args ...objects.IObject) (ret objects.IObject, err erro
 	if err != nil {
 		return nil, err
 	}
-	v, err := l.p.Help(s1)
+	v, err := l.process.Help(s1)
 	if err != nil {
 		return nil, err
 	}
@@ -312,7 +311,7 @@ func (l *Library) doSuggestion(args ...objects.IObject) (ret objects.IObject, er
 	if err != nil {
 		return nil, err
 	}
-	l.p.Suggestion(s1, int(i2))
+	l.process.Suggestion(s1, int(i2))
 	return nil, nil
 }
 
@@ -323,7 +322,7 @@ func (l *Library) doSetExit(args ...objects.IObject) (ret objects.IObject, err e
 		return nil, errors.New("invalid number of arguments")
 	}
 
-	l.p.SetExit()
+	l.process.SetExit()
 	return nil, nil
 }
 
@@ -333,7 +332,7 @@ func (l *Library) doClearScreen(args ...objects.IObject) (ret objects.IObject, e
 		return nil, errors.New("invalid number of arguments")
 	}
 
-	l.p.ClearScreen()
+	l.process.ClearScreen()
 	return nil, nil
 }
 
@@ -343,7 +342,7 @@ func (l *Library) doRestoreCursor(args ...objects.IObject) (ret objects.IObject,
 		return nil, errors.New("invalid number of arguments")
 	}
 
-	l.p.RestoreCursor()
+	l.process.RestoreCursor()
 	return nil, nil
 }
 
@@ -353,7 +352,7 @@ func (l *Library) doSaveCursor(args ...objects.IObject) (ret objects.IObject, er
 		return nil, errors.New("invalid number of arguments")
 	}
 
-	l.p.SaveCursor()
+	l.process.SaveCursor()
 	return nil, nil
 }
 
@@ -363,7 +362,7 @@ func (l *Library) doMoveCursorRight(args ...objects.IObject) (ret objects.IObjec
 		return nil, errors.New("invalid number of arguments")
 	}
 
-	l.p.MoveCursorRight()
+	l.process.MoveCursorRight()
 	return nil, nil
 }
 
@@ -373,7 +372,7 @@ func (l *Library) doMoveCursorLeft(args ...objects.IObject) (ret objects.IObject
 		return nil, errors.New("invalid number of arguments")
 	}
 
-	l.p.MoveCursorLeft()
+	l.process.MoveCursorLeft()
 	return nil, nil
 }
 
@@ -396,7 +395,7 @@ func (l *Library) doWriteForeground(args ...objects.IObject) (ret objects.IObjec
 	if err != nil {
 		return nil, err
 	}
-	l.p.WriteForeground(s1, interfaces.ColorDef(i2), b3)
+	l.process.WriteForeground(s1, interfaces.ColorDef(i2), b3)
 	return nil, nil
 }
 
@@ -425,7 +424,7 @@ func (l *Library) doWriteColor(args ...objects.IObject) (ret objects.IObject, er
 	if err != nil {
 		return nil, err
 	}
-	l.p.WriteColor(s1, interfaces.ColorDef(i2), interfaces.ColorDef(i3), interfaces.ColorMode(i4), b5)
+	l.process.WriteColor(s1, interfaces.ColorDef(i2), interfaces.ColorDef(i3), interfaces.ColorMode(i4), b5)
 	return nil, nil
 }
 
@@ -442,7 +441,7 @@ func (l *Library) doWritePromptLine(args ...objects.IObject) (ret objects.IObjec
 	if err != nil {
 		return nil, err
 	}
-	l.p.WritePromptLine(s1, s2)
+	l.process.WritePromptLine(s1, s2)
 	return nil, nil
 }
 
@@ -459,7 +458,7 @@ func (l *Library) doWritePromptEOL(args ...objects.IObject) (ret objects.IObject
 	if err != nil {
 		return nil, err
 	}
-	l.p.WritePromptEOL(s1, b2)
+	l.process.WritePromptEOL(s1, b2)
 	return nil, nil
 }
 
@@ -476,7 +475,7 @@ func (l *Library) doWrite(args ...objects.IObject) (ret objects.IObject, err err
 	if err != nil {
 		return nil, err
 	}
-	l.p.Write(s1, b2)
+	l.process.Write(s1, b2)
 	return nil, nil
 }
 
@@ -485,7 +484,7 @@ func (l *Library) doProcessSetSelfForeground(args ...objects.IObject) (ret objec
 	if len(args) != 0 {
 		return nil, errors.New("invalid number of arguments")
 	}
-	l.p.ProcessSetSelfForeground()
+	l.process.ProcessSetSelfForeground()
 	return nil, nil
 }
 
@@ -498,7 +497,7 @@ func (l *Library) doProcessSetForeground(args ...objects.IObject) (ret objects.I
 	if err != nil {
 		return nil, err
 	}
-	l.p.ProcessSetForeground(int(i1))
+	l.process.ProcessSetForeground(int(i1))
 	return nil, nil
 }
 
@@ -509,7 +508,7 @@ func (l *Library) doProcessList(args ...objects.IObject) (ret objects.IObject, e
 		return nil, errors.New("invalid number of arguments")
 	}
 	res := make(map[string]objects.IObject)
-	for _, p := range l.p.ProcessList() {
+	for _, p := range l.process.ProcessList() {
 		c := map[string]objects.IObject{
 			"line": objects.NewStringNoSize(p.Line()),
 			"name": objects.NewStringNoSize(p.Name()),
@@ -528,7 +527,7 @@ func (l *Library) doWindowsSelectionPrevious(args ...objects.IObject) (ret objec
 	if len(args) != 0 {
 		return nil, errors.New("invalid number of arguments")
 	}
-	l.p.WindowsSelectionPrevious()
+	l.process.WindowsSelectionPrevious()
 	return nil, nil
 }
 
@@ -537,7 +536,7 @@ func (l *Library) doWindowsSelectionNext(args ...objects.IObject) (ret objects.I
 	if len(args) != 0 {
 		return nil, errors.New("invalid number of arguments")
 	}
-	l.p.WindowsSelectionNext()
+	l.process.WindowsSelectionNext()
 	return nil, nil
 }
 
@@ -557,6 +556,6 @@ func (l *Library) doWindowsSelectionOptions(args ...objects.IObject) (ret object
 	if err != nil {
 		return nil, err
 	}
-	l.p.WindowsSelectionOptions(rune(i1), f2)
+	l.process.WindowsSelectionOptions(rune(i1), f2)
 	return nil, nil
 }

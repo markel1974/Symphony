@@ -8,33 +8,27 @@ import (
 
 // Strconv is a type that provides a module containing string conversion functions implemented using strconv.
 type Strconv struct {
-	*Module
+	*Package
 }
 
 // NewStrconv initializes and returns a pointer to a new Strconv instance containing predefined module functions.
 func NewStrconv() *Strconv {
-	s := &Strconv{
-		Module: NewModule(),
+	s := &Strconv{}
+	container := []*objects.FuncPackage{
+		objects.NewFuncPackage(objects.FuncPackageDef, "Atoi", objects.FuncIsOie(strconv.Atoi)),
+		objects.NewFuncPackage(objects.FuncPackageDef, "FormatBool", s.FormatBool),
+		objects.NewFuncPackage(objects.FuncPackageDef, "FormatFloat", s.FormatFloat),
+		objects.NewFuncPackage(objects.FuncPackageDef, "FormatInt", s.FormatInt),
+		objects.NewFuncPackage(objects.FuncPackageDef, "Itoa", objects.FuncIiOs(strconv.Itoa)),
+		objects.NewFuncPackage(objects.FuncPackageDef, "ParseBool", s.ParseBool),
+		objects.NewFuncPackage(objects.FuncPackageDef, "ParseFloat", s.ParseFloat),
+		objects.NewFuncPackage(objects.FuncPackageDef, "ParseNumber", s.ParseNumber),
+		objects.NewFuncPackage(objects.FuncPackageDef, "ParseInt", s.ParseInt),
+		objects.NewFuncPackage(objects.FuncPackageDef, "Quote", objects.FuncIsOs(strconv.Quote)),
+		objects.NewFuncPackage(objects.FuncPackageDef, "Unquote", objects.FuncIsOse(strconv.Unquote)),
 	}
-	s.attrs = map[string]objects.IObject{
-		"Atoi":        objects.NewFunctionModule(objects.FunctionModuleDef, "Atoi", objects.FuncIsOie(strconv.Atoi)),
-		"FormatBool":  objects.NewFunctionModule(objects.FunctionModuleDef, "FormatBool", s.FormatBool),
-		"FormatFloat": objects.NewFunctionModule(objects.FunctionModuleDef, "FormatFloat", s.FormatFloat),
-		"FormatInt":   objects.NewFunctionModule(objects.FunctionModuleDef, "FormatInt", s.FormatInt),
-		"Itoa":        objects.NewFunctionModule(objects.FunctionModuleDef, "Itoa", objects.FuncIiOs(strconv.Itoa)),
-		"ParseBool":   objects.NewFunctionModule(objects.FunctionModuleDef, "ParseBool", s.ParseBool),
-		"ParseFloat":  objects.NewFunctionModule(objects.FunctionModuleDef, "ParseFloat", s.ParseFloat),
-		"ParseNumber": objects.NewFunctionModule(objects.FunctionModuleDef, "ParseNumber", s.ParseNumber),
-		"ParseInt":    objects.NewFunctionModule(objects.FunctionModuleDef, "ParseInt", s.ParseInt),
-		"Quote":       objects.NewFunctionModule(objects.FunctionModuleDef, "Quote", objects.FuncIsOs(strconv.Quote)),
-		"Unquote":     objects.NewFunctionModule(objects.FunctionModuleDef, "Unquote", objects.FuncIsOse(strconv.Unquote)),
-	}
+	s.Package = NewPackage("strconv", container, nil)
 	return s
-}
-
-// Name returns the name of Strconv module.
-func (s *Strconv) Name() string {
-	return "strconv"
 }
 
 // FormatBool converts a boolean argument to its string representation ("true" or "false"). Returns an error if the argument is invalid.

@@ -7,68 +7,92 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
-// Module represents a module with predefined attributes that can be imported or accessed at runtime.
-// Attrs stores a map of string keys to IObject values, representing the module's predefined attributes.
-type Module struct {
-	attrs map[string]objects.IObject
+// Package represents a modular collection of objects, offering access to its resources via a container map.
+// It is identified by a unique name and supports storing objects implementing the IObject interface.
+type Package struct {
+	name      string
+	container map[string]objects.IObject
 }
 
-func NewModule() *Module {
-	return &Module{attrs: nil}
+// NewPackage creates a new Package instance with the specified name, functions, and constants.
+// It initializes the container map and adds provided functions and constants to it.
+// name is the name of the package.
+// functions is a slice of FuncPackage objects to include in the package.
+// constants is a map of constant objects to include in the package, keyed by their IDs.
+// Returns the newly created Package instance.
+func NewPackage(name string, functions []*objects.FuncPackage, constants map[string]objects.IObject) *Package {
+	p := &Package{
+		name:      name,
+		container: make(map[string]objects.IObject),
+	}
+	for _, fn := range functions {
+		p.container[fn.Name()] = fn
+	}
+	for id, c := range constants {
+		p.container[id] = c
+	}
+	return p
 }
 
+// Name returns the unique name of the Package.
+func (p *Package) Name() string {
+	return p.name
+}
+
+// BuiltinWrapper is a struct designed to wrap a Builtin instance and its associated IObject for additional functionality.
 type BuiltinWrapper struct {
 	wrapper *objects.Builtin
 	object  objects.IObject
 }
 
-// Loader is responsible for managing modules and resolving symbols within those modules.
-// It provides functionality for accessing and resolving both regular and built-in symbols.
-// The mod field holds a collection of modules, allowing for import and retrieval of symbols.
+// Loader represents a mechanism to manage and load packages and built-in objects in the system.
 type Loader struct {
-	modules map[string]*Module
-	builtin []*BuiltinWrapper
+	packages map[string]*Package
+	builtin  []*BuiltinWrapper
 }
 
-// NewLoader initializes and returns a new Loader instance with built-in modules preloaded.
+// NewLoader initializes and returns a new Loader instance with predefined standard packages and built-in functions.
 func NewLoader() *Loader {
-	modules := map[string]*Module{
-		"errors":  NewErrors().Module,
-		"fmt":     NewFmt().Module,
-		"math":    NewMath().Module,
-		"strings": NewStrings().Module,
-		"strconv": NewStrconv().Module,
-		"regexp":  NewRegexp().Module,
-		"time":    NewTime().Module,
-		"rand":    NewRand().Module,
-		"json":    NewJson().Module,
-		"base64":  NewBase64().Module,
-		"hex":     NewHex().Module,
+	builtin := NewBuiltinFunctions().Package()
+	packages := []*Package{
+		NewErrors().Package,
+		NewFmt().Package,
+		NewMath().Package,
+		NewStrings().Package,
+		NewStrconv().Package,
+		NewRegexp().Package,
+		NewTime().Package,
+		NewRand().Package,
+		NewJson().Package,
+		NewBase64().Package,
+		NewHex().Package,
 	}
-	builtinFunctions := NewBuiltinFunctions().Module()
-	builtin := make([]*BuiltinWrapper, len(builtinFunctions))
-	for i, fn := range builtinFunctions {
+	loader := &Loader{
+		packages: make(map[string]*Package),
+		builtin:  make([]*BuiltinWrapper, len(builtin)),
+	}
+	for i, fn := range builtin {
 		wrapper := objects.NewBuiltin(fn.Name(), i)
-		builtin[i] = &BuiltinWrapper{wrapper: wrapper, object: fn}
+		loader.builtin[i] = &BuiltinWrapper{wrapper: wrapper, object: fn}
 	}
-	return &Loader{
-		modules: modules,
-		builtin: builtin,
+	for _, p := range packages {
+		loader.packages[p.Name()] = p
 	}
+	return loader
 }
 
-// AddModule adds a new module to the loader's module collection.'
-func (l *Loader) AddModule(id string, attr map[string]objects.IObject) {
-	m := &Module{attrs: attr}
-	l.modules[id] = m
+// AddPackage adds a package with the given ID and attributes to the Loader's packages map.
+func (l *Loader) AddPackage(id string, attr map[string]objects.IObject) {
+	m := &Package{container: attr}
+	l.packages[id] = m
 }
 
-// BuiltinLen returns the number of built-in functions.
+// BuiltinLen returns the number of built-in objects stored in the Loader instance.
 func (l *Loader) BuiltinLen() int {
 	return len(l.builtin)
 }
 
-// Builtin returns a built-in function by its index.
+// Builtin retrieves a built-in object by its index or returns nil if the index is out of range.
 func (l *Loader) Builtin(idx int) *objects.Builtin {
 	if idx < 0 || idx >= len(l.builtin) {
 		return nil
@@ -76,7 +100,7 @@ func (l *Loader) Builtin(idx int) *objects.Builtin {
 	return l.builtin[idx].wrapper
 }
 
-// BuiltinResolve retrieves a built-in function by its index and returns it as a FunctionBuiltin instance.
+// BuiltinResolve returns the object associated with the given index from the built-in list or nil if the index is invalid.
 func (l *Loader) BuiltinResolve(idx int) objects.IObject {
 	if idx < 0 || idx >= len(l.builtin) {
 		return nil
@@ -84,7 +108,8 @@ func (l *Loader) BuiltinResolve(idx int) objects.IObject {
 	return l.builtin[idx].object
 }
 
-// ResolveSymbols resolves a list of symbol references to their corresponding objects using the loader's symbol mapping.
+// ResolveSymbols resolves a list of symbol references into concrete objects within the loader's context.
+// It returns a slice of resolved objects or an error if any reference is invalid.
 func (l *Loader) ResolveSymbols(symbols []objects.IObject) ([]objects.IObject, error) {
 	references := make([]objects.IObject, len(symbols))
 	for i, ref := range symbols {
@@ -97,7 +122,7 @@ func (l *Loader) ResolveSymbols(symbols []objects.IObject) ([]objects.IObject, e
 	return references, nil
 }
 
-// GetSymbol retrieves a symbol from the module based on the provided object definition. Returns the symbol and success status.
+// GetSymbol retrieves a symbol from a package by decoding its reference array and returns the associated object if found.
 func (l *Loader) GetSymbol(in objects.IObject) (objects.IObject, bool) {
 	definition, ok := in.(*objects.Array)
 	if !ok {
@@ -119,22 +144,22 @@ func (l *Loader) GetSymbol(in objects.IObject) (objects.IObject, bool) {
 	if !ok {
 		return nil, false
 	}
-	module, ok := l.modules[packageName.Value()]
+	module, ok := l.packages[packageName.Value()]
 	if !ok {
 		return nil, false
 	}
-	v, ok := module.attrs[symbolName.Value()]
+	v, ok := module.container[symbolName.Value()]
 	return v, ok
 }
 
-// CompileModule compiles the specified module by its name, returning an immutable map of its attributes or an error if not found.
-func (l *Loader) CompileModule(name string) (*objects.MapImmutable, error) {
-	module, ok := l.modules[name]
+// CompilePackage compiles a package by name, returning an immutable map of its attributes or an error if not found.
+func (l *Loader) CompilePackage(name string) (*objects.MapImmutable, error) {
+	module, ok := l.packages[name]
 	if !ok {
 		return nil, fmt.Errorf("module %s not found", name)
 	}
-	attrs := make(map[string]objects.IObject, len(module.attrs))
-	for k, v := range module.attrs {
+	attrs := make(map[string]objects.IObject, len(module.container))
+	for k, v := range module.container {
 		attrs[k] = v.Copy()
 	}
 	attrs[bytecode.ModuleKey] = objects.NewStringNoSize(name)

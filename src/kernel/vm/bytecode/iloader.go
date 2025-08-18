@@ -19,5 +19,5 @@ type ILoader interface {
 
 	ResolveSymbols([]objects.IObject) ([]objects.IObject, error)
 
-	CompileModule(name string) (*objects.MapImmutable, error)
+	CompilePackage(name string) (*objects.MapImmutable, error)
 }

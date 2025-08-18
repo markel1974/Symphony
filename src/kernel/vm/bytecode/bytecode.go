@@ -20,7 +20,7 @@ func init() {
 	gob.Register(&objects.Bool{})
 	gob.Register(&objects.Bytes{})
 	gob.Register(&objects.Char{})
-	gob.Register(&objects.FunctionCompiled{})
+	gob.Register(&objects.FuncCompiled{})
 	gob.Register(&objects.Error{})
 	gob.Register(&objects.Float{})
 	gob.Register(&objects.ArrayImmutable{})
@@ -30,7 +30,7 @@ func init() {
 	gob.Register(&objects.String{})
 	gob.Register(&objects.Time{})
 	gob.Register(&objects.Undefined{})
-	gob.Register(&objects.FunctionModule{})
+	gob.Register(&objects.FuncPackage{})
 }
 
 // CompileInstruction returns a bytecode for an opcode and the operands.
@@ -165,7 +165,7 @@ func (b *Bytecode) RemoveDuplicates() error {
 	b.constants = constantsDeduped
 	for _, in := range b.constants {
 		switch c := in.(type) {
-		case *objects.FunctionCompiled:
+		case *objects.FuncCompiled:
 			if err = b.updateConstIndexes(c.Data(), constantsIndexMap); err != nil {
 				return err
 			}
@@ -179,7 +179,7 @@ func (b *Bytecode) RemoveDuplicates() error {
 func (b *Bytecode) removeDuplicates(container []objects.IObject) ([]objects.IObject, map[int]int, error) {
 	var deDuped []objects.IObject
 	indexMap := make(map[int]int) // mapping from old constant index to new index
-	fns := make(map[*objects.FunctionCompiled]int)
+	fns := make(map[*objects.FuncCompiled]int)
 	ints := make(map[int64]int)
 	strings := make(map[string]int)
 	floats := make(map[float64]int)
@@ -188,7 +188,7 @@ func (b *Bytecode) removeDuplicates(container []objects.IObject) ([]objects.IObj
 
 	for curIdx, in := range container {
 		switch c := in.(type) {
-		case *objects.FunctionCompiled:
+		case *objects.FuncCompiled:
 			if newIdx, ok := fns[c]; ok {
 				indexMap[curIdx] = newIdx
 			} else {
@@ -198,7 +198,7 @@ func (b *Bytecode) removeDuplicates(container []objects.IObject) ([]objects.IObj
 				deDuped = append(deDuped, c)
 			}
 		case *objects.MapImmutable:
-			modName, err := b.inferModuleName(c)
+			modName, err := b.inferPackageName(c)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -291,15 +291,15 @@ func (b *Bytecode) fixDecodedObject(o objects.IObject, loader ILoader) (objects.
 			o.Set(k, fv)
 		}
 	case *objects.MapImmutable:
-		modName, err := b.inferModuleName(o)
+		packageName, err := b.inferPackageName(o)
 		if err != nil {
 			return nil, err
 		}
-		if mod, _ := loader.CompileModule(modName); mod != nil {
+		if mod, _ := loader.CompilePackage(packageName); mod != nil {
 			return mod, nil
 		}
 		for k, v := range o.Values() {
-			if _, isUserFunction := v.(*objects.FunctionModule); isUserFunction {
+			if _, isUserFunction := v.(*objects.FuncPackage); isUserFunction {
 				return nil, fmt.Errorf("user function not decodable")
 			}
 			fv, err := b.fixDecodedObject(v, loader)
@@ -343,10 +343,10 @@ func (b *Bytecode) updateConstIndexes(instances []byte, indexMap map[int]int) er
 	return nil
 }
 
-// inferModuleName retrieves the module name from a given MapImmutable object by using a predefined key.
+// inferPackageName retrieves the module name from a given MapImmutable object by using a predefined key.
 // Returns the module name as a string or an error if the key is missing or its value is of an unexpected type.
-func (b *Bytecode) inferModuleName(mod *objects.MapImmutable) (string, error) {
-	m, ok := mod.GetValue(ModuleKey)
+func (b *Bytecode) inferPackageName(pk *objects.MapImmutable) (string, error) {
+	m, ok := pk.GetValue(ModuleKey)
 	if !ok {
 		return "", fmt.Errorf("missing %s key", ModuleKey)
 	}
