@@ -1,7 +1,6 @@
 package stdlib
 
 import (
-	"regexp"
 	"strconv"
 	"strings"
 	"unicode/utf8"
@@ -11,11 +10,6 @@ import (
 
 // _stringsModule is a map containing string manipulation and formatting functions, regex utilities, and conversions.
 var _stringsModule = map[string]objects.IObject{
-	"re_match":     objects.NewFunctionModule(objects.FunctionModuleDef, "re_match", stringsREMatch),                              // re_match(pattern, text) => bool/error
-	"re_find":      objects.NewFunctionModule(objects.FunctionModuleDef, "re_find", stringsREFind),                                // re_find(pattern, text, count) => [[{text:,begin:,end:}]]/undefined
-	"re_replace":   objects.NewFunctionModule(objects.FunctionModuleDef, "re_replace", stringsREReplace),                          // re_replace(pattern, text, repl) => string/error
-	"re_split":     objects.NewFunctionModule(objects.FunctionModuleDef, "re_split", stringsRESplit),                              // re_split(pattern, text, count) => [string]/error
-	"re_compile":   objects.NewFunctionModule(objects.FunctionModuleDef, "re_compile", stringsRECompile),                          // re_compile(pattern) => Regexp/error
 	"Compare":      objects.NewFunctionModule(objects.FunctionModuleDef, "Compare", objects.FuncIssOi(strings.Compare)),           // compare(a, b) => int
 	"Contains":     objects.NewFunctionModule(objects.FunctionModuleDef, "Contains", objects.FuncIssOb(strings.Contains)),         // contains(s, substr) => bool
 	"ContainsAny":  objects.NewFunctionModule(objects.FunctionModuleDef, "ContainsAny", objects.FuncIssOb(strings.ContainsAny)),   // contains_any(s, chars) => bool
@@ -61,168 +55,6 @@ var _stringsModule = map[string]objects.IObject{
 	"Unquote":      objects.NewFunctionModule(objects.FunctionModuleDef, "Unquote", objects.FuncIsOse(strconv.Unquote)),           // unquote(str) => string/error
 }
 
-// stringsREMatch matches a string against a given regular expression and returns a boolean IObject result or an error.
-func stringsREMatch(args ...objects.IObject) (objects.IObject, error) {
-	if len(args) != 2 {
-		return nil, objects.ErrWrongNumArguments
-	}
-	s1, err := objects.ToStringArg(0, args[0])
-	if err != nil {
-		return nil, err
-	}
-	s2, err := objects.ToStringArg(1, args[1])
-	if err != nil {
-		return nil, err
-	}
-	matched, err := regexp.MatchString(s1, s2)
-	if err != nil {
-		return objects.NewObjectError(err), nil
-	}
-	if matched {
-		return objects.TrueValue, nil
-	}
-	return objects.FalseValue, nil
-}
-
-// stringsREFind performs a regex search on a string. Returns matches with details or undefined if no match is found.
-func stringsREFind(args ...objects.IObject) (objects.IObject, error) {
-	numArgs := len(args)
-	if numArgs != 2 && numArgs != 3 {
-		return nil, objects.ErrWrongNumArguments
-	}
-	s1, err := objects.ToStringArg(0, args[0])
-	if err != nil {
-		return nil, err
-	}
-	s2, err := objects.ToStringArg(1, args[1])
-	if err != nil {
-		return nil, err
-	}
-	re, err := regexp.Compile(s1)
-	if err != nil {
-		return objects.NewObjectError(err), nil
-	}
-	if numArgs < 3 {
-		m := re.FindStringSubmatchIndex(s2)
-		if m == nil {
-			return objects.UndefinedValue, nil
-		}
-		arr := objects.NewArray(nil)
-		for i := 0; i < len(m); i += 2 {
-			arr.Append(objects.NewMapImmutable(map[string]objects.IObject{
-				"text":  objects.NewStringNoSize(s2[m[i]:m[i+1]]),
-				"begin": objects.NewInt(int64(m[i])),
-				"end":   objects.NewInt(int64(m[i+1])),
-			}))
-		}
-		return objects.NewArray([]objects.IObject{arr}), nil
-	}
-	i3, err := objects.ToInt64Arg(2, args[2])
-	if err != nil {
-		return nil, err
-	}
-	mFA := re.FindAllStringSubmatchIndex(s2, int(i3))
-	if mFA == nil {
-		return objects.UndefinedValue, nil
-	}
-	arr := objects.NewArray(nil)
-	for _, m := range mFA {
-		subMatch := objects.NewArray(nil)
-		for i := 0; i < len(m); i += 2 {
-			subMatch.Append(objects.NewMapImmutable(map[string]objects.IObject{
-				"text":  objects.NewStringNoSize(s2[m[i]:m[i+1]]),
-				"begin": objects.NewInt(int64(m[i])),
-				"end":   objects.NewInt(int64(m[i+1])),
-			}))
-		}
-		arr.Append(subMatch)
-	}
-	return arr, nil
-}
-
-// stringsREReplace performs a regex-based replacement on a string using provided pattern, target, and replacement values.
-// It takes exactly three arguments: a regex pattern string, a target string, and a replacement string.
-// Returns a new string after performing the replacements or an error if inputs are invalid.
-func stringsREReplace(args ...objects.IObject) (objects.IObject, error) {
-	if len(args) != 3 {
-		return nil, objects.ErrWrongNumArguments
-	}
-	s1, err := objects.ToStringArg(0, args[0])
-	if err != nil {
-		return nil, err
-	}
-	s2, err := objects.ToStringArg(1, args[1])
-	if err != nil {
-		return nil, err
-	}
-	s3, err := objects.ToStringArg(2, args[2])
-	if err != nil {
-		return nil, err
-	}
-	re, err := regexp.Compile(s1)
-	if err != nil {
-		return objects.NewObjectError(err), nil
-	}
-	s := doTextRegexpReplace(re, s2, s3)
-	v, err := objects.NewString(s)
-	if err != nil {
-		return nil, err
-	}
-	return v, nil
-}
-
-// stringsRESplit takes a regex pattern, a string, and an optional limit, returning an array of substrings split by the pattern.
-func stringsRESplit(args ...objects.IObject) (objects.IObject, error) {
-	numArgs := len(args)
-	if numArgs != 2 && numArgs != 3 {
-		return nil, objects.ErrWrongNumArguments
-	}
-	s1, err := objects.ToStringArg(0, args[0])
-	if err != nil {
-		return nil, err
-	}
-	s2, err := objects.ToStringArg(1, args[1])
-	if err != nil {
-		return nil, err
-	}
-	var i3 = int64(-1)
-	if numArgs > 2 {
-		i3, err = objects.ToInt64Arg(2, args[2])
-		if err != nil {
-			return nil, err
-		}
-	}
-	re, err := regexp.Compile(s1)
-	if err != nil {
-		return objects.NewObjectError(err), nil
-	}
-	arr := &objects.Array{}
-	for _, s := range re.Split(s2, int(i3)) {
-		v, err := objects.NewString(s)
-		if err != nil {
-			return nil, err
-		}
-		arr.Append(v)
-	}
-	return arr, nil
-}
-
-// stringsRECompile compiles a string into a regular expression and returns it as an immutable map of regex functions.
-func stringsRECompile(args ...objects.IObject) (objects.IObject, error) {
-	if len(args) != 1 {
-		return nil, objects.ErrWrongNumArguments
-	}
-	s1, ok := objects.ToString(args[0])
-	if !ok {
-		return nil, objects.NewInvalidArgumentError(0, "string(compatible)", args[0].TypeName())
-	}
-	re, err := regexp.Compile(s1)
-	if err != nil {
-		return objects.NewObjectError(err), nil
-	}
-	return makeTextRegexp(re), nil
-}
-
 // stringsReplace replaces occurrences of a substring within a string with another substring up to a specified limit.
 // Takes four arguments: the original string, the substring to replace, the replacement string, and the maximum replacements.
 // Returns the resulting string as an IObject and an error if the inputs are invalid or the output exceeds size constraints.
@@ -246,7 +78,7 @@ func stringsReplace(args ...objects.IObject) (objects.IObject, error) {
 	if err != nil {
 		return nil, err
 	}
-	s, ok := doTextReplace(s1, s2, s3, int(i4))
+	s, ok := _stringsReplace(s1, s2, s3, int(i4))
 	if !ok {
 		return nil, objects.ErrStringLimit
 	}
@@ -577,8 +409,8 @@ func stringsParseInt(args ...objects.IObject) (objects.IObject, error) {
 	return objects.NewInt(parsed), nil
 }
 
-// doTextReplace replaces occurrences of 'old' with 'new' in the string 's', up to 'n' times. Returns updated string and a success flag.
-func doTextReplace(s string, old string, new string, n int) (string, bool) {
+// _stringsReplace replaces occurrences of 'old' with 'new' in the string 's', up to 'n' times. Returns updated string and a success flag.
+func _stringsReplace(s string, old string, new string, n int) (string, bool) {
 	if old == new || n == 0 {
 		return s, true // avoid allocation
 	}

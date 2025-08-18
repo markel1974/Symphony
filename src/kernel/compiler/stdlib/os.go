@@ -4,6 +4,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"syscall"
 
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
@@ -45,8 +46,8 @@ var osModule = map[string]objects.IObject{
 	"Clearenv":          objects.NewFunctionModule(objects.FunctionModuleDef, "Clearenv", objects.FuncInOn(os.Clearenv)),        // clearenv()
 	"Environ":           objects.NewFunctionModule(objects.FunctionModuleDef, "Environ", objects.FuncInOsS(os.Environ)),         // environ() => array(string)
 	"Exit":              objects.NewFunctionModule(objects.FunctionModuleDef, "Exit", objects.FuncIiOn(os.Exit)),                // exit(code int)
-	"osExpandEnv":       objects.NewFunctionModule(objects.FunctionModuleDef, "osExpandEnv", osExpandEnv),                       // expand_env(s string) => string
-	"getegid":           objects.NewFunctionModule(objects.FunctionModuleDef, "Getegid", objects.FuncInOi(os.Getegid)),          // getegid() => int
+	"Expand":            objects.NewFunctionModule(objects.FunctionModuleDef, "Expand", osExpandEnv),                            // expand_env(s string) => string
+	"Getegid":           objects.NewFunctionModule(objects.FunctionModuleDef, "Getegid", objects.FuncInOi(os.Getegid)),          // getegid() => int
 	"Getenv":            objects.NewFunctionModule(objects.FunctionModuleDef, "Getenv", objects.FuncIsOs(os.Getenv)),            // getenv(s string) => string
 	"geteuid":           objects.NewFunctionModule(objects.FunctionModuleDef, "Geteuid", objects.FuncInOi(os.Geteuid)),          // geteuid() => int
 	"Getgid":            objects.NewFunctionModule(objects.FunctionModuleDef, "Getgid", objects.FuncInOi(os.Getgid)),            // getgid() => int
@@ -366,4 +367,175 @@ func osStartProcess(args ...objects.IObject) (objects.IObject, error) {
 		return objects.NewObjectError(err), nil
 	}
 	return makeOSProcess(proc), nil
+}
+
+func makeOSProcessState(state *os.ProcessState) *objects.MapImmutable {
+	return objects.NewMapImmutable(
+		map[string]objects.IObject{
+			"Exited":  objects.NewFunctionModule(objects.FunctionModuleDef, "Exited", objects.FuncInOb(state.Exited)),
+			"Pid":     objects.NewFunctionModule(objects.FunctionModuleDef, "Pid", objects.FuncInOi(state.Pid)),
+			"String":  objects.NewFunctionModule(objects.FunctionModuleDef, "String", objects.FuncInOs(state.String)),
+			"Success": objects.NewFunctionModule(objects.FunctionModuleDef, "Success", objects.FuncInOb(state.Success)),
+		},
+	)
+}
+
+func makeOSProcess(proc *os.Process) *objects.MapImmutable {
+	return objects.NewMapImmutable(map[string]objects.IObject{
+		"Kill":    objects.NewFunctionModule(objects.FunctionModuleDef, "Kill", objects.FuncInOe(proc.Kill)),
+		"Release": objects.NewFunctionModule(objects.FunctionModuleDef, "Release", objects.FuncInOe(proc.Release)),
+		"Signal": objects.NewFunctionModule(objects.FunctionModuleDef, "Signal", func(args ...objects.IObject) (objects.IObject, error) {
+			if len(args) != 1 {
+				return nil, objects.ErrWrongNumArguments
+			}
+			i1, err := objects.ToInt64Arg(0, args[0])
+			if err != nil {
+				return nil, err
+			}
+			return objects.NewObjectError(proc.Signal(syscall.Signal(i1))), nil
+		}),
+		"Wait": objects.NewFunctionModule(objects.FunctionModuleDef, "Wait", func(args ...objects.IObject) (objects.IObject, error) {
+			if len(args) != 0 {
+				return nil, objects.ErrWrongNumArguments
+			}
+			state, err := proc.Wait()
+			if err != nil {
+				return objects.NewObjectError(err), nil
+			}
+			return makeOSProcessState(state), nil
+		}),
+	})
+}
+
+// makeOSExecCommand returns an immutable map exposing methods to manipulate and control an exec.Cmd instance.
+func makeOSExecCommand(cmd *exec.Cmd) *objects.MapImmutable {
+	return objects.NewMapImmutable(map[string]objects.IObject{
+		// combined_output() => bytes/error
+		"CombinedOutput": objects.NewFunctionModule(objects.FunctionModuleDef, "CombinedOutput", objects.FuncInObSe(cmd.CombinedOutput)),
+		// output() => bytes/error
+		"Output": objects.NewFunctionModule(objects.FunctionModuleDef, "Output", objects.FuncInObSe(cmd.Output)), //
+		// run() => error
+		"Run": objects.NewFunctionModule(objects.FunctionModuleDef, "Run", objects.FuncInOe(cmd.Run)), //
+		// start() => error
+		"Start": objects.NewFunctionModule(objects.FunctionModuleDef, "Start", objects.FuncInOe(cmd.Start)), //
+		// wait() => error
+		"Wait": objects.NewFunctionModule(objects.FunctionModuleDef, "Wait", objects.FuncInOe(cmd.Wait)), //
+		// set_path(path string)
+		"SetPath": objects.NewFunctionModule(objects.FunctionModuleDef, "SetPath", func(args ...objects.IObject) (objects.IObject, error) {
+			if len(args) != 1 {
+				return nil, objects.ErrWrongNumArguments
+			}
+			s1, err := objects.ToStringArg(0, args[0])
+			if err != nil {
+				return nil, err
+			}
+			cmd.Path = s1
+			return objects.UndefinedValue, nil
+		}),
+		// set_dir(dir string)
+		"SetDir": objects.NewFunctionModule(objects.FunctionModuleDef, "SetDir", func(args ...objects.IObject) (objects.IObject, error) {
+			if len(args) != 1 {
+				return nil, objects.ErrWrongNumArguments
+			}
+			s1, err := objects.ToStringArg(0, args[0])
+			if err != nil {
+				return nil, err
+			}
+			cmd.Dir = s1
+			return objects.UndefinedValue, nil
+		}),
+		// set_env(env array(string))
+		"SetEnv": objects.NewFunctionModule(objects.FunctionModuleDef, "SetEnv", func(args ...objects.IObject) (objects.IObject, error) {
+			if len(args) != 1 {
+				return nil, objects.ErrWrongNumArguments
+			}
+			var env []string
+			var err error
+			switch arg0 := args[0].(type) {
+			case *objects.Array:
+				env, err = objects.ToStringArrayArg(0, arg0.Values())
+				if err != nil {
+					return nil, err
+				}
+			case *objects.ArrayImmutable:
+				env, err = objects.ToStringArrayArg(0, arg0.Values())
+				if err != nil {
+					return nil, err
+				}
+			default:
+				return nil, objects.NewInvalidArgumentError(0, "array", arg0.TypeName())
+			}
+			cmd.Env = env
+			return objects.UndefinedValue, nil
+		}),
+		// process() => imap(process)
+		"Process": objects.NewFunctionModule(objects.FunctionModuleDef, "Process", func(args ...objects.IObject) (objects.IObject, error) {
+			if len(args) != 0 {
+				return nil, objects.ErrWrongNumArguments
+			}
+			return makeOSProcess(cmd.Process), nil
+		}),
+	})
+}
+
+// makeOSFile creates an MapImmutable containing methods applicable to an os.File object as IObject values.
+func makeOSFile(file *os.File) *objects.MapImmutable {
+	return objects.NewMapImmutable(
+		map[string]objects.IObject{
+			// chdir() => true/error
+			"Chdir": objects.NewFunctionModule(objects.FunctionModuleDef, "Chdir", objects.FuncInOe(file.Chdir)), //
+			// chown(uid int, gid int) => true/error
+			"Chown": objects.NewFunctionModule(objects.FunctionModuleDef, "Chown", objects.FuncIiiOe(file.Chown)), //
+			// close() => error
+			"Close": objects.NewFunctionModule(objects.FunctionModuleDef, "Close", objects.FuncInOe(file.Close)), //
+			// name() => string
+			"Name": objects.NewFunctionModule(objects.FunctionModuleDef, "Name", objects.FuncInOs(file.Name)), //
+			// readdirnames(n int) => array(string)/error
+			"Readdirnames": objects.NewFunctionModule(objects.FunctionModuleDef, "Readdirnames", objects.FuncIiOsSe(file.Readdirnames)), //
+			// sync() => error
+			"Sync": objects.NewFunctionModule(objects.FunctionModuleDef, "Sync", objects.FuncInOe(file.Sync)), //
+			// write(bytes) => int/error
+			"Write": objects.NewFunctionModule(objects.FunctionModuleDef, "Write", objects.FuncIbSOie(file.Write)), //
+			// write(string) => int/error
+			"WriteString": objects.NewFunctionModule(objects.FunctionModuleDef, "WriteString", objects.FuncIsOie(file.WriteString)), //
+			// read(bytes) => int/error
+			"Read": objects.NewFunctionModule(objects.FunctionModuleDef, "Read", objects.FuncIbSOie(file.Read)), //
+			// chmod(mode int) => error
+			"Chmod": objects.NewFunctionModule(objects.FunctionModuleDef, "Chmod", func(args ...objects.IObject) (objects.IObject, error) {
+				if len(args) != 1 {
+					return nil, objects.ErrWrongNumArguments
+				}
+				i1, err := objects.ToInt64Arg(0, args[0])
+				if err != nil {
+					return nil, err
+				}
+				return objects.NewObjectError(file.Chmod(os.FileMode(i1))), nil
+			}),
+			// seek(offset int, whence int) => int/error
+			"Seek": objects.NewFunctionModule(objects.FunctionModuleDef, "Seek", func(args ...objects.IObject) (objects.IObject, error) {
+				if len(args) != 2 {
+					return nil, objects.ErrWrongNumArguments
+				}
+				i1, err := objects.ToInt64Arg(0, args[0])
+				if err != nil {
+					return nil, err
+				}
+				i2, err := objects.ToInt64Arg(1, args[1])
+				if err != nil {
+					return nil, err
+				}
+				res, err := file.Seek(i1, int(i2))
+				if err != nil {
+					return objects.NewObjectError(err), nil
+				}
+				return objects.NewInt(res), nil
+			}),
+			// stat() => imap(fileinfo)/error
+			"Stat": objects.NewFunctionModule(objects.FunctionModuleDef, "Stat", func(args ...objects.IObject) (objects.IObject, error) {
+				if len(args) != 0 {
+					return nil, objects.ErrWrongNumArguments
+				}
+				return osStat(objects.NewStringNoSize(file.Name()))
+			}),
+		})
 }

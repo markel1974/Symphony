@@ -15,6 +15,7 @@ var _builtinModules = map[string]map[string]objects.IObject{
 	"fmt":     _fmtModule,
 	"math":    _mathModule,
 	"strings": _stringsModule,
+	"regexp":  _regexpModule,
 	"time":    _timeModule,
 	"rand":    _randModule,
 	"json":    _jsonModule,
