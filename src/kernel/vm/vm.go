@@ -3,7 +3,6 @@ package vm
 import (
 	"fmt"
 	"io"
-	"log"
 
 	"github.com/markel1974/c64emu/src/kernel/vm/bytecode"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
@@ -225,7 +224,7 @@ func (v *VM) loop() {
 		v.ip++
 		inst := v.currFrame.Get(v.ip)
 		opcode := bytecode.Opcode(inst & bytecode.OpcodesMask)
-		log.Println("Executing instruction ", opcode, bytecode.OpcodeNames(opcode))
+		//log.Println("Executing instruction ", opcode, bytecode.OpcodeNames(opcode))
 		v.sequencer[opcode](v)
 		if v.shutdown {
 			break
