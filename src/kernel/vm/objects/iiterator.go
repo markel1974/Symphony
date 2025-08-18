@@ -7,12 +7,9 @@ package objects
 type IIterator interface {
 	IObject
 
-	// Next returns true if there are more elements to iterate.
 	Next() bool
 
-	// Key returns the key or index values of the current element.
 	Key() IObject
 
-	// Value returns the values of the current element.
 	Value() IObject
 }
