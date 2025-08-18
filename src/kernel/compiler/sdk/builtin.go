@@ -14,7 +14,7 @@ var _builtinFunctions = []*objects.FunctionModule{
 	objects.NewFunctionModule(objects.FunctionBuiltinDef, "delete", builtinDelete),
 	objects.NewFunctionModule(objects.FunctionBuiltinDef, "splice", builtinSplice),
 	objects.NewFunctionModule(objects.FunctionBuiltinDef, "format", builtinFormat),
-	objects.NewFunctionModule(objects.FunctionBuiltinDef, "range", builtinRange),
+	//objects.NewFunctionModule(objects.FunctionBuiltinDef, "range", builtinRange),
 	objects.NewFunctionModule(objects.FunctionBuiltinDef, "string", builtinString),
 	objects.NewFunctionModule(objects.FunctionBuiltinDef, "int", builtinInt),
 	objects.NewFunctionModule(objects.FunctionBuiltinDef, "bool", builtinBool),
@@ -260,7 +260,7 @@ func builtinLen(args ...objects.IObject) (objects.IObject, error) {
 	case *objects.MapImmutable:
 		return objects.NewInt(int64(arg.Length())), nil
 	default:
-		return nil, objects.NewInvalidArgumentError(0, "array/string/bytes/map", arg.TypeName())
+		return nil, objects.NewInvalidArgumentError(0, "container", arg.TypeName())
 	}
 }
 
@@ -296,11 +296,11 @@ func builtinRange(args ...objects.IObject) (objects.IObject, error) {
 	if step == nil {
 		step = objects.NewInt(int64(1))
 	}
-	return buildRange(start.Value(), stop.Value(), step.Value()), nil
+	return _builtinRangeCreate(start.Value(), stop.Value(), step.Value()), nil
 }
 
 // buildRange generates an array of integers from start to stop with the specified step, supporting both ascending and descending ranges.
-func buildRange(start int64, stop int64, step int64) *objects.Array {
+func _builtinRangeCreate(start int64, stop int64, step int64) *objects.Array {
 	array := objects.NewArray(nil)
 	if start <= stop {
 		for i := start; i < stop; i += step {
