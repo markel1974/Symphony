@@ -81,3 +81,8 @@ func (f *Frame) SameFunction(callee *objects.FunctionCompiled) bool {
 func (f *Frame) NumLocals() int {
 	return f.compiledFunction.NumLocals()
 }
+
+// NumParameters returns the total number of parameters required by the compiled function of the current frame.
+func (f *Frame) NumParameters() int {
+	return f.compiledFunction.NumParameters()
+}

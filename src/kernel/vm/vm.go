@@ -60,11 +60,11 @@ func NewVM(loader bytecode.ILoader, sequencer ISequencer, bc *bytecode.Bytecode,
 		constants[idx] = constant
 		switch c := constant.(type) {
 		case *objects.Builtin:
-			fn := loader.BuiltinResolve(idx)
-			if fn == nil {
-				return nil, fmt.Errorf("builtin function not found: %s", c.Name())
+			symbol := loader.BuiltinResolve(idx)
+			if symbol == nil {
+				return nil, fmt.Errorf("builtin symbol not found: %s", c.Name())
 			}
-			constants[idx] = fn
+			constants[idx] = symbol
 		case *objects.FunctionCompiled:
 			entryPoints[c.Name()] = c
 		}
@@ -76,9 +76,9 @@ func NewVM(loader bytecode.ILoader, sequencer ISequencer, bc *bytecode.Bytecode,
 		references:  references,
 		entryPoints: entryPoints,
 	}
-	v.stack = NewStack(stackSize, maxAllocations, v.setError)
-	v.frames = NewFrames(maxFrames, v.setError)
-	v.constants = NewConstants(constants, v.setError)
+	v.stack = NewStack(stackSize, maxAllocations, v.SetError)
+	v.frames = NewFrames(maxFrames, v.SetError)
+	v.constants = NewConstants(constants, v.SetError)
 	if sequencer == nil {
 		sequencer = NewSequencer()
 	}
@@ -107,16 +107,23 @@ func (v *VM) Reset() {
 }
 
 // Run executes the virtual machine's bytecode, managing the stack, frames, and instruction pointer state.
-func (v *VM) Run(main string) error {
-	mainFn, _ := v.entryPoints[main]
+func (v *VM) Run(mainId string, args ...interface{}) error {
+	mainFn, _ := v.entryPoints[mainId]
 	if mainFn == nil {
 		return fmt.Errorf("main function not found")
 	}
 	v.currFrame = v.frames.Head()
 	v.currFrame.Bind(v.ip, mainFn, 0)
 	v.stack.SetStackPointer(v.currFrame.NumLocals())
+	if v.currFrame.NumParameters() != len(args) {
+		return fmt.Errorf("[%s] wrong number of arguments provided: want=%d, got=%d", mainId, v.currFrame.NumParameters(), len(args))
+	}
+	for idx, arg := range args {
+		argObj := objects.FromInterface(arg)
+		v.stack.SetAbsolute(idx, argObj)
+	}
 
-	v.run()
+	v.loop()
 
 	if v.err != nil {
 		filePos, _ := v.sourceFiles.Position(v.currFrame.SourcePos(v.ip - 1))
@@ -130,28 +137,14 @@ func (v *VM) Run(main string) error {
 	return nil
 }
 
-// run executes the main instruction loop for the virtual machine, updating the instruction pointer and processing opcodes.
-func (v *VM) run() {
-	for {
-		v.ip++
-		inst := v.currFrame.Get(v.ip)
-		opcode := bytecode.Opcode(inst & bytecode.OpcodesMask)
-		log.Println("Executing instruction ", opcode, bytecode.OpcodeNames(opcode))
-		v.sequencer[opcode](v)
-		if v.shutdown {
-			break
-		}
-	}
-}
-
-// setError sets the internal error state of the VM and marks it for shutdown.
-func (v *VM) setError(err error) {
+// SetError sets the internal error state of the VM and marks it for shutdown.
+func (v *VM) SetError(err error) {
 	v.err = err
 	v.shutdown = true
 }
 
-// checkBounds validates and adjusts slice bounds using provided low and high indices, ensuring they are within valid range.
-func (v *VM) checkBounds(lowStack objects.IObject, highStack objects.IObject, numElements int64) (int64, int64, error) {
+// BoundsCheck validates and adjusts slice bounds using provided low and high indices, ensuring they are within valid range.
+func (v *VM) BoundsCheck(lowStack objects.IObject, highStack objects.IObject, numElements int64) (int64, int64, error) {
 	var lowIdx int64
 	if lowStack != objects.UndefinedValue {
 		if low, ok := lowStack.(*objects.Int); ok {
@@ -182,4 +175,49 @@ func (v *VM) checkBounds(lowStack objects.IObject, highStack objects.IObject, nu
 		highIdx = numElements
 	}
 	return lowIdx, highIdx, nil
+}
+
+// IndexAssign assigns a value to a nested structure, using selectors to determine the target location.
+// It navigates through the provided selectors and performs an assignment on the target object at the final index.
+// Returns an error if any selector is invalid, the object is not indexable, or the assignment fails.
+func (v *VM) IndexAssign(dst objects.IObject, src objects.IObject, selectors []objects.IObject) error {
+	numSel := len(selectors)
+	for sIdx := numSel - 1; sIdx > 0; sIdx-- {
+		next, err := dst.IndexGet(selectors[sIdx])
+		if err != nil {
+			if objects.Is(err, objects.ErrNotIndexable) {
+				return fmt.Errorf("not indexable: %s", dst.TypeName())
+			}
+			if objects.Is(err, objects.ErrInvalidIndexType) {
+				return fmt.Errorf("invalid index type: %s",
+					selectors[sIdx].TypeName())
+			}
+			return err
+		}
+		dst = next
+	}
+	if err := dst.IndexSet(selectors[0], src); err != nil {
+		if objects.Is(err, objects.ErrNotIndexAssignable) {
+			return fmt.Errorf("not index-assignable: %s", dst.TypeName())
+		}
+		if objects.Is(err, objects.ErrInvalidIndexValueType) {
+			return fmt.Errorf("invaid index values type: %s", src.TypeName())
+		}
+		return err
+	}
+	return nil
+}
+
+// loop executes the main instruction loop for the virtual machine, updating the instruction pointer and processing opcodes.
+func (v *VM) loop() {
+	for {
+		v.ip++
+		inst := v.currFrame.Get(v.ip)
+		opcode := bytecode.Opcode(inst & bytecode.OpcodesMask)
+		log.Println("Executing instruction ", opcode, bytecode.OpcodeNames(opcode))
+		v.sequencer[opcode](v)
+		if v.shutdown {
+			break
+		}
+	}
 }

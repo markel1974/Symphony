@@ -19,6 +19,11 @@ func NewError(value IObject) *Error {
 	return &Error{value: value}
 }
 
+// Value returns the underlying IObject value of the Error object.
+func (o *Error) Value() IObject {
+	return o.value
+}
+
 // TypeName returns the name of the type as a string, which is "error".
 func (o *Error) TypeName() string {
 	return ErrorType

@@ -75,7 +75,7 @@ func (op *OpBinary) Execute(v *VM) {
 	operator := objects.Operator(opcode)
 	res, err := left.BinaryOp(operator, right)
 	if err != nil {
-		v.setError(err)
+		v.SetError(err)
 		return
 	}
 	v.stack.Push(res)
@@ -208,7 +208,7 @@ func (op *OpBComplement) Execute(v *VM) {
 		res := objects.NewInt(^x.Value())
 		v.stack.Push(res)
 	default:
-		v.setError(fmt.Errorf("invalid operation: ^%s", operand.TypeName()))
+		v.SetError(fmt.Errorf("invalid operation: ^%s", operand.TypeName()))
 		return
 	}
 }
@@ -236,7 +236,7 @@ func (op *OpMinus) Execute(v *VM) {
 		res := objects.NewFloat(-x.Value())
 		v.stack.Push(res)
 	default:
-		v.setError(fmt.Errorf("invalid operation: -%s", operand.TypeName()))
+		v.SetError(fmt.Errorf("invalid operation: -%s", operand.TypeName()))
 	}
 }
 
@@ -360,8 +360,8 @@ func (op *OpSetSelGlobal) Execute(v *VM) {
 	val := v.stack.PeekOffset(-numSelectors - 1)
 	v.stack.DecrementCount(int(numSelectors) + 1)
 	glObj := v.constants.Get(uint(globalIndex))
-	if err := objects.IndexAssign(glObj, val, selectors); err != nil {
-		v.setError(err)
+	if err := v.IndexAssign(glObj, val, selectors); err != nil {
+		v.SetError(err)
 		return
 	}
 }
@@ -502,14 +502,14 @@ func (op *OpIndex) Execute(v *VM) {
 	val, err := left.IndexGet(index)
 	if err != nil {
 		if objects.Is(err, objects.ErrNotIndexable) {
-			v.setError(fmt.Errorf("not indexable: %s", index.TypeName()))
+			v.SetError(fmt.Errorf("not indexable: %s", index.TypeName()))
 			return
 		}
 		if objects.Is(err, objects.ErrInvalidIndexType) {
-			v.setError(fmt.Errorf("invalid index type: %s", index.TypeName()))
+			v.SetError(fmt.Errorf("invalid index type: %s", index.TypeName()))
 			return
 		}
-		v.setError(err)
+		v.SetError(err)
 		return
 	}
 	if val == nil {
@@ -534,9 +534,9 @@ func (op *OpSliceIndex) Execute(v *VM) {
 	highStack := v.stack.Pop()
 	lowStack := v.stack.Pop()
 	leftStack := v.stack.Pop()
-	lowIdx, highIdx, err := v.checkBounds(lowStack, highStack, int64(leftStack.Length()))
+	lowIdx, highIdx, err := v.BoundsCheck(lowStack, highStack, int64(leftStack.Length()))
 	if err != nil {
-		v.setError(err)
+		v.SetError(err)
 		return
 	}
 	var val objects.IObject = nil
@@ -547,7 +547,7 @@ func (op *OpSliceIndex) Execute(v *VM) {
 		val = objects.NewArray(left.Values()[lowIdx:highIdx])
 	case *objects.String:
 		if val, err = objects.NewString(left.Value()[lowIdx:highIdx]); err != nil {
-			v.setError(err)
+			v.SetError(err)
 			return
 		}
 	case *objects.Bytes:
@@ -574,7 +574,7 @@ func (op *OpCall) Execute(v *VM) {
 	v.ip += 2
 	value := v.stack.PeekOffset(-1 - numArgs)
 	if !value.CanCall() {
-		v.setError(fmt.Errorf("%s is not callable: %s", value.String(), value.TypeName()))
+		v.SetError(fmt.Errorf("%s is not callable: %s", value.String(), value.TypeName()))
 		return
 	}
 	spread := v.currFrame.Get(v.ip + 2)
@@ -592,7 +592,7 @@ func (op *OpCall) Execute(v *VM) {
 			}
 			numArgs += z.Length() - 1
 		default:
-			v.setError(fmt.Errorf("not an array: %s", arrObj.TypeName()))
+			v.SetError(fmt.Errorf("not an array: %s", arrObj.TypeName()))
 			return
 		}
 	}
@@ -607,7 +607,7 @@ func (op *OpCall) Execute(v *VM) {
 			if callee.VarArgs() {
 				numParams--
 			}
-			v.setError(fmt.Errorf("%s wrong number of arguments: want>=%d, got=%d", callee.Name(), numParams, numArgs))
+			v.SetError(fmt.Errorf("%s wrong number of arguments: want>=%d, got=%d", callee.Name(), numParams, numArgs))
 			return
 		}
 		// Frame setup
@@ -629,9 +629,9 @@ func (op *OpCall) Execute(v *VM) {
 		v.stack.DecrementCount(numArgs + 1)
 		if err != nil {
 			if objects.Is(err, objects.ErrWrongNumArguments) {
-				v.setError(fmt.Errorf("wrong number of arguments in call to '%s'", value.TypeName()))
+				v.SetError(fmt.Errorf("wrong number of arguments in call to '%s'", value.TypeName()))
 			} else {
-				v.setError(err)
+				v.SetError(err)
 			}
 			return
 		}
@@ -765,8 +765,8 @@ func (op *OpSetSelLocal) Execute(v *VM) {
 	if obj, ok := dst.(*objects.ObjectPointer); ok {
 		dst = *obj.Value()
 	}
-	if err := objects.IndexAssign(dst, val, selectors); err != nil {
-		v.setError(err)
+	if err := v.IndexAssign(dst, val, selectors); err != nil {
+		v.SetError(err)
 		return
 	}
 }
@@ -810,7 +810,7 @@ func (op *OpClosure) Execute(v *VM) {
 	glObj := v.constants.Get(uint(constIndex))
 	fn, ok := glObj.(*objects.FunctionCompiled)
 	if !ok {
-		v.setError(fmt.Errorf("not a function: %s", fn.TypeName()))
+		v.SetError(fmt.Errorf("not a function: %s", fn.TypeName()))
 		return
 	}
 	free := make([]*objects.ObjectPointer, numFree)
@@ -932,8 +932,8 @@ func (op *OpSetSelFree) Execute(v *VM) {
 	val := v.stack.PeekOffset(-numSelectors - 1)
 	v.stack.DecrementCount(numSelectors + 1)
 	fvi := v.currFrame.FreeVarsIndex(freeIndex)
-	if err := objects.IndexAssign(*fvi.Value(), val, selectors); err != nil {
-		v.setError(err)
+	if err := v.IndexAssign(*fvi.Value(), val, selectors); err != nil {
+		v.SetError(err)
 		return
 	}
 }
@@ -955,7 +955,7 @@ func (op *OpIteratorInit) Execute(v *VM) {
 	localIndex := v.currFrame.Get(v.ip)
 	iterable := v.stack.Pop()
 	if !iterable.CanIterate() {
-		v.setError(fmt.Errorf("not iterable: %s", iterable.TypeName()))
+		v.SetError(fmt.Errorf("not iterable: %s", iterable.TypeName()))
 		return
 	}
 	iterator := iterable.Iterate()
@@ -980,7 +980,7 @@ func (op *OpIteratorNext) Execute(v *VM) {
 	iteratorObj := v.stack.PeekAbsolute(v.currFrame.BasePointer() + localIndex)
 	iterator, ok := iteratorObj.(objects.IIterator)
 	if !ok {
-		v.setError(fmt.Errorf("not an iterator: %s", iteratorObj.TypeName()))
+		v.SetError(fmt.Errorf("not an iterator: %s", iteratorObj.TypeName()))
 		return
 	}
 	if iterator.Next() {
@@ -1007,7 +1007,7 @@ func (op *OpIteratorKey) Execute(v *VM) {
 	iteratorObj := v.stack.PeekAbsolute(v.currFrame.BasePointer() + localIndex)
 	iterator, ok := iteratorObj.(objects.IIterator)
 	if !ok {
-		v.setError(fmt.Errorf("not an iterator: %s", iteratorObj.TypeName()))
+		v.SetError(fmt.Errorf("not an iterator: %s", iteratorObj.TypeName()))
 		return
 	}
 	v.stack.Push(iterator.Key())
@@ -1031,7 +1031,7 @@ func (op *OpIteratorValue) Execute(v *VM) {
 	iteratorObj := v.stack.PeekAbsolute(v.currFrame.BasePointer() + localIndex)
 	iterator, ok := iteratorObj.(objects.IIterator)
 	if !ok {
-		v.setError(fmt.Errorf("not an iterator: %s", iteratorObj.TypeName()))
+		v.SetError(fmt.Errorf("not an iterator: %s", iteratorObj.TypeName()))
 		return
 	}
 	v.stack.Push(iterator.Value())
@@ -1052,7 +1052,7 @@ func (op *OpReferences) Execute(v *VM) {
 	v.ip += 2
 	nameIndex := v.currFrame.Pos(v.ip, v.ip-1)
 	if nameIndex < 0 || nameIndex >= len(v.references) {
-		v.setError(fmt.Errorf("invalid attribute index %d", nameIndex))
+		v.SetError(fmt.Errorf("invalid attribute index %d", nameIndex))
 		return
 	}
 	symbol := v.references[nameIndex]
@@ -1087,5 +1087,5 @@ func NewOpUnknown() *OpUnknown {
 // Execute handles the execution of an unknown opcode, sets an error state, and stops the virtual machine.
 func (op *OpUnknown) Execute(v *VM) {
 	pos := v.currFrame.Get(v.ip)
-	v.setError(fmt.Errorf("unknown opcode: %d", pos))
+	v.SetError(fmt.Errorf("unknown opcode: %d", pos))
 }

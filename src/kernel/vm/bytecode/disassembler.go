@@ -23,7 +23,7 @@ func NewDisassembler(b *Bytecode) *Disassembler {
 // Disassemble parses and logs details of objects, constants, and references within the associated bytecode.
 func (d *Disassembler) Disassemble() {
 	log.Println("--- Object Count ---")
-	log.Println(d.countObjects())
+	log.Println(d.CountObjects())
 	log.Println("--- Constants ---")
 	for idx, v := range d.disassembleConstants() {
 		log.Printf("%04d => %s\n", idx, v)
@@ -32,18 +32,6 @@ func (d *Disassembler) Disassemble() {
 	for idx, v := range d.disassembleReferences() {
 		log.Printf("%04d => %s\n", idx, v)
 	}
-}
-
-// CountObjects computes the total number of objects in the Bytecode's constants and references, including nested objects.
-func (d *Disassembler) countObjects() int {
-	n := 0
-	for _, c := range d.bc.Constants() {
-		n += objects.CountObjects(c)
-	}
-	for _, c := range d.bc.References() {
-		n += objects.CountObjects(c)
-	}
-	return n
 }
 
 // disassembleConstants iterates through bytecode constants, disassembles each, and returns the results as a slice of strings.
@@ -96,4 +84,42 @@ func (d *Disassembler) disassembleInstructions(bc []byte, posOffset int) []strin
 		i += 1 + read
 	}
 	return out
+}
+
+// CountObjects computes the total number of objects in the Bytecode's constants and references, including nested objects.
+func (d *Disassembler) CountObjects() int {
+	n := 0
+	for _, c := range d.bc.Constants() {
+		n += d.countObjects(c)
+	}
+	for _, c := range d.bc.References() {
+		n += d.countObjects(c)
+	}
+	return n
+}
+
+// countObjects recursively counts the total number of objects contained in the given IObject, including nested structures.
+func (d *Disassembler) countObjects(in objects.IObject) int {
+	c := 1
+	switch o := in.(type) {
+	case *objects.Array:
+		for _, v := range o.Values() {
+			c += d.countObjects(v)
+		}
+	case *objects.ArrayImmutable:
+		for _, v := range o.Values() {
+			c += d.countObjects(v)
+		}
+	case *objects.Map:
+		for _, v := range o.Values() {
+			c += d.countObjects(v)
+		}
+	case *objects.MapImmutable:
+		for _, v := range o.Values() {
+			c += d.countObjects(v)
+		}
+	case *objects.Error:
+		c += d.countObjects(o.Value())
+	}
+	return c
 }

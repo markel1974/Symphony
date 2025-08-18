@@ -95,18 +95,6 @@ func ToInterface(in IObject) (res interface{}) {
 	return
 }
 
-// ToMap converts an IObject to a map[string]interface{} if the object is a *Map, recursively applying ToInterface.
-func ToMap(o IObject) (res map[string]interface{}) {
-	switch o := o.(type) {
-	case *Map:
-		res = make(map[string]interface{})
-		for key, v := range o.values {
-			res[key] = ToInterface(v)
-		}
-	}
-	return
-}
-
 // FromInterface converts a native Go value of various types into a corresponding IObject implementation.
 func FromInterface(in interface{}) IObject {
 	switch v := in.(type) {
@@ -184,6 +172,18 @@ func FromInterface(in interface{}) IObject {
 		return NewFunctionModule(FunctionModuleDef, "CallableFunc", v)
 	}
 	return UndefinedValue
+}
+
+// ToMap converts an IObject to a map[string]interface{} if the object is a *Map, recursively applying ToInterface.
+func ToMap(o IObject) (res map[string]interface{}) {
+	switch o := o.(type) {
+	case *Map:
+		res = make(map[string]interface{})
+		for key, v := range o.values {
+			res[key] = ToInterface(v)
+		}
+	}
+	return
 }
 
 // FromMap converts a map with string keys and interface{} values into a map with string keys and IObject values.
@@ -353,61 +353,4 @@ func ToTimeArg(index int, o IObject) (time.Time, error) {
 		return time.Time{}, NewInvalidArgumentError(index, "time(compatible)", o.TypeName())
 	}
 	return v, nil
-}
-
-// CountObjects recursively counts the total number of objects contained in the given IObject, including nested structures.
-func CountObjects(in IObject) int {
-	c := 1
-	switch o := in.(type) {
-	case *Array:
-		for _, v := range o.Values() {
-			c += CountObjects(v)
-		}
-	case *ArrayImmutable:
-		for _, v := range o.Values() {
-			c += CountObjects(v)
-		}
-	case *Map:
-		for _, v := range o.values {
-			c += CountObjects(v)
-		}
-	case *MapImmutable:
-		for _, v := range o.Values() {
-			c += CountObjects(v)
-		}
-	case *Error:
-		c += CountObjects(o.value)
-	}
-	return c
-}
-
-// IndexAssign assigns a value to a nested structure, using selectors to determine the target location.
-// It navigates through the provided selectors and performs an assignment on the target object at the final index.
-// Returns an error if any selector is invalid, the object is not indexable, or the assignment fails.
-func IndexAssign(dst IObject, src IObject, selectors []IObject) error {
-	numSel := len(selectors)
-	for sIdx := numSel - 1; sIdx > 0; sIdx-- {
-		next, err := dst.IndexGet(selectors[sIdx])
-		if err != nil {
-			if Is(err, ErrNotIndexable) {
-				return fmt.Errorf("not indexable: %s", dst.TypeName())
-			}
-			if Is(err, ErrInvalidIndexType) {
-				return fmt.Errorf("invalid index type: %s",
-					selectors[sIdx].TypeName())
-			}
-			return err
-		}
-		dst = next
-	}
-	if err := dst.IndexSet(selectors[0], src); err != nil {
-		if Is(err, ErrNotIndexAssignable) {
-			return fmt.Errorf("not index-assignable: %s", dst.TypeName())
-		}
-		if Is(err, ErrInvalidIndexValueType) {
-			return fmt.Errorf("invaid index values type: %s", src.TypeName())
-		}
-		return err
-	}
-	return nil
 }
