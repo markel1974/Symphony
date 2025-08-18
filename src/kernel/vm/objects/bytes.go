@@ -10,7 +10,6 @@ const (
 
 // MaxBytesLen is the maximum allowed size for byte slices across all instances, ensuring consistency in size limits.
 const (
-	// MaxBytesLen is the maximum length for bytes values. Note this limit applies to all compiler/VM instances in the process.
 	MaxBytesLen = 2147483647
 )
 
