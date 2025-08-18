@@ -15,8 +15,11 @@ import (
 // Execute performs the operation within the provided virtual machine instance.
 type IOpExecutor interface {
 	Opcode() bytecode.Opcode
+
 	Name() string
+
 	Operands() []int
+
 	Execute(v *VM)
 }
 
@@ -34,7 +37,7 @@ func NewOpConstant() *OpConstant {
 func (op *OpConstant) Execute(v *VM) {
 	v.ip += 2
 	cIdx := v.currFrame.Pos(v.ip, v.ip-1)
-	glObj := v.globals.Get(uint(cIdx))
+	glObj := v.constants.Get(uint(cIdx))
 	v.stack.Push(glObj)
 }
 
@@ -332,7 +335,7 @@ func (op *OpSetGlobal) Execute(v *VM) {
 	v.ip += 2
 	pos := v.currFrame.Pos(v.ip, v.ip-1)
 	val := v.stack.Peek()
-	v.globals.Set(uint(pos), val)
+	v.constants.Set(uint(pos), val)
 }
 
 // OpSetSelGlobal represents an operation for setting a global variable's value using selectors for indexing or access.
@@ -356,7 +359,7 @@ func (op *OpSetSelGlobal) Execute(v *VM) {
 	}
 	val := v.stack.PeekOffset(-numSelectors - 1)
 	v.stack.DecrementCount(int(numSelectors) + 1)
-	glObj := v.globals.Get(uint(globalIndex))
+	glObj := v.constants.Get(uint(globalIndex))
 	if err := objects.IndexAssign(glObj, val, selectors); err != nil {
 		v.setError(err)
 		return
@@ -378,7 +381,7 @@ func NewOpGetGlobal() *OpGetGlobal {
 func (op *OpGetGlobal) Execute(v *VM) {
 	v.ip += 2
 	glIndex := v.currFrame.Pos(v.ip, v.ip-1)
-	glObj := v.globals.Get(uint(glIndex))
+	glObj := v.constants.Get(uint(glIndex))
 	if glObj == nil {
 		//v.setError(fmt.Errorf("undefined global: %d", globalIndex))
 		//return
@@ -803,7 +806,7 @@ func NewOpGetBuiltin() *OpGetBuiltin {
 func (op *OpGetBuiltin) Execute(v *VM) {
 	v.ip++
 	builtinIndex := v.currFrame.Get(v.ip)
-	symbol := v.loader.GetBuiltinFunction(builtinIndex)
+	symbol := v.loader.BuiltinResolve(builtinIndex)
 	if symbol == nil {
 		v.setError(fmt.Errorf("unkown builtin index: %d", builtinIndex))
 		return
@@ -826,7 +829,7 @@ func (op *OpClosure) Execute(v *VM) {
 	v.ip += 3
 	constIndex := v.currFrame.Pos(v.ip-1, v.ip-2)
 	numFree := v.currFrame.Get(v.ip)
-	glObj := v.globals.Get(uint(constIndex))
+	glObj := v.constants.Get(uint(constIndex))
 	fn, ok := glObj.(*objects.FunctionCompiled)
 	if !ok {
 		v.setError(fmt.Errorf("not a function: %s", fn.TypeName()))

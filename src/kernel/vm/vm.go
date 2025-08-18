@@ -38,8 +38,8 @@ type VM struct {
 	sequencer   []func(vm *VM)
 	references  []objects.IObject
 	loader      bytecode.ILoader
-	globals     *Globals
-	functions   map[string]*objects.FunctionCompiled
+	constants   *Constants
+	entryPoints map[string]*objects.FunctionCompiled
 }
 
 // NewVM initializes and returns a new virtual machine instance configured with the provided components and settings.
@@ -54,33 +54,40 @@ func NewVM(loader bytecode.ILoader, sequencer ISequencer, bc *bytecode.Bytecode,
 	if err != nil {
 		return nil, err
 	}
-	if sequencer == nil {
-		sequencer = NewSequencer()
-	}
-	functions := make(map[string]*objects.FunctionCompiled)
-	globals := make([]objects.IObject, len(bc.Constants()))
+	constants := make([]objects.IObject, len(bc.Constants()))
+	entryPoints := make(map[string]*objects.FunctionCompiled)
 	for idx, constant := range bc.Constants() {
-		switch v := constant.(type) {
+		constants[idx] = constant
+		switch c := constant.(type) {
+		case *objects.Builtin:
+			fn := loader.BuiltinResolve(idx)
+			if fn == nil {
+				return nil, fmt.Errorf("builtin function not found: %s", c.Name())
+			}
+			constants[idx] = fn
 		case *objects.FunctionCompiled:
-			functions[v.Name()] = v
+			entryPoints[c.Name()] = c
 		}
-		globals[idx] = constant
 	}
 	v := &VM{
 		sourceFiles: bc.SourceFiles(),
 		ip:          resetIp,
 		loader:      loader,
 		references:  references,
-		functions:   functions,
+		entryPoints: entryPoints,
 	}
 	v.stack = NewStack(stackSize, maxAllocations, v.setError)
 	v.frames = NewFrames(maxFrames, v.setError)
-	v.globals = NewGlobals(globals, v.setError)
+	v.constants = NewConstants(constants, v.setError)
+	if sequencer == nil {
+		sequencer = NewSequencer()
+	}
 	seq := sequencer.Create()
 	v.sequencer = make([]func(vm *VM), len(seq))
 	for i, s := range seq {
 		v.sequencer[i] = s.Execute
 	}
+
 	v.Reset()
 	return v, nil
 }
@@ -101,7 +108,7 @@ func (v *VM) Reset() {
 
 // Run executes the virtual machine's bytecode, managing the stack, frames, and instruction pointer state.
 func (v *VM) Run(main string) error {
-	mainFn, _ := v.functions[main]
+	mainFn, _ := v.entryPoints[main]
 	if mainFn == nil {
 		return fmt.Errorf("main function not found")
 	}

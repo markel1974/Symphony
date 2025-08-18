@@ -24,9 +24,9 @@ type Scopes struct {
 // NewScopes initializes and returns a Scopes structure with a new symbol table, main compilation scope, and scope index set to 0.
 func NewScopes(loader bytecode.ILoader) *Scopes {
 	c := &Scopes{
-		builtin:     NewBuiltinSymbolTable(loader),
-		constants:   NewConstants(),
-		references:  NewConstants(),
+		builtin:     NewBuiltinSymbolTable(),
+		constants:   NewConstants(loader),
+		references:  NewConstants(nil),
 		symbolTable: NewSymbolTable(),
 		scopeIndex:  0,
 		scopes:      []*CompilationScope{NewCompilationScope()},

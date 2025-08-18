@@ -3,6 +3,7 @@ package compiler
 import (
 	"fmt"
 
+	"github.com/markel1974/c64emu/src/kernel/vm/bytecode"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
@@ -13,11 +14,22 @@ type Constants struct {
 }
 
 // NewConstants initializes and returns a new instance of the Constants struct with empty data structures.
-func NewConstants() *Constants {
-	return &Constants{
+func NewConstants(loader bytecode.ILoader) *Constants {
+	c := &Constants{
 		constants: []objects.IObject{},
 		cache:     make(map[string]int),
 	}
+	if loader != nil {
+		if bl := loader.BuiltinLen(); bl > 0 {
+			c.constants = make([]objects.IObject, bl)
+			for idx := 0; idx < bl; idx++ {
+				bi := loader.Builtin(idx)
+				c.constants[idx] = bi
+				c.cache[bi.Name()] = idx
+			}
+		}
+	}
+	return c
 }
 
 func (c *Constants) Print() {

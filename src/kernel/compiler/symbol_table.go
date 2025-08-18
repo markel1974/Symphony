@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/markel1974/c64emu/src/kernel/vm/bytecode"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
@@ -48,12 +47,8 @@ func NewSymbolTable() *SymbolTable {
 	return s
 }
 
-func NewBuiltinSymbolTable(loader bytecode.ILoader) *SymbolTable {
+func NewBuiltinSymbolTable() *SymbolTable {
 	st := NewSymbolTable()
-	for idx, fn := range loader.GetBuiltinFunctions() {
-		name := fn.Name()
-		st.symbols[name] = NewSymbol(name, idx, BuiltinScope, st.obj)
-	}
 	return st
 }
 

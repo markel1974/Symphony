@@ -27,12 +27,17 @@ type Module struct {
 	attrs map[string]objects.IObject
 }
 
+type Builtin struct {
+	wrapper *objects.Builtin
+	object  objects.IObject
+}
+
 // Loader is responsible for managing modules and resolving symbols within those modules.
 // It provides functionality for accessing and resolving both regular and built-in symbols.
 // The mod field holds a collection of modules, allowing for import and retrieval of symbols.
 type Loader struct {
-	modules          map[string]*Module
-	builtinFunctions []*objects.FunctionModule
+	modules map[string]*Module
+	builtin []*Builtin
 }
 
 // NewLoader initializes and returns a new Loader instance with built-in modules preloaded.
@@ -41,15 +46,34 @@ func NewLoader() *Loader {
 	for name, mod := range _builtinModules {
 		modules[name] = &Module{attrs: mod}
 	}
+	builtin := make([]*Builtin, len(_builtinFunctions))
+	for i, fn := range _builtinFunctions {
+		wrapper := objects.NewBuiltin(fn.Name(), i)
+		builtin[i] = &Builtin{wrapper: wrapper, object: fn}
+	}
 	return &Loader{
-		modules:          modules,
-		builtinFunctions: append([]*objects.FunctionModule{}, _builtinFunctions...),
+		modules: modules,
+		builtin: builtin,
 	}
 }
 
-// GetBuiltinFunctions returns a slice containing all registered builtin functions.
-func (l *Loader) GetBuiltinFunctions() []*objects.FunctionModule {
-	return l.builtinFunctions
+func (l *Loader) BuiltinLen() int {
+	return len(l.builtin)
+}
+
+func (l *Loader) Builtin(idx int) *objects.Builtin {
+	if idx < 0 || idx >= len(l.builtin) {
+		return nil
+	}
+	return l.builtin[idx].wrapper
+}
+
+// BuiltinResolve retrieves a built-in function by its index and returns it as a FunctionBuiltin instance.
+func (l *Loader) BuiltinResolve(idx int) objects.IObject {
+	if idx < 0 || idx >= len(l.builtin) {
+		return nil
+	}
+	return l.builtin[idx].object
 }
 
 // ResolveSymbols resolves a list of symbol references to their corresponding objects using the loader's symbol mapping.
@@ -63,27 +87,6 @@ func (l *Loader) ResolveSymbols(symbols []objects.IObject) ([]objects.IObject, e
 		references[i] = symbol
 	}
 	return references, nil
-}
-
-// ResolveBuiltinFunction resolves a list of IObject symbols into their corresponding built-in functions, returning an error if any fail.
-func (l *Loader) ResolveBuiltinFunction(symbols []objects.IObject) ([]*objects.FunctionModule, error) {
-	builtin := make([]*objects.FunctionModule, len(symbols))
-	for i := range symbols {
-		v := l.GetBuiltinFunction(i)
-		if v == nil {
-			return nil, fmt.Errorf("can't load builtin symbols, invalid reference %d", i)
-		}
-		builtin[i] = v
-	}
-	return builtin, nil
-}
-
-// GetBuiltinFunction retrieves a built-in function by its index and returns it as a FunctionBuiltin instance.
-func (l *Loader) GetBuiltinFunction(idx int) *objects.FunctionModule {
-	if idx < 0 || idx >= len(_builtinFunctions) {
-		return nil
-	}
-	return _builtinFunctions[idx]
 }
 
 // GetSymbol retrieves a symbol from the module based on the provided object definition. Returns the symbol and success status.
