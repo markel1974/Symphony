@@ -11,6 +11,7 @@ import (
 var _builtinModules = map[string]map[string]objects.IObject{
 	//"os":   osModule,
 	//"fmt":    _fmtSafeModule,
+	"errors":  _errorsModule,
 	"fmt":     _fmtModule,
 	"math":    _mathModule,
 	"strings": _stringsModule,

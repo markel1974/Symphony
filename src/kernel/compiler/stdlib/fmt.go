@@ -18,6 +18,7 @@ var _fmtModule = map[string]objects.IObject{
 	"Println": objects.NewFunctionModule(objects.FunctionModuleDef, "Println", fmtPrintln),
 	"Sprint":  objects.NewFunctionModule(objects.FunctionModuleDef, "Sprintf", fmtSprint),
 	"Sprintf": objects.NewFunctionModule(objects.FunctionModuleDef, "Sprintf", fmtSprintf),
+	"Errorf":  objects.NewFunctionModule(objects.FunctionModuleDef, "Errorf", fmtErrorf),
 }
 
 // fmtPrint prints the string representations of the provided IObject arguments without a newline.
@@ -93,4 +94,32 @@ func fmtSprintf(args ...objects.IObject) (ret objects.IObject, err error) {
 		ar = append(ar, objects.ToInterface(v))
 	}
 	return objects.NewString(fmt.Sprintf(s1, ar...))
+}
+
+// fmtSprintf formats a string based on a format string and arguments, returning the result or an error if formatting fails.
+func fmtErrorf(args ...objects.IObject) (ret objects.IObject, err error) {
+	argsLen := len(args)
+	if argsLen == 0 {
+		return nil, objects.ErrWrongNumArguments
+	}
+	s1, err := objects.ToStringArg(0, args[0])
+	if err != nil {
+		return nil, err
+	}
+	if len(args) == 1 {
+		v, err := objects.NewString(fmt.Errorf(s1).Error())
+		if err != nil {
+			return nil, err
+		}
+		return objects.NewError(v), nil
+	}
+	var ar []interface{}
+	for _, v := range args[1:] {
+		ar = append(ar, objects.ToInterface(v))
+	}
+	v, err := objects.NewString(fmt.Errorf(s1, ar...).Error())
+	if err != nil {
+		return nil, err
+	}
+	return objects.NewError(v), nil
 }

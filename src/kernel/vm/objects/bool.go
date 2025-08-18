@@ -6,7 +6,6 @@ const (
 
 // TrueValue is a predefined constant representing the boolean true value as an IObject.
 // FalseValue is a predefined constant representing the boolean false value as an IObject.
-// UndefinedValue is a predefined constant representing an undefined value as an IObject.
 var (
 	// TrueValue represents a true values.
 	TrueValue IObject = &Bool{value: true}
