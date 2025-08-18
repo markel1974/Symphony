@@ -313,10 +313,6 @@ func (c *Scopes) EmitSymbolGet(s *Symbol) error {
 		if _, err := c.Emit(bytecode.OpGetLocal, s.Index); err != nil {
 			return err
 		}
-	case BuiltinScope:
-		if _, err := c.Emit(bytecode.OpGetBuiltin, s.Index); err != nil {
-			return err
-		}
 	case FreeScope:
 		if _, err := c.Emit(bytecode.OpGetFree, s.Index); err != nil {
 			return err
@@ -379,6 +375,7 @@ func (c *Scopes) EmitUnaryOp(op token.Token) error {
 	return nil
 }
 
+// Print prints the contents of the Scopes structure to the console.
 func (c *Scopes) Print() {
 	fmt.Println("----- Constants -----")
 	c.constants.Print()

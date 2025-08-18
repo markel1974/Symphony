@@ -13,14 +13,12 @@ type SymbolScope string
 // GlobalScope represents a symbol defined in the global scope.
 // LocalScope represents a symbol defined in the local function scope.
 // FreeScope represents a free variable captured from an enclosing scope.
-// BuiltinScope represents a built-in function or value in the scope.
 // TypeScope represents a custom type definition in the scope.
 const (
 	ImportScope  SymbolScope = "IMPORT"
 	GlobalScope  SymbolScope = "GLOBAL"
 	LocalScope   SymbolScope = "LOCAL"
 	FreeScope    SymbolScope = "FREE"
-	BuiltinScope SymbolScope = "BUILTIN"
 	TypeScope    SymbolScope = "TYPE"
 	UnknownScope SymbolScope = "UNKNOWN"
 )
@@ -66,9 +64,6 @@ func (s *SymbolTable) Print() {
 		s.outer.Print()
 	}
 	for k, v := range s.symbols {
-		if v.Scope == BuiltinScope {
-			continue
-		}
 		fmt.Println(k, v.Name, v.Scope, v.Index, v.Fields)
 	}
 	for _, v := range s.freeSymbols {
@@ -134,7 +129,7 @@ func (s *SymbolTable) Resolve(name string) (*Symbol, bool) {
 	}
 	// Types, global variables, and builtin functions are directly accessible
 	// from inner scopes and should not be converted to "free variables".
-	if obj.Scope == ImportScope || obj.Scope == GlobalScope || obj.Scope == BuiltinScope || obj.Scope == TypeScope {
+	if obj.Scope == ImportScope || obj.Scope == GlobalScope || obj.Scope == TypeScope {
 		return obj, true
 	}
 	s.freeSymbols = append(s.freeSymbols, obj)

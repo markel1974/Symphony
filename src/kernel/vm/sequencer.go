@@ -54,7 +54,6 @@ func (ds *Sequencer) Create() []IOpExecutor {
 	ds.setSequence(NewOpSetLocal())
 	ds.setSequence(NewOpSetSelLocal())
 	ds.setSequence(NewOpGetLocal())
-	ds.setSequence(NewOpGetBuiltin())
 	ds.setSequence(NewOpClosure())
 	ds.setSequence(NewOpGetFreePtr())
 	ds.setSequence(NewOpGetFree())

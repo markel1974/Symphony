@@ -792,28 +792,6 @@ func (op *OpGetLocal) Execute(v *VM) {
 	v.stack.Push(val)
 }
 
-// OpGetBuiltin represents the operation code for retrieving a builtin function in the virtual machine.
-type OpGetBuiltin struct {
-	*bytecode.OpcodeDetails
-}
-
-// NewOpGetBuiltin creates a new instance of OpGetBuiltin with associated opcode details for OpGetBuiltin operations.
-func NewOpGetBuiltin() *OpGetBuiltin {
-	return &OpGetBuiltin{OpcodeDetails: bytecode.OpcodeToDetails(bytecode.OpGetBuiltin)}
-}
-
-// Execute advances the instruction pointer, retrieves a builtin symbol, and pushes it onto the VM stack.
-func (op *OpGetBuiltin) Execute(v *VM) {
-	v.ip++
-	builtinIndex := v.currFrame.Get(v.ip)
-	symbol := v.loader.BuiltinResolve(builtinIndex)
-	if symbol == nil {
-		v.setError(fmt.Errorf("unkown builtin index: %d", builtinIndex))
-		return
-	}
-	v.stack.Push(symbol)
-}
-
 // OpClosure represents a closure operation that creates a new closure in the virtual machine.
 type OpClosure struct {
 	*bytecode.OpcodeDetails

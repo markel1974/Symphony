@@ -89,7 +89,6 @@ const (
 	OpSetFree                     // Set free variables
 	OpGetLocalPtr                 // Get local variable as a pointer
 	OpSetSelFree                  // Set free variables using selectors
-	OpGetBuiltin                  // Get builtin function
 	OpClosure                     // Push closure
 	OpIteratorInit                // Iterator init
 	OpIteratorNext                // Iterator next
@@ -172,7 +171,6 @@ func init() {
 	createOpcodeDetails(OpSetLocal, []int{1}, "OpSetLocal")
 	createOpcodeDetails(OpDefineLocal, []int{1}, "OpDefineLocal")
 	createOpcodeDetails(OpSetSelLocal, []int{1, 1}, "OpSetSelLocal")
-	createOpcodeDetails(OpGetBuiltin, []int{1}, "OpGetBuiltin")
 	createOpcodeDetails(OpClosure, []int{2, 1}, "OpClosure")
 	createOpcodeDetails(OpGetFreePtr, []int{1}, "OpGetFreePtr")
 	createOpcodeDetails(OpGetFree, []int{1}, "OpGetFree")
