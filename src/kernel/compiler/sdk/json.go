@@ -7,16 +7,30 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
-// jsonModule is a map of JSON-related functions (decode, encode, indent, html_escape) implementing the IObject interface.
-var _jsonModule = map[string]objects.IObject{
-	"Unmarshal":  objects.NewFunctionModule(objects.FunctionModuleDef, "Unmarshal", jsonUnmarshal),
-	"Marshal":    objects.NewFunctionModule(objects.FunctionModuleDef, "Marshal", jsonMarshal),
-	"Indent":     objects.NewFunctionModule(objects.FunctionModuleDef, "Indent", jsonIndent),
-	"HTMLEscape": objects.NewFunctionModule(objects.FunctionModuleDef, "html_escape", jsonHTMLEscape),
+// Json represents a module containing JSON-related operations and utilities.
+type Json struct {
+	module map[string]objects.IObject
 }
 
-// jsonUnmarshal parses a JSON-encoded bytes or string argument into a map-like object or returns an error if decoding fails.
-func jsonUnmarshal(args ...objects.IObject) (ret objects.IObject, err error) {
+// NewJson creates and returns a new instance of Json containing predefined JSON operation modules.
+func NewJson() *Json {
+	j := &Json{}
+	j.module = map[string]objects.IObject{
+		"Unmarshal":  objects.NewFunctionModule(objects.FunctionModuleDef, "Unmarshal", j.Unmarshal),
+		"Marshal":    objects.NewFunctionModule(objects.FunctionModuleDef, "Marshal", j.Marshal),
+		"Indent":     objects.NewFunctionModule(objects.FunctionModuleDef, "Indent", j.Indent),
+		"HTMLEscape": objects.NewFunctionModule(objects.FunctionModuleDef, "html_escape", j.HTMLEscape),
+	}
+	return j
+}
+
+// Module returns the `module` map containing string keys and `objects.IObject` values from the `Json` structure.
+func (j *Json) Module() map[string]objects.IObject {
+	return j.module
+}
+
+// Unmarshal parses a JSON-encoded string or byte slice into a Map object and returns it as IObject.
+func (j *Json) Unmarshal(args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}
@@ -38,10 +52,8 @@ func jsonUnmarshal(args ...objects.IObject) (ret objects.IObject, err error) {
 	return result, nil
 }
 
-// jsonMarshal serializes an IObject into its JSON-encoded byte representation and returns it as a Bytes object.
-// jsonMarshal expects exactly one argument; otherwise, it returns an error for incorrect argument count.
-// jsonMarshal returns a serialized result or an error object if JSON marshalling fails.
-func jsonMarshal(args ...objects.IObject) (ret objects.IObject, err error) {
+// Marshal serializes a single IObject into a JSON-encoded byte slice and returns it as a Bytes object.
+func (j *Json) Marshal(args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}
@@ -52,10 +64,8 @@ func jsonMarshal(args ...objects.IObject) (ret objects.IObject, err error) {
 	return objects.NewBytes(result), nil
 }
 
-// jsonIndent formats JSON input with the specified prefix and indentation, returning the formatted JSON as Bytes.
-// It accepts three arguments: a string/bytes JSON input, a string prefix, and a string indentation.
-// Returns an error if the input is invalid or the formatting fails.
-func jsonIndent(args ...objects.IObject) (ret objects.IObject, err error) {
+// Indent takes a JSON object (bytes or string), a prefix, and an indent string, and returns the indented JSON.
+func (j *Json) Indent(args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 3 {
 		return nil, objects.ErrWrongNumArguments
 	}
@@ -87,9 +97,11 @@ func jsonIndent(args ...objects.IObject) (ret objects.IObject, err error) {
 	}
 }
 
-// jsonHTMLEscape escapes special HTML characters in a bytes or string object using JSON encoding.
-// Returns a new bytes object with the escaped data or an error if the input type is invalid.
-func jsonHTMLEscape(args ...objects.IObject) (ret objects.IObject, err error) {
+// HTMLEscape escapes certain characters in a JSON string or byte slice to their HTML-safe equivalents.
+// Accepts one argument of type `*objects.Bytes` or `*objects.String`.
+// Returns a new `*objects.Bytes` containing the escaped output or an error if an invalid argument type is provided.
+// Errors if the number of arguments is not exactly one.
+func (j *Json) HTMLEscape(args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}

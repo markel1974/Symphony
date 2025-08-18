@@ -6,37 +6,35 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
-// randModule is a map containing random-related utility functions for generating numbers, seeding, permutations, and more.
-var _randModule = map[string]objects.IObject{
-	"Int63":       objects.NewFunctionModule(objects.FunctionModuleDef, "Int63", objects.FuncInOi64(rand.Int63)),
-	"Float64":     objects.NewFunctionModule(objects.FunctionModuleDef, "Float64", objects.FuncInOf64(rand.Float64)),
-	"Int63n":      objects.NewFunctionModule(objects.FunctionModuleDef, "Int63n", objects.FuncIi64Oi64(rand.Int63n)),
-	"ExpFloat64":  objects.NewFunctionModule(objects.FunctionModuleDef, "ExpFloat64", objects.FuncInOf64(rand.ExpFloat64)),
-	"NormFloat64": objects.NewFunctionModule(objects.FunctionModuleDef, "NormFloat64", objects.FuncInOf64(rand.NormFloat64)),
-	"Perm":        objects.NewFunctionModule(objects.FunctionModuleDef, "Perm", objects.FuncIiOiS(rand.Perm)),
-	"Seed":        objects.NewFunctionModule(objects.FunctionModuleDef, "Seed", objects.FuncIi64On(rand.Seed)),
-	"Read":        objects.NewFunctionModule(objects.FunctionModuleDef, "Read", doRandRead),
-	"Rand":        objects.NewFunctionModule(objects.FunctionModuleDef, "Rand", doRandRand),
+// Rand is a struct that encapsulates a module mapping of string keys to objects implementing the IObject interface.
+type Rand struct {
+	module map[string]objects.IObject
 }
 
-// randRand generates an immutable map containing random-related functions derived from the provided rand.Rand instance.
-func randRand(r *rand.Rand) *objects.MapImmutable {
-	return objects.NewMapImmutable(
-		map[string]objects.IObject{
-			"Int63":       objects.NewFunctionModule(objects.FunctionModuleDef, "Int63", objects.FuncInOi64(r.Int63)),
-			"Float64":     objects.NewFunctionModule(objects.FunctionModuleDef, "Float64", objects.FuncInOf64(r.Float64)),
-			"Int63n":      objects.NewFunctionModule(objects.FunctionModuleDef, "Int63n", objects.FuncIi64Oi64(r.Int63n)),
-			"ExpFloat64":  objects.NewFunctionModule(objects.FunctionModuleDef, "ExpFloat64", objects.FuncInOf64(r.ExpFloat64)),
-			"NormFloat64": objects.NewFunctionModule(objects.FunctionModuleDef, "NormFloat64", objects.FuncInOf64(r.NormFloat64)),
-			"Perm":        objects.NewFunctionModule(objects.FunctionModuleDef, "Perm", objects.FuncIiOiS(r.Perm)),
-			"Seed":        objects.NewFunctionModule(objects.FunctionModuleDef, "Seed", objects.FuncIi64On(r.Seed)),
-			"Read":        objects.NewFunctionModule(objects.FunctionModuleDef, "Read", func(args ...objects.IObject) (objects.IObject, error) { return doRRandRand(r, args...) }),
-		})
+// NewRand creates a new instance of Rand with a pre-defined set of random number generation functions.
+func NewRand() *Rand {
+	z := &Rand{}
+	z.module = map[string]objects.IObject{
+		"Int63":       objects.NewFunctionModule(objects.FunctionModuleDef, "Int63", objects.FuncInOi64(rand.Int63)),
+		"Float64":     objects.NewFunctionModule(objects.FunctionModuleDef, "Float64", objects.FuncInOf64(rand.Float64)),
+		"Int63n":      objects.NewFunctionModule(objects.FunctionModuleDef, "Int63n", objects.FuncIi64Oi64(rand.Int63n)),
+		"ExpFloat64":  objects.NewFunctionModule(objects.FunctionModuleDef, "ExpFloat64", objects.FuncInOf64(rand.ExpFloat64)),
+		"NormFloat64": objects.NewFunctionModule(objects.FunctionModuleDef, "NormFloat64", objects.FuncInOf64(rand.NormFloat64)),
+		"Perm":        objects.NewFunctionModule(objects.FunctionModuleDef, "Perm", objects.FuncIiOiS(rand.Perm)),
+		"Seed":        objects.NewFunctionModule(objects.FunctionModuleDef, "Seed", objects.FuncIi64On(rand.Seed)),
+		"Read":        objects.NewFunctionModule(objects.FunctionModuleDef, "Read", z.Read),
+		"Rand":        objects.NewFunctionModule(objects.FunctionModuleDef, "Rand", z.Rand),
+	}
+	return z
 }
 
-// doRandRead reads random bytes into the given bytes object and returns the number of bytes read as an integer.
-// It expects exactly one argument of type *objects.Bytes. Returns an error if the argument is missing or invalid.
-func doRandRead(args ...objects.IObject) (objects.IObject, error) {
+// Module returns the module map of the Rand instance containing string keys mapped to objects.IObject values.
+func (z *Rand) Module() map[string]objects.IObject {
+	return z.module
+}
+
+// Read reads random data into a byte slice and returns the number of bytes written as an integer or an error if it occurs.
+func (z *Rand) Read(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}
@@ -51,9 +49,8 @@ func doRandRead(args ...objects.IObject) (objects.IObject, error) {
 	return objects.NewInt(int64(res)), nil
 }
 
-// doRandRand initializes a new random generator with the given seed and returns a map of random-related functions.
-// Expects one argument: an int(compatible) seed value. Returns an error for invalid arguments or wrong argument count.
-func doRandRand(args ...objects.IObject) (objects.IObject, error) {
+// Rand generates a new random number generator using the provided seed argument and returns its options as a map.
+func (z *Rand) Rand(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}
@@ -62,12 +59,26 @@ func doRandRand(args ...objects.IObject) (objects.IObject, error) {
 		return nil, err
 	}
 	src := rand.NewSource(i1)
-	return randRand(rand.New(src)), nil
+	return z.RandOptions(rand.New(src)), nil
 }
 
-// doRRandRand reads random data into a byte array and returns the number of bytes written or an error if any occurs.
-// The function expects exactly one argument of type *objects.Bytes; otherwise, it returns an argument or type error.
-func doRRandRand(r *rand.Rand, args ...objects.IObject) (objects.IObject, error) {
+// RandOptions returns an immutable map of utility functions for the provided *rand.Rand object, enabling random operations.
+func (z *Rand) RandOptions(r *rand.Rand) *objects.MapImmutable {
+	return objects.NewMapImmutable(
+		map[string]objects.IObject{
+			"Int63":       objects.NewFunctionModule(objects.FunctionModuleDef, "Int63", objects.FuncInOi64(r.Int63)),
+			"Float64":     objects.NewFunctionModule(objects.FunctionModuleDef, "Float64", objects.FuncInOf64(r.Float64)),
+			"Int63n":      objects.NewFunctionModule(objects.FunctionModuleDef, "Int63n", objects.FuncIi64Oi64(r.Int63n)),
+			"ExpFloat64":  objects.NewFunctionModule(objects.FunctionModuleDef, "ExpFloat64", objects.FuncInOf64(r.ExpFloat64)),
+			"NormFloat64": objects.NewFunctionModule(objects.FunctionModuleDef, "NormFloat64", objects.FuncInOf64(r.NormFloat64)),
+			"Perm":        objects.NewFunctionModule(objects.FunctionModuleDef, "Perm", objects.FuncIiOiS(r.Perm)),
+			"Seed":        objects.NewFunctionModule(objects.FunctionModuleDef, "Seed", objects.FuncIi64On(r.Seed)),
+			"Read":        objects.NewFunctionModule(objects.FunctionModuleDef, "Read", func(args ...objects.IObject) (objects.IObject, error) { return z.RandOptionsRead(r, args...) }),
+		})
+}
+
+// RandOptionsRead reads random data into a provided byte slice, returning the number of bytes read or an error.
+func (z *Rand) RandOptionsRead(r *rand.Rand, args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}

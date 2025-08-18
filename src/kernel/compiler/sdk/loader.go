@@ -7,22 +7,6 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
-// _builtinModules are builtin type standard library modules.
-var _builtinModules = map[string]map[string]objects.IObject{
-	//"os":   osModule,
-	//"fmt":    _fmtSafeModule,
-	"errors":  _errorsModule,
-	"fmt":     _fmtModule,
-	"math":    _mathModule,
-	"strings": _stringsModule,
-	"regexp":  _regexpModule,
-	"time":    _timeModule,
-	"rand":    _randModule,
-	"json":    _jsonModule,
-	"base64":  _base64Module,
-	"hex":     _hexModule,
-}
-
 // Module represents a module with predefined attributes that can be imported or accessed at runtime.
 // Attrs stores a map of string keys to IObject values, representing the module's predefined attributes.
 type Module struct {
@@ -44,8 +28,22 @@ type Loader struct {
 
 // NewLoader initializes and returns a new Loader instance with built-in modules preloaded.
 func NewLoader() *Loader {
+	builtinModules := map[string]map[string]objects.IObject{
+		//"fmt":    _fmtSafeModule,
+		"errors":  NewErrors().Module(),
+		"fmt":     NewFmt().Module(),
+		"math":    NewMath().Module(),
+		"strings": NewStrings().Module(),
+		"strconv": NewStrconv().Module(),
+		"regexp":  NewRegexp().Module(),
+		"time":    NewTime().Module(),
+		"rand":    NewRand().Module(),
+		"json":    NewJson().Module(),
+		"base64":  NewBase64().Module(),
+		"hex":     NewHex().Module(),
+	}
 	modules := make(map[string]*Module)
-	for name, mod := range _builtinModules {
+	for name, mod := range builtinModules {
 		modules[name] = &Module{attrs: mod}
 	}
 	builtin := make([]*Builtin, len(_builtinFunctions))

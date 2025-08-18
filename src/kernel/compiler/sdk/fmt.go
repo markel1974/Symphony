@@ -6,23 +6,27 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
-// fmtSafeModule is a map containing predefined functions from the fmt package wrapped as IObjects, like "sprintf".
-//var _fmtSafeModule = map[string]objects.IObject{
-//	"Sprintf": objects.NewFunctionModule(objects.FunctionModuleDef, "Sprintf", fmtSprintf),
-//}
-
-// fmtModule is a map that associates string keys with user-defined function objects for various formatted output operations.
-var _fmtModule = map[string]objects.IObject{
-	"Print":   objects.NewFunctionModule(objects.FunctionModuleDef, "Print", fmtPrint),
-	"Printf":  objects.NewFunctionModule(objects.FunctionModuleDef, "Printf", fmtPrintf),
-	"Println": objects.NewFunctionModule(objects.FunctionModuleDef, "Println", fmtPrintln),
-	"Sprint":  objects.NewFunctionModule(objects.FunctionModuleDef, "Sprintf", fmtSprint),
-	"Sprintf": objects.NewFunctionModule(objects.FunctionModuleDef, "Sprintf", fmtSprintf),
-	"Errorf":  objects.NewFunctionModule(objects.FunctionModuleDef, "Errorf", fmtErrorf),
+// Fmt represents a struct that provides formatted output methods using a map of predefined functions.
+type Fmt struct {
+	module map[string]objects.IObject
 }
 
-// fmtPrint prints the string representations of the provided IObject arguments without a newline.
-func fmtPrint(args ...objects.IObject) (ret objects.IObject, err error) {
+// NewFmt initializes and returns a new Fmt instance with predefined formatting functions as module properties.
+func NewFmt() *Fmt {
+	f := &Fmt{}
+	f.module = map[string]objects.IObject{
+		"Print":   objects.NewFunctionModule(objects.FunctionModuleDef, "Print", f.Print),
+		"Printf":  objects.NewFunctionModule(objects.FunctionModuleDef, "Printf", f.Printf),
+		"Println": objects.NewFunctionModule(objects.FunctionModuleDef, "Println", f.Println),
+		"Sprint":  objects.NewFunctionModule(objects.FunctionModuleDef, "Sprintf", f.Sprint),
+		"Sprintf": objects.NewFunctionModule(objects.FunctionModuleDef, "Sprintf", f.Sprintf),
+		"Errorf":  objects.NewFunctionModule(objects.FunctionModuleDef, "Errorf", f.Errorf),
+	}
+	return f
+}
+
+// Print writes the string representations of the provided arguments to the standard output without appending a newline.
+func (f *Fmt) Print(args ...objects.IObject) (ret objects.IObject, err error) {
 	var printArgs []interface{}
 	for _, arg := range args {
 		printArgs = append(printArgs, objects.ToInterface(arg))
@@ -31,8 +35,10 @@ func fmtPrint(args ...objects.IObject) (ret objects.IObject, err error) {
 	return nil, nil
 }
 
-// fmtPrintf formats and prints a string using given arguments; returns nil or an error on invalid input or formatting.
-func fmtPrintf(args ...objects.IObject) (ret objects.IObject, err error) {
+// Printf formats and outputs a string using the provided format and arguments, implementing similar behavior to fmt.Printf.
+// The first argument must be a format string, with additional arguments used to populate the format specifiers.
+// Returns an error if the number of arguments is insufficient or if the format argument is incompatible.
+func (f *Fmt) Printf(args ...objects.IObject) (ret objects.IObject, err error) {
 	argsLen := len(args)
 	if argsLen == 0 {
 		return nil, objects.ErrWrongNumArguments
@@ -53,9 +59,8 @@ func fmtPrintf(args ...objects.IObject) (ret objects.IObject, err error) {
 	return nil, nil
 }
 
-// fmtPrintln outputs arguments to the standard output with a newline, converting them to strings if necessary.
-// Returns nil and an error if any argument conversion fails.
-func fmtPrintln(args ...objects.IObject) (ret objects.IObject, err error) {
+// Println writes the given arguments to the standard output with a newline and returns nil and no error.
+func (f *Fmt) Println(args ...objects.IObject) (ret objects.IObject, err error) {
 	var printArgs []interface{}
 	for _, arg := range args {
 		printArgs = append(printArgs, objects.ToInterface(arg))
@@ -64,8 +69,8 @@ func fmtPrintln(args ...objects.IObject) (ret objects.IObject, err error) {
 	return nil, nil
 }
 
-// fmtSprintf formats a string based on a format string and arguments, returning the result or an error if formatting fails.
-func fmtSprint(args ...objects.IObject) (ret objects.IObject, err error) {
+// Sprint formats and concatenates the provided arguments into a single string and returns it as a new String object.
+func (f *Fmt) Sprint(args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) == 0 {
 		return nil, objects.ErrWrongNumArguments
 	}
@@ -76,8 +81,8 @@ func fmtSprint(args ...objects.IObject) (ret objects.IObject, err error) {
 	return objects.NewString(fmt.Sprint(ar))
 }
 
-// fmtSprintf formats a string based on a format string and arguments, returning the result or an error if formatting fails.
-func fmtSprintf(args ...objects.IObject) (ret objects.IObject, err error) {
+// Sprintf formats a string using a format specifier and optional arguments, returning it as a new string object.
+func (f *Fmt) Sprintf(args ...objects.IObject) (ret objects.IObject, err error) {
 	argsLen := len(args)
 	if argsLen == 0 {
 		return nil, objects.ErrWrongNumArguments
@@ -96,8 +101,8 @@ func fmtSprintf(args ...objects.IObject) (ret objects.IObject, err error) {
 	return objects.NewString(fmt.Sprintf(s1, ar...))
 }
 
-// fmtSprintf formats a string based on a format string and arguments, returning the result or an error if formatting fails.
-func fmtErrorf(args ...objects.IObject) (ret objects.IObject, err error) {
+// Errorf formats an error message using a format string and arguments, returning an IObject error representation.
+func (f *Fmt) Errorf(args ...objects.IObject) (ret objects.IObject, err error) {
 	argsLen := len(args)
 	if argsLen == 0 {
 		return nil, objects.ErrWrongNumArguments
@@ -122,4 +127,9 @@ func fmtErrorf(args ...objects.IObject) (ret objects.IObject, err error) {
 		return nil, err
 	}
 	return objects.NewError(v), nil
+}
+
+// Module returns the module map containing string keys and corresponding IObject values from the Fmt struct.
+func (f *Fmt) Module() map[string]objects.IObject {
+	return f.module
 }

@@ -6,22 +6,41 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
+// RegexpTextDef defines the default key for regular expression text.
+// RegexpBeginDef defines the default key for the beginning of a regular expression.
+// RegexpEndDef defines the default key for the end of a regular expression.
 const (
 	RegexpTextDef  = "Text"
 	RegexpBeginDef = "Begin"
 	RegexpEndDef   = "End"
 )
 
-var _regexpModule = map[string]objects.IObject{
-	"Match":   objects.NewFunctionModule(objects.FunctionModuleDef, "Match", regexpMatch),     // re_match(pattern, text) => bool/error
-	"Find":    objects.NewFunctionModule(objects.FunctionModuleDef, "Find", regexpFind),       // re_find(pattern, text, count) => [[{text:,begin:,end:}]]/undefined
-	"Replace": objects.NewFunctionModule(objects.FunctionModuleDef, "Replace", regexpReplace), // re_replace(pattern, text, repl) => string/error
-	"Split":   objects.NewFunctionModule(objects.FunctionModuleDef, "Split", regexpSplit),     // re_split(pattern, text, count) => [string]/error
-	"Compile": objects.NewFunctionModule(objects.FunctionModuleDef, "Compile", regexpCompile),
+// Regexp represents a structure providing regular expression functionality through associated operations and methods.
+type Regexp struct {
+	module map[string]objects.IObject
 }
 
-// regexpMatch matches a string against a given regular expression and returns a boolean IObject result or an error.
-func regexpMatch(args ...objects.IObject) (objects.IObject, error) {
+// NewRegexp creates and returns a new instance of the Regexp struct with initialized module functions.
+func NewRegexp() *Regexp {
+	r := &Regexp{}
+	r.module = map[string]objects.IObject{
+		"Match":   objects.NewFunctionModule(objects.FunctionModuleDef, "Match", r.Match),
+		"Find":    objects.NewFunctionModule(objects.FunctionModuleDef, "Find", r.Find),
+		"Replace": objects.NewFunctionModule(objects.FunctionModuleDef, "Replace", r.Replace),
+		"Split":   objects.NewFunctionModule(objects.FunctionModuleDef, "Split", r.Split),
+		"Compile": objects.NewFunctionModule(objects.FunctionModuleDef, "Compile", r.Compile),
+	}
+	return r
+}
+
+// Module returns the module map associated with the Regexp, containing functionalities as key-value pairs.
+func (r *Regexp) Module() map[string]objects.IObject {
+	return r.module
+}
+
+// Match checks whether the second string argument matches the pattern defined by the first string argument.
+// Returns a boolean object indicating match success or failure, and an error if any issues occur.
+func (r *Regexp) Match(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 2 {
 		return nil, objects.ErrWrongNumArguments
 	}
@@ -43,8 +62,10 @@ func regexpMatch(args ...objects.IObject) (objects.IObject, error) {
 	return objects.FalseValue, nil
 }
 
-// regexpFind performs a regex search on a string. Returns matches with details or undefined if no match is found.
-func regexpFind(args ...objects.IObject) (objects.IObject, error) {
+// Find searches a string for matches against a regular expression and returns match details or an array of matches.
+// The first argument is the pattern, the second argument is the string to search, and optionally, the third is the limit.
+// Returns an error if the number of arguments is incorrect or conversion fails for any argument.
+func (r *Regexp) Find(args ...objects.IObject) (objects.IObject, error) {
 	numArgs := len(args)
 	if numArgs != 2 && numArgs != 3 {
 		return nil, objects.ErrWrongNumArguments
@@ -99,8 +120,8 @@ func regexpFind(args ...objects.IObject) (objects.IObject, error) {
 	return arr, nil
 }
 
-// regexpSplit takes a regex pattern, a string, and an optional limit, returning an array of substrings split by the pattern.
-func regexpSplit(args ...objects.IObject) (objects.IObject, error) {
+// Split divides a string into substrings based on the regular expression pattern and returns them as an array.
+func (r *Regexp) Split(args ...objects.IObject) (objects.IObject, error) {
 	numArgs := len(args)
 	if numArgs != 2 && numArgs != 3 {
 		return nil, objects.ErrWrongNumArguments
@@ -135,8 +156,8 @@ func regexpSplit(args ...objects.IObject) (objects.IObject, error) {
 	return arr, nil
 }
 
-// regexpCompile compiles a string into a regular expression and returns it as an immutable map of regex functions.
-func regexpCompile(args ...objects.IObject) (objects.IObject, error) {
+// Compile compiles a single string argument into a regular expression and returns an object encapsulating its options.
+func (r *Regexp) Compile(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}
@@ -148,13 +169,11 @@ func regexpCompile(args ...objects.IObject) (objects.IObject, error) {
 	if err != nil {
 		return objects.NewObjectError(err), nil
 	}
-	return _regexpCompileResult(re), nil
+	return r.CompileOptions(re), nil
 }
 
-// regexpReplace performs a regex-based replacement on a string using provided pattern, target, and replacement values.
-// It takes exactly three arguments: a regex pattern string, a target string, and a replacement string.
-// Returns a new string after performing the replacements or an error if inputs are invalid.
-func regexpReplace(args ...objects.IObject) (objects.IObject, error) {
+// Replace performs a regex-based replacement on the input string with the specified replacement string and returns the result.
+func (r *Regexp) Replace(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 3 {
 		return nil, objects.ErrWrongNumArguments
 	}
@@ -174,7 +193,7 @@ func regexpReplace(args ...objects.IObject) (objects.IObject, error) {
 	if err != nil {
 		return objects.NewObjectError(err), nil
 	}
-	s := _regexpReplaceInternal(re, s2, s3)
+	s := r.replaceInternal(re, s2, s3)
 	v, err := objects.NewString(s)
 	if err != nil {
 		return nil, err
@@ -182,47 +201,26 @@ func regexpReplace(args ...objects.IObject) (objects.IObject, error) {
 	return v, nil
 }
 
-// _regexpCompileResult returns an MapImmutable of functions for regex operations: match, find, replace, and split.
-func _regexpCompileResult(re *regexp.Regexp) *objects.MapImmutable {
+// CompileOptions returns a MapImmutable containing methods for operations like match, find, replace, and split using a compiled regexp.
+func (r *Regexp) CompileOptions(re *regexp.Regexp) *objects.MapImmutable {
 	return objects.NewMapImmutable(
 		map[string]objects.IObject{
 			// match(text) => bool
-			"Match": objects.NewFunctionModule(objects.FunctionModuleDef, "Match", func(args ...objects.IObject) (objects.IObject, error) { return _regexpMatch(re, args...) }),
+			"Match": objects.NewFunctionModule(objects.FunctionModuleDef, "Match", func(args ...objects.IObject) (objects.IObject, error) { return r.CompileOptionMatch(re, args...) }),
 			// find(text) 			=> array(array({text:,begin:,end:}))/undefined
 			// find(text, maxCount) => array(array({text:,begin:,end:}))/undefined
-			"Find": objects.NewFunctionModule(objects.FunctionModuleDef, "Find", func(args ...objects.IObject) (objects.IObject, error) { return _regexpFind(re, args...) }),
+			"Find": objects.NewFunctionModule(objects.FunctionModuleDef, "Find", func(args ...objects.IObject) (objects.IObject, error) { return r.CompileOptionFind(re, args...) }),
 			// replace(src, repl) => string
-			"Replace": objects.NewFunctionModule(objects.FunctionModuleDef, "Replace", func(args ...objects.IObject) (objects.IObject, error) { return _regexpReplace(re, args...) }),
+			"Replace": objects.NewFunctionModule(objects.FunctionModuleDef, "Replace", func(args ...objects.IObject) (objects.IObject, error) { return r.CompileOptionReplace(re, args...) }),
 			// split(text) 			 => array(string)
 			// split(text, maxCount) => array(string)
-			"Split": objects.NewFunctionModule(objects.FunctionModuleDef, "Split", func(args ...objects.IObject) (objects.IObject, error) { return _regexpSplit(re, args...) }),
+			"Split": objects.NewFunctionModule(objects.FunctionModuleDef, "Split", func(args ...objects.IObject) (objects.IObject, error) { return r.CompileOptionSplit(re, args...) }),
 		},
 	)
 }
 
-// _regexpReplaceInternal performs a regex-based replacement in the input string, returning the modified string and success status.
-// re is the compiled regular expression used for matching patterns in src.
-// src is the source string to search within and replace matched substrings.
-// repl defines the replacement pattern, which may include backreferences from the regex match.
-// Returns the modified string and a boolean indicating if the operation was successful (e.g., did not exceed length limits).
-func _regexpReplaceInternal(re *regexp.Regexp, src, repl string) string {
-	idx := 0
-	out := ""
-	for _, m := range re.FindAllStringSubmatchIndex(src, -1) {
-		var exp []byte
-		exp = re.ExpandString(exp, repl, src, m)
-		out += src[idx:m[0]] + string(exp)
-		idx = m[1]
-	}
-	if idx < len(src) {
-		out += src[idx:]
-	}
-	return out
-}
-
-// _regexpMatch checks if the provided string argument matches the given regular expression and returns a boolean result.
-// Returns an error if the number of arguments is not 1 or if the argument type is not a string (compatible).
-func _regexpMatch(re *regexp.Regexp, args ...objects.IObject) (objects.IObject, error) {
+// CompileOptionMatch checks if the given regular expression matches the provided string argument and returns a boolean result.
+func (r *Regexp) CompileOptionMatch(re *regexp.Regexp, args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}
@@ -236,11 +234,11 @@ func _regexpMatch(re *regexp.Regexp, args ...objects.IObject) (objects.IObject, 
 	return objects.FalseValue, nil
 }
 
-// _regexpFind attempts to find matches in a given string based on a specified regular expression.
-// The first argument must be a string, and the second argument (optional) specifies a match limit (integer).
-// Returns an array of match details (e.g., matched text, start index, end index) or undefined if no match is found.
-// Returns an error if invalid argument types or wrong number of arguments are provided.
-func _regexpFind(re *regexp.Regexp, args ...objects.IObject) (objects.IObject, error) {
+// CompileOptionFind performs regex matching with options for finding single or multiple matches in a given string.
+// Accepts a compiled regex and one or two additional arguments: a string to match and optionally the match limit.
+// Returns a collection of matched substrings with their positions or an undefined value if no match is found.
+// Returns an error if arguments are invalid or if type conversion fails.
+func (r *Regexp) CompileOptionFind(re *regexp.Regexp, args ...objects.IObject) (objects.IObject, error) {
 	numArgs := len(args)
 	if numArgs != 1 && numArgs != 2 {
 		return nil, objects.ErrWrongNumArguments
@@ -289,8 +287,8 @@ func _regexpFind(re *regexp.Regexp, args ...objects.IObject) (objects.IObject, e
 	return arr, nil
 }
 
-// _regexpReplace performs a regex-based replacement with a source and replacement string, returning a new string or an error.
-func _regexpReplace(re *regexp.Regexp, args ...objects.IObject) (objects.IObject, error) {
+// CompileOptionReplace replaces occurrences in the input string matching the regular expression with the replacement string.
+func (r *Regexp) CompileOptionReplace(re *regexp.Regexp, args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 2 {
 		return nil, objects.ErrWrongNumArguments
 	}
@@ -302,13 +300,12 @@ func _regexpReplace(re *regexp.Regexp, args ...objects.IObject) (objects.IObject
 	if err != nil {
 		return nil, err
 	}
-	s := _regexpReplaceInternal(re, s1, s2)
+	s := r.replaceInternal(re, s1, s2)
 	return objects.NewString(s)
 }
 
-// _regexpSplit splits a string using a regular expression and returns an array of substrings. Accepts one or two arguments.
-// The first argument must be a string, the second (optional) must be an integer specifying the maximum number of splits.
-func _regexpSplit(re *regexp.Regexp, args ...objects.IObject) (objects.IObject, error) {
+// CompileOptionSplit splits the input string using the given compiled regular expression and optional max split count.
+func (r *Regexp) CompileOptionSplit(re *regexp.Regexp, args ...objects.IObject) (objects.IObject, error) {
 	numArgs := len(args)
 	if numArgs != 1 && numArgs != 2 {
 		return nil, objects.ErrWrongNumArguments
@@ -333,4 +330,20 @@ func _regexpSplit(re *regexp.Regexp, args ...objects.IObject) (objects.IObject, 
 		arr.Append(v)
 	}
 	return arr, nil
+}
+
+// replaceInternal performs a regex-based replacement on the input string using the specified pattern and replacement string.
+func (r *Regexp) replaceInternal(re *regexp.Regexp, src, repl string) string {
+	idx := 0
+	out := ""
+	for _, m := range re.FindAllStringSubmatchIndex(src, -1) {
+		var exp []byte
+		exp = re.ExpandString(exp, repl, src, m)
+		out += src[idx:m[0]] + string(exp)
+		idx = m[1]
+	}
+	if idx < len(src) {
+		out += src[idx:]
+	}
+	return out
 }
