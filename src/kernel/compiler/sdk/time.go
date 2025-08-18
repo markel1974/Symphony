@@ -8,13 +8,15 @@ import (
 
 // Time represents a structure that manages a collection of modules implementing the IObject interface.
 type Time struct {
-	module map[string]objects.IObject
+	*Module
 }
 
 // NewTime initializes and returns a new instance of Time with predefined constants and functions mapped to the module.
 func NewTime() *Time {
-	t := &Time{}
-	t.module = map[string]objects.IObject{
+	t := &Time{
+		Module: NewModule(),
+	}
+	t.attrs = map[string]objects.IObject{
 		"ANSIC":               objects.NewStringNoSize(time.ANSIC),
 		"UnixDate":            objects.NewStringNoSize(time.UnixDate),
 		"RubyDate":            objects.NewStringNoSize(time.RubyDate),
@@ -91,11 +93,6 @@ func NewTime() *Time {
 // Name returns the name of Time module.
 func (t *Time) Name() string {
 	return "time"
-}
-
-// Module returns a map where the keys are strings and the values implement the IObject interface, representing the module.
-func (t *Time) Module() map[string]objects.IObject {
-	return t.module
 }
 
 // Sleep pauses the execution for a specified duration provided as an argument in nanoseconds.

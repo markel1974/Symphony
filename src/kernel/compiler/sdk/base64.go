@@ -8,13 +8,15 @@ import (
 
 // Base64 represents a type that provides a module map for Base64-related encoding and decoding operations.
 type Base64 struct {
-	module map[string]objects.IObject
+	*Module
 }
 
 // NewBase64 initializes a new Base64 instance with predefined encoding and decoding functions in the module map.
 func NewBase64() *Base64 {
-	b := &Base64{}
-	b.module = map[string]objects.IObject{
+	b := &Base64{
+		Module: NewModule(),
+	}
+	b.attrs = map[string]objects.IObject{
 		"EncodeToString":       objects.NewFunctionModule(objects.FunctionModuleDef, "EncodeToString", objects.FuncIbSOs(base64.StdEncoding.EncodeToString)),
 		"DecodeString":         objects.NewFunctionModule(objects.FunctionModuleDef, "EncodeToString", objects.FuncIsObSe(base64.StdEncoding.DecodeString)),
 		"RawEncodeToString":    objects.NewFunctionModule(objects.FunctionModuleDef, "RawEncode", objects.FuncIbSOs(base64.RawStdEncoding.EncodeToString)),
@@ -30,9 +32,4 @@ func NewBase64() *Base64 {
 // Name returns the name of the Base64 module.
 func (b *Base64) Name() string {
 	return "base64"
-}
-
-// Module returns the map of string keys to objects.IObject representing the Base64 module implementation.
-func (b *Base64) Module() map[string]objects.IObject {
-	return b.module
 }

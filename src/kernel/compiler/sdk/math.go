@@ -8,13 +8,15 @@ import (
 
 // Math serves as a container for mathematical operations and modules, mapping module names to their respective objects.
 type Math struct {
-	module map[string]objects.IObject
+	*Module
 }
 
 // NewMath initializes and returns a new instance of Math with predefined mathematical constants and function modules.
 func NewMath() *Math {
-	m := &Math{}
-	m.module = map[string]objects.IObject{
+	m := &Math{
+		Module: NewModule(),
+	}
+	m.attrs = map[string]objects.IObject{
 		"E":         objects.NewFloat(math.E),
 		"Pi":        objects.NewFloat(math.Pi),
 		"Phi":       objects.NewFloat(math.Phi),
@@ -86,9 +88,4 @@ func NewMath() *Math {
 // Name returns the name of Math module.
 func (m *Math) Name() string {
 	return "math"
-}
-
-// Module returns the map of module objects stored within the Math instance.
-func (m *Math) Module() map[string]objects.IObject {
-	return m.module
 }

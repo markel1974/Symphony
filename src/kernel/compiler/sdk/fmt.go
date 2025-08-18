@@ -8,13 +8,15 @@ import (
 
 // Fmt represents a struct that provides formatted output methods using a map of predefined functions.
 type Fmt struct {
-	module map[string]objects.IObject
+	*Module
 }
 
 // NewFmt initializes and returns a new Fmt instance with predefined formatting functions as module properties.
 func NewFmt() *Fmt {
-	f := &Fmt{}
-	f.module = map[string]objects.IObject{
+	f := &Fmt{
+		Module: NewModule(),
+	}
+	f.attrs = map[string]objects.IObject{
 		"Print":   objects.NewFunctionModule(objects.FunctionModuleDef, "Print", f.Print),
 		"Printf":  objects.NewFunctionModule(objects.FunctionModuleDef, "Printf", f.Printf),
 		"Println": objects.NewFunctionModule(objects.FunctionModuleDef, "Println", f.Println),
@@ -28,11 +30,6 @@ func NewFmt() *Fmt {
 // Name returns the name of Fmt module.
 func (f *Fmt) Name() string {
 	return "fmt"
-}
-
-// Module returns the module map containing string keys and corresponding IObject values from the Fmt struct.
-func (f *Fmt) Module() map[string]objects.IObject {
-	return f.module
 }
 
 // Print writes the string representations of the provided arguments to the standard output without appending a newline.

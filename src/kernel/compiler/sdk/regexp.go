@@ -17,13 +17,15 @@ const (
 
 // Regexp represents a structure providing regular expression functionality through associated operations and methods.
 type Regexp struct {
-	module map[string]objects.IObject
+	*Module
 }
 
 // NewRegexp creates and returns a new instance of the Regexp struct with initialized module functions.
 func NewRegexp() *Regexp {
-	r := &Regexp{}
-	r.module = map[string]objects.IObject{
+	r := &Regexp{
+		Module: NewModule(),
+	}
+	r.attrs = map[string]objects.IObject{
 		"Match":   objects.NewFunctionModule(objects.FunctionModuleDef, "Match", r.Match),
 		"Find":    objects.NewFunctionModule(objects.FunctionModuleDef, "Find", r.Find),
 		"Replace": objects.NewFunctionModule(objects.FunctionModuleDef, "Replace", r.Replace),
@@ -36,11 +38,6 @@ func NewRegexp() *Regexp {
 // Name returns the name of Regexp module.
 func (r *Regexp) Name() string {
 	return "regexp"
-}
-
-// Module returns the module map associated with the Regexp, containing functionalities as key-value pairs.
-func (r *Regexp) Module() map[string]objects.IObject {
-	return r.module
 }
 
 // Match checks whether the second string argument matches the pattern defined by the first string argument.

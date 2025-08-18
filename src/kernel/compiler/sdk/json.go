@@ -9,13 +9,15 @@ import (
 
 // Json represents a module containing JSON-related operations and utilities.
 type Json struct {
-	module map[string]objects.IObject
+	*Module
 }
 
 // NewJson creates and returns a new instance of Json containing predefined JSON operation modules.
 func NewJson() *Json {
-	j := &Json{}
-	j.module = map[string]objects.IObject{
+	j := &Json{
+		Module: NewModule(),
+	}
+	j.attrs = map[string]objects.IObject{
 		"Unmarshal":  objects.NewFunctionModule(objects.FunctionModuleDef, "Unmarshal", j.Unmarshal),
 		"Marshal":    objects.NewFunctionModule(objects.FunctionModuleDef, "Marshal", j.Marshal),
 		"Indent":     objects.NewFunctionModule(objects.FunctionModuleDef, "Indent", j.Indent),
@@ -27,11 +29,6 @@ func NewJson() *Json {
 // Name returns the name of Json module.
 func (j *Json) Name() string {
 	return "json"
-}
-
-// Module returns the `module` map containing string keys and `objects.IObject` values from the `Json` structure.
-func (j *Json) Module() map[string]objects.IObject {
-	return j.module
 }
 
 // Unmarshal parses a JSON-encoded string or byte slice into a Map object and returns it as IObject.

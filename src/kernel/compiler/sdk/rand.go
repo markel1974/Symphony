@@ -8,13 +8,15 @@ import (
 
 // Rand is a struct that encapsulates a module mapping of string keys to objects implementing the IObject interface.
 type Rand struct {
-	module map[string]objects.IObject
+	*Module
 }
 
 // NewRand creates a new instance of Rand with a pre-defined set of random number generation functions.
 func NewRand() *Rand {
-	z := &Rand{}
-	z.module = map[string]objects.IObject{
+	z := &Rand{
+		Module: NewModule(),
+	}
+	z.attrs = map[string]objects.IObject{
 		"Int63":       objects.NewFunctionModule(objects.FunctionModuleDef, "Int63", objects.FuncInOi64(rand.Int63)),
 		"Float64":     objects.NewFunctionModule(objects.FunctionModuleDef, "Float64", objects.FuncInOf64(rand.Float64)),
 		"Int63n":      objects.NewFunctionModule(objects.FunctionModuleDef, "Int63n", objects.FuncIi64Oi64(rand.Int63n)),
@@ -31,11 +33,6 @@ func NewRand() *Rand {
 // Name returns the name of Rand module.
 func (z *Rand) Name() string {
 	return "rand"
-}
-
-// Module returns the module map of the Rand instance containing string keys mapped to objects.IObject values.
-func (z *Rand) Module() map[string]objects.IObject {
-	return z.module
 }
 
 // Read reads random data into a byte slice and returns the number of bytes written as an integer or an error if it occurs.

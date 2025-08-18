@@ -13,7 +13,11 @@ type Module struct {
 	attrs map[string]objects.IObject
 }
 
-type Builtin struct {
+func NewModule() *Module {
+	return &Module{attrs: nil}
+}
+
+type BuiltinWrapper struct {
 	wrapper *objects.Builtin
 	object  objects.IObject
 }
@@ -23,33 +27,29 @@ type Builtin struct {
 // The mod field holds a collection of modules, allowing for import and retrieval of symbols.
 type Loader struct {
 	modules map[string]*Module
-	builtin []*Builtin
+	builtin []*BuiltinWrapper
 }
 
 // NewLoader initializes and returns a new Loader instance with built-in modules preloaded.
 func NewLoader() *Loader {
-	packages := map[string]map[string]objects.IObject{
-		"errors":  NewErrors().Module(),
-		"fmt":     NewFmt().Module(),
-		"math":    NewMath().Module(),
-		"strings": NewStrings().Module(),
-		"strconv": NewStrconv().Module(),
-		"regexp":  NewRegexp().Module(),
-		"time":    NewTime().Module(),
-		"rand":    NewRand().Module(),
-		"json":    NewJson().Module(),
-		"base64":  NewBase64().Module(),
-		"hex":     NewHex().Module(),
-	}
-	modules := make(map[string]*Module)
-	for name, mod := range packages {
-		modules[name] = &Module{attrs: mod}
+	modules := map[string]*Module{
+		"errors":  NewErrors().Module,
+		"fmt":     NewFmt().Module,
+		"math":    NewMath().Module,
+		"strings": NewStrings().Module,
+		"strconv": NewStrconv().Module,
+		"regexp":  NewRegexp().Module,
+		"time":    NewTime().Module,
+		"rand":    NewRand().Module,
+		"json":    NewJson().Module,
+		"base64":  NewBase64().Module,
+		"hex":     NewHex().Module,
 	}
 	builtinFunctions := NewBuiltinFunctions().Module()
-	builtin := make([]*Builtin, len(builtinFunctions))
+	builtin := make([]*BuiltinWrapper, len(builtinFunctions))
 	for i, fn := range builtinFunctions {
 		wrapper := objects.NewBuiltin(fn.Name(), i)
-		builtin[i] = &Builtin{wrapper: wrapper, object: fn}
+		builtin[i] = &BuiltinWrapper{wrapper: wrapper, object: fn}
 	}
 	return &Loader{
 		modules: modules,

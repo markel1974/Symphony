@@ -8,13 +8,15 @@ import (
 
 // Strconv is a type that provides a module containing string conversion functions implemented using strconv.
 type Strconv struct {
-	module map[string]objects.IObject
+	*Module
 }
 
 // NewStrconv initializes and returns a pointer to a new Strconv instance containing predefined module functions.
 func NewStrconv() *Strconv {
-	s := &Strconv{}
-	s.module = map[string]objects.IObject{
+	s := &Strconv{
+		Module: NewModule(),
+	}
+	s.attrs = map[string]objects.IObject{
 		"Atoi":        objects.NewFunctionModule(objects.FunctionModuleDef, "Atoi", objects.FuncIsOie(strconv.Atoi)),
 		"FormatBool":  objects.NewFunctionModule(objects.FunctionModuleDef, "FormatBool", s.FormatBool),
 		"FormatFloat": objects.NewFunctionModule(objects.FunctionModuleDef, "FormatFloat", s.FormatFloat),
@@ -33,11 +35,6 @@ func NewStrconv() *Strconv {
 // Name returns the name of Strconv module.
 func (s *Strconv) Name() string {
 	return "strconv"
-}
-
-// Module retrieves the `module` field from the `Strconv` struct and returns it as a map of string keys and IObject values.
-func (s *Strconv) Module() map[string]objects.IObject {
-	return s.module
 }
 
 // FormatBool converts a boolean argument to its string representation ("true" or "false"). Returns an error if the argument is invalid.

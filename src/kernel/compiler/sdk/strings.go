@@ -10,13 +10,15 @@ import (
 // Strings provides a collection of string operations and functionality wrapped in a module.
 // It includes functions for manipulation, comparison, trimming, padding, splitting, and other string-related utilities.
 type Strings struct {
-	module map[string]objects.IObject
+	*Module
 }
 
 // NewStrings creates and returns a new instance of Strings with a preconfigured map of string utility functions.
 func NewStrings() *Strings {
-	s := &Strings{}
-	s.module = map[string]objects.IObject{
+	s := &Strings{
+		Module: NewModule(),
+	}
+	s.attrs = map[string]objects.IObject{
 		"Compare":      objects.NewFunctionModule(objects.FunctionModuleDef, "Compare", objects.FuncIssOi(strings.Compare)),
 		"Contains":     objects.NewFunctionModule(objects.FunctionModuleDef, "Contains", objects.FuncIssOb(strings.Contains)),
 		"ContainsAny":  objects.NewFunctionModule(objects.FunctionModuleDef, "ContainsAny", objects.FuncIssOb(strings.ContainsAny)),
@@ -56,11 +58,6 @@ func NewStrings() *Strings {
 // Name returns the name of Strings module.
 func (s *Strings) Name() string {
 	return "strings"
-}
-
-// Module returns the map of string operations available in the module.
-func (s *Strings) Module() map[string]objects.IObject {
-	return s.module
 }
 
 // Replace replaces occurrences of a substring within a string with the specified replacement string up to a given limit.
