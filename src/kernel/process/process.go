@@ -5,8 +5,11 @@ import (
 	"log"
 	"time"
 
+	"github.com/markel1974/c64emu/src/kernel/compiler"
+	"github.com/markel1974/c64emu/src/kernel/compiler/sdk"
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
 	"github.com/markel1974/c64emu/src/kernel/messages"
+	"github.com/markel1974/c64emu/src/kernel/vm"
 )
 
 const (
@@ -19,23 +22,27 @@ const (
 
 // Process represents a process or job in the system, including its context, state, associated options, and execution details.
 type Process struct {
-	kRouter interfaces.IKernelRequestRouter
-	cmd     interfaces.ICommand
-	//user             string
-	context interface{}
-	timers  []int
-	//pid              int
+	kRouter          interfaces.IKernelRequestRouter
+	cmd              interfaces.ICommand
+	context          interface{}
+	timers           []int
 	state            interfaces.ProcessState
 	gatekeeperChan   chan interfaces.IMessage
 	executorChan     chan interfaces.IMessage
 	executorWaitChan chan bool
 	timeout          time.Duration
+	loader           *sdk.Loader
+	compiler         *compiler.Compiler
+	vm               *vm.VM
 }
 
 // NewProcess initializes and returns a new Process instance with the provided kRouter, command, and command line data.
 func NewProcess(cmd interfaces.ICommand) *Process {
 	t := &Process{
 		cmd:              cmd,
+		loader:           nil,
+		compiler:         nil,
+		vm:               nil,
 		context:          nil,
 		state:            interfaces.ProcessStateSetup,
 		gatekeeperChan:   make(chan interfaces.IMessage, gatekeeperQueueLen),
@@ -65,15 +72,6 @@ func (t *Process) Start() {
 	_ = <-b
 	t.state = interfaces.ProcessStateRunning
 }
-
-// PID returns the process ID (PID) associated with the process.
-//func (t *Process) PID() int {
-//	return t.pid
-//}
-
-//func (t *Process) User() string {
-//	return t.user
-//}
 
 // GetCommand returns the ICommand instance associated with the Process.
 func (t *Process) GetCommand() interfaces.ICommand {
@@ -391,10 +389,6 @@ func (t *Process) PostMessage(msg interfaces.IMessage) {
 	t.gatekeeperChan <- msg
 }
 
-func (t *Process) createLibrary() {
-
-}
-
 // executorLoop initializes a loop to process messages from the executorChan and forwards a signal when ready.
 func (t *Process) executorLoop(r chan bool) {
 	go func() {
@@ -511,7 +505,28 @@ func (t *Process) handleMessageProcessStart(msg interfaces.IMessage) {
 	if !ok {
 		return
 	}
-	_ = t.cmd.Execute(t, mt.Args())
+	if t.cmd.HasScript() {
+		if t.compiler == nil {
+			t.compiler = compiler.New()
+		}
+		bc, err := t.compiler.Compile(t.cmd.Name(), t.cmd.Script())
+		if err != nil {
+			log.Printf("Process [%s]: error compiling script: %s", t.cmd.Name(), err.Error())
+			return
+		}
+		if t.loader == nil {
+			t.loader = sdk.NewLoader()
+			t.loader.AddModule("kernel", NewLibrary(t).Module())
+		}
+		if t.vm == nil {
+			t.vm = vm.New(nil, 1024)
+		}
+		if err = t.vm.Run(t.loader, bc, "main", mt.Args()); err != nil {
+			log.Printf("Process [%s]: error running script: %s", t.cmd.Name(), err.Error())
+		}
+	} else {
+		_ = t.cmd.Execute(t, mt.Args())
+	}
 	//if !t.cmd.Background() {
 	//	t.kRouter.PostKernelRequest(messages.NewMessageProcessSetForeground(t.PID()))
 	//}

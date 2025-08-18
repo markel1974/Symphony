@@ -2,6 +2,7 @@ package process
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
@@ -28,6 +29,7 @@ func (l *Library) setup() {
 	l.module = map[string]objects.IObject{
 		"SetContext":               objects.NewFunctionModule(objects.FunctionModuleDef, "SetContext", l.doSetContext),
 		"GetContext":               objects.NewFunctionModule(objects.FunctionModuleDef, "GetContext", l.doGetContext),
+		"Printf":                   objects.NewFunctionModule(objects.FunctionModuleDef, "Printf", l.doPrintf),
 		"CreateTimer":              objects.NewFunctionModule(objects.FunctionModuleDef, "CreateTimer", l.doCreateTimer),
 		"IsActive":                 objects.NewFunctionModule(objects.FunctionModuleDef, "IsActive", l.doIsActive),
 		"Kill":                     objects.NewFunctionModule(objects.FunctionModuleDef, "Kill", l.doKill),
@@ -97,6 +99,30 @@ func (l *Library) doCreateTimer(args ...objects.IObject) (ret objects.IObject, e
 		return nil, err
 	}
 	l.p.CreateTimer(int(i1), int(i2), int(i3))
+	return nil, nil
+}
+
+// doPrintf formats and writes a string output using provided arguments; returns an error for invalid input or formatting.
+func (l *Library) doPrintf(args ...objects.IObject) (ret objects.IObject, err error) {
+	argsLen := len(args)
+	if argsLen == 0 {
+		return nil, objects.ErrWrongNumArguments
+	}
+	s1, err := objects.ToStringArg(0, args[0])
+	if err != nil {
+		return nil, err
+	}
+	var val string
+	if len(args) == 1 {
+		val = s1
+	} else {
+		var ar []interface{}
+		for _, v := range args[1:] {
+			ar = append(ar, objects.ToInterface(v))
+		}
+		val = fmt.Sprintf(s1, ar...)
+	}
+	l.p.Write(val, true)
 	return nil, nil
 }
 

@@ -19,6 +19,7 @@ type Command struct {
 	suggestionsMinimumDistance int
 	daemon                     bool
 	background                 bool
+	script                     string
 	errorEvent                 interfaces.OnError
 	runEvent                   interfaces.OnRun
 	timerEvent                 interfaces.OnTimer
@@ -56,6 +57,21 @@ func (c *Command) SetParent(parent interfaces.ICommand) {
 // Type returns the structural nature of the command represented as interfaces.CommandType.
 func (c *Command) Type() interfaces.CommandType {
 	return c.kind
+}
+
+// HasScript checks if the Command has a non-empty script associated with it. Returns true if a script exists.
+func (c *Command) HasScript() bool {
+	return len(c.script) > 0
+}
+
+// Script returns the script as a string associated with the Command.
+func (c *Command) Script() string {
+	return c.script
+}
+
+// SetScript sets the script associated with the Command.
+func (c *Command) SetScript(script string) {
+	c.script = script
 }
 
 // DirectoryListing returns a list of all child command names, property names, and executable names associated with the command.

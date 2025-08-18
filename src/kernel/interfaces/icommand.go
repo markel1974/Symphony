@@ -75,6 +75,10 @@ type ICommand interface {
 
 	SuggestionsFor(typedName string) []string
 
+	HasScript() bool
+
+	Script() string
+
 	Execute(process IUserProcess, arg []string) error
 
 	Commands() []ICommand

@@ -13,11 +13,16 @@ type Constants struct {
 }
 
 // NewConstants initializes and returns a new Constants instance with provided global objects and error signaling function.
-func NewConstants(constants []objects.IObject, errSignal func(err error)) *Constants {
+func NewConstants(errSignal func(err error)) *Constants {
 	return &Constants{
-		constants: constants,
+		constants: nil,
 		errSignal: errSignal,
 	}
+}
+
+// SetConstants updates the constants pool with the provided values.
+func (g *Constants) SetConstants(constants []objects.IObject) {
+	g.constants = constants
 }
 
 // Get retrieves the object from the constants pool at the specified index. Returns UndefinedValue if the index is invalid.

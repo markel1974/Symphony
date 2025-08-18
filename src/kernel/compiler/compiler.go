@@ -35,14 +35,6 @@ func New() *Compiler {
 	return c
 }
 
-// bytecode generates and returns a *bytecode.Bytecode containing compiled constants and references. It may return an error.
-func (c *Compiler) bytecode() (*bytecode.Bytecode, error) {
-	bc := bytecode.NewBytecode()
-	bc.SetConstants(c.scopes.ConstantsRetrieve())
-	bc.SetReferences(c.scopes.ReferencesRetrieve())
-	return bc, nil
-}
-
 // Compile parses the provided source file and compiles it into bytecode. Returns compiled bytecode or an error.
 func (c *Compiler) Compile(filename string, source any) (*bytecode.Bytecode, error) {
 	c.fileSet = token.NewFileSet()
@@ -53,8 +45,15 @@ func (c *Compiler) Compile(filename string, source any) (*bytecode.Bytecode, err
 	if err = c.compile(astFile); err != nil {
 		return nil, err
 	}
-
 	return c.bytecode()
+}
+
+// bytecode generates and returns a *bytecode.Bytecode containing compiled constants and references. It may return an error.
+func (c *Compiler) bytecode() (*bytecode.Bytecode, error) {
+	bc := bytecode.NewBytecode()
+	bc.SetConstants(c.scopes.ConstantsRetrieve())
+	bc.SetReferences(c.scopes.ReferencesRetrieve())
+	return bc, nil
 }
 
 // Print writes the content of the internal scopes to the provided writer, typically for debugging or inspection.

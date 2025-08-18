@@ -143,11 +143,8 @@ func vmTest() {
 	d.Disassemble(log.Writer())
 
 	loader := sdk.NewLoader()
-	machine, err := vm.NewVM(loader, nil, bc, 100000)
-	if err != nil {
-		log.Fatalf("VM creation error: %s", err)
-	}
-	if err = machine.Run("main", 1, 2); err != nil {
+	machine := vm.New(nil, 100000)
+	if err = machine.Run(loader, bc, "main", 1, 2); err != nil {
 		machine.Print(log.Writer())
 		log.Fatalf("VM runtime error: %s", err)
 	}
@@ -165,7 +162,7 @@ func (nw *NilWriter) Write(p []byte) (int, error) {
 func main() {
 	//benchmark.VIC(1000000, 20, 10, 1)
 
-	vmTest()
+	//vmTest()
 
 	var showHelp bool
 	var showVersion bool

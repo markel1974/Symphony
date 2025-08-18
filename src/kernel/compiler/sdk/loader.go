@@ -59,10 +59,18 @@ func NewLoader() *Loader {
 	}
 }
 
+// AddModule adds a new module to the loader's module collection.'
+func (l *Loader) AddModule(id string, attr map[string]objects.IObject) {
+	m := &Module{attrs: attr}
+	l.modules[id] = m
+}
+
+// BuiltinLen returns the number of built-in functions.
 func (l *Loader) BuiltinLen() int {
 	return len(l.builtin)
 }
 
+// Builtin returns a built-in function by its index.
 func (l *Loader) Builtin(idx int) *objects.Builtin {
 	if idx < 0 || idx >= len(l.builtin) {
 		return nil

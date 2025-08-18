@@ -40,46 +40,22 @@ type VM struct {
 	references  []objects.IObject
 	loader      bytecode.ILoader
 	constants   *Constants
-	entryPoints map[string]*objects.FunctionCompiled
 }
 
-// NewVM initializes and returns a new virtual machine instance configured with the provided components and settings.
-func NewVM(loader bytecode.ILoader, sequencer ISequencer, bc *bytecode.Bytecode, maxAllocations int64) (*VM, error) {
-	if bc == nil {
-		return nil, fmt.Errorf("bytecode is nil")
-	}
-	if maxAllocations < 1 {
-		return nil, fmt.Errorf("max allocations must be greater than 0")
-	}
-	references, err := loader.ResolveSymbols(bc.References())
-	if err != nil {
-		return nil, err
-	}
-	constants := make([]objects.IObject, len(bc.Constants()))
-	entryPoints := make(map[string]*objects.FunctionCompiled)
-	for idx, constant := range bc.Constants() {
-		constants[idx] = constant
-		switch c := constant.(type) {
-		case *objects.Builtin:
-			symbol := loader.BuiltinResolve(idx)
-			if symbol == nil {
-				return nil, fmt.Errorf("builtin symbol not found: %s", c.Name())
-			}
-			constants[idx] = symbol
-		case *objects.FunctionCompiled:
-			entryPoints[c.Name()] = c
-		}
+// New initializes and returns a new virtual machine instance configured with the provided components and settings.
+func New(sequencer ISequencer, maxAllocations int64) *VM {
+	if maxAllocations < 10 {
+		maxAllocations = 10
 	}
 	v := &VM{
-		sourceFiles: bc.SourceFiles(),
 		ip:          resetIp,
-		loader:      loader,
-		references:  references,
-		entryPoints: entryPoints,
+		loader:      nil,
+		sourceFiles: nil,
+		references:  nil,
 	}
+	v.constants = NewConstants(v.SetError)
 	v.stack = NewStack(stackSize, maxAllocations, v.SetError)
 	v.frames = NewFrames(maxFrames, v.SetError)
-	v.constants = NewConstants(constants, v.SetError)
 	if sequencer == nil {
 		sequencer = NewSequencer()
 	}
@@ -88,9 +64,8 @@ func NewVM(loader bytecode.ILoader, sequencer ISequencer, bc *bytecode.Bytecode,
 	for i, s := range seq {
 		v.sequencer[i] = s.Execute
 	}
-
 	v.Reset()
-	return v, nil
+	return v
 }
 
 // Shutdown gracefully shuts down the virtual machine by setting its internal state to signify termination.
@@ -113,11 +88,41 @@ func (v *VM) Reset() {
 }
 
 // Run executes the virtual machine's bytecode, managing the stack, frames, and instruction pointer state.
-func (v *VM) Run(mainId string, args ...interface{}) error {
-	mainFn, _ := v.entryPoints[mainId]
+func (v *VM) Run(loader bytecode.ILoader, bc *bytecode.Bytecode, mainId string, args ...interface{}) error {
+	if bc == nil {
+		return fmt.Errorf("bytecode is nil")
+	}
+	if loader == nil {
+		return fmt.Errorf("loader is nil")
+	}
+	references, err := loader.ResolveSymbols(bc.References())
+	if err != nil {
+		return err
+	}
+	var mainFn *objects.FunctionCompiled
+	constants := make([]objects.IObject, len(bc.Constants()))
+	for idx, constant := range bc.Constants() {
+		constants[idx] = constant
+		switch c := constant.(type) {
+		case *objects.Builtin:
+			symbol := loader.BuiltinResolve(idx)
+			if symbol == nil {
+				return fmt.Errorf("builtin symbol not found: %s", c.Name())
+			}
+			constants[idx] = symbol
+		case *objects.FunctionCompiled:
+			if mainId == c.Name() {
+				mainFn = c
+			}
+		}
+	}
 	if mainFn == nil {
 		return fmt.Errorf("main function not found")
 	}
+	v.loader = loader
+	v.sourceFiles = bc.SourceFiles()
+	v.references = references
+	v.constants.SetConstants(constants)
 	v.currFrame = v.frames.Head()
 	v.currFrame.Bind(v.ip, mainFn, 0)
 	v.stack.SetStackPointer(v.currFrame.NumLocals())
