@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/markel1974/c64emu/src/kernel/vm/bytecode"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
@@ -30,7 +31,7 @@ const (
 // The structure tracks variable and function definitions and handles free symbols for closures.
 type SymbolTable struct {
 	outer          *SymbolTable
-	container      map[string]*Symbol
+	symbols        map[string]*Symbol
 	numDefinitions int
 	freeSymbols    []*Symbol
 	uniqueCounter  int
@@ -38,18 +39,28 @@ type SymbolTable struct {
 }
 
 // NewSymbolTable initializes and returns a new instance of SymbolTable with an empty container and counter set to zero.
-func NewSymbolTable(obj string) *SymbolTable {
-	s := make(map[string]*Symbol)
-	return &SymbolTable{
-		obj:           obj,
-		container:     s,
+func NewSymbolTable() *SymbolTable {
+	s := &SymbolTable{
+		obj:           "",
+		symbols:       make(map[string]*Symbol),
 		uniqueCounter: 0,
 	}
+	return s
+}
+
+func NewBuiltinSymbolTable(loader bytecode.ILoader) *SymbolTable {
+	st := NewSymbolTable()
+	for idx, fn := range loader.GetBuiltinFunctions() {
+		name := fn.Name()
+		st.symbols[name] = NewSymbol(name, idx, BuiltinScope, st.obj)
+	}
+	return st
 }
 
 // NewEnclosedSymbolTable creates a new symbol table enclosed by the provided outer symbol table.
-func NewEnclosedSymbolTable(obj string, outer *SymbolTable) *SymbolTable {
-	s := NewSymbolTable(obj)
+func NewEnclosedSymbolTable(outer *SymbolTable, obj string) *SymbolTable {
+	s := NewSymbolTable()
+	s.obj = obj
 	s.outer = outer
 	return s
 }
@@ -59,7 +70,7 @@ func (s *SymbolTable) Print() {
 	if s.outer != nil {
 		s.outer.Print()
 	}
-	for k, v := range s.container {
+	for k, v := range s.symbols {
 		if v.Scope == BuiltinScope {
 			continue
 		}
@@ -108,42 +119,31 @@ func (s *SymbolTable) Define(name string, scope SymbolScope) *Symbol {
 		}
 	}
 	symbol := NewSymbol(name, s.numDefinitions, scope, s.obj)
-	s.container[name] = symbol
+	s.symbols[name] = symbol
 	s.numDefinitions++
 	return symbol
-}
-
-// DefineBuiltin adds a built-in symbol to the symbol table with the specified name and index, returning the new symbol.
-func (s *SymbolTable) DefineBuiltin(name string, index int) {
-	symbol := NewSymbol(name, index, BuiltinScope, s.obj)
-	s.container[name] = symbol
 }
 
 // Resolve attempts to look up a symbol by name in the current SymbolTable and outer scopes, if applicable.
 // It returns the found Symbol and a boolean indicating whether the resolution was successful.
 func (s *SymbolTable) Resolve(name string) (*Symbol, bool) {
-	obj, ok := s.container[name]
-	if ok {
+	if obj, ok := s.symbols[name]; ok {
 		return obj, true
 	}
 	if s.outer == nil {
 		return nil, false
 	}
-	obj, ok = s.outer.Resolve(name)
+	obj, ok := s.outer.Resolve(name)
 	if !ok {
 		return obj, ok
 	}
-	// I tipi, le variabili globali e le funzioni builtin sono accessibili
-	// direttamente da scope interni e non devono essere convertiti in "free variables".
+	// Types, global variables, and builtin functions are directly accessible
+	// from inner scopes and should not be converted to "free variables".
 	if obj.Scope == ImportScope || obj.Scope == GlobalScope || obj.Scope == BuiltinScope || obj.Scope == TypeScope {
 		return obj, true
 	}
-	return s.defineFree(obj), true
-}
-
-func (s *SymbolTable) defineFree(original *Symbol) *Symbol {
-	s.freeSymbols = append(s.freeSymbols, original)
-	symbol := NewSymbol(original.Name, len(s.freeSymbols)-1, FreeScope, s.obj)
-	s.container[original.Name] = symbol
-	return symbol
+	s.freeSymbols = append(s.freeSymbols, obj)
+	symbol := NewSymbol(obj.Name, len(s.freeSymbols)-1, FreeScope, s.obj)
+	s.symbols[obj.Name] = symbol
+	return symbol, true
 }

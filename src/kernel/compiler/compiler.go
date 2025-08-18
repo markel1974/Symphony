@@ -287,24 +287,23 @@ func (c *Compiler) compileFuncBody(node *ast.FuncDecl, objName string, mangledNa
 // doAssignStmt processes an assignment statement by compiling the right-hand side and resolving variable symbols.
 // It also updates the type information for symbols or emits appropriate bytecode for assignments.
 func (c *Compiler) doAssignStmt(node *ast.AssignStmt) error {
-	// multi assignment
-	if callExpr, isCall := node.Rhs[0].(*ast.CallExpr); isCall && len(node.Lhs) > 1 {
+	//TODO UNIFY function-only and multi assignment
+
+	// multi assignment function-only (es. x, y := f())
+	if callExpr, ok := node.Rhs[0].(*ast.CallExpr); ok && len(node.Lhs) > 1 {
 		if err := c.compile(callExpr); err != nil {
 			return err
 		}
-		// (type inference logic for multiple assignment)
-		var returnTypes []string
-		var funcName string
+		var funcReturnTypes []string
 		if ident, isIdent := callExpr.Fun.(*ast.Ident); isIdent {
-			funcName = ident.Name
-		}
-		if funcName != "" {
-			if funcSymbol, ok := c.scopes.SymbolResolve(funcName); ok {
-				returnTypes = funcSymbol.Types()
+			if ident.Name != "" {
+				if funcSymbol, ok := c.scopes.SymbolResolve(ident.Name); ok {
+					funcReturnTypes = funcSymbol.Types()
+				}
 			}
 		}
-		if len(node.Lhs) != len(returnTypes) {
-			return fmt.Errorf("assignment mismatch: %d variables but %d return values", len(node.Lhs), len(returnTypes))
+		if len(node.Lhs) != len(funcReturnTypes) {
+			return fmt.Errorf("assignment mismatch: %d variables but %d return values", len(node.Lhs), len(funcReturnTypes))
 		}
 		for i := len(node.Lhs) - 1; i >= 0; i-- {
 			lhs := node.Lhs[i]
@@ -322,7 +321,7 @@ func (c *Compiler) doAssignStmt(node *ast.AssignStmt) error {
 					return fmt.Errorf("undefined variable: %s", ident.Name)
 				}
 			}
-			symbol.SetTypes([]string{returnTypes[i]})
+			symbol.SetTypes([]string{funcReturnTypes[i]})
 			if err := c.scopes.EmitSymbolSet(symbol); err != nil {
 				return err
 			}
@@ -339,20 +338,17 @@ func (c *Compiler) doAssignStmt(node *ast.AssignStmt) error {
 	}
 	//inferenza del tipo
 	var assignedTypeName []string
-	if compLit, ok := node.Rhs[0].(*ast.CompositeLit); ok {
-		if ident, ok := compLit.Type.(*ast.Ident); ok {
-			typeSymbol, ok := c.scopes.SymbolResolve(ident.Name)
-			if ok && typeSymbol.Scope == TypeScope {
+	switch rhs := node.Rhs[0].(type) {
+	case *ast.CompositeLit: // check for variable assignment
+		if ident, ok := rhs.Type.(*ast.Ident); ok {
+			if typeSymbol, ok := c.scopes.SymbolResolve(ident.Name); ok && typeSymbol.Scope == TypeScope {
 				assignedTypeName = []string{typeSymbol.Name}
 			}
 		}
-	}
-	if callExpr, ok := node.Rhs[0].(*ast.CallExpr); ok {
-		if ident, isIdent := callExpr.Fun.(*ast.Ident); isIdent {
-			if funcSymbol, ok := c.scopes.SymbolResolve(ident.Name); ok {
-				if len(funcSymbol.Types()) > 0 {
-					assignedTypeName = []string{funcSymbol.Types()[0]}
-				}
+	case *ast.CallExpr: // check for function call assignment
+		if ident, ok := rhs.Fun.(*ast.Ident); ok {
+			if funcSymbol, ok := c.scopes.SymbolResolve(ident.Name); ok && len(funcSymbol.Types()) > 0 {
+				assignedTypeName = []string{funcSymbol.Types()[0]}
 			}
 		}
 	}
@@ -370,15 +366,14 @@ func (c *Compiler) doAssignStmt(node *ast.AssignStmt) error {
 				return fmt.Errorf("undefined variable: %s", name)
 			}
 		}
-		// Aggiorna il tipo del simbolo in entrambi i casi (:= e =)
+		// Updates the symbol type in both cases (:= and =)
 		if len(assignedTypeName) > 0 {
 			symbol.SetTypes(assignedTypeName)
 		}
 		if err := c.scopes.EmitSymbolSet(symbol); err != nil {
 			return err
 		}
-		// L'OpPop è necessario solo per le assegnazioni a variabili semplici,
-		// perché OpSetLocal/Global non puliscono lo stack.
+		// OpPop is only needed for simple variable assignments because OpSetLocal/Global don't clean up the stack.
 		if _, err := c.scopes.Emit(bytecode.OpPop); err != nil {
 			return err
 		}

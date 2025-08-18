@@ -16,23 +16,22 @@ type Scopes struct {
 	constants   *Constants
 	references  *Constants
 	symbolTable *SymbolTable
+	builtin     *SymbolTable
 	scopeIndex  int
 	scopes      []*CompilationScope
 }
 
 // NewScopes initializes and returns a Scopes structure with a new symbol table, main compilation scope, and scope index set to 0.
 func NewScopes(loader bytecode.ILoader) *Scopes {
-	symbolTable := NewSymbolTable("")
-	for i, fn := range loader.GetBuiltinFunctions() {
-		symbolTable.DefineBuiltin(fn.Name(), i)
-	}
-	return &Scopes{
+	c := &Scopes{
+		builtin:     NewBuiltinSymbolTable(loader),
 		constants:   NewConstants(),
 		references:  NewConstants(),
-		symbolTable: symbolTable,
+		symbolTable: NewSymbolTable(),
 		scopeIndex:  0,
 		scopes:      []*CompilationScope{NewCompilationScope()},
 	}
+	return c
 }
 
 // ReferencesAdd adds a constant object with the given id to the scope and returns its internal index.
@@ -87,6 +86,9 @@ func (c *Scopes) SymbolDefine(symbol string, scope SymbolScope) *Symbol {
 
 // SymbolResolve attempts to find a symbol in the current scope and returns it along with a boolean indicating success.
 func (c *Scopes) SymbolResolve(symbol string) (*Symbol, bool) {
+	if obj, ok := c.builtin.Resolve(symbol); ok {
+		return obj, true
+	}
 	return c.symbolTable.Resolve(symbol)
 }
 
@@ -183,7 +185,7 @@ func (c *Scopes) Enter(obj string) error {
 		return fmt.Errorf("maximum scope depth exceeded: %d", maxScope)
 	}
 	scope := NewCompilationScope()
-	c.symbolTable = NewEnclosedSymbolTable(obj, c.symbolTable)
+	c.symbolTable = NewEnclosedSymbolTable(c.symbolTable, obj)
 	c.scopes = append(c.scopes, scope)
 	c.scopeIndex++
 	return nil

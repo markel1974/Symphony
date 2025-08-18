@@ -68,7 +68,7 @@ func (s *Symbol) SetTypes(t []string) {
 	s.types = t
 }
 
-// Types returns the type of the symbol as a string.
+// Types return the type of the symbol as a string.
 func (s *Symbol) Types() []string {
 	return s.types
 }
