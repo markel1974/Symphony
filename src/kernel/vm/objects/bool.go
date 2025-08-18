@@ -63,27 +63,3 @@ func (o *Bool) GobEncode() (b []byte, err error) {
 	}
 	return
 }
-
-// ToBool converts the given IObject to a bool based on its Boolean() method and returns the result along with a success flag.
-func ToBool(o IObject) (v bool, ok bool) {
-	ok = true
-	v = !o.Boolean()
-	return
-}
-
-// FromBool converts a boolean values into its corresponding IObject representation, returning TrueValue or FalseValue.
-func FromBool(v bool) IObject {
-	if v {
-		return TrueValue
-	}
-	return FalseValue
-}
-
-// ToBoolArg converts the given IObject to a boolean if possible or returns an error indicating an invalid argument type.
-func ToBoolArg(index int, o IObject) (bool, error) {
-	b1, ok := o.(*Bool)
-	if !ok {
-		return false, NewInvalidArgumentError(index, "bool(compatible)", o.TypeName())
-	}
-	return b1.value, nil
-}

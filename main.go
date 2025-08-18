@@ -11,7 +11,7 @@ import (
 	"github.com/markel1974/c64emu/src"
 	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/kernel/compiler"
-	"github.com/markel1974/c64emu/src/kernel/compiler/stdlib"
+	"github.com/markel1974/c64emu/src/kernel/compiler/sdk"
 	"github.com/markel1974/c64emu/src/kernel/compiler/stub"
 	"github.com/markel1974/c64emu/src/kernel/component"
 	"github.com/markel1974/c64emu/src/kernel/frontend"
@@ -134,22 +134,24 @@ func BuildDrives(d string) ([]*config.Drive, error) {
 
 func vmTest() {
 	comp := compiler.New()
-	bc, err := comp.Compile("example.go", stub.Source1)
+	bc, err := comp.Compile("example.go", stub.Source5)
 	if err != nil {
 		log.Fatalf("compiler error: %s", err)
 	}
 
 	d := bytecode.NewDisassembler(bc)
-	d.Disassemble()
+	d.Disassemble(log.Writer())
 
-	loader := stdlib.NewLoader()
+	loader := sdk.NewLoader()
 	machine, err := vm.NewVM(loader, nil, bc, 100000)
 	if err != nil {
 		log.Fatalf("VM creation error: %s", err)
 	}
-	if err = machine.Run("main"); err != nil {
+	if err = machine.Run("main", 1, 2); err != nil {
+		machine.Print(log.Writer())
 		log.Fatalf("VM runtime error: %s", err)
 	}
+	machine.Print(log.Writer())
 	os.Exit(0)
 }
 

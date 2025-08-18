@@ -35,8 +35,6 @@ type Process struct {
 // NewProcess initializes and returns a new Process instance with the provided kRouter, command, and command line data.
 func NewProcess(cmd interfaces.ICommand) *Process {
 	t := &Process{
-		//pid:              pid,
-		//user:             user,
 		cmd:              cmd,
 		context:          nil,
 		state:            interfaces.ProcessStateSetup,
@@ -391,6 +389,10 @@ func (t *Process) PostMessage(msg interfaces.IMessage) {
 	}
 	//msg.SetDestination(t.pid)
 	t.gatekeeperChan <- msg
+}
+
+func (t *Process) createLibrary() {
+
 }
 
 // executorLoop initializes a loop to process messages from the executorChan and forwards a signal when ready.
