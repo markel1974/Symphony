@@ -24,6 +24,11 @@ func NewJson() *Json {
 	return j
 }
 
+// Name returns the name of Json module.
+func (j *Json) Name() string {
+	return "json"
+}
+
 // Module returns the `module` map containing string keys and `objects.IObject` values from the `Json` structure.
 func (j *Json) Module() map[string]objects.IObject {
 	return j.module

@@ -53,6 +53,11 @@ func NewStrings() *Strings {
 	return s
 }
 
+// Name returns the name of Strings module.
+func (s *Strings) Name() string {
+	return "strings"
+}
+
 // Module returns the map of string operations available in the module.
 func (s *Strings) Module() map[string]objects.IObject {
 	return s.module

@@ -83,6 +83,11 @@ func NewMath() *Math {
 	return m
 }
 
+// Name returns the name of Math module.
+func (m *Math) Name() string {
+	return "math"
+}
+
 // Module returns the map of module objects stored within the Math instance.
 func (m *Math) Module() map[string]objects.IObject {
 	return m.module

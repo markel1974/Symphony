@@ -6,53 +6,71 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
-// _builtinFunctions is a slice of predefined builtin functions used for various standard operations within the system.
-var _builtinFunctions = []*objects.FunctionModule{
-	objects.NewFunctionModule(objects.FunctionBuiltinDef, "len", builtinLen),
-	objects.NewFunctionModule(objects.FunctionBuiltinDef, "copy", builtinCopy),
-	objects.NewFunctionModule(objects.FunctionBuiltinDef, "append", builtinAppend),
-	objects.NewFunctionModule(objects.FunctionBuiltinDef, "delete", builtinDelete),
-	objects.NewFunctionModule(objects.FunctionBuiltinDef, "splice", builtinSplice),
-	objects.NewFunctionModule(objects.FunctionBuiltinDef, "format", builtinFormat),
-	//objects.NewFunctionModule(objects.FunctionBuiltinDef, "range", builtinRange),
-	objects.NewFunctionModule(objects.FunctionBuiltinDef, "string", builtinString),
-	objects.NewFunctionModule(objects.FunctionBuiltinDef, "int", builtinInt),
-	objects.NewFunctionModule(objects.FunctionBuiltinDef, "bool", builtinBool),
-	objects.NewFunctionModule(objects.FunctionBuiltinDef, "float", builtinFloat),
-	objects.NewFunctionModule(objects.FunctionBuiltinDef, "char", builtinChar),
-	objects.NewFunctionModule(objects.FunctionBuiltinDef, "bytes", builtinBytes),
-	objects.NewFunctionModule(objects.FunctionBuiltinDef, "time", builtinTime),
-	objects.NewFunctionModule(objects.FunctionBuiltinDef, "type_name", builtinTypeName),
-	objects.NewFunctionModule(objects.FunctionBuiltinDef, "is_int", builtinIsInt),
-	objects.NewFunctionModule(objects.FunctionBuiltinDef, "is_float", builtinIsFloat),
-	objects.NewFunctionModule(objects.FunctionBuiltinDef, "is_string", builtinIsString),
-	objects.NewFunctionModule(objects.FunctionBuiltinDef, "is_bool", builtinIsBool),
-	objects.NewFunctionModule(objects.FunctionBuiltinDef, "is_char", builtinIsChar),
-	objects.NewFunctionModule(objects.FunctionBuiltinDef, "is_bytes", builtinIsBytes),
-	objects.NewFunctionModule(objects.FunctionBuiltinDef, "is_array", builtinIsArray),
-	objects.NewFunctionModule(objects.FunctionBuiltinDef, "is_immutable_array", builtinIsImmutableArray),
-	objects.NewFunctionModule(objects.FunctionBuiltinDef, "is_map", builtinIsMap),
-	objects.NewFunctionModule(objects.FunctionBuiltinDef, "is_immutable_map", builtinIsImmutableMap),
-	objects.NewFunctionModule(objects.FunctionBuiltinDef, "is_iterable", builtinIsIterable),
-	objects.NewFunctionModule(objects.FunctionBuiltinDef, "is_time", builtinIsTime),
-	objects.NewFunctionModule(objects.FunctionBuiltinDef, "is_error", builtinIsError),
-	objects.NewFunctionModule(objects.FunctionBuiltinDef, "is_undefined", builtinIsUndefined),
-	objects.NewFunctionModule(objects.FunctionBuiltinDef, "is_function", builtinIsFunction),
-	objects.NewFunctionModule(objects.FunctionBuiltinDef, "is_callable", builtinIsCallable),
+// BuiltinFunctions is a structure that encapsulates and provides access to predefined built-in function modules.
+type BuiltinFunctions struct {
+	module []*objects.FunctionModule
 }
 
-// builtinTypeName returns the type name of the given object argument as a string, or an error if the argument count is invalid.
-func builtinTypeName(args ...objects.IObject) (objects.IObject, error) {
+// NewBuiltinFunctions initializes a new BuiltinFunctions instance with predefined standard functions.
+// It returns a pointer to the newly created BuiltinFunctions object.
+func NewBuiltinFunctions() *BuiltinFunctions {
+	b := &BuiltinFunctions{}
+	b.module = []*objects.FunctionModule{
+		objects.NewFunctionModule(objects.FunctionBuiltinDef, "len", b.Len),
+		objects.NewFunctionModule(objects.FunctionBuiltinDef, "copy", b.Copy),
+		objects.NewFunctionModule(objects.FunctionBuiltinDef, "append", b.Append),
+		objects.NewFunctionModule(objects.FunctionBuiltinDef, "delete", b.Delete),
+		objects.NewFunctionModule(objects.FunctionBuiltinDef, "splice", b.Splice),
+		objects.NewFunctionModule(objects.FunctionBuiltinDef, "format", b.Format),
+		objects.NewFunctionModule(objects.FunctionBuiltinDef, "string", b.String),
+		objects.NewFunctionModule(objects.FunctionBuiltinDef, "int", b.Int),
+		objects.NewFunctionModule(objects.FunctionBuiltinDef, "bool", b.Bool),
+		objects.NewFunctionModule(objects.FunctionBuiltinDef, "float", b.Float),
+		objects.NewFunctionModule(objects.FunctionBuiltinDef, "char", b.Char),
+		objects.NewFunctionModule(objects.FunctionBuiltinDef, "bytes", b.Bytes),
+		objects.NewFunctionModule(objects.FunctionBuiltinDef, "time", b.Time),
+		objects.NewFunctionModule(objects.FunctionBuiltinDef, "type_name", b.TypeName),
+		objects.NewFunctionModule(objects.FunctionBuiltinDef, "is_int", b.IsInt),
+		objects.NewFunctionModule(objects.FunctionBuiltinDef, "is_float", b.IsFloat),
+		objects.NewFunctionModule(objects.FunctionBuiltinDef, "is_string", b.IsString),
+		objects.NewFunctionModule(objects.FunctionBuiltinDef, "is_bool", b.IsBool),
+		objects.NewFunctionModule(objects.FunctionBuiltinDef, "is_char", b.IsChar),
+		objects.NewFunctionModule(objects.FunctionBuiltinDef, "is_bytes", b.IsBytes),
+		objects.NewFunctionModule(objects.FunctionBuiltinDef, "is_array", b.IsArray),
+		objects.NewFunctionModule(objects.FunctionBuiltinDef, "is_immutable_array", b.IsImmutableArray),
+		objects.NewFunctionModule(objects.FunctionBuiltinDef, "is_map", b.IsMap),
+		objects.NewFunctionModule(objects.FunctionBuiltinDef, "is_immutable_map", b.IsImmutableMap),
+		objects.NewFunctionModule(objects.FunctionBuiltinDef, "is_iterable", b.IsIterable),
+		objects.NewFunctionModule(objects.FunctionBuiltinDef, "is_time", b.IsTime),
+		objects.NewFunctionModule(objects.FunctionBuiltinDef, "is_error", b.IsError),
+		objects.NewFunctionModule(objects.FunctionBuiltinDef, "is_undefined", b.IsUndefined),
+		objects.NewFunctionModule(objects.FunctionBuiltinDef, "is_function", b.IsFunction),
+		objects.NewFunctionModule(objects.FunctionBuiltinDef, "is_callable", b.IsCallable),
+	}
+
+	return b
+}
+
+// Name returns the name of the builtin function as a string.
+func (h *BuiltinFunctions) Name() string {
+	return "builtin"
+}
+
+// Module returns a slice of pointers to FunctionModule objects representing the built-in function modules.
+func (h *BuiltinFunctions) Module() []*objects.FunctionModule {
+	return h.module
+}
+
+// TypeName returns the type name of the provided object as a string. It expects a single argument and returns an error if the argument count is invalid.
+func (h *BuiltinFunctions) TypeName(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}
 	return objects.NewString(args[0].TypeName())
 }
 
-// builtinIsString checks if the given argument is of type String.
-// Returns TrueValue if the argument is a String, otherwise FalseValue.
-// Returns an error if the number of arguments is not exactly 1.
-func builtinIsString(args ...objects.IObject) (objects.IObject, error) {
+// IsString checks if the given argument is of type String and returns TrueValue if it is, otherwise FalseValue.
+func (h *BuiltinFunctions) IsString(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}
@@ -62,10 +80,8 @@ func builtinIsString(args ...objects.IObject) (objects.IObject, error) {
 	return objects.FalseValue, nil
 }
 
-// builtinIsInt checks if the provided argument is of type Int.
-// Returns TrueValue if the argument is an Int; otherwise, FalseValue.
-// Returns ErrWrongNumArguments if the number of arguments is not exactly one.
-func builtinIsInt(args ...objects.IObject) (objects.IObject, error) {
+// IsInt checks if the provided argument is of type Int. Returns true if it is, otherwise false. Returns an error if the number of arguments is not exactly one.
+func (h *BuiltinFunctions) IsInt(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}
@@ -75,9 +91,8 @@ func builtinIsInt(args ...objects.IObject) (objects.IObject, error) {
 	return objects.FalseValue, nil
 }
 
-// builtinIsFloat checks if the given argument is of type Float and returns TrueValue if it is, otherwise FalseValue.
-// It expects exactly one argument and returns an error if the number of arguments is incorrect.
-func builtinIsFloat(args ...objects.IObject) (objects.IObject, error) {
+// IsFloat checks if the provided argument is of type Float and returns a boolean result wrapped in an IObject.
+func (h *BuiltinFunctions) IsFloat(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}
@@ -87,9 +102,8 @@ func builtinIsFloat(args ...objects.IObject) (objects.IObject, error) {
 	return objects.FalseValue, nil
 }
 
-// builtinIsBool checks if the provided argument is of boolean type and returns true or false accordingly.
-// Returns an error if the number of arguments is not equal to 1.
-func builtinIsBool(args ...objects.IObject) (objects.IObject, error) {
+// IsBool checks if the given argument is of type Bool. It returns TrueValue if true, and FalseValue otherwise.
+func (h *BuiltinFunctions) IsBool(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}
@@ -99,8 +113,8 @@ func builtinIsBool(args ...objects.IObject) (objects.IObject, error) {
 	return objects.FalseValue, nil
 }
 
-// builtinIsChar checks if the provided argument is of type Char, returning TrueValue if it is, otherwise FalseValue.
-func builtinIsChar(args ...objects.IObject) (objects.IObject, error) {
+// IsChar checks if the given argument is of type Char. Returns TrueValue if true, otherwise FalseValue.
+func (h *BuiltinFunctions) IsChar(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}
@@ -110,8 +124,8 @@ func builtinIsChar(args ...objects.IObject) (objects.IObject, error) {
 	return objects.FalseValue, nil
 }
 
-// builtinIsBytes checks if the given argument is of type Bytes. Returns TrueValue if yes, otherwise FalseValue.
-func builtinIsBytes(args ...objects.IObject) (objects.IObject, error) {
+// IsBytes checks if the given argument is of type *Bytes. Returns TrueValue if true, otherwise FalseValue.
+func (h *BuiltinFunctions) IsBytes(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}
@@ -121,9 +135,8 @@ func builtinIsBytes(args ...objects.IObject) (objects.IObject, error) {
 	return objects.FalseValue, nil
 }
 
-// builtinIsArray checks if the provided argument is an Array. Returns TrueValue if it is, otherwise returns FalseValue.
-// Returns ErrWrongNumArguments if the number of arguments is not exactly 1.
-func builtinIsArray(args ...objects.IObject) (objects.IObject, error) {
+// IsArray determines whether the first argument is of type Array. Returns TrueValue if true and FalseValue otherwise.
+func (h *BuiltinFunctions) IsArray(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}
@@ -133,9 +146,8 @@ func builtinIsArray(args ...objects.IObject) (objects.IObject, error) {
 	return objects.FalseValue, nil
 }
 
-// builtinIsImmutableArray checks if the provided argument is of type ArrayImmutable and returns TrueValue or FalseValue.
-// Returns an error if the number of arguments is not exactly one.
-func builtinIsImmutableArray(args ...objects.IObject) (objects.IObject, error) {
+// IsImmutableArray checks if the provided argument is of type ArrayImmutable. Returns TrueValue if true, otherwise FalseValue.
+func (h *BuiltinFunctions) IsImmutableArray(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}
@@ -145,9 +157,8 @@ func builtinIsImmutableArray(args ...objects.IObject) (objects.IObject, error) {
 	return objects.FalseValue, nil
 }
 
-// builtinIsMap checks if the provided argument is of type map and returns true if it is, otherwise false.
-// Returns an error if the number of arguments is not exactly one.
-func builtinIsMap(args ...objects.IObject) (objects.IObject, error) {
+// IsMap checks if the provided argument is of type Map and returns TrueValue if true; otherwise, FalseValue.
+func (h *BuiltinFunctions) IsMap(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}
@@ -157,8 +168,9 @@ func builtinIsMap(args ...objects.IObject) (objects.IObject, error) {
 	return objects.FalseValue, nil
 }
 
-// builtinIsImmutableMap checks if the provided argument is of type MapImmutable and returns TrueValue or FalseValue.
-func builtinIsImmutableMap(args ...objects.IObject) (objects.IObject, error) {
+// IsImmutableMap checks if the first argument is of type MapImmutable and returns TrueValue if true, otherwise FalseValue.
+// Returns an error if the number of arguments provided is not exactly one.
+func (h *BuiltinFunctions) IsImmutableMap(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}
@@ -168,9 +180,8 @@ func builtinIsImmutableMap(args ...objects.IObject) (objects.IObject, error) {
 	return objects.FalseValue, nil
 }
 
-// builtinIsTime determines if the given argument is of type *objects.Time and returns true or false accordingly.
-// Returns an error if the number of arguments provided is not exactly one.
-func builtinIsTime(args ...objects.IObject) (objects.IObject, error) {
+// IsTime determines if the provided argument is of type Time and returns TrueValue if so, otherwise FalseValue.
+func (h *BuiltinFunctions) IsTime(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}
@@ -180,8 +191,8 @@ func builtinIsTime(args ...objects.IObject) (objects.IObject, error) {
 	return objects.FalseValue, nil
 }
 
-// builtinIsError checks if the provided argument is an error object. Returns true if it is, otherwise false.
-func builtinIsError(args ...objects.IObject) (objects.IObject, error) {
+// IsError checks if the provided argument is of type Error. Returns TrueValue if it is, else FalseValue.
+func (h *BuiltinFunctions) IsError(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}
@@ -191,8 +202,8 @@ func builtinIsError(args ...objects.IObject) (objects.IObject, error) {
 	return objects.FalseValue, nil
 }
 
-// builtinIsUndefined checks if the given argument is the special Undefined value and returns a boolean result.
-func builtinIsUndefined(args ...objects.IObject) (objects.IObject, error) {
+// IsUndefined checks if the provided argument is the undefined value. Returns true if undefined, otherwise false.
+func (h *BuiltinFunctions) IsUndefined(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}
@@ -202,9 +213,8 @@ func builtinIsUndefined(args ...objects.IObject) (objects.IObject, error) {
 	return objects.FalseValue, nil
 }
 
-// builtinIsFunction checks if the given argument is a FunctionCompiled. Returns TrueValue for true, else FalseValue.
-// Returns an error if the number of arguments is not 1.
-func builtinIsFunction(args ...objects.IObject) (objects.IObject, error) {
+// IsFunction checks if the provided argument is a compiled function and returns true or false accordingly.
+func (h *BuiltinFunctions) IsFunction(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}
@@ -215,9 +225,8 @@ func builtinIsFunction(args ...objects.IObject) (objects.IObject, error) {
 	return objects.FalseValue, nil
 }
 
-// builtinIsCallable checks if the given object is callable and returns a true or false value accordingly.
-// Returns an error if the number of arguments is not exactly one.
-func builtinIsCallable(args ...objects.IObject) (objects.IObject, error) {
+// IsCallable determines if the provided argument is callable and returns true or false accordingly. Returns an error if the number of arguments is not exactly one.
+func (h *BuiltinFunctions) IsCallable(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}
@@ -227,10 +236,9 @@ func builtinIsCallable(args ...objects.IObject) (objects.IObject, error) {
 	return objects.FalseValue, nil
 }
 
-// builtinIsIterable checks if the given argument is iterable.
-// Takes a single argument and returns true if the object can iterate, otherwise false.
-// Returns an error if the number of arguments is not exactly one.
-func builtinIsIterable(args ...objects.IObject) (objects.IObject, error) {
+// IsIterable checks if the provided argument is iterable and returns a Boolean object indicating the result.
+// Returns objects.ErrWrongNumArguments if the number of arguments is not exactly one.
+func (h *BuiltinFunctions) IsIterable(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}
@@ -240,9 +248,8 @@ func builtinIsIterable(args ...objects.IObject) (objects.IObject, error) {
 	return objects.FalseValue, nil
 }
 
-// builtinLen calculates the length of a supported object such as array, string, bytes, or map.
-// Returns an Int object representing the length or an error if the argument is invalid.
-func builtinLen(args ...objects.IObject) (objects.IObject, error) {
+// Len determines the length of an array, string, bytes, or map. Returns an error if the argument type is unsupported.
+func (h *BuiltinFunctions) Len(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}
@@ -264,9 +271,8 @@ func builtinLen(args ...objects.IObject) (objects.IObject, error) {
 	}
 }
 
-// builtinRange creates a range of integers based on the start, stop, and optional step parameters.
-// Returns an error if arguments are missing, of incorrect types, or if step is less than or equal to zero.
-func builtinRange(args ...objects.IObject) (objects.IObject, error) {
+// Range generates a range of integers, requiring 2-3 arguments: start, stop, and an optional step (> 0). Returns an IObject or error.
+func (h *BuiltinFunctions) Range(args ...objects.IObject) (objects.IObject, error) {
 	numArgs := len(args)
 	if numArgs < 2 || numArgs > 3 {
 		return nil, objects.ErrWrongNumArguments
@@ -296,11 +302,11 @@ func builtinRange(args ...objects.IObject) (objects.IObject, error) {
 	if step == nil {
 		step = objects.NewInt(int64(1))
 	}
-	return _builtinRangeCreate(start.Value(), stop.Value(), step.Value()), nil
+	return h.rangeCreate(start.Value(), stop.Value(), step.Value()), nil
 }
 
-// buildRange generates an array of integers from start to stop with the specified step, supporting both ascending and descending ranges.
-func _builtinRangeCreate(start int64, stop int64, step int64) *objects.Array {
+// rangeCreate generates an array with elements starting from `start`, ending before `stop`, incremented by `step`.
+func (h *BuiltinFunctions) rangeCreate(start int64, stop int64, step int64) *objects.Array {
 	array := objects.NewArray(nil)
 	if start <= stop {
 		for i := start; i < stop; i += step {
@@ -314,9 +320,8 @@ func _builtinRangeCreate(start int64, stop int64, step int64) *objects.Array {
 	return array
 }
 
-// builtinFormat formats a string using the given format string and additional arguments, returning a new string object.
-// Returns an error if no arguments are provided or if the first argument is not a string.
-func builtinFormat(args ...objects.IObject) (objects.IObject, error) {
+// Format applies a format string to a variable number of arguments, returning the formatted result as a String object.
+func (h *BuiltinFunctions) Format(args ...objects.IObject) (objects.IObject, error) {
 	numArgs := len(args)
 	if numArgs == 0 {
 		return nil, objects.ErrWrongNumArguments
@@ -335,17 +340,16 @@ func builtinFormat(args ...objects.IObject) (objects.IObject, error) {
 	return objects.NewString(fmt.Sprintf(formatString.Value(), ar...))
 }
 
-// builtinCopy creates and returns a copy of the provided object. Only one argument is expected; additional arguments result in an error.
-func builtinCopy(args ...objects.IObject) (objects.IObject, error) {
+// Copy returns a copy of the provided object. It accepts exactly one argument and raises an error on invalid input.
+func (h *BuiltinFunctions) Copy(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}
 	return args[0].Copy(), nil
 }
 
-// builtinString converts the provided argument to a string or returns the default value if specified and supported.
-// It returns an error if the argument count is invalid or if the string size exceeds the defined limit.
-func builtinString(args ...objects.IObject) (objects.IObject, error) {
+// String converts an object to a string representation or returns a default value if conversion is not possible.
+func (h *BuiltinFunctions) String(args ...objects.IObject) (objects.IObject, error) {
 	argsLen := len(args)
 	if !(argsLen == 1 || argsLen == 2) {
 		return nil, objects.ErrWrongNumArguments
@@ -363,8 +367,8 @@ func builtinString(args ...objects.IObject) (objects.IObject, error) {
 	return objects.UndefinedValue, nil
 }
 
-// builtinInt converts an object to an integer if possible; returns the second argument or undefined for invalid inputs.
-func builtinInt(args ...objects.IObject) (objects.IObject, error) {
+// Int converts the first argument to an integer type, or returns the second argument or undefined if the conversion fails.
+func (h *BuiltinFunctions) Int(args ...objects.IObject) (objects.IObject, error) {
 	argsLen := len(args)
 	if !(argsLen == 1 || argsLen == 2) {
 		return nil, objects.ErrWrongNumArguments
@@ -382,11 +386,8 @@ func builtinInt(args ...objects.IObject) (objects.IObject, error) {
 	return objects.UndefinedValue, nil
 }
 
-// builtinFloat converts the first argument to a Float object if possible, or returns the second argument or UndefinedValue.
-// It takes 1 or 2 arguments, with the second argument serving as a default return value if conversion fails.
-// Returns ErrWrongNumArguments if the number of arguments is not 1 or 2.
-// Returns a Float object or an error based on the conversion success.
-func builtinFloat(args ...objects.IObject) (objects.IObject, error) {
+// Float converts the provided argument to a Float object if possible, returning an error for invalid or unsupported input.
+func (h *BuiltinFunctions) Float(args ...objects.IObject) (objects.IObject, error) {
 	argsLen := len(args)
 	if !(argsLen == 1 || argsLen == 2) {
 		return nil, objects.ErrWrongNumArguments
@@ -404,9 +405,8 @@ func builtinFloat(args ...objects.IObject) (objects.IObject, error) {
 	return objects.UndefinedValue, nil
 }
 
-// builtinBool converts an object to its boolean representation or returns the object itself if already a boolean.
-// It returns an error if the number of arguments is not exactly one.
-func builtinBool(args ...objects.IObject) (objects.IObject, error) {
+// Bool converts the provided argument to a boolean type if possible, or returns an error if the argument count is invalid.
+func (h *BuiltinFunctions) Bool(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}
@@ -423,8 +423,8 @@ func builtinBool(args ...objects.IObject) (objects.IObject, error) {
 	return objects.UndefinedValue, nil
 }
 
-// builtinChar converts the given object to a character object. Returns the character or a default value if provided.
-func builtinChar(args ...objects.IObject) (objects.IObject, error) {
+// Char converts the given argument to a Char object if possible, returning the result, or a default fallback if provided.
+func (h *BuiltinFunctions) Char(args ...objects.IObject) (objects.IObject, error) {
 	argsLen := len(args)
 	if !(argsLen == 1 || argsLen == 2) {
 		return nil, objects.ErrWrongNumArguments
@@ -442,9 +442,9 @@ func builtinChar(args ...objects.IObject) (objects.IObject, error) {
 	return objects.UndefinedValue, nil
 }
 
-// builtinBytes creates a new byte array of a given size N or converts argument(s) to a byte slice.
-// Returns an error if the byte size exceeds the maximum limit or if arguments are invalid.
-func builtinBytes(args ...objects.IObject) (objects.IObject, error) {
+// Bytes creates a new byte slice object from the given input or returns an error if the arguments are invalid.
+// Accepts one or two arguments: a size as an *objects.Int or convertible byte data; optional default value.
+func (h *BuiltinFunctions) Bytes(args ...objects.IObject) (objects.IObject, error) {
 	argsLen := len(args)
 	if !(argsLen == 1 || argsLen == 2) {
 		return nil, objects.ErrWrongNumArguments
@@ -468,8 +468,8 @@ func builtinBytes(args ...objects.IObject) (objects.IObject, error) {
 	return objects.UndefinedValue, nil
 }
 
-// builtinTime converts the input into a Time object if possible or returns undefined/default value if input is invalid.
-func builtinTime(args ...objects.IObject) (objects.IObject, error) {
+// Time converts the input argument(s) to a Time object if compatible, else returns a fallback or undefined values.
+func (h *BuiltinFunctions) Time(args ...objects.IObject) (objects.IObject, error) {
 	argsLen := len(args)
 	if !(argsLen == 1 || argsLen == 2) {
 		return nil, objects.ErrWrongNumArguments
@@ -487,8 +487,8 @@ func builtinTime(args ...objects.IObject) (objects.IObject, error) {
 	return objects.UndefinedValue, nil
 }
 
-// builtinAppend appends elements to an array or immutable array, returning a new array. Errors if the first argument is not an array.
-func builtinAppend(args ...objects.IObject) (objects.IObject, error) {
+// Append adds one or more elements to an array or immutable array and returns the updated array or an error.
+func (h *BuiltinFunctions) Append(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) < 2 {
 		return nil, objects.ErrWrongNumArguments
 	}
@@ -502,8 +502,8 @@ func builtinAppend(args ...objects.IObject) (objects.IObject, error) {
 	}
 }
 
-// builtinDelete removes a key from a map object and returns UndefinedValue if successful; otherwise, returns an error.
-func builtinDelete(args ...objects.IObject) (objects.IObject, error) {
+// Delete removes a key-value pair from a map. Requires a map as the first argument and a string key as the second argument.
+func (h *BuiltinFunctions) Delete(args ...objects.IObject) (objects.IObject, error) {
 	argsLen := len(args)
 	if argsLen != 2 {
 		return nil, objects.ErrWrongNumArguments
@@ -520,10 +520,8 @@ func builtinDelete(args ...objects.IObject) (objects.IObject, error) {
 	}
 }
 
-// builtinSplice removes specified elements from an array and optionally inserts new elements at the same position.
-// It expects an array as the first argument, followed by the start index, delete count, and optional items to insert.
-// Returns a new array of the removed elements or an error for invalid types, out-of-bounds indices, or argument issues.
-func builtinSplice(args ...objects.IObject) (objects.IObject, error) {
+// Splice removes or replaces existing elements and/or adds new elements in an array, returning a new array of deleted elements.
+func (h *BuiltinFunctions) Splice(args ...objects.IObject) (objects.IObject, error) {
 	argsLen := len(args)
 	if argsLen == 0 {
 		return nil, objects.ErrWrongNumArguments

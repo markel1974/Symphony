@@ -18,6 +18,11 @@ func NewErrors() *Errors {
 	return e
 }
 
+// Name returns the name of the Errors instance.
+func (e *Errors) Name() string {
+	return "errors"
+}
+
 // Module returns the module map containing string keys and corresponding IObject values from the Errors struct.
 func (e *Errors) Module() map[string]objects.IObject {
 	return e.module

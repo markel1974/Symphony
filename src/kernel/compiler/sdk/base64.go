@@ -27,6 +27,11 @@ func NewBase64() *Base64 {
 	return b
 }
 
+// Name returns the name of the Base64 module.
+func (b *Base64) Name() string {
+	return "base64"
+}
+
 // Module returns the map of string keys to objects.IObject representing the Base64 module implementation.
 func (b *Base64) Module() map[string]objects.IObject {
 	return b.module

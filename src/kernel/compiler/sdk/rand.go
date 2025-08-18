@@ -28,6 +28,11 @@ func NewRand() *Rand {
 	return z
 }
 
+// Name returns the name of Rand module.
+func (z *Rand) Name() string {
+	return "rand"
+}
+
 // Module returns the module map of the Rand instance containing string keys mapped to objects.IObject values.
 func (z *Rand) Module() map[string]objects.IObject {
 	return z.module

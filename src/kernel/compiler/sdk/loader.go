@@ -28,8 +28,7 @@ type Loader struct {
 
 // NewLoader initializes and returns a new Loader instance with built-in modules preloaded.
 func NewLoader() *Loader {
-	builtinModules := map[string]map[string]objects.IObject{
-		//"fmt":    _fmtSafeModule,
+	packages := map[string]map[string]objects.IObject{
 		"errors":  NewErrors().Module(),
 		"fmt":     NewFmt().Module(),
 		"math":    NewMath().Module(),
@@ -43,11 +42,12 @@ func NewLoader() *Loader {
 		"hex":     NewHex().Module(),
 	}
 	modules := make(map[string]*Module)
-	for name, mod := range builtinModules {
+	for name, mod := range packages {
 		modules[name] = &Module{attrs: mod}
 	}
-	builtin := make([]*Builtin, len(_builtinFunctions))
-	for i, fn := range _builtinFunctions {
+	builtinFunctions := NewBuiltinFunctions().Module()
+	builtin := make([]*Builtin, len(builtinFunctions))
+	for i, fn := range builtinFunctions {
 		wrapper := objects.NewBuiltin(fn.Name(), i)
 		builtin[i] = &Builtin{wrapper: wrapper, object: fn}
 	}

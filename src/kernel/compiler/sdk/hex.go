@@ -21,6 +21,11 @@ func NewHex() *Hex {
 	return h
 }
 
+// Name returns the name of Hex module.
+func (h *Hex) Name() string {
+	return "hex"
+}
+
 // Module returns the map of string keys to IObject values stored in the Hex struct.
 func (h *Hex) Module() map[string]objects.IObject {
 	return h.module

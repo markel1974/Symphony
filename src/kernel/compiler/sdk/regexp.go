@@ -33,6 +33,11 @@ func NewRegexp() *Regexp {
 	return r
 }
 
+// Name returns the name of Regexp module.
+func (r *Regexp) Name() string {
+	return "regexp"
+}
+
 // Module returns the module map associated with the Regexp, containing functionalities as key-value pairs.
 func (r *Regexp) Module() map[string]objects.IObject {
 	return r.module

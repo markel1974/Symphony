@@ -25,6 +25,16 @@ func NewFmt() *Fmt {
 	return f
 }
 
+// Name returns the name of Fmt module.
+func (f *Fmt) Name() string {
+	return "fmt"
+}
+
+// Module returns the module map containing string keys and corresponding IObject values from the Fmt struct.
+func (f *Fmt) Module() map[string]objects.IObject {
+	return f.module
+}
+
 // Print writes the string representations of the provided arguments to the standard output without appending a newline.
 func (f *Fmt) Print(args ...objects.IObject) (ret objects.IObject, err error) {
 	var printArgs []interface{}
@@ -127,9 +137,4 @@ func (f *Fmt) Errorf(args ...objects.IObject) (ret objects.IObject, err error) {
 		return nil, err
 	}
 	return objects.NewError(v), nil
-}
-
-// Module returns the module map containing string keys and corresponding IObject values from the Fmt struct.
-func (f *Fmt) Module() map[string]objects.IObject {
-	return f.module
 }

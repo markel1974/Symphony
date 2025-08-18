@@ -30,6 +30,11 @@ func NewStrconv() *Strconv {
 	return s
 }
 
+// Name returns the name of Strconv module.
+func (s *Strconv) Name() string {
+	return "strconv"
+}
+
 // Module retrieves the `module` field from the `Strconv` struct and returns it as a map of string keys and IObject values.
 func (s *Strconv) Module() map[string]objects.IObject {
 	return s.module

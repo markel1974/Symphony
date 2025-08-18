@@ -88,6 +88,11 @@ func NewTime() *Time {
 	return t
 }
 
+// Name returns the name of Time module.
+func (t *Time) Name() string {
+	return "time"
+}
+
 // Module returns a map where the keys are strings and the values implement the IObject interface, representing the module.
 func (t *Time) Module() map[string]objects.IObject {
 	return t.module
