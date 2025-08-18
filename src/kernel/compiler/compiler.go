@@ -9,7 +9,7 @@ import (
 	"go/token"
 	"strings"
 
-	"github.com/markel1974/c64emu/src/kernel/compiler/stdlib"
+	"github.com/markel1974/c64emu/src/kernel/compiler/sdk"
 	"github.com/markel1974/c64emu/src/kernel/vm/bytecode"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
@@ -27,7 +27,7 @@ type Compiler struct {
 
 // New creates and returns a new instance of Compiler with initialized scopes using a standard library loader.
 func New() *Compiler {
-	loader := stdlib.NewLoader()
+	loader := sdk.NewLoader()
 	c := &Compiler{
 		scopes: NewScopes(loader),
 	}
@@ -874,9 +874,9 @@ func (c *Compiler) doRangeStmt(node *ast.RangeStmt) error {
 			valueSymbol = c.scopes.SymbolDefine(ident.Name, UnknownScope)
 		}
 	}
-	// 4. Inizio del ciclo
+	// Loop start
 	loopStartPos := scope.InstructionsLen()
-	// 5. Controlla se ci sono altri elementi, passando l'indice dell'iteratore.
+	// Check if there are more elements, passing the iterator index
 	if _, err := c.scopes.Emit(bytecode.OpIteratorNext, iteratorSymbol.Index); err != nil {
 		return err
 	}
@@ -884,7 +884,7 @@ func (c *Compiler) doRangeStmt(node *ast.RangeStmt) error {
 	if err != nil {
 		return err
 	}
-	// 6. Assegna i valori e pulisce lo stack degli operandi
+	// Assign values and clean operand stack
 	if valueSymbol != nil {
 		if _, err = c.scopes.Emit(bytecode.OpIteratorValue, iteratorSymbol.Index); err != nil {
 			return err
@@ -910,15 +910,14 @@ func (c *Compiler) doRangeStmt(node *ast.RangeStmt) error {
 			return err
 		}
 	}
-	// 7. Compila il corpo del ciclo
 	if err = c.compile(node.Body); err != nil {
 		return err
 	}
-	// 8. Salta all'inizio
+	// Jump to start
 	if _, err = c.scopes.Emit(bytecode.OpJump, loopStartPos); err != nil {
 		return err
 	}
-	// 9. Back-patching del jump di uscita
+	// Back-patching of exit jump
 	afterLoopPos := scope.InstructionsLen()
 	if err = c.scopes.ChangeOperand(jumpNotTruthyPos, afterLoopPos); err != nil {
 		return err
