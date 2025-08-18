@@ -266,7 +266,6 @@ func (c *Scopes) EmitLiteral(node *ast.BasicLit) error {
 
 // EmitSymbolSet generates bytecode instructions to set the value of a symbol in its appropriate scope (global, local, or free).
 func (c *Scopes) EmitSymbolSet(s *Symbol) error {
-	//fmt.Println("Emitting Symbol:", s)
 	switch s.Scope {
 	case GlobalScope:
 		if _, err := c.Emit(bytecode.OpSetGlobal, s.Index); err != nil {
@@ -318,30 +317,6 @@ func (c *Scopes) EmitSymbolGet(s *Symbol) error {
 		if _, err := c.Emit(bytecode.OpGetFree, s.Index); err != nil {
 			return err
 		}
-	}
-	return nil
-}
-
-// EmitBinaryOp compiles a binary operation by emitting the corresponding bytecode based on the provided token operator.
-func (c *Scopes) EmitBinaryOp(op token.Token) error {
-	z, ok := BinaryAdapterFor(op)
-	if !ok {
-		return fmt.Errorf("unhandled binary op: %s", op)
-	}
-	if _, err := c.Emit(z.op, z.arguments...); err != nil {
-		return err
-	}
-	return nil
-}
-
-// EmitUnaryOp compiles unary operations by emitting the corresponding bytecode for the given operator.
-func (c *Scopes) EmitUnaryOp(op token.Token) error {
-	z, ok := UnaryAdapterFor(op)
-	if !ok {
-		return fmt.Errorf("unhandled unary op: %s", op)
-	}
-	if _, err := c.Emit(z.op, z.arguments...); err != nil {
-		return err
 	}
 	return nil
 }

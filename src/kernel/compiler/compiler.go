@@ -958,7 +958,11 @@ func (c *Compiler) doBinaryExpr(node *ast.BinaryExpr) error {
 	if err := c.compile(node.Y); err != nil {
 		return err
 	}
-	if err := c.scopes.EmitBinaryOp(node.Op); err != nil {
+	z, ok := BinaryAdapterFor(node.Op)
+	if !ok {
+		return fmt.Errorf("unhandled binary op: %s", node.Op)
+	}
+	if _, err := c.scopes.Emit(z.op, z.arguments...); err != nil {
 		return err
 	}
 	return nil
@@ -1005,11 +1009,15 @@ func (c *Compiler) doUnaryExpr(node *ast.UnaryExpr) error {
 		}
 		return nil
 	}
-	// existing logic for other unary operators (e.g. '!', '-')
+	// existing logic for other unary operators (e.g. '!', '-', '^')
 	if err := c.compile(node.X); err != nil {
 		return err
 	}
-	if err := c.scopes.EmitUnaryOp(node.Op); err != nil {
+	z, ok := UnaryAdapterFor(node.Op)
+	if !ok {
+		return fmt.Errorf("unhandled unary op: %s", node.Op)
+	}
+	if _, err := c.scopes.Emit(z.op, z.arguments...); err != nil {
 		return err
 	}
 	return nil

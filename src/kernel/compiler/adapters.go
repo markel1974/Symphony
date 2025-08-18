@@ -46,6 +46,7 @@ var _binaryAdapter = map[token.Token]*TokenAdapter{
 var _unaryAdapter = map[token.Token]*TokenAdapter{
 	token.SUB: NewTokenAdapter(bytecode.OpMinus, nil),
 	token.NOT: NewTokenAdapter(bytecode.OpLNot, nil),
+	token.XOR: NewTokenAdapter(bytecode.OpBComplement, nil),
 }
 
 // BinaryAdapterFor retrieves the TokenAdapter for the given token operator and indicates if it exists in the mapping.
