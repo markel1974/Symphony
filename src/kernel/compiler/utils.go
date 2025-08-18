@@ -5,6 +5,7 @@ import (
 	"go/ast"
 )
 
+// GetIdent retrieves the *ast.Ident type from an *ast.Field's Type if it exists, including handling pointer types.
 func GetIdent(expr *ast.Field) *ast.Ident {
 	switch t := expr.Type.(type) {
 	case *ast.Ident:
@@ -17,6 +18,8 @@ func GetIdent(expr *ast.Field) *ast.Ident {
 	return nil
 }
 
+// GetReceivers extracts and returns the list of type names from the given AST FieldList result.
+// It handles both non-pointer and pointer type fields and returns an error for unsupported types.
 func GetReceivers(result *ast.FieldList) ([]string, error) {
 	if result == nil {
 		return nil, nil
@@ -35,16 +38,15 @@ func GetReceivers(result *ast.FieldList) ([]string, error) {
 			} else {
 				// Questo caso gestirebbe tipi più complessi come '*[]Home'
 				return nil, fmt.Errorf("unsupported pointer return type: *%T", v.X)
-				//return "", fmt.Errorf("unsupported pointer return type: *%T", v.X)
 			}
 		default:
 			return nil, fmt.Errorf("unsupported return type %T", v)
-			//return "", fmt.Errorf("unsupported return type %T", kind)
 		}
 	}
 	return ret, nil
 }
 
+// GetMangledName combines an identifier and function name to generate a mangled name in the format "identifier.function".
 func GetMangledName(identId string, fnName string) string {
 	m := fmt.Sprintf("%s.%s", identId, fnName)
 	return m
