@@ -3,7 +3,6 @@ package render
 import (
 	"bytes"
 	"log"
-	"math"
 	"sort"
 
 	"github.com/markel1974/c64emu/src/kernel/adaptiveticker"
@@ -34,6 +33,7 @@ type Render struct {
 	messageChan    chan interfaces.IMessage
 	router         interfaces.IKernelResponseRouter
 	handlers       map[interfaces.MessageType]func(interfaces.IMessage)
+	zIndexCounter  int
 }
 
 // NewRender creates and initializes a new Render instance with the provided terminal implementation.
@@ -51,6 +51,7 @@ func NewRender(driver interfaces.IDisplayDriver) *Render {
 		messageChan:    make(chan interfaces.IMessage, renderQueueLen),
 		surface:        NewSurface(driver, height, width, ""),
 		handlers:       make(map[interfaces.MessageType]func(interfaces.IMessage)),
+		zIndexCounter:  0,
 	}
 	r.handlers[interfaces.MessageTypeSetScreenSize] = r.handleSetScreenSize
 	r.handlers[interfaces.MessageTypePaintRequest] = r.handlePaintRequest
@@ -99,6 +100,7 @@ func (c *Render) Register() []interfaces.MessageType {
 	return out
 }
 
+// Setup initializes the Render instance and starts the event loop.
 func (c *Render) Setup(router interfaces.IKernelResponseRouter, pid int, process interfaces.IUserProcess) error {
 	c.router = router
 	c.pid = pid
@@ -144,12 +146,14 @@ func (c *Render) handleProcessForeground(msg interfaces.IMessage) {
 	if !ok {
 		return
 	}
-	p, _ := c.running[mt.ForegroundPID()]
-	if p == nil {
+	component, _ := c.running[mt.ForegroundPID()]
+	if component == nil {
 		c.foreground = nil
 		return
 	}
-	c.foreground = p
+	c.foreground = component
+	c.zIndexCounter++
+	component.SetZIndex(c.zIndexCounter)
 }
 
 // eventLoop continuously listens on the message channel and processes incoming messages until a quit message is received.
@@ -216,23 +220,20 @@ func (c *Render) handlePaintApply(msg interfaces.IMessage) {
 		return
 	}
 	component.SetInterpretedSurface(mt.Surface())
+
 	fullPaint := c.fullPaint
 	c.fullPaint = false
-	var foreground *InterpretedSurface = nil
-	activePid := adaptiveticker.UnknownId
-	hasSelection := false
-	if c.windowSelector.PID() != adaptiveticker.UnknownId {
-		activePid = c.windowSelector.PID()
-		hasSelection = true
-	} else if c.foreground != nil {
+	var activeSurface *InterpretedSurface = nil
+	activePid := c.windowSelector.PID()
+	if activePid == adaptiveticker.UnknownId && c.foreground != nil {
 		activePid = c.foreground.PID()
 	}
-	if activePid == adaptiveticker.UnknownId {
-		if z, _ := c.running[c.pid]; z != nil {
-			foreground = z.surface.GetInterpretedSurface()
+	if activePid != adaptiveticker.UnknownId {
+		if z, _ := c.running[activePid]; z != nil {
+			activeSurface = z.surface.GetInterpretedSurface()
 		}
 	}
-	running := c.processSorter(activePid, hasSelection, c.running)
+	running := c.processSorter(c.windowSelector.PID(), c.running)
 
 	var lines bytes.Buffer
 	c.surface.Prepare(c.height, c.width)
@@ -244,7 +245,7 @@ func (c *Render) handlePaintApply(msg interfaces.IMessage) {
 			c.surface.Assign(surface)
 			c.surface.Begin()
 			interpretedSurface.Appy(c.surface)
-			if interpretedSurface == foreground {
+			if interpretedSurface == activeSurface {
 				interpretedSurface.ApplyMoveCursor(c.surface)
 			}
 			c.surface.End()
@@ -515,21 +516,23 @@ func (c *Render) doWrite(data string, eol bool) {
 }
 
 // processSorter sorts the processes by their z-index and returns a slice of processes in the correct order.
-func (c *Render) processSorter(activePid int, hasSelection bool, components map[int]*Component) []*Component {
+func (c *Render) processSorter(selectionPid int, components map[int]*Component) []*Component {
 	running := make([]*Component, 0, len(components))
+	var selection *Component
 	for _, process := range c.running {
-		process.SetZIndex(process.PID())
 		process.surface.SetSelectionMode(false)
-		if activePid == process.PID() {
-			process.SetZIndex(math.MaxInt)
-			if hasSelection {
-				process.surface.SetSelectionMode(true)
-			}
+		if selectionPid == process.PID() {
+			selection = process
+			continue
 		}
 		running = append(running, process)
 	}
 	sort.SliceStable(running, func(i, j int) bool {
 		return running[i].ZIndex() < running[j].ZIndex()
 	})
+	if selection != nil {
+		selection.surface.SetSelectionMode(true)
+		running = append(running, selection)
+	}
 	return running
 }
