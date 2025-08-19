@@ -13,13 +13,14 @@ type Buffer struct {
 
 // NewBuffer creates and returns a new Buffer instance initialized with the given file path and content.
 func NewBuffer(filePath string, content string) *Buffer {
-	defaultLines := 80
+	//defaultLines := 80
+	//lines := strings.Split(content, "\n")
+	//if len(lines) > defaultLines {
+	//	defaultLines = len(lines)
+	//}
 	lines := strings.Split(content, "\n")
-	if len(lines) > defaultLines {
-		defaultLines = len(lines)
-	}
 	b := &Buffer{
-		lines:    make([]string, defaultLines),
+		lines:    make([]string, len(lines)),
 		cursorX:  0,
 		cursorY:  0,
 		filePath: filePath,
@@ -27,7 +28,6 @@ func NewBuffer(filePath string, content string) *Buffer {
 	for i, line := range lines {
 		b.lines[i] = line
 	}
-
 	return b
 }
 
@@ -59,7 +59,6 @@ func (b *Buffer) MoveCursor(dx, dy int) {
 	if b.cursorY >= len(b.lines) {
 		b.cursorY = len(b.lines) - 1
 	}
-
 	b.cursorX += dx
 	if b.cursorX < 0 {
 		b.cursorX = 0
@@ -78,15 +77,14 @@ func (b *Buffer) InsertRow() {
 	a2 := line[:b.cursorX]
 	b.cursorX = 0
 	b.lines[b.cursorY] = a1
-
 	centerIndex := b.cursorY
 	if centerIndex == 0 {
 		b.lines = append([]string{a2}, b.lines...)
-		return
+	} else {
+		head := b.lines[:centerIndex]
+		tail := append([]string{a2}, b.lines[centerIndex:]...)
+		b.lines = append(head, tail...)
 	}
-	head := b.lines[:centerIndex]
-	tail := append([]string{a2}, b.lines[centerIndex:]...)
-	b.lines = append(head, tail...)
 	b.cursorY++
 }
 

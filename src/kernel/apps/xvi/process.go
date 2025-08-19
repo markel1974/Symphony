@@ -41,7 +41,7 @@ func (p *XVI) onPaint(surface interfaces.ISurface) {
 
 // onError handles errors encountered during the execution of the process and triggers appropriate error-handling logic.
 func (p *XVI) onError(err error) {
-	//TODO
+	p.tui.SetError(err)
 }
 
 // activateHandler handles the activation event for the process, setting up initial state or responding to reactivation.
@@ -75,7 +75,6 @@ func (p *XVI) doInsertMode(code int, key rune) {
 		if key < 32 {
 			if key == '\n' {
 				p.buffer.InsertRow()
-				//p.buffer.MoveCursor(0, 1)
 			}
 			//nothing for now
 		} else {

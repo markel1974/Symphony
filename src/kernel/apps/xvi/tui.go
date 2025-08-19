@@ -11,6 +11,7 @@ import (
 type Tui struct {
 	buffer  *Buffer
 	mode    string
+	status  string
 	rows    int
 	columns int
 	offsetY int
@@ -22,6 +23,7 @@ func NewTui(buffer *Buffer) *Tui {
 	t := &Tui{
 		buffer:  buffer,
 		mode:    "normal",
+		status:  "",
 		offsetY: 0,
 		offsetX: 0,
 	}
@@ -38,6 +40,14 @@ func (t *Tui) GetMode() string {
 	return t.mode
 }
 
+func (t *Tui) SetError(err error) {
+	if err == nil {
+		t.status = ""
+	} else {
+		t.status = err.Error()
+	}
+}
+
 // Draw renders the content of the buffer onto the surface based on the viewport and cursor position.
 func (t *Tui) Draw(process interfaces.IUserProcess, surface interfaces.ISurface) {
 	rows, columns := surface.GetWindowSize()
@@ -51,7 +61,7 @@ func (t *Tui) Draw(process interfaces.IUserProcess, surface interfaces.ISurface)
 		return
 	}
 	cx, cy := t.buffer.Cursor()
-	textAreaHeight := t.rows - 3
+	textAreaHeight := t.rows - 4
 	textAreaWidth := t.columns
 	if cy < t.offsetY {
 		t.offsetY = cy
@@ -76,12 +86,14 @@ func (t *Tui) Draw(process interfaces.IUserProcess, surface interfaces.ISurface)
 				}
 				surface.DrawTextColor(y, 0, visibleLine, interfaces.ColorWhiteDef, interfaces.ColorBlackDef, 0)
 			}
+		} else {
+			surface.DrawTextColor(y, 0, "~", interfaces.ColorGreenDef, interfaces.ColorBlackDef, 0)
 		}
 	}
 
 	// Status Bar
 	statusText := fmt.Sprintf("-- %s -- %s   %d, %d", strings.ToUpper(t.mode), t.buffer.filePath, cy+1, cx+1)
-	statusLine := strings.Repeat(" ", t.columns)
+	statusLine := t.status + strings.Repeat(" ", t.columns-len(t.status))
 	surface.DrawTextColor(t.rows-3, 0, statusLine, interfaces.ColorBlackDef, interfaces.ColorWhiteDef, 0)
 	surface.DrawTextColor(t.rows-4, 0, statusText, interfaces.ColorBlackDef, interfaces.ColorWhiteDef, 0)
 
