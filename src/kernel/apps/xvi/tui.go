@@ -80,7 +80,7 @@ func (t *Tui) Draw(process interfaces.IUserProcess, surface interfaces.ISurface)
 		}
 	}
 
-	// Disegna la status bar
+	// Status Bar
 	statusText := fmt.Sprintf("-- %s -- %s   %d, %d", strings.ToUpper(t.mode), t.buffer.filePath, cy+1, cx+1)
 	statusLine := strings.Repeat(" ", t.columns)
 	surface.DrawTextColor(t.rows-3, 0, statusLine, interfaces.ColorBlackDef, interfaces.ColorWhiteDef, 0)

@@ -197,6 +197,8 @@ func (s *Surface) MoveCursor(rs int, cs int) {
 	//	cs = 1
 	//}
 	rows, columns := s.compute(rs, cs, true)
+	rows++
+	columns++
 	//if rows < s.border {
 	//	rows = s.border
 	//}
