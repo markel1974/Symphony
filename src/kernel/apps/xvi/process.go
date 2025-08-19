@@ -75,6 +75,7 @@ func (p *XVI) doInsertMode(code int, key rune) {
 		if key < 32 {
 			if key == '\n' {
 				p.buffer.InsertRow()
+				p.buffer.MoveCursor(0, 1)
 			}
 			//nothing for now
 		} else {

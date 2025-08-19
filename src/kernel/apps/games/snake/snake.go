@@ -116,7 +116,7 @@ func (snake *Snake) onTimer(_ int, _ int) {
 
 // onPaint updates the snake's appearance on the surface and adjusts dimensions if the terminal size changes.
 func (snake *Snake) onPaint(surface interfaces.ISurface) {
-	rows, columns := surface.GetSize()
+	rows, columns := surface.GetScreenSize()
 	if snake.Rows != rows || snake.Columns != columns {
 		snake.setSize(rows, columns)
 	}
@@ -293,7 +293,7 @@ func (snake *Snake) draw(surface interfaces.ISurface) {
 
 	surface.DrawTextColor(0, 0, score, interfaces.ColorBlueDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
 	if snake.GameOver {
-		rows, column := surface.GetSize()
+		rows, column := surface.GetScreenSize()
 		gameOver := "Game Over"
 		surface.DrawTextColor(rows/2, (column/2)-(len(gameOver)/2), gameOver, interfaces.ColorBlueDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
 	}

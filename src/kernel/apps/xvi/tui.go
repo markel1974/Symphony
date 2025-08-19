@@ -40,10 +40,13 @@ func (t *Tui) GetMode() string {
 
 // Draw renders the content of the buffer onto the surface based on the viewport and cursor position.
 func (t *Tui) Draw(process interfaces.IUserProcess, surface interfaces.ISurface) {
-	rows, columns := surface.GetSize()
+	rows, columns := surface.GetWindowSize()
 	if rows != t.rows || columns != t.columns {
 		t.rows = rows
 		t.columns = columns
+		t.offsetY = 0
+		t.offsetX = 0
+		surface.MoveCursor(0, 0)
 		process.PaintRequest()
 		return
 	}

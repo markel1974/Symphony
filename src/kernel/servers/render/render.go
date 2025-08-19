@@ -195,7 +195,12 @@ func (c *Render) handlePaintRequest(msg interfaces.IMessage) {
 		return
 	}
 	component.SetAvailable()
-	mp := messages.NewMessagePaintPrepare(c.PID(), msg.Source(), NewInterpretedSurface(c.height, c.width))
+
+	windowRow, windowCol := 0, 0
+	if surface := component.Surface(); surface != nil {
+		windowRow, windowCol = surface.GetWindowSize()
+	}
+	mp := messages.NewMessagePaintPrepare(c.PID(), msg.Source(), NewInterpretedSurface(c.height, c.width, windowRow, windowCol))
 	c.router.PostKernelResponse(msg.Source(), mp)
 }
 
@@ -213,10 +218,16 @@ func (c *Render) handlePaintApply(msg interfaces.IMessage) {
 
 	fullPaint := c.fullPaint
 	c.fullPaint = false
-
+	var foreground *InterpretedSurface = nil
 	var surfaces []*Surface
+
 	for _, process := range c.running {
 		surface := process.Surface()
+		if c.foreground != nil {
+			if c.foreground.PID() == process.PID() {
+				foreground = surface.GetInterpretedSurface()
+			}
+		}
 		if process.PID() == c.windowSelector.PID() {
 			surface.SetZIndex(255)
 			surface.SetSelectionMode(true)
@@ -235,21 +246,26 @@ func (c *Render) handlePaintApply(msg interfaces.IMessage) {
 	c.surface.Prepare(c.height, c.width)
 
 	for _, surface := range surfaces {
-		if surface.interpreted != nil {
+		interpretedSurface := surface.GetInterpretedSurface()
+		if interpretedSurface != nil {
 			c.surface.Assign(surface)
 			c.surface.Begin()
-			surface.GetInterpretedSurface().Appy(c.surface)
+			interpretedSurface.Appy(c.surface)
+			if interpretedSurface == foreground {
+				interpretedSurface.ApplyMoveCursor(c.surface)
+			}
 			c.surface.End()
 		}
 	}
-	c.surface.GetBuffer(&lines, fullPaint)
 
 	c.doSaveCursor()
 	c.doMoveCursorTopLeft()
+
+	c.surface.GetBuffer(&lines, fullPaint)
 	c.doWrite(string(lines.Bytes()), false)
-	if c.surface.HasMoveCursor() {
-		row, column := c.surface.Cursor()
-		c.doMoveCursor(row, column)
+
+	if cRow, cCol := c.surface.Cursor(); cRow >= 0 && cCol >= 0 {
+		c.doMoveCursor(cRow, cCol)
 	} else {
 		c.doRestoreCursor()
 	}
@@ -257,6 +273,10 @@ func (c *Render) handlePaintApply(msg interfaces.IMessage) {
 
 // handleWindowsSelectionBegin handles the selection of a process to be displayed in the terminal.
 func (c *Render) handleWindowsSelectionBegin(msg interfaces.IMessage) {
+	component, _ := c.running[msg.Source()]
+	if component == nil {
+		return
+	}
 	c.windowSelector.Clear()
 	for idx, process := range c.running {
 		if !process.Available() {
@@ -278,7 +298,11 @@ func (c *Render) handleWindowsSelectionBegin(msg interfaces.IMessage) {
 			c.windowSelector.Set(pid, defaultIdx)
 		}
 	}
-	mp := messages.NewMessagePaintPrepare(c.PID(), msg.Source(), NewInterpretedSurface(c.height, c.width))
+	windowRow, windowCol := 0, 0
+	if surface := component.Surface(); surface != nil {
+		windowRow, windowCol = surface.GetWindowSize()
+	}
+	mp := messages.NewMessagePaintPrepare(c.PID(), msg.Source(), NewInterpretedSurface(c.height, c.width, windowRow, windowCol))
 	c.router.PostKernelResponse(msg.Source(), mp)
 }
 
@@ -286,6 +310,10 @@ func (c *Render) handleWindowsSelectionBegin(msg interfaces.IMessage) {
 func (c *Render) handleWindowsSelectionOptions(msg interfaces.IMessage) {
 	mt, ok := msg.(*messages.MessageWindowsSelectionOptions)
 	if !ok {
+		return
+	}
+	component, _ := c.running[msg.Source()]
+	if component == nil {
 		return
 	}
 	pid := c.windowSelector.PID()
@@ -296,22 +324,43 @@ func (c *Render) handleWindowsSelectionOptions(msg interfaces.IMessage) {
 	}
 	process.Surface().SetOption(mt.Option(), mt.Value())
 	c.fullPaint = true
-	mp := messages.NewMessagePaintPrepare(c.PID(), msg.Source(), NewInterpretedSurface(c.height, c.width))
+
+	windowRow, windowCol := 0, 0
+	if surface := process.Surface(); surface != nil {
+		windowRow, windowCol = surface.GetWindowSize()
+	}
+	mp := messages.NewMessagePaintPrepare(c.PID(), msg.Source(), NewInterpretedSurface(c.height, c.width, windowRow, windowCol))
 	c.router.PostKernelResponse(pid, mp)
 }
 
 // handleWindowsSelectionPrevious navigates to the previous window in the selection if possible and triggers a paint request.
 func (c *Render) handleWindowsSelectionPrevious(msg interfaces.IMessage) {
+	component, _ := c.running[msg.Source()]
+	if component == nil {
+		return
+	}
 	if c.windowSelector.Prev() {
-		mp := messages.NewMessagePaintPrepare(c.PID(), msg.Source(), NewInterpretedSurface(c.height, c.width))
+		windowRow, windowCol := 0, 0
+		if surface := component.Surface(); surface != nil {
+			windowRow, windowCol = surface.GetWindowSize()
+		}
+		mp := messages.NewMessagePaintPrepare(c.PID(), msg.Source(), NewInterpretedSurface(c.height, c.width, windowRow, windowCol))
 		c.router.PostKernelResponse(msg.Source(), mp)
 	}
 }
 
 // handleWindowsSelectionNext moves the window selector to the next window and triggers a repaint if the selection changes.
 func (c *Render) handleWindowsSelectionNext(msg interfaces.IMessage) {
+	component, _ := c.running[msg.Source()]
+	if component == nil {
+		return
+	}
 	if c.windowSelector.Next() {
-		mp := messages.NewMessagePaintPrepare(c.PID(), msg.Source(), NewInterpretedSurface(c.height, c.width))
+		windowRow, windowCol := 0, 0
+		if surface := component.Surface(); surface != nil {
+			windowRow, windowCol = surface.GetWindowSize()
+		}
+		mp := messages.NewMessagePaintPrepare(c.PID(), msg.Source(), NewInterpretedSurface(c.height, c.width, windowRow, windowCol))
 		c.router.PostKernelResponse(msg.Source(), mp)
 	}
 }

@@ -44,12 +44,32 @@ func NewSurface(terminal interfaces.ITerminal, rows int, columns int, caption st
 		rowMax:       0,
 		border:       1,
 		zIndex:       0,
+		interpreted:  nil,
 		cursorRow:    -1,
 		cursorColumn: -1,
-		interpreted:  nil,
 	}
 	s.Prepare(rows, columns)
 	return s
+}
+
+// GetWindowSize returns the calculated width and height of the window based on scale and user-defined adjustments.
+func (s *Surface) GetWindowSize() (int, int) {
+	rows := s.rows
+	columns := s.columns
+	if s.scale > 0 && s.scale < 1 {
+		rows = int(math.Round(float64(rows) * s.scale))
+		columns = int(math.Round(float64(columns) * s.scale))
+	}
+	if s.user {
+		rows -= s.border * 2
+		columns -= s.border * 2
+	}
+	return rows, columns
+}
+
+// GetScreenSize returns the number of rows and columns representing the screen size of the surface.
+func (s *Surface) GetScreenSize() (int, int) {
+	return s.rows, s.columns
 }
 
 // Assign copies the properties of the given Surface to the current one.
@@ -152,28 +172,15 @@ func (s *Surface) Merge(surface *Surface) {
 // Begin initializes the Surface for user-defined modifications and updates its internal dimensions.
 func (s *Surface) Begin() {
 	s.user = true
-	s.iRows, s.iColumns = s.GetSize()
+	s.iRows, s.iColumns = s.GetWindowSize()
+	s.cursorRow = -1
+	s.cursorColumn = -1
 }
 
 // End terminates the user interaction mode and re-renders the window.
 func (s *Surface) End() {
 	s.user = false
 	s.drawWindow()
-}
-
-// GetSize computes the dimensions of the surface, adjusting for scale and borders if necessary, and returns rows and columns.
-func (s *Surface) GetSize() (int, int) {
-	rows := s.rows
-	columns := s.columns
-	if s.scale > 0 && s.scale < 1 {
-		rows = int(math.Round(float64(rows) * s.scale))
-		columns = int(math.Round(float64(columns) * s.scale))
-	}
-	if s.user {
-		rows -= s.border * 2
-		columns -= s.border * 2
-	}
-	return rows, columns
 }
 
 // SetSelectionMode sets the selection mode for the Surface. If true, the surface will render in selection mode.
@@ -183,46 +190,30 @@ func (s *Surface) SetSelectionMode(selection bool) {
 
 // MoveCursor moves the cursor to the specified row and column.
 func (s *Surface) MoveCursor(rs int, cs int) {
-	//if rs < s.border {
-	//	rs = s.border
+	//if rs < 1 {
+	//	rs = 1
 	//}
-	//if rs < s.border {
-	//	rs = s.border
+	//if cs < 1 {
+	//	cs = 1
 	//}
 	rows, columns := s.compute(rs, cs, true)
-	/*
-		if user {
-			if r <= s.border {
-				r = s.border + 1
-			}
-			if c <= s.border {
-				c = s.border + 1
-			}
-		}
-
-	*/
-	if rows < s.border {
-		rows = s.border
+	//if rows < s.border {
+	//	rows = s.border
+	//}
+	//if columns < s.border {
+	//	columns = s.border
+	//}
+	maxRows := s.iRows + s.offsetY - s.border
+	maxColumns := s.iColumns + s.offsetX - s.border
+	if rows >= maxRows {
+		rows = maxRows
 	}
-	if columns < s.border {
-		columns = s.border
-	}
-	if rs >= s.iRows {
-		rs = s.iRows - s.border
-	}
-	if cs >= s.iColumns {
-		cs = s.iColumns - s.border
+	if columns >= maxColumns {
+		columns = maxColumns
 	}
 	s.cursorRow = rows
 	s.cursorColumn = columns
-}
-
-// HasMoveCursor checks if the cursor is in a valid position on the surface by verifying its row and column values.
-func (s *Surface) HasMoveCursor() bool {
-	if s.cursorRow == -1 || s.cursorColumn == -1 {
-		return false
-	}
-	return true
+	//fmt.Printf("Cursor: %d, %d, Received: %d, %d | %d | %d\n", s.cursorRow, s.cursorColumn, rs, cs, maxRows, maxColumns)
 }
 
 // Cursor returns the current position of the cursor as a row and column.
@@ -264,7 +255,7 @@ func (s *Surface) DrawColor(rs int, cs int, text rune, fg interfaces.ColorDef, b
 	if columns < 0 {
 		return
 	}
-	ars, acs := s.GetSize()
+	ars, acs := s.GetWindowSize()
 	if rs >= ars {
 		return
 	}
@@ -301,7 +292,7 @@ func (s *Surface) DrawTextColor(rows int, column int, text string, fg interfaces
 
 // DrawSeries renders a data series onto the surface using specified width, height, and value range (min and max).
 func (s *Surface) DrawSeries(data []float64, w int, h int, min float64, max float64) {
-	rows, columns := s.GetSize()
+	rows, columns := s.GetWindowSize()
 	if h <= 0 {
 		h = rows
 	}
@@ -355,7 +346,7 @@ func (s *Surface) GetBuffer(lines *bytes.Buffer, full bool) {
 
 // drawWindow draws a bordered window on the surface with optional caption and selection mode colors.
 func (s *Surface) drawWindow() {
-	rows, columns := s.GetSize()
+	rows, columns := s.GetWindowSize()
 	fg := interfaces.ColorWhiteDef
 	bg := interfaces.ColorNoneDef
 	mode := interfaces.ModeNormal

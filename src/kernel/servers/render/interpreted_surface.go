@@ -5,9 +5,11 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/servers/render/plotter"
 )
 
+// maxCommands defines the maximum number of commands that can be stored in the command buffer before further additions are ignored.
 const maxCommands = 16384
 
-// InterpretedCommand represents a drawing action to be processed, including text, colors, positions, and series data.
+// InterpretedCommand represents a command with configurable properties for rendering surfaces and visual output.
+// It includes text placement, color definitions, and series data for graphical representation.
 type InterpretedCommand struct {
 	Type       InterpretedCommandType
 	Rows       int
@@ -23,36 +25,54 @@ type InterpretedCommand struct {
 	SeriesMax  float64
 }
 
-// InterpretedCommandType represents the type of command to be executed in a drawing operation or similar context.
+// InterpretedCommandType defines the type of a parsed or processed command in the application.
 type InterpretedCommandType int
 
-// InterpretedCommandDrawColor represents a command for drawing a color.
-// InterpretedCommandDrawTextColor represents a command for drawing text color.
-// InterpretedCommandDrawSeries represents a command for drawing a series.
+// InterpretedCommandDrawColor represents a command type for drawing colors.
+// InterpretedCommandDrawTextColor represents a command type for drawing text colors.
+// InterpretedCommandDrawSeries represents a command type for drawing a series.
 const (
 	InterpretedCommandDrawColor InterpretedCommandType = iota
 	InterpretedCommandDrawTextColor
 	InterpretedCommandDrawSeries
-	InterpretedCommandMoveCursor
 )
 
-// InterpretedSurface is a type used for storing and managing a sequence of drawing commands.
-// It enables creation and manipulation of visual elements through DrawCommand instances.
-// Commands can be executed on a target surface to reflect the desired graphical output.
+// InterpretedSurface represents a 2D surface capable of handling interpreted drawing commands like text, colors, and series.
+// It enables operations such as drawing, moving cursors, and rendering data through sequences of commands.
+// The type maintains the dimensions of the surface, available rows/columns, and a list of accumulated commands for rendering.
 type InterpretedSurface struct {
-	rows     int
-	columns  int
-	commands []InterpretedCommand
+	screenRows    int
+	screenColumns int
+	windowRows    int
+	windowColumns int
+	commands      []InterpretedCommand
+	moveRows      int
+	moveCols      int
 }
 
-func NewInterpretedSurface(rows int, columns int) *InterpretedSurface {
+// NewInterpretedSurface initializes and returns a pointer to a new InterpretedSurface with the specified dimensions.
+func NewInterpretedSurface(screenRows int, screenColumns int, windowRows int, windowColumns int) *InterpretedSurface {
 	return &InterpretedSurface{
-		rows:    rows,
-		columns: columns,
+		screenRows:    screenRows,
+		screenColumns: screenColumns,
+		windowRows:    windowRows,
+		windowColumns: windowColumns,
+		moveRows:      -1,
+		moveCols:      -1,
 	}
 }
 
-// DrawColor adds a drawing command to the surface, specifying position, rune, foreground, background colors, and color mode.
+// GetScreenSize returns the number of rows and columns that define the screen size of the surface.
+func (s *InterpretedSurface) GetScreenSize() (int, int) {
+	return s.screenRows, s.screenColumns
+}
+
+// GetWindowSize returns the dimensions of the current window as the number of rows and columns.
+func (s *InterpretedSurface) GetWindowSize() (int, int) {
+	return s.windowRows, s.windowColumns
+}
+
+// DrawColor appends a command to draw a colored rune at the specified position with foreground and background colors, and a mode setting.
 func (s *InterpretedSurface) DrawColor(rows int, columns int, text rune, fg interfaces.ColorDef, bg interfaces.ColorDef, mode interfaces.ColorMode) {
 	if len(s.commands) > maxCommands {
 		return
@@ -68,28 +88,26 @@ func (s *InterpretedSurface) DrawColor(rows int, columns int, text rune, fg inte
 	})
 }
 
-func (s *InterpretedSurface) GetSize() (int, int) {
-	return s.rows, s.columns
-}
-
+// Begin initializes a new sequence of operations or commands on the surface.
 func (s *InterpretedSurface) Begin() {
 }
 
+// End finalizes the current sequence of drawing or surface commands on the InterpretedSurface.
 func (s *InterpretedSurface) End() {
 }
 
+// MoveCursor updates the cursor position by setting the specified row and column offsets.
 func (s *InterpretedSurface) MoveCursor(rows int, column int) {
-	if len(s.commands) > maxCommands {
-		return
-	}
-	s.commands = append(s.commands, InterpretedCommand{
-		Type:   InterpretedCommandMoveCursor,
-		Rows:   rows,
-		Column: column,
-	})
+	s.moveRows = rows
+	s.moveCols = column
 }
 
-// DrawTextColor queues a command to render a string of text at the specified row and column with foreground and background colors.
+// GetMoveCursor returns the current cursor position as a tuple of rows and columns.
+func (s *InterpretedSurface) GetMoveCursor() (int, int) {
+	return s.moveRows, s.moveCols
+}
+
+// DrawTextColor queues a command to draw text at a specific location with foreground, background colors, and a color mode.
 func (s *InterpretedSurface) DrawTextColor(rows int, column int, text string, fg interfaces.ColorDef, bg interfaces.ColorDef, mode interfaces.ColorMode) {
 	if len(s.commands) > maxCommands {
 		return
@@ -105,7 +123,7 @@ func (s *InterpretedSurface) DrawTextColor(rows int, column int, text string, fg
 	})
 }
 
-// DrawSeries appends a DrawCommand for rendering a series to the command list with its data, dimensions, and range.
+// DrawSeries adds a command to draw a data series with specified dimensions and value range to the command queue.
 func (s *InterpretedSurface) DrawSeries(data []float64, w int, h int, min float64, max float64) {
 	if len(s.commands) > maxCommands {
 		return
@@ -120,22 +138,20 @@ func (s *InterpretedSurface) DrawSeries(data []float64, w int, h int, min float6
 	})
 }
 
-// Draw renders a single rune at the specified row and column using default color and mode settings.
+// Draw renders a single character at the specified row and column using default colors and normal mode.
 func (s *InterpretedSurface) Draw(rows int, column int, c rune) {
 	s.DrawColor(rows, column, c, interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
 }
 
-// DrawText renders a string at the specified row and column without applying colors or modes.
+// DrawText draws a string `c` at the specified row and column positions using default colors and normal display mode.
 func (s *InterpretedSurface) DrawText(rows int, column int, c string) {
 	s.DrawTextColor(rows, column, c, interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
 }
 
-// Appy applies a series of drawing commands to a target surface based on their type and provided parameters.
+// Appy applies a series of commands stored in the surface to the provided ISurface target, executing drawing operations.
 func (s *InterpretedSurface) Appy(target interfaces.ISurface) {
 	for _, cmd := range s.commands {
 		switch cmd.Type {
-		case InterpretedCommandMoveCursor:
-			target.MoveCursor(cmd.Rows, cmd.Column)
 		case InterpretedCommandDrawColor:
 			if len(cmd.Text) > 0 {
 				target.DrawColor(cmd.Rows, cmd.Column, []rune(cmd.Text)[0], cmd.Fg, cmd.Bg, cmd.Mode)
@@ -143,7 +159,7 @@ func (s *InterpretedSurface) Appy(target interfaces.ISurface) {
 		case InterpretedCommandDrawTextColor:
 			target.DrawTextColor(cmd.Rows, cmd.Column, cmd.Text, cmd.Fg, cmd.Bg, cmd.Mode)
 		case InterpretedCommandDrawSeries:
-			rows, columns := target.GetSize()
+			rows, columns := target.GetWindowSize()
 			w, h := cmd.SeriesW, cmd.SeriesH
 			if h <= 0 {
 				h = rows
@@ -159,4 +175,12 @@ func (s *InterpretedSurface) Appy(target interfaces.ISurface) {
 			g.Draw(target)
 		}
 	}
+}
+
+// ApplyMoveCursor adjusts the target surface's cursor position to match the moveRows and moveCols values of the current surface.
+func (s *InterpretedSurface) ApplyMoveCursor(target interfaces.ISurface) {
+	if s.moveRows < 0 || s.moveCols < 0 {
+		return
+	}
+	target.MoveCursor(s.moveRows, s.moveCols)
 }

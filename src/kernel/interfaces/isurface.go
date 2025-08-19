@@ -1,7 +1,9 @@
 package interfaces
 
 type ISurface interface {
-	GetSize() (int, int)
+	GetScreenSize() (int, int)
+
+	GetWindowSize() (int, int)
 
 	MoveCursor(rows int, column int)
 

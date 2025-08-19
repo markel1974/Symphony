@@ -323,7 +323,7 @@ func (g *Invaders) handleKey(_ int, k rune) {
 
 // handlePaint adjusts the game dimensions and redraws the surface based on the current game state.
 func (g *Invaders) handlePaint(surface interfaces.ISurface) {
-	rows, columns := surface.GetSize()
+	rows, columns := surface.GetScreenSize()
 	w, h := g.GetSize()
 	if h != rows || w != columns {
 		g.SetSize(columns, rows)
