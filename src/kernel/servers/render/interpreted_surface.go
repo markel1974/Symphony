@@ -33,6 +33,7 @@ const (
 	InterpretedCommandDrawColor InterpretedCommandType = iota
 	InterpretedCommandDrawTextColor
 	InterpretedCommandDrawSeries
+	InterpretedCommandMoveCursor
 )
 
 // InterpretedSurface is a type used for storing and managing a sequence of drawing commands.
@@ -75,6 +76,17 @@ func (s *InterpretedSurface) Begin() {
 }
 
 func (s *InterpretedSurface) End() {
+}
+
+func (s *InterpretedSurface) MoveCursor(rows int, column int) {
+	if len(s.commands) > maxCommands {
+		return
+	}
+	s.commands = append(s.commands, InterpretedCommand{
+		Type:   InterpretedCommandMoveCursor,
+		Rows:   rows,
+		Column: column,
+	})
 }
 
 // DrawTextColor queues a command to render a string of text at the specified row and column with foreground and background colors.
@@ -122,6 +134,8 @@ func (s *InterpretedSurface) DrawText(rows int, column int, c string) {
 func (s *InterpretedSurface) Appy(target interfaces.ISurface) {
 	for _, cmd := range s.commands {
 		switch cmd.Type {
+		case InterpretedCommandMoveCursor:
+			target.MoveCursor(cmd.Rows, cmd.Column)
 		case InterpretedCommandDrawColor:
 			if len(cmd.Text) > 0 {
 				target.DrawColor(cmd.Rows, cmd.Column, []rune(cmd.Text)[0], cmd.Fg, cmd.Bg, cmd.Mode)

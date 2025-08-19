@@ -13,12 +13,22 @@ type Buffer struct {
 
 // NewBuffer creates and returns a new Buffer instance initialized with the given file path and content.
 func NewBuffer(filePath string, content string) *Buffer {
-	return &Buffer{
-		lines:    strings.Split(content, "\n"),
+	defaultLines := 80
+	lines := strings.Split(content, "\n")
+	if len(lines) > defaultLines {
+		defaultLines = len(lines)
+	}
+	b := &Buffer{
+		lines:    make([]string, defaultLines),
 		cursorX:  0,
 		cursorY:  0,
 		filePath: filePath,
 	}
+	for i, line := range lines {
+		b.lines[i] = line
+	}
+
+	return b
 }
 
 // GetLine retrieves the content of the line at the specified vertical index y from the buffer.
@@ -59,6 +69,18 @@ func (b *Buffer) MoveCursor(dx, dy int) {
 	if b.cursorX > lineLen {
 		b.cursorX = lineLen
 	}
+}
+
+// InsertRow inserts a new empty line at the current cursor position in the buffer and moves the cursor down.
+func (b *Buffer) InsertRow() {
+	centerIndex := b.cursorY
+	if centerIndex == 0 {
+		b.lines = append([]string{""}, b.lines...)
+		return
+	}
+	head := b.lines[:centerIndex]
+	tail := append([]string{""}, b.lines[centerIndex:]...)
+	b.lines = append(head, tail...)
 }
 
 // InsertChar inserts a given character at the current cursor position in the buffer and moves the cursor to the right.

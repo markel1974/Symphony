@@ -247,7 +247,12 @@ func (c *Render) handlePaintApply(msg interfaces.IMessage) {
 	c.doSaveCursor()
 	c.doMoveCursorTopLeft()
 	c.doWrite(string(lines.Bytes()), false)
-	c.doRestoreCursor()
+	if c.surface.HasMoveCursor() {
+		row, column := c.surface.Cursor()
+		c.doMoveCursor(row, column)
+	} else {
+		c.doRestoreCursor()
+	}
 }
 
 // handleWindowsSelectionBegin handles the selection of a process to be displayed in the terminal.

@@ -8,15 +8,12 @@ import (
 type XVI struct {
 	tui     *Tui
 	buffer  *Buffer
-	mode    string
 	process interfaces.IUserProcess
 }
 
 // NewXVI creates and initializes a new instance of the XVI structure with default settings.
 func NewXVI() *XVI {
-	p := &XVI{
-		mode: "normal",
-	}
+	p := &XVI{}
 	return p
 }
 
@@ -54,46 +51,74 @@ func (p *XVI) onActivate() {
 
 // keyHandler processes keyboard input based on the current mode (normal or insert) and updates the buffer or mode accordingly.
 func (p *XVI) onKey(code int, key rune) {
-	kind := interfaces.KeyType(code)
-
-	switch p.mode {
+	switch p.tui.GetMode() {
 	case "normal":
-		if kind == interfaces.KeyTypeCursor {
-			switch interfaces.CursorCodeDef(key) {
-			case interfaces.CursorUpDef:
-				p.buffer.MoveCursor(0, -1)
-			case interfaces.CursorDownDef:
-				p.buffer.MoveCursor(0, 1)
-			case interfaces.CursorLeftDef:
-				p.buffer.MoveCursor(-1, 0)
-			case interfaces.CursorRightDef:
-				p.buffer.MoveCursor(1, 0)
-			}
-		}
-		switch key {
-		case 'i':
-			p.mode = "insert"
-		case 'h':
-			p.buffer.MoveCursor(-1, 0)
-		case 'j':
-			p.buffer.MoveCursor(0, 1)
-		case 'k':
-			p.buffer.MoveCursor(0, -1)
-		case 'l':
-			p.buffer.MoveCursor(1, 0)
-		}
-
+		p.doNormalMode(code, key)
 	case "insert":
-		switch kind {
-		case interfaces.KeyTypeTab:
-			p.mode = "normal"
-		case interfaces.KeyTypeCancel:
-			p.buffer.DeleteChar()
-		default:
-			if key != 0 {
-				p.buffer.InsertChar(key)
-			}
-		}
+		p.doInsertMode(code, key)
 	}
 	p.process.PaintRequest()
+}
+
+// doInsertMode processes key input in insert mode, modifying the buffer or changing the mode based on the key type.
+func (p *XVI) doInsertMode(code int, key rune) {
+	if p.doCursor(code, key) {
+		return
+	}
+	kind := interfaces.KeyType(code)
+	switch kind {
+	case interfaces.KeyTypeTab:
+		p.tui.SetMode("normal")
+	case interfaces.KeyTypeCancel:
+		p.buffer.DeleteChar()
+	default:
+		if key < 32 {
+			if key == '\n' {
+				p.buffer.InsertRow()
+			}
+			//nothing for now
+		} else {
+			p.buffer.InsertChar(key)
+		}
+	}
+}
+
+// doNormalMode processes input in normal mode, handling cursor movements and switching to insert mode when 'i' is pressed.
+func (p *XVI) doNormalMode(code int, key rune) {
+	if p.doCursor(code, key) {
+		return
+	}
+	switch key {
+	case 'i':
+		p.tui.SetMode("insert")
+	case 'h':
+		//p.buffer.MoveCursor(-1, 0)
+	case 'j':
+		//p.buffer.MoveCursor(0, 1)
+	case 'k':
+		//p.buffer.MoveCursor(0, -1)
+	case 'l':
+		//p.buffer.MoveCursor(1, 0)
+	}
+}
+
+func (p *XVI) doCursor(code int, key rune) bool {
+	kind := interfaces.KeyType(code)
+	if kind == interfaces.KeyTypeCursor {
+		switch interfaces.CursorCodeDef(key) {
+		case interfaces.CursorUpDef:
+			p.buffer.MoveCursor(0, -1)
+			return true
+		case interfaces.CursorDownDef:
+			p.buffer.MoveCursor(0, 1)
+			return true
+		case interfaces.CursorLeftDef:
+			p.buffer.MoveCursor(-1, 0)
+			return true
+		case interfaces.CursorRightDef:
+			p.buffer.MoveCursor(1, 0)
+			return true
+		}
+	}
+	return false
 }

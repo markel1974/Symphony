@@ -26,8 +26,13 @@ func (t *Tui) SetMode(mode string) {
 	t.mode = mode
 }
 
+func (t *Tui) GetMode() string {
+	return t.mode
+}
+
 func (t *Tui) Draw(process interfaces.IUserProcess, surface interfaces.ISurface) {
 	rows, columns := surface.GetSize()
+	fmt.Println(rows, columns)
 	if rows != t.rows || columns != t.columns {
 		t.rows = rows
 		t.columns = columns
@@ -43,7 +48,7 @@ func (t *Tui) Draw(process interfaces.IUserProcess, surface interfaces.ISurface)
 	cx, cy := t.buffer.Cursor()
 	statusText := fmt.Sprintf("-- %s -- %s   %d, %d", strings.ToUpper(t.mode), t.buffer.filePath, cy+1, cx+1)
 	for idx, l := range statusText {
-		surface.DrawColor(5, idx, l, interfaces.ColorBlackDef, interfaces.ColorWhiteDef, 0)
+		surface.DrawColor(t.rows-3, idx, l, interfaces.ColorBlackDef, interfaces.ColorWhiteDef, 0)
 	}
-	process.MoveCursor(cy, cx)
+	surface.MoveCursor(cy, cx)
 }

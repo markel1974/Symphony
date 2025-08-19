@@ -27,22 +27,26 @@ type Surface struct {
 	iRows          int
 	iColumns       int
 	zIndex         int
+	cursorRow      int
+	cursorColumn   int
 }
 
 // NewSurface initializes a new Surface object with the provided terminal, row, and column dimensions.
 func NewSurface(terminal interfaces.ITerminal, rows int, columns int, caption string) *Surface {
 	s := &Surface{
-		terminal:    terminal,
-		caption:     caption,
-		rows:        -1,
-		columns:     -1,
-		scale:       1.0,
-		offsetX:     0,
-		offsetY:     0,
-		rowMax:      0,
-		border:      1,
-		zIndex:      0,
-		interpreted: nil,
+		terminal:     terminal,
+		caption:      caption,
+		rows:         -1,
+		columns:      -1,
+		scale:        1.0,
+		offsetX:      0,
+		offsetY:      0,
+		rowMax:       0,
+		border:       1,
+		zIndex:       0,
+		cursorRow:    -1,
+		cursorColumn: -1,
+		interpreted:  nil,
 	}
 	s.Prepare(rows, columns)
 	return s
@@ -177,9 +181,58 @@ func (s *Surface) SetSelectionMode(selection bool) {
 	s.selection = selection
 }
 
+// MoveCursor moves the cursor to the specified row and column.
+func (s *Surface) MoveCursor(rs int, cs int) {
+	//if rs < s.border {
+	//	rs = s.border
+	//}
+	//if rs < s.border {
+	//	rs = s.border
+	//}
+	rows, columns := s.compute(rs, cs, true)
+	/*
+		if user {
+			if r <= s.border {
+				r = s.border + 1
+			}
+			if c <= s.border {
+				c = s.border + 1
+			}
+		}
+
+	*/
+	if rows < s.border {
+		rows = s.border
+	}
+	if columns < s.border {
+		columns = s.border
+	}
+	if rs >= s.iRows {
+		rs = s.iRows - s.border
+	}
+	if cs >= s.iColumns {
+		cs = s.iColumns - s.border
+	}
+	s.cursorRow = rows
+	s.cursorColumn = columns
+}
+
+// HasMoveCursor checks if the cursor is in a valid position on the surface by verifying its row and column values.
+func (s *Surface) HasMoveCursor() bool {
+	if s.cursorRow == -1 || s.cursorColumn == -1 {
+		return false
+	}
+	return true
+}
+
+// Cursor returns the current position of the cursor as a row and column.
+func (s *Surface) Cursor() (int, int) {
+	return s.cursorRow, s.cursorColumn
+}
+
 // Draw places a rune at the specified row and column on the surface, considering offsets and boundaries.
 func (s *Surface) Draw(rs int, cs int, text rune) {
-	rows, columns := s.compute(rs, cs)
+	rows, columns := s.compute(rs, cs, s.user)
 	if rows < 0 {
 		return
 	}
@@ -204,14 +257,13 @@ func (s *Surface) Draw(rs int, cs int, text rune) {
 
 // DrawColor renders a colored character at the specified row and column on the surface using the given foreground color, background color, and color mode.
 func (s *Surface) DrawColor(rs int, cs int, text rune, fg interfaces.ColorDef, bg interfaces.ColorDef, mode interfaces.ColorMode) {
-	rows, columns := s.compute(rs, cs)
+	rows, columns := s.compute(rs, cs, s.user)
 	if rows < 0 {
 		return
 	}
 	if columns < 0 {
 		return
 	}
-
 	ars, acs := s.GetSize()
 	if rs >= ars {
 		return
@@ -266,10 +318,10 @@ func (s *Surface) DrawSeries(data []float64, w int, h int, min float64, max floa
 }
 
 // compute adjusts the given row and column by applying surface offsets and border if in user mode. Returns new indices.
-func (s *Surface) compute(r int, c int) (int, int) {
+func (s *Surface) compute(r int, c int, user bool) (int, int) {
 	rows := r + s.offsetY
 	column := c + s.offsetX
-	if s.user {
+	if user {
 		rows += s.border
 		column += s.border
 	}

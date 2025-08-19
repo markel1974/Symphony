@@ -3,6 +3,8 @@ package interfaces
 type ISurface interface {
 	GetSize() (int, int)
 
+	MoveCursor(rows int, column int)
+
 	Draw(rows int, column int, c rune)
 
 	DrawColor(rows int, column int, c rune, fg ColorDef, bg ColorDef, mode ColorMode)
