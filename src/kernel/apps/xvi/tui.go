@@ -40,6 +40,7 @@ func (t *Tui) GetMode() string {
 	return t.mode
 }
 
+// SetError sets the status of the Tui instance to the specified error value.
 func (t *Tui) SetError(err error) {
 	if err == nil {
 		t.status = ""
