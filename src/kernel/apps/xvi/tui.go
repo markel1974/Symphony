@@ -69,7 +69,6 @@ func (t *Tui) Draw(process interfaces.IUserProcess, surface interfaces.ISurface)
 		bufferLineIndex := y + t.offsetY
 		if bufferLineIndex < t.buffer.LineCount() {
 			line := t.buffer.GetLine(bufferLineIndex)
-			// Se la linea è più lunga della larghezza della vista, tagliala
 			if t.offsetX < len(line) {
 				visibleLine := line[t.offsetX:]
 				if len(visibleLine) > textAreaWidth {

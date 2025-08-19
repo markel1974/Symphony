@@ -73,14 +73,21 @@ func (b *Buffer) MoveCursor(dx, dy int) {
 
 // InsertRow inserts a new empty line at the current cursor position in the buffer and moves the cursor down.
 func (b *Buffer) InsertRow() {
+	line := b.lines[b.cursorY]
+	a1 := line[b.cursorX:]
+	a2 := line[:b.cursorX]
+	b.cursorX = 0
+	b.lines[b.cursorY] = a1
+
 	centerIndex := b.cursorY
 	if centerIndex == 0 {
-		b.lines = append([]string{""}, b.lines...)
+		b.lines = append([]string{a2}, b.lines...)
 		return
 	}
 	head := b.lines[:centerIndex]
-	tail := append([]string{""}, b.lines[centerIndex:]...)
+	tail := append([]string{a2}, b.lines[centerIndex:]...)
 	b.lines = append(head, tail...)
+	b.cursorY++
 }
 
 // InsertChar inserts a given character at the current cursor position in the buffer and moves the cursor to the right.
