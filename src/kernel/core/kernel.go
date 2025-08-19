@@ -278,7 +278,7 @@ func (c *Kernel) handleReadEvent(m interfaces.IMessage) {
 	// Broadcast to processes requesting global input notifications
 	//sentForeground := false
 	for _, kProc := range c.running {
-		if readBroadcastEvent := kProc.GetCommand().OnReadBroadcast(); readBroadcastEvent != nil {
+		if kProc.GetCommand().HasReadFilter() {
 			mr := messages.NewMessageRead(c.PID(), kProc.PID(), mm.Kind(), mm.Data(), true)
 			kProc.PostMessage(mr)
 			//if c.foreground != nil && c.foreground == kProc{
@@ -287,13 +287,10 @@ func (c *Kernel) handleReadEvent(m interfaces.IMessage) {
 		}
 	}
 
-	// Send to foreground process if it accepts input
 	if c.foreground != nil {
-		if readEvent := c.foreground.GetCommand().OnRead(); readEvent != nil {
-			mr := messages.NewMessageRead(c.PID(), c.foreground.PID(), mm.Kind(), mm.Data(), false)
-			//mm.SetDestination3(c.PID())
-			c.foreground.PostMessage(mr)
-		}
+		mr := messages.NewMessageRead(c.PID(), c.foreground.PID(), mm.Kind(), mm.Data(), false)
+		//mm.SetDestination3(c.PID())
+		c.foreground.PostMessage(mr)
 	}
 }
 

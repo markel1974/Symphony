@@ -1,6 +1,8 @@
 package vt100
 
 import (
+	"fmt"
+
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
 )
 
@@ -77,6 +79,12 @@ func (l *VT100) CreateColorize(text string, f int, b int, mode interfaces.ColorM
 	default:
 		return text
 	}
+}
+
+func (l *VT100) CreateMoveCursor(row int, colum int) []byte {
+	//ESC[<L>;<C>H
+	v := fmt.Sprintf("\x1b[%d;%dH", row, colum)
+	return []byte(v)
 }
 
 // CreateSaveCursor returns the VT100 escape sequence to save the current cursor position.

@@ -6,6 +6,7 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/apps/stats"
 	"github.com/markel1974/c64emu/src/kernel/apps/system"
 	"github.com/markel1974/c64emu/src/kernel/apps/xshell"
+	"github.com/markel1974/c64emu/src/kernel/apps/xvi"
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
 	"github.com/markel1974/c64emu/src/kernel/process"
 )
@@ -44,6 +45,7 @@ func (t *Root) Build(bin interfaces.ICommand) (string, interfaces.ICommand, inte
 	//sbinCommands = append(sbinCommands, system.CreateTasks())
 	sbinCommands = append(sbinCommands, system.CreateLs())
 	sbinCommands = append(sbinCommands, system.CreateHelp())
+	sbinCommands = append(sbinCommands, xvi.CreateXVI())
 
 	for _, app := range sbinCommands {
 		_ = sbin.AddCommand(app)

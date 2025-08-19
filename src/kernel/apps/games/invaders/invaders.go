@@ -10,16 +10,16 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/servers/render/matrix"
 )
 
-// fgPlayText defines the foreground color for play text.
-// bgPlayText defines the background color for play text.
-// playerSpriteBottomOffset specifies the offset for the bottom of the player sprite.
-// scoreX denotes the X-coordinate position for the score display.
-// scoreY denotes the Y-coordinate position for the score display.
-// livesRightOffset specifies the right offset for the lives display.
-// rwdSm defines the reward for a small achievement.
-// rwdMd defines the reward for a medium achievement.
-// rwdLg defines the reward for a large achievement.
-// nonIndex represents a non-existent or invalid index value.
+// fgPlayText specifies the foreground color for playback text, using the cyan default color.
+// bgPlayText specifies the background color for playback text, using the red default color.
+// playerSpriteBottomOffset denotes the bottom offset for player sprite positioning.
+// scoreX defines the x-coordinate position for the score display.
+// scoreY defines the y-coordinate position for the score display.
+// livesRightOffset indicates the offset for the lives display from the right edge.
+// rwdSm represents the small reward value.
+// rwdMd represents the medium reward value.
+// rwdLg represents the large reward value.
+// nonIndex represents an invalid or non-referenced index value.
 const (
 	fgPlayText               = interfaces.ColorCyanDef
 	bgPlayText               = interfaces.ColorRedDef
@@ -37,21 +37,21 @@ const (
 	nonIndex = -50
 )
 
-// GameState represents the state of the game, typically using enumerated constants such as menu, playing, or paused.
+// GameState represents the current state of the game, defined as an unsigned 8-bit integer.
 type GameState uint8
 
 // MenuState represents the game state where the main menu is displayed.
-// PlayState represents the game state where the game is actively being played.
-// HighScoresState represents the game state where the high scores are displayed.
+// PlayState represents the game state where the gameplay occurs.
+// HighScoresState represents the game state showing the high scores screen.
 const (
 	MenuState GameState = iota
 	PlayState
 	HighScoresState
 )
 
-// Invaders represents the core structure for the game, managing entities, states, and interactions.
-// It maintains player data, alien configurations, UFOs, stars, barricades, and various gameplay states.
+// Invaders represents the main game entity controlling game logic, state, and rendering, managing various game components.
 type Invaders struct {
+	process    interfaces.IUserProcess
 	highScores []*HighScore
 	state      GameState
 	fc         uint8
@@ -77,18 +77,31 @@ type Invaders struct {
 	stars *Stars
 }
 
-// NewGame initializes a new game instance with the given width and height, setting up game components and state.
-func NewGame(w int, h int) *Invaders {
+// New creates and initializes a new Invaders instance with the given width and height.
+func New() *Invaders {
 	g := &Invaders{
-		h:     h,
-		w:     w,
 		stars: NewStars(),
 	}
 	g.init()
 	return g
 }
 
-// init initializes the Invaders instance by setting up high scores, frame count, barricades, fragments, and aliens.// init initializes the Invaders game state, setting up highScores, barricades, fragments, and alien entities.
+// Setup initializes the Invaders game by setting up the user process with the necessary event handlers.
+func (g *Invaders) Setup(process interfaces.IUserProcess) {
+	g.process = process
+	g.process.SetOnKey(g.handleKey)
+	g.process.SetOnTimer(g.handleTimer)
+	g.process.SetOnPaint(g.handlePaint)
+}
+
+// Start initializes the game by setting the menu state and creating a repeating timer for game updates.
+func (g *Invaders) Start() {
+	g.w, g.h = g.process.GetScreenSize()
+	g.setMenuState()
+	g.process.CreateTimer(0, 100, -1)
+}
+
+// init initializes the Invaders game's core components, including high scores, barricade, fragments, and aliens.
 func (g *Invaders) init() {
 	g.highScores = make([]*HighScore, 0)
 	g.fc = 1
@@ -98,20 +111,19 @@ func (g *Invaders) init() {
 	g.aliens = NewAliens()
 }
 
-// SetSize sets the width and height of the game area and reinitializes the game state.
+// SetSize updates the width and height of the game and reinitializes its components.
 func (g *Invaders) SetSize(w int, h int) {
 	g.w = w
 	g.h = h
 	g.init()
 }
 
-// GetSize returns the width and height of the Invaders as two integer values.// GetSize returns the width and height of the Invaders game field as two integers.
+// GetSize returns the current width and height of the Invaders game field.
 func (g *Invaders) GetSize() (int, int) {
 	return g.w, g.h
 }
 
-// drawMenu renders the game menu on the provided surface, including logo, menu items, and starfield background.
-// It calculates positions and highlights the currently selected menu item.
+// drawMenu renders the game's menu interface, including title, menu items, and animated stars, onto the provided surface.
 func (g *Invaders) drawMenu(surface interfaces.ISurface) {
 	x := g.w/2 - logoLineLength/2
 	y := logoY
@@ -146,7 +158,7 @@ func (g *Invaders) drawMenu(surface interfaces.ISurface) {
 	g.stars.Draw(surface)
 }
 
-// drawFlash renders a visual effect or text on the surface during a specific freeze state, then decreases the freeze counter.
+// drawFlash displays a flashing message at the center of the surface when the freeze timer is active, decrementing it each frame.
 func (g *Invaders) drawFlash(surface interfaces.ISurface) {
 	if g.freeze > 0 {
 		drawColor(surface, g.w/2-len(g.freezeText)/2, g.h/2, fgPlayText, bgPlayText, g.freezeText)
@@ -154,8 +166,7 @@ func (g *Invaders) drawFlash(surface interfaces.ISurface) {
 	}
 }
 
-// drawPlay renders all game components on the provided surface, including stars, barricade, UFO, aliens, player, and fragments.
-// It also displays the player's score and remaining lives, and manages visual effects such as screen flashes.
+// drawPlay renders the main play area of the game, including stars, barricades, UFO, aliens, player, score, lives, and fragments.
 func (g *Invaders) drawPlay(surface interfaces.ISurface) {
 	g.stars.Draw(surface)
 	g.barricade.Draw(surface)
@@ -171,8 +182,8 @@ func (g *Invaders) drawPlay(surface interfaces.ISurface) {
 	g.drawFlash(surface)
 }
 
-// Draw renders game elements to the provided surface based on the current game state (MenuState, PlayState, HighScoresState).
-func (g *Invaders) Draw(surface interfaces.ISurface) {
+// draw renders the appropriate game state UI elements on the provided surface.
+func (g *Invaders) draw(surface interfaces.ISurface) {
 	switch g.state {
 	case MenuState:
 		g.drawMenu(surface)
@@ -183,8 +194,8 @@ func (g *Invaders) Draw(surface interfaces.ISurface) {
 	}
 }
 
-// Update evaluates and acts upon the current game state by incrementing the frame count and updating specific state logic.
-func (g *Invaders) Update() {
+// update updates the game state based on the current state (MenuState, PlayState, HighScoresState) and increments the frame count.
+func (g *Invaders) update() {
 	g.fc++
 	switch g.state {
 	case MenuState:
@@ -196,12 +207,12 @@ func (g *Invaders) Update() {
 	}
 }
 
-// updateMenu updates the starfield animation for the menu screen based on the current window size and frame count.
+// updateMenu updates the menu by refreshing the stars' position based on the current game dimensions and frame count.
 func (g *Invaders) updateMenu() {
 	g.stars.Update(g.w, g.h, g.fc)
 }
 
-// updatePlay controls the gameplay logic, including updates to enemies, player, projectiles, and level progression.
+// updatePlay updates the game state during the play phase, handling collisions, movements, scoring, and game logic.
 func (g *Invaders) updatePlay() {
 	g.stars.Update(g.w, g.h, g.fc)
 
@@ -298,8 +309,8 @@ func (g *Invaders) updatePlay() {
 	}
 }
 
-// HandleKey processes a key input and delegates handling based on the current game state.
-func (g *Invaders) HandleKey(k rune) {
+// handleKey routes key input to appropriate handlers based on the current game state.
+func (g *Invaders) handleKey(_ int, k rune) {
 	switch g.state {
 	case MenuState:
 		g.handleKeyMenu(k)
@@ -310,7 +321,24 @@ func (g *Invaders) HandleKey(k rune) {
 	}
 }
 
-// handleKeyMenu processes key input to navigate and select items in the menu of the Invaders game.
+// handlePaint adjusts the game dimensions and redraws the surface based on the current game state.
+func (g *Invaders) handlePaint(surface interfaces.ISurface) {
+	rows, columns := surface.GetSize()
+	w, h := g.GetSize()
+	if h != rows || w != columns {
+		g.SetSize(columns, rows)
+		g.setMenuState()
+	}
+	g.draw(surface)
+}
+
+// handleTimer is triggered by a timer event, updates game state, and requests a repaint of the game surface.
+func (g *Invaders) handleTimer(_ int, _ int) {
+	g.update()
+	g.process.PaintRequest()
+}
+
+// handleKeyMenu processes key inputs for navigating or selecting options in the menu state of the game.
 func (g *Invaders) handleKeyMenu(k rune) {
 	switch k {
 	case 'a':
@@ -331,7 +359,7 @@ func (g *Invaders) handleKeyMenu(k rune) {
 	}
 }
 
-// handleKeyPlay processes the player's key input during the game-play state and executes corresponding actions.
+// handleKeyPlay processes key inputs during the game's play state and executes corresponding player actions.
 func (g *Invaders) handleKeyPlay(k rune) {
 	switch k {
 	case 'd':
@@ -343,13 +371,13 @@ func (g *Invaders) handleKeyPlay(k rune) {
 	}
 }
 
-// SetMenuState sets the game state to MenuState and initializes the highlighted menu item to the first menu item.
-func (g *Invaders) SetMenuState() {
+// setMenuState sets the game state to the menu and initializes the highlighted menu item to the first option.
+func (g *Invaders) setMenuState() {
 	g.state = MenuState
 	g.hmi = FirstMenuItem
 }
 
-// SetPlayState transitions the game to the play state, initializes the game settings, and starts the first level.
+// SetPlayState transitions the game to the play state, initializes gameplay elements, and starts the next level.
 func (g *Invaders) SetPlayState() {
 	g.state = PlayState
 	g.initPlay()
@@ -361,18 +389,18 @@ func (g *Invaders) beginNextLevel() {
 	g.aliens.Create(alienStartX, alienStartY, 0)
 }
 
-// explode triggers an explosion effect at the specified (x, y) coordinates by adding a new fragment to the fragments system.
+// explode triggers the addition of a new fragment at the specified coordinates (x, y).
 func (g *Invaders) explode(x, y int) {
 	g.fragments.AddFragment(x, y)
 }
 
-// wipeBullets resets the player's bullet and reinitializes alien bullets based on the number of alien columns and rows.
+// wipeBullets clears all bullets from the player and resets alien bullets based on the number of aliens present.
 func (g *Invaders) wipeBullets() {
 	g.player.WipeBullet()
 	g.aliens.alienBullets.Setup(g.aliens.columns * g.aliens.rows / 10)
 }
 
-// initPlay initializes the game state for a new play session, setting up player, aliens, barricades, and timers.
+// initPlay initializes the game state for the play mode, setting up player, aliens, barricades, fragments, and UFO timer.
 func (g *Invaders) initPlay() {
 	g.fc = 1
 	g.lvl = 1
@@ -399,9 +427,9 @@ func (g *Invaders) initPlay() {
 	g.ufoTimer = &t
 }
 
-// gameOver sets the game state to "GAME OVER", displays the freeze text, and transitions to the menu state.
+// gameOver resets the game to the menu state, displays "GAME OVER" text, and freezes the game temporarily.
 func (g *Invaders) gameOver() {
 	g.freeze = 200
 	g.freezeText = "GAME OVER"
-	g.SetMenuState()
+	g.setMenuState()
 }

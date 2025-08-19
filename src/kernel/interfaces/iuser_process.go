@@ -1,22 +1,22 @@
 package interfaces
 
-// OnError defines a function type that handles errors that occur during process execution.
-type OnError func(process IUserProcess, err error)
-
 // OnRun defines a function type that performs a process execution with given arguments and returns an error if any occurs.
 type OnRun func(process IUserProcess, args []string) error
 
-// OnTimer defines a function type for processes invoked at regular intervals, receiving the process, timer id, and interval.
-type OnTimer func(process IUserProcess, tid int, interval int)
+// OnError defines a function type that handles errors that occur during process execution.
+type OnError func(err error)
 
-// OnRead defines a function type invoked for processing input events with a process, an event code, and a key character.
-type OnRead func(process IUserProcess, code int, key rune)
+// OnTimer defines a function type for processes invoked at regular intervals, receiving the process, timer id, and interval.
+type OnTimer func(tid int, interval int)
+
+// OnKey defines a function type invoked for processing input events with a process, an event code, and a key character.
+type OnKey func(code int, key rune)
 
 // OnPaint defines a function type used to handle painting processes on a specified surface in the context of a process.
-type OnPaint func(process IUserProcess, surface ISurface)
+type OnPaint func(surface ISurface)
 
 // OnActivate defines a function type executed when a process is activated, receiving the process as a parameter.
-type OnActivate func(process IUserProcess)
+type OnActivate func()
 
 // IUserProcess defines an interface for process management, process handling, interaction, and rendering within a system.
 type IUserProcess interface {
@@ -28,9 +28,17 @@ type IUserProcess interface {
 
 	GetCommand() ICommand
 
-	SetContext(ctx interface{})
+	SetOnError(fn OnError)
 
-	GetContext() interface{}
+	SetOnKey(fn OnKey)
+
+	SetOnKeyBroadcast(fn OnKey)
+
+	SetOnTimer(fn OnTimer)
+
+	SetOnPaint(fn OnPaint)
+
+	SetOnActivate(fn OnActivate)
 
 	CreateTimer(first int, interval int, count int)
 
@@ -85,6 +93,8 @@ type IUserProcess interface {
 	MoveCursorLeft()
 
 	MoveCursorRight()
+
+	MoveCursor(row int, column int)
 
 	SaveCursor()
 

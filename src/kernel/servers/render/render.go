@@ -65,6 +65,7 @@ func NewRender(driver interfaces.IDisplayDriver) *Render {
 	r.handlers[interfaces.MessageTypeRestoreCursor] = r.handleRestoreCursor
 	r.handlers[interfaces.MessageTypeMoveCursorLeft] = r.handleMoveCursorLeft
 	r.handlers[interfaces.MessageTypeMoveCursorRight] = r.handleMoveCursorRight
+	r.handlers[interfaces.MessageTypeMoveCursor] = r.handleMoveCursor
 	r.handlers[interfaces.MessageTypeWrite] = r.handleWrite
 	r.handlers[interfaces.MessageTypeWriteColor] = r.handleWriteColor
 	r.handlers[interfaces.MessageTypeGetScreenSizeRequest] = r.handleGetScreenSize
@@ -369,6 +370,15 @@ func (c *Render) handleMoveCursorRight(msg interfaces.IMessage) {
 	c.doMoveCursorRight()
 }
 
+// handleMoveCursorRight moves the cursor one step to the right on the rendering interface using the associated driver.
+func (c *Render) handleMoveCursor(msg interfaces.IMessage) {
+	m, ok := msg.(*messages.MessageMoveCursor)
+	if !ok {
+		return
+	}
+	c.doMoveCursor(m.Row(), m.Column())
+}
+
 // handleWrite writes the provided string to the terminal followed by an end-of-line character.
 func (c *Render) handleWrite(msg interfaces.IMessage) {
 	mt, ok := msg.(*messages.MessageWrite)
@@ -407,12 +417,6 @@ func (c *Render) doClearLine(line string) {
 	_, _ = c.driver.Write(p)
 }
 
-// doMoveCursorTopLeft moves the cursor to the top-left position of the rendering surface using the underlying driver.
-func (c *Render) doMoveCursorTopLeft() {
-	p := c.driver.CreateMoveCursorTopLeft()
-	_, _ = c.driver.Write(p)
-}
-
 // doClearScreen clears the terminal screen by generating and writing a clear screen sequence via the driver.
 func (c *Render) doClearScreen() {
 	p := c.driver.CreateClearScreen()
@@ -440,6 +444,18 @@ func (c *Render) doMoveCursorLeft() {
 // doMoveCursorRight moves the cursor one step to the right on the rendering interface using the associated driver.
 func (c *Render) doMoveCursorRight() {
 	p := c.driver.CreateMoveCursorRight()
+	_, _ = c.driver.Write(p)
+}
+
+// doMoveCursorTopLeft moves the cursor to the top-left position of the rendering surface using the underlying driver.
+func (c *Render) doMoveCursorTopLeft() {
+	p := c.driver.CreateMoveCursorTopLeft()
+	_, _ = c.driver.Write(p)
+}
+
+// doMoveCursor moves the cursor to the specified position using the underlying driver's capabilities.'
+func (c *Render) doMoveCursor(row int, col int) {
+	p := c.driver.CreateMoveCursor(row, col)
 	_, _ = c.driver.Write(p)
 }
 

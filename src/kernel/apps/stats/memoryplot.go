@@ -8,114 +8,124 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/process"
 )
 
-// rtPlotData represents runtime plot data and configuration for rendering a dynamic graph.
-// It includes data points, plot type, min/max values, and auto-scaling behavior.
-type rtPlotData struct {
-	rtPlotData   []float64
-	rtPlotType   int
-	rtPlotMinVal float64
-	rtPlotMaxVal float64
-	rtPlotAuto   bool
+// RtPlot represents a real-time data plotting mechanism, managing data, its limits, rendering setup, and auto-scaling.
+type RtPlot struct {
+	process interfaces.IUserProcess
+	data    []float64
+	kind    int
+	minVal  float64
+	maxVal  float64
+	auto    bool
 }
 
-// CreateMemoryPlot creates a shell command for plotting real-time memory statistics including alloc, total, os, and GC data.
-// It supports dynamic updates and allows controlling plot scaling or enabling auto-scaling via interactive inputs.
+// NewRtPlotData initializes a new RtPlot instance with the specified kind and default settings.
+// It sets up the plot to automatically adjust its range and prepares it for plotting runtime data.
+// Returns a pointer to the newly created RtPlot instance.
+func NewRtPlotData(kind int) *RtPlot {
+	plt := &RtPlot{
+		kind:   kind,
+		auto:   true,
+		data:   nil,
+		minVal: math.Inf(1),
+		maxVal: math.Inf(-1),
+	}
+	return plt
+}
+
+// Setup configures the RtPlot instance with the provided IUserProcess and binds event handlers for read, timer, and paint.
+func (plt *RtPlot) Setup(process interfaces.IUserProcess) {
+	plt.process = process
+	plt.process.SetOnKey(plt.onKey)
+	plt.process.SetOnTimer(plt.onTimer)
+	plt.process.SetOnPaint(plt.onPaint)
+}
+
+// Start initializes and starts a timer for the plot with a zero delay, a 300ms interval, and infinite occurrences.
+func (plt *RtPlot) Start() {
+	plt.process.CreateTimer(0, 300, -1)
+}
+
+// onKey handles keyboard input, adjusts plot range dynamically, and toggles auto-scaling based on provided key actions.
+func (plt *RtPlot) onKey(_ int, key rune) {
+	interval := math.Abs(plt.maxVal - plt.minVal)
+	scale := (interval * 10) / 100
+	switch key {
+	case 'a', '+':
+		plt.auto = false
+		plt.maxVal += scale
+		plt.minVal -= scale
+	case 'z', '-':
+		plt.auto = false
+		plt.maxVal -= scale
+		plt.minVal += scale
+	case 'r':
+		plt.auto = !plt.auto
+	}
+}
+
+// timerFn is a timer callback method that reads memory stats, updates min/max values, appends data, and triggers repaint.
+func (plt *RtPlot) onTimer(_ int, _ int) {
+	var m runtime.MemStats
+	runtime.ReadMemStats(&m)
+	var val float64
+	switch plt.kind {
+	case 0:
+		val = bToMb(m.Alloc)
+	case 1:
+		val = bToMb(m.TotalAlloc)
+	case 2:
+		val = bToMb(m.Sys)
+	case 3:
+		val = float64(m.NumGC)
+	default:
+		val = bToMb(m.Alloc)
+	}
+	if val < plt.minVal {
+		plt.minVal = val
+	}
+	if val > plt.maxVal {
+		plt.maxVal = val
+	}
+	plt.data = append(plt.data, val)
+	if len(plt.data) > 10 {
+		plt.data = plt.data[1:]
+	}
+	plt.process.PaintRequest()
+}
+
+// paintFn renders the current data series onto the provided ISurface, using defined min and max values or auto-scaling.
+func (plt *RtPlot) onPaint(surface interfaces.ISurface) {
+	var minPlot float64 = 0
+	var maxPlot float64 = 0
+	if !plt.auto {
+		minPlot = plt.minVal
+		maxPlot = plt.maxVal
+	}
+	surface.DrawSeries(plt.data, -1, -1, minPlot, maxPlot)
+}
+
+// CreateMemoryPlot returns a new command that generates a runtime memory plot with selectable memory statistics types.
 func CreateMemoryPlot() interfaces.ICommand {
 	run := func(process interfaces.IUserProcess, args []string) error {
-		plt := &rtPlotData{
-			rtPlotType:   0,
-			rtPlotAuto:   true,
-			rtPlotData:   nil,
-			rtPlotMinVal: math.Inf(1),
-			rtPlotMaxVal: math.Inf(-1),
-		}
+		kind := 0
 		if len(args) > 0 {
 			switch args[0] {
 			case "alloc":
-				plt.rtPlotType = 0
+				kind = 0
 			case "total":
-				plt.rtPlotType = 1
+				kind = 1
 			case "os":
-				plt.rtPlotType = 2
+				kind = 2
 			case "gc":
-				plt.rtPlotType = 3
+				kind = 3
 			}
 		}
-		process.SetContext(plt)
-		process.CreateTimer(0, 300, -1)
+		plt := NewRtPlotData(kind)
+		plt.Setup(process)
+		plt.Start()
 		return nil
-	}
-	readFn := func(process interfaces.IUserProcess, code int, key rune) {
-		ctx := process.GetContext()
-		plt := ctx.(*rtPlotData)
-
-		interval := math.Abs(plt.rtPlotMaxVal - plt.rtPlotMinVal)
-		scale := (interval * 10) / 100
-
-		switch key {
-		case 'a', '+':
-			plt.rtPlotAuto = false
-			plt.rtPlotMaxVal += scale
-			plt.rtPlotMinVal -= scale
-		case 'z', '-':
-			plt.rtPlotAuto = false
-			plt.rtPlotMaxVal -= scale
-			plt.rtPlotMinVal += scale
-		case 'r':
-			plt.rtPlotAuto = !plt.rtPlotAuto
-		}
-
-	}
-	timerFn := func(process interfaces.IUserProcess, tid int, interval int) {
-		var m runtime.MemStats
-		ctx := process.GetContext()
-		plt := ctx.(*rtPlotData)
-
-		runtime.ReadMemStats(&m)
-		var val float64
-		switch plt.rtPlotType {
-		case 0:
-			val = bToMb(m.Alloc)
-		case 1:
-			val = bToMb(m.TotalAlloc)
-		case 2:
-			val = bToMb(m.Sys)
-		case 3:
-			val = float64(m.NumGC)
-		default:
-			val = bToMb(m.Alloc)
-		}
-
-		if val < plt.rtPlotMinVal {
-			plt.rtPlotMinVal = val
-		}
-		if val > plt.rtPlotMaxVal {
-			plt.rtPlotMaxVal = val
-		}
-
-		plt.rtPlotData = append(plt.rtPlotData, val)
-		if len(plt.rtPlotData) > 10 {
-			plt.rtPlotData = plt.rtPlotData[1:]
-		}
-
-		process.PaintRequest()
-	}
-	paintFn := func(process interfaces.IUserProcess, surface interfaces.ISurface) {
-		var minPlot float64 = 0
-		var maxPlot float64 = 0
-		ctx := process.GetContext()
-		plt := ctx.(*rtPlotData)
-		if !plt.rtPlotAuto {
-			minPlot = plt.rtPlotMinVal
-			maxPlot = plt.rtPlotMaxVal
-		}
-		surface.DrawSeries(plt.rtPlotData, -1, -1, minPlot, maxPlot)
 	}
 	root := process.NewCommand("rtplot", interfaces.CommandTypeFile, nil, true, run)
 	root.SetHelp("Runtime Plot", "Runtime Plot")
-	root.SetOnTimer(timerFn)
-	root.SetOnPaint(paintFn)
-	root.SetOnRead(readFn)
-
 	return root
 }

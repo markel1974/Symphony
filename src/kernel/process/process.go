@@ -24,7 +24,6 @@ const (
 type Process struct {
 	kRouter          interfaces.IKernelRequestRouter
 	cmd              interfaces.ICommand
-	context          interface{}
 	timers           []int
 	state            interfaces.ProcessState
 	gatekeeperChan   chan interfaces.IMessage
@@ -34,6 +33,12 @@ type Process struct {
 	loader           *sdk.Loader
 	compiler         *compiler.Compiler
 	vm               *vm.VM
+	onError          interfaces.OnError
+	onTimer          interfaces.OnTimer
+	onKey            interfaces.OnKey
+	onKeyBroadcast   interfaces.OnKey
+	onPaint          interfaces.OnPaint
+	onActivate       interfaces.OnActivate
 }
 
 // NewProcess initializes and returns a new Process instance with the provided kRouter, command, and command line data.
@@ -43,7 +48,6 @@ func NewProcess(cmd interfaces.ICommand) *Process {
 		loader:           nil,
 		compiler:         nil,
 		vm:               nil,
-		context:          nil,
 		state:            interfaces.ProcessStateSetup,
 		gatekeeperChan:   make(chan interfaces.IMessage, gatekeeperQueueLen),
 		executorChan:     make(chan interfaces.IMessage, executorQueueLen),
@@ -62,6 +66,36 @@ func (t *Process) Process() interfaces.IUserProcess {
 	return t
 }
 
+// SetOnError sets a callback function to handle errors that occur during the execution of the command.
+func (t *Process) SetOnError(fn interfaces.OnError) {
+	t.onError = fn
+}
+
+// SetOnKey sets the function to handle read-related events for the command.
+func (t *Process) SetOnKey(fn interfaces.OnKey) {
+	t.onKey = fn
+}
+
+// SetOnKeyBroadcast sets the function to handle read broadcast events for the command.
+func (t *Process) SetOnKeyBroadcast(fn interfaces.OnKey) {
+	t.onKeyBroadcast = fn
+}
+
+// SetOnTimer sets the OnTimer callback function for the command's timer event.
+func (t *Process) SetOnTimer(fn interfaces.OnTimer) {
+	t.onTimer = fn
+}
+
+// SetOnPaint configures a custom function to handle paint events for the command.
+func (t *Process) SetOnPaint(fn interfaces.OnPaint) {
+	t.onPaint = fn
+}
+
+// SetOnActivate assigns a callback function to be executed when the command is activated.
+func (t *Process) SetOnActivate(fn interfaces.OnActivate) {
+	t.onActivate = fn
+}
+
 // Start begins the process by setting its state to running and initiating its event loop asynchronously.
 func (t *Process) Start() {
 	a := make(chan bool)
@@ -76,16 +110,6 @@ func (t *Process) Start() {
 // GetCommand returns the ICommand instance associated with the Process.
 func (t *Process) GetCommand() interfaces.ICommand {
 	return t.cmd
-}
-
-// SetContext sets the context for the process, storing the provided context object in the process internal context field.
-func (t *Process) SetContext(ctx interface{}) {
-	t.context = ctx
-}
-
-// GetContext retrieves the context associated with the Process, returning it as an interface{}.
-func (t *Process) GetContext() interface{} {
-	return t.context
 }
 
 // CreateTimer initializes a timer with a specified start delay, repeat interval, and count for the current process.
@@ -359,6 +383,11 @@ func (t *Process) MoveCursorRight() {
 	t.kRouter.PostKernelRequest(messages.NewMessageMoveCursorRight(-1, -1))
 }
 
+// MoveCursor adjusts the cursor position to the specified row and column within the process's environment.
+func (t *Process) MoveCursor(row int, col int) {
+	t.kRouter.PostKernelRequest(messages.NewMessageMoveCursor(-1, -1, row, col))
+}
+
 // SaveCursor saves the current cursor state by invoking the SaveCursor method on the associated renderer.
 func (t *Process) SaveCursor() {
 	t.kRouter.PostKernelRequest(messages.NewMessageSaveCursor(-1, -1))
@@ -465,8 +494,8 @@ func (t *Process) handleMessageError(msg interfaces.IMessage) {
 		return
 	}
 	log.Printf("Process [%s]: reveived error %s", t.cmd.Name(), mt.Error())
-	if onError := t.cmd.OnError(); onError != nil {
-		onError(t, mt.Error())
+	if onError := t.onError; onError != nil {
+		onError(mt.Error())
 	}
 }
 
@@ -476,8 +505,8 @@ func (t *Process) handleMessageTimer(msg interfaces.IMessage) {
 	if !ok {
 		return
 	}
-	if timerEvent := t.cmd.OnTimer(); timerEvent != nil {
-		timerEvent(t, mt.TID(), mt.Interval())
+	if timerEvent := t.onTimer; timerEvent != nil {
+		timerEvent(mt.TID(), mt.Interval())
 	}
 }
 
@@ -488,12 +517,12 @@ func (t *Process) handleMessageRead(msg interfaces.IMessage) {
 		return
 	}
 	if mt.Broadcast() {
-		if readBroadcastEvent := t.cmd.OnReadBroadcast(); readBroadcastEvent != nil {
-			readBroadcastEvent(t, int(mt.Kind()), mt.Data())
+		if readBroadcastEvent := t.onKeyBroadcast; readBroadcastEvent != nil {
+			readBroadcastEvent(int(mt.Kind()), mt.Data())
 		}
 	} else {
-		if readEvent := t.cmd.OnRead(); readEvent != nil {
-			readEvent(t, int(mt.Kind()), mt.Data())
+		if readEvent := t.onKey; readEvent != nil {
+			readEvent(int(mt.Kind()), mt.Data())
 		}
 	}
 }
@@ -542,8 +571,8 @@ func (t *Process) handleMessageProcessActivate(msg interfaces.IMessage) {
 	if !ok {
 		return
 	}
-	if activate := t.cmd.OnActivate(); activate != nil {
-		activate(t)
+	if activate := t.onActivate; activate != nil {
+		activate()
 	}
 }
 
@@ -562,9 +591,9 @@ func (t *Process) handleMessagePaintPrepare(msg interfaces.IMessage) {
 	if !ok {
 		return
 	}
-	if paintEvent := t.cmd.OnPaint(); paintEvent != nil {
+	if paintEvent := t.onPaint; paintEvent != nil {
 		mt.Surface().Begin()
-		paintEvent(t, mt.Surface())
+		paintEvent(mt.Surface())
 		mt.Surface().End()
 
 		ma := messages.NewMessagePaintApply(-1, -1, mt.Surface())

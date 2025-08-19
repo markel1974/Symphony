@@ -20,15 +20,10 @@ type Command struct {
 	daemon                     bool
 	background                 bool
 	script                     string
-	errorEvent                 interfaces.OnError
 	runEvent                   interfaces.OnRun
-	timerEvent                 interfaces.OnTimer
-	readEvent                  interfaces.OnRead
-	readBroadcastEvent         interfaces.OnRead
-	paintEvent                 interfaces.OnPaint
-	activateEvent              interfaces.OnActivate
 	commands                   []interfaces.ICommand
 	parent                     interfaces.ICommand
+	readFilter                 bool
 }
 
 // NewCommand creates a new Command instance with the specified name, type, aliases, daemon status, and execution function.
@@ -50,6 +45,7 @@ func NewCommand(name string, kind interfaces.CommandType, aliases []string, daem
 	}
 }
 
+// SetParent sets the parent command for the current command instance. It helps establish a hierarchical relationship.
 func (c *Command) SetParent(parent interfaces.ICommand) {
 	c.parent = parent
 }
@@ -57,6 +53,14 @@ func (c *Command) SetParent(parent interfaces.ICommand) {
 // Type returns the structural nature of the command represented as interfaces.CommandType.
 func (c *Command) Type() interfaces.CommandType {
 	return c.kind
+}
+
+func (c *Command) SetReadFilter(readFilter bool) {
+	c.readFilter = readFilter
+}
+
+func (c *Command) HasReadFilter() bool {
+	return c.readFilter
 }
 
 // HasScript checks if the Command has a non-empty script associated with it. Returns true if a script exists.
@@ -82,66 +86,6 @@ func (c *Command) DirectoryListing() []string {
 		out = append(out, cmd.Name())
 	}
 	return out
-}
-
-// OnError returns the error event handler associated with the Command instance.
-func (c *Command) OnError() interfaces.OnError {
-	return c.errorEvent
-}
-
-// OnPaint returns the OnPaint associated with the command, which handles rendering or drawing operations.
-func (c *Command) OnPaint() interfaces.OnPaint {
-	return c.paintEvent
-}
-
-// OnRead retrieves the function assigned to handle read events for the command.
-func (c *Command) OnRead() interfaces.OnRead {
-	return c.readEvent
-}
-
-// OnReadBroadcast returns a function for handling broadcast event messages within the command context.
-func (c *Command) OnReadBroadcast() interfaces.OnRead {
-	return c.readBroadcastEvent
-}
-
-// OnTimer returns the OnTimer associated with the Command, used to define the timer-based behavior for the command.
-func (c *Command) OnTimer() interfaces.OnTimer {
-	return c.timerEvent
-}
-
-// OnActivate returns the OnTimer associated with the Command, used to define the timer-based behavior for the command.
-func (c *Command) OnActivate() interfaces.OnActivate {
-	return c.activateEvent
-}
-
-// SetOnError sets a callback function to handle errors that occur during the execution of the command.
-func (c *Command) SetOnError(fn interfaces.OnError) {
-	c.errorEvent = fn
-}
-
-// SetOnRead sets the function to handle read-related events for the command.
-func (c *Command) SetOnRead(fn interfaces.OnRead) {
-	c.readEvent = fn
-}
-
-// SetOnReadBroadcast sets the function to handle read broadcast events for the command.
-func (c *Command) SetOnReadBroadcast(fn interfaces.OnRead) {
-	c.readBroadcastEvent = fn
-}
-
-// SetOnTimer sets the OnTimer callback function for the command's timer event.
-func (c *Command) SetOnTimer(fn interfaces.OnTimer) {
-	c.timerEvent = fn
-}
-
-// SetOnPaint configures a custom function to handle paint events for the command.
-func (c *Command) SetOnPaint(fn interfaces.OnPaint) {
-	c.paintEvent = fn
-}
-
-// SetOnActivate assigns a callback function to be executed when the command is activated.
-func (c *Command) SetOnActivate(fn interfaces.OnActivate) {
-	c.activateEvent = fn
 }
 
 // Daemon returns whether the command is configured to runEvent in daemon mode.

@@ -10,6 +10,7 @@ import (
 
 // XShell defines a command-line interface entity with support for input management, authentication, rendering, and history.
 type XShell struct {
+	process         interfaces.IUserProcess
 	current         []rune
 	pos             int
 	echo            bool
@@ -38,62 +39,68 @@ func NewXShell(prompt string, autosave bool) *XShell {
 	return c
 }
 
-// Start initializes the console session, sets the prompt prefix, and prepares for user interaction.
+func (c *XShell) Setup(process interfaces.IUserProcess) {
+	c.process = process
+	process.SetOnKey(c.keyHandler)
+	process.SetOnKeyBroadcast(c.broadcastKeyHandler)
+	process.SetOnError(c.ErrorHandler)
+	process.SetOnActivate(c.activateHandler)
+}
+
 func (c *XShell) Start(process interfaces.IUserProcess) {
 	process.WriteForeground("Admin Console Ready", interfaces.ColorBlueDef, true)
-	//process.Write("", true)
 }
 
 // ErrorHandler handles errors by writing the error message to the process output and proceeding to the next line.
-func (c *XShell) ErrorHandler(process interfaces.IUserProcess, err error) {
-	process.Write(err.Error(), true)
-	c.nextLine(process, false)
+func (c *XShell) ErrorHandler(err error) {
+	c.process.Write(err.Error(), true)
+	c.nextLine(false)
 }
 
 // ActivateHandler triggers the processing loop for the specified process, ensuring the next line is handled without a delay.
-func (c *XShell) ActivateHandler(process interfaces.IUserProcess) {
-	c.nextLine(process, false)
+func (c *XShell) activateHandler() {
+	c.nextLine(false)
 }
 
-func (c *XShell) BroadcastKeyHandler(process interfaces.IUserProcess, code int, key rune) {
+func (c *XShell) broadcastKeyHandler(code int, key rune) {
 	kind := interfaces.KeyType(code)
 	if kind == interfaces.KeyTypeCtrl {
 		if key == 3 {
 			//ctrl-c
 			c.selectionMode = false
-			process.KillForeground()
+			c.process.KillForeground()
 		} else if key == 4 {
 			//ctrl-d
 			c.selectionMode = !c.selectionMode
 			if c.selectionMode {
-				process.WindowsSelectionBegin()
+				c.process.WindowsSelectionBegin()
 			} else {
-				process.WindowsSelectionEnd()
-				process.ProcessSetSelfForeground()
+				c.process.WindowsSelectionEnd()
+				c.process.ProcessSetSelfForeground()
 			}
 		}
 		return
 	}
 
 	if c.selectionMode {
-		c.keyHandlerSelection(process, code, key)
+		c.keyHandlerSelection(code, key)
 	}
 }
 
 // KeyHandler handles keyboard input events for the XShell context, adjusting behavior based on selection mode status.
-func (c *XShell) KeyHandler(process interfaces.IUserProcess, code int, key rune) {
+func (c *XShell) keyHandler(code int, key rune) {
 	if !c.selectionMode {
-		c.keyHandlerNormal(process, code, key)
+		c.keyHandlerNormal(code, key)
 	}
 }
 
 // KeyHandler handles keyboard inputs based on the provided key type and key value, executing corresponding actions.
-func (c *XShell) keyHandlerNormal(process interfaces.IUserProcess, code int, key rune) {
+func (c *XShell) keyHandlerNormal(code int, key rune) {
 	kind := interfaces.KeyType(code)
 	if kind == interfaces.KeyTypeCtrl {
 		switch key {
 		case 3:
-			c.nextLine(process, true)
+			c.nextLine(true)
 		case 4:
 			//c.handleExecActivate()
 		}
@@ -102,69 +109,69 @@ func (c *XShell) keyHandlerNormal(process interfaces.IUserProcess, code int, key
 
 	switch kind {
 	case interfaces.KeyTypeEnter:
-		c.enterPressed(process)
+		c.enterPressed()
 		c.tabCount = 0
 	case interfaces.KeyTypeTab:
-		c.tabPressed(process)
+		c.tabPressed()
 	case interfaces.KeyTypeCancel:
 		c.tabCount = 0
-		c.textCancel(process)
+		c.textCancel()
 	case interfaces.KeyTypeBackspace:
 		c.tabCount = 0
-		c.textBackspace(process)
+		c.textBackspace()
 	case interfaces.KeyTypeKey:
 		c.tabCount = 0
-		c.keyPressed(process, key)
+		c.keyPressed(key)
 	case interfaces.KeyTypeCursor:
 		c.tabCount = 0
-		c.cursorPressed(process, interfaces.CursorCodeDef(key))
+		c.cursorPressed(interfaces.CursorCodeDef(key))
 	default:
 		log.Println("handlerKeyEvent: Unknown key type")
 	}
 }
 
-func (c *XShell) keyHandlerSelection(process interfaces.IUserProcess, code int, key rune) {
+func (c *XShell) keyHandlerSelection(code int, key rune) {
 	kind := interfaces.KeyType(code)
 	if kind == interfaces.KeyTypeCursor {
 		switch interfaces.CursorCodeDef(key) {
 		case interfaces.CursorUpDef:
-			process.WindowsSelectionOptions('y', -1)
+			c.process.WindowsSelectionOptions('y', -1)
 		case interfaces.CursorDownDef:
-			process.WindowsSelectionOptions('y', 1)
+			c.process.WindowsSelectionOptions('y', 1)
 		case interfaces.CursorLeftDef:
-			process.WindowsSelectionOptions('x', -1)
+			c.process.WindowsSelectionOptions('x', -1)
 		case interfaces.CursorRightDef:
-			process.WindowsSelectionOptions('x', 1)
+			c.process.WindowsSelectionOptions('x', 1)
 		}
 		return
 	}
 
 	switch key {
 	case 'w':
-		process.WindowsSelectionOptions('y', -1)
+		c.process.WindowsSelectionOptions('y', -1)
 	case 's':
-		process.WindowsSelectionOptions('y', 1)
+		c.process.WindowsSelectionOptions('y', 1)
 	case 'a':
-		process.WindowsSelectionOptions('x', -1)
+		c.process.WindowsSelectionOptions('x', -1)
 	case 'd':
-		process.WindowsSelectionOptions('x', 1)
+		c.process.WindowsSelectionOptions('x', 1)
 	case '+':
-		process.WindowsSelectionOptions('z', 0.1)
+		c.process.WindowsSelectionOptions('z', 0.1)
 	case '-':
-		process.WindowsSelectionOptions('z', -0.1)
+		c.process.WindowsSelectionOptions('z', -0.1)
 	case '\t':
-		process.WindowsSelectionNext()
+		c.process.WindowsSelectionNext()
 	case 'q':
-		process.WindowsSelectionPrevious()
+		c.process.WindowsSelectionPrevious()
 	}
 }
 
 // nextLine resets the input buffer and renders the prompt and EOL markers with specified colors and styles.
-func (c *XShell) nextLine(process interfaces.IUserProcess, eol bool) {
+func (c *XShell) nextLine(eol bool) {
 	c.current = nil
 	c.pos = 0
-	c.prompt = process.CWDName() + c.defaultPrompt
-	process.WritePromptEOL(c.prompt, eol)
+	c.prompt = c.process.CWDName() + c.defaultPrompt
+	c.process.WritePromptEOL(c.prompt, eol)
 }
 
 // Redraw refreshes the current shell display with the given line, updates internal state, and re-renders the prompt and line.
@@ -214,72 +221,72 @@ func (c *XShell) historySuggest(process interfaces.IUserProcess, data string, su
 }
 
 // textBackspace removes the character at the current cursor position and updates the Shell state accordingly.
-func (c *XShell) textBackspace(process interfaces.IUserProcess) {
+func (c *XShell) textBackspace() {
 	if c.pos > 0 {
 		c.pos--
 		c.current = removeAtPos(c.current, c.pos)
 		if c.echo {
-			process.MoveCursorLeft()
-			process.SaveCursor()
-			process.WriteForeground(string(c.current[c.pos:]), interfaces.ColorNoneDef, false)
-			process.WriteForeground(string(' '), interfaces.ColorNoneDef, false)
-			process.RestoreCursor()
+			c.process.MoveCursorLeft()
+			c.process.SaveCursor()
+			c.process.WriteForeground(string(c.current[c.pos:]), interfaces.ColorNoneDef, false)
+			c.process.WriteForeground(string(' '), interfaces.ColorNoneDef, false)
+			c.process.RestoreCursor()
 		}
 	}
 }
 
 // textCancel removes the character at the current cursor position and updates the display if echo mode is enabled.
-func (c *XShell) textCancel(process interfaces.IUserProcess) {
+func (c *XShell) textCancel() {
 	if c.pos >= 0 {
 		c.current = removeAtPos(c.current, c.pos)
 		if c.echo {
-			process.SaveCursor()
-			process.WriteForeground(string(c.current[c.pos:]), interfaces.ColorNoneDef, false)
-			process.WriteForeground(string(' '), interfaces.ColorNoneDef, false)
-			process.RestoreCursor()
+			c.process.SaveCursor()
+			c.process.WriteForeground(string(c.current[c.pos:]), interfaces.ColorNoneDef, false)
+			c.process.WriteForeground(string(' '), interfaces.ColorNoneDef, false)
+			c.process.RestoreCursor()
 		}
 	}
 }
 
 // cursorPressed handles cursor navigation events based on the given CursorCodeDef.
-func (c *XShell) cursorPressed(process interfaces.IUserProcess, code interfaces.CursorCodeDef) {
+func (c *XShell) cursorPressed(code interfaces.CursorCodeDef) {
 	switch code {
 	case interfaces.CursorUpDef:
 		if data, valid := c.history.GetHistoryPrev(); valid {
-			c.redraw(process, data)
+			c.redraw(c.process, data)
 		}
 	case interfaces.CursorDownDef:
 		if data, valid := c.history.GetHistoryNext(); valid {
-			c.redraw(process, data)
+			c.redraw(c.process, data)
 		}
 	case interfaces.CursorLeftDef:
 		if c.pos > 0 {
 			c.pos--
-			process.MoveCursorLeft()
+			c.process.MoveCursorLeft()
 		}
 	case interfaces.CursorRightDef:
 		if c.pos >= 0 && c.pos < len(c.current) {
 			c.pos++
-			process.MoveCursorRight()
+			c.process.MoveCursorRight()
 		}
 	}
 }
 
 // EnterPressed handles the Enter key press event, processes the input based on the current shell state, and updates the state accordingly.
-func (c *XShell) enterPressed(process interfaces.IUserProcess) {
+func (c *XShell) enterPressed() {
 	buffer := string(c.current)
 	if len(buffer) == 0 {
-		c.nextLine(process, true)
+		c.nextLine(true)
 		return
 	}
 	c.history.AddToHistory(buffer)
 	c.history.SetDefault("")
-	process.Write("", true)
-	process.ProcessExec(buffer)
+	c.process.Write("", true)
+	c.process.ProcessExec(buffer)
 }
 
 // TabPressed handles tab key events, providing intelligent autocompletion based on current input and command context.
-func (c *XShell) tabPressed(process interfaces.IUserProcess) {
+func (c *XShell) tabPressed() {
 	if c.tabCount == 0 {
 		c.tabFound = false
 		c.tabData = ""
@@ -291,29 +298,29 @@ func (c *XShell) tabPressed(process interfaces.IUserProcess) {
 	c.tabCount++
 
 	if c.tabFound {
-		data, suggestions, found := process.Suggestion(c.tabData, c.pos)
-		c.historySuggest(process, data, suggestions, found)
+		data, suggestions, found := c.process.Suggestion(c.tabData, c.pos)
+		c.historySuggest(c.process, data, suggestions, found)
 	}
 }
 
 // keyPressed processes a printable key input and updates the current input buffer, cursor position, and visual rendering.
-func (c *XShell) keyPressed(process interfaces.IUserProcess, key rune) {
+func (c *XShell) keyPressed(key rune) {
 	if unicode.IsPrint(key) {
 		if c.pos < 0 {
 			log.Println("doTextInsert: negative pos", c.pos)
 		} else if c.pos == len(c.current) {
 			if c.echo {
-				process.WriteForeground(string(key), interfaces.ColorNoneDef, false)
+				c.process.WriteForeground(string(key), interfaces.ColorNoneDef, false)
 			}
 			c.current = append(c.current, key)
 			c.pos++
 		} else if c.pos < len(c.current) {
 			if c.echo {
-				process.WriteForeground(string(key), interfaces.ColorNoneDef, false)
-				process.SaveCursor()
-				process.WriteForeground(string(c.current[c.pos:]), interfaces.ColorNoneDef, false)
+				c.process.WriteForeground(string(key), interfaces.ColorNoneDef, false)
+				c.process.SaveCursor()
+				c.process.WriteForeground(string(c.current[c.pos:]), interfaces.ColorNoneDef, false)
 			}
-			process.RestoreCursor()
+			c.process.RestoreCursor()
 			c.current = insertAtPos(c.current, key, c.pos)
 			c.pos++
 		} else {

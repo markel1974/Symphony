@@ -81,6 +81,7 @@ const (
 	MessageTypeClearLine
 	MessageTypeMoveCursorLeft
 	MessageTypeMoveCursorRight
+	MessageTypeMoveCursor
 	MessageTypeSaveCursor
 	MessageTypeRestoreCursor
 	MessageTypeWindowsSelectionBegin

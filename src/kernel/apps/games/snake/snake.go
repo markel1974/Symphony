@@ -7,7 +7,7 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
 )
 
-// direction represents a type used to specify movement or orientation in a discrete set of directions.
+// direction represents an enumerated type used to define possible movement or orientation values.
 type direction int
 
 // Up represents the upward direction.
@@ -21,27 +21,28 @@ const (
 	Right
 )
 
-// Point represents a coordinate in a 2D space with X and Y integer values.
+// Point represents a coordinate with X and Y integer values.
 type Point struct {
 	X int
 	Y int
 }
 
-// Attributes represents visual properties for a character, including its symbol and foreground/background colors.
+// Attributes defines visual characteristics including a character, foreground color, and background color.
 type Attributes struct {
 	C  rune
 	Fg interfaces.ColorDef
 	Bg interfaces.ColorDef
 }
 
-// Data represents a combination of positional information and visual attributes.
+// Data represents a structure that combines a Point and associated Attributes for rendering or processing purposes.
 type Data struct {
 	Point
 	Attributes
 }
 
-// Snake represents the state and behavior of the snake in the game, including its position, direction, length, and components.
+// Snake represents a snake in the game, including its attributes, state, position, and game-related properties.
 type Snake struct {
+	process    interfaces.IUserProcess
 	Position   Point
 	Direction  direction
 	Length     int
@@ -58,7 +59,7 @@ type Snake struct {
 	SpriteTail Attributes
 }
 
-// New creates and initializes a new Snake instance with default sprite attributes for its head, body, and tail.
+// New creates and returns a new instance of Snake with default attributes and initial setup.
 func New() *Snake {
 	snake := &Snake{
 		SpriteTail: Attributes{C: '░', Fg: interfaces.ColorYellowDef, Bg: interfaces.ColorNoneDef},
@@ -68,17 +69,71 @@ func New() *Snake {
 	return snake
 }
 
-// SetSize sets the dimensions of the game grid by setting the number of rows and columns and resets game borders and state.
-func (snake *Snake) SetSize(rows int, column int) {
+// Setup configures the snake's dependencies and binds event handlers for reading, timing, and painting operations.
+func (snake *Snake) Setup(process interfaces.IUserProcess) {
+	snake.process = process
+	process.SetOnKey(snake.onKey)
+	process.SetOnTimer(snake.onTimer)
+	process.SetOnPaint(snake.onPaint)
+}
+
+// Start initializes the game board dimensions and creates the main game timer.
+func (snake *Snake) Start() {
+	w, h := snake.process.GetScreenSize()
+	snake.setSize(h, w)
+	snake.process.CreateTimer(0, 200, -1)
+}
+
+// onRead handles user input to change the direction of the snake or restart the game when specific keys are pressed.
+func (snake *Snake) onKey(_ int, key rune) {
+	switch key {
+	case 'a':
+		if snake.Direction != Left {
+			snake.Direction = Left
+		}
+	case 'd':
+		if snake.Direction != Right {
+			snake.Direction = Right
+		}
+	case 'w':
+		if snake.Direction != Up {
+			snake.Direction = Up
+		}
+	case 's':
+		if snake.Direction != Down {
+			snake.Direction = Down
+		}
+	case '1':
+		snake.initialize()
+	}
+}
+
+// onTimer is triggered periodically by a timer, advancing the snake's state and requesting a repaint of the game surface.
+func (snake *Snake) onTimer(_ int, _ int) {
+	snake.Advance()
+	snake.process.PaintRequest()
+}
+
+// onPaint updates the snake's appearance on the surface and adjusts dimensions if the terminal size changes.
+func (snake *Snake) onPaint(surface interfaces.ISurface) {
+	rows, columns := surface.GetSize()
+	if snake.Rows != rows || snake.Columns != columns {
+		snake.setSize(rows, columns)
+	}
+	snake.draw(surface)
+}
+
+// setSize updates the Snake's grid size (rows and columns) and reinitializes the game state.
+func (snake *Snake) setSize(rows int, column int) {
 	snake.Rows = rows
 	snake.Columns = column
 	snake.borders = nil
 
-	snake.Start()
+	snake.initialize()
 }
 
-// Start initializes the snake's game state, resets parameters, and places food and borders on the game surface.
-func (snake *Snake) Start() {
+// initialize resets the snake's state, including direction, speed, body, game status, and initializes borders and food.
+func (snake *Snake) initialize() {
 	snake.GameOver = false
 	snake.Speed = 1
 	snake.Direction = Right
@@ -94,7 +149,7 @@ func (snake *Snake) Start() {
 	//snake.borders = append(snake.borders, NewBorder(Coordinates{32, 5}, 3, 20))
 }
 
-// moveFood randomly positions the food inside the game boundaries and sets its appearance attributes.
+// moveFood relocates the food to a random position within the playable area and updates its appearance properties.
 func (snake *Snake) moveFood() {
 	minRows := 1
 	maxRows := snake.Rows - 2
@@ -118,7 +173,7 @@ func (snake *Snake) moveFood() {
 	snake.Food.Bg = interfaces.ColorNoneDef
 }
 
-// createSurface initializes and returns a 2D slice of strings representing the game surface with empty spaces based on Rows and Columns.
+// createSurface initializes and returns a 2D grid representing the game's surface of empty strings with defined dimensions.
 func (snake *Snake) createSurface() [][]string {
 	var surface [][]string
 	for i := 0; i < snake.Rows; i++ {
@@ -131,7 +186,7 @@ func (snake *Snake) createSurface() [][]string {
 	return surface
 }
 
-// head retrieves the current position of the snake's head as a Point. Returns a default Point if the snake has no body.
+// head returns the current position of the snake's head as a Point. Returns an empty Point if the Body is empty.
 func (snake *Snake) head() Point {
 	if len(snake.Body) > 0 {
 		var idx = len(snake.Body) - 1
@@ -142,12 +197,12 @@ func (snake *Snake) head() Point {
 	return Point{}
 }
 
-// borderCollision checks if the snake's head has collided with any defined borders and returns true if a collision occurs.
+// borderCollision checks whether the snake's head collides with any of the defined borders and returns true if a collision occurs.
 func (snake *Snake) borderCollision() bool {
 	k := snake.head()
 	found := false
 	for _, border := range snake.borders {
-		if border.Contains(k) {
+		if border.contains(k) {
 			found = true
 			break
 		}
@@ -155,7 +210,7 @@ func (snake *Snake) borderCollision() bool {
 	return found
 }
 
-// foodCollision checks if the snake's head is positioned at the same coordinates as the food. Returns true if they match.
+// foodCollision checks if the snake's head position matches the food's position and returns true if they collide.
 func (snake *Snake) foodCollision() bool {
 	k := snake.head()
 	if k.X == snake.Food.X && k.Y == snake.Food.Y {
@@ -164,19 +219,19 @@ func (snake *Snake) foodCollision() bool {
 	return false
 }
 
-// snakeCollision checks if the snake's head has collided with its own body and returns true if a collision is detected.
+// snakeCollision checks if the snake's head collides with its own body and returns true if there is a collision.
 func (snake *Snake) snakeCollision() bool {
-	return snake.Contains()
+	return snake.contains()
 }
 
-// Advance progresses the game state by updating the snake's position and handling collisions or interactions.
+// Advance progresses the state of the snake in the game by handling movement, collisions, and food consumption.
 func (snake *Snake) Advance() {
 	//for x := 0; x <= snake.Score; x ++ {
 	snake.update()
 	//}
 }
 
-// update updates the snake's position, handles game logic, and checks for collisions or food consumption.
+// update updates the snake's position on the grid and handles collisions or interactions like food consumption.
 func (snake *Snake) update() {
 	if !snake.GameOver {
 		nHead := snake.head()
@@ -211,7 +266,7 @@ func (snake *Snake) update() {
 	}
 }
 
-// rebuildSnake updates the snake's tail, appends the new head, and sets the appropriate attributes for body parts.
+// rebuildSnake updates the snake's body by adding a new head and adjusting tail and body attributes accordingly.
 func (snake *Snake) rebuildSnake(nHead Point) {
 	if len(snake.Body) > 0 {
 		snake.Body[len(snake.Body)-1].Attributes = snake.SpriteBody
@@ -222,8 +277,8 @@ func (snake *Snake) rebuildSnake(nHead Point) {
 	}
 }
 
-// Draw renders the snake, food, borders, and the score on the provided surface. Displays "Game Over" if the game ends.
-func (snake *Snake) Draw(surface interfaces.ISurface) {
+// Draw renders the snake, food, borders, score, and game-over message on the given surface.
+func (snake *Snake) draw(surface interfaces.ISurface) {
 	surface.DrawColor(snake.Food.Y, snake.Food.X, snake.Food.C, snake.Food.Fg, snake.Food.Bg, interfaces.ModeNormal)
 
 	for _, c := range snake.Body {
@@ -244,67 +299,18 @@ func (snake *Snake) Draw(surface interfaces.ISurface) {
 	}
 }
 
-// SetPosition sets the snake's position by updating the X and Y coordinates of the snake's position to the given X value.
-func (snake *Snake) SetPosition(x int, _ int) {
+// SetPosition updates the snake's position based on the provided x-coordinate, setting both X and Y to the same value.
+func (snake *Snake) setPosition(x int, _ int) {
 	snake.Position.X = x
 	snake.Position.Y = x
 }
 
-// Contains checks if the snake's head overlaps with any part of its body, excluding the head itself. Returns true if it does.
-func (snake *Snake) Contains() bool {
+// contains checks if the snake's head collides with any part of its body, returning true if a collision is detected.
+func (snake *Snake) contains() bool {
 	for i := 0; i < len(snake.Body)-1; i++ {
 		if snake.head() == snake.Body[i].Point {
 			return true
 		}
 	}
 	return false
-}
-
-// Border defines a structure representing a rectangular boundary with specific dimensions and coordinates.
-// It includes the width, height, and a map tracking points and associated data within the border.
-type Border struct {
-	width  int
-	height int
-	coords map[Point]Data
-}
-
-// NewBorder creates a new Border struct with specified origin coordinates, width, and height.
-// It initializes the border with points having default attributes and stores them in a map.
-// The origin defines the starting point, and the width/height determine the boundary dimensions.
-// Returns a pointer to the created Border instance.
-func NewBorder(origX int, origY int, width, height int) *Border {
-	b := new(Border)
-	b.width, b.height = width-1, height-2
-	b.coords = make(map[Point]Data)
-
-	for x := origX; x < b.width; x++ {
-		p1 := Point{X: x, Y: origY}
-		p2 := Point{X: x, Y: b.height}
-
-		b.coords[p1] = Data{Point: p1, Attributes: Attributes{C: '█', Fg: interfaces.ColorGreenDef, Bg: interfaces.ColorNoneDef}}
-		b.coords[p2] = Data{Point: p2, Attributes: Attributes{C: '█', Fg: interfaces.ColorGreenDef, Bg: interfaces.ColorNoneDef}}
-	}
-
-	for y := origY; y < b.height+1; y++ {
-		p1 := Point{X: origX, Y: y}
-		p2 := Point{X: b.width, Y: y}
-
-		b.coords[p1] = Data{Point: p1, Attributes: Attributes{C: '█', Fg: interfaces.ColorGreenDef, Bg: interfaces.ColorNoneDef}}
-		b.coords[p2] = Data{Point: p2, Attributes: Attributes{C: '█', Fg: interfaces.ColorGreenDef, Bg: interfaces.ColorNoneDef}}
-	}
-
-	return b
-}
-
-// Contains checks whether the given point exists within the border's defined coordinates. Returns true if it exists.
-func (b *Border) Contains(point Point) bool {
-	_, exists := b.coords[point]
-	return exists
-}
-
-// Draw renders the border onto the provided surface by iterating through its coordinates and applying color settings.
-func (b *Border) Draw(s interfaces.ISurface) {
-	for _, c := range b.coords {
-		s.DrawColor(c.Y, c.X, c.C, c.Fg, c.Bg, interfaces.ModeNormal)
-	}
 }

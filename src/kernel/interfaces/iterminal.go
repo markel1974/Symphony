@@ -42,6 +42,8 @@ type ITerminal interface {
 
 	CreateRestoreCursor() []byte
 
+	CreateMoveCursor(row int, column int) []byte
+
 	CreateMoveCursorLeft() []byte
 
 	CreateMoveCursorRight() []byte

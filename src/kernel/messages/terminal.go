@@ -218,3 +218,31 @@ func NewMessageMoveCursorRight(source int, destination int) *MessageMoveCursorRi
 		IMessage: interfaces.NewMessageNoAck(source, destination, interfaces.MessageTypeMoveCursorRight),
 	}
 }
+
+// MessageMoveCursor represents a message to move the cursor in a graphical or textual interface.
+// It specifies the new cursor position with row and column coordinates.
+// Implements the IMessage interface for structured messaging.
+type MessageMoveCursor struct {
+	interfaces.IMessage
+	row    int
+	column int
+}
+
+// NewMessageMoveCursor creates a new MessageMoveCursor instance with the specified source, destination, row, and column values.
+func NewMessageMoveCursor(source int, destination int, row int, column int) *MessageMoveCursor {
+	return &MessageMoveCursor{
+		IMessage: interfaces.NewMessageNoAck(source, destination, interfaces.MessageTypeMoveCursor),
+		row:      row,
+		column:   column,
+	}
+}
+
+// Row returns the row index associated with the MessageMoveCursor instance.
+func (m *MessageMoveCursor) Row() int {
+	return m.row
+}
+
+// Column returns the column index associated with the MessageMoveCursor.
+func (m *MessageMoveCursor) Column() int {
+	return m.column
+}

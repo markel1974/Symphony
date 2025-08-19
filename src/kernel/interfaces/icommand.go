@@ -21,29 +21,9 @@ const (
 type ICommand interface {
 	SetParent(parent ICommand)
 
+	HasReadFilter() bool
+
 	Type() CommandType
-
-	OnPaint() OnPaint
-
-	OnRead() OnRead
-
-	OnReadBroadcast() OnRead
-
-	OnActivate() OnActivate
-
-	OnError() OnError
-
-	OnTimer() OnTimer
-
-	SetOnActivate(fn OnActivate)
-
-	SetOnReadBroadcast(fn OnRead)
-
-	SetOnRead(fn OnRead)
-
-	SetOnTimer(fn OnTimer)
-
-	SetOnPaint(fn OnPaint)
 
 	Daemon() bool
 

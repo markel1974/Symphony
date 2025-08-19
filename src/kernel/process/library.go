@@ -22,8 +22,6 @@ func NewLibrary(process *Process) *Library {
 		pkg:     make(map[string]objects.IObject),
 	}
 	container := []*objects.FuncPackage{
-		objects.NewFuncPackage(objects.FuncPackageDef, "SetContext", l.doSetContext),
-		objects.NewFuncPackage(objects.FuncPackageDef, "GetContext", l.doGetContext),
 		objects.NewFuncPackage(objects.FuncPackageDef, "Printf", l.doPrintf),
 		objects.NewFuncPackage(objects.FuncPackageDef, "CreateTimer", l.doCreateTimer),
 		objects.NewFuncPackage(objects.FuncPackageDef, "IsActive", l.doIsActive),
@@ -68,16 +66,6 @@ func NewLibrary(process *Process) *Library {
 // Package returns a map where keys are strings and values implement the IObject interface, representing the library's package.
 func (l *Library) Package() map[string]objects.IObject {
 	return l.pkg
-}
-
-// doGetContext retrieves the current execution context within the library. Returns an error if arguments are provided.
-func (l *Library) doGetContext(args ...objects.IObject) (ret objects.IObject, err error) {
-	if len(args) != 0 {
-		return nil, errors.New("invalid number of arguments")
-	}
-	_ = l.process.GetContext()
-	//TODO implement
-	return nil, nil
 }
 
 // doCreateTimer validates and extracts three integer arguments, then creates a timer using these arguments. Returns nil or an error.
@@ -270,15 +258,6 @@ func (l *Library) doCWDName(args ...objects.IObject) (ret objects.IObject, err e
 	}
 	v := l.process.CWDName()
 	return objects.NewString(v)
-}
-
-// doSetContext updates the library's context with the provided IObject. Validates a single argument is provided.
-func (l *Library) doSetContext(args ...objects.IObject) (ret objects.IObject, err error) {
-	if len(args) != 1 {
-		return nil, errors.New("invalid number of arguments")
-	}
-	l.process.SetContext(args[0])
-	return nil, nil
 }
 
 // doHelp retrieves and returns a help string for the provided argument, which must be a single string-compatible object.
