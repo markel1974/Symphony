@@ -7,48 +7,82 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
 )
 
+// Tui represents a text-based user interface for interacting with a Buffer and managing viewport rendering and modes.
 type Tui struct {
 	buffer  *Buffer
 	mode    string
 	rows    int
 	columns int
+	offsetY int
+	offsetX int
 }
 
+// NewTui creates and initializes a new Tui instance with the provided Buffer and default settings.
 func NewTui(buffer *Buffer) *Tui {
 	t := &Tui{
-		buffer: buffer,
-		mode:   "normal",
+		buffer:  buffer,
+		mode:    "normal",
+		offsetY: 0,
+		offsetX: 0,
 	}
 	return t
 }
 
+// SetMode sets the mode of the Tui instance to the specified string value.
 func (t *Tui) SetMode(mode string) {
 	t.mode = mode
 }
 
+// GetMode returns the current mode of the Tui instance as a string.
 func (t *Tui) GetMode() string {
 	return t.mode
 }
 
+// Draw renders the content of the buffer onto the surface based on the viewport and cursor position.
 func (t *Tui) Draw(process interfaces.IUserProcess, surface interfaces.ISurface) {
 	rows, columns := surface.GetSize()
-	fmt.Println(rows, columns)
 	if rows != t.rows || columns != t.columns {
 		t.rows = rows
 		t.columns = columns
 		process.PaintRequest()
 		return
 	}
-	for y := 0; y < t.buffer.LineCount(); y++ {
-		line := t.buffer.GetLine(y)
-		for idx, l := range line {
-			surface.DrawColor(y, idx, l, interfaces.ColorWhiteDef, interfaces.ColorBlackDef, 0)
+	cx, cy := t.buffer.Cursor()
+	textAreaHeight := t.rows - 3
+	textAreaWidth := t.columns
+	if cy < t.offsetY {
+		t.offsetY = cy
+	}
+	if cy >= t.offsetY+textAreaHeight {
+		t.offsetY = cy - textAreaHeight + 1
+	}
+	if cx < t.offsetX {
+		t.offsetX = cx
+	}
+	if cx >= t.offsetX+textAreaWidth {
+		t.offsetX = cx - textAreaWidth + 1
+	}
+	for y := 0; y < textAreaHeight; y++ {
+		bufferLineIndex := y + t.offsetY
+		if bufferLineIndex < t.buffer.LineCount() {
+			line := t.buffer.GetLine(bufferLineIndex)
+			// Se la linea è più lunga della larghezza della vista, tagliala
+			if t.offsetX < len(line) {
+				visibleLine := line[t.offsetX:]
+				if len(visibleLine) > textAreaWidth {
+					visibleLine = visibleLine[:textAreaWidth]
+				}
+				surface.DrawTextColor(y, 0, visibleLine, interfaces.ColorWhiteDef, interfaces.ColorBlackDef, 0)
+			}
 		}
 	}
-	cx, cy := t.buffer.Cursor()
+
+	// Disegna la status bar
 	statusText := fmt.Sprintf("-- %s -- %s   %d, %d", strings.ToUpper(t.mode), t.buffer.filePath, cy+1, cx+1)
-	for idx, l := range statusText {
-		surface.DrawColor(t.rows-3, idx, l, interfaces.ColorBlackDef, interfaces.ColorWhiteDef, 0)
-	}
-	surface.MoveCursor(cy, cx)
+	statusLine := strings.Repeat(" ", t.columns)
+	surface.DrawTextColor(t.rows-3, 0, statusLine, interfaces.ColorBlackDef, interfaces.ColorWhiteDef, 0)
+	surface.DrawTextColor(t.rows-4, 0, statusText, interfaces.ColorBlackDef, interfaces.ColorWhiteDef, 0)
+
+	// Sposta il cursore fisico nella posizione corretta RELATIVA alla viewport
+	surface.MoveCursor(cy-t.offsetY, cx-t.offsetX)
 }
