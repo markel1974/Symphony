@@ -177,21 +177,7 @@ func (s *Surface) SetSelectionMode(selection bool) {
 
 // MoveCursor moves the cursor to the specified row and column.
 func (s *Surface) MoveCursor(rs int, cs int) {
-	//if rs < 1 {
-	//	rs = 1
-	//}
-	//if cs < 1 {
-	//	cs = 1
-	//}
 	rows, columns := s.compute(rs, cs, true)
-	rows++
-	columns++
-	//if rows < s.border {
-	//	rows = s.border
-	//}
-	//if columns < s.border {
-	//	columns = s.border
-	//}
 	maxRows := s.iRows + s.offsetY - s.border
 	maxColumns := s.iColumns + s.offsetX - s.border
 	if rows >= maxRows {
@@ -202,7 +188,6 @@ func (s *Surface) MoveCursor(rs int, cs int) {
 	}
 	s.cursorRow = rows
 	s.cursorColumn = columns
-	//fmt.Printf("Cursor: %d, %d, Received: %d, %d | %d | %d\n", s.cursorRow, s.cursorColumn, rs, cs, maxRows, maxColumns)
 }
 
 // Cursor returns the current position of the cursor as a row and column.

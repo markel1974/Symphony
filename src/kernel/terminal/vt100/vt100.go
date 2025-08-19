@@ -1,29 +1,21 @@
 package vt100
 
 import (
-	"fmt"
+	"strconv"
 
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
 )
 
 //var controlSequenceIntroducer = []byte{ 27, 91 }
 
-// _escMoveCursorLeftDef defines the escape sequence for moving the cursor one position to the left.
-// _escMoveCursorRightDef defines the escape sequence for moving the cursor one position to the right.
-// _escMoveCursorTopLeftDef defines the escape sequence for moving the cursor to the top-left corner of the screen.
-// _escSaveCursorDef defines the escape sequence for saving the current cursor position.
-// _escRestoreCursorDef defines the escape sequence for restoring the saved cursor position.
-// _clearLine defines the escape sequence to clear the current line and move the cursor to the beginning.
-// _clearScreen defines the escape sequence to clear the entire screen and move the cursor to the beginning.
-// escClearLineDef is commented out and would define the escape sequence to clear the current line if uncommented.
 var (
 	_escMoveCursorLeftDef    = []byte{27, 91, 68}
 	_escMoveCursorRightDef   = []byte{27, 91, 67}
-	_escMoveCursorTopLeftDef = []byte{27, 91, 'H'}
-	_escSaveCursorDef        = []byte{27, '7'}
-	_escRestoreCursorDef     = []byte{27, '8'}
-	_clearLine               = "\x1B[2K" + "\r"
-	_clearScreen             = "\x1B[2J" + "\r"
+	_escMoveCursorTopLeftDef = []byte{27, 91, 72}
+	_escSaveCursorDef        = []byte{27, 55}
+	_escRestoreCursorDef     = []byte{27, 56}
+	_clearLine               = []byte{27, 91, 50, 75, 13}
+	_clearScreen             = []byte{27, 91, 50, 74, 13}
 	//	escClearLineDef =   	  []byte{ 27, 91, '2', 'K' }
 )
 
@@ -81,10 +73,19 @@ func (l *VT100) CreateColorize(text string, f int, b int, mode interfaces.ColorM
 	}
 }
 
-func (l *VT100) CreateMoveCursor(row int, colum int) []byte {
+func (l *VT100) CreateMoveCursor(row int, col int) []byte {
 	//ESC[<L>;<C>H
-	v := fmt.Sprintf("\x1b[%d;%dH", row, colum)
-	return []byte(v)
+	//v := fmt.Sprintf("\x1b[%d;%dH", row, colum)
+	//return []byte(v)
+	// Pre-alloca uno slice con una capacità ragionevole per evitare riallocazioni
+	// \x1b [ r o w ; c o l H -> 7 caratteri + cifre
+	buf := make([]byte, 0, 16)
+	buf = append(buf, 27, 91)
+	buf = strconv.AppendInt(buf, int64(row+1), 10) // +1 perché VT100 è 1-based
+	buf = append(buf, 59)
+	buf = strconv.AppendInt(buf, int64(col+1), 10) // +1 perché VT100 è 1-based
+	buf = append(buf, 72)
+	return buf
 }
 
 // CreateSaveCursor returns the VT100 escape sequence to save the current cursor position.
@@ -120,12 +121,12 @@ func (l *VT100) CreateClearLine(_ string) []byte {
 
 	// CreateClearLine sends the VT100 code for erasing the line followed by a carriage return
 	// to move the cursor back to the beginning of the line
-	return []byte(_clearLine)
+	return _clearLine
 }
 
 // CreateClearScreen returns the VT100 escape sequence for clearing the screen and moving the cursor to the top-left position.
 func (l *VT100) CreateClearScreen() []byte {
-	return []byte(_clearScreen)
+	return _clearScreen
 }
 
 // CreateSetEnterKey updates the rune value to be used as the Enter (Return) key input handler in the VT100 terminal.
