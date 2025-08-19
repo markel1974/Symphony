@@ -11,6 +11,7 @@ type Component struct {
 	surface   *Surface
 	pid       int
 	available bool
+	zIndex    int
 }
 
 // NewComponent initializes and returns a new Component instance using the provided process description and terminal interface.
@@ -23,8 +24,17 @@ func NewComponent(pid int, description string, terminal interfaces.ITerminal, ro
 		pid:       pid,
 		surface:   NewSurface(terminal, rows, columns, caption),
 		available: false,
+		zIndex:    0,
 	}
 	return c
+}
+
+func (c *Component) ZIndex() int {
+	return c.zIndex
+}
+
+func (c *Component) SetZIndex(zIndex int) {
+	c.zIndex = zIndex
 }
 
 func (c *Component) Available() bool {
@@ -50,21 +60,24 @@ func (c *Component) RowMax() int {
 	return c.surface.RowMax()
 }
 
+/*
 // Compile renders the Component's descriptive surface and applies it to the Component's surface.
-func (c *Component) Compile(height int, width int, activePid int) {
+func (c *Component) Compile(height int, width int) {
 	c.surface.Prepare(height, width)
-	c.surface.SetZIndex(0)
+	//c.surface.SetZIndex(0)
 	c.surface.SetSelectionMode(false)
 	if c.surface.interpreted != nil {
-		if c.PID() == activePid {
-			c.surface.SetZIndex(255)
-			c.surface.SetSelectionMode(true)
-		}
+		//if c.PID() == activePid {
+		//	c.surface.SetZIndex(255)
+		//	c.surface.SetSelectionMode(true)
+		//}
 		c.surface.Begin()
 		c.surface.interpreted.Appy(c.surface)
 		c.surface.End()
 	}
 }
+
+*/
 
 // SetInterpretedSurface sets the descriptive surface for the Component.
 func (c *Component) SetInterpretedSurface(surface interfaces.ISurface) {

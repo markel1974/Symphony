@@ -26,7 +26,6 @@ type Surface struct {
 	selection      bool
 	iRows          int
 	iColumns       int
-	zIndex         int
 	cursorRow      int
 	cursorColumn   int
 }
@@ -43,7 +42,6 @@ func NewSurface(terminal interfaces.ITerminal, rows int, columns int, caption st
 		offsetY:      0,
 		rowMax:       0,
 		border:       1,
-		zIndex:       0,
 		interpreted:  nil,
 		cursorRow:    -1,
 		cursorColumn: -1,
@@ -80,7 +78,6 @@ func (s *Surface) Assign(surface *Surface) {
 	s.offsetY = surface.offsetY
 	s.border = surface.border
 	s.selection = surface.selection
-	s.zIndex = surface.zIndex
 }
 
 // SetInterpretedSurface sets the descriptive surface for the Surface.
@@ -105,16 +102,6 @@ func (s *Surface) SetOption(option rune, value float64) {
 			s.scale = scale
 		}
 	}
-}
-
-// SetZIndex updates the z-index of the Surface, which determines its stacking order relative to other surfaces.
-func (s *Surface) SetZIndex(z int) {
-	s.zIndex = z
-}
-
-// ZIndex retrieves the current z-index value of the Surface, representing its stacking order.
-func (s *Surface) ZIndex() int {
-	return s.zIndex
 }
 
 // SetRowMax sets the maximum allowed rows for the Surface instance to the specified value.

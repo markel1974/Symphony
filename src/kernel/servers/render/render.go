@@ -3,6 +3,7 @@ package render
 import (
 	"bytes"
 	"log"
+	"math"
 	"sort"
 
 	"github.com/markel1974/c64emu/src/kernel/adaptiveticker"
@@ -215,37 +216,29 @@ func (c *Render) handlePaintApply(msg interfaces.IMessage) {
 		return
 	}
 	component.SetInterpretedSurface(mt.Surface())
-
 	fullPaint := c.fullPaint
 	c.fullPaint = false
 	var foreground *InterpretedSurface = nil
-	var surfaces []*Surface
-
-	for _, process := range c.running {
-		surface := process.Surface()
-		if c.foreground != nil {
-			if c.foreground.PID() == process.PID() {
-				foreground = surface.GetInterpretedSurface()
-			}
-		}
-		if process.PID() == c.windowSelector.PID() {
-			surface.SetZIndex(255)
-			surface.SetSelectionMode(true)
-		} else {
-			surface.SetZIndex(0)
-			surface.SetSelectionMode(false)
-		}
-		surfaces = append(surfaces, surface)
+	activePid := adaptiveticker.UnknownId
+	hasSelection := false
+	if c.windowSelector.PID() != adaptiveticker.UnknownId {
+		activePid = c.windowSelector.PID()
+		hasSelection = true
+	} else if c.foreground != nil {
+		activePid = c.foreground.PID()
 	}
-
-	sort.SliceStable(surfaces, func(i, j int) bool {
-		return surfaces[i].ZIndex() < surfaces[j].ZIndex()
-	})
+	if activePid == adaptiveticker.UnknownId {
+		if z, _ := c.running[c.pid]; z != nil {
+			foreground = z.surface.GetInterpretedSurface()
+		}
+	}
+	running := c.processSorter(activePid, hasSelection, c.running)
 
 	var lines bytes.Buffer
 	c.surface.Prepare(c.height, c.width)
 
-	for _, surface := range surfaces {
+	for _, process := range running {
+		surface := process.Surface()
 		interpretedSurface := surface.GetInterpretedSurface()
 		if interpretedSurface != nil {
 			c.surface.Assign(surface)
@@ -519,4 +512,24 @@ func (c *Render) doWrite(data string, eol bool) {
 	if eol {
 		_, _ = c.driver.Write([]byte(eolDef))
 	}
+}
+
+// processSorter sorts the processes by their z-index and returns a slice of processes in the correct order.
+func (c *Render) processSorter(activePid int, hasSelection bool, components map[int]*Component) []*Component {
+	running := make([]*Component, 0, len(components))
+	for _, process := range c.running {
+		process.SetZIndex(process.PID())
+		process.surface.SetSelectionMode(false)
+		if activePid == process.PID() {
+			process.SetZIndex(math.MaxInt)
+			if hasSelection {
+				process.surface.SetSelectionMode(true)
+			}
+		}
+		running = append(running, process)
+	}
+	sort.SliceStable(running, func(i, j int) bool {
+		return running[i].ZIndex() < running[j].ZIndex()
+	})
+	return running
 }
