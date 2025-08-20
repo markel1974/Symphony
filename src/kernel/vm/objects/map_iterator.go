@@ -10,7 +10,7 @@ const (
 // The embedded Object provides default implementations for methods from the IObject interface.
 // The internal state includes the map (values), keys (keys), current position index (index), and total keys length (length).
 type MapIterator struct {
-	Object
+	*Object
 	values map[string]IObject
 	keys   []string
 	index  int
@@ -18,12 +18,13 @@ type MapIterator struct {
 }
 
 // NewMapIterator creates and returns a new instance of MapIterator.
-func NewMapIterator(v map[string]IObject) *MapIterator {
+func _newMapIterator(factory *Factory, v map[string]IObject) *MapIterator {
 	var keys []string
 	for k := range v {
 		keys = append(keys, k)
 	}
 	return &MapIterator{
+		Object: factory.NewObject(),
 		values: v,
 		keys:   keys,
 		length: len(keys),
@@ -33,12 +34,9 @@ func NewMapIterator(v map[string]IObject) *MapIterator {
 
 // Copy creates and returns a new instance of MapIterator, duplicating its current state.
 func (i *MapIterator) Copy() IObject {
-	return &MapIterator{
-		values: i.values,
-		keys:   i.keys,
-		index:  i.index,
-		length: i.length,
-	}
+	ret := i.Factory().NewMapIterator(i.values)
+	ret.index = i.index
+	return ret
 }
 
 // TypeName returns the type name of the MapIterator as a string.
@@ -70,7 +68,7 @@ func (i *MapIterator) Next() bool {
 // Key retrieves the key of the current element in the iteration as an IObject.
 func (i *MapIterator) Key() IObject {
 	k := i.keys[i.index-1]
-	return NewStringNoSize(k)
+	return i.Factory().NewStringNoSize(k)
 }
 
 // Value retrieves the values of the current element in the iteration based on the iterator's current position.

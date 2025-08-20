@@ -16,13 +16,16 @@ const (
 // Bytes represents a data type for handling a sequence of bytes.
 // It embeds Object and provides behaviors like indexing, iteration, and binary operations.
 type Bytes struct {
-	Object
+	*Object
 	values []byte
 }
 
 // NewBytes creates and returns a new Bytes object initialized with the provided byte slice.
-func NewBytes(value []byte) *Bytes {
-	return &Bytes{values: value}
+func _newBytes(factory *Factory, value []byte) *Bytes {
+	return &Bytes{
+		Object: factory.NewObject(),
+		values: value,
+	}
 }
 
 // Length returns the length of the Bytes object, which is the number of bytes in the underlying byte slice.
@@ -56,7 +59,7 @@ func (o *Bytes) BinaryOp(op Operator, in IObject) (IObject, error) {
 			if len(o.values)+len(rhs.values) > MaxBytesLen {
 				return nil, ErrBytesLimit
 			}
-			return &Bytes{values: append(o.values, rhs.values...)}, nil
+			return o.Factory().NewBytes(append(o.values, rhs.values...)), nil
 		}
 	default:
 		return nil, ErrInvalidOperator
@@ -66,7 +69,7 @@ func (o *Bytes) BinaryOp(op Operator, in IObject) (IObject, error) {
 
 // Copy creates and returns a new `Bytes` object with a duplicated values slice, ensuring no reference sharing.
 func (o *Bytes) Copy() IObject {
-	return &Bytes{values: append([]byte{}, o.values...)}
+	return o.Factory().NewBytes(append([]byte{}, o.values...))
 }
 
 // Boolean determines if the Bytes object is considered falsy by checking if it contains no values. Returns true if empty.
@@ -92,10 +95,10 @@ func (o *Bytes) IndexGet(index IObject) (res IObject, err error) {
 	}
 	idxVal := int(intIdx.value)
 	if idxVal < 0 || idxVal >= len(o.values) {
-		res = UndefinedValue
+		res = o.Factory().UndefinedValue()
 		return
 	}
-	res = NewInt(int64(o.values[idxVal]))
+	res = o.Factory().NewInt(int64(o.values[idxVal]))
 	return
 }
 
@@ -106,5 +109,5 @@ func (o *Bytes) CanIterate() bool {
 
 // Iterate returns an iterator for the Bytes object, enabling sequential access to its byte values.
 func (o *Bytes) Iterate() IIterator {
-	return NewBytesIterator(o.values)
+	return o.Factory().NewBytesIterator(o.values)
 }

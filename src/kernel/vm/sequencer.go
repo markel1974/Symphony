@@ -8,63 +8,66 @@ import (
 // It provides methods for creating and populating the sequencer with specific opcode implementations.
 // The container field stores the IOpExecutor instances, indexed by their opcode with masking applied for efficiency.
 type Sequencer struct {
+	op        *bytecode.Opcodes
 	container []IOpExecutor
 }
 
 // NewSequencer initializes and returns a new instance of Sequencer.
-func NewSequencer() *Sequencer {
-	return &Sequencer{}
+func NewSequencer(op *bytecode.Opcodes) *Sequencer {
+	return &Sequencer{
+		op: op,
+	}
 }
 
 // Create initializes the internal container with default operation executors and returns it.
 func (ds *Sequencer) Create() []IOpExecutor {
 	ds.container = make([]IOpExecutor, bytecode.OpcodesLen)
 	for idx := range ds.container {
-		ds.container[idx] = NewOpUnknown()
+		ds.container[idx] = NewOpUnknown(ds.op)
 	}
-	ds.setSequence(NewOpConstant())
-	ds.setSequence(NewOpNull())
-	ds.setSequence(NewOpBinary())
-	ds.setSequence(NewOpReferences())
-	ds.setSequence(NewOpEqual())
-	ds.setSequence(NewOpNotEqual())
-	ds.setSequence(NewOpPop())
-	ds.setSequence(NewOpTrue())
-	ds.setSequence(NewOpFalse())
-	ds.setSequence(NewOpLNot())
-	ds.setSequence(NewOpBComplement())
-	ds.setSequence(NewOpMinus())
-	ds.setSequence(NewOpJumpFalsy())
-	ds.setSequence(NewOpAndJump())
-	ds.setSequence(NewOpOrJump())
-	ds.setSequence(NewOpJump())
-	ds.setSequence(NewOpSetGlobal())
-	ds.setSequence(NewOpSetSelGlobal())
-	ds.setSequence(NewOpGetGlobal())
-	ds.setSequence(NewOpArray())
-	ds.setSequence(NewOpMap())
-	ds.setSequence(NewOpStruct())
-	ds.setSequence(NewOpError())
-	ds.setSequence(NewOpImmutable())
-	ds.setSequence(NewOpIndex())
-	ds.setSequence(NewOpSliceIndex())
-	ds.setSequence(NewOpCall())
-	ds.setSequence(NewOpReturn())
-	ds.setSequence(NewOpDefineLocal())
-	ds.setSequence(NewOpSetLocal())
-	ds.setSequence(NewOpSetSelLocal())
-	ds.setSequence(NewOpGetLocal())
-	ds.setSequence(NewOpClosure())
-	ds.setSequence(NewOpGetFreePtr())
-	ds.setSequence(NewOpGetFree())
-	ds.setSequence(NewOpSetFree())
-	ds.setSequence(NewOpGetLocalPtr())
-	ds.setSequence(NewOpSetSelFree())
-	ds.setSequence(NewOpIteratorInit())
-	ds.setSequence(NewOpIteratorNext())
-	ds.setSequence(NewOpIteratorKey())
-	ds.setSequence(NewOpIteratorValue())
-	ds.setSequence(NewOpSuspend())
+	ds.setSequence(NewOpConstant(ds.op))
+	ds.setSequence(NewOpNull(ds.op))
+	ds.setSequence(NewOpBinary(ds.op))
+	ds.setSequence(NewOpReferences(ds.op))
+	ds.setSequence(NewOpEqual(ds.op))
+	ds.setSequence(NewOpNotEqual(ds.op))
+	ds.setSequence(NewOpPop(ds.op))
+	ds.setSequence(NewOpTrue(ds.op))
+	ds.setSequence(NewOpFalse(ds.op))
+	ds.setSequence(NewOpLNot(ds.op))
+	ds.setSequence(NewOpBComplement(ds.op))
+	ds.setSequence(NewOpMinus(ds.op))
+	ds.setSequence(NewOpJumpFalsy(ds.op))
+	ds.setSequence(NewOpAndJump(ds.op))
+	ds.setSequence(NewOpOrJump(ds.op))
+	ds.setSequence(NewOpJump(ds.op))
+	ds.setSequence(NewOpSetGlobal(ds.op))
+	ds.setSequence(NewOpSetSelGlobal(ds.op))
+	ds.setSequence(NewOpGetGlobal(ds.op))
+	ds.setSequence(NewOpArray(ds.op))
+	ds.setSequence(NewOpMap(ds.op))
+	ds.setSequence(NewOpStruct(ds.op))
+	ds.setSequence(NewOpError(ds.op))
+	ds.setSequence(NewOpImmutable(ds.op))
+	ds.setSequence(NewOpIndex(ds.op))
+	ds.setSequence(NewOpSliceIndex(ds.op))
+	ds.setSequence(NewOpCall(ds.op))
+	ds.setSequence(NewOpReturn(ds.op))
+	ds.setSequence(NewOpDefineLocal(ds.op))
+	ds.setSequence(NewOpSetLocal(ds.op))
+	ds.setSequence(NewOpSetSelLocal(ds.op))
+	ds.setSequence(NewOpGetLocal(ds.op))
+	ds.setSequence(NewOpClosure(ds.op))
+	ds.setSequence(NewOpGetFreePtr(ds.op))
+	ds.setSequence(NewOpGetFree(ds.op))
+	ds.setSequence(NewOpSetFree(ds.op))
+	ds.setSequence(NewOpGetLocalPtr(ds.op))
+	ds.setSequence(NewOpSetSelFree(ds.op))
+	ds.setSequence(NewOpIteratorInit(ds.op))
+	ds.setSequence(NewOpIteratorNext(ds.op))
+	ds.setSequence(NewOpIteratorKey(ds.op))
+	ds.setSequence(NewOpIteratorValue(ds.op))
+	ds.setSequence(NewOpSuspend(ds.op))
 	return ds.container
 }
 

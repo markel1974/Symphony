@@ -11,13 +11,16 @@ const (
 
 // Array represents a collection of IObject elements, providing methods for manipulation, indexing, and iteration.
 type Array struct {
-	Object
+	*Object
 	values []IObject
 }
 
 // NewArray creates and returns a new Array object initialized with the provided slice of IObject elements.
-func NewArray(value []IObject) *Array {
-	return &Array{values: value}
+func _newArray(factory *Factory, value []IObject) *Array {
+	return &Array{
+		Object: factory.NewObject(),
+		values: value,
+	}
 }
 
 // TypeName returns the string "array", representing the type name of the Array object.
@@ -79,7 +82,7 @@ func (o *Array) BinaryOp(op Operator, in IObject) (IObject, error) {
 			if len(rhs.values) == 0 {
 				return o, nil
 			}
-			return &Array{values: append(o.values, rhs.values...)}, nil
+			return o.Factory().NewArray(append(o.values, rhs.values...)), nil
 		default:
 			return nil, ErrInvalidOperator
 		}
@@ -93,7 +96,7 @@ func (o *Array) Copy() IObject {
 	for _, elem := range o.values {
 		c = append(c, elem.Copy())
 	}
-	return NewArray(c)
+	return o.Factory().NewArray(c)
 }
 
 // Boolean returns true if the array is empty, otherwise false.
@@ -132,7 +135,7 @@ func (o *Array) IndexGet(index IObject) (res IObject, err error) {
 	}
 	idxVal := int(intIdx.value)
 	if idxVal < 0 || idxVal >= len(o.values) {
-		res = UndefinedValue
+		res = o.Factory().UndefinedValue()
 		return
 	}
 	res = o.values[idxVal]
@@ -141,7 +144,7 @@ func (o *Array) IndexGet(index IObject) (res IObject, err error) {
 
 // IndexSet assigns a given values to the specified index in the array, returning an error if the operation is invalid.
 func (o *Array) IndexSet(index IObject, value IObject) (err error) {
-	idx, ok := ToInt64(index)
+	idx, ok := o.Factory().ToInt64(index)
 	if !ok {
 		err = ErrInvalidIndexType
 		return
@@ -162,5 +165,5 @@ func (o *Array) CanIterate() bool {
 
 // Iterate returns an IIterator for the Array instance, allowing sequential access to its elements.
 func (o *Array) Iterate() IIterator {
-	return NewArrayIterator(o.values)
+	return o.Factory().NewArrayIterator(o.values)
 }

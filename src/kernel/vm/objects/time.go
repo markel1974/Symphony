@@ -10,13 +10,16 @@ const (
 
 // Time represents a custom object encapsulating a Go time.Time values with extended behaviors and operations.
 type Time struct {
-	Object
+	*Object
 	value time.Time
 }
 
 // NewTime creates a new instance of Time wrapping the provided time.Time values.
-func NewTime(value time.Time) *Time {
-	return &Time{value: value}
+func _newTime(factory *Factory, value time.Time) *Time {
+	return &Time{
+		Object: factory.NewObject(),
+		value:  value,
+	}
 }
 
 // Value returns the underlying time.Time values of the Time object.
@@ -44,39 +47,39 @@ func (o *Time) BinaryOp(op Operator, in IObject) (IObject, error) {
 			if rhs.value == 0 {
 				return o, nil
 			}
-			return &Time{value: o.value.Add(time.Duration(rhs.value))}, nil
+			return o.Factory().NewTime(o.value.Add(time.Duration(rhs.value))), nil
 		case OperatorSub:
 			if rhs.value == 0 {
 				return o, nil
 			}
-			return &Time{value: o.value.Add(time.Duration(-rhs.value))}, nil
+			return o.Factory().NewTime(o.value.Add(time.Duration(-rhs.value))), nil
 		default:
 			return nil, ErrInvalidOperator
 		}
 	case *Time:
 		switch op {
 		case OperatorSub:
-			return &Int{value: int64(o.value.Sub(rhs.value))}, nil
+			return o.Factory().NewInt(int64(o.value.Sub(rhs.value))), nil
 		case OperatorLess:
 			if o.value.Before(rhs.value) {
-				return TrueValue, nil
+				return o.Factory().TrueValue(), nil
 			}
-			return FalseValue, nil
+			return o.Factory().FalseValue(), nil
 		case OperatorGreater:
 			if o.value.After(rhs.value) {
-				return TrueValue, nil
+				return o.Factory().TrueValue(), nil
 			}
-			return FalseValue, nil
+			return o.Factory().FalseValue(), nil
 		case OperatorLessEq:
 			if o.value.Equal(rhs.value) || o.value.Before(rhs.value) {
-				return TrueValue, nil
+				return o.Factory().TrueValue(), nil
 			}
-			return FalseValue, nil
+			return o.Factory().FalseValue(), nil
 		case OperatorGreaterEq:
 			if o.value.Equal(rhs.value) || o.value.After(rhs.value) {
-				return TrueValue, nil
+				return o.Factory().TrueValue(), nil
 			}
-			return FalseValue, nil
+			return o.Factory().FalseValue(), nil
 		default:
 			return nil, ErrInvalidOperator
 		}
@@ -86,7 +89,7 @@ func (o *Time) BinaryOp(op Operator, in IObject) (IObject, error) {
 
 // Copy returns a new instance of the Time object with the same internal time values, duplicating its state.
 func (o *Time) Copy() IObject {
-	return &Time{value: o.value}
+	return o.Factory().NewTime(o.value)
 }
 
 // Boolean returns true if the Time object's values is zero (indicating it is uninitialized or empty), otherwise false.

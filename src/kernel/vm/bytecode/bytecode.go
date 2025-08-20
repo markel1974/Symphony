@@ -33,43 +33,24 @@ func init() {
 	gob.Register(&objects.FuncPackage{})
 }
 
-// CompileInstruction returns a bytecode for an opcode and the operands.
-func CompileInstruction(opcode Opcode, operands ...int) []byte {
-	numOperands := OpcodeToOperands(opcode)
-	totalLen := 1
-	for _, w := range numOperands {
-		totalLen += w
-	}
-	instruction := make([]byte, totalLen)
-	instruction[0] = opcode
-	offset := 1
-	for i, o := range operands {
-		width := numOperands[i]
-		switch width {
-		case 1:
-			instruction[offset] = byte(o)
-		case 2:
-			n := uint16(o)
-			instruction[offset] = byte(n >> 8)
-			instruction[offset+1] = byte(n)
-		}
-		offset += width
-	}
-	return instruction
-}
-
 // Bytecode represents a construct that encapsulates compiled code, associated constants, and object references.
 // It aggregates information like source files, constant pool, and referenced objects required for execution.
 type Bytecode struct {
+	factory    *objects.Factory
+	opcodes    *Opcodes
 	files      *Files
 	constants  []objects.IObject
 	references []objects.IObject
 }
 
 // NewBytecode creates and returns a new instance of Bytecode with an initialized Files object.
-func NewBytecode() *Bytecode {
+func NewBytecode(factory *objects.Factory, op *Opcodes, constants []objects.IObject, references []objects.IObject) *Bytecode {
 	return &Bytecode{
-		files: NewFiles(),
+		factory:    factory,
+		opcodes:    op,
+		files:      NewFiles(),
+		constants:  constants,
+		references: references,
 	}
 }
 
@@ -98,16 +79,6 @@ func (b *Bytecode) Constants() []objects.IObject {
 // References retrieves the list of IObject references stored in the Bytecode.
 func (b *Bytecode) References() []objects.IObject {
 	return b.references
-}
-
-// SetConstants updates the constants field of the Bytecode with a new slice of IObject.
-func (b *Bytecode) SetConstants(constants []objects.IObject) {
-	b.constants = constants
-}
-
-// SetReferences sets the references field of the Bytecode to the provided slice of objects.
-func (b *Bytecode) SetReferences(references []objects.IObject) {
-	b.references = references
 }
 
 // Encode serializes the Bytecode object and writes it to the provided io.Writer in gob format. Returns an error if encoding fails.
@@ -261,11 +232,11 @@ func (b *Bytecode) fixDecodedObject(o objects.IObject, loader ILoader) (objects.
 	switch o := o.(type) {
 	case *objects.Bool:
 		if o.Boolean() {
-			return objects.FalseValue, nil
+			return b.factory.FalseValue(), nil
 		}
-		return objects.TrueValue, nil
+		return b.factory.TrueValue(), nil
 	case *objects.Undefined:
-		return objects.UndefinedValue, nil
+		return b.factory.UndefinedValue(), nil
 	case *objects.Array:
 		for i, v := range o.Values() {
 			fv, err := b.fixDecodedObject(v, loader)
@@ -318,7 +289,7 @@ func (b *Bytecode) updateConstIndexes(instances []byte, indexMap map[int]int) er
 	i := 0
 	for i < len(instances) {
 		op := instances[i]
-		offset := OpcodeToOperandsOffset(op)
+		offset := b.opcodes.OpcodeToOperandsOffset(op)
 		switch op {
 		case OpConstant:
 			curIdx := int(instances[i+2]) | int(instances[i+1])<<8
@@ -326,7 +297,7 @@ func (b *Bytecode) updateConstIndexes(instances []byte, indexMap map[int]int) er
 			if !ok {
 				return fmt.Errorf("constant index not found: %d", curIdx)
 			}
-			copy(instances[i:], CompileInstruction(op, newIdx))
+			copy(instances[i:], b.opcodes.CompileInstruction(op, newIdx))
 		case OpClosure:
 			curIdx := int(instances[i+2]) | int(instances[i+1])<<8
 			numFree := int(instances[i+3])
@@ -334,9 +305,9 @@ func (b *Bytecode) updateConstIndexes(instances []byte, indexMap map[int]int) er
 			if !ok {
 				return fmt.Errorf("constant index not found: %d", curIdx)
 			}
-			copy(instances[i:], CompileInstruction(op, newIdx, numFree))
+			copy(instances[i:], b.opcodes.CompileInstruction(op, newIdx, numFree))
 		default:
-			return fmt.Errorf("unsupported opcode: %s", OpcodeNames(op))
+			return fmt.Errorf("unsupported opcode: %s", b.opcodes.OpcodeNames(op))
 		}
 		i += 1 + offset
 	}

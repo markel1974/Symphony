@@ -22,38 +22,43 @@ const (
 
 // Compiler represents a structure to manage the compilation process, including scopes and associated token file sets.
 type Compiler struct {
+	factory *objects.Factory
 	scopes  *Scopes
 	fileSet *token.FileSet
 }
 
 // New creates and returns a new instance of Compiler with initialized scopes using a standard library loader.
-func New() *Compiler {
-	loader := sdk.NewLoader()
+func New(factory *objects.Factory) *Compiler {
+	loader := sdk.NewLoader(factory)
+	op := bytecode.NewOpcodes(factory)
 	c := &Compiler{
-		scopes: NewScopes(loader),
+		factory: factory,
+		scopes:  NewScopes(factory, op, loader),
 	}
 	return c
 }
 
 // Compile parses the provided source file and compiles it into bytecode. Returns compiled bytecode or an error.
-func (c *Compiler) Compile(filename string, source any) (*bytecode.Bytecode, error) {
+func (c *Compiler) Compile(filename string, source any) error {
 	c.fileSet = token.NewFileSet()
 	astFile, err := parser.ParseFile(c.fileSet, filename, source, 0)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	if err = c.compile(astFile); err != nil {
-		return nil, err
+		return err
 	}
-	return c.bytecode()
+	return nil
 }
 
-// bytecode generates and returns a *bytecode.Bytecode containing compiled constants and references. It may return an error.
-func (c *Compiler) bytecode() (*bytecode.Bytecode, error) {
-	bc := bytecode.NewBytecode()
-	bc.SetConstants(c.scopes.ConstantsRetrieve())
-	bc.SetReferences(c.scopes.ReferencesRetrieve())
-	return bc, nil
+// Constants retrieves a slice of IObject containing all constants stored in the current compiler scopes.
+func (c *Compiler) Constants() []objects.IObject {
+	return c.scopes.ConstantsRetrieve()
+}
+
+// References retrieves a list of IObject references from the current compiler scope.
+func (c *Compiler) References() []objects.IObject {
+	return c.scopes.ReferencesRetrieve()
 }
 
 // Print writes the content of the internal scopes to the provided writer, typically for debugging or inspection.
@@ -187,7 +192,7 @@ func (c *Compiler) doFile(node *ast.File) error {
 		}
 
 		// function pre-definition
-		placeholder := objects.NewFunctionCompiled(fnName, nil, 0, 0, false, nil, nil)
+		placeholder := c.factory.NewFuncCompiled(fnName, nil, 0, 0, false, nil, nil)
 		funcIndexes[fnName] = c.scopes.ConstantsAdd(fnName, placeholder)
 		receiverNames, err := GetReceivers(fn.Type.Results)
 		if err != nil {
@@ -273,7 +278,7 @@ func (c *Compiler) compileFuncBody(node *ast.FuncDecl, objName string, mangledNa
 	if node.Recv != nil && len(node.Recv.List) > 0 {
 		nParams++
 	}
-	compiledFn := objects.NewFunctionCompiled(mangledName, code, nLocals, nParams, false, nil, freeSymbols)
+	compiledFn := c.factory.NewFuncCompiled(mangledName, code, nLocals, nParams, false, nil, freeSymbols)
 	if err = c.scopes.ConstantsSetIndex(constIndex, compiledFn); err != nil {
 		return err
 	}
@@ -396,7 +401,7 @@ func (c *Compiler) doAssignStmt(node *ast.AssignStmt) error {
 			return fmt.Errorf("undefined variable: %s", receiverIdent.Name)
 		}
 		fieldName := lhs.Sel.Name
-		keyConst := c.scopes.ConstantsAddOrGet(objects.NewStringNoSize(fieldName))
+		keyConst := c.scopes.ConstantsAddOrGet(c.factory.NewStringNoSize(fieldName))
 		if _, err := c.scopes.Emit(bytecode.OpConstant, keyConst); err != nil {
 			return err
 		}
@@ -436,7 +441,7 @@ func (c *Compiler) doCallExpr(node *ast.CallExpr) error {
 			found := false
 			fnIndex, found = c.scopes.ReferencesGet(fnName)
 			if !found {
-				attrArray := objects.NewArray([]objects.IObject{objects.NewStringNoSize(receiverIdent.Name), objects.NewStringNoSize(selExpr.Sel.Name)})
+				attrArray := c.factory.NewArray([]objects.IObject{c.factory.NewStringNoSize(receiverIdent.Name), c.factory.NewStringNoSize(selExpr.Sel.Name)})
 				fnIndex = c.scopes.ReferencesAdd(fnName, attrArray)
 			}
 			for _, arg := range node.Args {
@@ -605,7 +610,7 @@ func (c *Compiler) doCompositeLit(node *ast.CompositeLit) error {
 		for idx := range symbol.Fields {
 			fieldName := symbol.Fields[idx].Name()
 			fieldNode := symbol.Fields[idx].Node()
-			keyConst := c.scopes.ConstantsAddOrGet(objects.NewStringNoSize(fieldName))
+			keyConst := c.scopes.ConstantsAddOrGet(c.factory.NewStringNoSize(fieldName))
 			if _, err := c.scopes.Emit(bytecode.OpConstant, keyConst); err != nil {
 				return err
 			}
@@ -777,7 +782,7 @@ func (c *Compiler) doIncDecStmt(node *ast.IncDecStmt) error {
 		return err
 	}
 	// adds constant '1' to the stack
-	constIndex := c.scopes.ConstantsAdd("", objects.NewInt(1))
+	constIndex := c.scopes.ConstantsAdd("", c.factory.NewInt(1))
 	if _, err := c.scopes.Emit(bytecode.OpConstant, constIndex); err != nil {
 		return err
 	}
@@ -1079,7 +1084,7 @@ func (c *Compiler) doSelectorExpr(node *ast.SelectorExpr) error {
 		cacheKey := GetMangledName(receiverIdent.Name, node.Sel.Name)
 		nameIndex, found := c.scopes.ReferencesGet(cacheKey)
 		if !found {
-			attrArray := objects.NewArray([]objects.IObject{objects.NewStringNoSize(receiverIdent.Name), objects.NewStringNoSize(node.Sel.Name)})
+			attrArray := c.factory.NewArray([]objects.IObject{c.factory.NewStringNoSize(receiverIdent.Name), c.factory.NewStringNoSize(node.Sel.Name)})
 			nameIndex = c.scopes.ReferencesAdd(cacheKey, attrArray)
 		}
 		if _, err := c.scopes.Emit(bytecode.OpReferences, nameIndex); err != nil {
@@ -1090,7 +1095,7 @@ func (c *Compiler) doSelectorExpr(node *ast.SelectorExpr) error {
 			return err
 		}
 		fieldName := node.Sel.Name
-		keyConst := c.scopes.ConstantsAddOrGet(objects.NewStringNoSize(fieldName))
+		keyConst := c.scopes.ConstantsAddOrGet(c.factory.NewStringNoSize(fieldName))
 		if _, err := c.scopes.Emit(bytecode.OpConstant, keyConst); err != nil {
 			return err
 		}

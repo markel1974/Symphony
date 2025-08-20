@@ -19,24 +19,26 @@ const (
 // This type embeds Object and supports operations like indexing, iteration, comparison, and copying.
 // It implements IObject and provides a richer functionality for string manipulation within the runtime system.
 type String struct {
-	Object
+	*Object
 	value   string
 	runeStr []rune
 }
 
 // NewString creates and returns a new String object initialized with the provided string values.
-func NewString(value string) (*String, error) {
+func _newString(factory *Factory, value string) (*String, error) {
 	if len(value) > MaxStringLen {
 		return nil, ErrStringLimit
 	}
 	return &String{
-		value: value,
+		Object: factory.NewObject(),
+		value:  value,
 	}, nil
 }
 
-func NewStringNoSize(value string) *String {
+func _newStringNoSize(factory *Factory, value string) *String {
 	return &String{
-		value: value,
+		Object: factory.NewObject(),
+		value:  value,
 	}
 }
 
@@ -71,45 +73,45 @@ func (o *String) BinaryOp(op Operator, rhs IObject) (IObject, error) {
 			if len(o.value)+len(rhs.value) > MaxStringLen {
 				return nil, ErrStringLimit
 			}
-			return &String{value: o.value + rhs.value}, nil
+			return o.Factory().NewString(o.value + rhs.value)
 		default:
 			rhsStr := rhs.String()
 			if len(o.value)+len(rhsStr) > MaxStringLen {
 				return nil, ErrStringLimit
 			}
-			return &String{value: o.value + rhsStr}, nil
+			return o.Factory().NewString(o.value + rhsStr)
 		}
 	case OperatorLess:
 		switch rhs := rhs.(type) {
 		case *String:
 			if o.value < rhs.value {
-				return TrueValue, nil
+				return o.Factory().TrueValue(), nil
 			}
-			return FalseValue, nil
+			return o.Factory().FalseValue(), nil
 		}
 	case OperatorLessEq:
 		switch rhs := rhs.(type) {
 		case *String:
 			if o.value <= rhs.value {
-				return TrueValue, nil
+				return o.Factory().TrueValue(), nil
 			}
-			return FalseValue, nil
+			return o.Factory().FalseValue(), nil
 		}
 	case OperatorGreater:
 		switch rhs := rhs.(type) {
 		case *String:
 			if o.value > rhs.value {
-				return TrueValue, nil
+				return o.Factory().TrueValue(), nil
 			}
-			return FalseValue, nil
+			return o.Factory().FalseValue(), nil
 		}
 	case OperatorGreaterEq:
 		switch rhs := rhs.(type) {
 		case *String:
 			if o.value >= rhs.value {
-				return TrueValue, nil
+				return o.Factory().TrueValue(), nil
 			}
-			return FalseValue, nil
+			return o.Factory().FalseValue(), nil
 		}
 	default:
 		return nil, ErrInvalidOperator
@@ -124,7 +126,7 @@ func (o *String) Boolean() bool {
 
 // Copy creates and returns a new String instance with the same values as the original.
 func (o *String) Copy() IObject {
-	return &String{value: o.value}
+	return o.Factory().NewStringNoSize(o.value)
 }
 
 // Equals checks whether the current String object is equal to the provided IObject by comparing their values.
@@ -138,22 +140,19 @@ func (o *String) Equals(x IObject) bool {
 
 // IndexGet retrieves the character at the specified index from the String object.
 // Returns an error if the index is not of type Int or is out of bounds.
-func (o *String) IndexGet(index IObject) (res IObject, err error) {
+func (o *String) IndexGet(index IObject) (IObject, error) {
 	intIdx, ok := index.(*Int)
 	if !ok {
-		err = ErrInvalidIndexType
-		return
+		return nil, ErrInvalidIndexType
 	}
 	idxVal := int(intIdx.value)
 	if o.runeStr == nil {
 		o.runeStr = []rune(o.value)
 	}
 	if idxVal < 0 || idxVal >= len(o.runeStr) {
-		res = UndefinedValue
-		return
+		return o.Factory().UndefinedValue(), nil
 	}
-	res = &Char{value: o.runeStr[idxVal]}
-	return
+	return o.Factory().NewChar(o.runeStr[idxVal]), nil
 }
 
 // CanIterate checks if the String object supports iteration and always returns true.
@@ -166,5 +165,5 @@ func (o *String) Iterate() IIterator {
 	if o.runeStr == nil {
 		o.runeStr = []rune(o.value)
 	}
-	return NewStringIterator(o.runeStr)
+	return o.Factory().NewStringIterator(o.runeStr)
 }

@@ -12,13 +12,16 @@ const (
 // ArrayImmutable represents an array that cannot be modified after creation.
 // Implements IObject and supports iteration, comparison, and copying.
 type ArrayImmutable struct {
-	Object
+	*Object
 	values []IObject
 }
 
 // NewArrayImmutable creates a new ArrayImmutable instance with the given slice of IObject, ensuring it is immutable.
-func NewArrayImmutable(value []IObject) *ArrayImmutable {
-	return &ArrayImmutable{values: value}
+func _newArrayImmutable(factory *Factory, value []IObject) *ArrayImmutable {
+	return &ArrayImmutable{
+		Object: factory.NewObject(),
+		values: value,
+	}
 }
 
 // Values returns the underlying slice of IObject stored in the ArrayImmutable, ensuring immutability.
@@ -58,7 +61,7 @@ func (o *ArrayImmutable) BinaryOp(op Operator, rhs IObject) (IObject, error) {
 	if ia, ok := rhs.(*ArrayImmutable); ok {
 		switch op {
 		case OperatorAdd:
-			return NewArray(append(o.values, ia.values...)), nil
+			return o.Factory().NewArray(append(o.values, ia.values...)), nil
 		default:
 			return nil, ErrInvalidOperator
 		}
@@ -72,7 +75,7 @@ func (o *ArrayImmutable) Copy() IObject {
 	for _, elem := range o.values {
 		c = append(c, elem.Copy())
 	}
-	return NewArray(c)
+	return o.Factory().NewArray(c)
 }
 
 // Boolean checks if the ArrayImmutable is considered falsy, returning true if its Value slice has no elements.
@@ -111,7 +114,7 @@ func (o *ArrayImmutable) IndexGet(index IObject) (res IObject, err error) {
 	}
 	idxVal := int(intIdx.value)
 	if idxVal < 0 || idxVal >= len(o.values) {
-		res = UndefinedValue
+		res = o.Factory().UndefinedValue()
 		return
 	}
 	res = o.values[idxVal]
@@ -125,5 +128,5 @@ func (o *ArrayImmutable) CanIterate() bool {
 
 // Iterate returns an IIterator to traverse the elements of the ArrayImmutable sequentially.
 func (o *ArrayImmutable) Iterate() IIterator {
-	return NewArrayIterator(o.values)
+	return o.Factory().NewArrayIterator(o.values)
 }

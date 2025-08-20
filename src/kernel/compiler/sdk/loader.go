@@ -47,32 +47,34 @@ type BuiltinWrapper struct {
 
 // Loader represents a mechanism to manage and load packages and built-in objects in the system.
 type Loader struct {
+	factory  *objects.Factory
 	packages map[string]*Package
 	builtin  []*BuiltinWrapper
 }
 
 // NewLoader initializes and returns a new Loader instance with predefined standard packages and built-in functions.
-func NewLoader() *Loader {
-	builtin := NewBuiltinFunctions().Package()
+func NewLoader(factory *objects.Factory) *Loader {
+	builtin := NewBuiltinFunctions(factory).Package()
 	packages := []*Package{
-		NewErrors().Package,
-		NewFmt().Package,
-		NewMath().Package,
-		NewStrings().Package,
-		NewStrconv().Package,
-		NewRegexp().Package,
-		NewTime().Package,
-		NewRand().Package,
-		NewJson().Package,
-		NewBase64().Package,
-		NewHex().Package,
+		NewErrors(factory).Package,
+		NewFmt(factory).Package,
+		NewMath(factory).Package,
+		NewStrings(factory).Package,
+		NewStrconv(factory).Package,
+		NewRegexp(factory).Package,
+		NewTime(factory).Package,
+		NewRand(factory).Package,
+		NewJson(factory).Package,
+		NewBase64(factory).Package,
+		NewHex(factory).Package,
 	}
 	loader := &Loader{
+		factory:  factory,
 		packages: make(map[string]*Package),
 		builtin:  make([]*BuiltinWrapper, len(builtin)),
 	}
 	for i, fn := range builtin {
-		wrapper := objects.NewBuiltin(fn.Name(), i)
+		wrapper := factory.NewBuiltin(fn.Name(), i)
 		loader.builtin[i] = &BuiltinWrapper{wrapper: wrapper, object: fn}
 	}
 	for _, p := range packages {
@@ -162,6 +164,6 @@ func (l *Loader) CompilePackage(name string) (*objects.MapImmutable, error) {
 	for k, v := range module.container {
 		attrs[k] = v.Copy()
 	}
-	attrs[bytecode.ModuleKey] = objects.NewStringNoSize(name)
-	return objects.NewMapImmutable(attrs), nil
+	attrs[bytecode.ModuleKey] = l.factory.NewStringNoSize(name)
+	return l.factory.NewMapImmutable(attrs), nil
 }

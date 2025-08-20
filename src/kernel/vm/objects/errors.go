@@ -64,11 +64,3 @@ func NewInvalidArgumentError(index int, expected string, found string) error {
 	name := fmt.Sprintf("argument %d", index)
 	return fmt.Errorf("invalid type for argument '%s': expected %s, found %s", name, expected, found)
 }
-
-// NewObjectError wraps a Go error into an IObject-compatible error object or returns TrueValue if the error is nil.
-func NewObjectError(err error) IObject {
-	if err == nil {
-		return TrueValue
-	}
-	return NewError(NewStringNoSize(err.Error()))
-}

@@ -11,13 +11,16 @@ const (
 
 // MapImmutable represents a read-only map structure where keys are strings and values are of type IObject.
 type MapImmutable struct {
-	Object
+	*Object
 	values map[string]IObject
 }
 
 // NewMapImmutable creates a new instance of MapImmutable with the provided map of string keys and IObject values.
-func NewMapImmutable(value map[string]IObject) *MapImmutable {
-	return &MapImmutable{values: value}
+func _newMapImmutable(factory *Factory, value map[string]IObject) *MapImmutable {
+	return &MapImmutable{
+		Object: factory.NewObject(),
+		values: value,
+	}
 }
 
 // Values returns the underlying map of string keys and IObject values.
@@ -59,7 +62,7 @@ func (o *MapImmutable) Copy() IObject {
 	for k, v := range o.values {
 		c[k] = v.Copy()
 	}
-	return NewMap(c)
+	return o.Factory().NewMap(c)
 }
 
 // Boolean returns true if the map is empty, indicating it is considered "falsy", otherwise false.
@@ -69,14 +72,14 @@ func (o *MapImmutable) Boolean() bool {
 
 // IndexGet retrieves the values associated with the given index in the MapImmutable. Returns an error for invalid index types.
 func (o *MapImmutable) IndexGet(index IObject) (res IObject, err error) {
-	strIdx, ok := ToString(index)
+	strIdx, ok := o.Factory().ToString(index)
 	if !ok {
 		err = ErrInvalidIndexType
 		return
 	}
 	res, ok = o.values[strIdx]
 	if !ok {
-		res = UndefinedValue
+		res = o.Factory().UndefinedValue()
 	}
 	return
 }
@@ -106,7 +109,7 @@ func (o *MapImmutable) Equals(in IObject) bool {
 
 // Iterate returns an iterator for traversing the key-values pairs in the immutable map.
 func (o *MapImmutable) Iterate() IIterator {
-	return NewMapIterator(o.values)
+	return o.Factory().NewMapIterator(o.values)
 }
 
 // CanIterate returns true, indicating that the MapImmutable supports iteration.

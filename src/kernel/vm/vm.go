@@ -28,6 +28,7 @@ type ISequencer interface {
 
 // VM represents a virtual machine that executes bytecode instructions, handles stack, and manages execution frames.
 type VM struct {
+	factory     *objects.Factory
 	sourceFiles *bytecode.Files
 	stack       *Stack
 	frames      *Frames
@@ -42,21 +43,23 @@ type VM struct {
 }
 
 // New initializes and returns a new virtual machine instance configured with the provided components and settings.
-func New(sequencer ISequencer, maxAllocations int64) *VM {
+func New(factory *objects.Factory, op *bytecode.Opcodes, sequencer ISequencer, maxAllocations int64) *VM {
 	if maxAllocations < 10 {
 		maxAllocations = 10
 	}
+	//op := bytecode.NewOpcodes(factory)
 	v := &VM{
+		factory:     factory,
 		ip:          resetIp,
 		loader:      nil,
 		sourceFiles: nil,
 		references:  nil,
 	}
-	v.constants = NewConstants(v.SetError)
-	v.stack = NewStack(stackSize, maxAllocations, v.SetError)
-	v.frames = NewFrames(maxFrames, v.SetError)
+	v.constants = NewConstants(factory, v.SetError)
+	v.stack = NewStack(factory, stackSize, maxAllocations, v.SetError)
+	v.frames = NewFrames(factory, maxFrames, v.SetError)
 	if sequencer == nil {
-		sequencer = NewSequencer()
+		sequencer = NewSequencer(op)
 	}
 	seq := sequencer.Create()
 	v.sequencer = make([]func(vm *VM), len(seq))
@@ -88,12 +91,6 @@ func (v *VM) Reset() {
 
 // Run executes the virtual machine's bytecode, managing the stack, frames, and instruction pointer state.
 func (v *VM) Run(loader bytecode.ILoader, bc *bytecode.Bytecode, mainId string, args ...interface{}) error {
-	if bc == nil {
-		return fmt.Errorf("bytecode is nil")
-	}
-	if loader == nil {
-		return fmt.Errorf("loader is nil")
-	}
 	references, err := loader.ResolveSymbols(bc.References())
 	if err != nil {
 		return err
@@ -129,7 +126,7 @@ func (v *VM) Run(loader bytecode.ILoader, bc *bytecode.Bytecode, mainId string, 
 		return fmt.Errorf("[%s] wrong number of arguments provided: want=%d, got=%d", mainId, v.currFrame.NumParameters(), len(args))
 	}
 	for idx, arg := range args {
-		argObj := objects.FromInterface(arg)
+		argObj := v.factory.FromInterface(arg)
 		v.stack.SetAbsolute(idx, argObj)
 	}
 
@@ -137,7 +134,7 @@ func (v *VM) Run(loader bytecode.ILoader, bc *bytecode.Bytecode, mainId string, 
 
 	if v.err != nil {
 		filePos, _ := v.sourceFiles.Position(v.currFrame.SourcePos(v.ip - 1))
-		err := fmt.Errorf("runtime error %w at %s", v.err, filePos)
+		err = fmt.Errorf("runtime error %w at %s", v.err, filePos)
 		for _, frame := range v.frames.Unroll() {
 			filePos, _ = v.sourceFiles.Position(frame.SourcePos(frame.StartIP() - 1))
 			err = fmt.Errorf("%w at %s", err, filePos)
@@ -156,7 +153,7 @@ func (v *VM) SetError(err error) {
 // BoundsCheck validates and adjusts slice bounds using provided low and high indices, ensuring they are within valid range.
 func (v *VM) BoundsCheck(lowStack objects.IObject, highStack objects.IObject, numElements int64) (int64, int64, error) {
 	var lowIdx int64
-	if lowStack != objects.UndefinedValue {
+	if lowStack != v.factory.UndefinedValue() {
 		if low, ok := lowStack.(*objects.Int); ok {
 			lowIdx = low.Value()
 		} else {
@@ -164,7 +161,7 @@ func (v *VM) BoundsCheck(lowStack objects.IObject, highStack objects.IObject, nu
 		}
 	}
 	var highIdx int64
-	if highStack == objects.UndefinedValue {
+	if highStack == v.factory.UndefinedValue() {
 		highIdx = numElements
 	} else if high, ok := highStack.(*objects.Int); ok {
 		highIdx = high.Value()

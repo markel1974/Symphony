@@ -8,24 +8,27 @@ import (
 
 // Strconv is a type that provides a module containing string conversion functions implemented using strconv.
 type Strconv struct {
+	factory *objects.Factory
 	*Package
 }
 
 // NewStrconv initializes and returns a pointer to a new Strconv instance containing predefined module functions.
-func NewStrconv() *Strconv {
-	s := &Strconv{}
+func NewStrconv(factory *objects.Factory) *Strconv {
+	s := &Strconv{
+		factory: factory,
+	}
 	container := []*objects.FuncPackage{
-		objects.NewFuncPackage(objects.FuncPackageDef, "Atoi", objects.FuncIsOie(strconv.Atoi)),
-		objects.NewFuncPackage(objects.FuncPackageDef, "FormatBool", s.FormatBool),
-		objects.NewFuncPackage(objects.FuncPackageDef, "FormatFloat", s.FormatFloat),
-		objects.NewFuncPackage(objects.FuncPackageDef, "FormatInt", s.FormatInt),
-		objects.NewFuncPackage(objects.FuncPackageDef, "Itoa", objects.FuncIiOs(strconv.Itoa)),
-		objects.NewFuncPackage(objects.FuncPackageDef, "ParseBool", s.ParseBool),
-		objects.NewFuncPackage(objects.FuncPackageDef, "ParseFloat", s.ParseFloat),
-		objects.NewFuncPackage(objects.FuncPackageDef, "ParseNumber", s.ParseNumber),
-		objects.NewFuncPackage(objects.FuncPackageDef, "ParseInt", s.ParseInt),
-		objects.NewFuncPackage(objects.FuncPackageDef, "Quote", objects.FuncIsOs(strconv.Quote)),
-		objects.NewFuncPackage(objects.FuncPackageDef, "Unquote", objects.FuncIsOse(strconv.Unquote)),
+		factory.NewFuncPackage(objects.FuncPackageDef, "Atoi", factory.FuncIsOie(strconv.Atoi)),
+		factory.NewFuncPackage(objects.FuncPackageDef, "FormatBool", s.FormatBool),
+		factory.NewFuncPackage(objects.FuncPackageDef, "FormatFloat", s.FormatFloat),
+		factory.NewFuncPackage(objects.FuncPackageDef, "FormatInt", s.FormatInt),
+		factory.NewFuncPackage(objects.FuncPackageDef, "Itoa", factory.FuncIiOs(strconv.Itoa)),
+		factory.NewFuncPackage(objects.FuncPackageDef, "ParseBool", s.ParseBool),
+		factory.NewFuncPackage(objects.FuncPackageDef, "ParseFloat", s.ParseFloat),
+		factory.NewFuncPackage(objects.FuncPackageDef, "ParseNumber", s.ParseNumber),
+		factory.NewFuncPackage(objects.FuncPackageDef, "ParseInt", s.ParseInt),
+		factory.NewFuncPackage(objects.FuncPackageDef, "Quote", factory.FuncIsOs(strconv.Quote)),
+		factory.NewFuncPackage(objects.FuncPackageDef, "Unquote", factory.FuncIsOse(strconv.Unquote)),
 	}
 	s.Package = NewPackage("strconv", container, nil)
 	return s
@@ -36,14 +39,14 @@ func (s *Strconv) FormatBool(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}
-	b1, err := objects.ToBoolArg(0, args[0])
+	b1, err := s.factory.ToBoolArg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
 	if b1 {
-		return objects.NewString("true")
+		return s.factory.NewString("true")
 	}
-	return objects.NewString("false")
+	return s.factory.NewString("false")
 }
 
 // FormatFloat converts a float64 into a string representation according to the specified format, precision, and bit size.
@@ -51,23 +54,23 @@ func (s *Strconv) FormatFloat(args ...objects.IObject) (objects.IObject, error) 
 	if len(args) != 4 {
 		return nil, objects.ErrWrongNumArguments
 	}
-	f1, err := objects.ToFloat64Arg(0, args[0])
+	f1, err := s.factory.ToFloat64Arg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
-	s2, err := objects.ToStringArg(1, args[1])
+	s2, err := s.factory.ToStringArg(1, args[1])
 	if err != nil {
 		return nil, err
 	}
-	i3, err := objects.ToInt64Arg(2, args[2])
+	i3, err := s.factory.ToInt64Arg(2, args[2])
 	if err != nil {
 		return nil, err
 	}
-	i4, err := objects.ToInt64Arg(3, args[3])
+	i4, err := s.factory.ToInt64Arg(3, args[3])
 	if err != nil {
 		return nil, err
 	}
-	return objects.NewString(strconv.FormatFloat(f1, s2[0], int(i3), int(i4)))
+	return s.factory.NewString(strconv.FormatFloat(f1, s2[0], int(i3), int(i4)))
 }
 
 // FormatInt formats an int64 number as a string in the specified base, provided by the second argument.
@@ -75,15 +78,15 @@ func (s *Strconv) FormatInt(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 2 {
 		return nil, objects.ErrWrongNumArguments
 	}
-	i1, err := objects.ToInt64Arg(0, args[0])
+	i1, err := s.factory.ToInt64Arg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
-	i2, err := objects.ToInt64Arg(1, args[1])
+	i2, err := s.factory.ToInt64Arg(1, args[1])
 	if err != nil {
 		return nil, err
 	}
-	return objects.NewString(strconv.FormatInt(i1, int(i2)))
+	return s.factory.NewString(strconv.FormatInt(i1, int(i2)))
 }
 
 // ParseBool parses a string representation of a boolean value and returns the corresponding boolean object or an error.
@@ -99,13 +102,13 @@ func (s *Strconv) ParseBool(args ...objects.IObject) (ret objects.IObject, err e
 	}
 	parsed, err := strconv.ParseBool(s1.Value())
 	if err != nil {
-		ret = objects.NewObjectError(err)
+		ret = s.factory.NewObjectError(err)
 		return
 	}
 	if parsed {
-		ret = objects.TrueValue
+		ret = s.factory.TrueValue()
 	} else {
-		ret = objects.FalseValue
+		ret = s.factory.FalseValue()
 	}
 	return
 }
@@ -115,19 +118,19 @@ func (s *Strconv) ParseFloat(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 2 {
 		return nil, objects.ErrWrongNumArguments
 	}
-	s1, err := objects.ToStringArg(0, args[0])
+	s1, err := s.factory.ToStringArg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
-	i2, err := objects.ToInt64Arg(1, args[1])
+	i2, err := s.factory.ToInt64Arg(1, args[1])
 	if err != nil {
 		return nil, err
 	}
 	parsed, err := strconv.ParseFloat(s1, int(i2))
 	if err != nil {
-		return objects.NewObjectError(err), nil
+		return s.factory.NewObjectError(err), nil
 	}
-	return objects.NewFloat(parsed), nil
+	return s.factory.NewFloat(parsed), nil
 }
 
 // ParseNumber extracts and parses numeric values from a string, returning a float object or an error if parsing fails.
@@ -135,7 +138,7 @@ func (s *Strconv) ParseNumber(args ...objects.IObject) (objects.IObject, error) 
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}
-	s1, err := objects.ToStringArg(0, args[0])
+	s1, err := s.factory.ToStringArg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
@@ -149,7 +152,7 @@ func (s *Strconv) ParseNumber(args ...objects.IObject) (objects.IObject, error) 
 	if err != nil {
 		return nil, err
 	}
-	return objects.NewFloat(parsed), nil
+	return s.factory.NewFloat(parsed), nil
 }
 
 // ParseInt converts a string argument to an integer with the specified base and bit size after validating arguments.
@@ -157,21 +160,21 @@ func (s *Strconv) ParseInt(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 3 {
 		return nil, objects.ErrWrongNumArguments
 	}
-	s1, err := objects.ToStringArg(0, args[0])
+	s1, err := s.factory.ToStringArg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
-	i2, err := objects.ToInt64Arg(1, args[1])
+	i2, err := s.factory.ToInt64Arg(1, args[1])
 	if err != nil {
 		return nil, err
 	}
-	i3, err := objects.ToInt64Arg(2, args[2])
+	i3, err := s.factory.ToInt64Arg(2, args[2])
 	if err != nil {
 		return nil, err
 	}
 	parsed, err := strconv.ParseInt(s1, int(i2), int(i3))
 	if err != nil {
-		return objects.NewObjectError(err), nil
+		return s.factory.NewObjectError(err), nil
 	}
-	return objects.NewInt(parsed), nil
+	return s.factory.NewInt(parsed), nil
 }

@@ -17,18 +17,19 @@ const (
 
 // Regexp represents a structure providing regular expression functionality through associated operations and methods.
 type Regexp struct {
+	factory *objects.Factory
 	*Package
 }
 
 // NewRegexp creates and returns a new instance of the Regexp struct with initialized module functions.
-func NewRegexp() *Regexp {
-	r := &Regexp{}
+func NewRegexp(factory *objects.Factory) *Regexp {
+	r := &Regexp{factory: factory}
 	container := []*objects.FuncPackage{
-		objects.NewFuncPackage(objects.FuncPackageDef, "Match", r.Match),
-		objects.NewFuncPackage(objects.FuncPackageDef, "Find", r.Find),
-		objects.NewFuncPackage(objects.FuncPackageDef, "Replace", r.Replace),
-		objects.NewFuncPackage(objects.FuncPackageDef, "Split", r.Split),
-		objects.NewFuncPackage(objects.FuncPackageDef, "Compile", r.Compile),
+		factory.NewFuncPackage(objects.FuncPackageDef, "Match", r.Match),
+		factory.NewFuncPackage(objects.FuncPackageDef, "Find", r.Find),
+		factory.NewFuncPackage(objects.FuncPackageDef, "Replace", r.Replace),
+		factory.NewFuncPackage(objects.FuncPackageDef, "Split", r.Split),
+		factory.NewFuncPackage(objects.FuncPackageDef, "Compile", r.Compile),
 	}
 	r.Package = NewPackage("regexp", container, nil)
 	return r
@@ -40,22 +41,22 @@ func (r *Regexp) Match(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 2 {
 		return nil, objects.ErrWrongNumArguments
 	}
-	s1, err := objects.ToStringArg(0, args[0])
+	s1, err := r.factory.ToStringArg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
-	s2, err := objects.ToStringArg(1, args[1])
+	s2, err := r.factory.ToStringArg(1, args[1])
 	if err != nil {
 		return nil, err
 	}
 	matched, err := regexp.MatchString(s1, s2)
 	if err != nil {
-		return objects.NewObjectError(err), nil
+		return r.factory.NewObjectError(err), nil
 	}
 	if matched {
-		return objects.TrueValue, nil
+		return r.factory.TrueValue(), nil
 	}
-	return objects.FalseValue, nil
+	return r.factory.FalseValue(), nil
 }
 
 // Find searches a string for matches against a regular expression and returns match details or an array of matches.
@@ -66,49 +67,49 @@ func (r *Regexp) Find(args ...objects.IObject) (objects.IObject, error) {
 	if numArgs != 2 && numArgs != 3 {
 		return nil, objects.ErrWrongNumArguments
 	}
-	s1, err := objects.ToStringArg(0, args[0])
+	s1, err := r.factory.ToStringArg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
-	s2, err := objects.ToStringArg(1, args[1])
+	s2, err := r.factory.ToStringArg(1, args[1])
 	if err != nil {
 		return nil, err
 	}
 	re, err := regexp.Compile(s1)
 	if err != nil {
-		return objects.NewObjectError(err), nil
+		return r.factory.NewObjectError(err), nil
 	}
 	if numArgs < 3 {
 		m := re.FindStringSubmatchIndex(s2)
 		if m == nil {
-			return objects.UndefinedValue, nil
+			return r.factory.UndefinedValue(), nil
 		}
-		arr := objects.NewArray(nil)
+		arr := r.factory.NewArray(nil)
 		for i := 0; i < len(m); i += 2 {
-			arr.Append(objects.NewMapImmutable(map[string]objects.IObject{
-				RegexpTextDef:  objects.NewStringNoSize(s2[m[i]:m[i+1]]),
-				RegexpBeginDef: objects.NewInt(int64(m[i])),
-				RegexpEndDef:   objects.NewInt(int64(m[i+1])),
+			arr.Append(r.factory.NewMapImmutable(map[string]objects.IObject{
+				RegexpTextDef:  r.factory.NewStringNoSize(s2[m[i]:m[i+1]]),
+				RegexpBeginDef: r.factory.NewInt(int64(m[i])),
+				RegexpEndDef:   r.factory.NewInt(int64(m[i+1])),
 			}))
 		}
-		return objects.NewArray([]objects.IObject{arr}), nil
+		return r.factory.NewArray([]objects.IObject{arr}), nil
 	}
-	i3, err := objects.ToInt64Arg(2, args[2])
+	i3, err := r.factory.ToInt64Arg(2, args[2])
 	if err != nil {
 		return nil, err
 	}
 	mFA := re.FindAllStringSubmatchIndex(s2, int(i3))
 	if mFA == nil {
-		return objects.UndefinedValue, nil
+		return r.factory.UndefinedValue(), nil
 	}
-	arr := objects.NewArray(nil)
+	arr := r.factory.NewArray(nil)
 	for _, m := range mFA {
-		subMatch := objects.NewArray(nil)
+		subMatch := r.factory.NewArray(nil)
 		for i := 0; i < len(m); i += 2 {
-			subMatch.Append(objects.NewMapImmutable(map[string]objects.IObject{
-				RegexpTextDef:  objects.NewStringNoSize(s2[m[i]:m[i+1]]),
-				RegexpBeginDef: objects.NewInt(int64(m[i])),
-				RegexpEndDef:   objects.NewInt(int64(m[i+1])),
+			subMatch.Append(r.factory.NewMapImmutable(map[string]objects.IObject{
+				RegexpTextDef:  r.factory.NewStringNoSize(s2[m[i]:m[i+1]]),
+				RegexpBeginDef: r.factory.NewInt(int64(m[i])),
+				RegexpEndDef:   r.factory.NewInt(int64(m[i+1])),
 			}))
 		}
 		arr.Append(subMatch)
@@ -122,28 +123,28 @@ func (r *Regexp) Split(args ...objects.IObject) (objects.IObject, error) {
 	if numArgs != 2 && numArgs != 3 {
 		return nil, objects.ErrWrongNumArguments
 	}
-	s1, err := objects.ToStringArg(0, args[0])
+	s1, err := r.factory.ToStringArg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
-	s2, err := objects.ToStringArg(1, args[1])
+	s2, err := r.factory.ToStringArg(1, args[1])
 	if err != nil {
 		return nil, err
 	}
 	var i3 = int64(-1)
 	if numArgs > 2 {
-		i3, err = objects.ToInt64Arg(2, args[2])
+		i3, err = r.factory.ToInt64Arg(2, args[2])
 		if err != nil {
 			return nil, err
 		}
 	}
 	re, err := regexp.Compile(s1)
 	if err != nil {
-		return objects.NewObjectError(err), nil
+		return r.factory.NewObjectError(err), nil
 	}
-	arr := &objects.Array{}
+	arr := r.factory.NewArray(nil)
 	for _, s := range re.Split(s2, int(i3)) {
-		v, err := objects.NewString(s)
+		v, err := r.factory.NewString(s)
 		if err != nil {
 			return nil, err
 		}
@@ -157,13 +158,13 @@ func (r *Regexp) Compile(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}
-	s1, ok := objects.ToString(args[0])
+	s1, ok := r.factory.ToString(args[0])
 	if !ok {
 		return nil, objects.NewInvalidArgumentError(0, "string(compatible)", args[0].TypeName())
 	}
 	re, err := regexp.Compile(s1)
 	if err != nil {
-		return objects.NewObjectError(err), nil
+		return r.factory.NewObjectError(err), nil
 	}
 	return r.CompileOptions(re), nil
 }
@@ -173,24 +174,24 @@ func (r *Regexp) Replace(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 3 {
 		return nil, objects.ErrWrongNumArguments
 	}
-	s1, err := objects.ToStringArg(0, args[0])
+	s1, err := r.factory.ToStringArg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
-	s2, err := objects.ToStringArg(1, args[1])
+	s2, err := r.factory.ToStringArg(1, args[1])
 	if err != nil {
 		return nil, err
 	}
-	s3, err := objects.ToStringArg(2, args[2])
+	s3, err := r.factory.ToStringArg(2, args[2])
 	if err != nil {
 		return nil, err
 	}
 	re, err := regexp.Compile(s1)
 	if err != nil {
-		return objects.NewObjectError(err), nil
+		return r.factory.NewObjectError(err), nil
 	}
 	s := r.replaceInternal(re, s2, s3)
-	v, err := objects.NewString(s)
+	v, err := r.factory.NewString(s)
 	if err != nil {
 		return nil, err
 	}
@@ -199,18 +200,18 @@ func (r *Regexp) Replace(args ...objects.IObject) (objects.IObject, error) {
 
 // CompileOptions returns a MapImmutable containing methods for operations like match, find, replace, and split using a compiled regexp.
 func (r *Regexp) CompileOptions(re *regexp.Regexp) *objects.MapImmutable {
-	return objects.NewMapImmutable(
+	return r.factory.NewMapImmutable(
 		map[string]objects.IObject{
 			// match(text) => bool
-			"Match": objects.NewFuncPackage(objects.FuncPackageDef, "Match", func(args ...objects.IObject) (objects.IObject, error) { return r.CompileOptionMatch(re, args...) }),
+			"Match": r.factory.NewFuncPackage(objects.FuncPackageDef, "Match", func(args ...objects.IObject) (objects.IObject, error) { return r.CompileOptionMatch(re, args...) }),
 			// find(text) 			=> array(array({text:,begin:,end:}))/undefined
 			// find(text, maxCount) => array(array({text:,begin:,end:}))/undefined
-			"Find": objects.NewFuncPackage(objects.FuncPackageDef, "Find", func(args ...objects.IObject) (objects.IObject, error) { return r.CompileOptionFind(re, args...) }),
+			"Find": r.factory.NewFuncPackage(objects.FuncPackageDef, "Find", func(args ...objects.IObject) (objects.IObject, error) { return r.CompileOptionFind(re, args...) }),
 			// replace(src, repl) => string
-			"Replace": objects.NewFuncPackage(objects.FuncPackageDef, "Replace", func(args ...objects.IObject) (objects.IObject, error) { return r.CompileOptionReplace(re, args...) }),
+			"Replace": r.factory.NewFuncPackage(objects.FuncPackageDef, "Replace", func(args ...objects.IObject) (objects.IObject, error) { return r.CompileOptionReplace(re, args...) }),
 			// split(text) 			 => array(string)
 			// split(text, maxCount) => array(string)
-			"Split": objects.NewFuncPackage(objects.FuncPackageDef, "Split", func(args ...objects.IObject) (objects.IObject, error) { return r.CompileOptionSplit(re, args...) }),
+			"Split": r.factory.NewFuncPackage(objects.FuncPackageDef, "Split", func(args ...objects.IObject) (objects.IObject, error) { return r.CompileOptionSplit(re, args...) }),
 		},
 	)
 }
@@ -220,14 +221,14 @@ func (r *Regexp) CompileOptionMatch(re *regexp.Regexp, args ...objects.IObject) 
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}
-	s1, err := objects.ToStringArg(0, args[0])
+	s1, err := r.factory.ToStringArg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
 	if re.MatchString(s1) {
-		return objects.TrueValue, nil
+		return r.factory.TrueValue(), nil
 	}
-	return objects.FalseValue, nil
+	return r.factory.FalseValue(), nil
 }
 
 // CompileOptionFind performs regex matching with options for finding single or multiple matches in a given string.
@@ -239,43 +240,43 @@ func (r *Regexp) CompileOptionFind(re *regexp.Regexp, args ...objects.IObject) (
 	if numArgs != 1 && numArgs != 2 {
 		return nil, objects.ErrWrongNumArguments
 	}
-	s1, err := objects.ToStringArg(0, args[0])
+	s1, err := r.factory.ToStringArg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
 	if numArgs == 1 {
 		mRe := re.FindStringSubmatchIndex(s1)
 		if mRe == nil {
-			return objects.UndefinedValue, nil
+			return r.factory.UndefinedValue(), nil
 		}
-		arr := objects.NewArray(nil)
+		arr := r.factory.NewArray(nil)
 		for i := 0; i < len(mRe); i += 2 {
-			arr.Append(objects.NewMapImmutable(
+			arr.Append(r.factory.NewMapImmutable(
 				map[string]objects.IObject{
-					RegexpTextDef:  objects.NewStringNoSize(s1[mRe[i]:mRe[i+1]]),
-					RegexpBeginDef: objects.NewInt(int64(mRe[i])),
-					RegexpEndDef:   objects.NewInt(int64(mRe[i+1])),
+					RegexpTextDef:  r.factory.NewStringNoSize(s1[mRe[i]:mRe[i+1]]),
+					RegexpBeginDef: r.factory.NewInt(int64(mRe[i])),
+					RegexpEndDef:   r.factory.NewInt(int64(mRe[i+1])),
 				}))
 		}
-		return objects.NewArray([]objects.IObject{arr}), nil
+		return r.factory.NewArray([]objects.IObject{arr}), nil
 	}
-	i2, err := objects.ToInt64Arg(1, args[1])
+	i2, err := r.factory.ToInt64Arg(1, args[1])
 	if err != nil {
 		return nil, err
 	}
 	mRe := re.FindAllStringSubmatchIndex(s1, int(i2))
 	if mRe == nil {
-		return objects.UndefinedValue, nil
+		return r.factory.UndefinedValue(), nil
 	}
-	arr := objects.NewArray(nil)
+	arr := r.factory.NewArray(nil)
 	for _, m := range mRe {
-		subMatch := objects.NewArray(nil)
+		subMatch := r.factory.NewArray(nil)
 		for i := 0; i < len(m); i += 2 {
-			subMatch.Append(objects.NewMapImmutable(
+			subMatch.Append(r.factory.NewMapImmutable(
 				map[string]objects.IObject{
-					RegexpTextDef:  objects.NewStringNoSize(s1[m[i]:m[i+1]]),
-					RegexpBeginDef: objects.NewInt(int64(m[i])),
-					RegexpEndDef:   objects.NewInt(int64(m[i+1])),
+					RegexpTextDef:  r.factory.NewStringNoSize(s1[m[i]:m[i+1]]),
+					RegexpBeginDef: r.factory.NewInt(int64(m[i])),
+					RegexpEndDef:   r.factory.NewInt(int64(m[i+1])),
 				}))
 		}
 		arr.Append(subMatch)
@@ -288,16 +289,16 @@ func (r *Regexp) CompileOptionReplace(re *regexp.Regexp, args ...objects.IObject
 	if len(args) != 2 {
 		return nil, objects.ErrWrongNumArguments
 	}
-	s1, err := objects.ToStringArg(0, args[0])
+	s1, err := r.factory.ToStringArg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
-	s2, err := objects.ToStringArg(1, args[1])
+	s2, err := r.factory.ToStringArg(1, args[1])
 	if err != nil {
 		return nil, err
 	}
 	s := r.replaceInternal(re, s1, s2)
-	return objects.NewString(s)
+	return r.factory.NewString(s)
 }
 
 // CompileOptionSplit splits the input string using the given compiled regular expression and optional max split count.
@@ -306,20 +307,20 @@ func (r *Regexp) CompileOptionSplit(re *regexp.Regexp, args ...objects.IObject) 
 	if numArgs != 1 && numArgs != 2 {
 		return nil, objects.ErrWrongNumArguments
 	}
-	s1, err := objects.ToStringArg(0, args[0])
+	s1, err := r.factory.ToStringArg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
 	var i2 = int64(-1)
 	if numArgs > 1 {
-		i2, err = objects.ToInt64Arg(1, args[1])
+		i2, err = r.factory.ToInt64Arg(1, args[1])
 		if err != nil {
 			return nil, err
 		}
 	}
-	arr := objects.NewArray(nil)
+	arr := r.factory.NewArray(nil)
 	for _, s := range re.Split(s1, int(i2)) {
-		v, err := objects.NewString(s)
+		v, err := r.factory.NewString(s)
 		if err != nil {
 			return nil, err
 		}

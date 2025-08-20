@@ -9,17 +9,20 @@ import (
 
 // Json represents a module containing JSON-related operations and utilities.
 type Json struct {
+	factory *objects.Factory
 	*Package
 }
 
 // NewJson creates and returns a new instance of Json containing predefined JSON operation modules.
-func NewJson() *Json {
-	j := &Json{}
+func NewJson(factory *objects.Factory) *Json {
+	j := &Json{
+		factory: factory,
+	}
 	container := []*objects.FuncPackage{
-		objects.NewFuncPackage(objects.FuncPackageDef, "Unmarshal", j.Unmarshal),
-		objects.NewFuncPackage(objects.FuncPackageDef, "Marshal", j.Marshal),
-		objects.NewFuncPackage(objects.FuncPackageDef, "Indent", j.Indent),
-		objects.NewFuncPackage(objects.FuncPackageDef, "html_escape", j.HTMLEscape),
+		factory.NewFuncPackage(objects.FuncPackageDef, "Unmarshal", j.Unmarshal),
+		factory.NewFuncPackage(objects.FuncPackageDef, "Marshal", j.Marshal),
+		factory.NewFuncPackage(objects.FuncPackageDef, "Indent", j.Indent),
+		factory.NewFuncPackage(objects.FuncPackageDef, "html_escape", j.HTMLEscape),
 	}
 	j.Package = NewPackage("json", container, nil)
 	return j
@@ -42,9 +45,9 @@ func (j *Json) Unmarshal(args ...objects.IObject) (ret objects.IObject, err erro
 	}
 	d := make(map[string]interface{})
 	if err = json.Unmarshal(data, &d); err != nil {
-		return objects.NewError(objects.NewStringNoSize(err.Error())), nil
+		return j.factory.NewError(j.factory.NewStringNoSize(err.Error())), nil
 	}
-	result := objects.NewMap(objects.FromMap(d))
+	result := j.factory.NewMap(j.factory.FromMap(d))
 	return result, nil
 }
 
@@ -53,11 +56,11 @@ func (j *Json) Marshal(args ...objects.IObject) (ret objects.IObject, err error)
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}
-	result, err := json.Marshal(objects.ToInterface(args[0]))
+	result, err := json.Marshal(j.factory.ToInterface(args[0]))
 	if err != nil {
-		return objects.NewError(objects.NewStringNoSize(err.Error())), nil
+		return j.factory.NewError(j.factory.NewStringNoSize(err.Error())), nil
 	}
-	return objects.NewBytes(result), nil
+	return j.factory.NewBytes(result), nil
 }
 
 // Indent takes a JSON object (bytes or string), a prefix, and an indent string, and returns the indented JSON.
@@ -65,11 +68,11 @@ func (j *Json) Indent(args ...objects.IObject) (ret objects.IObject, err error) 
 	if len(args) != 3 {
 		return nil, objects.ErrWrongNumArguments
 	}
-	prefix, err := objects.ToStringArg(1, args[1])
+	prefix, err := j.factory.ToStringArg(1, args[1])
 	if err != nil {
 		return nil, err
 	}
-	indent, err := objects.ToStringArg(2, args[2])
+	indent, err := j.factory.ToStringArg(2, args[2])
 	if err != nil {
 		return nil, err
 	}
@@ -78,16 +81,16 @@ func (j *Json) Indent(args ...objects.IObject) (ret objects.IObject, err error) 
 		var dst bytes.Buffer
 		err = json.Indent(&dst, o.Value(), prefix, indent)
 		if err != nil {
-			return objects.NewError(objects.NewStringNoSize(err.Error())), nil
+			return j.factory.NewError(j.factory.NewStringNoSize(err.Error())), nil
 		}
-		return objects.NewBytes(dst.Bytes()), nil
+		return j.factory.NewBytes(dst.Bytes()), nil
 	case *objects.String:
 		var dst bytes.Buffer
 		err = json.Indent(&dst, []byte(o.Value()), prefix, indent)
 		if err != nil {
-			return objects.NewError(objects.NewStringNoSize(err.Error())), nil
+			return j.factory.NewError(j.factory.NewStringNoSize(err.Error())), nil
 		}
-		return objects.NewBytes(dst.Bytes()), nil
+		return j.factory.NewBytes(dst.Bytes()), nil
 	default:
 		return nil, objects.NewInvalidArgumentError(0, "bytes/string", args[0].TypeName())
 	}
@@ -105,11 +108,11 @@ func (j *Json) HTMLEscape(args ...objects.IObject) (ret objects.IObject, err err
 	case *objects.Bytes:
 		var dst bytes.Buffer
 		json.HTMLEscape(&dst, o.Value())
-		return objects.NewBytes(dst.Bytes()), nil
+		return j.factory.NewBytes(dst.Bytes()), nil
 	case *objects.String:
 		var dst bytes.Buffer
 		json.HTMLEscape(&dst, []byte(o.Value()))
-		return objects.NewBytes(dst.Bytes()), nil
+		return j.factory.NewBytes(dst.Bytes()), nil
 	default:
 		return nil, objects.NewInvalidArgumentError(0, "bytes/string", args[0].TypeName())
 	}

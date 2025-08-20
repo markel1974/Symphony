@@ -11,51 +11,53 @@ import (
 // Library represents a collection of modules that interact with system processes and provide various functionalities.
 // It contains a reference to a Process and a map of module names to their respective objects.
 type Library struct {
+	factory *objects.Factory
 	process *Process
 	pkg     map[string]objects.IObject
 }
 
 // NewLibrary creates and initializes a new Library instance with the provided Process.
-func NewLibrary(process *Process) *Library {
+func NewLibrary(factory *objects.Factory, process *Process) *Library {
 	l := &Library{
+		factory: factory,
 		process: process,
 		pkg:     make(map[string]objects.IObject),
 	}
 	container := []*objects.FuncPackage{
-		objects.NewFuncPackage(objects.FuncPackageDef, "Printf", l.doPrintf),
-		objects.NewFuncPackage(objects.FuncPackageDef, "CreateTimer", l.doCreateTimer),
-		objects.NewFuncPackage(objects.FuncPackageDef, "IsActive", l.doIsActive),
-		objects.NewFuncPackage(objects.FuncPackageDef, "Kill", l.doKill),
-		objects.NewFuncPackage(objects.FuncPackageDef, "KillForeground", l.doKillForeground),
-		objects.NewFuncPackage(objects.FuncPackageDef, "KillAll", l.doKillAll),
-		objects.NewFuncPackage(objects.FuncPackageDef, "CWDSet", l.doCWDSet),
-		objects.NewFuncPackage(objects.FuncPackageDef, "CWDName", l.doCWDName),
-		objects.NewFuncPackage(objects.FuncPackageDef, "CWDPath", l.doCWDPath),
-		objects.NewFuncPackage(objects.FuncPackageDef, "CWDDirectoryListing", l.doCWDDirectoryListing),
-		objects.NewFuncPackage(objects.FuncPackageDef, "GetScreenSize", l.doGetScreenSize),
-		objects.NewFuncPackage(objects.FuncPackageDef, "PaintRequest", l.doPaintRequest),
-		objects.NewFuncPackage(objects.FuncPackageDef, "ProcessExec", l.doProcessExec),
-		objects.NewFuncPackage(objects.FuncPackageDef, "WindowsSelectionBegin", l.doWindowsSelectionBegin),
-		objects.NewFuncPackage(objects.FuncPackageDef, "CWDSet", l.doWindowsSelectionEnd),
-		objects.NewFuncPackage(objects.FuncPackageDef, "WindowsSelectionOptions", l.doWindowsSelectionOptions),
-		objects.NewFuncPackage(objects.FuncPackageDef, "WindowsSelectionNext", l.doWindowsSelectionNext),
-		objects.NewFuncPackage(objects.FuncPackageDef, "WindowsSelectionPrevious", l.doWindowsSelectionPrevious),
-		objects.NewFuncPackage(objects.FuncPackageDef, "ProcessList", l.doProcessList),
-		objects.NewFuncPackage(objects.FuncPackageDef, "ProcessSetForeground", l.doProcessSetForeground),
-		objects.NewFuncPackage(objects.FuncPackageDef, "ProcessSetSelfForeground", l.doProcessSetSelfForeground),
-		objects.NewFuncPackage(objects.FuncPackageDef, "Write", l.doWrite),
-		objects.NewFuncPackage(objects.FuncPackageDef, "WritePromptEOL", l.doWritePromptEOL),
-		objects.NewFuncPackage(objects.FuncPackageDef, "WritePromptLine", l.doWritePromptLine),
-		objects.NewFuncPackage(objects.FuncPackageDef, "WriteColor", l.doWriteColor),
-		objects.NewFuncPackage(objects.FuncPackageDef, "WriteForeground", l.doWriteForeground),
-		objects.NewFuncPackage(objects.FuncPackageDef, "MoveCursorLeft", l.doMoveCursorLeft),
-		objects.NewFuncPackage(objects.FuncPackageDef, "MoveCursorRight", l.doMoveCursorRight),
-		objects.NewFuncPackage(objects.FuncPackageDef, "SaveCursor", l.doSaveCursor),
-		objects.NewFuncPackage(objects.FuncPackageDef, "RestoreCursor", l.doRestoreCursor),
-		objects.NewFuncPackage(objects.FuncPackageDef, "ClearScreen", l.doClearScreen),
-		objects.NewFuncPackage(objects.FuncPackageDef, "SetExit", l.doSetExit),
-		objects.NewFuncPackage(objects.FuncPackageDef, "Suggestion", l.doSuggestion),
-		objects.NewFuncPackage(objects.FuncPackageDef, "Help", l.doHelp),
+		factory.NewFuncPackage(objects.FuncPackageDef, "Printf", l.doPrintf),
+		factory.NewFuncPackage(objects.FuncPackageDef, "CreateTimer", l.doCreateTimer),
+		factory.NewFuncPackage(objects.FuncPackageDef, "IsActive", l.doIsActive),
+		factory.NewFuncPackage(objects.FuncPackageDef, "Kill", l.doKill),
+		factory.NewFuncPackage(objects.FuncPackageDef, "KillForeground", l.doKillForeground),
+		factory.NewFuncPackage(objects.FuncPackageDef, "KillAll", l.doKillAll),
+		factory.NewFuncPackage(objects.FuncPackageDef, "CWDSet", l.doCWDSet),
+		factory.NewFuncPackage(objects.FuncPackageDef, "CWDName", l.doCWDName),
+		factory.NewFuncPackage(objects.FuncPackageDef, "CWDPath", l.doCWDPath),
+		factory.NewFuncPackage(objects.FuncPackageDef, "CWDDirectoryListing", l.doCWDDirectoryListing),
+		factory.NewFuncPackage(objects.FuncPackageDef, "GetScreenSize", l.doGetScreenSize),
+		factory.NewFuncPackage(objects.FuncPackageDef, "PaintRequest", l.doPaintRequest),
+		factory.NewFuncPackage(objects.FuncPackageDef, "ProcessExec", l.doProcessExec),
+		factory.NewFuncPackage(objects.FuncPackageDef, "WindowsSelectionBegin", l.doWindowsSelectionBegin),
+		factory.NewFuncPackage(objects.FuncPackageDef, "CWDSet", l.doWindowsSelectionEnd),
+		factory.NewFuncPackage(objects.FuncPackageDef, "WindowsSelectionOptions", l.doWindowsSelectionOptions),
+		factory.NewFuncPackage(objects.FuncPackageDef, "WindowsSelectionNext", l.doWindowsSelectionNext),
+		factory.NewFuncPackage(objects.FuncPackageDef, "WindowsSelectionPrevious", l.doWindowsSelectionPrevious),
+		factory.NewFuncPackage(objects.FuncPackageDef, "ProcessList", l.doProcessList),
+		factory.NewFuncPackage(objects.FuncPackageDef, "ProcessSetForeground", l.doProcessSetForeground),
+		factory.NewFuncPackage(objects.FuncPackageDef, "ProcessSetSelfForeground", l.doProcessSetSelfForeground),
+		factory.NewFuncPackage(objects.FuncPackageDef, "Write", l.doWrite),
+		factory.NewFuncPackage(objects.FuncPackageDef, "WritePromptEOL", l.doWritePromptEOL),
+		factory.NewFuncPackage(objects.FuncPackageDef, "WritePromptLine", l.doWritePromptLine),
+		factory.NewFuncPackage(objects.FuncPackageDef, "WriteColor", l.doWriteColor),
+		factory.NewFuncPackage(objects.FuncPackageDef, "WriteForeground", l.doWriteForeground),
+		factory.NewFuncPackage(objects.FuncPackageDef, "MoveCursorLeft", l.doMoveCursorLeft),
+		factory.NewFuncPackage(objects.FuncPackageDef, "MoveCursorRight", l.doMoveCursorRight),
+		factory.NewFuncPackage(objects.FuncPackageDef, "SaveCursor", l.doSaveCursor),
+		factory.NewFuncPackage(objects.FuncPackageDef, "RestoreCursor", l.doRestoreCursor),
+		factory.NewFuncPackage(objects.FuncPackageDef, "ClearScreen", l.doClearScreen),
+		factory.NewFuncPackage(objects.FuncPackageDef, "SetExit", l.doSetExit),
+		factory.NewFuncPackage(objects.FuncPackageDef, "Suggestion", l.doSuggestion),
+		factory.NewFuncPackage(objects.FuncPackageDef, "Help", l.doHelp),
 	}
 	for _, v := range container {
 		l.pkg[v.Name()] = v
@@ -73,15 +75,15 @@ func (l *Library) doCreateTimer(args ...objects.IObject) (ret objects.IObject, e
 	if len(args) != 3 {
 		return nil, errors.New("invalid number of arguments")
 	}
-	i1, err := objects.ToInt64Arg(0, args[0])
+	i1, err := l.factory.ToInt64Arg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
-	i2, err := objects.ToInt64Arg(1, args[1])
+	i2, err := l.factory.ToInt64Arg(1, args[1])
 	if err != nil {
 		return nil, err
 	}
-	i3, err := objects.ToInt64Arg(2, args[2])
+	i3, err := l.factory.ToInt64Arg(2, args[2])
 	if err != nil {
 		return nil, err
 	}
@@ -95,7 +97,7 @@ func (l *Library) doPrintf(args ...objects.IObject) (ret objects.IObject, err er
 	if argsLen == 0 {
 		return nil, objects.ErrWrongNumArguments
 	}
-	s1, err := objects.ToStringArg(0, args[0])
+	s1, err := l.factory.ToStringArg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
@@ -105,7 +107,7 @@ func (l *Library) doPrintf(args ...objects.IObject) (ret objects.IObject, err er
 	} else {
 		var ar []interface{}
 		for _, v := range args[1:] {
-			ar = append(ar, objects.ToInterface(v))
+			ar = append(ar, l.factory.ToInterface(v))
 		}
 		val = fmt.Sprintf(s1, ar...)
 	}
@@ -117,12 +119,12 @@ func (l *Library) doIsActive(args ...objects.IObject) (ret objects.IObject, err 
 	if len(args) != 1 {
 		return nil, errors.New("invalid number of arguments")
 	}
-	i1, err := objects.ToInt64Arg(0, args[0])
+	i1, err := l.factory.ToInt64Arg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
 	v := l.process.IsActive(int(i1))
-	return objects.FromBool(v), nil
+	return l.factory.FromBool(v), nil
 }
 
 // doKill terminates a process identified by the provided argument, which must be convertible to an int64. Returns no value.
@@ -130,7 +132,7 @@ func (l *Library) doKill(args ...objects.IObject) (ret objects.IObject, err erro
 	if len(args) != 1 {
 		return nil, errors.New("invalid number of arguments")
 	}
-	i1, err := objects.ToInt64Arg(0, args[0])
+	i1, err := l.factory.ToInt64Arg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
@@ -156,7 +158,7 @@ func (l *Library) doKillAll(args ...objects.IObject) (ret objects.IObject, err e
 	if len(args) != 1 {
 		return nil, errors.New("invalid number of arguments")
 	}
-	s1, err := objects.ToStringArg(0, args[0])
+	s1, err := l.factory.ToStringArg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
@@ -188,7 +190,7 @@ func (l *Library) doProcessExec(args ...objects.IObject) (ret objects.IObject, e
 	if len(args) != 1 {
 		return nil, errors.New("invalid number of arguments")
 	}
-	s1, err := objects.ToStringArg(0, args[0])
+	s1, err := l.factory.ToStringArg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
@@ -213,9 +215,9 @@ func (l *Library) doGetScreenSize(args ...objects.IObject) (ret objects.IObject,
 		return nil, errors.New("invalid number of arguments")
 	}
 	w, h := l.process.GetScreenSize()
-	return objects.NewMap(map[string]objects.IObject{
-		"width":  objects.NewInt(int64(w)),
-		"height": objects.NewInt(int64(h)),
+	return l.factory.NewMap(map[string]objects.IObject{
+		"width":  l.factory.NewInt(int64(w)),
+		"height": l.factory.NewInt(int64(h)),
 	}), nil
 }
 
@@ -226,7 +228,7 @@ func (l *Library) doCWDDirectoryListing(args ...objects.IObject) (ret objects.IO
 		return nil, errors.New("invalid number of arguments")
 	}
 	v := l.process.CWDDirectoryListing()
-	return objects.FromStringArray(v)
+	return l.factory.FromStringArray(v)
 }
 
 // doCWDSet sets the current working directory (CWD) using the provided string argument. Returns a boolean as IObject.
@@ -234,12 +236,12 @@ func (l *Library) doCWDSet(args ...objects.IObject) (ret objects.IObject, err er
 	if len(args) != 1 {
 		return nil, errors.New("invalid number of arguments")
 	}
-	s1, err := objects.ToStringArg(0, args[0])
+	s1, err := l.factory.ToStringArg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
 	v := l.process.CWDSet(s1)
-	return objects.FromBool(v), nil
+	return l.factory.FromBool(v), nil
 }
 
 // doCWDPath returns the current working directory's path as a string object or an error if arguments are provided.
@@ -248,7 +250,7 @@ func (l *Library) doCWDPath(args ...objects.IObject) (ret objects.IObject, err e
 		return nil, errors.New("invalid number of arguments")
 	}
 	v := l.process.CWDPath()
-	return objects.NewString(v)
+	return l.factory.NewString(v)
 }
 
 // doCWDName retrieves the current working directory name, returns it as a string object, and validates argument count.
@@ -257,7 +259,7 @@ func (l *Library) doCWDName(args ...objects.IObject) (ret objects.IObject, err e
 		return nil, errors.New("invalid number of arguments")
 	}
 	v := l.process.CWDName()
-	return objects.NewString(v)
+	return l.factory.NewString(v)
 }
 
 // doHelp retrieves and returns a help string for the provided argument, which must be a single string-compatible object.
@@ -265,7 +267,7 @@ func (l *Library) doHelp(args ...objects.IObject) (ret objects.IObject, err erro
 	if len(args) != 1 {
 		return nil, errors.New("invalid number of arguments")
 	}
-	s1, err := objects.ToStringArg(0, args[0])
+	s1, err := l.factory.ToStringArg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
@@ -273,7 +275,7 @@ func (l *Library) doHelp(args ...objects.IObject) (ret objects.IObject, err erro
 	if err != nil {
 		return nil, err
 	}
-	return objects.NewString(v)
+	return l.factory.NewString(v)
 }
 
 // doSuggestion processes two arguments: a string and an integer, to trigger the Suggestion functionality within the library.
@@ -282,11 +284,11 @@ func (l *Library) doSuggestion(args ...objects.IObject) (ret objects.IObject, er
 	if len(args) != 2 {
 		return nil, errors.New("invalid number of arguments")
 	}
-	s1, err := objects.ToStringArg(0, args[0])
+	s1, err := l.factory.ToStringArg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
-	i2, err := objects.ToInt64Arg(1, args[1])
+	i2, err := l.factory.ToInt64Arg(1, args[1])
 	if err != nil {
 		return nil, err
 	}
@@ -362,15 +364,15 @@ func (l *Library) doWriteForeground(args ...objects.IObject) (ret objects.IObjec
 	if len(args) != 3 {
 		return nil, errors.New("invalid number of arguments")
 	}
-	s1, err := objects.ToStringArg(0, args[0])
+	s1, err := l.factory.ToStringArg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
-	i2, err := objects.ToInt64Arg(1, args[1])
+	i2, err := l.factory.ToInt64Arg(1, args[1])
 	if err != nil {
 		return nil, err
 	}
-	b3, err := objects.ToBoolArg(2, args[2])
+	b3, err := l.factory.ToBoolArg(2, args[2])
 	if err != nil {
 		return nil, err
 	}
@@ -383,23 +385,23 @@ func (l *Library) doWriteColor(args ...objects.IObject) (ret objects.IObject, er
 	if len(args) != 5 {
 		return nil, errors.New("invalid number of arguments")
 	}
-	s1, err := objects.ToStringArg(0, args[0])
+	s1, err := l.factory.ToStringArg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
-	i2, err := objects.ToInt64Arg(1, args[1])
+	i2, err := l.factory.ToInt64Arg(1, args[1])
 	if err != nil {
 		return nil, err
 	}
-	i3, err := objects.ToInt64Arg(2, args[2])
+	i3, err := l.factory.ToInt64Arg(2, args[2])
 	if err != nil {
 		return nil, err
 	}
-	i4, err := objects.ToInt64Arg(3, args[3])
+	i4, err := l.factory.ToInt64Arg(3, args[3])
 	if err != nil {
 		return nil, err
 	}
-	b5, err := objects.ToBoolArg(4, args[4])
+	b5, err := l.factory.ToBoolArg(4, args[4])
 	if err != nil {
 		return nil, err
 	}
@@ -412,11 +414,11 @@ func (l *Library) doWritePromptLine(args ...objects.IObject) (ret objects.IObjec
 	if len(args) != 2 {
 		return nil, errors.New("invalid number of arguments")
 	}
-	s1, err := objects.ToStringArg(0, args[0])
+	s1, err := l.factory.ToStringArg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
-	s2, err := objects.ToStringArg(1, args[1])
+	s2, err := l.factory.ToStringArg(1, args[1])
 	if err != nil {
 		return nil, err
 	}
@@ -429,11 +431,11 @@ func (l *Library) doWritePromptEOL(args ...objects.IObject) (ret objects.IObject
 	if len(args) != 2 {
 		return nil, errors.New("invalid number of arguments")
 	}
-	s1, err := objects.ToStringArg(0, args[0])
+	s1, err := l.factory.ToStringArg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
-	b2, err := objects.ToBoolArg(1, args[1])
+	b2, err := l.factory.ToBoolArg(1, args[1])
 	if err != nil {
 		return nil, err
 	}
@@ -446,11 +448,11 @@ func (l *Library) doWrite(args ...objects.IObject) (ret objects.IObject, err err
 	if len(args) != 2 {
 		return nil, errors.New("invalid number of arguments")
 	}
-	s1, err := objects.ToStringArg(0, args[0])
+	s1, err := l.factory.ToStringArg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
-	b2, err := objects.ToBoolArg(1, args[1])
+	b2, err := l.factory.ToBoolArg(1, args[1])
 	if err != nil {
 		return nil, err
 	}
@@ -472,7 +474,7 @@ func (l *Library) doProcessSetForeground(args ...objects.IObject) (ret objects.I
 	if len(args) != 1 {
 		return nil, errors.New("invalid number of arguments")
 	}
-	i1, err := objects.ToInt64Arg(0, args[0])
+	i1, err := l.factory.ToInt64Arg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
@@ -489,14 +491,14 @@ func (l *Library) doProcessList(args ...objects.IObject) (ret objects.IObject, e
 	res := make(map[string]objects.IObject)
 	for _, p := range l.process.ProcessList() {
 		c := map[string]objects.IObject{
-			"line": objects.NewStringNoSize(p.Line()),
-			"name": objects.NewStringNoSize(p.Name()),
-			"time": objects.NewTime(p.Time()),
-			"pid":  objects.NewInt(int64(p.PID())),
+			"line": l.factory.NewStringNoSize(p.Line()),
+			"name": l.factory.NewStringNoSize(p.Name()),
+			"time": l.factory.NewTime(p.Time()),
+			"pid":  l.factory.NewInt(int64(p.PID())),
 		}
-		res[p.Name()] = objects.NewMap(c)
+		res[p.Name()] = l.factory.NewMap(c)
 	}
-	return objects.NewMap(res), nil
+	return l.factory.NewMap(res), nil
 }
 
 // doWindowsSelectionPrevious navigates to the previous selection in the Windows selection context.
@@ -527,11 +529,11 @@ func (l *Library) doWindowsSelectionOptions(args ...objects.IObject) (ret object
 	if len(args) != 2 {
 		return nil, errors.New("invalid number of arguments")
 	}
-	i1, err := objects.ToInt64Arg(0, args[0])
+	i1, err := l.factory.ToInt64Arg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
-	f2, err := objects.ToFloat64Arg(0, args[0])
+	f2, err := l.factory.ToFloat64Arg(0, args[0])
 	if err != nil {
 		return nil, err
 	}

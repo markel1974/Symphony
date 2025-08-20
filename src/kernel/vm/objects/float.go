@@ -13,13 +13,16 @@ const (
 // It embeds Object to implement common interface methods and extends behavior where necessary.
 // The value field holds the actual float64 values encapsulated by the Float type.
 type Float struct {
-	Object
+	*Object
 	value float64
 }
 
 // NewFloat creates and returns a pointer to a new Float object initialized with the specified float64 values.
-func NewFloat(value float64) *Float {
-	return &Float{value: value}
+func _newFloat(factory *Factory, value float64) *Float {
+	return &Float{
+		Object: factory.NewObject(),
+		value:  value,
+	}
 }
 
 func (o *Float) Value() float64 {
@@ -47,45 +50,45 @@ func (o *Float) BinaryOp(op Operator, rhs IObject) (IObject, error) {
 			if r == o.value {
 				return o, nil
 			}
-			return &Float{value: r}, nil
+			return o.Factory().NewFloat(r), nil
 		case OperatorSub:
 			r := o.value - rhs.value
 			if r == o.value {
 				return o, nil
 			}
-			return &Float{value: r}, nil
+			return o.Factory().NewFloat(r), nil
 		case OperatorMul:
 			r := o.value * rhs.value
 			if r == o.value {
 				return o, nil
 			}
-			return &Float{value: r}, nil
+			return o.Factory().NewFloat(r), nil
 		case OperatorQuo:
 			r := o.value / rhs.value
 			if r == o.value {
 				return o, nil
 			}
-			return &Float{value: r}, nil
+			return o.Factory().NewFloat(r), nil
 		case OperatorLess:
 			if o.value < rhs.value {
-				return TrueValue, nil
+				return o.Factory().TrueValue(), nil
 			}
-			return FalseValue, nil
+			return o.Factory().FalseValue(), nil
 		case OperatorGreater:
 			if o.value > rhs.value {
-				return TrueValue, nil
+				return o.Factory().TrueValue(), nil
 			}
-			return FalseValue, nil
+			return o.Factory().FalseValue(), nil
 		case OperatorLessEq:
 			if o.value <= rhs.value {
-				return TrueValue, nil
+				return o.Factory().TrueValue(), nil
 			}
-			return FalseValue, nil
+			return o.Factory().FalseValue(), nil
 		case OperatorGreaterEq:
 			if o.value >= rhs.value {
-				return TrueValue, nil
+				return o.Factory().TrueValue(), nil
 			}
-			return FalseValue, nil
+			return o.Factory().FalseValue(), nil
 		default:
 			return nil, ErrInvalidOperator
 		}
@@ -96,45 +99,45 @@ func (o *Float) BinaryOp(op Operator, rhs IObject) (IObject, error) {
 			if r == o.value {
 				return o, nil
 			}
-			return &Float{value: r}, nil
+			return o.Factory().NewFloat(r), nil
 		case OperatorSub:
 			r := o.value - float64(rhs.value)
 			if r == o.value {
 				return o, nil
 			}
-			return &Float{value: r}, nil
+			return o.Factory().NewFloat(r), nil
 		case OperatorMul:
 			r := o.value * float64(rhs.value)
 			if r == o.value {
 				return o, nil
 			}
-			return &Float{value: r}, nil
+			return o.Factory().NewFloat(r), nil
 		case OperatorQuo:
 			r := o.value / float64(rhs.value)
 			if r == o.value {
 				return o, nil
 			}
-			return &Float{value: r}, nil
+			return o.Factory().NewFloat(r), nil
 		case OperatorLess:
 			if o.value < float64(rhs.value) {
-				return TrueValue, nil
+				return o.Factory().TrueValue(), nil
 			}
-			return FalseValue, nil
+			return o.Factory().FalseValue(), nil
 		case OperatorGreater:
 			if o.value > float64(rhs.value) {
-				return TrueValue, nil
+				return o.Factory().TrueValue(), nil
 			}
-			return FalseValue, nil
+			return o.Factory().FalseValue(), nil
 		case OperatorLessEq:
 			if o.value <= float64(rhs.value) {
-				return TrueValue, nil
+				return o.Factory().TrueValue(), nil
 			}
-			return FalseValue, nil
+			return o.Factory().FalseValue(), nil
 		case OperatorGreaterEq:
 			if o.value >= float64(rhs.value) {
-				return TrueValue, nil
+				return o.Factory().TrueValue(), nil
 			}
-			return FalseValue, nil
+			return o.Factory().FalseValue(), nil
 		default:
 			return nil, ErrInvalidOperator
 		}
@@ -144,7 +147,7 @@ func (o *Float) BinaryOp(op Operator, rhs IObject) (IObject, error) {
 
 // Copy creates and returns a new instance of the Float object, duplicating its current state.
 func (o *Float) Copy() IObject {
-	return &Float{value: o.value}
+	return o.Factory().NewFloat(o.value)
 }
 
 // Boolean determines if the float object is considered falsy, returning true if the values is NaN; otherwise, false.

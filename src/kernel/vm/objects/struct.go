@@ -12,13 +12,16 @@ const (
 
 // Struct is a composite object that implements the IObject interface and stores a collection of key-value pairs.
 type Struct struct {
-	Object
+	*Object
 	values map[string]IObject
 }
 
 // NewStruct creates a new instance of MapImmutable with the provided map of string keys and IObject values.
-func NewStruct(value map[string]IObject) *Struct {
-	return &Struct{values: value}
+func _newStruct(factory *Factory, value map[string]IObject) *Struct {
+	return &Struct{
+		Object: factory.NewObject(),
+		values: value,
+	}
 }
 
 // Values returns the underlying map of string keys to IObject values contained within the Struct.
@@ -62,7 +65,7 @@ func (o *Struct) Copy() IObject {
 	for k, v := range o.values {
 		c[k] = v.Copy()
 	}
-	return NewStruct(c)
+	return o.Factory().NewStruct(c)
 }
 
 // Boolean returns true if the Struct contains no values, otherwise false.
@@ -72,14 +75,14 @@ func (o *Struct) Boolean() bool {
 
 // IndexGet retrieves the value associated with the given index within the Struct. Returns an error for invalid index types.
 func (o *Struct) IndexGet(index IObject) (res IObject, err error) {
-	strIdx, ok := ToString(index)
+	strIdx, ok := o.Factory().ToString(index)
 	if !ok {
 		err = ErrInvalidIndexType
 		return
 	}
 	res, ok = o.values[strIdx]
 	if !ok {
-		res = UndefinedValue
+		res = o.Factory().UndefinedValue()
 	}
 	return
 }
@@ -107,7 +110,7 @@ func (o *Struct) Equals(in IObject) bool {
 
 // Iterate returns an IIterator for traversing the key-value pairs in the Struct's internal map.
 func (o *Struct) Iterate() IIterator {
-	return NewStructIterator(o.values)
+	return o.Factory().NewStructIterator(o.values)
 }
 
 // CanIterate checks if the object can be iterated over. Always returns true for this implementation.

@@ -10,6 +10,8 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
 	"github.com/markel1974/c64emu/src/kernel/messages"
 	"github.com/markel1974/c64emu/src/kernel/vm"
+	"github.com/markel1974/c64emu/src/kernel/vm/bytecode"
+	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
 const (
@@ -31,6 +33,7 @@ type Process struct {
 	executorWaitChan chan bool
 	timeout          time.Duration
 	loader           *sdk.Loader
+	opcodes          *bytecode.Opcodes
 	compiler         *compiler.Compiler
 	vm               *vm.VM
 	onError          interfaces.OnError
@@ -45,6 +48,7 @@ type Process struct {
 func NewProcess(cmd interfaces.ICommand) *Process {
 	t := &Process{
 		cmd:              cmd,
+		opcodes:          nil,
 		loader:           nil,
 		compiler:         nil,
 		vm:               nil,
@@ -535,20 +539,24 @@ func (t *Process) handleMessageProcessStart(msg interfaces.IMessage) {
 		return
 	}
 	if t.cmd.HasScript() {
-		if t.compiler == nil {
-			t.compiler = compiler.New()
+		if t.opcodes == nil {
+			t.opcodes = bytecode.NewOpcodes(objects.NewFactory())
 		}
-		bc, err := t.compiler.Compile(t.cmd.Name(), t.cmd.Script())
+		if t.compiler == nil {
+			t.compiler = compiler.New(t.opcodes.Factory())
+		}
+		err := t.compiler.Compile(t.cmd.Name(), t.cmd.Script())
 		if err != nil {
 			log.Printf("Process [%s]: error compiling script: %s", t.cmd.Name(), err.Error())
 			return
 		}
+		bc := bytecode.NewBytecode(t.opcodes.Factory(), t.opcodes, t.compiler.Constants(), t.compiler.References())
 		if t.loader == nil {
-			t.loader = sdk.NewLoader()
-			t.loader.AddPackage("kernel", NewLibrary(t).Package())
+			t.loader = sdk.NewLoader(t.opcodes.Factory())
+			t.loader.AddPackage("kernel", NewLibrary(t.opcodes.Factory(), t).Package())
 		}
 		if t.vm == nil {
-			t.vm = vm.New(nil, 1024)
+			t.vm = vm.New(t.opcodes.Factory(), t.opcodes, nil, 1024)
 		}
 		if err = t.vm.Run(t.loader, bc, "main", mt.Args()); err != nil {
 			log.Printf("Process [%s]: error running script: %s", t.cmd.Name(), err.Error())

@@ -8,13 +8,13 @@ type Instructions struct {
 }
 
 // NewInstructions creates a new instance of Instructions with the provided byte slice data.
-func NewInstructions(data []byte) *Instructions {
+func _newInstructions(data []byte) *Instructions {
 	return &Instructions{data: data}
 }
 
 // Copy creates and returns a new Instructions instance with a duplicated copy of the original data slice.
 func (i *Instructions) Copy() *Instructions {
-	out := NewInstructions(nil)
+	out := _newInstructions(nil)
 	out.data = append([]byte{}, i.data...)
 	return out
 }

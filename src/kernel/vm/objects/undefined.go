@@ -5,14 +5,15 @@ const (
 	UndefinedLabel = "<" + UndefinedType + ">"
 )
 
-var (
-	// UndefinedValue represents an undefined values.
-	UndefinedValue IObject = &Undefined{}
-)
-
 // Undefined represents an undefined values.
 type Undefined struct {
-	Object
+	*Object
+}
+
+func _newUndefined(factory *Factory) *Undefined {
+	return &Undefined{
+		Object: factory.NewObject(),
+	}
 }
 
 // TypeName returns the name of the type.
@@ -42,7 +43,7 @@ func (o *Undefined) Equals(x IObject) bool {
 
 // IndexGet returns an element at a given index.
 func (o *Undefined) IndexGet(_ IObject) (IObject, error) {
-	return UndefinedValue, nil
+	return o.Factory().UndefinedValue(), nil
 }
 
 // Iterate creates a map iterator.

@@ -10,45 +10,46 @@ import (
 // Strings provides a collection of string operations and functionality wrapped in a module.
 // It includes functions for manipulation, comparison, trimming, padding, splitting, and other string-related utilities.
 type Strings struct {
+	factory *objects.Factory
 	*Package
 }
 
 // NewStrings creates and returns a new instance of Strings with a preconfigured map of string utility functions.
-func NewStrings() *Strings {
-	s := &Strings{}
+func NewStrings(factory *objects.Factory) *Strings {
+	s := &Strings{factory: factory}
 	container := []*objects.FuncPackage{
-		objects.NewFuncPackage(objects.FuncPackageDef, "Compare", objects.FuncIssOi(strings.Compare)),
-		objects.NewFuncPackage(objects.FuncPackageDef, "Contains", objects.FuncIssOb(strings.Contains)),
-		objects.NewFuncPackage(objects.FuncPackageDef, "ContainsAny", objects.FuncIssOb(strings.ContainsAny)),
-		objects.NewFuncPackage(objects.FuncPackageDef, "Count", objects.FuncIssOi(strings.Count)),
-		objects.NewFuncPackage(objects.FuncPackageDef, "EqualFold", objects.FuncIssOb(strings.EqualFold)),
-		objects.NewFuncPackage(objects.FuncPackageDef, "Fields", objects.FuncIsOsS(strings.Fields)),
-		objects.NewFuncPackage(objects.FuncPackageDef, "HasPrefix", objects.FuncIssOb(strings.HasPrefix)),
-		objects.NewFuncPackage(objects.FuncPackageDef, "HasSuffix", objects.FuncIssOb(strings.HasSuffix)),
-		objects.NewFuncPackage(objects.FuncPackageDef, "Index", objects.FuncIssOi(strings.Index)),
-		objects.NewFuncPackage(objects.FuncPackageDef, "IndexAny", objects.FuncIssOi(strings.IndexAny)),
-		objects.NewFuncPackage(objects.FuncPackageDef, "Join", s.Join),
-		objects.NewFuncPackage(objects.FuncPackageDef, "LastIndex", objects.FuncIssOi(strings.LastIndex)),
-		objects.NewFuncPackage(objects.FuncPackageDef, "LastIndexAny", objects.FuncIssOi(strings.LastIndexAny)),
-		objects.NewFuncPackage(objects.FuncPackageDef, "Repeat", s.Repeat),
-		objects.NewFuncPackage(objects.FuncPackageDef, "Replace", s.Replace),
-		objects.NewFuncPackage(objects.FuncPackageDef, "Substring", s.Substring),
-		objects.NewFuncPackage(objects.FuncPackageDef, "Split", objects.FuncIssOsS(strings.Split)),
-		objects.NewFuncPackage(objects.FuncPackageDef, "SplitAfter", objects.FuncIssOsS(strings.SplitAfter)),
-		objects.NewFuncPackage(objects.FuncPackageDef, "SplitAfterN", objects.FuncIssiOsS(strings.SplitAfterN)),
-		objects.NewFuncPackage(objects.FuncPackageDef, "SplitN", objects.FuncIssiOsS(strings.SplitN)),
-		objects.NewFuncPackage(objects.FuncPackageDef, "Title", objects.FuncIsOs(strings.Title)),
-		objects.NewFuncPackage(objects.FuncPackageDef, "ToLower", objects.FuncIsOs(strings.ToLower)),
-		objects.NewFuncPackage(objects.FuncPackageDef, "ToTitle", objects.FuncIsOs(strings.ToTitle)),
-		objects.NewFuncPackage(objects.FuncPackageDef, "ToUpper", objects.FuncIsOs(strings.ToUpper)),
-		objects.NewFuncPackage(objects.FuncPackageDef, "PadLeft", s.PadLeft),
-		objects.NewFuncPackage(objects.FuncPackageDef, "PadRight", s.PadRight),
-		objects.NewFuncPackage(objects.FuncPackageDef, "Trim", objects.FuncIssOs(strings.Trim)),
-		objects.NewFuncPackage(objects.FuncPackageDef, "TrimLeft", objects.FuncIssOs(strings.TrimLeft)),
-		objects.NewFuncPackage(objects.FuncPackageDef, "TrimPrefix", objects.FuncIssOs(strings.TrimPrefix)),
-		objects.NewFuncPackage(objects.FuncPackageDef, "TrimRight", objects.FuncIssOs(strings.TrimRight)),
-		objects.NewFuncPackage(objects.FuncPackageDef, "TrimSpace", objects.FuncIsOs(strings.TrimSpace)),
-		objects.NewFuncPackage(objects.FuncPackageDef, "TrimSuffix", objects.FuncIssOs(strings.TrimSuffix)),
+		factory.NewFuncPackage(objects.FuncPackageDef, "Compare", factory.FuncIssOi(strings.Compare)),
+		factory.NewFuncPackage(objects.FuncPackageDef, "Contains", factory.FuncIssOb(strings.Contains)),
+		factory.NewFuncPackage(objects.FuncPackageDef, "ContainsAny", factory.FuncIssOb(strings.ContainsAny)),
+		factory.NewFuncPackage(objects.FuncPackageDef, "Count", factory.FuncIssOi(strings.Count)),
+		factory.NewFuncPackage(objects.FuncPackageDef, "EqualFold", factory.FuncIssOb(strings.EqualFold)),
+		factory.NewFuncPackage(objects.FuncPackageDef, "Fields", factory.FuncIsOsS(strings.Fields)),
+		factory.NewFuncPackage(objects.FuncPackageDef, "HasPrefix", factory.FuncIssOb(strings.HasPrefix)),
+		factory.NewFuncPackage(objects.FuncPackageDef, "HasSuffix", factory.FuncIssOb(strings.HasSuffix)),
+		factory.NewFuncPackage(objects.FuncPackageDef, "Index", factory.FuncIssOi(strings.Index)),
+		factory.NewFuncPackage(objects.FuncPackageDef, "IndexAny", factory.FuncIssOi(strings.IndexAny)),
+		factory.NewFuncPackage(objects.FuncPackageDef, "Join", s.Join),
+		factory.NewFuncPackage(objects.FuncPackageDef, "LastIndex", factory.FuncIssOi(strings.LastIndex)),
+		factory.NewFuncPackage(objects.FuncPackageDef, "LastIndexAny", factory.FuncIssOi(strings.LastIndexAny)),
+		factory.NewFuncPackage(objects.FuncPackageDef, "Repeat", s.Repeat),
+		factory.NewFuncPackage(objects.FuncPackageDef, "Replace", s.Replace),
+		factory.NewFuncPackage(objects.FuncPackageDef, "Substring", s.Substring),
+		factory.NewFuncPackage(objects.FuncPackageDef, "Split", factory.FuncIssOsS(strings.Split)),
+		factory.NewFuncPackage(objects.FuncPackageDef, "SplitAfter", factory.FuncIssOsS(strings.SplitAfter)),
+		factory.NewFuncPackage(objects.FuncPackageDef, "SplitAfterN", factory.FuncIssiOsS(strings.SplitAfterN)),
+		factory.NewFuncPackage(objects.FuncPackageDef, "SplitN", factory.FuncIssiOsS(strings.SplitN)),
+		factory.NewFuncPackage(objects.FuncPackageDef, "Title", factory.FuncIsOs(strings.Title)),
+		factory.NewFuncPackage(objects.FuncPackageDef, "ToLower", factory.FuncIsOs(strings.ToLower)),
+		factory.NewFuncPackage(objects.FuncPackageDef, "ToTitle", factory.FuncIsOs(strings.ToTitle)),
+		factory.NewFuncPackage(objects.FuncPackageDef, "ToUpper", factory.FuncIsOs(strings.ToUpper)),
+		factory.NewFuncPackage(objects.FuncPackageDef, "PadLeft", s.PadLeft),
+		factory.NewFuncPackage(objects.FuncPackageDef, "PadRight", s.PadRight),
+		factory.NewFuncPackage(objects.FuncPackageDef, "Trim", factory.FuncIssOs(strings.Trim)),
+		factory.NewFuncPackage(objects.FuncPackageDef, "TrimLeft", factory.FuncIssOs(strings.TrimLeft)),
+		factory.NewFuncPackage(objects.FuncPackageDef, "TrimPrefix", factory.FuncIssOs(strings.TrimPrefix)),
+		factory.NewFuncPackage(objects.FuncPackageDef, "TrimRight", factory.FuncIssOs(strings.TrimRight)),
+		factory.NewFuncPackage(objects.FuncPackageDef, "TrimSpace", factory.FuncIsOs(strings.TrimSpace)),
+		factory.NewFuncPackage(objects.FuncPackageDef, "TrimSuffix", factory.FuncIssOs(strings.TrimSuffix)),
 	}
 	s.Package = NewPackage("strings", container, nil)
 	return s
@@ -59,19 +60,19 @@ func (s *Strings) Replace(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 4 {
 		return nil, objects.ErrWrongNumArguments
 	}
-	s1, err := objects.ToStringArg(0, args[0])
+	s1, err := s.factory.ToStringArg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
-	s2, err := objects.ToStringArg(1, args[1])
+	s2, err := s.factory.ToStringArg(1, args[1])
 	if err != nil {
 		return nil, err
 	}
-	s3, err := objects.ToStringArg(2, args[2])
+	s3, err := s.factory.ToStringArg(2, args[2])
 	if err != nil {
 		return nil, err
 	}
-	i4, err := objects.ToInt64Arg(3, args[3])
+	i4, err := s.factory.ToInt64Arg(3, args[3])
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +80,7 @@ func (s *Strings) Replace(args ...objects.IObject) (objects.IObject, error) {
 	if !ok {
 		return nil, objects.ErrStringLimit
 	}
-	return objects.NewString(ret)
+	return s.factory.NewString(ret)
 }
 
 // Substring extracts a portion of a string based on the starting and ending indices provided as arguments.
@@ -88,18 +89,18 @@ func (s *Strings) Substring(args ...objects.IObject) (objects.IObject, error) {
 	if argsLen != 2 && argsLen != 3 {
 		return nil, objects.ErrWrongNumArguments
 	}
-	s1, err := objects.ToStringArg(0, args[0])
+	s1, err := s.factory.ToStringArg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
-	i2, err := objects.ToInt64Arg(1, args[1])
+	i2, err := s.factory.ToInt64Arg(1, args[1])
 	if err != nil {
 		return nil, err
 	}
 	strlen := int64(len(s1))
 	i3 := strlen
 	if argsLen == 3 {
-		i3, err = objects.ToInt64Arg(2, args[2])
+		i3, err = s.factory.ToInt64Arg(2, args[2])
 		if err != nil {
 			return nil, err
 		}
@@ -117,7 +118,7 @@ func (s *Strings) Substring(args ...objects.IObject) (objects.IObject, error) {
 	} else if i3 > strlen {
 		i3 = strlen
 	}
-	return objects.NewString(s1[i2:i3])
+	return s.factory.NewString(s1[i2:i3])
 }
 
 // PadLeft adds padding to the left of a string to ensure its total length is at least the specified value.
@@ -127,11 +128,11 @@ func (s *Strings) PadLeft(args ...objects.IObject) (objects.IObject, error) {
 	if argsLen != 2 && argsLen != 3 {
 		return nil, objects.ErrWrongNumArguments
 	}
-	s1, err := objects.ToStringArg(0, args[0])
+	s1, err := s.factory.ToStringArg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
-	i2, err := objects.ToInt64Arg(1, args[1])
+	i2, err := s.factory.ToInt64Arg(1, args[1])
 	if err != nil {
 		return nil, err
 	}
@@ -140,22 +141,22 @@ func (s *Strings) PadLeft(args ...objects.IObject) (objects.IObject, error) {
 	}
 	sLen := int64(len(s1))
 	if sLen >= i2 {
-		return objects.NewString(s1)
+		return s.factory.NewString(s1)
 	}
 	s3 := " "
 	if argsLen == 3 {
-		s3, err = objects.ToStringArg(2, args[2])
+		s3, err = s.factory.ToStringArg(2, args[2])
 		if err != nil {
 			return nil, err
 		}
 	}
 	padStrLen := int64(len(s3))
 	if padStrLen == 0 {
-		return objects.NewString(s1)
+		return s.factory.NewString(s1)
 	}
 	padCount := ((i2 - padStrLen) / padStrLen) + 1
 	retStr := strings.Repeat(s3, int(padCount)) + s1
-	return objects.NewString(retStr[int64(len(retStr))-i2:])
+	return s.factory.NewString(retStr[int64(len(retStr))-i2:])
 }
 
 // PadRight pads the input string on the right with a specified string or space until it reaches the desired length.
@@ -164,32 +165,32 @@ func (s *Strings) PadRight(args ...objects.IObject) (objects.IObject, error) {
 	if argsLen != 2 && argsLen != 3 {
 		return nil, objects.ErrWrongNumArguments
 	}
-	s1, err := objects.ToStringArg(0, args[0])
+	s1, err := s.factory.ToStringArg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
-	i2, err := objects.ToInt64Arg(1, args[1])
+	i2, err := s.factory.ToInt64Arg(1, args[1])
 	if err != nil {
 		return nil, err
 	}
 	sLen := int64(len(s1))
 	if sLen >= i2 {
-		return objects.NewString(s1)
+		return s.factory.NewString(s1)
 	}
 	s3 := " "
 	if argsLen == 3 {
-		s3, err = objects.ToStringArg(2, args[2])
+		s3, err = s.factory.ToStringArg(2, args[2])
 		if err != nil {
 			return nil, err
 		}
 	}
 	padStrLen := int64(len(s3))
 	if padStrLen == 0 {
-		return objects.NewString(s1)
+		return s.factory.NewString(s1)
 	}
 	padCount := ((i2 - padStrLen) / padStrLen) + 1
 	retStr := s1 + strings.Repeat(s3, int(padCount))
-	return objects.NewString(retStr[:i2])
+	return s.factory.NewString(retStr[:i2])
 }
 
 // Repeat repeats the input string a specified number of times and returns the concatenated result.
@@ -197,15 +198,15 @@ func (s *Strings) Repeat(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 2 {
 		return nil, objects.ErrWrongNumArguments
 	}
-	s1, err := objects.ToStringArg(0, args[0])
+	s1, err := s.factory.ToStringArg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
-	i2, err := objects.ToInt64Arg(1, args[1])
+	i2, err := s.factory.ToInt64Arg(1, args[1])
 	if err != nil {
 		return nil, err
 	}
-	return objects.NewString(strings.Repeat(s1, int(i2)))
+	return s.factory.NewString(strings.Repeat(s1, int(i2)))
 }
 
 // Join concatenates elements of an array into a single string, using a specified separator string.
@@ -218,7 +219,7 @@ func (s *Strings) Join(args ...objects.IObject) (ret objects.IObject, err error)
 	switch arg0 := args[0].(type) {
 	case *objects.Array:
 		for idx, a := range arg0.Values() {
-			as, err := objects.ToStringArg(idx, a)
+			as, err := s.factory.ToStringArg(idx, a)
 			if err != nil {
 				return nil, err
 			}
@@ -227,7 +228,7 @@ func (s *Strings) Join(args ...objects.IObject) (ret objects.IObject, err error)
 		}
 	case *objects.ArrayImmutable:
 		for idx, a := range arg0.Values() {
-			as, err := objects.ToStringArg(idx, a)
+			as, err := s.factory.ToStringArg(idx, a)
 			if err != nil {
 				return nil, err
 			}
@@ -237,11 +238,11 @@ func (s *Strings) Join(args ...objects.IObject) (ret objects.IObject, err error)
 	default:
 		return nil, objects.NewInvalidArgumentError(0, "array", args[0].TypeName())
 	}
-	s2, err := objects.ToStringArg(1, args[1])
+	s2, err := s.factory.ToStringArg(1, args[1])
 	if err != nil {
 		return nil, err
 	}
-	return objects.NewString(strings.Join(ss1, s2))
+	return s.factory.NewString(strings.Join(ss1, s2))
 }
 
 // stringsReplace replaces up to n occurrences of the substring old with the substring new in the input string str.

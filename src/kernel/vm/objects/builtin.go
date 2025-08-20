@@ -11,16 +11,17 @@ const (
 
 // Builtin defines a struct representing a built-in object with a name and an integer value.
 type Builtin struct {
-	Object
+	*Object
 	name  string
 	index int
 }
 
 // NewBuiltin creates a new instance of Builtin with the specified name and value.
-func NewBuiltin(name string, index int) *Builtin {
+func _newBuiltin(factory *Factory, name string, index int) *Builtin {
 	return &Builtin{
-		name:  name,
-		index: index,
+		Object: factory.NewObject(),
+		name:   name,
+		index:  index,
 	}
 }
 
@@ -46,7 +47,7 @@ func (o *Builtin) TypeName() string {
 
 // Copy creates and returns a new Builtin object with the same name and value as the current instance.
 func (o *Builtin) Copy() IObject {
-	return NewBuiltin(o.name, o.index)
+	return o.Factory().NewBuiltin(o.name, o.index)
 }
 
 // Boolean returns false, indicating the boolean representation of the Builtin object is always false.

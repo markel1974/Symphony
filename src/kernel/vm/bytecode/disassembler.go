@@ -72,14 +72,14 @@ func (d *Disassembler) disassembleInstructions(bc []byte, posOffset int) []strin
 	var out []string
 	for i := 0; i < len(bc); {
 		opcode := bc[i]
-		numOperands, operands, read := OpcodeToOperandsDetails(opcode, bc[i+1:])
+		numOperands, operands, read := d.bc.opcodes.OpcodeToOperandsDetails(opcode, bc[i+1:])
 		switch len(numOperands) {
 		case 0:
-			out = append(out, fmt.Sprintf("%04d %-7s", posOffset+i, OpcodeNames(opcode)))
+			out = append(out, fmt.Sprintf("%04d %-7s", posOffset+i, d.bc.opcodes.OpcodeNames(opcode)))
 		case 1:
-			out = append(out, fmt.Sprintf("%04d %-7s %-5d", posOffset+i, OpcodeNames(opcode), operands[0]))
+			out = append(out, fmt.Sprintf("%04d %-7s %-5d", posOffset+i, d.bc.opcodes.OpcodeNames(opcode), operands[0]))
 		case 2:
-			out = append(out, fmt.Sprintf("%04d %-7s %-5d %-5d", posOffset+i, OpcodeNames(opcode), operands[0], operands[1]))
+			out = append(out, fmt.Sprintf("%04d %-7s %-5d %-5d", posOffset+i, d.bc.opcodes.OpcodeNames(opcode), operands[0], operands[1]))
 		}
 		i += 1 + read
 	}

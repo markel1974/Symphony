@@ -6,18 +6,19 @@ const (
 
 // TrueValue is a predefined constant representing the boolean true value as an IObject.
 // FalseValue is a predefined constant representing the boolean false value as an IObject.
-var (
-	// TrueValue represents a true values.
-	TrueValue IObject = &Bool{value: true}
-
-	// FalseValue represents a false values.
-	FalseValue IObject = &Bool{value: false}
-)
 
 // Bool is a custom type representing a boolean values, implementing IObject interface and encapsulating a boolean value.
 type Bool struct {
-	Object
+	*Object
 	value bool
+}
+
+// NewBool creates and returns a new Bool object with the specified boolean value.
+func _newBool(factory *Factory, value bool) *Bool {
+	return &Bool{
+		Object: factory.NewObject(),
+		value:  value,
+	}
 }
 
 // String returns the string representation of the Bool object, index.e., "true" if the value is true, otherwise "false".

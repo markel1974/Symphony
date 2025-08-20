@@ -1,5 +1,7 @@
 package bytecode
 
+import "github.com/markel1974/c64emu/src/kernel/vm/objects"
+
 // OpcodesLen defines the length of Opcodes as 256, calculated using a bitwise shift operation.
 // OpcodesMask provides a bitmask for Opcodes of length 256 by subtracting 1 from OpcodesLen.
 const (
@@ -103,14 +105,16 @@ const (
 
 // OpcodeDetails represents the details of an opcode, including its identifier, its operands, and its name.
 type OpcodeDetails struct {
+	factory  *objects.Factory
 	opcode   Opcode
 	operands []int
 	name     string
 }
 
 // NewOpcodeDetails creates a new OpcodeDetails instance, initializing its opcode, operands, and name fields.
-func NewOpcodeDetails(opcode Opcode, operands []int, name string) *OpcodeDetails {
+func NewOpcodeDetails(factory *objects.Factory, opcode Opcode, operands []int, name string) *OpcodeDetails {
 	od := &OpcodeDetails{
+		factory:  factory,
 		opcode:   opcode,
 		operands: operands,
 		name:     name,
@@ -123,6 +127,10 @@ func (od *OpcodeDetails) Opcode() Opcode {
 	return od.opcode
 }
 
+func (od *OpcodeDetails) Factory() *objects.Factory {
+	return od.factory
+}
+
 // Name returns the name of the opcode as a string.
 func (od *OpcodeDetails) Name() string {
 	return od.name
@@ -133,80 +141,90 @@ func (od *OpcodeDetails) Operands() []int {
 	return od.operands
 }
 
-// _opcodesDetail holds details for all defined opcodes, including their operands and names, indexed by the opcode value.
-var _opcodesDetail []*OpcodeDetails
+type Opcodes struct {
+	factory *objects.Factory
+	details []*OpcodeDetails
+}
 
-// init initializes the opcode details by creating and populating the `_opcodesDetail` slice with `OpcodeDetails` instances.
-func init() {
-	_opcodesDetail = make([]*OpcodeDetails, OpcodesLen)
-	for i := range _opcodesDetail {
-		_opcodesDetail[i] = NewOpcodeDetails(OpUnknown, []int{}, "OpUnknown")
+func NewOpcodes(factory *objects.Factory) *Opcodes {
+	op := &Opcodes{
+		factory: factory,
+		details: make([]*OpcodeDetails, OpcodesLen),
 	}
-	createOpcodeDetails(OpConstant, []int{2}, "OpConstant")
-	createOpcodeDetails(OpPop, []int{}, "OpPop")
-	createOpcodeDetails(OpTrue, []int{}, "OpTrue")
-	createOpcodeDetails(OpFalse, []int{}, "OpFalse")
-	createOpcodeDetails(OpBComplement, []int{}, "OpBComplement")
-	createOpcodeDetails(OpEqual, []int{}, "OpEqual")
-	createOpcodeDetails(OpNotEqual, []int{}, "OpNotEqual")
-	createOpcodeDetails(OpMinus, []int{}, "OpMinus")
-	createOpcodeDetails(OpLNot, []int{}, "OpLNot")
-	createOpcodeDetails(OpJumpFalsy, []int{2}, "OpJumpFalsy")
-	createOpcodeDetails(OpAndJump, []int{2}, "OpAndJump")
-	createOpcodeDetails(OpOrJump, []int{2}, "OpOrJump")
-	createOpcodeDetails(OpJump, []int{2}, "OpJump")
-	createOpcodeDetails(OpNull, []int{}, "OpNull")
-	createOpcodeDetails(OpGetGlobal, []int{2}, "OpGetGlobal")
-	createOpcodeDetails(OpSetGlobal, []int{2}, "OpSetGlobal")
-	createOpcodeDetails(OpSetSelGlobal, []int{2, 1}, "OpSetSelGlobal")
-	createOpcodeDetails(OpArray, []int{2}, "OpArray")
-	createOpcodeDetails(OpMap, []int{2}, "OpMap")
-	createOpcodeDetails(OpStruct, []int{2}, "OpStruct")
-	createOpcodeDetails(OpImmutable, []int{}, "OpImmutable")
-	createOpcodeDetails(OpIndex, []int{}, "OpIndex")
-	createOpcodeDetails(OpSliceIndex, []int{}, "OpSliceIndex")
-	createOpcodeDetails(OpCall, []int{1, 1}, "OpCall")
-	createOpcodeDetails(OpReturn, []int{1}, "OpReturn")
-	createOpcodeDetails(OpGetLocal, []int{1}, "OpGetLocal")
-	createOpcodeDetails(OpSetLocal, []int{1}, "OpSetLocal")
-	createOpcodeDetails(OpDefineLocal, []int{1}, "OpDefineLocal")
-	createOpcodeDetails(OpSetSelLocal, []int{1, 1}, "OpSetSelLocal")
-	createOpcodeDetails(OpClosure, []int{2, 1}, "OpClosure")
-	createOpcodeDetails(OpGetFreePtr, []int{1}, "OpGetFreePtr")
-	createOpcodeDetails(OpGetFree, []int{1}, "OpGetFree")
-	createOpcodeDetails(OpSetFree, []int{1}, "OpSetFree")
-	createOpcodeDetails(OpGetLocalPtr, []int{1}, "OpGetLocalPtr")
-	createOpcodeDetails(OpSetSelFree, []int{1, 1}, "OpSetSelFree")
-	createOpcodeDetails(OpIteratorInit, []int{1}, "OpIteratorInit")
-	createOpcodeDetails(OpIteratorNext, []int{1}, "OpIteratorNext")
-	createOpcodeDetails(OpIteratorKey, []int{1}, "OpIteratorKey")
-	createOpcodeDetails(OpIteratorValue, []int{1}, "OpIteratorValue")
-	createOpcodeDetails(OpBinary, []int{1}, "OpBinary")
-	createOpcodeDetails(OpReferences, []int{2}, "OpReferences")
-	createOpcodeDetails(OpSuspend, []int{}, "OpSuspend")
-	createOpcodeDetails(OpError, []int{}, "OpError")
+	for i := range op.details {
+		op.details[i] = NewOpcodeDetails(factory, OpUnknown, []int{}, "OpUnknown")
+	}
+	op.createOpcodeDetails(factory, OpConstant, []int{2}, "OpConstant")
+	op.createOpcodeDetails(factory, OpPop, []int{}, "OpPop")
+	op.createOpcodeDetails(factory, OpTrue, []int{}, "OpTrue")
+	op.createOpcodeDetails(factory, OpFalse, []int{}, "OpFalse")
+	op.createOpcodeDetails(factory, OpBComplement, []int{}, "OpBComplement")
+	op.createOpcodeDetails(factory, OpEqual, []int{}, "OpEqual")
+	op.createOpcodeDetails(factory, OpNotEqual, []int{}, "OpNotEqual")
+	op.createOpcodeDetails(factory, OpMinus, []int{}, "OpMinus")
+	op.createOpcodeDetails(factory, OpLNot, []int{}, "OpLNot")
+	op.createOpcodeDetails(factory, OpJumpFalsy, []int{2}, "OpJumpFalsy")
+	op.createOpcodeDetails(factory, OpAndJump, []int{2}, "OpAndJump")
+	op.createOpcodeDetails(factory, OpOrJump, []int{2}, "OpOrJump")
+	op.createOpcodeDetails(factory, OpJump, []int{2}, "OpJump")
+	op.createOpcodeDetails(factory, OpNull, []int{}, "OpNull")
+	op.createOpcodeDetails(factory, OpGetGlobal, []int{2}, "OpGetGlobal")
+	op.createOpcodeDetails(factory, OpSetGlobal, []int{2}, "OpSetGlobal")
+	op.createOpcodeDetails(factory, OpSetSelGlobal, []int{2, 1}, "OpSetSelGlobal")
+	op.createOpcodeDetails(factory, OpArray, []int{2}, "OpArray")
+	op.createOpcodeDetails(factory, OpMap, []int{2}, "OpMap")
+	op.createOpcodeDetails(factory, OpStruct, []int{2}, "OpStruct")
+	op.createOpcodeDetails(factory, OpImmutable, []int{}, "OpImmutable")
+	op.createOpcodeDetails(factory, OpIndex, []int{}, "OpIndex")
+	op.createOpcodeDetails(factory, OpSliceIndex, []int{}, "OpSliceIndex")
+	op.createOpcodeDetails(factory, OpCall, []int{1, 1}, "OpCall")
+	op.createOpcodeDetails(factory, OpReturn, []int{1}, "OpReturn")
+	op.createOpcodeDetails(factory, OpGetLocal, []int{1}, "OpGetLocal")
+	op.createOpcodeDetails(factory, OpSetLocal, []int{1}, "OpSetLocal")
+	op.createOpcodeDetails(factory, OpDefineLocal, []int{1}, "OpDefineLocal")
+	op.createOpcodeDetails(factory, OpSetSelLocal, []int{1, 1}, "OpSetSelLocal")
+	op.createOpcodeDetails(factory, OpClosure, []int{2, 1}, "OpClosure")
+	op.createOpcodeDetails(factory, OpGetFreePtr, []int{1}, "OpGetFreePtr")
+	op.createOpcodeDetails(factory, OpGetFree, []int{1}, "OpGetFree")
+	op.createOpcodeDetails(factory, OpSetFree, []int{1}, "OpSetFree")
+	op.createOpcodeDetails(factory, OpGetLocalPtr, []int{1}, "OpGetLocalPtr")
+	op.createOpcodeDetails(factory, OpSetSelFree, []int{1, 1}, "OpSetSelFree")
+	op.createOpcodeDetails(factory, OpIteratorInit, []int{1}, "OpIteratorInit")
+	op.createOpcodeDetails(factory, OpIteratorNext, []int{1}, "OpIteratorNext")
+	op.createOpcodeDetails(factory, OpIteratorKey, []int{1}, "OpIteratorKey")
+	op.createOpcodeDetails(factory, OpIteratorValue, []int{1}, "OpIteratorValue")
+	op.createOpcodeDetails(factory, OpBinary, []int{1}, "OpBinary")
+	op.createOpcodeDetails(factory, OpReferences, []int{2}, "OpReferences")
+	op.createOpcodeDetails(factory, OpSuspend, []int{}, "OpSuspend")
+	op.createOpcodeDetails(factory, OpError, []int{}, "OpError")
+	return op
+}
+
+// Factory returns the factory associated with the Opcodes instance.
+func (op *Opcodes) Factory() *objects.Factory {
+	return op.factory
 }
 
 // createOpcodeDetails associates opcode details with a specific opcode, storing it in a global lookup by applying a mask.
-func createOpcodeDetails(opcode Opcode, operands []int, name string) {
-	od := NewOpcodeDetails(opcode, operands, name)
-	_opcodesDetail[od.opcode&OpcodesMask] = od
+func (op *Opcodes) createOpcodeDetails(factory *objects.Factory, opcode Opcode, operands []int, name string) {
+	od := NewOpcodeDetails(factory, opcode, operands, name)
+	op.details[od.opcode&OpcodesMask] = od
 }
 
 // OpcodeToDetails retrieves the OpcodeDetails corresponding to the given opcode by applying the OpcodesMask.
-func OpcodeToDetails(opcode Opcode) *OpcodeDetails {
-	return _opcodesDetail[opcode&OpcodesMask]
+func (op *Opcodes) OpcodeToDetails(opcode Opcode) *OpcodeDetails {
+	return op.details[opcode&OpcodesMask]
 }
 
 // OpcodeToOperands retrieves the operand widths for a given opcode from its details.
-func OpcodeToOperands(opcode Opcode) []int {
-	details := OpcodeToDetails(opcode)
+func (op *Opcodes) OpcodeToOperands(opcode Opcode) []int {
+	details := op.OpcodeToDetails(opcode)
 	return details.Operands()
 }
 
 // OpcodeToOperandsOffset calculates the total byte offset for the operands of a given opcode.
-func OpcodeToOperandsOffset(opcode Opcode) int {
-	details := OpcodeToDetails(opcode)
+func (op *Opcodes) OpcodeToOperandsOffset(opcode Opcode) int {
+	details := op.OpcodeToDetails(opcode)
 	if len(details.Operands()) == 0 {
 		return 0
 	}
@@ -218,8 +236,8 @@ func OpcodeToOperandsOffset(opcode Opcode) int {
 }
 
 // OpcodeToOperandsDetails extracts operand details from a given opcode and instruction sequence, returning operand widths, values, and bytes read.
-func OpcodeToOperandsDetails(opcode Opcode, ins []byte) ([]int, []int, int) {
-	details := OpcodeToDetails(opcode)
+func (op *Opcodes) OpcodeToOperandsDetails(opcode Opcode, ins []byte) ([]int, []int, int) {
+	details := op.OpcodeToDetails(opcode)
 	if len(details.Operands()) == 0 {
 		return nil, nil, 0
 	}
@@ -244,7 +262,32 @@ func OpcodeToOperandsDetails(opcode Opcode, ins []byte) ([]int, []int, int) {
 }
 
 // OpcodeNames returns the name of the provided opcode as a string.
-func OpcodeNames(opcode Opcode) string {
-	details := OpcodeToDetails(opcode)
+func (op *Opcodes) OpcodeNames(opcode Opcode) string {
+	details := op.OpcodeToDetails(opcode)
 	return details.Name()
+}
+
+// CompileInstruction returns a bytecode for an opcode and the operands.
+func (op *Opcodes) CompileInstruction(opcode Opcode, operands ...int) []byte {
+	numOperands := op.OpcodeToOperands(opcode)
+	totalLen := 1
+	for _, w := range numOperands {
+		totalLen += w
+	}
+	instruction := make([]byte, totalLen)
+	instruction[0] = opcode
+	offset := 1
+	for i, o := range operands {
+		width := numOperands[i]
+		switch width {
+		case 1:
+			instruction[offset] = byte(o)
+		case 2:
+			n := uint16(o)
+			instruction[offset] = byte(n >> 8)
+			instruction[offset+1] = byte(n)
+		}
+		offset += width
+	}
+	return instruction
 }

@@ -9,13 +9,16 @@ const (
 // It embeds Object, inheriting default behaviors for the IObject interface methods.
 // The value field holds the actual IObject instance being wrapped.
 type ObjectPointer struct {
-	Object
+	*Object
 	value *IObject
 }
 
 // NewObjectPointer creates a new ObjectPointer instance wrapping the provided IObject pointer.// NewObjectPointer creates a new ObjectPointer instance with the provided IObject values.
-func NewObjectPointer(value *IObject) *ObjectPointer {
-	return &ObjectPointer{value: value}
+func _newObjectPointer(factory *Factory, value *IObject) *ObjectPointer {
+	return &ObjectPointer{
+		Object: factory.NewObject(),
+		value:  value,
+	}
 }
 
 // Value returns the internal IObject pointer stored in the ObjectPointer instance.

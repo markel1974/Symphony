@@ -7,7 +7,7 @@ const (
 
 // FuncCompiled represents a compiled function with bytecode instructions, metadata, and associated free variables.
 type FuncCompiled struct {
-	Object
+	*Object
 	name          string
 	instructions  *Instructions
 	numLocals     int
@@ -18,13 +18,14 @@ type FuncCompiled struct {
 }
 
 // NewFunctionCompiled creates a new instance of FuncCompiled with the given instructions, locals, parameters, varArgs, sourceMap, and free vars.
-func NewFunctionCompiled(name string, instructions []byte, numLocals int, numParameters int, varArgs bool, sourceMap map[int]int, free []*ObjectPointer) *FuncCompiled {
+func _newFuncCompiled(factory *Factory, name string, instructions []byte, numLocals int, numParameters int, varArgs bool, sourceMap map[int]int, free []*ObjectPointer) *FuncCompiled {
 	if sourceMap == nil {
 		sourceMap = make(map[int]int)
 	}
 	return &FuncCompiled{
+		Object:        factory.NewObject(),
 		name:          name,
-		instructions:  NewInstructions(instructions),
+		instructions:  _newInstructions(instructions),
 		numLocals:     numLocals,
 		numParameters: numParameters,
 		varArgs:       varArgs,
@@ -80,13 +81,10 @@ func (o *FuncCompiled) String() string {
 
 // Copy creates and returns a new instance of FuncCompiled, duplicating its state, except for its variable pointers.
 func (o *FuncCompiled) Copy() IObject {
-	return &FuncCompiled{
-		instructions:  o.instructions.Copy(), //append([]byte{}, o.instructions...),
-		numLocals:     o.numLocals,
-		numParameters: o.numParameters,
-		varArgs:       o.varArgs,
-		free:          append([]*ObjectPointer{}, o.free...), // DO NOT Copy() of elements; these are variable pointers
-	}
+	ret := o.Factory().NewFuncCompiled(o.name, nil, o.numLocals, o.numParameters, o.varArgs, nil, nil)
+	ret.instructions = o.instructions.Copy()
+	ret.free = append([]*ObjectPointer{}, o.free...)
+	return ret
 }
 
 // Equals checks if the current FuncCompiled is equal to the provided IObject. Always returns false.

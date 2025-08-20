@@ -1,5 +1,11 @@
 package objects
 
+import (
+	"fmt"
+	"strconv"
+	"time"
+)
+
 // Code		Meaning		Go-Type			Description
 //	I		Input			-			Prefix indicating input parameters.
 //	O		Output			-			Prefix indicating return values.
@@ -14,104 +20,580 @@ package objects
 //	bS		bytes-Slice		[]byte		A slice (array) of bytes.
 //  iS      int-Slice		[]int       A slice (array) of int.
 
+type Factory struct {
+	trueValue      IObject
+	falseValue     IObject
+	undefinedValue IObject
+}
+
+func NewFactory() *Factory {
+	f := &Factory{}
+	f.trueValue = _newBool(f, true)
+	f.falseValue = _newBool(f, false)
+	f.undefinedValue = _newUndefined(f)
+	return f
+}
+
+func (f *Factory) FalseValue() IObject {
+	return f.falseValue
+}
+
+func (f *Factory) TrueValue() IObject {
+	return f.trueValue
+}
+
+func (f *Factory) UndefinedValue() IObject {
+	return f.undefinedValue
+}
+
+func (f *Factory) NewObject() *Object {
+	return _newObject(f)
+}
+
+func (f *Factory) NewArray(values []IObject) *Array {
+	return _newArray(f, values)
+}
+
+func (f *Factory) NewArrayImmutable(values []IObject) *ArrayImmutable {
+	return _newArrayImmutable(f, values)
+}
+
+func (f *Factory) NewArrayIterator(values []IObject) *ArrayIterator {
+	return _newArrayIterator(f, values)
+}
+
+func (f *Factory) NewBool(value bool) *Bool {
+	return _newBool(f, value)
+}
+
+func (f *Factory) NewBuiltin(name string, index int) *Builtin {
+	return _newBuiltin(f, name, index)
+}
+
+func (f *Factory) NewBytes(value []byte) *Bytes {
+	return _newBytes(f, value)
+}
+
+func (f *Factory) NewBytesIterator(v []byte) *BytesIterator {
+	return _newBytesIterator(f, v)
+}
+
+func (f *Factory) NewChar(value rune) *Char {
+	return _newChar(f, value)
+}
+
+func (f *Factory) NewError(value IObject) *Error {
+	return _newError(f, value)
+}
+
+func (f *Factory) NewFuncCompiled(name string, instructions []byte, numLocals int, numParameters int, varArgs bool, sourceMap map[int]int, free []*ObjectPointer) *FuncCompiled {
+	return _newFuncCompiled(f, name, instructions, numLocals, numParameters, varArgs, sourceMap, free)
+}
+
+func (f *Factory) NewFuncPackage(kind string, name string, fn FuncCallable) *FuncPackage {
+	return _newFuncPackage(f, kind, name, fn)
+}
+
+func (f *Factory) NewObjectError(err error) IObject {
+	if err == nil {
+		return f.TrueValue()
+	}
+	return f.NewError(f.NewStringNoSize(err.Error()))
+}
+
+func (f *Factory) NewFloat(v float64) *Float {
+	return _newFloat(f, v)
+}
+
+func (f *Factory) NewInt(v int64) *Int {
+	return _newInt(f, v)
+}
+
+func (f *Factory) NewObjectPointer(value *IObject) *ObjectPointer {
+	return _newObjectPointer(f, value)
+}
+
+func (f *Factory) NewMap(v map[string]IObject) *Map {
+	return _newMap(f, v)
+}
+
+func (f *Factory) NewMapImmutable(v map[string]IObject) *MapImmutable {
+	return _newMapImmutable(f, v)
+}
+
+func (f *Factory) NewMapIterator(v map[string]IObject) *MapIterator {
+	return _newMapIterator(f, v)
+}
+
+func (f *Factory) NewStringNoSize(value string) *String {
+	return _newStringNoSize(f, value)
+}
+
+func (f *Factory) NewString(value string) (*String, error) {
+	return _newString(f, value)
+}
+
+func (f *Factory) NewStringIterator(v []rune) *StringIterator {
+	return _newStringIterator(f, v)
+}
+
+func (f *Factory) NewStruct(value map[string]IObject) *Struct {
+	return _newStruct(f, value)
+}
+
+func (f *Factory) NewStructIterator(v map[string]IObject) *StructIterator {
+	return _newStructIterator(f, v)
+}
+
+func (f *Factory) NewTime(value time.Time) *Time {
+	return _newTime(f, value)
+}
+
+// ToInterface converts an IObject to its corresponding native Go representation, such as int, string, float64, bool, etc.
+func (f *Factory) ToInterface(in IObject) (res interface{}) {
+	switch o := in.(type) {
+	case *Int:
+		res = o.value
+	case *String:
+		res = o.value
+	case *Float:
+		res = o.value
+	case *Bool:
+		res = o == f.TrueValue()
+	case *Char:
+		res = o.value
+	case *Bytes:
+		res = o.values
+	case *Array:
+		res = make([]interface{}, len(o.Values()))
+		for i, val := range o.Values() {
+			res.([]interface{})[i] = f.ToInterface(val)
+		}
+	case *ArrayImmutable:
+		res = make([]interface{}, o.Length())
+		for i, val := range o.Values() {
+			res.([]interface{})[i] = f.ToInterface(val)
+		}
+	case *Map:
+		res = make(map[string]interface{})
+		for key, v := range o.values {
+			res.(map[string]interface{})[key] = f.ToInterface(v)
+		}
+	case *MapImmutable:
+		res = make(map[string]interface{})
+		for key, v := range o.Values() {
+			res.(map[string]interface{})[key] = f.ToInterface(v)
+		}
+	case *Time:
+		res = o.value
+	case *Error:
+		res = New(o.String())
+	case *Undefined:
+		res = nil
+	case IObject:
+		return o
+	}
+	return
+}
+
+// FromInterface converts a native Go value of various types into a corresponding IObject implementation.
+func (f *Factory) FromInterface(in interface{}) IObject {
+	switch v := in.(type) {
+	case nil:
+		return f.UndefinedValue()
+	case string:
+		if len(v) > MaxStringLen {
+			return f.NewStringNoSize(v[0:MaxStringLen])
+		}
+		return f.NewStringNoSize(v)
+	case int64:
+		return f.NewInt(v)
+	case int:
+		return f.NewInt(int64(v))
+	case bool:
+		if v {
+			return f.TrueValue()
+		}
+		return f.FalseValue()
+	case rune:
+		return f.NewChar(v)
+	case byte:
+		return f.NewChar(rune(v))
+	case float64:
+		return f.NewFloat(v)
+	case []byte:
+		if len(v) > MaxBytesLen {
+			return f.NewBytes(v[0:MaxBytesLen])
+		}
+		return f.NewBytes(v)
+	case error:
+		return f.NewError(f.NewStringNoSize(v.Error()))
+	case map[string]IObject:
+		return f.NewMap(v)
+	case map[string]interface{}:
+		kv := f.FromMap(v)
+		return f.NewMap(kv)
+	case []bool:
+		arr := make([]IObject, len(v))
+		for i, e := range v {
+			if e {
+				arr[i] = f.TrueValue()
+			} else {
+				arr[i] = f.FalseValue()
+			}
+		}
+		return f.NewArray(arr)
+	case []int:
+		arr := make([]IObject, len(v))
+		for i, e := range v {
+			arr[i] = f.NewInt(int64(e))
+		}
+		return f.NewArray(arr)
+	case []map[string]interface{}:
+		arr := make([]IObject, len(v))
+		for i, e := range v {
+			kv := f.FromMap(e)
+			vo := f.FromInterface(kv)
+			arr[i] = vo
+		}
+		return f.NewArray(arr)
+	case []IObject:
+		return f.NewArray(v)
+	case []interface{}:
+		arr := make([]IObject, len(v))
+		for i, e := range v {
+			arr[i] = f.FromInterface(e)
+		}
+		return f.NewArray(arr)
+	case time.Time:
+		return f.NewTime(v)
+	case IObject:
+		return v
+	case FuncCallable:
+		return f.NewFuncPackage(FuncPackageDef, "FuncCallable", v)
+	}
+	return f.UndefinedValue()
+}
+
+// ToMap converts an IObject to a map[string]interface{} if the object is a *Map, recursively applying ToInterface.
+func (f *Factory) ToMap(o IObject) (res map[string]interface{}) {
+	switch o := o.(type) {
+	case *Map:
+		res = make(map[string]interface{})
+		for key, v := range o.values {
+			res[key] = f.ToInterface(v)
+		}
+	}
+	return
+}
+
+// FromMap converts a map with string keys and interface{} values into a map with string keys and IObject values.
+func (f *Factory) FromMap(v map[string]interface{}) map[string]IObject {
+	kv := make(map[string]IObject)
+	for key, val := range v {
+		kv[key] = f.FromInterface(val)
+	}
+	return kv
+}
+
+// ToInt64 attempts to convert the given IObject to an int64 value.
+// It returns the converted value and a boolean indicating success or failure.
+func (f *Factory) ToInt64(o IObject) (int64, bool) {
+	switch o := o.(type) {
+	case *Int:
+		return o.value, true
+	case *Float:
+		return int64(o.value), true
+	case *Char:
+		return int64(o.value), true
+	case *Bool:
+		if o == f.TrueValue() {
+			return 1, true
+		}
+		return 0, true
+	case *String:
+		c, err := strconv.ParseInt(o.value, 10, 64)
+		if err == nil {
+			return c, true
+		}
+		return 0, false
+	default:
+		return 0, false
+	}
+}
+
+// ToInt64Arg converts an IObject to an int64, returning an error if the conversion is not possible or the type is invalid.
+func (f *Factory) ToInt64Arg(index int, o IObject) (int64, error) {
+	v, ok := f.ToInt64(o)
+	if !ok {
+		return 0, NewInvalidArgumentError(index, "int(compatible)", o.TypeName())
+	}
+	return v, nil
+}
+
+// ToRune attempts to convert an IObject to a rune if it is of type *Int or *Char, returning the rune and a boolean success flag.
+func (f *Factory) ToRune(o IObject) (v rune, ok bool) {
+	switch o := o.(type) {
+	case *Int:
+		v = rune(o.value)
+		ok = true
+	case *Char:
+		v = o.value
+		ok = true
+	}
+	return
+}
+
+// ToString converts an IObject to its string representation and determines whether the conversion is valid.
+func (f *Factory) ToString(o IObject) (string, bool) {
+	if o == nil {
+		return "", false
+	}
+	if o == f.UndefinedValue() {
+		return "", false
+	}
+	if str, isStr := o.(*String); isStr {
+		return str.value, true
+	}
+	return o.String(), true
+}
+
+// ToStringArg attempts to convert an IObject to a string. Returns an error if conversion fails or type is incompatible.
+func (f *Factory) ToStringArg(index int, o IObject) (string, error) {
+	v, ok := f.ToString(o)
+	if !ok {
+		return "", NewInvalidArgumentError(index, "string(compatible)", o.TypeName())
+	}
+	return v, nil
+}
+
+// ToStringArrayArg attempts to convert an array of IObjects to a slice of strings.
+func (f *Factory) ToStringArrayArg(index int, arr []IObject) ([]string, error) {
+	var sArr []string
+	for idx, elem := range arr {
+		str, ok := f.ToString(elem)
+		if !ok {
+			return nil, NewInvalidArgumentError(index, fmt.Sprintf("%d - string array(compatible)", idx), elem.TypeName())
+		}
+		sArr = append(sArr, str)
+	}
+	return sArr, nil
+}
+
+// ToByteSlice converts an IObject to a byte slice if the object is of type *Bytes or *String.
+// It returns the converted byte slice and a boolean indicating success.
+func (f *Factory) ToByteSlice(o IObject) ([]byte, bool) {
+	switch o := o.(type) {
+	case *Bytes:
+		return o.values, true
+	case *String:
+		return []byte(o.value), true
+	default:
+		return nil, false
+	}
+}
+
+// ToByteSliceArg attempts to convert an IObject to a byte slice. Returns an error if the conversion fails or the type is incompatible.
+func (f *Factory) ToByteSliceArg(index int, o IObject) ([]byte, error) {
+	b, ok := f.ToByteSlice(o)
+	if !ok {
+		return nil, NewInvalidArgumentError(index, "byte slice(compatible)", o.TypeName())
+	}
+	return b, nil
+}
+
+// ToFloat64 attempts to convert an IObject to a float64 and returns the values along with a success flag.
+func (f *Factory) ToFloat64(o IObject) (float64, bool) {
+	switch o := o.(type) {
+	case *Int:
+		return float64(o.value), true
+	case *Float:
+		return o.value, true
+	case *Char:
+		return float64(o.value), true
+	case *Bool:
+		if o == f.TrueValue() {
+			return 1, true
+		}
+		return 0, true
+	case *String:
+		c, err := strconv.ParseFloat(o.value, 64)
+		if err == nil {
+			return c, true
+		}
+		return 0, false
+	default:
+		return 0, false
+	}
+}
+
+// ToFloat64Arg converts an IObject to a float64 and returns an error if the conversion fails or the type is incompatible.
+func (f *Factory) ToFloat64Arg(index int, o IObject) (float64, error) {
+	v, ok := f.ToFloat64(o)
+	if !ok {
+		return 0, NewInvalidArgumentError(index, "float64(compatible)", o.TypeName())
+	}
+	return v, nil
+}
+
+// ToTime converts an IObject into a time.Time if it is time-compatible (e.g., *Time or *Int). Returns the time and a boolean.
+func (f *Factory) ToTime(o IObject) (time.Time, bool) {
+	switch o := o.(type) {
+	case *Time:
+		return o.value, true
+	case *Int:
+		return time.Unix(o.value, 0), true
+	}
+	return time.Time{}, false
+}
+
+// ToTimeArg attempts to convert an IObject to a time.Time. Returns an error if the conversion fails or the type is incompatible.
+func (f *Factory) ToTimeArg(index int, o IObject) (time.Time, error) {
+	v, ok := f.ToTime(o)
+	if !ok {
+		return time.Time{}, NewInvalidArgumentError(index, "time(compatible)", o.TypeName())
+	}
+	return v, nil
+}
+
+// ToBool converts the given IObject to a bool based on its Boolean() method and returns the result along with a success flag.
+func (f *Factory) ToBool(o IObject) (v bool, ok bool) {
+	ok = true
+	v = !o.Boolean()
+	return
+}
+
+// FromBool converts a boolean values into its corresponding IObject representation, returning TrueValue or FalseValue.
+func (f *Factory) FromBool(v bool) IObject {
+	if v {
+		return f.TrueValue()
+	}
+	return f.FalseValue()
+}
+
+// ToBoolArg converts the given IObject to a boolean if possible or returns an error indicating an invalid argument type.
+func (f *Factory) ToBoolArg(index int, o IObject) (bool, error) {
+	b1, ok := o.(*Bool)
+	if !ok {
+		return false, NewInvalidArgumentError(index, "bool(compatible)", o.TypeName())
+	}
+	return b1.value, nil
+}
+
+// FromStringArray converts a slice of strings into an array of IObjects.
+func (f *Factory) FromStringArray(in []string) (IObject, error) {
+	var data []IObject
+	if len(in) > 0 {
+		data = make([]IObject, len(in))
+		for idx, v := range in {
+			r, err := f.NewString(v)
+			if err != nil {
+				return nil, err
+			}
+			data[idx] = r
+		}
+	}
+	return f.NewArray(data), nil
+}
+
 // FuncInOn converts a no-argument, no-return Go function into a FuncCallable type that can be called with zero arguments.
 // Returns ErrWrongNumArguments if any arguments are passed.
 // Invokes the provided function and returns UndefinedValue upon successful execution.
-func FuncInOn(fn func()) FuncCallable {
+func (f *Factory) FuncInOn(fn func()) FuncCallable {
 	return func(args ...IObject) (ret IObject, err error) {
 		if len(args) != 0 {
 			return nil, ErrWrongNumArguments
 		}
 		fn()
-		return UndefinedValue, nil
+		return f.UndefinedValue(), nil
 	}
 }
 
 // FuncInOi wraps a no-argument integer-returning function into a callable functional interface of type FuncCallable.
 // Returns an error if arguments are provided. Converts the integer result into an IObject using NewInt.
-func FuncInOi(fn func() int) FuncCallable {
+func (f *Factory) FuncInOi(fn func() int) FuncCallable {
 	return func(args ...IObject) (ret IObject, err error) {
 		if len(args) != 0 {
 			return nil, ErrWrongNumArguments
 		}
-		return NewInt(int64(fn())), nil
+		return f.NewInt(int64(fn())), nil
 	}
 }
 
 // FuncInOi64 wraps a function returning int64 into a FuncCallable with no arguments.
 // Returns ErrWrongNumArguments if arguments are passed.
 // Converts the result to an IObject using NewInt before returning.
-func FuncInOi64(fn func() int64) FuncCallable {
+func (f *Factory) FuncInOi64(fn func() int64) FuncCallable {
 	return func(args ...IObject) (ret IObject, err error) {
 		if len(args) != 0 {
 			return nil, ErrWrongNumArguments
 		}
-		return NewInt(fn()), nil
+		return f.NewInt(fn()), nil
 	}
 }
 
 // FuncIi64Oi64 wraps a function that takes int64 and returns int64, into a FuncCallable compatible with IObject interface.
-func FuncIi64Oi64(fn func(int64) int64) FuncCallable {
+func (f *Factory) FuncIi64Oi64(fn func(int64) int64) FuncCallable {
 	return func(args ...IObject) (ret IObject, err error) {
 		if len(args) != 1 {
 			return nil, ErrWrongNumArguments
 		}
-		i1, err := ToInt64Arg(0, args[0])
+		i1, err := f.ToInt64Arg(0, args[0])
 		if err != nil {
 			return nil, err
 		}
-		return NewInt(fn(i1)), nil
+		return f.NewInt(fn(i1)), nil
 	}
 }
 
 // FuncIi64On wraps a function that accepts a single int64 argument into a FuncCallable that works with IObject arguments.
-func FuncIi64On(fn func(int64)) FuncCallable {
+func (f *Factory) FuncIi64On(fn func(int64)) FuncCallable {
 	return func(args ...IObject) (ret IObject, err error) {
 		if len(args) != 1 {
 			return nil, ErrWrongNumArguments
 		}
-		i1, err := ToInt64Arg(0, args[0])
+		i1, err := f.ToInt64Arg(0, args[0])
 		if err != nil {
 			return nil, err
 		}
 		fn(i1)
-		return UndefinedValue, nil
+		return f.UndefinedValue(), nil
 	}
 }
 
 // FuncInOb wraps a zero-argument boolean function into a FuncCallable that returns TrueValue or FalseValue.
-func FuncInOb(fn func() bool) FuncCallable {
+func (f *Factory) FuncInOb(fn func() bool) FuncCallable {
 	return func(args ...IObject) (ret IObject, err error) {
 		if len(args) != 0 {
 			return nil, ErrWrongNumArguments
 		}
 		if fn() {
-			return TrueValue, nil
+			return f.TrueValue(), nil
 		}
-		return FalseValue, nil
+		return f.FalseValue(), nil
 	}
 }
 
 // FuncInOe creates a FuncCallable wrapper around a zero-argument function that returns an error.
 // Returns ErrWrongNumArguments if arguments are provided.
 // Wraps the error returned by the given function into an IObject-compatible error object.
-func FuncInOe(fn func() error) FuncCallable {
+func (f *Factory) FuncInOe(fn func() error) FuncCallable {
 	return func(args ...IObject) (ret IObject, err error) {
 		if len(args) != 0 {
 			return nil, ErrWrongNumArguments
 		}
-		return NewObjectError(fn()), nil
+		return f.NewObjectError(fn()), nil
 	}
 }
 
 // FuncInOs wraps a function that returns a string, creating a FuncCallable with IObject arguments and results.
 // If called with arguments, it returns ErrWrongNumArguments. Otherwise, it returns a string-wrapped IObject result.
-func FuncInOs(fn func() string) FuncCallable {
+func (f *Factory) FuncInOs(fn func() string) FuncCallable {
 	return func(args ...IObject) (ret IObject, err error) {
 		if len(args) != 0 {
 			return nil, ErrWrongNumArguments
 		}
-		v, err := NewString(fn())
+		v, err := f.NewString(fn())
 		if err != nil {
 			return nil, err
 		}
@@ -121,16 +603,16 @@ func FuncInOs(fn func() string) FuncCallable {
 
 // FuncInOse wraps a function that returns a string and error into a FuncCallable that accepts no arguments.
 // Returns an error if arguments are provided or if the wrapped function encounters an error.
-func FuncInOse(fn func() (string, error)) FuncCallable {
+func (f *Factory) FuncInOse(fn func() (string, error)) FuncCallable {
 	return func(args ...IObject) (ret IObject, err error) {
 		if len(args) != 0 {
 			return nil, ErrWrongNumArguments
 		}
 		res, err := fn()
 		if err != nil {
-			return NewObjectError(err), nil
+			return f.NewObjectError(err), nil
 		}
-		v, err := NewString(res)
+		v, err := f.NewString(res)
 		if err != nil {
 			return nil, err
 		}
@@ -140,45 +622,45 @@ func FuncInOse(fn func() (string, error)) FuncCallable {
 
 // FuncInObSe converts a function returning ([]byte, error) into a FuncCallable that adheres to IObject function standards.
 // It ensures the argument count is zero, wraps errors into IObject-compatible errors, and enforces byte slice size limits.
-func FuncInObSe(fn func() ([]byte, error)) FuncCallable {
+func (f *Factory) FuncInObSe(fn func() ([]byte, error)) FuncCallable {
 	return func(args ...IObject) (ret IObject, err error) {
 		if len(args) != 0 {
 			return nil, ErrWrongNumArguments
 		}
 		res, err := fn()
 		if err != nil {
-			return NewObjectError(err), nil
+			return f.NewObjectError(err), nil
 		}
 		if len(res) > MaxBytesLen {
 			return nil, ErrBytesLimit
 		}
-		return NewBytes(res), nil
+		return f.NewBytes(res), nil
 	}
 }
 
 // FuncInOf64 wraps a zero-argument function that returns a float64 into a FuncCallable returning an IObject and an error.
 // Returns ErrWrongNumArguments if called with arguments.
 // Converts the float64 output of the provided function into an IObject using NewFloat.
-func FuncInOf64(fn func() float64) FuncCallable {
+func (f *Factory) FuncInOf64(fn func() float64) FuncCallable {
 	return func(args ...IObject) (ret IObject, err error) {
 		if len(args) != 0 {
 			return nil, ErrWrongNumArguments
 		}
-		return NewFloat(fn()), nil
+		return f.NewFloat(fn()), nil
 	}
 }
 
 // FuncInOsS takes a function that returns a slice of strings and wraps it into a FuncCallable returning an Array of strings.
 // The FuncCallable expects zero arguments; passing others results in ErrWrongNumArguments.
 // Converts each string from the slice into a String object and appends it to the Array.
-func FuncInOsS(fn func() []string) FuncCallable {
+func (f *Factory) FuncInOsS(fn func() []string) FuncCallable {
 	return func(args ...IObject) (ret IObject, err error) {
 		if len(args) != 0 {
 			return nil, ErrWrongNumArguments
 		}
-		arr := &Array{}
+		arr := f.NewArray(nil)
 		for _, elem := range fn() {
-			v, err := NewString(elem)
+			v, err := f.NewString(elem)
 			if err != nil {
 				return nil, err
 			}
@@ -191,37 +673,37 @@ func FuncInOsS(fn func() []string) FuncCallable {
 // FuncInOiSe wraps a function that returns a slice of integers and an error into a FuncCallable compatible function.
 // It validates zero arguments, invokes the wrapped function, wraps any error, and converts the slice to an array of IObject.
 // Returns an IObject array containing the integers or a wrapped error if the wrapped function fails.
-func FuncInOiSe(fn func() ([]int, error)) FuncCallable {
+func (f *Factory) FuncInOiSe(fn func() ([]int, error)) FuncCallable {
 	return func(args ...IObject) (ret IObject, err error) {
 		if len(args) != 0 {
 			return nil, ErrWrongNumArguments
 		}
 		res, err := fn()
 		if err != nil {
-			return NewObjectError(err), nil
+			return f.NewObjectError(err), nil
 		}
-		arr := NewArray(nil)
+		arr := f.NewArray(nil)
 		for _, v := range res {
-			arr.Append(NewInt(int64(v)))
+			arr.Append(f.NewInt(int64(v)))
 		}
 		return arr, nil
 	}
 }
 
 // FuncIiOiS takes a function that converts an integer to a slice of integers and returns it as a callable function.
-func FuncIiOiS(fn func(int) []int) FuncCallable {
+func (f *Factory) FuncIiOiS(fn func(int) []int) FuncCallable {
 	return func(args ...IObject) (ret IObject, err error) {
 		if len(args) != 1 {
 			return nil, ErrWrongNumArguments
 		}
-		i1, err := ToInt64Arg(0, args[0])
+		i1, err := f.ToInt64Arg(0, args[0])
 		if err != nil {
 			return nil, err
 		}
 		res := fn(int(i1))
-		arr := NewArray(nil)
+		arr := f.NewArray(nil)
 		for _, v := range res {
-			arr.Append(NewInt(int64(v)))
+			arr.Append(f.NewInt(int64(v)))
 		}
 		return arr, nil
 	}
@@ -230,122 +712,122 @@ func FuncIiOiS(fn func(int) []int) FuncCallable {
 // FuncIf64Of64 converts a single-argument float64 function into a FuncCallable compatible with IObject arguments.
 // It validates the input argument as a float-compatible type.
 // Returns a new IObject representing the result or an appropriate error if validation fails.
-func FuncIf64Of64(fn func(float64) float64) FuncCallable {
+func (f *Factory) FuncIf64Of64(fn func(float64) float64) FuncCallable {
 	return func(args ...IObject) (ret IObject, err error) {
 		if len(args) != 1 {
 			return nil, ErrWrongNumArguments
 		}
-		f1, err := ToFloat64Arg(0, args[0])
+		f1, err := f.ToFloat64Arg(0, args[0])
 		if err != nil {
 			return nil, err
 		}
-		return NewFloat(fn(f1)), nil
+		return f.NewFloat(fn(f1)), nil
 	}
 }
 
 // FuncIiOn wraps a function with an int parameter to conform to the FuncCallable signature for custom runtime calls.
 // It validates the argument count and type, invoking the provided function with the argument as an integer.
 // Returns UndefinedValue on success or an error if the argument is invalid.
-func FuncIiOn(fn func(int)) FuncCallable {
+func (f *Factory) FuncIiOn(fn func(int)) FuncCallable {
 	return func(args ...IObject) (ret IObject, err error) {
 		if len(args) != 1 {
 			return nil, ErrWrongNumArguments
 		}
-		i1, err := ToInt64Arg(0, args[0])
+		i1, err := f.ToInt64Arg(0, args[0])
 		if err != nil {
 			return nil, err
 		}
 		fn(int(i1))
-		return UndefinedValue, nil
+		return f.UndefinedValue(), nil
 	}
 }
 
 // FuncIiOf64 wraps a function of type func(int) float64 as a FuncCallable, enabling its use within the IObject interface ecosystem.
 // It validates that exactly one argument is provided and converts it to an int before calling the wrapped function.
 // If the argument type is incompatible or the wrong number of arguments are passed, an appropriate error is returned.
-func FuncIiOf64(fn func(int) float64) FuncCallable {
+func (f *Factory) FuncIiOf64(fn func(int) float64) FuncCallable {
 	return func(args ...IObject) (ret IObject, err error) {
 		if len(args) != 1 {
 			return nil, ErrWrongNumArguments
 		}
-		i1, err := ToInt64Arg(0, args[0])
+		i1, err := f.ToInt64Arg(0, args[0])
 		if err != nil {
 			return nil, err
 		}
-		return NewFloat(fn(int(i1))), nil
+		return f.NewFloat(fn(int(i1))), nil
 	}
 }
 
 // FuncIf64Oi wraps a function transforming a float64 to an int, making it callable with IObject arguments.
 // Returns an error if incorrect number or type of arguments are provided.
-func FuncIf64Oi(fn func(float64) int) FuncCallable {
+func (f *Factory) FuncIf64Oi(fn func(float64) int) FuncCallable {
 	return func(args ...IObject) (ret IObject, err error) {
 		if len(args) != 1 {
 			return nil, ErrWrongNumArguments
 		}
-		f1, err := ToFloat64Arg(0, args[0])
+		f1, err := f.ToFloat64Arg(0, args[0])
 		if err != nil {
 			return nil, err
 		}
-		return NewInt(int64(fn(f1))), nil
+		return f.NewInt(int64(fn(f1))), nil
 	}
 }
 
 // FuncIf64f64Of64 creates a FuncCallable that applies the given binary float64 function to two converted IObject arguments.
 // Returns an error if arguments are not exactly two or cannot be converted to float64.
-func FuncIf64f64Of64(fn func(float64, float64) float64) FuncCallable {
+func (f *Factory) FuncIf64f64Of64(fn func(float64, float64) float64) FuncCallable {
 	return func(args ...IObject) (ret IObject, err error) {
 		if len(args) != 2 {
 			return nil, ErrWrongNumArguments
 		}
-		f1, err := ToFloat64Arg(0, args[0])
+		f1, err := f.ToFloat64Arg(0, args[0])
 		if err != nil {
 			return nil, err
 		}
-		f2, err := ToFloat64Arg(1, args[1])
+		f2, err := f.ToFloat64Arg(1, args[1])
 		if err != nil {
 			return nil, err
 		}
-		return NewFloat(fn(f1, f2)), nil
+		return f.NewFloat(fn(f1, f2)), nil
 	}
 }
 
 // FuncIif64Of64 wraps a provided function accepting an int and float64, returning it as a FuncCallable compatible with IObject arguments.
 // It enforces argument type validation and handles potential type mismatches with descriptive errors.
-func FuncIif64Of64(fn func(int, float64) float64) FuncCallable {
+func (f *Factory) FuncIif64Of64(fn func(int, float64) float64) FuncCallable {
 	return func(args ...IObject) (ret IObject, err error) {
 		if len(args) != 2 {
 			return nil, ErrWrongNumArguments
 		}
-		i1, err := ToInt64Arg(0, args[0])
+		i1, err := f.ToInt64Arg(0, args[0])
 		if err != nil {
 			return nil, err
 		}
-		f2, err := ToFloat64Arg(1, args[1])
+		f2, err := f.ToFloat64Arg(1, args[1])
 		if err != nil {
 			return nil, err
 		}
-		return NewFloat(fn(int(i1), f2)), nil
+		return f.NewFloat(fn(int(i1), f2)), nil
 	}
 }
 
 // FuncIf64iOf64 creates a FuncCallable wrapping a function that takes a float64 and int and returns a float64.
 // It validates input argument types and converts them to the appropriate types expected by the wrapped function.
 // Returns an IObject representing the result of the wrapped function or an error if argument validation fails.
-func FuncIf64iOf64(fn func(float64, int) float64) FuncCallable {
+func (f *Factory) FuncIf64iOf64(fn func(float64, int) float64) FuncCallable {
 	return func(args ...IObject) (ret IObject, err error) {
 		if len(args) != 2 {
 			return nil, ErrWrongNumArguments
 		}
-		f1, err := ToFloat64Arg(0, args[0])
+		f1, err := f.ToFloat64Arg(0, args[0])
 		if err != nil {
 			return nil, err
 		}
-		i2, err := ToInt64Arg(1, args[1])
+		i2, err := f.ToInt64Arg(1, args[1])
 		if err != nil {
 			return nil, err
 		}
-		return NewFloat(fn(f1, int(i2))), nil
+		return f.NewFloat(fn(f1, int(i2))), nil
 	}
 }
 
@@ -353,54 +835,54 @@ func FuncIf64iOf64(fn func(float64, int) float64) FuncCallable {
 // It converts the first argument to a float64 and the second to an int, then applies the provided function.
 // Returns TrueValue if the function evaluates to true; otherwise, returns FalseValue.
 // Returns ErrWrongNumArguments if the argument count is not 2 or NewInvalidArgumentError on type conversion failures.
-func FuncIf64iOb(fn func(float64, int) bool) FuncCallable {
+func (f *Factory) FuncIf64iOb(fn func(float64, int) bool) FuncCallable {
 	return func(args ...IObject) (ret IObject, err error) {
 		if len(args) != 2 {
 			return nil, ErrWrongNumArguments
 		}
-		f1, err := ToFloat64Arg(0, args[0])
+		f1, err := f.ToFloat64Arg(0, args[0])
 		if err != nil {
 			return nil, err
 		}
-		i2, err := ToInt64Arg(1, args[1])
+		i2, err := f.ToInt64Arg(1, args[1])
 		if err != nil {
 			return nil, err
 		}
 		if fn(f1, int(i2)) {
-			return TrueValue, nil
+			return f.TrueValue(), nil
 		}
-		return FalseValue, nil
+		return f.FalseValue(), nil
 	}
 }
 
 // FuncIf64Ob wraps a function accepting a float64 and returning a boolean into a FuncCallable compatible with the IObject interface.
-func FuncIf64Ob(fn func(float64) bool) FuncCallable {
+func (f *Factory) FuncIf64Ob(fn func(float64) bool) FuncCallable {
 	return func(args ...IObject) (ret IObject, err error) {
 		if len(args) != 1 {
 			return nil, ErrWrongNumArguments
 		}
-		f1, err := ToFloat64Arg(0, args[0])
+		f1, err := f.ToFloat64Arg(0, args[0])
 		if err != nil {
 			return nil, err
 		}
 		if fn(f1) {
-			return TrueValue, nil
+			return f.TrueValue(), nil
 		}
-		return FalseValue, nil
+		return f.FalseValue(), nil
 	}
 }
 
 // FuncIsOs creates a FuncCallable that applies a provided string-to-string function to the first argument and returns the result.
-func FuncIsOs(fn func(string) string) FuncCallable {
+func (f *Factory) FuncIsOs(fn func(string) string) FuncCallable {
 	return func(args ...IObject) (IObject, error) {
 		if len(args) != 1 {
 			return nil, ErrWrongNumArguments
 		}
-		s1, err := ToStringArg(0, args[0])
+		s1, err := f.ToStringArg(0, args[0])
 		if err != nil {
 			return nil, err
 		}
-		v, err := NewString(fn(s1))
+		v, err := f.NewString(fn(s1))
 		if err != nil {
 			return nil, err
 		}
@@ -411,19 +893,19 @@ func FuncIsOs(fn func(string) string) FuncCallable {
 // FuncIsOsS converts a string-to-string-array function into a FuncCallable that operates on IObject arguments.
 // It takes one string-compatible argument, applies the provided function, and returns the result as an Array of strings.
 // If argument count or type is invalid, it returns an error.
-func FuncIsOsS(fn func(string) []string) FuncCallable {
+func (f *Factory) FuncIsOsS(fn func(string) []string) FuncCallable {
 	return func(args ...IObject) (IObject, error) {
 		if len(args) != 1 {
 			return nil, ErrWrongNumArguments
 		}
-		s1, err := ToStringArg(0, args[0])
+		s1, err := f.ToStringArg(0, args[0])
 		if err != nil {
 			return nil, err
 		}
 		res := fn(s1)
-		arr := NewArray(nil)
+		arr := f.NewArray(nil)
 		for _, elem := range res {
-			v, err := NewString(elem)
+			v, err := f.NewString(elem)
 			if err != nil {
 				return nil, err
 			}
@@ -434,20 +916,20 @@ func FuncIsOsS(fn func(string) []string) FuncCallable {
 }
 
 // FuncIsOse wraps a string transformation function and adapts it to a FuncCallable with argument validation logic.
-func FuncIsOse(fn func(string) (string, error)) FuncCallable {
+func (f *Factory) FuncIsOse(fn func(string) (string, error)) FuncCallable {
 	return func(args ...IObject) (IObject, error) {
 		if len(args) != 1 {
 			return nil, ErrWrongNumArguments
 		}
-		s1, err := ToStringArg(0, args[0])
+		s1, err := f.ToStringArg(0, args[0])
 		if err != nil {
 			return nil, err
 		}
 		res, err := fn(s1)
 		if err != nil {
-			return NewObjectError(err), nil
+			return f.NewObjectError(err), nil
 		}
-		v, err := NewString(res)
+		v, err := f.NewString(res)
 		if err != nil {
 			return nil, err
 		}
@@ -459,56 +941,56 @@ func FuncIsOse(fn func(string) (string, error)) FuncCallable {
 // It expects exactly one argument convertible to a string and returns an IObject error or result.
 // Returns ErrWrongNumArguments if called with an incorrect number of arguments.
 // Returns an invalid argument error if the first argument is not string-compatible.
-func FuncIsOe(fn func(string) error) FuncCallable {
+func (f *Factory) FuncIsOe(fn func(string) error) FuncCallable {
 	return func(args ...IObject) (IObject, error) {
 		if len(args) != 1 {
 			return nil, ErrWrongNumArguments
 		}
-		s1, err := ToStringArg(0, args[0])
+		s1, err := f.ToStringArg(0, args[0])
 		if err != nil {
 			return nil, err
 		}
-		return NewObjectError(fn(s1)), nil
+		return f.NewObjectError(fn(s1)), nil
 	}
 }
 
 // FuncIssOe wraps a function accepting two strings and returning an error into a FuncCallable compatible with the IObject interface.
 // It ensures the function is called with exactly two string arguments and returns an appropriate error for incorrect usage.
-func FuncIssOe(fn func(string, string) error) FuncCallable {
+func (f *Factory) FuncIssOe(fn func(string, string) error) FuncCallable {
 	return func(args ...IObject) (IObject, error) {
 		if len(args) != 2 {
 			return nil, ErrWrongNumArguments
 		}
-		s1, err := ToStringArg(0, args[0])
+		s1, err := f.ToStringArg(0, args[0])
 		if err != nil {
 			return nil, err
 		}
-		s2, err := ToStringArg(1, args[1])
+		s2, err := f.ToStringArg(1, args[1])
 		if err != nil {
 			return nil, err
 		}
-		return NewObjectError(fn(s1, s2)), nil
+		return f.NewObjectError(fn(s1, s2)), nil
 	}
 }
 
 // FuncIssOsS converts a function that takes two strings and returns a slice of strings into a FuncCallable.
 // The returned FuncCallable validates its arguments, invokes the provided function, and returns the results as an array.
-func FuncIssOsS(fn func(string, string) []string) FuncCallable {
+func (f *Factory) FuncIssOsS(fn func(string, string) []string) FuncCallable {
 	return func(args ...IObject) (IObject, error) {
 		if len(args) != 2 {
 			return nil, ErrWrongNumArguments
 		}
-		s1, err := ToStringArg(0, args[0])
+		s1, err := f.ToStringArg(0, args[0])
 		if err != nil {
 			return nil, err
 		}
-		s2, err := ToStringArg(1, args[1])
+		s2, err := f.ToStringArg(1, args[1])
 		if err != nil {
 			return nil, err
 		}
-		arr := NewArray(nil)
+		arr := f.NewArray(nil)
 		for _, res := range fn(s1, s2) {
-			v, err := NewString(res)
+			v, err := f.NewString(res)
 			if err != nil {
 				return nil, err
 			}
@@ -521,26 +1003,26 @@ func FuncIssOsS(fn func(string, string) []string) FuncCallable {
 // FuncIssiOsS converts a function with parameters (string, string, int) -> []string into a FuncCallable.
 // It validates arguments, applies the function, and wraps the output in an IObject-compatible Array.
 // Returns an error if argument validation fails or function results cannot be converted to a String.
-func FuncIssiOsS(fn func(string, string, int) []string) FuncCallable {
+func (f *Factory) FuncIssiOsS(fn func(string, string, int) []string) FuncCallable {
 	return func(args ...IObject) (IObject, error) {
 		if len(args) != 3 {
 			return nil, ErrWrongNumArguments
 		}
-		s1, err := ToStringArg(0, args[0])
+		s1, err := f.ToStringArg(0, args[0])
 		if err != nil {
 			return nil, err
 		}
-		s2, err := ToStringArg(1, args[1])
+		s2, err := f.ToStringArg(1, args[1])
 		if err != nil {
 			return nil, err
 		}
-		i3, err := ToInt64Arg(2, args[2])
+		i3, err := f.ToInt64Arg(2, args[2])
 		if err != nil {
 			return nil, err
 		}
-		arr := NewArray(nil)
+		arr := f.NewArray(nil)
 		for _, res := range fn(s1, s2, int(i3)) {
-			v, err := NewString(res)
+			v, err := f.NewString(res)
 			if err != nil {
 				return nil, err
 			}
@@ -554,40 +1036,40 @@ func FuncIssiOsS(fn func(string, string, int) []string) FuncCallable {
 // The returned FuncCallable validates that exactly two arguments are passed and they are string-compatible.
 // If arguments are valid, the wrapped function is invoked, and its integer result is wrapped in an IObject.
 // Returns an error if the number of arguments is incorrect or conversion to strings fails.
-func FuncIssOi(fn func(string, string) int) FuncCallable {
+func (f *Factory) FuncIssOi(fn func(string, string) int) FuncCallable {
 	return func(args ...IObject) (IObject, error) {
 		if len(args) != 2 {
 			return nil, ErrWrongNumArguments
 		}
-		s1, err := ToStringArg(0, args[0])
+		s1, err := f.ToStringArg(0, args[0])
 		if err != nil {
 			return nil, err
 		}
-		s2, err := ToStringArg(1, args[1])
+		s2, err := f.ToStringArg(1, args[1])
 		if err != nil {
 			return nil, err
 		}
-		return NewInt(int64(fn(s1, s2))), nil
+		return f.NewInt(int64(fn(s1, s2))), nil
 	}
 }
 
 // FuncIssOs wraps a function that takes two strings and returns a string into a FuncCallable accepting IObject arguments.
 // It validates argument types and ensures exactly two arguments are passed or returns an appropriate error.
 // The wrapped function's result is converted to an IObject before being returned.
-func FuncIssOs(fn func(string, string) string) FuncCallable {
+func (f *Factory) FuncIssOs(fn func(string, string) string) FuncCallable {
 	return func(args ...IObject) (IObject, error) {
 		if len(args) != 2 {
 			return nil, ErrWrongNumArguments
 		}
-		s1, err := ToStringArg(0, args[0])
+		s1, err := f.ToStringArg(0, args[0])
 		if err != nil {
 			return nil, err
 		}
-		s2, err := ToStringArg(1, args[1])
+		s2, err := f.ToStringArg(1, args[1])
 		if err != nil {
 			return nil, err
 		}
-		v, err := NewString(fn(s1, s2))
+		v, err := f.NewString(fn(s1, s2))
 		if err != nil {
 			return nil, err
 		}
@@ -600,28 +1082,28 @@ func FuncIssOs(fn func(string, string) string) FuncCallable {
 // The returned FuncCallable validates arguments, applies the provided function, and returns TrueValue or FalseValue.
 // It expects the function to take two string arguments and return a boolean indicating the comparison result.
 // Returns an error if the number of arguments is incorrect or arguments are not string-compatible.
-func FuncIssOb(fn func(string, string) bool) FuncCallable {
+func (f *Factory) FuncIssOb(fn func(string, string) bool) FuncCallable {
 	return func(args ...IObject) (IObject, error) {
 		if len(args) != 2 {
 			return nil, ErrWrongNumArguments
 		}
-		s1, err := ToStringArg(0, args[0])
+		s1, err := f.ToStringArg(0, args[0])
 		if err != nil {
 			return nil, err
 		}
-		s2, err := ToStringArg(1, args[1])
+		s2, err := f.ToStringArg(1, args[1])
 		if err != nil {
 			return nil, err
 		}
 		if fn(s1, s2) {
-			return TrueValue, nil
+			return f.TrueValue(), nil
 		}
-		return FalseValue, nil
+		return f.FalseValue(), nil
 	}
 }
 
 // FuncIsSsOs creates a FuncCallable that processes a string slice and a string, applying the given transformation function.
-func FuncIsSsOs(fn func([]string, string) string) FuncCallable {
+func (f *Factory) FuncIsSsOs(fn func([]string, string) string) FuncCallable {
 	return func(args ...IObject) (IObject, error) {
 		if len(args) != 2 {
 			return nil, ErrWrongNumArguments
@@ -630,7 +1112,7 @@ func FuncIsSsOs(fn func([]string, string) string) FuncCallable {
 		switch arg0 := args[0].(type) {
 		case *Array:
 			for idx, a := range arg0.Values() {
-				as, err := ToStringArg(idx, a)
+				as, err := f.ToStringArg(idx, a)
 				if err != nil {
 					return nil, err
 				}
@@ -638,7 +1120,7 @@ func FuncIsSsOs(fn func([]string, string) string) FuncCallable {
 			}
 		case *ArrayImmutable:
 			for idx, a := range arg0.Values() {
-				as, err := ToStringArg(idx, a)
+				as, err := f.ToStringArg(idx, a)
 				if err != nil {
 					return nil, err
 				}
@@ -647,11 +1129,11 @@ func FuncIsSsOs(fn func([]string, string) string) FuncCallable {
 		default:
 			return nil, NewInvalidArgumentError(0, "array", args[0].TypeName())
 		}
-		s2, err := ToStringArg(1, args[1])
+		s2, err := f.ToStringArg(1, args[1])
 		if err != nil {
 			return nil, err
 		}
-		v, err := NewString(fn(ss1, s2))
+		v, err := f.NewString(fn(ss1, s2))
 		if err != nil {
 			return nil, err
 		}
@@ -662,58 +1144,58 @@ func FuncIsSsOs(fn func([]string, string) string) FuncCallable {
 // FuncIsi64Oe transforms a function accepting a string and int64 into a FuncCallable that operates on IObject arguments.
 // Takes exactly two arguments; the first must be string-compatible, the second int64-compatible, or errors are returned.
 // Wraps the result of the provided function into an IObject or returns an appropriate error if validation fails.
-func FuncIsi64Oe(fn func(string, int64) error) FuncCallable {
+func (f *Factory) FuncIsi64Oe(fn func(string, int64) error) FuncCallable {
 	return func(args ...IObject) (ret IObject, err error) {
 		if len(args) != 2 {
 			return nil, ErrWrongNumArguments
 		}
-		s1, err := ToStringArg(0, args[0])
+		s1, err := f.ToStringArg(0, args[0])
 		if err != nil {
 			return nil, err
 		}
-		i2, err := ToInt64Arg(1, args[1])
+		i2, err := f.ToInt64Arg(1, args[1])
 		if err != nil {
 			return nil, err
 		}
-		return NewObjectError(fn(s1, i2)), nil
+		return f.NewObjectError(fn(s1, i2)), nil
 	}
 }
 
 // FuncIiiOe wraps a function taking two integers and returning an error into a FuncCallable accepting two IObject arguments.
-func FuncIiiOe(fn func(int, int) error) FuncCallable {
+func (f *Factory) FuncIiiOe(fn func(int, int) error) FuncCallable {
 	return func(args ...IObject) (ret IObject, err error) {
 		if len(args) != 2 {
 			return nil, ErrWrongNumArguments
 		}
-		i1, err := ToInt64Arg(0, args[0])
+		i1, err := f.ToInt64Arg(0, args[0])
 		if err != nil {
 			return nil, err
 		}
-		i2, err := ToInt64Arg(1, args[1])
+		i2, err := f.ToInt64Arg(1, args[1])
 		if err != nil {
 			return nil, err
 		}
-		return NewObjectError(fn(int(i1), int(i2))), nil
+		return f.NewObjectError(fn(int(i1), int(i2))), nil
 	}
 }
 
 // FuncIsiOs wraps a function that takes a string and int as inputs and returns a string, converting it to a FuncCallable.
 // It validates the arguments, calls the wrapped function, and converts the result to an IObject.
 // Returns an error if arguments are of invalid types or wrong number of arguments is supplied.
-func FuncIsiOs(fn func(string, int) string) FuncCallable {
+func (f *Factory) FuncIsiOs(fn func(string, int) string) FuncCallable {
 	return func(args ...IObject) (ret IObject, err error) {
 		if len(args) != 2 {
 			return nil, ErrWrongNumArguments
 		}
-		s1, err := ToStringArg(0, args[0])
+		s1, err := f.ToStringArg(0, args[0])
 		if err != nil {
 			return nil, err
 		}
-		i2, err := ToInt64Arg(1, args[1])
+		i2, err := f.ToInt64Arg(1, args[1])
 		if err != nil {
 			return nil, err
 		}
-		v, err := NewString(fn(s1, int(i2)))
+		v, err := f.NewString(fn(s1, int(i2)))
 		if err != nil {
 			return nil, err
 		}
@@ -722,24 +1204,24 @@ func FuncIsiOs(fn func(string, int) string) FuncCallable {
 }
 
 // FuncIsiiOe converts a function with string, int, int inputs, and an error return into a FuncCallable with variadic IObject arguments.
-func FuncIsiiOe(fn func(string, int, int) error) FuncCallable {
+func (f *Factory) FuncIsiiOe(fn func(string, int, int) error) FuncCallable {
 	return func(args ...IObject) (ret IObject, err error) {
 		if len(args) != 3 {
 			return nil, ErrWrongNumArguments
 		}
-		s1, err := ToStringArg(0, args[0])
+		s1, err := f.ToStringArg(0, args[0])
 		if err != nil {
 			return nil, err
 		}
-		i2, err := ToInt64Arg(1, args[1])
+		i2, err := f.ToInt64Arg(1, args[1])
 		if err != nil {
 			return nil, err
 		}
-		i3, err := ToInt64Arg(2, args[2])
+		i3, err := f.ToInt64Arg(2, args[2])
 		if err != nil {
 			return nil, err
 		}
-		return NewObjectError(fn(s1, int(i2), int(i3))), nil
+		return f.NewObjectError(fn(s1, int(i2), int(i3))), nil
 	}
 }
 
@@ -748,36 +1230,36 @@ func FuncIsiiOe(fn func(string, int, int) error) FuncCallable {
 // Returns ErrWrongNumArguments if called with more or less than one argument.
 // Returns NewInvalidArgumentError if the input argument isn't byte-compatible.
 // Converts the function's error output into an appropriate IObject error.
-func FuncIbSOie(fn func([]byte) (int, error)) FuncCallable {
+func (f *Factory) FuncIbSOie(fn func([]byte) (int, error)) FuncCallable {
 	return func(args ...IObject) (ret IObject, err error) {
 		if len(args) != 1 {
 			return nil, ErrWrongNumArguments
 		}
-		bs1, err := ToByteSliceArg(0, args[0])
+		bs1, err := f.ToByteSliceArg(0, args[0])
 		if err != nil {
 			return nil, err
 		}
 		res, err := fn(bs1)
 		if err != nil {
-			return NewObjectError(err), nil
+			return f.NewObjectError(err), nil
 		}
-		return NewInt(int64(res)), nil
+		return f.NewInt(int64(res)), nil
 	}
 }
 
 // FuncIbSOs wraps a function that converts a byte slice to a string, returning it as a FuncCallable in the custom object system.
 // It ensures the input is a single argument of type bytes-compatible, and returns an error for invalid or unsupported types.
 // The resulting FuncCallable checks argument validity, applies the provided function, and returns a new String object.
-func FuncIbSOs(fn func([]byte) string) FuncCallable {
+func (f *Factory) FuncIbSOs(fn func([]byte) string) FuncCallable {
 	return func(args ...IObject) (ret IObject, err error) {
 		if len(args) != 1 {
 			return nil, ErrWrongNumArguments
 		}
-		bs1, err := ToByteSliceArg(0, args[0])
+		bs1, err := f.ToByteSliceArg(0, args[0])
 		if err != nil {
 			return nil, err
 		}
-		v, err := NewString(fn(bs1))
+		v, err := f.NewString(fn(bs1))
 		if err != nil {
 			return nil, err
 		}
@@ -786,66 +1268,66 @@ func FuncIbSOs(fn func([]byte) string) FuncCallable {
 }
 
 // FuncIsOie wraps a string-to-int function into a FuncCallable compatible with IObject interface arguments and error handling.
-func FuncIsOie(fn func(string) (int, error)) FuncCallable {
+func (f *Factory) FuncIsOie(fn func(string) (int, error)) FuncCallable {
 	return func(args ...IObject) (ret IObject, err error) {
 		if len(args) != 1 {
 			return nil, ErrWrongNumArguments
 		}
-		s1, err := ToStringArg(0, args[0])
+		s1, err := f.ToStringArg(0, args[0])
 		if err != nil {
 			return nil, err
 		}
 		res, err := fn(s1)
 		if err != nil {
-			return NewObjectError(err), nil
+			return f.NewObjectError(err), nil
 		}
-		return NewInt(int64(res)), nil
+		return f.NewInt(int64(res)), nil
 	}
 }
 
 // FuncIsObSe returns a FuncCallable that wraps a function converting a string to a byte slice and error output.
 // It validates input, reports invalid arguments, enforces byte length limits, and converts output to IObject format.
 // Uses ErrWrongNumArguments, NewInvalidArgumentError, and ErrBytesLimit for error handling.
-func FuncIsObSe(fn func(string) ([]byte, error)) FuncCallable {
+func (f *Factory) FuncIsObSe(fn func(string) ([]byte, error)) FuncCallable {
 	return func(args ...IObject) (ret IObject, err error) {
 		if len(args) != 1 {
 			return nil, ErrWrongNumArguments
 		}
-		s1, err := ToStringArg(0, args[0])
+		s1, err := f.ToStringArg(0, args[0])
 		if err != nil {
 			return nil, err
 		}
 		res, err := fn(s1)
 		if err != nil {
-			return NewObjectError(err), nil
+			return f.NewObjectError(err), nil
 		}
 		if len(res) > MaxBytesLen {
 			return nil, ErrBytesLimit
 		}
-		return NewBytes(res), nil
+		return f.NewBytes(res), nil
 	}
 }
 
 // FuncIiOsSe converts a function mapping an integer to a slice of strings and an error into a FuncCallable.
-func FuncIiOsSe(fn func(int) ([]string, error)) FuncCallable {
+func (f *Factory) FuncIiOsSe(fn func(int) ([]string, error)) FuncCallable {
 	return func(args ...IObject) (ret IObject, err error) {
 		if len(args) != 1 {
 			return nil, ErrWrongNumArguments
 		}
-		i1, err := ToInt64Arg(0, args[0])
+		i1, err := f.ToInt64Arg(0, args[0])
 		if err != nil {
 			return nil, err
 		}
 		res, err := fn(int(i1))
 		if err != nil {
-			return NewObjectError(err), nil
+			return f.NewObjectError(err), nil
 		}
-		arr := NewArray(nil)
+		arr := f.NewArray(nil)
 		for _, r := range res {
 			if len(r) > MaxStringLen {
 				return nil, ErrStringLimit
 			}
-			v, err := NewString(r)
+			v, err := f.NewString(r)
 			if err != nil {
 				return nil, err
 			}
@@ -857,17 +1339,17 @@ func FuncIiOsSe(fn func(int) ([]string, error)) FuncCallable {
 
 // FuncIiOs wraps a function of type `func(int) string` into a FuncCallable compatible with the IObject interface system.
 // It validates argument count and type, executes the provided function, and converts the result into an IObject.
-func FuncIiOs(fn func(int) string) FuncCallable {
+func (f *Factory) FuncIiOs(fn func(int) string) FuncCallable {
 	return func(args ...IObject) (ret IObject, err error) {
 		if len(args) != 1 {
 			return nil, ErrWrongNumArguments
 		}
-		i1, err := ToInt64Arg(0, args[0])
+		i1, err := f.ToInt64Arg(0, args[0])
 		if err != nil {
 			return nil, err
 		}
 		s := fn(int(i1))
-		v, err := NewString(s)
+		v, err := f.NewString(s)
 		if err != nil {
 			return nil, err
 		}

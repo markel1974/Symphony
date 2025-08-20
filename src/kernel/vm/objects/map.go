@@ -11,13 +11,16 @@ const (
 
 // Map represents a collection of key-values pairs where keys are strings and values implement the IObject interface.
 type Map struct {
-	Object
+	*Object
 	values map[string]IObject
 }
 
 // NewMap creates and returns a new instance of Map initialized with the provided map of string keys to IObject values.
-func NewMap(value map[string]IObject) *Map {
-	return &Map{values: value}
+func _newMap(factory *Factory, value map[string]IObject) *Map {
+	return &Map{
+		Object: factory.NewObject(),
+		values: value,
+	}
 }
 
 // Get retrieves the values associated with the specified key from the map. If the key is not found, it returns nil.
@@ -71,7 +74,7 @@ func (o *Map) Copy() IObject {
 	for k, v := range o.values {
 		c[k] = v.Copy()
 	}
-	return &Map{values: c}
+	return o.Factory().NewMap(c)
 }
 
 // Boolean returns true if the map contains no key-values pairs, indicating it is empty.
@@ -105,21 +108,21 @@ func (o *Map) Equals(in IObject) bool {
 // IndexGet retrieves the values associated with the given index in the map. Returns UndefinedValue if the index does not exist.
 // An error is returned if the index type is invalid.
 func (o *Map) IndexGet(index IObject) (res IObject, err error) {
-	strIdx, ok := ToString(index)
+	strIdx, ok := o.Factory().ToString(index)
 	if !ok {
 		err = ErrInvalidIndexType
 		return
 	}
 	res, ok = o.values[strIdx]
 	if !ok {
-		res = UndefinedValue
+		res = o.Factory().UndefinedValue()
 	}
 	return
 }
 
 // IndexSet sets the specified values at the given string-convertible index in the Map. Returns an error for invalid index types.
 func (o *Map) IndexSet(index, value IObject) (err error) {
-	strIdx, ok := ToString(index)
+	strIdx, ok := o.Factory().ToString(index)
 	if !ok {
 		err = ErrInvalidIndexType
 		return
@@ -130,7 +133,7 @@ func (o *Map) IndexSet(index, value IObject) (err error) {
 
 // Iterate creates and returns an iterator for the Map, allowing iteration over its keys and associated values.
 func (o *Map) Iterate() IIterator {
-	return NewMapIterator(o.values)
+	return o.Factory().NewMapIterator(o.values)
 }
 
 // CanIterate returns true, indicating that the Map object supports iteration over its elements.

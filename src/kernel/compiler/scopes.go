@@ -14,6 +14,8 @@ import (
 
 // Scopes manages a collection of compilation scopes and the associated symbol table for nested compilation contexts.
 type Scopes struct {
+	factory     *objects.Factory
+	op          *bytecode.Opcodes
 	constants   *Constants
 	references  *Constants
 	symbolTable *SymbolTable
@@ -23,8 +25,10 @@ type Scopes struct {
 }
 
 // NewScopes initializes and returns a Scopes structure with a new symbol table, main compilation scope, and scope index set to 0.
-func NewScopes(loader bytecode.ILoader) *Scopes {
+func NewScopes(factory *objects.Factory, op *bytecode.Opcodes, loader bytecode.ILoader) *Scopes {
 	c := &Scopes{
+		factory:     factory,
+		op:          op,
 		builtin:     NewBuiltinSymbolTable(),
 		constants:   NewConstants(loader),
 		references:  NewConstants(nil),
@@ -214,7 +218,7 @@ func (c *Scopes) ChangeOperand(opPos int, operand int) error {
 	if err != nil {
 		return err
 	}
-	newInstruction := bytecode.CompileInstruction(op, operand)
+	newInstruction := c.op.CompileInstruction(op, operand)
 	if err = c.InstructionReplace(opPos, newInstruction); err != nil {
 		return err
 	}
@@ -223,7 +227,7 @@ func (c *Scopes) ChangeOperand(opPos int, operand int) error {
 
 // Emit generates and adds a new instruction to the current scope and updates the last emitted instruction info.
 func (c *Scopes) Emit(op bytecode.Opcode, operands ...int) (int, error) {
-	ins := bytecode.CompileInstruction(op, operands...)
+	ins := c.op.CompileInstruction(op, operands...)
 	pos, err := c.AddInstructions(ins)
 	if err != nil {
 		return 0, err
@@ -241,17 +245,17 @@ func (c *Scopes) EmitLiteral(node *ast.BasicLit) error {
 	switch node.Kind {
 	case token.INT:
 		val, _ := strconv.ParseInt(node.Value, 0, 64)
-		if _, err := c.Emit(bytecode.OpConstant, c.ConstantsAdd("", objects.NewInt(val))); err != nil {
+		if _, err := c.Emit(bytecode.OpConstant, c.ConstantsAdd("", c.factory.NewInt(val))); err != nil {
 			return err
 		}
 	case token.FLOAT:
 		val, _ := strconv.ParseFloat(node.Value, 64)
-		if _, err := c.Emit(bytecode.OpConstant, c.ConstantsAdd("", objects.NewFloat(val))); err != nil {
+		if _, err := c.Emit(bytecode.OpConstant, c.ConstantsAdd("", c.factory.NewFloat(val))); err != nil {
 			return err
 		}
 	case token.STRING:
 		val, _ := strconv.Unquote(node.Value)
-		s, err := objects.NewString(val)
+		s, err := c.factory.NewString(val)
 		if err != nil {
 			return err
 		}

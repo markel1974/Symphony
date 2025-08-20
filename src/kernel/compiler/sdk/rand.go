@@ -8,22 +8,25 @@ import (
 
 // Rand is a struct that encapsulates a module mapping of string keys to objects implementing the IObject interface.
 type Rand struct {
+	factory *objects.Factory
 	*Package
 }
 
 // NewRand creates a new instance of Rand with a pre-defined set of random number generation functions.
-func NewRand() *Rand {
-	z := &Rand{}
+func NewRand(factory *objects.Factory) *Rand {
+	z := &Rand{
+		factory: factory,
+	}
 	container := []*objects.FuncPackage{
-		objects.NewFuncPackage(objects.FuncPackageDef, "Int63", objects.FuncInOi64(rand.Int63)),
-		objects.NewFuncPackage(objects.FuncPackageDef, "Float64", objects.FuncInOf64(rand.Float64)),
-		objects.NewFuncPackage(objects.FuncPackageDef, "Int63n", objects.FuncIi64Oi64(rand.Int63n)),
-		objects.NewFuncPackage(objects.FuncPackageDef, "ExpFloat64", objects.FuncInOf64(rand.ExpFloat64)),
-		objects.NewFuncPackage(objects.FuncPackageDef, "NormFloat64", objects.FuncInOf64(rand.NormFloat64)),
-		objects.NewFuncPackage(objects.FuncPackageDef, "Perm", objects.FuncIiOiS(rand.Perm)),
-		objects.NewFuncPackage(objects.FuncPackageDef, "Seed", objects.FuncIi64On(rand.Seed)),
-		objects.NewFuncPackage(objects.FuncPackageDef, "Read", z.Read),
-		objects.NewFuncPackage(objects.FuncPackageDef, "Rand", z.Rand),
+		factory.NewFuncPackage(objects.FuncPackageDef, "Int63", factory.FuncInOi64(rand.Int63)),
+		factory.NewFuncPackage(objects.FuncPackageDef, "Float64", factory.FuncInOf64(rand.Float64)),
+		factory.NewFuncPackage(objects.FuncPackageDef, "Int63n", factory.FuncIi64Oi64(rand.Int63n)),
+		factory.NewFuncPackage(objects.FuncPackageDef, "ExpFloat64", factory.FuncInOf64(rand.ExpFloat64)),
+		factory.NewFuncPackage(objects.FuncPackageDef, "NormFloat64", factory.FuncInOf64(rand.NormFloat64)),
+		factory.NewFuncPackage(objects.FuncPackageDef, "Perm", factory.FuncIiOiS(rand.Perm)),
+		factory.NewFuncPackage(objects.FuncPackageDef, "Seed", factory.FuncIi64On(rand.Seed)),
+		factory.NewFuncPackage(objects.FuncPackageDef, "Read", z.Read),
+		factory.NewFuncPackage(objects.FuncPackageDef, "Rand", z.Rand),
 	}
 	z.Package = NewPackage("rand", container, nil)
 	return z
@@ -34,15 +37,15 @@ func (z *Rand) Read(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}
-	bs1, err := objects.ToByteSliceArg(0, args[0])
+	bs1, err := z.factory.ToByteSliceArg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
 	res, err := rand.Read(bs1)
 	if err != nil {
-		return objects.NewObjectError(err), nil
+		return z.factory.NewObjectError(err), nil
 	}
-	return objects.NewInt(int64(res)), nil
+	return z.factory.NewInt(int64(res)), nil
 }
 
 // Rand generates a new random number generator using the provided seed argument and returns its options as a map.
@@ -50,7 +53,7 @@ func (z *Rand) Rand(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}
-	i1, err := objects.ToInt64Arg(0, args[0])
+	i1, err := z.factory.ToInt64Arg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
@@ -60,16 +63,16 @@ func (z *Rand) Rand(args ...objects.IObject) (objects.IObject, error) {
 
 // RandOptions returns an immutable map of utility functions for the provided *rand.Rand object, enabling random operations.
 func (z *Rand) RandOptions(r *rand.Rand) *objects.MapImmutable {
-	return objects.NewMapImmutable(
+	return z.factory.NewMapImmutable(
 		map[string]objects.IObject{
-			"Int63":       objects.NewFuncPackage(objects.FuncPackageDef, "Int63", objects.FuncInOi64(r.Int63)),
-			"Float64":     objects.NewFuncPackage(objects.FuncPackageDef, "Float64", objects.FuncInOf64(r.Float64)),
-			"Int63n":      objects.NewFuncPackage(objects.FuncPackageDef, "Int63n", objects.FuncIi64Oi64(r.Int63n)),
-			"ExpFloat64":  objects.NewFuncPackage(objects.FuncPackageDef, "ExpFloat64", objects.FuncInOf64(r.ExpFloat64)),
-			"NormFloat64": objects.NewFuncPackage(objects.FuncPackageDef, "NormFloat64", objects.FuncInOf64(r.NormFloat64)),
-			"Perm":        objects.NewFuncPackage(objects.FuncPackageDef, "Perm", objects.FuncIiOiS(r.Perm)),
-			"Seed":        objects.NewFuncPackage(objects.FuncPackageDef, "Seed", objects.FuncIi64On(r.Seed)),
-			"Read":        objects.NewFuncPackage(objects.FuncPackageDef, "Read", func(args ...objects.IObject) (objects.IObject, error) { return z.RandOptionsRead(r, args...) }),
+			"Int63":       z.factory.NewFuncPackage(objects.FuncPackageDef, "Int63", z.factory.FuncInOi64(r.Int63)),
+			"Float64":     z.factory.NewFuncPackage(objects.FuncPackageDef, "Float64", z.factory.FuncInOf64(r.Float64)),
+			"Int63n":      z.factory.NewFuncPackage(objects.FuncPackageDef, "Int63n", z.factory.FuncIi64Oi64(r.Int63n)),
+			"ExpFloat64":  z.factory.NewFuncPackage(objects.FuncPackageDef, "ExpFloat64", z.factory.FuncInOf64(r.ExpFloat64)),
+			"NormFloat64": z.factory.NewFuncPackage(objects.FuncPackageDef, "NormFloat64", z.factory.FuncInOf64(r.NormFloat64)),
+			"Perm":        z.factory.NewFuncPackage(objects.FuncPackageDef, "Perm", z.factory.FuncIiOiS(r.Perm)),
+			"Seed":        z.factory.NewFuncPackage(objects.FuncPackageDef, "Seed", z.factory.FuncIi64On(r.Seed)),
+			"Read":        z.factory.NewFuncPackage(objects.FuncPackageDef, "Read", func(args ...objects.IObject) (objects.IObject, error) { return z.RandOptionsRead(r, args...) }),
 		})
 }
 
@@ -78,13 +81,13 @@ func (z *Rand) RandOptionsRead(r *rand.Rand, args ...objects.IObject) (objects.I
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}
-	bs1, err := objects.ToByteSliceArg(0, args[0])
+	bs1, err := z.factory.ToByteSliceArg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
 	res, err := r.Read(bs1)
 	if err != nil {
-		return objects.NewObjectError(err), nil
+		return z.factory.NewObjectError(err), nil
 	}
-	return objects.NewInt(int64(res)), nil
+	return z.factory.NewInt(int64(res)), nil
 }

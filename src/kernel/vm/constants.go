@@ -8,13 +8,15 @@ import (
 
 // Constants is a structure that manages global objects and handles error signaling through a callback function.
 type Constants struct {
+	factory   *objects.Factory
 	constants []objects.IObject
 	errSignal func(err error)
 }
 
 // NewConstants initializes and returns a new Constants instance with provided global objects and error signaling function.
-func NewConstants(errSignal func(err error)) *Constants {
+func NewConstants(factory *objects.Factory, errSignal func(err error)) *Constants {
 	return &Constants{
+		factory:   factory,
 		constants: nil,
 		errSignal: errSignal,
 	}
@@ -29,7 +31,7 @@ func (g *Constants) SetConstants(constants []objects.IObject) {
 func (g *Constants) Get(index uint) objects.IObject {
 	if index >= uint(len(g.constants)) {
 		g.errSignal(fmt.Errorf("invalid constant index: %d", index))
-		return objects.UndefinedValue
+		return g.factory.UndefinedValue()
 	}
 	return g.constants[index]
 }

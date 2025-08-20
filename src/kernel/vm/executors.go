@@ -15,6 +15,8 @@ import (
 type IOpExecutor interface {
 	Opcode() bytecode.Opcode
 
+	Factory() *objects.Factory
+
 	Name() string
 
 	Operands() []int
@@ -28,8 +30,8 @@ type OpConstant struct {
 }
 
 // NewOpConstant creates a new OpConstant instance with opcode details initialized for the OpConstant operation.
-func NewOpConstant() *OpConstant {
-	return &OpConstant{OpcodeDetails: bytecode.OpcodeToDetails(bytecode.OpConstant)}
+func NewOpConstant(op *bytecode.Opcodes) *OpConstant {
+	return &OpConstant{OpcodeDetails: op.OpcodeToDetails(bytecode.OpConstant)}
 }
 
 // Execute executes the OpConstant instruction in the virtual machine, pushing a global constant onto the stack.
@@ -46,13 +48,13 @@ type OpNull struct {
 }
 
 // NewOpNull creates a new OpNull instance with details mapped from the OpNull opcode.
-func NewOpNull() *OpNull {
-	return &OpNull{OpcodeDetails: bytecode.OpcodeToDetails(bytecode.OpNull)}
+func NewOpNull(op *bytecode.Opcodes) *OpNull {
+	return &OpNull{OpcodeDetails: op.OpcodeToDetails(bytecode.OpNull)}
 }
 
 // Execute pushes an undefined value onto the virtual machine's stack.
 func (op *OpNull) Execute(v *VM) {
-	v.stack.Push(objects.UndefinedValue)
+	v.stack.Push(op.Factory().UndefinedValue())
 }
 
 // OpBinary represents a type that performs binary operations by extending bytecode.OpcodeDetails.
@@ -61,8 +63,8 @@ type OpBinary struct {
 }
 
 // NewOpBinary creates a new instance of OpBinary with its corresponding OpcodeDetails initialized.
-func NewOpBinary() *OpBinary {
-	return &OpBinary{OpcodeDetails: bytecode.OpcodeToDetails(bytecode.OpBinary)}
+func NewOpBinary(op *bytecode.Opcodes) *OpBinary {
+	return &OpBinary{OpcodeDetails: op.OpcodeToDetails(bytecode.OpBinary)}
 }
 
 // Execute performs a binary operation using operands from the stack, updates the instruction pointer, and handles errors.
@@ -86,17 +88,17 @@ type OpEqual struct {
 }
 
 // NewOpEqual creates and returns an instance of OpEqual, initialized with its corresponding opcode details.
-func NewOpEqual() *OpEqual {
-	return &OpEqual{OpcodeDetails: bytecode.OpcodeToDetails(bytecode.OpEqual)}
+func NewOpEqual(op *bytecode.Opcodes) *OpEqual {
+	return &OpEqual{OpcodeDetails: op.OpcodeToDetails(bytecode.OpEqual)}
 }
 
 // Execute performs the equality comparison between the top two stack values and pushes the result (true or false) back onto the stack.
 func (op *OpEqual) Execute(v *VM) {
 	right := v.stack.Pop()
 	left := v.stack.Pop()
-	val := objects.TrueValue
+	val := op.Factory().TrueValue()
 	if left.Equals(right) {
-		val = objects.FalseValue
+		val = op.Factory().FalseValue()
 	}
 	v.stack.Push(val)
 }
@@ -108,17 +110,17 @@ type OpNotEqual struct {
 }
 
 // NewOpNotEqual creates and returns a new instance of OpNotEqual with OpcodeDetails initialized from bytecode.
-func NewOpNotEqual() *OpNotEqual {
-	return &OpNotEqual{OpcodeDetails: bytecode.OpcodeToDetails(bytecode.OpNotEqual)}
+func NewOpNotEqual(op *bytecode.Opcodes) *OpNotEqual {
+	return &OpNotEqual{OpcodeDetails: op.OpcodeToDetails(bytecode.OpNotEqual)}
 }
 
 // Execute evaluates whether the top two stack elements are unequal and pushes the result as a boolean onto the stack.
 func (op *OpNotEqual) Execute(v *VM) {
 	right := v.stack.Pop()
 	left := v.stack.Pop()
-	val := objects.FalseValue
+	val := op.Factory().FalseValue()
 	if left.Equals(right) {
-		val = objects.TrueValue
+		val = op.Factory().TrueValue()
 	}
 	v.stack.Push(val)
 }
@@ -129,8 +131,8 @@ type OpPop struct {
 }
 
 // NewOpPop creates and returns a new instance of OpPop, initializing it with details corresponding to the OpPop opcode.
-func NewOpPop() *OpPop {
-	return &OpPop{OpcodeDetails: bytecode.OpcodeToDetails(bytecode.OpPop)}
+func NewOpPop(op *bytecode.Opcodes) *OpPop {
+	return &OpPop{OpcodeDetails: op.OpcodeToDetails(bytecode.OpPop)}
 }
 
 // Execute performs the operation defined by OpPop, which decreases the stack pointer of the VM.
@@ -144,13 +146,13 @@ type OpTrue struct {
 }
 
 // NewOpTrue initializes a new instance of OpTrue, representing the opcode that pushes the boolean value true onto the stack.
-func NewOpTrue() *OpTrue {
-	return &OpTrue{OpcodeDetails: bytecode.OpcodeToDetails(bytecode.OpTrue)}
+func NewOpTrue(op *bytecode.Opcodes) *OpTrue {
+	return &OpTrue{OpcodeDetails: op.OpcodeToDetails(bytecode.OpTrue)}
 }
 
 // Execute pushes the constant true value onto the virtual machine's stack.
 func (op *OpTrue) Execute(v *VM) {
-	v.stack.Push(objects.TrueValue)
+	v.stack.Push(op.Factory().TrueValue())
 }
 
 // OpFalse represents an opcode structure for pushing the boolean value false onto the stack.
@@ -159,13 +161,13 @@ type OpFalse struct {
 }
 
 // NewOpFalse creates a new instance of OpFalse, representing the operation to push the boolean value false onto the stack.
-func NewOpFalse() *OpFalse {
-	return &OpFalse{OpcodeDetails: bytecode.OpcodeToDetails(bytecode.OpFalse)}
+func NewOpFalse(op *bytecode.Opcodes) *OpFalse {
+	return &OpFalse{OpcodeDetails: op.OpcodeToDetails(bytecode.OpFalse)}
 }
 
 // Execute pushes a predefined `FalseValue` onto the virtual machine's stack.
 func (op *OpFalse) Execute(v *VM) {
-	v.stack.Push(objects.FalseValue)
+	v.stack.Push(op.Factory().FalseValue())
 }
 
 // OpLNot represents the logical NOT (!) operation opcode in the virtual machine's instruction set.
@@ -174,16 +176,16 @@ type OpLNot struct {
 }
 
 // NewOpLNot creates a new instance of OpLNot, representing a logical NOT operation (!).
-func NewOpLNot() *OpLNot {
-	return &OpLNot{OpcodeDetails: bytecode.OpcodeToDetails(bytecode.OpLNot)}
+func NewOpLNot(op *bytecode.Opcodes) *OpLNot {
+	return &OpLNot{OpcodeDetails: op.OpcodeToDetails(bytecode.OpLNot)}
 }
 
 // Execute performs a logical NOT operation on the operand at the top of the stack, pushing the result back onto the stack.
 func (op *OpLNot) Execute(v *VM) {
 	operand := v.stack.Pop()
-	val := objects.FalseValue
+	val := op.Factory().FalseValue()
 	if operand.Boolean() {
-		val = objects.TrueValue
+		val = op.Factory().TrueValue()
 	}
 	v.stack.Push(val)
 }
@@ -195,8 +197,8 @@ type OpBComplement struct {
 }
 
 // NewOpBComplement initializes and returns an OpBComplement instance with the corresponding OpcodeDetails configuration.
-func NewOpBComplement() *OpBComplement {
-	return &OpBComplement{OpcodeDetails: bytecode.OpcodeToDetails(bytecode.OpBComplement)}
+func NewOpBComplement(op *bytecode.Opcodes) *OpBComplement {
+	return &OpBComplement{OpcodeDetails: op.OpcodeToDetails(bytecode.OpBComplement)}
 }
 
 // Execute performs the bitwise complement operation on the top stack value. Sets an error if the value is not an integer.
@@ -204,7 +206,7 @@ func (op *OpBComplement) Execute(v *VM) {
 	operand := v.stack.Pop()
 	switch x := operand.(type) {
 	case *objects.Int:
-		res := objects.NewInt(^x.Value())
+		res := op.Factory().NewInt(^x.Value())
 		v.stack.Push(res)
 	default:
 		v.SetError(fmt.Errorf("invalid operation: ^%s", operand.TypeName()))
@@ -219,8 +221,8 @@ type OpMinus struct {
 }
 
 // NewOpMinus creates and returns a new OpMinus instance, initializing it with the details of the OpMinus bytecode.
-func NewOpMinus() *OpMinus {
-	return &OpMinus{OpcodeDetails: bytecode.OpcodeToDetails(bytecode.OpMinus)}
+func NewOpMinus(op *bytecode.Opcodes) *OpMinus {
+	return &OpMinus{OpcodeDetails: op.OpcodeToDetails(bytecode.OpMinus)}
 }
 
 // Execute performs a subtraction operation by negating the top stack element, supporting integers and floats.
@@ -229,10 +231,10 @@ func (op *OpMinus) Execute(v *VM) {
 	operand := v.stack.Pop()
 	switch x := operand.(type) {
 	case *objects.Int:
-		res := objects.NewInt(-x.Value())
+		res := op.Factory().NewInt(-x.Value())
 		v.stack.Push(res)
 	case *objects.Float:
-		res := objects.NewFloat(-x.Value())
+		res := op.Factory().NewFloat(-x.Value())
 		v.stack.Push(res)
 	default:
 		v.SetError(fmt.Errorf("invalid operation: -%s", operand.TypeName()))
@@ -245,8 +247,8 @@ type OpJumpFalsy struct {
 }
 
 // NewOpJumpFalsy creates and returns a new instance of OpJumpFalsy initialized with its corresponding OpcodeDetails.
-func NewOpJumpFalsy() *OpJumpFalsy {
-	return &OpJumpFalsy{OpcodeDetails: bytecode.OpcodeToDetails(bytecode.OpJumpFalsy)}
+func NewOpJumpFalsy(op *bytecode.Opcodes) *OpJumpFalsy {
+	return &OpJumpFalsy{OpcodeDetails: op.OpcodeToDetails(bytecode.OpJumpFalsy)}
 }
 
 // Execute advances the instruction pointer, evaluates the stack's top element, and updates the pointer if false.
@@ -265,8 +267,8 @@ type OpAndJump struct {
 }
 
 // NewOpAndJump creates and returns a new instance of OpAndJump, initializing it with details for the OpAndJump opcode.
-func NewOpAndJump() *OpAndJump {
-	return &OpAndJump{OpcodeDetails: bytecode.OpcodeToDetails(bytecode.OpAndJump)}
+func NewOpAndJump(op *bytecode.Opcodes) *OpAndJump {
+	return &OpAndJump{OpcodeDetails: op.OpcodeToDetails(bytecode.OpAndJump)}
 }
 
 // Execute updates the instruction pointer, evaluates a condition, and adjusts or decrements the stack based on the result.
@@ -287,8 +289,8 @@ type OpOrJump struct {
 }
 
 // NewOpOrJump creates and returns a new instance of OpOrJump, associated with the OpOrJump opcode and its details.
-func NewOpOrJump() *OpOrJump {
-	return &OpOrJump{OpcodeDetails: bytecode.OpcodeToDetails(bytecode.OpOrJump)}
+func NewOpOrJump(op *bytecode.Opcodes) *OpOrJump {
+	return &OpOrJump{OpcodeDetails: op.OpcodeToDetails(bytecode.OpOrJump)}
 }
 
 // Execute advances the instruction pointer, evaluates the stack's top object, and updates the IP based on its boolean value.
@@ -309,8 +311,8 @@ type OpJump struct {
 }
 
 // NewOpJump creates and returns a new instance of OpJump with details initialized for the OpJump opcode.
-func NewOpJump() *OpJump {
-	return &OpJump{OpcodeDetails: bytecode.OpcodeToDetails(bytecode.OpJump)}
+func NewOpJump(op *bytecode.Opcodes) *OpJump {
+	return &OpJump{OpcodeDetails: op.OpcodeToDetails(bytecode.OpJump)}
 }
 
 // Execute updates the instruction pointer (`ip`) in the virtual machine (`VM`) to a calculated position in the frame.
@@ -325,8 +327,8 @@ type OpSetGlobal struct {
 }
 
 // NewOpSetGlobal creates and returns a new instance of OpSetGlobal with initialized OpcodeDetails.
-func NewOpSetGlobal() *OpSetGlobal {
-	return &OpSetGlobal{OpcodeDetails: bytecode.OpcodeToDetails(bytecode.OpSetGlobal)}
+func NewOpSetGlobal(op *bytecode.Opcodes) *OpSetGlobal {
+	return &OpSetGlobal{OpcodeDetails: op.OpcodeToDetails(bytecode.OpSetGlobal)}
 }
 
 // Execute updates the instruction pointer, calculates a global variable position, and sets its value from the stack.
@@ -343,8 +345,8 @@ type OpSetSelGlobal struct {
 }
 
 // NewOpSetSelGlobal creates a new instance of OpSetSelGlobal with its corresponding OpcodeDetails initialized.
-func NewOpSetSelGlobal() *OpSetSelGlobal {
-	return &OpSetSelGlobal{OpcodeDetails: bytecode.OpcodeToDetails(bytecode.OpSetSelGlobal)}
+func NewOpSetSelGlobal(op *bytecode.Opcodes) *OpSetSelGlobal {
+	return &OpSetSelGlobal{OpcodeDetails: op.OpcodeToDetails(bytecode.OpSetSelGlobal)}
 }
 
 // Execute performs the operation defined by OpSetSelGlobal, updating the VM state and handling global index assignment.
@@ -372,8 +374,8 @@ type OpGetGlobal struct {
 }
 
 // NewOpGetGlobal creates a new instance of OpGetGlobal with its associated opcode details.
-func NewOpGetGlobal() *OpGetGlobal {
-	return &OpGetGlobal{OpcodeDetails: bytecode.OpcodeToDetails(bytecode.OpGetGlobal)}
+func NewOpGetGlobal(op *bytecode.Opcodes) *OpGetGlobal {
+	return &OpGetGlobal{OpcodeDetails: op.OpcodeToDetails(bytecode.OpGetGlobal)}
 }
 
 // Execute retrieves a global object using its index, pushes it onto the stack, and advances the instruction pointer.
@@ -395,8 +397,8 @@ type OpArray struct {
 }
 
 // NewOpArray creates and returns a new instance of OpArray, initialized with details for the OpArray operation.
-func NewOpArray() *OpArray {
-	return &OpArray{OpcodeDetails: bytecode.OpcodeToDetails(bytecode.OpArray)}
+func NewOpArray(op *bytecode.Opcodes) *OpArray {
+	return &OpArray{OpcodeDetails: op.OpcodeToDetails(bytecode.OpArray)}
 }
 
 // Execute processes the OpArray instruction, constructing an array from stack elements and pushing it onto the stack.
@@ -404,7 +406,7 @@ func (op *OpArray) Execute(v *VM) {
 	v.ip += 2
 	numElements := v.currFrame.Pos(v.ip, v.ip-1)
 	elements := v.stack.PopArrayElements(numElements)
-	arr := objects.NewArray(elements)
+	arr := op.Factory().NewArray(elements)
 	v.stack.Push(arr)
 }
 
@@ -414,8 +416,8 @@ type OpMap struct {
 }
 
 // NewOpMap initializes and returns a new instance of OpMap with its OpcodeDetails set to OpMap details.
-func NewOpMap() *OpMap {
-	return &OpMap{OpcodeDetails: bytecode.OpcodeToDetails(bytecode.OpMap)}
+func NewOpMap(op *bytecode.Opcodes) *OpMap {
+	return &OpMap{OpcodeDetails: op.OpcodeToDetails(bytecode.OpMap)}
 }
 
 // Execute processes the OpMap instruction, adjusts the instruction pointer, and pushes a new map object onto the stack.
@@ -423,7 +425,7 @@ func (op *OpMap) Execute(v *VM) {
 	v.ip += 2
 	numElements := v.currFrame.Pos(v.ip, v.ip-1)
 	mElem := v.stack.PopMapElements(numElements)
-	v.stack.Push(objects.NewMap(mElem))
+	v.stack.Push(op.Factory().NewMap(mElem))
 }
 
 // OpStruct is a wrapper around bytecode.OpcodeDetails, representing a struct creation operation in bytecode execution.
@@ -432,8 +434,8 @@ type OpStruct struct {
 }
 
 // NewOpStruct initializes and returns a new instance of OpStruct with its OpcodeDetails set to OpMap details.
-func NewOpStruct() *OpStruct {
-	return &OpStruct{OpcodeDetails: bytecode.OpcodeToDetails(bytecode.OpStruct)}
+func NewOpStruct(op *bytecode.Opcodes) *OpStruct {
+	return &OpStruct{OpcodeDetails: op.OpcodeToDetails(bytecode.OpStruct)}
 }
 
 // Execute processes the OpMap instruction, adjusts the instruction pointer, and pushes a new map object onto the stack.
@@ -441,7 +443,7 @@ func (op *OpStruct) Execute(v *VM) {
 	v.ip += 2
 	numElements := v.currFrame.Pos(v.ip, v.ip-1)
 	mElem := v.stack.PopMapElements(numElements)
-	v.stack.Push(objects.NewMap(mElem))
+	v.stack.Push(op.Factory().NewMap(mElem))
 }
 
 // OpError represents an operation that creates and assigns an error object in a virtual machine's runtime environment.
@@ -450,14 +452,14 @@ type OpError struct {
 }
 
 // NewOpError creates and returns a new instance of OpError with associated OpcodeDetails for the OpError opcode.
-func NewOpError() *OpError {
-	return &OpError{OpcodeDetails: bytecode.OpcodeToDetails(bytecode.OpError)}
+func NewOpError(op *bytecode.Opcodes) *OpError {
+	return &OpError{OpcodeDetails: op.OpcodeToDetails(bytecode.OpError)}
 }
 
 // Execute converts the top value on the VM stack into an error object and replaces it on the stack.
 func (op *OpError) Execute(v *VM) {
 	value := v.stack.Peek()
-	e := objects.NewError(value)
+	e := op.Factory().NewError(value)
 	v.stack.Set(e)
 }
 
@@ -467,8 +469,8 @@ type OpImmutable struct {
 }
 
 // NewOpImmutable creates a new instance of OpImmutable with details loaded from bytecode.OpcodeToDetails.
-func NewOpImmutable() *OpImmutable {
-	return &OpImmutable{OpcodeDetails: bytecode.OpcodeToDetails(bytecode.OpImmutable)}
+func NewOpImmutable(op *bytecode.Opcodes) *OpImmutable {
+	return &OpImmutable{OpcodeDetails: op.OpcodeToDetails(bytecode.OpImmutable)}
 }
 
 // Execute processes the top element on the stack and converts it into an immutable version if it's an array or map.
@@ -476,10 +478,10 @@ func (op *OpImmutable) Execute(v *VM) {
 	val := v.stack.Peek()
 	switch value := val.(type) {
 	case *objects.Array:
-		obj := objects.NewArrayImmutable(value.Values())
+		obj := op.Factory().NewArrayImmutable(value.Values())
 		v.stack.Set(obj)
 	case *objects.Map:
-		obj := objects.NewMapImmutable(value.Values())
+		obj := op.Factory().NewMapImmutable(value.Values())
 		v.stack.Set(obj)
 	}
 }
@@ -490,8 +492,8 @@ type OpIndex struct {
 }
 
 // NewOpIndex creates and returns a new instance of OpIndex initialized with its associated OpcodeDetails.
-func NewOpIndex() *OpIndex {
-	return &OpIndex{OpcodeDetails: bytecode.OpcodeToDetails(bytecode.OpIndex)}
+func NewOpIndex(op *bytecode.Opcodes) *OpIndex {
+	return &OpIndex{OpcodeDetails: op.OpcodeToDetails(bytecode.OpIndex)}
 }
 
 // Execute processes the index operation on the stack, retrieving a value or setting an error if indexing is invalid.
@@ -512,7 +514,7 @@ func (op *OpIndex) Execute(v *VM) {
 		return
 	}
 	if val == nil {
-		val = objects.UndefinedValue
+		val = op.Factory().UndefinedValue()
 	}
 	v.stack.Push(val)
 }
@@ -524,8 +526,8 @@ type OpSliceIndex struct {
 }
 
 // NewOpSliceIndex creates a new instance of OpSliceIndex containing details for the slice indexing bytecode operation.
-func NewOpSliceIndex() *OpSliceIndex {
-	return &OpSliceIndex{OpcodeDetails: bytecode.OpcodeToDetails(bytecode.OpSliceIndex)}
+func NewOpSliceIndex(op *bytecode.Opcodes) *OpSliceIndex {
+	return &OpSliceIndex{OpcodeDetails: op.OpcodeToDetails(bytecode.OpSliceIndex)}
 }
 
 // Execute processes the slice operation on the stack, adjusting bounds and supporting various object types like arrays and strings.
@@ -541,16 +543,16 @@ func (op *OpSliceIndex) Execute(v *VM) {
 	var val objects.IObject = nil
 	switch left := leftStack.(type) {
 	case *objects.Array:
-		val = objects.NewArray(left.Values()[lowIdx:highIdx])
+		val = op.Factory().NewArray(left.Values()[lowIdx:highIdx])
 	case *objects.ArrayImmutable:
-		val = objects.NewArray(left.Values()[lowIdx:highIdx])
+		val = op.Factory().NewArray(left.Values()[lowIdx:highIdx])
 	case *objects.String:
-		if val, err = objects.NewString(left.Value()[lowIdx:highIdx]); err != nil {
+		if val, err = op.Factory().NewString(left.Value()[lowIdx:highIdx]); err != nil {
 			v.SetError(err)
 			return
 		}
 	case *objects.Bytes:
-		val = objects.NewBytes(left.Value()[lowIdx:highIdx])
+		val = op.Factory().NewBytes(left.Value()[lowIdx:highIdx])
 	}
 	if val != nil {
 		v.stack.Push(val)
@@ -563,8 +565,8 @@ type OpCall struct {
 }
 
 // NewOpCall creates and returns a new instance of OpCall with initialized OpcodeDetails for the OpCall opcode.
-func NewOpCall() *OpCall {
-	return &OpCall{OpcodeDetails: bytecode.OpcodeToDetails(bytecode.OpCall)}
+func NewOpCall(op *bytecode.Opcodes) *OpCall {
+	return &OpCall{OpcodeDetails: op.OpcodeToDetails(bytecode.OpCall)}
 }
 
 // Execute processes the OpCall instruction, invoking the callable or handling array spreads, and manages the stack state.
@@ -634,11 +636,11 @@ func (op *OpCall) Execute(v *VM) {
 			}
 			return
 		}
-		if ret != nil && ret != objects.UndefinedValue {
+		if ret != nil && ret != op.Factory().UndefinedValue() {
 			v.stack.Push(ret)
 		}
 		if ret == nil {
-			ret = objects.UndefinedValue
+			ret = op.Factory().UndefinedValue()
 		}
 		v.stack.Push(ret)
 	}
@@ -650,8 +652,8 @@ type OpReturn struct {
 }
 
 // NewOpReturn creates a new instance of OpReturn with its OpcodeDetails initialized for the OpReturn operation.
-func NewOpReturn() *OpReturn {
-	return &OpReturn{OpcodeDetails: bytecode.OpcodeToDetails(bytecode.OpReturn)}
+func NewOpReturn(op *bytecode.Opcodes) *OpReturn {
+	return &OpReturn{OpcodeDetails: op.OpcodeToDetails(bytecode.OpReturn)}
 }
 
 // Execute performs the return operation for the current frame, manages the stack, and transitions between frames in the VM.
@@ -668,6 +670,9 @@ func (op *OpReturn) Execute(v *VM) {
 		returnValues[i] = v.stack.Pop()
 	}
 
+	//leavingFrameBasePointer := v.currFrame.BasePointer()
+	//v.stack.ReleaseObjects(leavingFrameBasePointer, v.stack.StackPointer())
+
 	// 3. Gestisce il cambio di frame.
 	if v.frames.Index() > 1 {
 		leavingFrameBasePointer := v.currFrame.BasePointer()
@@ -679,7 +684,7 @@ func (op *OpReturn) Execute(v *VM) {
 
 		// 4. Esegue il push dei valori di ritorno sul nuovo stack (quello del chiamante).
 		if numReturnVals == 0 {
-			v.stack.Push(objects.UndefinedValue)
+			v.stack.Push(op.Factory().UndefinedValue())
 		} else {
 			// Itera sulla slice al contrario per ripristinare l'ordine originale.
 			for i := numReturnVals - 1; i >= 0; i-- {
@@ -697,8 +702,8 @@ type OpDefineLocal struct {
 }
 
 // NewOpDefineLocal creates a new instance of OpDefineLocal with its associated opcode details.
-func NewOpDefineLocal() *OpDefineLocal {
-	return &OpDefineLocal{OpcodeDetails: bytecode.OpcodeToDetails(bytecode.OpDefineLocal)}
+func NewOpDefineLocal(op *bytecode.Opcodes) *OpDefineLocal {
+	return &OpDefineLocal{OpcodeDetails: op.OpcodeToDetails(bytecode.OpDefineLocal)}
 }
 
 // Execute increments the instruction pointer, retrieves a local index, and assigns a stack value to a designated slot.
@@ -717,8 +722,8 @@ type OpSetLocal struct {
 }
 
 // NewOpSetLocal initializes and returns a new instance of OpSetLocal with associated opcode details.
-func NewOpSetLocal() *OpSetLocal {
-	return &OpSetLocal{OpcodeDetails: bytecode.OpcodeToDetails(bytecode.OpSetLocal)}
+func NewOpSetLocal(op *bytecode.Opcodes) *OpSetLocal {
+	return &OpSetLocal{OpcodeDetails: op.OpcodeToDetails(bytecode.OpSetLocal)}
 }
 
 // Execute updates a local variable in the current frame using the stack's top value and the local index from instructions.
@@ -742,8 +747,8 @@ type OpSetSelLocal struct {
 }
 
 // NewOpSetSelLocal creates and returns a new instance of the OpSetSelLocal operation executor.
-func NewOpSetSelLocal() *OpSetSelLocal {
-	return &OpSetSelLocal{OpcodeDetails: bytecode.OpcodeToDetails(bytecode.OpSetSelLocal)}
+func NewOpSetSelLocal(op *bytecode.Opcodes) *OpSetSelLocal {
+	return &OpSetSelLocal{OpcodeDetails: op.OpcodeToDetails(bytecode.OpSetSelLocal)}
 }
 
 // Execute performs the operation of retrieving, modifying, and reassigning a value using selectors in the local scope.
@@ -773,8 +778,8 @@ type OpGetLocal struct {
 }
 
 // NewOpGetLocal creates a new OpGetLocal instance and initializes it with details for the OpGetLocal opcode.
-func NewOpGetLocal() *OpGetLocal {
-	return &OpGetLocal{OpcodeDetails: bytecode.OpcodeToDetails(bytecode.OpGetLocal)}
+func NewOpGetLocal(op *bytecode.Opcodes) *OpGetLocal {
+	return &OpGetLocal{OpcodeDetails: op.OpcodeToDetails(bytecode.OpGetLocal)}
 }
 
 // Execute retrieves a local variable from the current frame's base pointer and pushes it onto the stack.
@@ -794,8 +799,8 @@ type OpClosure struct {
 }
 
 // NewOpClosure returns a new instance of OpClosure initialized with the details of the OpClosure opcode.
-func NewOpClosure() *OpClosure {
-	return &OpClosure{OpcodeDetails: bytecode.OpcodeToDetails(bytecode.OpClosure)}
+func NewOpClosure(op *bytecode.Opcodes) *OpClosure {
+	return &OpClosure{OpcodeDetails: op.OpcodeToDetails(bytecode.OpClosure)}
 }
 
 // Execute performs the operation associated with the OpClosure opcode, creating a closure and pushing it onto the stack.
@@ -817,11 +822,11 @@ func (op *OpClosure) Execute(v *VM) {
 			free[i] = freeVar
 		default:
 			t := v.stack.PeekOffset(-numFree + i)
-			free[i] = objects.NewObjectPointer(&t)
+			free[i] = op.Factory().NewObjectPointer(&t)
 		}
 	}
 	v.stack.DecrementCount(numFree)
-	cl := objects.NewFunctionCompiled("closure", fn.Instructions().Data(), fn.NumLocals(), fn.NumParameters(), fn.VarArgs(), nil, free)
+	cl := op.Factory().NewFuncCompiled("closure", fn.Instructions().Data(), fn.NumLocals(), fn.NumParameters(), fn.VarArgs(), nil, free)
 	v.stack.Push(cl)
 }
 
@@ -832,8 +837,8 @@ type OpGetFreePtr struct {
 }
 
 // NewOpGetFreePtr creates a new instance of OpGetFreePtr initialized with the corresponding OpcodeDetails.
-func NewOpGetFreePtr() *OpGetFreePtr {
-	return &OpGetFreePtr{OpcodeDetails: bytecode.OpcodeToDetails(bytecode.OpGetFreePtr)}
+func NewOpGetFreePtr(op *bytecode.Opcodes) *OpGetFreePtr {
+	return &OpGetFreePtr{OpcodeDetails: op.OpcodeToDetails(bytecode.OpGetFreePtr)}
 }
 
 // Execute executes the OpGetFreePtr operation, pushing a free variable onto the stack based on the current instruction pointer.
@@ -850,8 +855,8 @@ type OpGetFree struct {
 }
 
 // NewOpGetFree creates and returns a new instance of OpGetFree, initializing its OpcodeDetails using bytecode metadata.
-func NewOpGetFree() *OpGetFree {
-	return &OpGetFree{OpcodeDetails: bytecode.OpcodeToDetails(bytecode.OpGetFree)}
+func NewOpGetFree(op *bytecode.Opcodes) *OpGetFree {
+	return &OpGetFree{OpcodeDetails: op.OpcodeToDetails(bytecode.OpGetFree)}
 }
 
 // Execute increments the instruction pointer, retrieves a value using free variable index, and pushes it onto the stack.
@@ -868,8 +873,8 @@ type OpSetFree struct {
 }
 
 // NewOpSetFree creates and returns a new instance of OpSetFree initialized with its corresponding OpcodeDetails.
-func NewOpSetFree() *OpSetFree {
-	return &OpSetFree{OpcodeDetails: bytecode.OpcodeToDetails(bytecode.OpSetFree)}
+func NewOpSetFree(op *bytecode.Opcodes) *OpSetFree {
+	return &OpSetFree{OpcodeDetails: op.OpcodeToDetails(bytecode.OpSetFree)}
 }
 
 // Execute increments the instruction pointer, retrieves a free variable index, and sets its value from the stack.
@@ -886,8 +891,8 @@ type OpGetLocalPtr struct {
 }
 
 // NewOpGetLocalPtr creates and returns a new instance of OpGetLocalPtr, initializing its OpcodeDetails.
-func NewOpGetLocalPtr() *OpGetLocalPtr {
-	return &OpGetLocalPtr{OpcodeDetails: bytecode.OpcodeToDetails(bytecode.OpGetLocalPtr)}
+func NewOpGetLocalPtr(op *bytecode.Opcodes) *OpGetLocalPtr {
+	return &OpGetLocalPtr{OpcodeDetails: op.OpcodeToDetails(bytecode.OpGetLocalPtr)}
 }
 
 // Execute advances the instruction pointer, retrieves a local variable, and pushes an ObjectPointer to the stack.
@@ -900,7 +905,7 @@ func (op *OpGetLocalPtr) Execute(v *VM) {
 		v.stack.Push(obj)
 		return
 	}
-	freeVar := objects.NewObjectPointer(&val)
+	freeVar := op.Factory().NewObjectPointer(&val)
 	v.stack.SetAbsolute(sp, freeVar)
 	v.stack.Push(freeVar)
 }
@@ -911,8 +916,8 @@ type OpSetSelFree struct {
 }
 
 // NewOpSetSelFree creates a new instance of OpSetSelFree with initialized OpcodeDetails referencing OpSetSelFree.
-func NewOpSetSelFree() *OpSetSelFree {
-	return &OpSetSelFree{OpcodeDetails: bytecode.OpcodeToDetails(bytecode.OpSetSelFree)}
+func NewOpSetSelFree(op *bytecode.Opcodes) *OpSetSelFree {
+	return &OpSetSelFree{OpcodeDetails: op.OpcodeToDetails(bytecode.OpSetSelFree)}
 }
 
 // Execute updates the instruction pointer, retrieves operands, processes selectors, and performs indexed assignment in the VM.
@@ -941,8 +946,8 @@ type OpIteratorInit struct {
 }
 
 // NewOpIteratorInit creates and returns a new instance of OpIteratorInit with associated opcode details.
-func NewOpIteratorInit() *OpIteratorInit {
-	return &OpIteratorInit{OpcodeDetails: bytecode.OpcodeToDetails(bytecode.OpIteratorInit)}
+func NewOpIteratorInit(op *bytecode.Opcodes) *OpIteratorInit {
+	return &OpIteratorInit{OpcodeDetails: op.OpcodeToDetails(bytecode.OpIteratorInit)}
 }
 
 // Execute initializes an iterator for an iterable object and stores it in the specified local slot in the current frame.
@@ -965,8 +970,8 @@ type OpIteratorNext struct {
 }
 
 // NewOpIteratorNext creates a new instance of OpIteratorNext with associated opcode details.
-func NewOpIteratorNext() *OpIteratorNext {
-	return &OpIteratorNext{OpcodeDetails: bytecode.OpcodeToDetails(bytecode.OpIteratorNext)}
+func NewOpIteratorNext(op *bytecode.Opcodes) *OpIteratorNext {
+	return &OpIteratorNext{OpcodeDetails: op.OpcodeToDetails(bytecode.OpIteratorNext)}
 }
 
 // Execute processes the next iterator state in the current frame, pushing a boolean to the stack indicating iteration status.
@@ -980,9 +985,9 @@ func (op *OpIteratorNext) Execute(v *VM) {
 		return
 	}
 	if iterator.Next() {
-		v.stack.Push(objects.TrueValue)
+		v.stack.Push(op.Factory().TrueValue())
 	} else {
-		v.stack.Push(objects.FalseValue)
+		v.stack.Push(op.Factory().FalseValue())
 	}
 }
 
@@ -992,8 +997,8 @@ type OpIteratorKey struct {
 }
 
 // NewOpIteratorKey creates a new instance of OpIteratorKey with associated opcode details.
-func NewOpIteratorKey() *OpIteratorKey {
-	return &OpIteratorKey{OpcodeDetails: bytecode.OpcodeToDetails(bytecode.OpIteratorKey)}
+func NewOpIteratorKey(op *bytecode.Opcodes) *OpIteratorKey {
+	return &OpIteratorKey{OpcodeDetails: op.OpcodeToDetails(bytecode.OpIteratorKey)}
 }
 
 // Execute processes the "iterator key" operation, retrieves the iterator key, and pushes it onto the VM stack.
@@ -1016,8 +1021,8 @@ type OpIteratorValue struct {
 }
 
 // NewOpIteratorValue creates and returns a new instance of OpIteratorValue with its associated OpcodeDetails initialized.
-func NewOpIteratorValue() *OpIteratorValue {
-	return &OpIteratorValue{OpcodeDetails: bytecode.OpcodeToDetails(bytecode.OpIteratorValue)}
+func NewOpIteratorValue(op *bytecode.Opcodes) *OpIteratorValue {
+	return &OpIteratorValue{OpcodeDetails: op.OpcodeToDetails(bytecode.OpIteratorValue)}
 }
 
 // Execute processes the next instruction to retrieve and push the current value of an iterator onto the stack.
@@ -1039,8 +1044,8 @@ type OpReferences struct {
 }
 
 // NewOpReferences initializes a new OpReferences instance with corresponding OpcodeDetails from the bytecode package.
-func NewOpReferences() *OpReferences {
-	return &OpReferences{OpcodeDetails: bytecode.OpcodeToDetails(bytecode.OpReferences)}
+func NewOpReferences(op *bytecode.Opcodes) *OpReferences {
+	return &OpReferences{OpcodeDetails: op.OpcodeToDetails(bytecode.OpReferences)}
 }
 
 // Execute processes the specified VM instruction, adjusts the instruction pointer, and pushes a reference onto the stack.
@@ -1061,8 +1066,8 @@ type OpSuspend struct {
 }
 
 // NewOpSuspend creates and returns a new OpSuspend instance with opcode details initialized for the suspend operation.
-func NewOpSuspend() *OpSuspend {
-	return &OpSuspend{OpcodeDetails: bytecode.OpcodeToDetails(bytecode.OpSuspend)}
+func NewOpSuspend(op *bytecode.Opcodes) *OpSuspend {
+	return &OpSuspend{OpcodeDetails: op.OpcodeToDetails(bytecode.OpSuspend)}
 }
 
 // Execute performs the suspend operation on the given virtual machine by setting its shutdown state to true.
@@ -1076,8 +1081,8 @@ type OpUnknown struct {
 }
 
 // NewOpUnknown creates a new instance of OpUnknown with its corresponding OpcodeDetails configuration set.
-func NewOpUnknown() *OpUnknown {
-	return &OpUnknown{OpcodeDetails: bytecode.OpcodeToDetails(bytecode.OpUnknown)}
+func NewOpUnknown(op *bytecode.Opcodes) *OpUnknown {
+	return &OpUnknown{OpcodeDetails: op.OpcodeToDetails(bytecode.OpUnknown)}
 }
 
 // Execute handles the execution of an unknown opcode, sets an error state, and stops the virtual machine.

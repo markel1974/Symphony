@@ -6,13 +6,16 @@ const (
 
 // Char represents a character type, encapsulating a single rune values and inheriting behavior from Object.
 type Char struct {
-	Object
+	*Object
 	value rune
 }
 
 // NewChar creates and returns a new Char object with the specified rune values.
-func NewChar(value rune) *Char {
-	return &Char{value: value}
+func _newChar(factory *Factory, value rune) *Char {
+	return &Char{
+		Object: factory.NewObject(),
+		value:  value,
+	}
 }
 
 // Value returns the rune values stored in the Char object.
@@ -40,33 +43,33 @@ func (o *Char) BinaryOp(op Operator, in IObject) (IObject, error) {
 			if r == o.value {
 				return o, nil
 			}
-			return NewChar(r), nil
+			return o.Factory().NewChar(r), nil
 		case OperatorSub:
 			r := o.value - rhs.value
 			if r == o.value {
 				return o, nil
 			}
-			return NewChar(r), nil
+			return o.Factory().NewChar(r), nil
 		case OperatorLess:
 			if o.value < rhs.value {
-				return TrueValue, nil
+				return o.Factory().TrueValue(), nil
 			}
-			return FalseValue, nil
+			return o.Factory().FalseValue(), nil
 		case OperatorGreater:
 			if o.value > rhs.value {
-				return TrueValue, nil
+				return o.Factory().TrueValue(), nil
 			}
-			return FalseValue, nil
+			return o.Factory().FalseValue(), nil
 		case OperatorLessEq:
 			if o.value <= rhs.value {
-				return TrueValue, nil
+				return o.Factory().TrueValue(), nil
 			}
-			return FalseValue, nil
+			return o.Factory().FalseValue(), nil
 		case OperatorGreaterEq:
 			if o.value >= rhs.value {
-				return TrueValue, nil
+				return o.Factory().TrueValue(), nil
 			}
-			return FalseValue, nil
+			return o.Factory().FalseValue(), nil
 		default:
 			return nil, ErrInvalidOperator
 		}
@@ -77,33 +80,33 @@ func (o *Char) BinaryOp(op Operator, in IObject) (IObject, error) {
 			if r == o.value {
 				return o, nil
 			}
-			return NewChar(r), nil
+			return o.Factory().NewChar(r), nil
 		case OperatorSub:
 			r := o.value - rune(rhs.value)
 			if r == o.value {
 				return o, nil
 			}
-			return NewChar(r), nil
+			return o.Factory().NewChar(r), nil
 		case OperatorLess:
 			if int64(o.Value()) < rhs.value {
-				return TrueValue, nil
+				return o.Factory().TrueValue(), nil
 			}
-			return FalseValue, nil
+			return o.Factory().FalseValue(), nil
 		case OperatorGreater:
 			if int64(o.Value()) > rhs.value {
-				return TrueValue, nil
+				return o.Factory().TrueValue(), nil
 			}
-			return FalseValue, nil
+			return o.Factory().FalseValue(), nil
 		case OperatorLessEq:
 			if int64(o.Value()) <= rhs.value {
-				return TrueValue, nil
+				return o.Factory().TrueValue(), nil
 			}
-			return FalseValue, nil
+			return o.Factory().FalseValue(), nil
 		case OperatorGreaterEq:
 			if int64(o.Value()) >= rhs.value {
-				return TrueValue, nil
+				return o.Factory().TrueValue(), nil
 			}
-			return FalseValue, nil
+			return o.Factory().FalseValue(), nil
 		default:
 			return nil, ErrInvalidOperator
 		}
@@ -113,7 +116,7 @@ func (o *Char) BinaryOp(op Operator, in IObject) (IObject, error) {
 
 // Copy creates and returns a new instance of the Char object with the same values.
 func (o *Char) Copy() IObject {
-	return &Char{value: o.value}
+	return o.Factory().NewChar(o.value)
 }
 
 // Boolean checks whether the Char object represents a falsy state, returning true if the underlying values is 0.

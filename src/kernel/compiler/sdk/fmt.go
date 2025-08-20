@@ -8,19 +8,22 @@ import (
 
 // Fmt represents a struct that provides formatted output methods using a map of predefined functions.
 type Fmt struct {
+	factory *objects.Factory
 	*Package
 }
 
 // NewFmt initializes and returns a new Fmt instance with predefined formatting functions as module properties.
-func NewFmt() *Fmt {
-	f := &Fmt{}
+func NewFmt(factory *objects.Factory) *Fmt {
+	f := &Fmt{
+		factory: factory,
+	}
 	container := []*objects.FuncPackage{
-		objects.NewFuncPackage(objects.FuncPackageDef, "Print", f.Print),
-		objects.NewFuncPackage(objects.FuncPackageDef, "Printf", f.Printf),
-		objects.NewFuncPackage(objects.FuncPackageDef, "Println", f.Println),
-		objects.NewFuncPackage(objects.FuncPackageDef, "Sprintf", f.Sprint),
-		objects.NewFuncPackage(objects.FuncPackageDef, "Sprintf", f.Sprintf),
-		objects.NewFuncPackage(objects.FuncPackageDef, "Errorf", f.Errorf),
+		factory.NewFuncPackage(objects.FuncPackageDef, "Print", f.Print),
+		factory.NewFuncPackage(objects.FuncPackageDef, "Printf", f.Printf),
+		factory.NewFuncPackage(objects.FuncPackageDef, "Println", f.Println),
+		factory.NewFuncPackage(objects.FuncPackageDef, "Sprintf", f.Sprint),
+		factory.NewFuncPackage(objects.FuncPackageDef, "Sprintf", f.Sprintf),
+		factory.NewFuncPackage(objects.FuncPackageDef, "Errorf", f.Errorf),
 	}
 	f.Package = NewPackage("fmt", container, nil)
 	return f
@@ -30,7 +33,7 @@ func NewFmt() *Fmt {
 func (f *Fmt) Print(args ...objects.IObject) (ret objects.IObject, err error) {
 	var printArgs []interface{}
 	for _, arg := range args {
-		printArgs = append(printArgs, objects.ToInterface(arg))
+		printArgs = append(printArgs, f.factory.ToInterface(arg))
 	}
 	_, _ = fmt.Print(printArgs...)
 	return nil, nil
@@ -44,7 +47,7 @@ func (f *Fmt) Printf(args ...objects.IObject) (ret objects.IObject, err error) {
 	if argsLen == 0 {
 		return nil, objects.ErrWrongNumArguments
 	}
-	s1, err := objects.ToStringArg(0, args[0])
+	s1, err := f.factory.ToStringArg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
@@ -54,7 +57,7 @@ func (f *Fmt) Printf(args ...objects.IObject) (ret objects.IObject, err error) {
 	}
 	var ar []interface{}
 	for _, v := range args[1:] {
-		ar = append(ar, objects.ToInterface(v))
+		ar = append(ar, f.factory.ToInterface(v))
 	}
 	fmt.Printf(s1, ar...)
 	return nil, nil
@@ -64,7 +67,7 @@ func (f *Fmt) Printf(args ...objects.IObject) (ret objects.IObject, err error) {
 func (f *Fmt) Println(args ...objects.IObject) (ret objects.IObject, err error) {
 	var printArgs []interface{}
 	for _, arg := range args {
-		printArgs = append(printArgs, objects.ToInterface(arg))
+		printArgs = append(printArgs, f.factory.ToInterface(arg))
 	}
 	_, _ = fmt.Println(printArgs...)
 	return nil, nil
@@ -77,9 +80,9 @@ func (f *Fmt) Sprint(args ...objects.IObject) (ret objects.IObject, err error) {
 	}
 	var ar []interface{}
 	for _, v := range args {
-		ar = append(ar, objects.ToInterface(v))
+		ar = append(ar, f.factory.ToInterface(v))
 	}
-	return objects.NewString(fmt.Sprint(ar))
+	return f.factory.NewString(fmt.Sprint(ar))
 }
 
 // Sprintf formats a string using a format specifier and optional arguments, returning it as a new string object.
@@ -88,18 +91,18 @@ func (f *Fmt) Sprintf(args ...objects.IObject) (ret objects.IObject, err error) 
 	if argsLen == 0 {
 		return nil, objects.ErrWrongNumArguments
 	}
-	s1, err := objects.ToStringArg(0, args[0])
+	s1, err := f.factory.ToStringArg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
 	if len(args) == 1 {
-		return objects.NewString(s1)
+		return f.factory.NewString(s1)
 	}
 	var ar []interface{}
 	for _, v := range args[1:] {
-		ar = append(ar, objects.ToInterface(v))
+		ar = append(ar, f.factory.ToInterface(v))
 	}
-	return objects.NewString(fmt.Sprintf(s1, ar...))
+	return f.factory.NewString(fmt.Sprintf(s1, ar...))
 }
 
 // Errorf formats an error message using a format string and arguments, returning an IObject error representation.
@@ -108,24 +111,24 @@ func (f *Fmt) Errorf(args ...objects.IObject) (ret objects.IObject, err error) {
 	if argsLen == 0 {
 		return nil, objects.ErrWrongNumArguments
 	}
-	s1, err := objects.ToStringArg(0, args[0])
+	s1, err := f.factory.ToStringArg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
 	if len(args) == 1 {
-		v, err := objects.NewString(fmt.Errorf(s1).Error())
+		v, err := f.factory.NewString(fmt.Errorf(s1).Error())
 		if err != nil {
 			return nil, err
 		}
-		return objects.NewError(v), nil
+		return f.factory.NewError(v), nil
 	}
 	var ar []interface{}
 	for _, v := range args[1:] {
-		ar = append(ar, objects.ToInterface(v))
+		ar = append(ar, f.factory.ToInterface(v))
 	}
-	v, err := objects.NewString(fmt.Errorf(s1, ar...).Error())
+	v, err := f.factory.NewString(fmt.Errorf(s1, ar...).Error())
 	if err != nil {
 		return nil, err
 	}
-	return objects.NewError(v), nil
+	return f.factory.NewError(v), nil
 }

@@ -10,6 +10,7 @@ import (
 // Stack represents a data structure that operates on a LIFO (Last In, First Out) principle.
 // It manages a slice of objects implementing the IObject interface and tracks the stack pointer.
 type Stack struct {
+	factory        *objects.Factory
 	stack          []objects.IObject
 	sp             int
 	allocations    int64
@@ -18,8 +19,9 @@ type Stack struct {
 }
 
 // NewStack creates and initializes a new Stack with the specified size and returns a pointer to it.
-func NewStack(size int, maxAllocations int64, errSignal func(err error)) *Stack {
+func NewStack(factory *objects.Factory, size int, maxAllocations int64, errSignal func(err error)) *Stack {
 	s := &Stack{
+		factory:        factory,
 		sp:             0,
 		stack:          make([]objects.IObject, size),
 		maxAllocations: maxAllocations,
@@ -27,7 +29,7 @@ func NewStack(size int, maxAllocations int64, errSignal func(err error)) *Stack 
 		errSignal:      errSignal,
 	}
 	for i := range s.stack {
-		s.stack[i] = objects.UndefinedValue
+		s.stack[i] = factory.UndefinedValue()
 	}
 	return s
 }
@@ -118,7 +120,7 @@ func (v *Stack) PushVarArgs(numArgs int, realArgs int) {
 		v.errSignal(objects.ErrIndexOutOfBounds)
 		return
 	}
-	v.stack[spStart] = objects.NewArray(args)
+	v.stack[spStart] = v.factory.NewArray(args)
 	v.sp = spStart + 1
 }
 
@@ -126,7 +128,7 @@ func (v *Stack) PushVarArgs(numArgs int, realArgs int) {
 // It returns UndefinedValue if the stack is empty (stack underflow).
 func (v *Stack) Pop() objects.IObject {
 	if v.sp == 0 {
-		return objects.UndefinedValue
+		return v.factory.UndefinedValue()
 	}
 	v.sp--
 	return v.stack[v.sp]
@@ -168,7 +170,7 @@ func (v *Stack) PeekAbsolute(absolute int) objects.IObject {
 func (v *Stack) PeekOffset(offset int) objects.IObject {
 	sp := v.sp + offset
 	if sp < 0 || sp >= len(v.stack) {
-		return objects.UndefinedValue
+		return v.factory.UndefinedValue()
 	}
 	ret := v.stack[sp]
 	return ret
@@ -178,7 +180,7 @@ func (v *Stack) PeekOffset(offset int) objects.IObject {
 func (v *Stack) Peek() objects.IObject {
 	sp := v.sp - 1
 	if sp < 0 || sp >= len(v.stack) {
-		return objects.UndefinedValue
+		return v.factory.UndefinedValue()
 	}
 	ret := v.stack[v.sp-1]
 	return ret
@@ -196,6 +198,29 @@ func (v *Stack) PeekArrayObject(numArgs int) []objects.IObject {
 	}
 	z := v.stack[start:v.sp]
 	return z
+}
+
+func (v *Stack) ReleaseObjects(start, end int) {
+	//TODO IMPLMENT!
+	/*
+		for i := start; i < end; i++ {
+			obj := v.stack[i]
+			switch o := obj.(type) {
+			case *objects.Int:
+				v.factory.ReleaseInt(o)
+			case *objects.Float:
+				v.factory.ReleaseFloat(o)
+			case *objects.String:
+				v.factory.ReleaseString(o)
+			case *objects.Array:
+				v.factory.ReleaseArray(o)
+				// Oggetti come Bool e Undefined sono singleton, non vanno rilasciati.
+				// Altri oggetti complessi potrebbero non avere un pool, quindi non fare nulla.
+			}
+			v.stack[i] = v.factory.UndefinedValue()
+		}
+
+	*/
 }
 
 // Print outputs each element in the stack from the bottom to the current stack pointer.

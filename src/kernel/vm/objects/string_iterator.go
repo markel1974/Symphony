@@ -7,15 +7,16 @@ const (
 
 // StringIterator represents an iterator for traversing over the characters of a string, implemented as runes.
 type StringIterator struct {
-	Object
+	*Object
 	values []rune
 	index  int
 	length int
 }
 
 // NewStringIterator creates and returns a new instance of StringIterator with the given rune slice.
-func NewStringIterator(v []rune) *StringIterator {
+func _newStringIterator(factory *Factory, v []rune) *StringIterator {
 	return &StringIterator{
+		Object: factory.NewObject(),
 		values: v,
 		length: len(v),
 		index:  0,
@@ -24,11 +25,9 @@ func NewStringIterator(v []rune) *StringIterator {
 
 // Copy creates and returns a new instance of StringIterator with the same state as the current one.
 func (i *StringIterator) Copy() IObject {
-	return &StringIterator{
-		values: i.values,
-		index:  i.index,
-		length: i.length,
-	}
+	ret := i.Factory().NewStringIterator(i.values)
+	ret.index = i.index
+	return ret
 }
 
 // TypeName returns the type name of the StringIterator as a string.
@@ -59,10 +58,10 @@ func (i *StringIterator) Next() bool {
 
 // Key returns the zero-based index of the current element in the iteration as an Int object.
 func (i *StringIterator) Key() IObject {
-	return &Int{value: int64(i.index - 1)}
+	return i.Factory().NewInt(int64(i.index - 1))
 }
 
 // Value returns the current character as an IObject wrapped in a Char instance from the internal rune slice.
 func (i *StringIterator) Value() IObject {
-	return &Char{value: i.values[i.index-1]}
+	return i.Factory().NewChar(i.values[i.index-1])
 }

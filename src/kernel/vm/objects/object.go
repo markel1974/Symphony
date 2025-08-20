@@ -2,6 +2,17 @@ package objects
 
 // Object is a default implementation of the IObject interface with unimplemented or default behavior for methods.
 type Object struct {
+	factory *Factory
+}
+
+func _newObject(factory *Factory) *Object {
+	return &Object{
+		factory: factory,
+	}
+}
+
+func (o *Object) Factory() *Factory {
+	return o.factory
 }
 
 // TypeName returns the name of the object type. This method must be implemented by objects inheriting Object.

@@ -10,13 +10,16 @@ const (
 
 // Int represents an integer type with a 64-bit value and methods for operations, equality, and object behavior.
 type Int struct {
-	Object
+	*Object
 	value int64
 }
 
 // NewInt creates and returns a new instance of the Int struct initialized with the specified int64 value.
-func NewInt(value int64) *Int {
-	return &Int{value: value}
+func _newInt(factory *Factory, value int64) *Int {
+	return &Int{
+		Object: factory.NewObject(),
+		value:  value,
+	}
 }
 
 // Value returns the underlying int64 value of the Int object.
@@ -44,149 +47,149 @@ func (o *Int) BinaryOp(op Operator, rhs IObject) (IObject, error) {
 			if r == o.value {
 				return o, nil
 			}
-			return &Int{value: r}, nil
+			return o.Factory().NewInt(r), nil
 		case OperatorSub:
 			r := o.value - rhs.value
 			if r == o.value {
 				return o, nil
 			}
-			return &Int{value: r}, nil
+			return o.Factory().NewInt(r), nil
 		case OperatorMul:
 			r := o.value * rhs.value
 			if r == o.value {
 				return o, nil
 			}
-			return &Int{value: r}, nil
+			return o.Factory().NewInt(r), nil
 		case OperatorQuo:
 			r := o.value / rhs.value
 			if r == o.value {
 				return o, nil
 			}
-			return &Int{value: r}, nil
+			return o.Factory().NewInt(r), nil
 		case OperatorRem:
 			r := o.value % rhs.value
 			if r == o.value {
 				return o, nil
 			}
-			return &Int{value: r}, nil
+			return o.Factory().NewInt(r), nil
 		case OperatorAnd:
 			r := o.value & rhs.value
 			if r == o.value {
 				return o, nil
 			}
-			return &Int{value: r}, nil
+			return o.Factory().NewInt(r), nil
 		case OperatorOr:
 			r := o.value | rhs.value
 			if r == o.value {
 				return o, nil
 			}
-			return &Int{value: r}, nil
+			return o.Factory().NewInt(r), nil
 		case OperatorXor:
 			r := o.value ^ rhs.value
 			if r == o.value {
 				return o, nil
 			}
-			return &Int{value: r}, nil
+			return o.Factory().NewInt(r), nil
 		case OperatorAndNot:
 			r := o.value &^ rhs.value
 			if r == o.value {
 				return o, nil
 			}
-			return &Int{value: r}, nil
+			return o.Factory().NewInt(r), nil
 		case OperatorShl:
 			r := o.value << uint64(rhs.value)
 			if r == o.value {
 				return o, nil
 			}
-			return &Int{value: r}, nil
+			return o.Factory().NewInt(r), nil
 		case OperatorShr:
 			r := o.value >> uint64(rhs.value)
 			if r == o.value {
 				return o, nil
 			}
-			return &Int{value: r}, nil
+			return o.Factory().NewInt(r), nil
 		case OperatorLess:
 			if o.value < rhs.value {
-				return TrueValue, nil
+				return o.Factory().TrueValue(), nil
 			}
-			return FalseValue, nil
+			return o.Factory().FalseValue(), nil
 		case OperatorGreater:
 			if o.value > rhs.value {
-				return TrueValue, nil
+				return o.Factory().TrueValue(), nil
 			}
-			return FalseValue, nil
+			return o.Factory().FalseValue(), nil
 		case OperatorLessEq:
 			if o.value <= rhs.value {
-				return TrueValue, nil
+				return o.Factory().TrueValue(), nil
 			}
-			return FalseValue, nil
+			return o.Factory().FalseValue(), nil
 		case OperatorGreaterEq:
 			if o.value >= rhs.value {
-				return TrueValue, nil
+				return o.Factory().TrueValue(), nil
 			}
-			return FalseValue, nil
+			return o.Factory().FalseValue(), nil
 		default:
 			return nil, ErrInvalidOperator
 		}
 	case *Float:
 		switch op {
 		case OperatorAdd:
-			return &Float{value: float64(o.value) + rhs.value}, nil
+			return o.Factory().NewFloat(float64(o.value) + rhs.value), nil
 		case OperatorSub:
-			return &Float{value: float64(o.value) - rhs.value}, nil
+			return o.Factory().NewFloat(float64(o.value) - rhs.value), nil
 		case OperatorMul:
-			return &Float{value: float64(o.value) * rhs.value}, nil
+			return o.Factory().NewFloat(float64(o.value) * rhs.value), nil
 		case OperatorQuo:
-			return &Float{value: float64(o.value) / rhs.value}, nil
+			return o.Factory().NewFloat(float64(o.value) / rhs.value), nil
 		case OperatorLess:
 			if float64(o.value) < rhs.value {
-				return TrueValue, nil
+				return o.Factory().TrueValue(), nil
 			}
-			return FalseValue, nil
+			return o.Factory().FalseValue(), nil
 		case OperatorGreater:
 			if float64(o.value) > rhs.value {
-				return TrueValue, nil
+				return o.Factory().TrueValue(), nil
 			}
-			return FalseValue, nil
+			return o.Factory().FalseValue(), nil
 		case OperatorLessEq:
 			if float64(o.value) <= rhs.value {
-				return TrueValue, nil
+				return o.Factory().TrueValue(), nil
 			}
-			return FalseValue, nil
+			return o.Factory().FalseValue(), nil
 		case OperatorGreaterEq:
 			if float64(o.value) >= rhs.value {
-				return TrueValue, nil
+				return o.Factory().TrueValue(), nil
 			}
-			return FalseValue, nil
+			return o.Factory().FalseValue(), nil
 		default:
 			return nil, ErrInvalidOperator
 		}
 	case *Char:
 		switch op {
 		case OperatorAdd:
-			return &Char{value: rune(o.value) + rhs.value}, nil
+			return o.Factory().NewChar(rune(o.value) + rhs.value), nil
 		case OperatorSub:
-			return &Char{value: rune(o.value) - rhs.value}, nil
+			return o.Factory().NewChar(rune(o.value) - rhs.value), nil
 		case OperatorLess:
 			if o.value < int64(rhs.value) {
-				return TrueValue, nil
+				return o.Factory().TrueValue(), nil
 			}
-			return FalseValue, nil
+			return o.Factory().FalseValue(), nil
 		case OperatorGreater:
 			if o.value > int64(rhs.value) {
-				return TrueValue, nil
+				return o.Factory().TrueValue(), nil
 			}
-			return FalseValue, nil
+			return o.Factory().FalseValue(), nil
 		case OperatorLessEq:
 			if o.value <= int64(rhs.value) {
-				return TrueValue, nil
+				return o.Factory().TrueValue(), nil
 			}
-			return FalseValue, nil
+			return o.Factory().FalseValue(), nil
 		case OperatorGreaterEq:
 			if o.value >= int64(rhs.value) {
-				return TrueValue, nil
+				return o.Factory().TrueValue(), nil
 			}
-			return FalseValue, nil
+			return o.Factory().FalseValue(), nil
 		default:
 			return nil, ErrInvalidOperator
 		}
@@ -196,7 +199,7 @@ func (o *Int) BinaryOp(op Operator, rhs IObject) (IObject, error) {
 
 // Copy creates and returns a new instance of the Int object with the same value as the current instance.
 func (o *Int) Copy() IObject {
-	return &Int{value: o.value}
+	return o.Factory().NewInt(o.value)
 }
 
 // Boolean checks whether the integer value is considered falsy. Returns true if the value is 0, otherwise false.

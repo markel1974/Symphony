@@ -6,14 +6,17 @@ import (
 
 // Errors is a type that encapsulates a map of module functions accessible as objects.
 type Errors struct {
+	factory *objects.Factory
 	*Package
 }
 
 // NewErrors initializes and returns a new Errors instance with pre-defined function modules.
-func NewErrors() *Errors {
-	e := &Errors{}
+func NewErrors(factory *objects.Factory) *Errors {
+	e := &Errors{
+		factory: factory,
+	}
 	container := []*objects.FuncPackage{
-		objects.NewFuncPackage(objects.FuncPackageDef, "New", e.New),
+		factory.NewFuncPackage(objects.FuncPackageDef, "New", e.New),
 	}
 	e.Package = NewPackage("errors", container, nil)
 	return e
@@ -24,13 +27,13 @@ func (e *Errors) New(args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}
-	s, err := objects.ToStringArg(0, args[0])
+	s, err := e.factory.ToStringArg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
-	v, err := objects.NewString(s)
+	v, err := e.factory.NewString(s)
 	if err != nil {
 		return nil, err
 	}
-	return objects.NewError(v), nil
+	return e.factory.NewError(v), nil
 }
