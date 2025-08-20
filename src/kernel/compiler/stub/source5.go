@@ -11,6 +11,8 @@ func main(a int, b int) {
 	//for y:=10; y==0; y-- {
 	//	fmt.Printf("y:%d -> %s\n", y, "CIAO")
 	//}
+	y:=len("CIAO")
+	fmt.Printf("y:%d -> %s\n", y, "CIAO")
 	for y:=0; y<10; y++ {
 		fmt.Printf("y:%d -> %s\n", y, "CIAO")
 	}

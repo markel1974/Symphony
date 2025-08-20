@@ -13,8 +13,19 @@ func _newObject(factory *Factory, frame int) *Object {
 	}
 }
 
+// Factory returns a reference to the Factory associated with the Object.
 func (o *Object) Factory() *Factory {
 	return o.factory
+}
+
+// Frame returns the current frame value of the Object.
+func (o *Object) Frame() int {
+	return o.frame
+}
+
+// SetFrame updates the frame field of the Object with the specified frame value.
+func (o *Object) SetFrame(frame int) {
+	o.frame = frame
 }
 
 // TypeName returns the name of the object type. This method must be implemented by objects inheriting Object.

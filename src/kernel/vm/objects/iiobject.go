@@ -3,6 +3,8 @@ package objects
 // IObject defines a generic interface for objects that can perform various operations and support multiple behaviors.
 // TypeName returns the type name of the object.
 // String returns the string representation of the object.
+// Frame returns the frame number of the object.
+// SetFrame sets the frame number of the object.
 // BinaryOp performs a binary operation between the object and a right-hand side operand.
 // Boolean checks if the object represents a falsy value.
 // Equals checks whether the object is equal to another object.
@@ -18,6 +20,10 @@ type IObject interface {
 	TypeName() string
 
 	String() string
+
+	Frame() int
+
+	SetFrame(frame int)
 
 	BinaryOp(frame int, op Operator, rightHandSide IObject) (IObject, error)
 

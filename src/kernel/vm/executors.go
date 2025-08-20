@@ -616,17 +616,17 @@ func (op *OpCall) Execute(v *VM) {
 		v.frames.Next()
 		bp := v.stack.StackPointer() - numArgs
 		v.currFrame.Bind(v.ip, callee, bp)
-		// Si riserva lo spazio per *tutte* le variabili locali della nuova funzione
-		// semplicemente avanzando il puntatore dello stack.
-		// Questo garantisce che lo spazio per i calcoli temporanei inizi *dopo*
-		// lo spazio riservato per le variabili locali, evitando collisioni.
+		// Reserve space for *all* local variables of the new function
+		// by simply advancing the stack pointer.
+		// This ensures that space for temporary calculations starts *after*
+		// the space reserved for local variables, avoiding collisions.
 		v.stack.SetStackPointer(v.stack.StackPointer() + callee.NumLocals())
 		v.ip = resetIp
 	} else {
 		var args []objects.IObject
 		args = append(args, v.stack.PeekArrayObject(numArgs)...)
 		ret, err := value.Call(args...)
-		// Pulisce lo stack dalla funzione e dai suoi argomenti
+		// Cleans the stack from the function and its arguments
 		v.stack.DecrementCount(numArgs + 1)
 		if err != nil {
 			if objects.Is(err, objects.ErrWrongNumArguments) {
@@ -636,13 +636,12 @@ func (op *OpCall) Execute(v *VM) {
 			}
 			return
 		}
-		if ret != nil && ret != op.Factory().UndefinedValue() {
+		if ret == nil {
+			v.stack.Push(op.Factory().UndefinedValue())
+		} else {
+			ret.SetFrame(v.currFrame.ID())
 			v.stack.Push(ret)
 		}
-		if ret == nil {
-			ret = op.Factory().UndefinedValue()
-		}
-		v.stack.Push(ret)
 	}
 }
 
