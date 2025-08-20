@@ -459,7 +459,7 @@ func NewOpError(op *bytecode.Opcodes) *OpError {
 // Execute converts the top value on the VM stack into an error object and replaces it on the stack.
 func (op *OpError) Execute(v *VM) {
 	value := v.stack.Peek()
-	e := op.Factory().NewError(v.currFrame.ID(), value)
+	e := op.Factory().NewError(v.currFrame.ID(), value.String())
 	v.stack.Set(e)
 }
 

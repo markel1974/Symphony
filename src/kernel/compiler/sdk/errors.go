@@ -16,7 +16,7 @@ func NewErrors(factory *objects.Factory) *Errors {
 		factory: factory,
 	}
 	container := []*objects.FuncPackage{
-		factory.NewFuncPackage(objects.FrameStatic, objects.FuncPackageDef, "New", e.New),
+		factory.NewFuncPackage(objects.FuncPackageDef, "New", e.New),
 	}
 	e.Package = NewPackage("errors", container, nil)
 	return e
@@ -31,9 +31,5 @@ func (e *Errors) New(args ...objects.IObject) (ret objects.IObject, err error) {
 	if err != nil {
 		return nil, err
 	}
-	v, err := e.factory.NewString(objects.FrameReturnValue, s)
-	if err != nil {
-		return nil, err
-	}
-	return e.factory.NewError(objects.FrameReturnValue, v), nil
+	return e.factory.NewError(objects.FrameReturnValue, s), nil
 }

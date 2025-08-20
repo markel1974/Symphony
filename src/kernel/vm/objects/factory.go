@@ -113,8 +113,8 @@ func (f *Factory) NewChar(frame int, value rune) *Char {
 }
 
 // NewError creates and returns a new Error instance based on the provided IObject value and the associated Factory.
-func (f *Factory) NewError(frame int, value IObject) *Error {
-	return _newError(f, frame, value)
+func (f *Factory) NewError(frame int, e string) *Error {
+	return _newError(f, frame, e)
 }
 
 // NewFuncCompiled creates and returns a new FuncCompiled instance using the provided function metadata and bytecode.
@@ -123,8 +123,8 @@ func (f *Factory) NewFuncCompiled(frame int, name string, instructions []byte, n
 }
 
 // NewFuncPackage creates a new instance of FuncPackage with the specified kind, name, and callable function.
-func (f *Factory) NewFuncPackage(frame int, kind string, name string, fn FuncCallable) *FuncPackage {
-	return _newFuncPackage(f, frame, kind, name, fn)
+func (f *Factory) NewFuncPackage(kind string, name string, fn FuncCallable) *FuncPackage {
+	return _newFuncPackage(f, kind, name, fn)
 }
 
 // NewObjectError creates a new IObject based on the provided error. Returns TrueValue if the error is nil, otherwise an error object.
@@ -132,7 +132,7 @@ func (f *Factory) NewObjectError(frame int, err error) IObject {
 	if err == nil {
 		return f.TrueValue()
 	}
-	return f.NewError(frame, f.NewStringNoSize(frame, err.Error()))
+	return f.NewError(frame, err.Error())
 }
 
 // NewFloat creates a new Float instance with the given float64 value, using the Factory for initialization.
@@ -282,7 +282,7 @@ func (f *Factory) FromInterface(frame int, in interface{}) IObject {
 		}
 		return f.NewBytes(frame, v)
 	case error:
-		return f.NewError(frame, f.NewStringNoSize(frame, v.Error()))
+		return f.NewError(frame, v.Error())
 	case map[string]IObject:
 		return f.NewMap(frame, v)
 	case map[string]interface{}:
@@ -325,7 +325,7 @@ func (f *Factory) FromInterface(frame int, in interface{}) IObject {
 	case IObject:
 		return v
 	case FuncCallable:
-		return f.NewFuncPackage(frame, FuncPackageDef, "FuncCallable", v)
+		return f.NewFuncPackage(FuncPackageDef, "FuncCallable", v)
 	}
 	return f.UndefinedValue()
 }

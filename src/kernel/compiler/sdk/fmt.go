@@ -18,12 +18,12 @@ func NewFmt(factory *objects.Factory) *Fmt {
 		factory: factory,
 	}
 	container := []*objects.FuncPackage{
-		factory.NewFuncPackage(objects.FrameStatic, objects.FuncPackageDef, "Print", f.Print),
-		factory.NewFuncPackage(objects.FrameStatic, objects.FuncPackageDef, "Printf", f.Printf),
-		factory.NewFuncPackage(objects.FrameStatic, objects.FuncPackageDef, "Println", f.Println),
-		factory.NewFuncPackage(objects.FrameStatic, objects.FuncPackageDef, "Sprintf", f.Sprint),
-		factory.NewFuncPackage(objects.FrameStatic, objects.FuncPackageDef, "Sprintf", f.Sprintf),
-		factory.NewFuncPackage(objects.FrameStatic, objects.FuncPackageDef, "Errorf", f.Errorf),
+		factory.NewFuncPackage(objects.FuncPackageDef, "Print", f.Print),
+		factory.NewFuncPackage(objects.FuncPackageDef, "Printf", f.Printf),
+		factory.NewFuncPackage(objects.FuncPackageDef, "Println", f.Println),
+		factory.NewFuncPackage(objects.FuncPackageDef, "Sprintf", f.Sprint),
+		factory.NewFuncPackage(objects.FuncPackageDef, "Sprintf", f.Sprintf),
+		factory.NewFuncPackage(objects.FuncPackageDef, "Errorf", f.Errorf),
 	}
 	f.Package = NewPackage("fmt", container, nil)
 	return f
@@ -116,19 +116,11 @@ func (f *Fmt) Errorf(args ...objects.IObject) (ret objects.IObject, err error) {
 		return nil, err
 	}
 	if len(args) == 1 {
-		v, err := f.factory.NewString(objects.FrameReturnValue, fmt.Errorf(s1).Error())
-		if err != nil {
-			return nil, err
-		}
-		return f.factory.NewError(objects.FrameReturnValue, v), nil
+		return f.factory.NewError(objects.FrameReturnValue, s1), nil
 	}
 	var ar []interface{}
 	for _, v := range args[1:] {
 		ar = append(ar, f.factory.ToInterface(v))
 	}
-	v, err := f.factory.NewString(objects.FrameReturnValue, fmt.Errorf(s1, ar...).Error())
-	if err != nil {
-		return nil, err
-	}
-	return f.factory.NewError(objects.FrameReturnValue, v), nil
+	return f.factory.NewError(objects.FrameReturnValue, s1), nil
 }

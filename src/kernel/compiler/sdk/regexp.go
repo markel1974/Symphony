@@ -25,11 +25,11 @@ type Regexp struct {
 func NewRegexp(factory *objects.Factory) *Regexp {
 	r := &Regexp{factory: factory}
 	container := []*objects.FuncPackage{
-		factory.NewFuncPackage(objects.FrameStatic, objects.FuncPackageDef, "Match", r.Match),
-		factory.NewFuncPackage(objects.FrameStatic, objects.FuncPackageDef, "Find", r.Find),
-		factory.NewFuncPackage(objects.FrameStatic, objects.FuncPackageDef, "Replace", r.Replace),
-		factory.NewFuncPackage(objects.FrameStatic, objects.FuncPackageDef, "Split", r.Split),
-		factory.NewFuncPackage(objects.FrameStatic, objects.FuncPackageDef, "Compile", r.Compile),
+		factory.NewFuncPackage(objects.FuncPackageDef, "Match", r.Match),
+		factory.NewFuncPackage(objects.FuncPackageDef, "Find", r.Find),
+		factory.NewFuncPackage(objects.FuncPackageDef, "Replace", r.Replace),
+		factory.NewFuncPackage(objects.FuncPackageDef, "Split", r.Split),
+		factory.NewFuncPackage(objects.FuncPackageDef, "Compile", r.Compile),
 	}
 	r.Package = NewPackage("regexp", container, nil)
 	return r
@@ -203,15 +203,15 @@ func (r *Regexp) CompileOptions(re *regexp.Regexp) *objects.MapImmutable {
 	return r.factory.NewMapImmutable(objects.FrameReturnValue,
 		map[string]objects.IObject{
 			// match(text) => bool
-			"Match": r.factory.NewFuncPackage(objects.FrameReturnValue, objects.FuncPackageDef, "Match", func(args ...objects.IObject) (objects.IObject, error) { return r.CompileOptionMatch(re, args...) }),
+			"Match": r.factory.NewFuncPackage(objects.FuncPackageDef, "Match", func(args ...objects.IObject) (objects.IObject, error) { return r.CompileOptionMatch(re, args...) }),
 			// find(text) 			=> array(array({text:,begin:,end:}))/undefined
 			// find(text, maxCount) => array(array({text:,begin:,end:}))/undefined
-			"Find": r.factory.NewFuncPackage(objects.FrameReturnValue, objects.FuncPackageDef, "Find", func(args ...objects.IObject) (objects.IObject, error) { return r.CompileOptionFind(re, args...) }),
+			"Find": r.factory.NewFuncPackage(objects.FuncPackageDef, "Find", func(args ...objects.IObject) (objects.IObject, error) { return r.CompileOptionFind(re, args...) }),
 			// replace(src, repl) => string
-			"Replace": r.factory.NewFuncPackage(objects.FrameReturnValue, objects.FuncPackageDef, "Replace", func(args ...objects.IObject) (objects.IObject, error) { return r.CompileOptionReplace(re, args...) }),
+			"Replace": r.factory.NewFuncPackage(objects.FuncPackageDef, "Replace", func(args ...objects.IObject) (objects.IObject, error) { return r.CompileOptionReplace(re, args...) }),
 			// split(text) 			 => array(string)
 			// split(text, maxCount) => array(string)
-			"Split": r.factory.NewFuncPackage(objects.FrameReturnValue, objects.FuncPackageDef, "Split", func(args ...objects.IObject) (objects.IObject, error) { return r.CompileOptionSplit(re, args...) }),
+			"Split": r.factory.NewFuncPackage(objects.FuncPackageDef, "Split", func(args ...objects.IObject) (objects.IObject, error) { return r.CompileOptionSplit(re, args...) }),
 		},
 	)
 }

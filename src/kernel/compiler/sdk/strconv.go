@@ -18,17 +18,17 @@ func NewStrconv(factory *objects.Factory) *Strconv {
 		factory: factory,
 	}
 	container := []*objects.FuncPackage{
-		factory.NewFuncPackage(objects.FrameStatic, objects.FuncPackageDef, "Atoi", factory.FuncIsOie(strconv.Atoi)),
-		factory.NewFuncPackage(objects.FrameStatic, objects.FuncPackageDef, "FormatBool", s.FormatBool),
-		factory.NewFuncPackage(objects.FrameStatic, objects.FuncPackageDef, "FormatFloat", s.FormatFloat),
-		factory.NewFuncPackage(objects.FrameStatic, objects.FuncPackageDef, "FormatInt", s.FormatInt),
-		factory.NewFuncPackage(objects.FrameStatic, objects.FuncPackageDef, "Itoa", factory.FuncIiOs(strconv.Itoa)),
-		factory.NewFuncPackage(objects.FrameStatic, objects.FuncPackageDef, "ParseBool", s.ParseBool),
-		factory.NewFuncPackage(objects.FrameStatic, objects.FuncPackageDef, "ParseFloat", s.ParseFloat),
-		factory.NewFuncPackage(objects.FrameStatic, objects.FuncPackageDef, "ParseNumber", s.ParseNumber),
-		factory.NewFuncPackage(objects.FrameStatic, objects.FuncPackageDef, "ParseInt", s.ParseInt),
-		factory.NewFuncPackage(objects.FrameStatic, objects.FuncPackageDef, "Quote", factory.FuncIsOs(strconv.Quote)),
-		factory.NewFuncPackage(objects.FrameStatic, objects.FuncPackageDef, "Unquote", factory.FuncIsOse(strconv.Unquote)),
+		factory.NewFuncPackage(objects.FuncPackageDef, "Atoi", factory.FuncIsOie(strconv.Atoi)),
+		factory.NewFuncPackage(objects.FuncPackageDef, "FormatBool", s.FormatBool),
+		factory.NewFuncPackage(objects.FuncPackageDef, "FormatFloat", s.FormatFloat),
+		factory.NewFuncPackage(objects.FuncPackageDef, "FormatInt", s.FormatInt),
+		factory.NewFuncPackage(objects.FuncPackageDef, "Itoa", factory.FuncIiOs(strconv.Itoa)),
+		factory.NewFuncPackage(objects.FuncPackageDef, "ParseBool", s.ParseBool),
+		factory.NewFuncPackage(objects.FuncPackageDef, "ParseFloat", s.ParseFloat),
+		factory.NewFuncPackage(objects.FuncPackageDef, "ParseNumber", s.ParseNumber),
+		factory.NewFuncPackage(objects.FuncPackageDef, "ParseInt", s.ParseInt),
+		factory.NewFuncPackage(objects.FuncPackageDef, "Quote", factory.FuncIsOs(strconv.Quote)),
+		factory.NewFuncPackage(objects.FuncPackageDef, "Unquote", factory.FuncIsOse(strconv.Unquote)),
 	}
 	s.Package = NewPackage("strconv", container, nil)
 	return s

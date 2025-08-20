@@ -8,17 +8,26 @@ const (
 	ErrorType = "error"
 )
 
+const (
+	maxErrorLen = 1024
+)
+
 // Error represents an object that encapsulates an error and implements the IObject interface.
 type Error struct {
 	*Object
+	err   string
 	value IObject
 }
 
 // NewError creates and returns a new Error object with the specified values.
-func _newError(factory *Factory, frame int, value IObject) *Error {
+func _newError(factory *Factory, frame int, err string) *Error {
+	if len(err) > maxErrorLen {
+		err = err[:maxErrorLen]
+	}
 	return &Error{
 		Object: factory.NewObject(frame),
-		value:  value,
+		value:  factory.NewStringNoSize(frame, err),
+		err:    err,
 	}
 }
 
@@ -47,7 +56,7 @@ func (o *Error) Boolean() bool {
 
 // Copy creates and returns a new instance of the Error object with the same underlying values.
 func (o *Error) Copy(frame int) IObject {
-	return o.Factory().NewError(frame, o.value.Copy(frame))
+	return o.Factory().NewError(frame, o.err)
 }
 
 // Equals checks if the current Error object is equal to another object using pointer equality.

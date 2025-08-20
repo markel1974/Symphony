@@ -19,10 +19,10 @@ func NewJson(factory *objects.Factory) *Json {
 		factory: factory,
 	}
 	container := []*objects.FuncPackage{
-		factory.NewFuncPackage(objects.FrameStatic, objects.FuncPackageDef, "Unmarshal", j.Unmarshal),
-		factory.NewFuncPackage(objects.FrameStatic, objects.FuncPackageDef, "Marshal", j.Marshal),
-		factory.NewFuncPackage(objects.FrameStatic, objects.FuncPackageDef, "Indent", j.Indent),
-		factory.NewFuncPackage(objects.FrameStatic, objects.FuncPackageDef, "html_escape", j.HTMLEscape),
+		factory.NewFuncPackage(objects.FuncPackageDef, "Unmarshal", j.Unmarshal),
+		factory.NewFuncPackage(objects.FuncPackageDef, "Marshal", j.Marshal),
+		factory.NewFuncPackage(objects.FuncPackageDef, "Indent", j.Indent),
+		factory.NewFuncPackage(objects.FuncPackageDef, "html_escape", j.HTMLEscape),
 	}
 	j.Package = NewPackage("json", container, nil)
 	return j
@@ -45,7 +45,7 @@ func (j *Json) Unmarshal(args ...objects.IObject) (ret objects.IObject, err erro
 	}
 	d := make(map[string]interface{})
 	if err = json.Unmarshal(data, &d); err != nil {
-		return j.factory.NewError(objects.FrameReturnValue, j.factory.NewStringNoSize(objects.FrameReturnValue, err.Error())), nil
+		return j.factory.NewError(objects.FrameReturnValue, err.Error()), nil
 	}
 	result := j.factory.NewMap(objects.FrameReturnValue, j.factory.FromMap(objects.FrameReturnValue, d))
 	return result, nil
@@ -58,7 +58,7 @@ func (j *Json) Marshal(args ...objects.IObject) (ret objects.IObject, err error)
 	}
 	result, err := json.Marshal(j.factory.ToInterface(args[0]))
 	if err != nil {
-		return j.factory.NewError(objects.FrameReturnValue, j.factory.NewStringNoSize(objects.FrameReturnValue, err.Error())), nil
+		return j.factory.NewError(objects.FrameReturnValue, err.Error()), nil
 	}
 	return j.factory.NewBytes(objects.FrameReturnValue, result), nil
 }
@@ -81,14 +81,14 @@ func (j *Json) Indent(args ...objects.IObject) (ret objects.IObject, err error) 
 		var dst bytes.Buffer
 		err = json.Indent(&dst, o.Value(), prefix, indent)
 		if err != nil {
-			return j.factory.NewError(objects.FrameReturnValue, j.factory.NewStringNoSize(objects.FrameReturnValue, err.Error())), nil
+			return j.factory.NewError(objects.FrameReturnValue, err.Error()), nil
 		}
 		return j.factory.NewBytes(objects.FrameReturnValue, dst.Bytes()), nil
 	case *objects.String:
 		var dst bytes.Buffer
 		err = json.Indent(&dst, []byte(o.Value()), prefix, indent)
 		if err != nil {
-			return j.factory.NewError(objects.FrameReturnValue, j.factory.NewStringNoSize(objects.FrameReturnValue, err.Error())), nil
+			return j.factory.NewError(objects.FrameReturnValue, err.Error()), nil
 		}
 		return j.factory.NewBytes(objects.FrameReturnValue, dst.Bytes()), nil
 	default:

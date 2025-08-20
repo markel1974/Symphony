@@ -18,8 +18,8 @@ func NewHex(factory *objects.Factory) *Hex {
 		factory: factory,
 	}
 	container := []*objects.FuncPackage{
-		factory.NewFuncPackage(objects.FrameStatic, objects.FuncPackageDef, "EncodeToString", factory.FuncIbSOs(hex.EncodeToString)),
-		factory.NewFuncPackage(objects.FrameStatic, objects.FuncPackageDef, "DecodeString", factory.FuncIsObSe(hex.DecodeString)),
+		factory.NewFuncPackage(objects.FuncPackageDef, "EncodeToString", factory.FuncIbSOs(hex.EncodeToString)),
+		factory.NewFuncPackage(objects.FuncPackageDef, "DecodeString", factory.FuncIsObSe(hex.DecodeString)),
 	}
 	h.Package = NewPackage("hex", container, nil)
 	return h
