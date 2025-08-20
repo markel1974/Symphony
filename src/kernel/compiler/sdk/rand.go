@@ -43,7 +43,7 @@ func (z *Rand) Read(args ...objects.IObject) (objects.IObject, error) {
 	}
 	res, err := rand.Read(bs1)
 	if err != nil {
-		return z.factory.NewObjectError(objects.FrameReturnValue, err), nil
+		return z.factory.NewError(objects.FrameReturnValue, err.Error()), nil
 	}
 	return z.factory.NewInt(objects.FrameReturnValue, int64(res)), nil
 }
@@ -88,7 +88,7 @@ func (z *Rand) RandOptionsRead(r *rand.Rand, args ...objects.IObject) (objects.I
 	}
 	res, err := r.Read(bs1)
 	if err != nil {
-		return z.factory.NewObjectError(objects.FrameReturnValue, err), nil
+		return z.factory.NewError(objects.FrameReturnValue, err.Error()), nil
 	}
 	return z.factory.NewInt(objects.FrameReturnValue, int64(res)), nil
 }

@@ -102,7 +102,7 @@ func (s *Strconv) ParseBool(args ...objects.IObject) (ret objects.IObject, err e
 	}
 	parsed, err := strconv.ParseBool(s1.Value())
 	if err != nil {
-		ret = s.factory.NewObjectError(objects.FrameReturnValue, err)
+		ret = s.factory.NewError(objects.FrameReturnValue, err.Error())
 		return
 	}
 	if parsed {
@@ -128,7 +128,7 @@ func (s *Strconv) ParseFloat(args ...objects.IObject) (objects.IObject, error) {
 	}
 	parsed, err := strconv.ParseFloat(s1, int(i2))
 	if err != nil {
-		return s.factory.NewObjectError(objects.FrameReturnValue, err), nil
+		return s.factory.NewError(objects.FrameReturnValue, err.Error()), nil
 	}
 	return s.factory.NewFloat(objects.FrameReturnValue, parsed), nil
 }
@@ -174,7 +174,7 @@ func (s *Strconv) ParseInt(args ...objects.IObject) (objects.IObject, error) {
 	}
 	parsed, err := strconv.ParseInt(s1, int(i2), int(i3))
 	if err != nil {
-		return s.factory.NewObjectError(objects.FrameReturnValue, err), nil
+		return s.factory.NewError(objects.FrameReturnValue, err.Error()), nil
 	}
 	return s.factory.NewInt(objects.FrameReturnValue, parsed), nil
 }

@@ -1,6 +1,7 @@
 package objects
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"time"
@@ -127,14 +128,6 @@ func (f *Factory) NewFuncPackage(kind string, name string, fn FuncCallable) *Fun
 	return _newFuncPackage(f, kind, name, fn)
 }
 
-// NewObjectError creates a new IObject based on the provided error. Returns TrueValue if the error is nil, otherwise an error object.
-func (f *Factory) NewObjectError(frame int, err error) IObject {
-	if err == nil {
-		return f.TrueValue()
-	}
-	return f.NewError(frame, err.Error())
-}
-
 // NewFloat creates a new Float instance with the given float64 value, using the Factory for initialization.
 func (f *Factory) NewFloat(frame int, v float64) *Float {
 	return _newFloat(f, frame, v)
@@ -242,7 +235,7 @@ func (f *Factory) ToInterface(in IObject) (res interface{}) {
 	case *Time:
 		res = o.value
 	case *Error:
-		res = New(o.String())
+		res = errors.New(o.String())
 	case *Undefined:
 		res = nil
 	case IObject:
@@ -633,18 +626,22 @@ func (f *Factory) FuncInOb(fn func() bool) FuncCallable {
 // Returns ErrWrongNumArguments if arguments are provided.
 // Wraps the error returned by the given function into an IObject-compatible error object.
 func (f *Factory) FuncInOe(fn func() error) FuncCallable {
-	return func(args ...IObject) (ret IObject, err error) {
+	return func(args ...IObject) (IObject, error) {
 		if len(args) != 0 {
 			return nil, ErrWrongNumArguments
 		}
-		return f.NewObjectError(FrameReturnValue, fn()), nil
+		err := fn()
+		if err != nil {
+			return f.NewError(FrameReturnValue, err.Error()), nil
+		}
+		return f.TrueValue(), nil
 	}
 }
 
 // FuncInOs wraps a function that returns a string, creating a FuncCallable with IObject arguments and results.
 // If called with arguments, it returns ErrWrongNumArguments. Otherwise, it returns a string-wrapped IObject result.
 func (f *Factory) FuncInOs(fn func() string) FuncCallable {
-	return func(args ...IObject) (ret IObject, err error) {
+	return func(args ...IObject) (IObject, error) {
 		if len(args) != 0 {
 			return nil, ErrWrongNumArguments
 		}
@@ -659,13 +656,13 @@ func (f *Factory) FuncInOs(fn func() string) FuncCallable {
 // FuncInOse wraps a function that returns a string and error into a FuncCallable that accepts no arguments.
 // Returns an error if arguments are provided or if the wrapped function encounters an error.
 func (f *Factory) FuncInOse(fn func() (string, error)) FuncCallable {
-	return func(args ...IObject) (ret IObject, err error) {
+	return func(args ...IObject) (IObject, error) {
 		if len(args) != 0 {
 			return nil, ErrWrongNumArguments
 		}
 		res, err := fn()
 		if err != nil {
-			return f.NewObjectError(FrameReturnValue, err), nil
+			return f.NewError(FrameReturnValue, err.Error()), nil
 		}
 		v, err := f.NewString(FrameReturnValue, res)
 		if err != nil {
@@ -678,13 +675,13 @@ func (f *Factory) FuncInOse(fn func() (string, error)) FuncCallable {
 // FuncInObSe converts a function returning ([]byte, error) into a FuncCallable that adheres to IObject function standards.
 // It ensures the argument count is zero, wraps errors into IObject-compatible errors, and enforces byte slice size limits.
 func (f *Factory) FuncInObSe(fn func() ([]byte, error)) FuncCallable {
-	return func(args ...IObject) (ret IObject, err error) {
+	return func(args ...IObject) (IObject, error) {
 		if len(args) != 0 {
 			return nil, ErrWrongNumArguments
 		}
 		res, err := fn()
 		if err != nil {
-			return f.NewObjectError(FrameReturnValue, err), nil
+			return f.NewError(FrameReturnValue, err.Error()), nil
 		}
 		if len(res) > MaxBytesLen {
 			return nil, ErrBytesLimit
@@ -729,13 +726,13 @@ func (f *Factory) FuncInOsS(fn func() []string) FuncCallable {
 // It validates zero arguments, invokes the wrapped function, wraps any error, and converts the slice to an array of IObject.
 // Returns an IObject array containing the integers or a wrapped error if the wrapped function fails.
 func (f *Factory) FuncInOiSe(fn func() ([]int, error)) FuncCallable {
-	return func(args ...IObject) (ret IObject, err error) {
+	return func(args ...IObject) (IObject, error) {
 		if len(args) != 0 {
 			return nil, ErrWrongNumArguments
 		}
 		res, err := fn()
 		if err != nil {
-			return f.NewObjectError(FrameReturnValue, err), nil
+			return f.NewError(FrameReturnValue, err.Error()), nil
 		}
 		arr := f.NewArray(FrameReturnValue, nil)
 		for _, v := range res {
@@ -982,7 +979,7 @@ func (f *Factory) FuncIsOse(fn func(string) (string, error)) FuncCallable {
 		}
 		res, err := fn(s1)
 		if err != nil {
-			return f.NewObjectError(FrameReturnValue, err), nil
+			return f.NewError(FrameReturnValue, err.Error()), nil
 		}
 		v, err := f.NewString(FrameReturnValue, res)
 		if err != nil {
@@ -1005,7 +1002,11 @@ func (f *Factory) FuncIsOe(fn func(string) error) FuncCallable {
 		if err != nil {
 			return nil, err
 		}
-		return f.NewObjectError(FrameReturnValue, fn(s1)), nil
+		err = fn(s1)
+		if err != nil {
+			return f.NewError(FrameReturnValue, err.Error()), nil
+		}
+		return f.TrueValue(), nil
 	}
 }
 
@@ -1024,7 +1025,11 @@ func (f *Factory) FuncIssOe(fn func(string, string) error) FuncCallable {
 		if err != nil {
 			return nil, err
 		}
-		return f.NewObjectError(FrameReturnValue, fn(s1, s2)), nil
+		err = fn(s1, s2)
+		if err != nil {
+			return f.NewError(FrameReturnValue, err.Error()), nil
+		}
+		return f.TrueValue(), nil
 	}
 }
 
@@ -1212,7 +1217,11 @@ func (f *Factory) FuncIsi64Oe(fn func(string, int64) error) FuncCallable {
 		if err != nil {
 			return nil, err
 		}
-		return f.NewObjectError(FrameReturnValue, fn(s1, i2)), nil
+		err = fn(s1, i2)
+		if err != nil {
+			return f.NewError(FrameReturnValue, err.Error()), nil
+		}
+		return f.TrueValue(), nil
 	}
 }
 
@@ -1230,7 +1239,11 @@ func (f *Factory) FuncIiiOe(fn func(int, int) error) FuncCallable {
 		if err != nil {
 			return nil, err
 		}
-		return f.NewObjectError(FrameReturnValue, fn(int(i1), int(i2))), nil
+		err = fn(int(i1), int(i2))
+		if err != nil {
+			return f.NewError(FrameReturnValue, err.Error()), nil
+		}
+		return f.TrueValue(), nil
 	}
 }
 
@@ -1276,7 +1289,11 @@ func (f *Factory) FuncIsiiOe(fn func(string, int, int) error) FuncCallable {
 		if err != nil {
 			return nil, err
 		}
-		return f.NewObjectError(FrameReturnValue, fn(s1, int(i2), int(i3))), nil
+		err = fn(s1, int(i2), int(i3))
+		if err != nil {
+			return f.NewError(FrameReturnValue, err.Error()), nil
+		}
+		return f.TrueValue(), nil
 	}
 }
 
@@ -1296,7 +1313,7 @@ func (f *Factory) FuncIbSOie(fn func([]byte) (int, error)) FuncCallable {
 		}
 		res, err := fn(bs1)
 		if err != nil {
-			return f.NewObjectError(FrameReturnValue, err), nil
+			return f.NewError(FrameReturnValue, err.Error()), nil
 		}
 		return f.NewInt(FrameReturnValue, int64(res)), nil
 	}
@@ -1334,7 +1351,7 @@ func (f *Factory) FuncIsOie(fn func(string) (int, error)) FuncCallable {
 		}
 		res, err := fn(s1)
 		if err != nil {
-			return f.NewObjectError(FrameReturnValue, err), nil
+			return f.NewError(FrameReturnValue, err.Error()), nil
 		}
 		return f.NewInt(FrameReturnValue, int64(res)), nil
 	}
@@ -1354,7 +1371,7 @@ func (f *Factory) FuncIsObSe(fn func(string) ([]byte, error)) FuncCallable {
 		}
 		res, err := fn(s1)
 		if err != nil {
-			return f.NewObjectError(FrameReturnValue, err), nil
+			return f.NewError(FrameReturnValue, err.Error()), nil
 		}
 		if len(res) > MaxBytesLen {
 			return nil, ErrBytesLimit
@@ -1375,7 +1392,7 @@ func (f *Factory) FuncIiOsSe(fn func(int) ([]string, error)) FuncCallable {
 		}
 		res, err := fn(int(i1))
 		if err != nil {
-			return f.NewObjectError(FrameReturnValue, err), nil
+			return f.NewError(FrameReturnValue, err.Error()), nil
 		}
 		arr := f.NewArray(FrameReturnValue, nil)
 		for _, r := range res {

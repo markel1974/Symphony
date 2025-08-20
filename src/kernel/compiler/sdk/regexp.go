@@ -51,7 +51,7 @@ func (r *Regexp) Match(args ...objects.IObject) (objects.IObject, error) {
 	}
 	matched, err := regexp.MatchString(s1, s2)
 	if err != nil {
-		return r.factory.NewObjectError(objects.FrameReturnValue, err), nil
+		return r.factory.NewError(objects.FrameReturnValue, err.Error()), nil
 	}
 	if matched {
 		return r.factory.TrueValue(), nil
@@ -77,7 +77,7 @@ func (r *Regexp) Find(args ...objects.IObject) (objects.IObject, error) {
 	}
 	re, err := regexp.Compile(s1)
 	if err != nil {
-		return r.factory.NewObjectError(objects.FrameReturnValue, err), nil
+		return r.factory.NewError(objects.FrameReturnValue, err.Error()), nil
 	}
 	if numArgs < 3 {
 		m := re.FindStringSubmatchIndex(s2)
@@ -140,7 +140,7 @@ func (r *Regexp) Split(args ...objects.IObject) (objects.IObject, error) {
 	}
 	re, err := regexp.Compile(s1)
 	if err != nil {
-		return r.factory.NewObjectError(objects.FrameReturnValue, err), nil
+		return r.factory.NewError(objects.FrameReturnValue, err.Error()), nil
 	}
 	arr := r.factory.NewArray(objects.FrameReturnValue, nil)
 	for _, s := range re.Split(s2, int(i3)) {
@@ -164,7 +164,7 @@ func (r *Regexp) Compile(args ...objects.IObject) (objects.IObject, error) {
 	}
 	re, err := regexp.Compile(s1)
 	if err != nil {
-		return r.factory.NewObjectError(objects.FrameReturnValue, err), nil
+		return r.factory.NewError(objects.FrameReturnValue, err.Error()), nil
 	}
 	return r.CompileOptions(re), nil
 }
@@ -188,7 +188,7 @@ func (r *Regexp) Replace(args ...objects.IObject) (objects.IObject, error) {
 	}
 	re, err := regexp.Compile(s1)
 	if err != nil {
-		return r.factory.NewObjectError(objects.FrameReturnValue, err), nil
+		return r.factory.NewError(objects.FrameReturnValue, err.Error()), nil
 	}
 	s := r.replaceInternal(re, s2, s3)
 	v, err := r.factory.NewString(objects.FrameReturnValue, s)

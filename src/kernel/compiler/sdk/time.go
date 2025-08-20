@@ -118,7 +118,7 @@ func (t *Time) ParseDuration(args ...objects.IObject) (objects.IObject, error) {
 	}
 	dur, err := time.ParseDuration(s1)
 	if err != nil {
-		return t.factory.NewObjectError(objects.FrameReturnValue, err), nil
+		return t.factory.NewError(objects.FrameReturnValue, err.Error()), nil
 	}
 	return t.factory.NewInt(objects.FrameReturnValue, int64(dur)), nil
 }
@@ -285,7 +285,7 @@ func (t *Time) Parse(args ...objects.IObject) (objects.IObject, error) {
 	}
 	parsed, err := time.Parse(s1, s2)
 	if err != nil {
-		return t.factory.NewObjectError(objects.FrameReturnValue, err), nil
+		return t.factory.NewError(objects.FrameReturnValue, err.Error()), nil
 	}
 	return t.factory.NewTime(objects.FrameReturnValue, parsed), nil
 }

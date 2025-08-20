@@ -17,7 +17,6 @@ import (
 // ErrStringLimit represents an error where the size of string value exceeds the limit.
 // ErrNotIndexable is an error where an Object is not indexable.
 // ErrNotIndexAssignable is an error where an Object is not index-assignable.
-// ErrNotImplemented is an error where an Object has not implemented a required method.
 // ErrInvalidRangeStep is an error where the range step is less than or equal to 0 in the range function.
 var (
 	ErrStackOverflow = errors.New("stack overflow")
@@ -44,15 +43,8 @@ var (
 
 	ErrNotIndexAssignable = errors.New("not index-assignable")
 
-	ErrNotImplemented = errors.New("not implemented")
-
 	ErrInvalidRangeStep = errors.New("range step must be greater than 0")
 )
-
-// New creates and returns a new error with the specified message string.
-func New(src string) error {
-	return errors.New(src)
-}
 
 // Is reports whether any error in an error chain matches the target error. Uses errors.Is for comparison.
 func Is(err error, target error) bool {
