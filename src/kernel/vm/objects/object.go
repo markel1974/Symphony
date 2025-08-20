@@ -6,7 +6,7 @@ type Object struct {
 	frame   int
 }
 
-func _newObject(factory *Factory, frame int) *Object {
+func newObject(factory *Factory, frame int) *Object {
 	return &Object{
 		factory: factory,
 		frame:   frame,

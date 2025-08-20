@@ -14,7 +14,7 @@ type StringIterator struct {
 }
 
 // NewStringIterator creates and returns a new instance of StringIterator with the given rune slice.
-func _newStringIterator(factory *Factory, frame int, v []rune) *StringIterator {
+func newStringIterator(factory *Factory, frame int, v []rune) *StringIterator {
 	return &StringIterator{
 		Object: factory.NewObject(frame),
 		values: v,

@@ -18,7 +18,7 @@ type Float struct {
 }
 
 // NewFloat creates and returns a pointer to a new Float object initialized with the specified float64 values.
-func _newFloat(factory *Factory, frame int, value float64) *Float {
+func newFloat(factory *Factory, frame int, value float64) *Float {
 	return &Float{
 		Object: factory.NewObject(frame),
 		value:  value,

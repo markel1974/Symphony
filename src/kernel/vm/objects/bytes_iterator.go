@@ -13,7 +13,7 @@ type BytesIterator struct {
 	length int
 }
 
-func _newBytesIterator(factory *Factory, frame int, v []byte) *BytesIterator {
+func newBytesIterator(factory *Factory, frame int, v []byte) *BytesIterator {
 	return &BytesIterator{
 		Object: factory.NewObject(frame),
 		values: v,

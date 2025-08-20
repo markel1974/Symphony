@@ -15,7 +15,7 @@ type Time struct {
 }
 
 // NewTime creates a new instance of Time wrapping the provided time.Time values.
-func _newTime(factory *Factory, frame int, value time.Time) *Time {
+func newTime(factory *Factory, frame int, value time.Time) *Time {
 	return &Time{
 		Object: factory.NewObject(frame),
 		value:  value,

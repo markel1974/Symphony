@@ -20,7 +20,7 @@ type StructIterator struct {
 }
 
 // NewStructIterator initializes and returns a new StructIterator for the given map of string keys to IObject values.
-func _newStructIterator(factory *Factory, frame int, v map[string]IObject) *StructIterator {
+func newStructIterator(factory *Factory, frame int, v map[string]IObject) *StructIterator {
 	var keys []string
 	for k := range v {
 		keys = append(keys, k)

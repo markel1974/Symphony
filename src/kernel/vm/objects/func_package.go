@@ -17,7 +17,7 @@ type FuncPackage struct {
 }
 
 // NewFuncPackage creates a new FuncPackage instance with the specified ID and callable function.
-func _newFuncPackage(factory *Factory, kind string, name string, fn FuncCallable) *FuncPackage {
+func newFuncPackage(factory *Factory, kind string, name string, fn FuncCallable) *FuncPackage {
 	return &FuncPackage{
 		Object: factory.NewObject(FrameStatic),
 		kind:   kind,

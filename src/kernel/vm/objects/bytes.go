@@ -21,7 +21,7 @@ type Bytes struct {
 }
 
 // NewBytes creates and returns a new Bytes object initialized with the provided byte slice.
-func _newBytes(factory *Factory, frame int, value []byte) *Bytes {
+func newBytes(factory *Factory, frame int, value []byte) *Bytes {
 	return &Bytes{
 		Object: factory.NewObject(frame),
 		values: value,

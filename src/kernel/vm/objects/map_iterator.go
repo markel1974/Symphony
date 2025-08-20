@@ -18,7 +18,7 @@ type MapIterator struct {
 }
 
 // NewMapIterator creates and returns a new instance of MapIterator.
-func _newMapIterator(factory *Factory, frame int, v map[string]IObject) *MapIterator {
+func newMapIterator(factory *Factory, frame int, v map[string]IObject) *MapIterator {
 	var keys []string
 	for k := range v {
 		keys = append(keys, k)

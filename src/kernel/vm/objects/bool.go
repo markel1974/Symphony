@@ -14,7 +14,7 @@ type Bool struct {
 }
 
 // NewBool creates and returns a new Bool object with the specified boolean value.
-func _newBool(factory *Factory, frame int, value bool) *Bool {
+func newBool(factory *Factory, frame int, value bool) *Bool {
 	return &Bool{
 		Object: factory.NewObject(frame),
 		value:  value,
