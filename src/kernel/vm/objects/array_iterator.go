@@ -15,9 +15,9 @@ type ArrayIterator struct {
 }
 
 // NewArrayIterator creates and returns a new ArrayIterator instance with the given slice of IObject.
-func _newArrayIterator(factory *Factory, v []IObject) *ArrayIterator {
+func _newArrayIterator(factory *Factory, frame int, v []IObject) *ArrayIterator {
 	return &ArrayIterator{
-		Object: factory.NewObject(),
+		Object: factory.NewObject(frame),
 		values: v,
 		length: len(v),
 		index:  0,
@@ -45,8 +45,8 @@ func (i *ArrayIterator) Equals(IObject) bool {
 }
 
 // Copy creates and returns a duplicate of the ArrayIterator, preserving its current state.
-func (i *ArrayIterator) Copy() IObject {
-	ret := i.Factory().NewArrayIterator(i.values)
+func (i *ArrayIterator) Copy(frame int) IObject {
+	ret := i.Factory().NewArrayIterator(frame, i.values)
 	ret.index = i.index
 	return ret
 }
@@ -58,11 +58,11 @@ func (i *ArrayIterator) Next() bool {
 }
 
 // Key returns the index of the current element in the iteration as an IObject.
-func (i *ArrayIterator) Key() IObject {
-	return i.Factory().NewInt(int64(i.index - 1))
+func (i *ArrayIterator) Key(frame int) IObject {
+	return i.Factory().NewInt(frame, int64(i.index-1))
 }
 
 // Value returns the current element in the iteration based on the iterator's internal position.
-func (i *ArrayIterator) Value() IObject {
+func (i *ArrayIterator) Value(frame int) IObject {
 	return i.values[i.index-1]
 }

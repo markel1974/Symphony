@@ -126,10 +126,9 @@ func (v *VM) Run(loader bytecode.ILoader, bc *bytecode.Bytecode, mainId string, 
 		return fmt.Errorf("[%s] wrong number of arguments provided: want=%d, got=%d", mainId, v.currFrame.NumParameters(), len(args))
 	}
 	for idx, arg := range args {
-		argObj := v.factory.FromInterface(arg)
+		argObj := v.factory.FromInterface(objects.FrameStatic, arg)
 		v.stack.SetAbsolute(idx, argObj)
 	}
-
 	v.loop()
 
 	if v.err != nil {
@@ -187,10 +186,10 @@ func (v *VM) BoundsCheck(lowStack objects.IObject, highStack objects.IObject, nu
 // IndexAssign assigns a value to a nested structure, using selectors to determine the target location.
 // It navigates through the provided selectors and performs an assignment on the target object at the final index.
 // Returns an error if any selector is invalid, the object is not indexable, or the assignment fails.
-func (v *VM) IndexAssign(dst objects.IObject, src objects.IObject, selectors []objects.IObject) error {
+func (v *VM) IndexAssign(frame int, dst objects.IObject, src objects.IObject, selectors []objects.IObject) error {
 	numSel := len(selectors)
 	for sIdx := numSel - 1; sIdx > 0; sIdx-- {
-		next, err := dst.IndexGet(selectors[sIdx])
+		next, err := dst.IndexGet(frame, selectors[sIdx])
 		if err != nil {
 			if objects.Is(err, objects.ErrNotIndexable) {
 				return fmt.Errorf("not indexable: %s", dst.TypeName())

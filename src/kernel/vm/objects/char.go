@@ -11,9 +11,9 @@ type Char struct {
 }
 
 // NewChar creates and returns a new Char object with the specified rune values.
-func _newChar(factory *Factory, value rune) *Char {
+func _newChar(factory *Factory, frame int, value rune) *Char {
 	return &Char{
-		Object: factory.NewObject(),
+		Object: factory.NewObject(frame),
 		value:  value,
 	}
 }
@@ -34,7 +34,7 @@ func (o *Char) TypeName() string {
 }
 
 // BinaryOp performs a binary operation between the Char object and another IObject using the specified operator.
-func (o *Char) BinaryOp(op Operator, in IObject) (IObject, error) {
+func (o *Char) BinaryOp(frame int, op Operator, in IObject) (IObject, error) {
 	switch rhs := in.(type) {
 	case *Char:
 		switch op {
@@ -43,13 +43,13 @@ func (o *Char) BinaryOp(op Operator, in IObject) (IObject, error) {
 			if r == o.value {
 				return o, nil
 			}
-			return o.Factory().NewChar(r), nil
+			return o.Factory().NewChar(frame, r), nil
 		case OperatorSub:
 			r := o.value - rhs.value
 			if r == o.value {
 				return o, nil
 			}
-			return o.Factory().NewChar(r), nil
+			return o.Factory().NewChar(frame, r), nil
 		case OperatorLess:
 			if o.value < rhs.value {
 				return o.Factory().TrueValue(), nil
@@ -80,13 +80,13 @@ func (o *Char) BinaryOp(op Operator, in IObject) (IObject, error) {
 			if r == o.value {
 				return o, nil
 			}
-			return o.Factory().NewChar(r), nil
+			return o.Factory().NewChar(frame, r), nil
 		case OperatorSub:
 			r := o.value - rune(rhs.value)
 			if r == o.value {
 				return o, nil
 			}
-			return o.Factory().NewChar(r), nil
+			return o.Factory().NewChar(frame, r), nil
 		case OperatorLess:
 			if int64(o.Value()) < rhs.value {
 				return o.Factory().TrueValue(), nil
@@ -115,8 +115,8 @@ func (o *Char) BinaryOp(op Operator, in IObject) (IObject, error) {
 }
 
 // Copy creates and returns a new instance of the Char object with the same values.
-func (o *Char) Copy() IObject {
-	return o.Factory().NewChar(o.value)
+func (o *Char) Copy(frame int) IObject {
+	return o.Factory().NewChar(frame, o.value)
 }
 
 // Boolean checks whether the Char object represents a falsy state, returning true if the underlying values is 0.

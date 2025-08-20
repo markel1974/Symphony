@@ -10,9 +10,9 @@ type Undefined struct {
 	*Object
 }
 
-func _newUndefined(factory *Factory) *Undefined {
+func _newUndefined(factory *Factory, frame int) *Undefined {
 	return &Undefined{
-		Object: factory.NewObject(),
+		Object: factory.NewObject(frame),
 	}
 }
 
@@ -26,8 +26,8 @@ func (o *Undefined) String() string {
 }
 
 // Copy returns a copy of the type.
-func (o *Undefined) Copy() IObject {
-	return o
+func (o *Undefined) Copy(frame int) IObject {
+	return _newUndefined(o.Factory(), frame)
 }
 
 // Boolean returns true.
@@ -42,12 +42,12 @@ func (o *Undefined) Equals(x IObject) bool {
 }
 
 // IndexGet returns an element at a given index.
-func (o *Undefined) IndexGet(_ IObject) (IObject, error) {
+func (o *Undefined) IndexGet(_ int, _ IObject) (IObject, error) {
 	return o.Factory().UndefinedValue(), nil
 }
 
 // Iterate creates a map iterator.
-func (o *Undefined) Iterate() IIterator {
+func (o *Undefined) Iterate(_ int) IIterator {
 	return o
 }
 
@@ -62,11 +62,11 @@ func (o *Undefined) Next() bool {
 }
 
 // Key returns the key or index values of the current element.
-func (o *Undefined) Key() IObject {
+func (o *Undefined) Key(_ int) IObject {
 	return o
 }
 
 // Value returns the values of the current element.
-func (o *Undefined) Value() IObject {
+func (o *Undefined) Value(_ int) IObject {
 	return o
 }

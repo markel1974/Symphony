@@ -18,12 +18,12 @@ func NewFmt(factory *objects.Factory) *Fmt {
 		factory: factory,
 	}
 	container := []*objects.FuncPackage{
-		factory.NewFuncPackage(objects.FuncPackageDef, "Print", f.Print),
-		factory.NewFuncPackage(objects.FuncPackageDef, "Printf", f.Printf),
-		factory.NewFuncPackage(objects.FuncPackageDef, "Println", f.Println),
-		factory.NewFuncPackage(objects.FuncPackageDef, "Sprintf", f.Sprint),
-		factory.NewFuncPackage(objects.FuncPackageDef, "Sprintf", f.Sprintf),
-		factory.NewFuncPackage(objects.FuncPackageDef, "Errorf", f.Errorf),
+		factory.NewFuncPackage(objects.FrameStatic, objects.FuncPackageDef, "Print", f.Print),
+		factory.NewFuncPackage(objects.FrameStatic, objects.FuncPackageDef, "Printf", f.Printf),
+		factory.NewFuncPackage(objects.FrameStatic, objects.FuncPackageDef, "Println", f.Println),
+		factory.NewFuncPackage(objects.FrameStatic, objects.FuncPackageDef, "Sprintf", f.Sprint),
+		factory.NewFuncPackage(objects.FrameStatic, objects.FuncPackageDef, "Sprintf", f.Sprintf),
+		factory.NewFuncPackage(objects.FrameStatic, objects.FuncPackageDef, "Errorf", f.Errorf),
 	}
 	f.Package = NewPackage("fmt", container, nil)
 	return f
@@ -82,7 +82,7 @@ func (f *Fmt) Sprint(args ...objects.IObject) (ret objects.IObject, err error) {
 	for _, v := range args {
 		ar = append(ar, f.factory.ToInterface(v))
 	}
-	return f.factory.NewString(fmt.Sprint(ar))
+	return f.factory.NewString(objects.FrameReturnValue, fmt.Sprint(ar))
 }
 
 // Sprintf formats a string using a format specifier and optional arguments, returning it as a new string object.
@@ -96,13 +96,13 @@ func (f *Fmt) Sprintf(args ...objects.IObject) (ret objects.IObject, err error) 
 		return nil, err
 	}
 	if len(args) == 1 {
-		return f.factory.NewString(s1)
+		return f.factory.NewString(objects.FrameReturnValue, s1)
 	}
 	var ar []interface{}
 	for _, v := range args[1:] {
 		ar = append(ar, f.factory.ToInterface(v))
 	}
-	return f.factory.NewString(fmt.Sprintf(s1, ar...))
+	return f.factory.NewString(objects.FrameReturnValue, fmt.Sprintf(s1, ar...))
 }
 
 // Errorf formats an error message using a format string and arguments, returning an IObject error representation.
@@ -116,19 +116,19 @@ func (f *Fmt) Errorf(args ...objects.IObject) (ret objects.IObject, err error) {
 		return nil, err
 	}
 	if len(args) == 1 {
-		v, err := f.factory.NewString(fmt.Errorf(s1).Error())
+		v, err := f.factory.NewString(objects.FrameReturnValue, fmt.Errorf(s1).Error())
 		if err != nil {
 			return nil, err
 		}
-		return f.factory.NewError(v), nil
+		return f.factory.NewError(objects.FrameReturnValue, v), nil
 	}
 	var ar []interface{}
 	for _, v := range args[1:] {
 		ar = append(ar, f.factory.ToInterface(v))
 	}
-	v, err := f.factory.NewString(fmt.Errorf(s1, ar...).Error())
+	v, err := f.factory.NewString(objects.FrameReturnValue, fmt.Errorf(s1, ar...).Error())
 	if err != nil {
 		return nil, err
 	}
-	return f.factory.NewError(v), nil
+	return f.factory.NewError(objects.FrameReturnValue, v), nil
 }

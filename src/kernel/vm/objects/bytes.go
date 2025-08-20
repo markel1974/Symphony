@@ -21,9 +21,9 @@ type Bytes struct {
 }
 
 // NewBytes creates and returns a new Bytes object initialized with the provided byte slice.
-func _newBytes(factory *Factory, value []byte) *Bytes {
+func _newBytes(factory *Factory, frame int, value []byte) *Bytes {
 	return &Bytes{
-		Object: factory.NewObject(),
+		Object: factory.NewObject(frame),
 		values: value,
 	}
 }
@@ -51,7 +51,7 @@ func (o *Bytes) TypeName() string {
 // BinaryOp performs a binary operation on the Bytes object based on the specified operator and operand.
 // Supports addition for concatenating two Bytes objects, ensuring the combined length does not exceed MaxBytesLen.
 // Returns the resulting Bytes object or an error if the operation or operand is invalid.
-func (o *Bytes) BinaryOp(op Operator, in IObject) (IObject, error) {
+func (o *Bytes) BinaryOp(frame int, op Operator, in IObject) (IObject, error) {
 	switch op {
 	case OperatorAdd:
 		switch rhs := in.(type) {
@@ -59,7 +59,7 @@ func (o *Bytes) BinaryOp(op Operator, in IObject) (IObject, error) {
 			if len(o.values)+len(rhs.values) > MaxBytesLen {
 				return nil, ErrBytesLimit
 			}
-			return o.Factory().NewBytes(append(o.values, rhs.values...)), nil
+			return o.Factory().NewBytes(frame, append(o.values, rhs.values...)), nil
 		}
 	default:
 		return nil, ErrInvalidOperator
@@ -68,8 +68,8 @@ func (o *Bytes) BinaryOp(op Operator, in IObject) (IObject, error) {
 }
 
 // Copy creates and returns a new `Bytes` object with a duplicated values slice, ensuring no reference sharing.
-func (o *Bytes) Copy() IObject {
-	return o.Factory().NewBytes(append([]byte{}, o.values...))
+func (o *Bytes) Copy(frame int) IObject {
+	return o.Factory().NewBytes(frame, append([]byte{}, o.values...))
 }
 
 // Boolean determines if the Bytes object is considered falsy by checking if it contains no values. Returns true if empty.
@@ -87,7 +87,7 @@ func (o *Bytes) Equals(x IObject) bool {
 }
 
 // IndexGet retrieves the values at the specified index from the Bytes object and returns an error if the index is invalid.
-func (o *Bytes) IndexGet(index IObject) (res IObject, err error) {
+func (o *Bytes) IndexGet(frame int, index IObject) (res IObject, err error) {
 	intIdx, ok := index.(*Int)
 	if !ok {
 		err = ErrInvalidIndexType
@@ -98,7 +98,7 @@ func (o *Bytes) IndexGet(index IObject) (res IObject, err error) {
 		res = o.Factory().UndefinedValue()
 		return
 	}
-	res = o.Factory().NewInt(int64(o.values[idxVal]))
+	res = o.Factory().NewInt(frame, int64(o.values[idxVal]))
 	return
 }
 
@@ -108,6 +108,6 @@ func (o *Bytes) CanIterate() bool {
 }
 
 // Iterate returns an iterator for the Bytes object, enabling sequential access to its byte values.
-func (o *Bytes) Iterate() IIterator {
-	return o.Factory().NewBytesIterator(o.values)
+func (o *Bytes) Iterate(frame int) IIterator {
+	return o.Factory().NewBytesIterator(frame, o.values)
 }

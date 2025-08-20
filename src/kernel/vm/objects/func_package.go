@@ -17,9 +17,9 @@ type FuncPackage struct {
 }
 
 // NewFuncPackage creates a new FuncPackage instance with the specified ID and callable function.
-func _newFuncPackage(factory *Factory, kind string, name string, fn FuncCallable) *FuncPackage {
+func _newFuncPackage(factory *Factory, frame int, kind string, name string, fn FuncCallable) *FuncPackage {
 	return &FuncPackage{
-		Object: factory.NewObject(),
+		Object: factory.NewObject(frame),
 		kind:   kind,
 		name:   name,
 		value:  fn,
@@ -42,8 +42,8 @@ func (o *FuncPackage) String() string {
 }
 
 // Copy creates and returns a new FuncPackage instance with the same Value field as the original object.
-func (o *FuncPackage) Copy() IObject {
-	return o.Factory().NewFuncPackage(o.kind, o.name, o.value)
+func (o *FuncPackage) Copy(frame int) IObject {
+	return o.Factory().NewFuncPackage(frame, o.kind, o.name, o.value)
 }
 
 // Equals checks whether the current FuncPackage is equal to another object of type IObject. Always returns false.

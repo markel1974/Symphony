@@ -19,19 +19,19 @@ type IObject interface {
 
 	String() string
 
-	BinaryOp(op Operator, rightHandSide IObject) (IObject, error)
+	BinaryOp(frame int, op Operator, rightHandSide IObject) (IObject, error)
 
 	Boolean() bool
 
 	Equals(other IObject) bool
 
-	Copy() IObject
+	Copy(frame int) IObject
 
-	IndexGet(index IObject) (value IObject, err error)
+	IndexGet(frame int, index IObject) (value IObject, err error)
 
 	IndexSet(index, value IObject) error
 
-	Iterate() IIterator
+	Iterate(frame int) IIterator
 
 	CanIterate() bool
 

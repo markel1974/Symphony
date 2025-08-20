@@ -14,9 +14,9 @@ type ObjectPointer struct {
 }
 
 // NewObjectPointer creates a new ObjectPointer instance wrapping the provided IObject pointer.// NewObjectPointer creates a new ObjectPointer instance with the provided IObject values.
-func _newObjectPointer(factory *Factory, value *IObject) *ObjectPointer {
+func _newObjectPointer(factory *Factory, frame int, value *IObject) *ObjectPointer {
 	return &ObjectPointer{
-		Object: factory.NewObject(),
+		Object: factory.NewObject(frame),
 		value:  value,
 	}
 }
@@ -42,7 +42,7 @@ func (o *ObjectPointer) TypeName() string {
 }
 
 // Copy creates and returns a duplicate of the object implementing the IObject interface.
-func (o *ObjectPointer) Copy() IObject {
+func (o *ObjectPointer) Copy(_ int) IObject {
 	return o
 }
 

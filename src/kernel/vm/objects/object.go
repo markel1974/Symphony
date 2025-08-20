@@ -3,11 +3,13 @@ package objects
 // Object is a default implementation of the IObject interface with unimplemented or default behavior for methods.
 type Object struct {
 	factory *Factory
+	frame   int
 }
 
-func _newObject(factory *Factory) *Object {
+func _newObject(factory *Factory, frame int) *Object {
 	return &Object{
 		factory: factory,
+		frame:   frame,
 	}
 }
 
@@ -27,12 +29,12 @@ func (o *Object) String() string {
 
 // BinaryOp performs a binary operation on the current object and another object using the specified operator.
 // Returns the result of the operation or an error if the operation is not supported.
-func (o *Object) BinaryOp(_ Operator, _ IObject) (IObject, error) {
+func (o *Object) BinaryOp(_ int, _ Operator, _ IObject) (IObject, error) {
 	return nil, ErrInvalidOperator
 }
 
 // Copy creates and returns a new instance of the object, duplicating its state.
-func (o *Object) Copy() IObject {
+func (o *Object) Copy(_ int) IObject {
 	return nil
 }
 
@@ -47,7 +49,7 @@ func (o *Object) Equals(x IObject) bool {
 }
 
 // IndexGet attempts to retrieve a value at the given index and returns an error if the object is not indexable.
-func (o *Object) IndexGet(_ IObject) (res IObject, err error) {
+func (o *Object) IndexGet(_ int, _ IObject) (res IObject, err error) {
 	return nil, ErrNotIndexable
 }
 
@@ -58,7 +60,7 @@ func (o *Object) IndexSet(_, _ IObject) (err error) {
 }
 
 // Iterate returns an IIterator to traverse over the elements of the object. If iteration is not supported, it returns nil.
-func (o *Object) Iterate() IIterator {
+func (o *Object) Iterate(_ int) IIterator {
 	return nil
 }
 

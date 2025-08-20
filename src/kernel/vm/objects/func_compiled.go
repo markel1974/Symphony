@@ -18,12 +18,12 @@ type FuncCompiled struct {
 }
 
 // NewFunctionCompiled creates a new instance of FuncCompiled with the given instructions, locals, parameters, varArgs, sourceMap, and free vars.
-func _newFuncCompiled(factory *Factory, name string, instructions []byte, numLocals int, numParameters int, varArgs bool, sourceMap map[int]int, free []*ObjectPointer) *FuncCompiled {
+func _newFuncCompiled(factory *Factory, frame int, name string, instructions []byte, numLocals int, numParameters int, varArgs bool, sourceMap map[int]int, free []*ObjectPointer) *FuncCompiled {
 	if sourceMap == nil {
 		sourceMap = make(map[int]int)
 	}
 	return &FuncCompiled{
-		Object:        factory.NewObject(),
+		Object:        factory.NewObject(frame),
 		name:          name,
 		instructions:  _newInstructions(instructions),
 		numLocals:     numLocals,
@@ -80,8 +80,8 @@ func (o *FuncCompiled) String() string {
 }
 
 // Copy creates and returns a new instance of FuncCompiled, duplicating its state, except for its variable pointers.
-func (o *FuncCompiled) Copy() IObject {
-	ret := o.Factory().NewFuncCompiled(o.name, nil, o.numLocals, o.numParameters, o.varArgs, nil, nil)
+func (o *FuncCompiled) Copy(frame int) IObject {
+	ret := o.Factory().NewFuncCompiled(frame, o.name, nil, o.numLocals, o.numParameters, o.varArgs, nil, nil)
 	ret.instructions = o.instructions.Copy()
 	ret.free = append([]*ObjectPointer{}, o.free...)
 	return ret

@@ -24,40 +24,40 @@ func NewLibrary(factory *objects.Factory, process *Process) *Library {
 		pkg:     make(map[string]objects.IObject),
 	}
 	container := []*objects.FuncPackage{
-		factory.NewFuncPackage(objects.FuncPackageDef, "Printf", l.doPrintf),
-		factory.NewFuncPackage(objects.FuncPackageDef, "CreateTimer", l.doCreateTimer),
-		factory.NewFuncPackage(objects.FuncPackageDef, "IsActive", l.doIsActive),
-		factory.NewFuncPackage(objects.FuncPackageDef, "Kill", l.doKill),
-		factory.NewFuncPackage(objects.FuncPackageDef, "KillForeground", l.doKillForeground),
-		factory.NewFuncPackage(objects.FuncPackageDef, "KillAll", l.doKillAll),
-		factory.NewFuncPackage(objects.FuncPackageDef, "CWDSet", l.doCWDSet),
-		factory.NewFuncPackage(objects.FuncPackageDef, "CWDName", l.doCWDName),
-		factory.NewFuncPackage(objects.FuncPackageDef, "CWDPath", l.doCWDPath),
-		factory.NewFuncPackage(objects.FuncPackageDef, "CWDDirectoryListing", l.doCWDDirectoryListing),
-		factory.NewFuncPackage(objects.FuncPackageDef, "GetScreenSize", l.doGetScreenSize),
-		factory.NewFuncPackage(objects.FuncPackageDef, "PaintRequest", l.doPaintRequest),
-		factory.NewFuncPackage(objects.FuncPackageDef, "ProcessExec", l.doProcessExec),
-		factory.NewFuncPackage(objects.FuncPackageDef, "WindowsSelectionBegin", l.doWindowsSelectionBegin),
-		factory.NewFuncPackage(objects.FuncPackageDef, "CWDSet", l.doWindowsSelectionEnd),
-		factory.NewFuncPackage(objects.FuncPackageDef, "WindowsSelectionOptions", l.doWindowsSelectionOptions),
-		factory.NewFuncPackage(objects.FuncPackageDef, "WindowsSelectionNext", l.doWindowsSelectionNext),
-		factory.NewFuncPackage(objects.FuncPackageDef, "WindowsSelectionPrevious", l.doWindowsSelectionPrevious),
-		factory.NewFuncPackage(objects.FuncPackageDef, "ProcessList", l.doProcessList),
-		factory.NewFuncPackage(objects.FuncPackageDef, "ProcessSetForeground", l.doProcessSetForeground),
-		factory.NewFuncPackage(objects.FuncPackageDef, "ProcessSetSelfForeground", l.doProcessSetSelfForeground),
-		factory.NewFuncPackage(objects.FuncPackageDef, "Write", l.doWrite),
-		factory.NewFuncPackage(objects.FuncPackageDef, "WritePromptEOL", l.doWritePromptEOL),
-		factory.NewFuncPackage(objects.FuncPackageDef, "WritePromptLine", l.doWritePromptLine),
-		factory.NewFuncPackage(objects.FuncPackageDef, "WriteColor", l.doWriteColor),
-		factory.NewFuncPackage(objects.FuncPackageDef, "WriteForeground", l.doWriteForeground),
-		factory.NewFuncPackage(objects.FuncPackageDef, "MoveCursorLeft", l.doMoveCursorLeft),
-		factory.NewFuncPackage(objects.FuncPackageDef, "MoveCursorRight", l.doMoveCursorRight),
-		factory.NewFuncPackage(objects.FuncPackageDef, "SaveCursor", l.doSaveCursor),
-		factory.NewFuncPackage(objects.FuncPackageDef, "RestoreCursor", l.doRestoreCursor),
-		factory.NewFuncPackage(objects.FuncPackageDef, "ClearScreen", l.doClearScreen),
-		factory.NewFuncPackage(objects.FuncPackageDef, "SetExit", l.doSetExit),
-		factory.NewFuncPackage(objects.FuncPackageDef, "Suggestion", l.doSuggestion),
-		factory.NewFuncPackage(objects.FuncPackageDef, "Help", l.doHelp),
+		factory.NewFuncPackage(objects.FrameStatic, objects.FuncPackageDef, "Printf", l.doPrintf),
+		factory.NewFuncPackage(objects.FrameStatic, objects.FuncPackageDef, "CreateTimer", l.doCreateTimer),
+		factory.NewFuncPackage(objects.FrameStatic, objects.FuncPackageDef, "IsActive", l.doIsActive),
+		factory.NewFuncPackage(objects.FrameStatic, objects.FuncPackageDef, "Kill", l.doKill),
+		factory.NewFuncPackage(objects.FrameStatic, objects.FuncPackageDef, "KillForeground", l.doKillForeground),
+		factory.NewFuncPackage(objects.FrameStatic, objects.FuncPackageDef, "KillAll", l.doKillAll),
+		factory.NewFuncPackage(objects.FrameStatic, objects.FuncPackageDef, "CWDSet", l.doCWDSet),
+		factory.NewFuncPackage(objects.FrameStatic, objects.FuncPackageDef, "CWDName", l.doCWDName),
+		factory.NewFuncPackage(objects.FrameStatic, objects.FuncPackageDef, "CWDPath", l.doCWDPath),
+		factory.NewFuncPackage(objects.FrameStatic, objects.FuncPackageDef, "CWDDirectoryListing", l.doCWDDirectoryListing),
+		factory.NewFuncPackage(objects.FrameStatic, objects.FuncPackageDef, "GetScreenSize", l.doGetScreenSize),
+		factory.NewFuncPackage(objects.FrameStatic, objects.FuncPackageDef, "PaintRequest", l.doPaintRequest),
+		factory.NewFuncPackage(objects.FrameStatic, objects.FuncPackageDef, "ProcessExec", l.doProcessExec),
+		factory.NewFuncPackage(objects.FrameStatic, objects.FuncPackageDef, "WindowsSelectionBegin", l.doWindowsSelectionBegin),
+		factory.NewFuncPackage(objects.FrameStatic, objects.FuncPackageDef, "CWDSet", l.doWindowsSelectionEnd),
+		factory.NewFuncPackage(objects.FrameStatic, objects.FuncPackageDef, "WindowsSelectionOptions", l.doWindowsSelectionOptions),
+		factory.NewFuncPackage(objects.FrameStatic, objects.FuncPackageDef, "WindowsSelectionNext", l.doWindowsSelectionNext),
+		factory.NewFuncPackage(objects.FrameStatic, objects.FuncPackageDef, "WindowsSelectionPrevious", l.doWindowsSelectionPrevious),
+		factory.NewFuncPackage(objects.FrameStatic, objects.FuncPackageDef, "ProcessList", l.doProcessList),
+		factory.NewFuncPackage(objects.FrameStatic, objects.FuncPackageDef, "ProcessSetForeground", l.doProcessSetForeground),
+		factory.NewFuncPackage(objects.FrameStatic, objects.FuncPackageDef, "ProcessSetSelfForeground", l.doProcessSetSelfForeground),
+		factory.NewFuncPackage(objects.FrameStatic, objects.FuncPackageDef, "Write", l.doWrite),
+		factory.NewFuncPackage(objects.FrameStatic, objects.FuncPackageDef, "WritePromptEOL", l.doWritePromptEOL),
+		factory.NewFuncPackage(objects.FrameStatic, objects.FuncPackageDef, "WritePromptLine", l.doWritePromptLine),
+		factory.NewFuncPackage(objects.FrameStatic, objects.FuncPackageDef, "WriteColor", l.doWriteColor),
+		factory.NewFuncPackage(objects.FrameStatic, objects.FuncPackageDef, "WriteForeground", l.doWriteForeground),
+		factory.NewFuncPackage(objects.FrameStatic, objects.FuncPackageDef, "MoveCursorLeft", l.doMoveCursorLeft),
+		factory.NewFuncPackage(objects.FrameStatic, objects.FuncPackageDef, "MoveCursorRight", l.doMoveCursorRight),
+		factory.NewFuncPackage(objects.FrameStatic, objects.FuncPackageDef, "SaveCursor", l.doSaveCursor),
+		factory.NewFuncPackage(objects.FrameStatic, objects.FuncPackageDef, "RestoreCursor", l.doRestoreCursor),
+		factory.NewFuncPackage(objects.FrameStatic, objects.FuncPackageDef, "ClearScreen", l.doClearScreen),
+		factory.NewFuncPackage(objects.FrameStatic, objects.FuncPackageDef, "SetExit", l.doSetExit),
+		factory.NewFuncPackage(objects.FrameStatic, objects.FuncPackageDef, "Suggestion", l.doSuggestion),
+		factory.NewFuncPackage(objects.FrameStatic, objects.FuncPackageDef, "Help", l.doHelp),
 	}
 	for _, v := range container {
 		l.pkg[v.Name()] = v
@@ -215,9 +215,9 @@ func (l *Library) doGetScreenSize(args ...objects.IObject) (ret objects.IObject,
 		return nil, errors.New("invalid number of arguments")
 	}
 	w, h := l.process.GetScreenSize()
-	return l.factory.NewMap(map[string]objects.IObject{
-		"width":  l.factory.NewInt(int64(w)),
-		"height": l.factory.NewInt(int64(h)),
+	return l.factory.NewMap(objects.FrameReturnValue, map[string]objects.IObject{
+		"width":  l.factory.NewInt(objects.FrameReturnValue, int64(w)),
+		"height": l.factory.NewInt(objects.FrameReturnValue, int64(h)),
 	}), nil
 }
 
@@ -228,7 +228,7 @@ func (l *Library) doCWDDirectoryListing(args ...objects.IObject) (ret objects.IO
 		return nil, errors.New("invalid number of arguments")
 	}
 	v := l.process.CWDDirectoryListing()
-	return l.factory.FromStringArray(v)
+	return l.factory.FromStringArray(objects.FrameReturnValue, v)
 }
 
 // doCWDSet sets the current working directory (CWD) using the provided string argument. Returns a boolean as IObject.
@@ -250,7 +250,7 @@ func (l *Library) doCWDPath(args ...objects.IObject) (ret objects.IObject, err e
 		return nil, errors.New("invalid number of arguments")
 	}
 	v := l.process.CWDPath()
-	return l.factory.NewString(v)
+	return l.factory.NewString(objects.FrameReturnValue, v)
 }
 
 // doCWDName retrieves the current working directory name, returns it as a string object, and validates argument count.
@@ -259,7 +259,7 @@ func (l *Library) doCWDName(args ...objects.IObject) (ret objects.IObject, err e
 		return nil, errors.New("invalid number of arguments")
 	}
 	v := l.process.CWDName()
-	return l.factory.NewString(v)
+	return l.factory.NewString(objects.FrameReturnValue, v)
 }
 
 // doHelp retrieves and returns a help string for the provided argument, which must be a single string-compatible object.
@@ -275,7 +275,7 @@ func (l *Library) doHelp(args ...objects.IObject) (ret objects.IObject, err erro
 	if err != nil {
 		return nil, err
 	}
-	return l.factory.NewString(v)
+	return l.factory.NewString(objects.FrameReturnValue, v)
 }
 
 // doSuggestion processes two arguments: a string and an integer, to trigger the Suggestion functionality within the library.
@@ -491,14 +491,14 @@ func (l *Library) doProcessList(args ...objects.IObject) (ret objects.IObject, e
 	res := make(map[string]objects.IObject)
 	for _, p := range l.process.ProcessList() {
 		c := map[string]objects.IObject{
-			"line": l.factory.NewStringNoSize(p.Line()),
-			"name": l.factory.NewStringNoSize(p.Name()),
-			"time": l.factory.NewTime(p.Time()),
-			"pid":  l.factory.NewInt(int64(p.PID())),
+			"line": l.factory.NewStringNoSize(objects.FrameReturnValue, p.Line()),
+			"name": l.factory.NewStringNoSize(objects.FrameReturnValue, p.Name()),
+			"time": l.factory.NewTime(objects.FrameReturnValue, p.Time()),
+			"pid":  l.factory.NewInt(objects.FrameReturnValue, int64(p.PID())),
 		}
-		res[p.Name()] = l.factory.NewMap(c)
+		res[p.Name()] = l.factory.NewMap(objects.FrameReturnValue, c)
 	}
-	return l.factory.NewMap(res), nil
+	return l.factory.NewMap(objects.FrameReturnValue, res), nil
 }
 
 // doWindowsSelectionPrevious navigates to the previous selection in the Windows selection context.

@@ -15,9 +15,9 @@ type Error struct {
 }
 
 // NewError creates and returns a new Error object with the specified values.
-func _newError(factory *Factory, value IObject) *Error {
+func _newError(factory *Factory, frame int, value IObject) *Error {
 	return &Error{
-		Object: factory.NewObject(),
+		Object: factory.NewObject(frame),
 		value:  value,
 	}
 }
@@ -46,8 +46,8 @@ func (o *Error) Boolean() bool {
 }
 
 // Copy creates and returns a new instance of the Error object with the same underlying values.
-func (o *Error) Copy() IObject {
-	return o.Factory().NewError(o.value.Copy())
+func (o *Error) Copy(frame int) IObject {
+	return o.Factory().NewError(frame, o.value.Copy(frame))
 }
 
 // Equals checks if the current Error object is equal to another object using pointer equality.
@@ -56,7 +56,7 @@ func (o *Error) Equals(x IObject) bool {
 }
 
 // IndexGet retrieves the values associated with the "values" index in an Error object or returns an error for invalid indices.
-func (o *Error) IndexGet(index IObject) (res IObject, err error) {
+func (o *Error) IndexGet(_ int, index IObject) (res IObject, err error) {
 	if strIdx, _ := o.Factory().ToString(index); strIdx != "values" {
 		err = ErrInvalidIndexOnError
 		return

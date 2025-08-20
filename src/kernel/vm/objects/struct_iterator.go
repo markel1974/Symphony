@@ -20,13 +20,13 @@ type StructIterator struct {
 }
 
 // NewStructIterator initializes and returns a new StructIterator for the given map of string keys to IObject values.
-func _newStructIterator(factory *Factory, v map[string]IObject) *StructIterator {
+func _newStructIterator(factory *Factory, frame int, v map[string]IObject) *StructIterator {
 	var keys []string
 	for k := range v {
 		keys = append(keys, k)
 	}
 	return &StructIterator{
-		Object: factory.NewObject(),
+		Object: factory.NewObject(frame),
 		values: v,
 		keys:   keys,
 		length: len(keys),
@@ -35,8 +35,8 @@ func _newStructIterator(factory *Factory, v map[string]IObject) *StructIterator 
 }
 
 // Copy creates and returns a duplicate instance of the current StructIterator with the same internal state.
-func (i *StructIterator) Copy() IObject {
-	ret := i.Factory().NewStructIterator(i.values)
+func (i *StructIterator) Copy(frame int) IObject {
+	ret := i.Factory().NewStructIterator(frame, i.values)
 	ret.index = i.index
 	return ret
 }
@@ -68,13 +68,13 @@ func (i *StructIterator) Next() bool {
 }
 
 // Key retrieves the key of the current element in the MapIterator as an IObject.
-func (i *StructIterator) Key() IObject {
+func (i *StructIterator) Key(frame int) IObject {
 	k := i.keys[i.index-1]
-	return i.factory.NewStringNoSize(k)
+	return i.factory.NewStringNoSize(frame, k)
 }
 
 // Value retrieves the value of the current element in the iteration based on the iterator's current position.
-func (i *StructIterator) Value() IObject {
+func (i *StructIterator) Value(_ int) IObject {
 	k := i.keys[i.index-1]
 	return i.values[k]
 }

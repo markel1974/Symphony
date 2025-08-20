@@ -245,17 +245,17 @@ func (c *Scopes) EmitLiteral(node *ast.BasicLit) error {
 	switch node.Kind {
 	case token.INT:
 		val, _ := strconv.ParseInt(node.Value, 0, 64)
-		if _, err := c.Emit(bytecode.OpConstant, c.ConstantsAdd("", c.factory.NewInt(val))); err != nil {
+		if _, err := c.Emit(bytecode.OpConstant, c.ConstantsAdd("", c.factory.NewInt(objects.FrameStatic, val))); err != nil {
 			return err
 		}
 	case token.FLOAT:
 		val, _ := strconv.ParseFloat(node.Value, 64)
-		if _, err := c.Emit(bytecode.OpConstant, c.ConstantsAdd("", c.factory.NewFloat(val))); err != nil {
+		if _, err := c.Emit(bytecode.OpConstant, c.ConstantsAdd("", c.factory.NewFloat(objects.FrameStatic, val))); err != nil {
 			return err
 		}
 	case token.STRING:
 		val, _ := strconv.Unquote(node.Value)
-		s, err := c.factory.NewString(val)
+		s, err := c.factory.NewString(objects.FrameStatic, val)
 		if err != nil {
 			return err
 		}

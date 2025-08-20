@@ -14,9 +14,9 @@ type StringIterator struct {
 }
 
 // NewStringIterator creates and returns a new instance of StringIterator with the given rune slice.
-func _newStringIterator(factory *Factory, v []rune) *StringIterator {
+func _newStringIterator(factory *Factory, frame int, v []rune) *StringIterator {
 	return &StringIterator{
-		Object: factory.NewObject(),
+		Object: factory.NewObject(frame),
 		values: v,
 		length: len(v),
 		index:  0,
@@ -24,8 +24,8 @@ func _newStringIterator(factory *Factory, v []rune) *StringIterator {
 }
 
 // Copy creates and returns a new instance of StringIterator with the same state as the current one.
-func (i *StringIterator) Copy() IObject {
-	ret := i.Factory().NewStringIterator(i.values)
+func (i *StringIterator) Copy(frame int) IObject {
+	ret := i.Factory().NewStringIterator(frame, i.values)
 	ret.index = i.index
 	return ret
 }
@@ -57,11 +57,11 @@ func (i *StringIterator) Next() bool {
 }
 
 // Key returns the zero-based index of the current element in the iteration as an Int object.
-func (i *StringIterator) Key() IObject {
-	return i.Factory().NewInt(int64(i.index - 1))
+func (i *StringIterator) Key(frame int) IObject {
+	return i.Factory().NewInt(frame, int64(i.index-1))
 }
 
 // Value returns the current character as an IObject wrapped in a Char instance from the internal rune slice.
-func (i *StringIterator) Value() IObject {
-	return i.Factory().NewChar(i.values[i.index-1])
+func (i *StringIterator) Value(frame int) IObject {
+	return i.Factory().NewChar(frame, i.values[i.index-1])
 }

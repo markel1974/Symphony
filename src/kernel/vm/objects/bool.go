@@ -14,9 +14,9 @@ type Bool struct {
 }
 
 // NewBool creates and returns a new Bool object with the specified boolean value.
-func _newBool(factory *Factory, value bool) *Bool {
+func _newBool(factory *Factory, frame int, value bool) *Bool {
 	return &Bool{
-		Object: factory.NewObject(),
+		Object: factory.NewObject(frame),
 		value:  value,
 	}
 }
@@ -35,8 +35,8 @@ func (o *Bool) TypeName() string {
 }
 
 // Copy creates and returns a reference to the current Bool object.
-func (o *Bool) Copy() IObject {
-	return o
+func (o *Bool) Copy(frame int) IObject {
+	return o.factory.NewBool(frame, o.value)
 }
 
 // Boolean returns true if the Bool value is false, otherwise returns false.

@@ -17,9 +17,9 @@ type Builtin struct {
 }
 
 // NewBuiltin creates a new instance of Builtin with the specified name and value.
-func _newBuiltin(factory *Factory, name string, index int) *Builtin {
+func _newBuiltin(factory *Factory, frame int, name string, index int) *Builtin {
 	return &Builtin{
-		Object: factory.NewObject(),
+		Object: factory.NewObject(frame),
 		name:   name,
 		index:  index,
 	}
@@ -46,8 +46,8 @@ func (o *Builtin) TypeName() string {
 }
 
 // Copy creates and returns a new Builtin object with the same name and value as the current instance.
-func (o *Builtin) Copy() IObject {
-	return o.Factory().NewBuiltin(o.name, o.index)
+func (o *Builtin) Copy(frame int) IObject {
+	return o.Factory().NewBuiltin(frame, o.name, o.index)
 }
 
 // Boolean returns false, indicating the boolean representation of the Builtin object is always false.

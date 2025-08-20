@@ -101,7 +101,7 @@ func (v *Stack) Push(obj objects.IObject) {
 }
 
 // PushVarArgs processes a variadic argument list, grouping extra arguments into an array and updating the stack pointer.
-func (v *Stack) PushVarArgs(numArgs int, realArgs int) {
+func (v *Stack) PushVarArgs(frame int, numArgs int, realArgs int) {
 	varArgs := numArgs - realArgs
 	if varArgs < 0 {
 		return
@@ -120,7 +120,7 @@ func (v *Stack) PushVarArgs(numArgs int, realArgs int) {
 		v.errSignal(objects.ErrIndexOutOfBounds)
 		return
 	}
-	v.stack[spStart] = v.factory.NewArray(args)
+	v.stack[spStart] = v.factory.NewArray(frame, args)
 	v.sp = spStart + 1
 }
 

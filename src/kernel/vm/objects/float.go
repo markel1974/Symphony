@@ -18,9 +18,9 @@ type Float struct {
 }
 
 // NewFloat creates and returns a pointer to a new Float object initialized with the specified float64 values.
-func _newFloat(factory *Factory, value float64) *Float {
+func _newFloat(factory *Factory, frame int, value float64) *Float {
 	return &Float{
-		Object: factory.NewObject(),
+		Object: factory.NewObject(frame),
 		value:  value,
 	}
 }
@@ -41,7 +41,7 @@ func (o *Float) TypeName() string {
 
 // BinaryOp performs a binary operation between the current Float and another IObject based on the specified operator.
 // Returns the result of the operation as an IObject or an error if the operation is invalid.
-func (o *Float) BinaryOp(op Operator, rhs IObject) (IObject, error) {
+func (o *Float) BinaryOp(frame int, op Operator, rhs IObject) (IObject, error) {
 	switch rhs := rhs.(type) {
 	case *Float:
 		switch op {
@@ -50,25 +50,25 @@ func (o *Float) BinaryOp(op Operator, rhs IObject) (IObject, error) {
 			if r == o.value {
 				return o, nil
 			}
-			return o.Factory().NewFloat(r), nil
+			return o.Factory().NewFloat(frame, r), nil
 		case OperatorSub:
 			r := o.value - rhs.value
 			if r == o.value {
 				return o, nil
 			}
-			return o.Factory().NewFloat(r), nil
+			return o.Factory().NewFloat(frame, r), nil
 		case OperatorMul:
 			r := o.value * rhs.value
 			if r == o.value {
 				return o, nil
 			}
-			return o.Factory().NewFloat(r), nil
+			return o.Factory().NewFloat(frame, r), nil
 		case OperatorQuo:
 			r := o.value / rhs.value
 			if r == o.value {
 				return o, nil
 			}
-			return o.Factory().NewFloat(r), nil
+			return o.Factory().NewFloat(frame, r), nil
 		case OperatorLess:
 			if o.value < rhs.value {
 				return o.Factory().TrueValue(), nil
@@ -99,25 +99,25 @@ func (o *Float) BinaryOp(op Operator, rhs IObject) (IObject, error) {
 			if r == o.value {
 				return o, nil
 			}
-			return o.Factory().NewFloat(r), nil
+			return o.Factory().NewFloat(frame, r), nil
 		case OperatorSub:
 			r := o.value - float64(rhs.value)
 			if r == o.value {
 				return o, nil
 			}
-			return o.Factory().NewFloat(r), nil
+			return o.Factory().NewFloat(frame, r), nil
 		case OperatorMul:
 			r := o.value * float64(rhs.value)
 			if r == o.value {
 				return o, nil
 			}
-			return o.Factory().NewFloat(r), nil
+			return o.Factory().NewFloat(frame, r), nil
 		case OperatorQuo:
 			r := o.value / float64(rhs.value)
 			if r == o.value {
 				return o, nil
 			}
-			return o.Factory().NewFloat(r), nil
+			return o.Factory().NewFloat(frame, r), nil
 		case OperatorLess:
 			if o.value < float64(rhs.value) {
 				return o.Factory().TrueValue(), nil
@@ -146,8 +146,8 @@ func (o *Float) BinaryOp(op Operator, rhs IObject) (IObject, error) {
 }
 
 // Copy creates and returns a new instance of the Float object, duplicating its current state.
-func (o *Float) Copy() IObject {
-	return o.Factory().NewFloat(o.value)
+func (o *Float) Copy(frame int) IObject {
+	return o.Factory().NewFloat(frame, o.value)
 }
 
 // Boolean determines if the float object is considered falsy, returning true if the values is NaN; otherwise, false.

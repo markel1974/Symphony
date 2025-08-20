@@ -74,7 +74,7 @@ func NewLoader(factory *objects.Factory) *Loader {
 		builtin:  make([]*BuiltinWrapper, len(builtin)),
 	}
 	for i, fn := range builtin {
-		wrapper := factory.NewBuiltin(fn.Name(), i)
+		wrapper := factory.NewBuiltin(objects.FrameStatic, fn.Name(), i)
 		loader.builtin[i] = &BuiltinWrapper{wrapper: wrapper, object: fn}
 	}
 	for _, p := range packages {
@@ -162,8 +162,8 @@ func (l *Loader) CompilePackage(name string) (*objects.MapImmutable, error) {
 	}
 	attrs := make(map[string]objects.IObject, len(module.container))
 	for k, v := range module.container {
-		attrs[k] = v.Copy()
+		attrs[k] = v.Copy(objects.FrameStatic)
 	}
-	attrs[bytecode.ModuleKey] = l.factory.NewStringNoSize(name)
-	return l.factory.NewMapImmutable(attrs), nil
+	attrs[bytecode.ModuleKey] = l.factory.NewStringNoSize(objects.FrameStatic, name)
+	return l.factory.NewMapImmutable(objects.FrameStatic, attrs), nil
 }

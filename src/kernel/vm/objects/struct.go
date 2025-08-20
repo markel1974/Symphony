@@ -17,9 +17,9 @@ type Struct struct {
 }
 
 // NewStruct creates a new instance of MapImmutable with the provided map of string keys and IObject values.
-func _newStruct(factory *Factory, value map[string]IObject) *Struct {
+func _newStruct(factory *Factory, frame int, value map[string]IObject) *Struct {
 	return &Struct{
-		Object: factory.NewObject(),
+		Object: factory.NewObject(frame),
 		values: value,
 	}
 }
@@ -60,12 +60,12 @@ func (o *Struct) String() string {
 }
 
 // Copy creates and returns a new IObject by duplicating the internal state of the Struct instance.
-func (o *Struct) Copy() IObject {
+func (o *Struct) Copy(frame int) IObject {
 	c := make(map[string]IObject)
 	for k, v := range o.values {
-		c[k] = v.Copy()
+		c[k] = v.Copy(frame)
 	}
-	return o.Factory().NewStruct(c)
+	return o.Factory().NewStruct(frame, c)
 }
 
 // Boolean returns true if the Struct contains no values, otherwise false.
@@ -74,7 +74,7 @@ func (o *Struct) Boolean() bool {
 }
 
 // IndexGet retrieves the value associated with the given index within the Struct. Returns an error for invalid index types.
-func (o *Struct) IndexGet(index IObject) (res IObject, err error) {
+func (o *Struct) IndexGet(_ int, index IObject) (res IObject, err error) {
 	strIdx, ok := o.Factory().ToString(index)
 	if !ok {
 		err = ErrInvalidIndexType
@@ -109,8 +109,8 @@ func (o *Struct) Equals(in IObject) bool {
 }
 
 // Iterate returns an IIterator for traversing the key-value pairs in the Struct's internal map.
-func (o *Struct) Iterate() IIterator {
-	return o.Factory().NewStructIterator(o.values)
+func (o *Struct) Iterate(frame int) IIterator {
+	return o.Factory().NewStructIterator(frame, o.values)
 }
 
 // CanIterate checks if the object can be iterated over. Always returns true for this implementation.

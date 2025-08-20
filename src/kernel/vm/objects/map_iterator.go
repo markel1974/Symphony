@@ -18,13 +18,13 @@ type MapIterator struct {
 }
 
 // NewMapIterator creates and returns a new instance of MapIterator.
-func _newMapIterator(factory *Factory, v map[string]IObject) *MapIterator {
+func _newMapIterator(factory *Factory, frame int, v map[string]IObject) *MapIterator {
 	var keys []string
 	for k := range v {
 		keys = append(keys, k)
 	}
 	return &MapIterator{
-		Object: factory.NewObject(),
+		Object: factory.NewObject(frame),
 		values: v,
 		keys:   keys,
 		length: len(keys),
@@ -33,8 +33,8 @@ func _newMapIterator(factory *Factory, v map[string]IObject) *MapIterator {
 }
 
 // Copy creates and returns a new instance of MapIterator, duplicating its current state.
-func (i *MapIterator) Copy() IObject {
-	ret := i.Factory().NewMapIterator(i.values)
+func (i *MapIterator) Copy(frame int) IObject {
+	ret := i.Factory().NewMapIterator(frame, i.values)
 	ret.index = i.index
 	return ret
 }
@@ -66,13 +66,13 @@ func (i *MapIterator) Next() bool {
 }
 
 // Key retrieves the key of the current element in the iteration as an IObject.
-func (i *MapIterator) Key() IObject {
+func (i *MapIterator) Key(frame int) IObject {
 	k := i.keys[i.index-1]
-	return i.Factory().NewStringNoSize(k)
+	return i.Factory().NewStringNoSize(frame, k)
 }
 
 // Value retrieves the values of the current element in the iteration based on the iterator's current position.
-func (i *MapIterator) Value() IObject {
+func (i *MapIterator) Value(_ int) IObject {
 	k := i.keys[i.index-1]
 	return i.values[k]
 }

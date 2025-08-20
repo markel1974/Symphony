@@ -16,9 +16,9 @@ type MapImmutable struct {
 }
 
 // NewMapImmutable creates a new instance of MapImmutable with the provided map of string keys and IObject values.
-func _newMapImmutable(factory *Factory, value map[string]IObject) *MapImmutable {
+func _newMapImmutable(factory *Factory, frame int, value map[string]IObject) *MapImmutable {
 	return &MapImmutable{
-		Object: factory.NewObject(),
+		Object: factory.NewObject(frame),
 		values: value,
 	}
 }
@@ -57,12 +57,12 @@ func (o *MapImmutable) String() string {
 }
 
 // Copy creates and returns a deep copy of the MapImmutable, duplicating all key-values pairs.
-func (o *MapImmutable) Copy() IObject {
+func (o *MapImmutable) Copy(frame int) IObject {
 	c := make(map[string]IObject)
 	for k, v := range o.values {
-		c[k] = v.Copy()
+		c[k] = v.Copy(frame)
 	}
-	return o.Factory().NewMap(c)
+	return o.Factory().NewMap(frame, c)
 }
 
 // Boolean returns true if the map is empty, indicating it is considered "falsy", otherwise false.
@@ -71,7 +71,7 @@ func (o *MapImmutable) Boolean() bool {
 }
 
 // IndexGet retrieves the values associated with the given index in the MapImmutable. Returns an error for invalid index types.
-func (o *MapImmutable) IndexGet(index IObject) (res IObject, err error) {
+func (o *MapImmutable) IndexGet(_ int, index IObject) (res IObject, err error) {
 	strIdx, ok := o.Factory().ToString(index)
 	if !ok {
 		err = ErrInvalidIndexType
@@ -108,8 +108,8 @@ func (o *MapImmutable) Equals(in IObject) bool {
 }
 
 // Iterate returns an iterator for traversing the key-values pairs in the immutable map.
-func (o *MapImmutable) Iterate() IIterator {
-	return o.Factory().NewMapIterator(o.values)
+func (o *MapImmutable) Iterate(frame int) IIterator {
+	return o.Factory().NewMapIterator(frame, o.values)
 }
 
 // CanIterate returns true, indicating that the MapImmutable supports iteration.

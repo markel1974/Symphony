@@ -9,7 +9,7 @@ type IIterator interface {
 
 	Next() bool
 
-	Key() IObject
+	Key(frame int) IObject
 
-	Value() IObject
+	Value(frame int) IObject
 }

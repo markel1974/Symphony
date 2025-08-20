@@ -16,9 +16,9 @@ type Array struct {
 }
 
 // NewArray creates and returns a new Array object initialized with the provided slice of IObject elements.
-func _newArray(factory *Factory, value []IObject) *Array {
+func _newArray(factory *Factory, frame int, value []IObject) *Array {
 	return &Array{
-		Object: factory.NewObject(),
+		Object: factory.NewObject(frame),
 		values: value,
 	}
 }
@@ -75,14 +75,14 @@ func (o *Array) String() string {
 
 // BinaryOp performs a binary operation on the Array with the given operator and right-hand side object.
 // It supports the addition operator (OperatorAdd) for concatenating arrays. Returns the result or an error for invalid operations.
-func (o *Array) BinaryOp(op Operator, in IObject) (IObject, error) {
+func (o *Array) BinaryOp(frame int, op Operator, in IObject) (IObject, error) {
 	if rhs, ok := in.(*Array); ok {
 		switch op {
 		case OperatorAdd:
 			if len(rhs.values) == 0 {
 				return o, nil
 			}
-			return o.Factory().NewArray(append(o.values, rhs.values...)), nil
+			return o.Factory().NewArray(frame, append(o.values, rhs.values...)), nil
 		default:
 			return nil, ErrInvalidOperator
 		}
@@ -91,12 +91,12 @@ func (o *Array) BinaryOp(op Operator, in IObject) (IObject, error) {
 }
 
 // Copy creates and returns a deep copy of the Array and its elements.
-func (o *Array) Copy() IObject {
+func (o *Array) Copy(frame int) IObject {
 	var c []IObject
 	for _, elem := range o.values {
-		c = append(c, elem.Copy())
+		c = append(c, elem.Copy(frame))
 	}
-	return o.Factory().NewArray(c)
+	return o.Factory().NewArray(frame, c)
 }
 
 // Boolean returns true if the array is empty, otherwise false.
@@ -127,7 +127,7 @@ func (o *Array) Equals(in IObject) bool {
 }
 
 // IndexGet retrieves the element at the given index from the Array. Returns an error if the index type is invalid or out of bounds.
-func (o *Array) IndexGet(index IObject) (res IObject, err error) {
+func (o *Array) IndexGet(_ int, index IObject) (res IObject, err error) {
 	intIdx, ok := index.(*Int)
 	if !ok {
 		err = ErrInvalidIndexType
@@ -164,6 +164,6 @@ func (o *Array) CanIterate() bool {
 }
 
 // Iterate returns an IIterator for the Array instance, allowing sequential access to its elements.
-func (o *Array) Iterate() IIterator {
-	return o.Factory().NewArrayIterator(o.values)
+func (o *Array) Iterate(frame int) IIterator {
+	return o.Factory().NewArrayIterator(frame, o.values)
 }

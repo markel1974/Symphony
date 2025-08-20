@@ -15,9 +15,9 @@ type Time struct {
 }
 
 // NewTime creates a new instance of Time wrapping the provided time.Time values.
-func _newTime(factory *Factory, value time.Time) *Time {
+func _newTime(factory *Factory, frame int, value time.Time) *Time {
 	return &Time{
-		Object: factory.NewObject(),
+		Object: factory.NewObject(frame),
 		value:  value,
 	}
 }
@@ -39,7 +39,7 @@ func (o *Time) TypeName() string {
 
 // BinaryOp performs a binary operation between the Time object and another IObject using a specified Operator.
 // Returns the resulting IObject or an error if the operation is invalid or unsupported.
-func (o *Time) BinaryOp(op Operator, in IObject) (IObject, error) {
+func (o *Time) BinaryOp(frame int, op Operator, in IObject) (IObject, error) {
 	switch rhs := in.(type) {
 	case *Int:
 		switch op {
@@ -47,19 +47,19 @@ func (o *Time) BinaryOp(op Operator, in IObject) (IObject, error) {
 			if rhs.value == 0 {
 				return o, nil
 			}
-			return o.Factory().NewTime(o.value.Add(time.Duration(rhs.value))), nil
+			return o.Factory().NewTime(frame, o.value.Add(time.Duration(rhs.value))), nil
 		case OperatorSub:
 			if rhs.value == 0 {
 				return o, nil
 			}
-			return o.Factory().NewTime(o.value.Add(time.Duration(-rhs.value))), nil
+			return o.Factory().NewTime(frame, o.value.Add(time.Duration(-rhs.value))), nil
 		default:
 			return nil, ErrInvalidOperator
 		}
 	case *Time:
 		switch op {
 		case OperatorSub:
-			return o.Factory().NewInt(int64(o.value.Sub(rhs.value))), nil
+			return o.Factory().NewInt(frame, int64(o.value.Sub(rhs.value))), nil
 		case OperatorLess:
 			if o.value.Before(rhs.value) {
 				return o.Factory().TrueValue(), nil
@@ -88,8 +88,8 @@ func (o *Time) BinaryOp(op Operator, in IObject) (IObject, error) {
 }
 
 // Copy returns a new instance of the Time object with the same internal time values, duplicating its state.
-func (o *Time) Copy() IObject {
-	return o.Factory().NewTime(o.value)
+func (o *Time) Copy(frame int) IObject {
+	return o.Factory().NewTime(frame, o.value)
 }
 
 // Boolean returns true if the Time object's values is zero (indicating it is uninitialized or empty), otherwise false.

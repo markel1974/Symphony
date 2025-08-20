@@ -25,19 +25,19 @@ type String struct {
 }
 
 // NewString creates and returns a new String object initialized with the provided string values.
-func _newString(factory *Factory, value string) (*String, error) {
+func _newString(factory *Factory, frame int, value string) (*String, error) {
 	if len(value) > MaxStringLen {
 		return nil, ErrStringLimit
 	}
 	return &String{
-		Object: factory.NewObject(),
+		Object: factory.NewObject(frame),
 		value:  value,
 	}, nil
 }
 
-func _newStringNoSize(factory *Factory, value string) *String {
+func _newStringNoSize(factory *Factory, frame int, value string) *String {
 	return &String{
-		Object: factory.NewObject(),
+		Object: factory.NewObject(frame),
 		value:  value,
 	}
 }
@@ -65,7 +65,7 @@ func (o *String) String() string {
 // BinaryOp performs the specified binary operation on the calling string object and a right-hand operand.
 // Supported operations include addition and comparison (e.g., less than, greater than, and their equal variants).
 // Returns the result of the operation or an error if the operation is invalid or exceeds size limits.
-func (o *String) BinaryOp(op Operator, rhs IObject) (IObject, error) {
+func (o *String) BinaryOp(frame int, op Operator, rhs IObject) (IObject, error) {
 	switch op {
 	case OperatorAdd:
 		switch rhs := rhs.(type) {
@@ -73,13 +73,13 @@ func (o *String) BinaryOp(op Operator, rhs IObject) (IObject, error) {
 			if len(o.value)+len(rhs.value) > MaxStringLen {
 				return nil, ErrStringLimit
 			}
-			return o.Factory().NewString(o.value + rhs.value)
+			return o.Factory().NewString(frame, o.value+rhs.value)
 		default:
 			rhsStr := rhs.String()
 			if len(o.value)+len(rhsStr) > MaxStringLen {
 				return nil, ErrStringLimit
 			}
-			return o.Factory().NewString(o.value + rhsStr)
+			return o.Factory().NewString(frame, o.value+rhsStr)
 		}
 	case OperatorLess:
 		switch rhs := rhs.(type) {
@@ -125,8 +125,8 @@ func (o *String) Boolean() bool {
 }
 
 // Copy creates and returns a new String instance with the same values as the original.
-func (o *String) Copy() IObject {
-	return o.Factory().NewStringNoSize(o.value)
+func (o *String) Copy(frame int) IObject {
+	return o.Factory().NewStringNoSize(frame, o.value)
 }
 
 // Equals checks whether the current String object is equal to the provided IObject by comparing their values.
@@ -140,7 +140,7 @@ func (o *String) Equals(x IObject) bool {
 
 // IndexGet retrieves the character at the specified index from the String object.
 // Returns an error if the index is not of type Int or is out of bounds.
-func (o *String) IndexGet(index IObject) (IObject, error) {
+func (o *String) IndexGet(frame int, index IObject) (IObject, error) {
 	intIdx, ok := index.(*Int)
 	if !ok {
 		return nil, ErrInvalidIndexType
@@ -152,7 +152,7 @@ func (o *String) IndexGet(index IObject) (IObject, error) {
 	if idxVal < 0 || idxVal >= len(o.runeStr) {
 		return o.Factory().UndefinedValue(), nil
 	}
-	return o.Factory().NewChar(o.runeStr[idxVal]), nil
+	return o.Factory().NewChar(frame, o.runeStr[idxVal]), nil
 }
 
 // CanIterate checks if the String object supports iteration and always returns true.
@@ -161,9 +161,9 @@ func (o *String) CanIterate() bool {
 }
 
 // Iterate returns an IIterator for iterating over the runes of the String. It initializes runeStr if not already initialized.
-func (o *String) Iterate() IIterator {
+func (o *String) Iterate(frame int) IIterator {
 	if o.runeStr == nil {
 		o.runeStr = []rune(o.value)
 	}
-	return o.Factory().NewStringIterator(o.runeStr)
+	return o.Factory().NewStringIterator(frame, o.runeStr)
 }

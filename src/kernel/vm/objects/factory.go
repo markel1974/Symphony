@@ -34,12 +34,17 @@ type Factory struct {
 	//charPool  sync.Pool
 }
 
+const (
+	FrameStatic      = -1
+	FrameReturnValue = -2
+)
+
 // NewFactory initializes a new Factory instance and sets up default bool and undefined values.
 func NewFactory() *Factory {
 	f := &Factory{}
-	f.trueValue = _newBool(f, true)
-	f.falseValue = _newBool(f, false)
-	f.undefinedValue = _newUndefined(f)
+	f.trueValue = _newBool(f, FrameStatic, true)
+	f.falseValue = _newBool(f, FrameStatic, false)
+	f.undefinedValue = _newUndefined(f, FrameStatic)
 
 	//f.intPool.New = func() interface{} {
 	//	return &_newInt(f, 0) // Crea un Int con valore di default
@@ -63,84 +68,84 @@ func (f *Factory) UndefinedValue() IObject {
 }
 
 // NewObject creates and returns a new instance of Object with its factory field set to the receiving Factory instance.
-func (f *Factory) NewObject() *Object {
-	return _newObject(f)
+func (f *Factory) NewObject(frame int) *Object {
+	return _newObject(f, frame)
 }
 
 // NewArray creates and returns a new Array populated with the provided slice of IObject elements.
-func (f *Factory) NewArray(values []IObject) *Array {
-	return _newArray(f, values)
+func (f *Factory) NewArray(frame int, values []IObject) *Array {
+	return _newArray(f, frame, values)
 }
 
 // NewArrayImmutable constructs a new ArrayImmutable instance with the provided slice of IObject, ensuring immutability.
-func (f *Factory) NewArrayImmutable(values []IObject) *ArrayImmutable {
-	return _newArrayImmutable(f, values)
+func (f *Factory) NewArrayImmutable(frame int, values []IObject) *ArrayImmutable {
+	return _newArrayImmutable(f, frame, values)
 }
 
 // NewArrayIterator creates a new ArrayIterator for iterating over the provided slice of IObject values.
-func (f *Factory) NewArrayIterator(values []IObject) *ArrayIterator {
-	return _newArrayIterator(f, values)
+func (f *Factory) NewArrayIterator(frame int, values []IObject) *ArrayIterator {
+	return _newArrayIterator(f, frame, values)
 }
 
 // NewBool creates and returns a new Bool object initialized with the specified boolean value.
-func (f *Factory) NewBool(value bool) *Bool {
-	return _newBool(f, value)
+func (f *Factory) NewBool(frame int, value bool) *Bool {
+	return _newBool(f, frame, value)
 }
 
 // NewBuiltin creates a new Builtin object with the specified name and index using the Factory.
-func (f *Factory) NewBuiltin(name string, index int) *Builtin {
-	return _newBuiltin(f, name, index)
+func (f *Factory) NewBuiltin(frame int, name string, index int) *Builtin {
+	return _newBuiltin(f, frame, name, index)
 }
 
 // NewBytes creates and returns a new instance of Bytes initialized with the provided byte slice and factory context.
-func (f *Factory) NewBytes(value []byte) *Bytes {
-	return _newBytes(f, value)
+func (f *Factory) NewBytes(frame int, value []byte) *Bytes {
+	return _newBytes(f, frame, value)
 }
 
 // NewBytesIterator creates a new BytesIterator for iterating over the provided byte slice `v` using the specified Factory.
-func (f *Factory) NewBytesIterator(v []byte) *BytesIterator {
-	return _newBytesIterator(f, v)
+func (f *Factory) NewBytesIterator(frame int, v []byte) *BytesIterator {
+	return _newBytesIterator(f, frame, v)
 }
 
 // NewChar creates a new Char instance associated with the Factory, initialized with the given rune value.
-func (f *Factory) NewChar(value rune) *Char {
-	return _newChar(f, value)
+func (f *Factory) NewChar(frame int, value rune) *Char {
+	return _newChar(f, frame, value)
 }
 
 // NewError creates and returns a new Error instance based on the provided IObject value and the associated Factory.
-func (f *Factory) NewError(value IObject) *Error {
-	return _newError(f, value)
+func (f *Factory) NewError(frame int, value IObject) *Error {
+	return _newError(f, frame, value)
 }
 
 // NewFuncCompiled creates and returns a new FuncCompiled instance using the provided function metadata and bytecode.
-func (f *Factory) NewFuncCompiled(name string, instructions []byte, numLocals int, numParameters int, varArgs bool, sourceMap map[int]int, free []*ObjectPointer) *FuncCompiled {
-	return _newFuncCompiled(f, name, instructions, numLocals, numParameters, varArgs, sourceMap, free)
+func (f *Factory) NewFuncCompiled(frame int, name string, instructions []byte, numLocals int, numParameters int, varArgs bool, sourceMap map[int]int, free []*ObjectPointer) *FuncCompiled {
+	return _newFuncCompiled(f, frame, name, instructions, numLocals, numParameters, varArgs, sourceMap, free)
 }
 
 // NewFuncPackage creates a new instance of FuncPackage with the specified kind, name, and callable function.
-func (f *Factory) NewFuncPackage(kind string, name string, fn FuncCallable) *FuncPackage {
-	return _newFuncPackage(f, kind, name, fn)
+func (f *Factory) NewFuncPackage(frame int, kind string, name string, fn FuncCallable) *FuncPackage {
+	return _newFuncPackage(f, frame, kind, name, fn)
 }
 
 // NewObjectError creates a new IObject based on the provided error. Returns TrueValue if the error is nil, otherwise an error object.
-func (f *Factory) NewObjectError(err error) IObject {
+func (f *Factory) NewObjectError(frame int, err error) IObject {
 	if err == nil {
 		return f.TrueValue()
 	}
-	return f.NewError(f.NewStringNoSize(err.Error()))
+	return f.NewError(frame, f.NewStringNoSize(frame, err.Error()))
 }
 
 // NewFloat creates a new Float instance with the given float64 value, using the Factory for initialization.
-func (f *Factory) NewFloat(v float64) *Float {
-	return _newFloat(f, v)
+func (f *Factory) NewFloat(frame int, v float64) *Float {
+	return _newFloat(f, frame, v)
 }
 
 // NewInt creates and returns a new instance of Int initialized with the given int64 value.
-func (f *Factory) NewInt(v int64) *Int {
+func (f *Factory) NewInt(frame int, v int64) *Int {
 	//obj := f.intPool.Get().(*Int)
 	//obj.value = v
 	//return obj
-	return _newInt(f, v)
+	return _newInt(f, frame, v)
 }
 
 //func (f *Factory) ReleaseInt(obj *Int) {
@@ -150,53 +155,53 @@ func (f *Factory) NewInt(v int64) *Int {
 //}
 
 // NewObjectPointer creates a new ObjectPointer instance wrapping the provided IObject pointer.
-func (f *Factory) NewObjectPointer(value *IObject) *ObjectPointer {
-	return _newObjectPointer(f, value)
+func (f *Factory) NewObjectPointer(frame int, value *IObject) *ObjectPointer {
+	return _newObjectPointer(f, frame, value)
 }
 
 // NewMap creates and returns a new instance of Map initialized with the provided map of string keys and IObject values.
-func (f *Factory) NewMap(v map[string]IObject) *Map {
-	return _newMap(f, v)
+func (f *Factory) NewMap(frame int, v map[string]IObject) *Map {
+	return _newMap(f, frame, v)
 }
 
 // NewMapImmutable creates a new immutable map with string keys and IObject values from the provided map.
-func (f *Factory) NewMapImmutable(v map[string]IObject) *MapImmutable {
-	return _newMapImmutable(f, v)
+func (f *Factory) NewMapImmutable(frame int, v map[string]IObject) *MapImmutable {
+	return _newMapImmutable(f, frame, v)
 }
 
 // NewMapIterator creates and returns a new MapIterator for the provided map of string keys and IObject values.
-func (f *Factory) NewMapIterator(v map[string]IObject) *MapIterator {
-	return _newMapIterator(f, v)
+func (f *Factory) NewMapIterator(frame int, v map[string]IObject) *MapIterator {
+	return _newMapIterator(f, frame, v)
 }
 
 // NewStringNoSize creates a new String instance with the provided value, omitting size initialization.
-func (f *Factory) NewStringNoSize(value string) *String {
-	return _newStringNoSize(f, value)
+func (f *Factory) NewStringNoSize(frame int, value string) *String {
+	return _newStringNoSize(f, frame, value)
 }
 
 // NewString creates a new instance of String with the given value, utilizing the Factory for initialization.
-func (f *Factory) NewString(value string) (*String, error) {
-	return _newString(f, value)
+func (f *Factory) NewString(frame int, value string) (*String, error) {
+	return _newString(f, frame, value)
 }
 
 // NewStringIterator creates a new StringIterator instance for a given slice of runes, enabling character traversal.
-func (f *Factory) NewStringIterator(v []rune) *StringIterator {
-	return _newStringIterator(f, v)
+func (f *Factory) NewStringIterator(frame int, v []rune) *StringIterator {
+	return _newStringIterator(f, frame, v)
 }
 
 // NewStruct creates and returns a new instance of Struct using the provided map of string keys and IObject values.
-func (f *Factory) NewStruct(value map[string]IObject) *Struct {
-	return _newStruct(f, value)
+func (f *Factory) NewStruct(frame int, value map[string]IObject) *Struct {
+	return _newStruct(f, frame, value)
 }
 
 // NewStructIterator creates a new StructIterator instance for iterating over a map with string keys and IObject values.
-func (f *Factory) NewStructIterator(v map[string]IObject) *StructIterator {
-	return _newStructIterator(f, v)
+func (f *Factory) NewStructIterator(frame int, v map[string]IObject) *StructIterator {
+	return _newStructIterator(f, frame, v)
 }
 
 // NewTime creates a new instance of Time using the provided time.Time value and initializes it with the factory instance.
-func (f *Factory) NewTime(value time.Time) *Time {
-	return _newTime(f, value)
+func (f *Factory) NewTime(frame int, value time.Time) *Time {
+	return _newTime(f, frame, value)
 }
 
 // ToInterface converts an IObject to its corresponding native Go representation, such as int, string, float64, bool, etc.
@@ -247,42 +252,42 @@ func (f *Factory) ToInterface(in IObject) (res interface{}) {
 }
 
 // FromInterface converts a native Go value of various types into a corresponding IObject implementation.
-func (f *Factory) FromInterface(in interface{}) IObject {
+func (f *Factory) FromInterface(frame int, in interface{}) IObject {
 	switch v := in.(type) {
 	case nil:
 		return f.UndefinedValue()
 	case string:
 		if len(v) > MaxStringLen {
-			return f.NewStringNoSize(v[0:MaxStringLen])
+			return f.NewStringNoSize(frame, v[0:MaxStringLen])
 		}
-		return f.NewStringNoSize(v)
+		return f.NewStringNoSize(frame, v)
 	case int64:
-		return f.NewInt(v)
+		return f.NewInt(frame, v)
 	case int:
-		return f.NewInt(int64(v))
+		return f.NewInt(frame, int64(v))
 	case bool:
 		if v {
 			return f.TrueValue()
 		}
 		return f.FalseValue()
 	case rune:
-		return f.NewChar(v)
+		return f.NewChar(frame, v)
 	case byte:
-		return f.NewChar(rune(v))
+		return f.NewChar(frame, rune(v))
 	case float64:
-		return f.NewFloat(v)
+		return f.NewFloat(frame, v)
 	case []byte:
 		if len(v) > MaxBytesLen {
-			return f.NewBytes(v[0:MaxBytesLen])
+			return f.NewBytes(frame, v[0:MaxBytesLen])
 		}
-		return f.NewBytes(v)
+		return f.NewBytes(frame, v)
 	case error:
-		return f.NewError(f.NewStringNoSize(v.Error()))
+		return f.NewError(frame, f.NewStringNoSize(frame, v.Error()))
 	case map[string]IObject:
-		return f.NewMap(v)
+		return f.NewMap(frame, v)
 	case map[string]interface{}:
-		kv := f.FromMap(v)
-		return f.NewMap(kv)
+		kv := f.FromMap(frame, v)
+		return f.NewMap(frame, kv)
 	case []bool:
 		arr := make([]IObject, len(v))
 		for i, e := range v {
@@ -292,35 +297,35 @@ func (f *Factory) FromInterface(in interface{}) IObject {
 				arr[i] = f.FalseValue()
 			}
 		}
-		return f.NewArray(arr)
+		return f.NewArray(frame, arr)
 	case []int:
 		arr := make([]IObject, len(v))
 		for i, e := range v {
-			arr[i] = f.NewInt(int64(e))
+			arr[i] = f.NewInt(frame, int64(e))
 		}
-		return f.NewArray(arr)
+		return f.NewArray(frame, arr)
 	case []map[string]interface{}:
 		arr := make([]IObject, len(v))
 		for i, e := range v {
-			kv := f.FromMap(e)
-			vo := f.FromInterface(kv)
+			kv := f.FromMap(frame, e)
+			vo := f.FromInterface(frame, kv)
 			arr[i] = vo
 		}
-		return f.NewArray(arr)
+		return f.NewArray(frame, arr)
 	case []IObject:
-		return f.NewArray(v)
+		return f.NewArray(frame, v)
 	case []interface{}:
 		arr := make([]IObject, len(v))
 		for i, e := range v {
-			arr[i] = f.FromInterface(e)
+			arr[i] = f.FromInterface(frame, e)
 		}
-		return f.NewArray(arr)
+		return f.NewArray(frame, arr)
 	case time.Time:
-		return f.NewTime(v)
+		return f.NewTime(frame, v)
 	case IObject:
 		return v
 	case FuncCallable:
-		return f.NewFuncPackage(FuncPackageDef, "FuncCallable", v)
+		return f.NewFuncPackage(frame, FuncPackageDef, "FuncCallable", v)
 	}
 	return f.UndefinedValue()
 }
@@ -338,10 +343,10 @@ func (f *Factory) ToMap(o IObject) (res map[string]interface{}) {
 }
 
 // FromMap converts a map with string keys and interface{} values into a map with string keys and IObject values.
-func (f *Factory) FromMap(v map[string]interface{}) map[string]IObject {
+func (f *Factory) FromMap(frame int, v map[string]interface{}) map[string]IObject {
 	kv := make(map[string]IObject)
 	for key, val := range v {
-		kv[key] = f.FromInterface(val)
+		kv[key] = f.FromInterface(frame, val)
 	}
 	return kv
 }
@@ -531,19 +536,19 @@ func (f *Factory) ToBoolArg(index int, o IObject) (bool, error) {
 }
 
 // FromStringArray converts a slice of strings into an array of IObjects.
-func (f *Factory) FromStringArray(in []string) (IObject, error) {
+func (f *Factory) FromStringArray(frame int, in []string) (IObject, error) {
 	var data []IObject
 	if len(in) > 0 {
 		data = make([]IObject, len(in))
 		for idx, v := range in {
-			r, err := f.NewString(v)
+			r, err := f.NewString(frame, v)
 			if err != nil {
 				return nil, err
 			}
 			data[idx] = r
 		}
 	}
-	return f.NewArray(data), nil
+	return f.NewArray(frame, data), nil
 }
 
 // FuncInOn converts a no-argument, no-return Go function into a FuncCallable type that can be called with zero arguments.
@@ -566,7 +571,7 @@ func (f *Factory) FuncInOi(fn func() int) FuncCallable {
 		if len(args) != 0 {
 			return nil, ErrWrongNumArguments
 		}
-		return f.NewInt(int64(fn())), nil
+		return f.NewInt(FrameReturnValue, int64(fn())), nil
 	}
 }
 
@@ -578,7 +583,7 @@ func (f *Factory) FuncInOi64(fn func() int64) FuncCallable {
 		if len(args) != 0 {
 			return nil, ErrWrongNumArguments
 		}
-		return f.NewInt(fn()), nil
+		return f.NewInt(FrameReturnValue, fn()), nil
 	}
 }
 
@@ -592,7 +597,7 @@ func (f *Factory) FuncIi64Oi64(fn func(int64) int64) FuncCallable {
 		if err != nil {
 			return nil, err
 		}
-		return f.NewInt(fn(i1)), nil
+		return f.NewInt(FrameReturnValue, fn(i1)), nil
 	}
 }
 
@@ -632,7 +637,7 @@ func (f *Factory) FuncInOe(fn func() error) FuncCallable {
 		if len(args) != 0 {
 			return nil, ErrWrongNumArguments
 		}
-		return f.NewObjectError(fn()), nil
+		return f.NewObjectError(FrameReturnValue, fn()), nil
 	}
 }
 
@@ -643,7 +648,7 @@ func (f *Factory) FuncInOs(fn func() string) FuncCallable {
 		if len(args) != 0 {
 			return nil, ErrWrongNumArguments
 		}
-		v, err := f.NewString(fn())
+		v, err := f.NewString(FrameReturnValue, fn())
 		if err != nil {
 			return nil, err
 		}
@@ -660,9 +665,9 @@ func (f *Factory) FuncInOse(fn func() (string, error)) FuncCallable {
 		}
 		res, err := fn()
 		if err != nil {
-			return f.NewObjectError(err), nil
+			return f.NewObjectError(FrameReturnValue, err), nil
 		}
-		v, err := f.NewString(res)
+		v, err := f.NewString(FrameReturnValue, res)
 		if err != nil {
 			return nil, err
 		}
@@ -679,12 +684,12 @@ func (f *Factory) FuncInObSe(fn func() ([]byte, error)) FuncCallable {
 		}
 		res, err := fn()
 		if err != nil {
-			return f.NewObjectError(err), nil
+			return f.NewObjectError(FrameReturnValue, err), nil
 		}
 		if len(res) > MaxBytesLen {
 			return nil, ErrBytesLimit
 		}
-		return f.NewBytes(res), nil
+		return f.NewBytes(FrameReturnValue, res), nil
 	}
 }
 
@@ -696,7 +701,7 @@ func (f *Factory) FuncInOf64(fn func() float64) FuncCallable {
 		if len(args) != 0 {
 			return nil, ErrWrongNumArguments
 		}
-		return f.NewFloat(fn()), nil
+		return f.NewFloat(FrameReturnValue, fn()), nil
 	}
 }
 
@@ -708,9 +713,9 @@ func (f *Factory) FuncInOsS(fn func() []string) FuncCallable {
 		if len(args) != 0 {
 			return nil, ErrWrongNumArguments
 		}
-		arr := f.NewArray(nil)
+		arr := f.NewArray(FrameReturnValue, nil)
 		for _, elem := range fn() {
-			v, err := f.NewString(elem)
+			v, err := f.NewString(FrameReturnValue, elem)
 			if err != nil {
 				return nil, err
 			}
@@ -730,11 +735,11 @@ func (f *Factory) FuncInOiSe(fn func() ([]int, error)) FuncCallable {
 		}
 		res, err := fn()
 		if err != nil {
-			return f.NewObjectError(err), nil
+			return f.NewObjectError(FrameReturnValue, err), nil
 		}
-		arr := f.NewArray(nil)
+		arr := f.NewArray(FrameReturnValue, nil)
 		for _, v := range res {
-			arr.Append(f.NewInt(int64(v)))
+			arr.Append(f.NewInt(FrameReturnValue, int64(v)))
 		}
 		return arr, nil
 	}
@@ -751,9 +756,9 @@ func (f *Factory) FuncIiOiS(fn func(int) []int) FuncCallable {
 			return nil, err
 		}
 		res := fn(int(i1))
-		arr := f.NewArray(nil)
+		arr := f.NewArray(FrameReturnValue, nil)
 		for _, v := range res {
-			arr.Append(f.NewInt(int64(v)))
+			arr.Append(f.NewInt(FrameReturnValue, int64(v)))
 		}
 		return arr, nil
 	}
@@ -771,7 +776,7 @@ func (f *Factory) FuncIf64Of64(fn func(float64) float64) FuncCallable {
 		if err != nil {
 			return nil, err
 		}
-		return f.NewFloat(fn(f1)), nil
+		return f.NewFloat(FrameReturnValue, fn(f1)), nil
 	}
 }
 
@@ -804,7 +809,7 @@ func (f *Factory) FuncIiOf64(fn func(int) float64) FuncCallable {
 		if err != nil {
 			return nil, err
 		}
-		return f.NewFloat(fn(int(i1))), nil
+		return f.NewFloat(FrameReturnValue, fn(int(i1))), nil
 	}
 }
 
@@ -819,7 +824,7 @@ func (f *Factory) FuncIf64Oi(fn func(float64) int) FuncCallable {
 		if err != nil {
 			return nil, err
 		}
-		return f.NewInt(int64(fn(f1))), nil
+		return f.NewInt(FrameReturnValue, int64(fn(f1))), nil
 	}
 }
 
@@ -838,7 +843,7 @@ func (f *Factory) FuncIf64f64Of64(fn func(float64, float64) float64) FuncCallabl
 		if err != nil {
 			return nil, err
 		}
-		return f.NewFloat(fn(f1, f2)), nil
+		return f.NewFloat(FrameReturnValue, fn(f1, f2)), nil
 	}
 }
 
@@ -857,7 +862,7 @@ func (f *Factory) FuncIif64Of64(fn func(int, float64) float64) FuncCallable {
 		if err != nil {
 			return nil, err
 		}
-		return f.NewFloat(fn(int(i1), f2)), nil
+		return f.NewFloat(FrameReturnValue, fn(int(i1), f2)), nil
 	}
 }
 
@@ -877,7 +882,7 @@ func (f *Factory) FuncIf64iOf64(fn func(float64, int) float64) FuncCallable {
 		if err != nil {
 			return nil, err
 		}
-		return f.NewFloat(fn(f1, int(i2))), nil
+		return f.NewFloat(FrameReturnValue, fn(f1, int(i2))), nil
 	}
 }
 
@@ -932,7 +937,7 @@ func (f *Factory) FuncIsOs(fn func(string) string) FuncCallable {
 		if err != nil {
 			return nil, err
 		}
-		v, err := f.NewString(fn(s1))
+		v, err := f.NewString(FrameReturnValue, fn(s1))
 		if err != nil {
 			return nil, err
 		}
@@ -953,9 +958,9 @@ func (f *Factory) FuncIsOsS(fn func(string) []string) FuncCallable {
 			return nil, err
 		}
 		res := fn(s1)
-		arr := f.NewArray(nil)
+		arr := f.NewArray(FrameReturnValue, nil)
 		for _, elem := range res {
-			v, err := f.NewString(elem)
+			v, err := f.NewString(FrameReturnValue, elem)
 			if err != nil {
 				return nil, err
 			}
@@ -977,9 +982,9 @@ func (f *Factory) FuncIsOse(fn func(string) (string, error)) FuncCallable {
 		}
 		res, err := fn(s1)
 		if err != nil {
-			return f.NewObjectError(err), nil
+			return f.NewObjectError(FrameReturnValue, err), nil
 		}
-		v, err := f.NewString(res)
+		v, err := f.NewString(FrameReturnValue, res)
 		if err != nil {
 			return nil, err
 		}
@@ -1000,7 +1005,7 @@ func (f *Factory) FuncIsOe(fn func(string) error) FuncCallable {
 		if err != nil {
 			return nil, err
 		}
-		return f.NewObjectError(fn(s1)), nil
+		return f.NewObjectError(FrameReturnValue, fn(s1)), nil
 	}
 }
 
@@ -1019,7 +1024,7 @@ func (f *Factory) FuncIssOe(fn func(string, string) error) FuncCallable {
 		if err != nil {
 			return nil, err
 		}
-		return f.NewObjectError(fn(s1, s2)), nil
+		return f.NewObjectError(FrameReturnValue, fn(s1, s2)), nil
 	}
 }
 
@@ -1038,9 +1043,9 @@ func (f *Factory) FuncIssOsS(fn func(string, string) []string) FuncCallable {
 		if err != nil {
 			return nil, err
 		}
-		arr := f.NewArray(nil)
+		arr := f.NewArray(FrameReturnValue, nil)
 		for _, res := range fn(s1, s2) {
-			v, err := f.NewString(res)
+			v, err := f.NewString(FrameReturnValue, res)
 			if err != nil {
 				return nil, err
 			}
@@ -1070,9 +1075,9 @@ func (f *Factory) FuncIssiOsS(fn func(string, string, int) []string) FuncCallabl
 		if err != nil {
 			return nil, err
 		}
-		arr := f.NewArray(nil)
+		arr := f.NewArray(FrameReturnValue, nil)
 		for _, res := range fn(s1, s2, int(i3)) {
-			v, err := f.NewString(res)
+			v, err := f.NewString(FrameReturnValue, res)
 			if err != nil {
 				return nil, err
 			}
@@ -1099,7 +1104,7 @@ func (f *Factory) FuncIssOi(fn func(string, string) int) FuncCallable {
 		if err != nil {
 			return nil, err
 		}
-		return f.NewInt(int64(fn(s1, s2))), nil
+		return f.NewInt(FrameReturnValue, int64(fn(s1, s2))), nil
 	}
 }
 
@@ -1119,7 +1124,7 @@ func (f *Factory) FuncIssOs(fn func(string, string) string) FuncCallable {
 		if err != nil {
 			return nil, err
 		}
-		v, err := f.NewString(fn(s1, s2))
+		v, err := f.NewString(FrameReturnValue, fn(s1, s2))
 		if err != nil {
 			return nil, err
 		}
@@ -1183,7 +1188,7 @@ func (f *Factory) FuncIsSsOs(fn func([]string, string) string) FuncCallable {
 		if err != nil {
 			return nil, err
 		}
-		v, err := f.NewString(fn(ss1, s2))
+		v, err := f.NewString(FrameReturnValue, fn(ss1, s2))
 		if err != nil {
 			return nil, err
 		}
@@ -1207,7 +1212,7 @@ func (f *Factory) FuncIsi64Oe(fn func(string, int64) error) FuncCallable {
 		if err != nil {
 			return nil, err
 		}
-		return f.NewObjectError(fn(s1, i2)), nil
+		return f.NewObjectError(FrameReturnValue, fn(s1, i2)), nil
 	}
 }
 
@@ -1225,7 +1230,7 @@ func (f *Factory) FuncIiiOe(fn func(int, int) error) FuncCallable {
 		if err != nil {
 			return nil, err
 		}
-		return f.NewObjectError(fn(int(i1), int(i2))), nil
+		return f.NewObjectError(FrameReturnValue, fn(int(i1), int(i2))), nil
 	}
 }
 
@@ -1245,7 +1250,7 @@ func (f *Factory) FuncIsiOs(fn func(string, int) string) FuncCallable {
 		if err != nil {
 			return nil, err
 		}
-		v, err := f.NewString(fn(s1, int(i2)))
+		v, err := f.NewString(FrameReturnValue, fn(s1, int(i2)))
 		if err != nil {
 			return nil, err
 		}
@@ -1271,7 +1276,7 @@ func (f *Factory) FuncIsiiOe(fn func(string, int, int) error) FuncCallable {
 		if err != nil {
 			return nil, err
 		}
-		return f.NewObjectError(fn(s1, int(i2), int(i3))), nil
+		return f.NewObjectError(FrameReturnValue, fn(s1, int(i2), int(i3))), nil
 	}
 }
 
@@ -1291,9 +1296,9 @@ func (f *Factory) FuncIbSOie(fn func([]byte) (int, error)) FuncCallable {
 		}
 		res, err := fn(bs1)
 		if err != nil {
-			return f.NewObjectError(err), nil
+			return f.NewObjectError(FrameReturnValue, err), nil
 		}
-		return f.NewInt(int64(res)), nil
+		return f.NewInt(FrameReturnValue, int64(res)), nil
 	}
 }
 
@@ -1309,7 +1314,7 @@ func (f *Factory) FuncIbSOs(fn func([]byte) string) FuncCallable {
 		if err != nil {
 			return nil, err
 		}
-		v, err := f.NewString(fn(bs1))
+		v, err := f.NewString(FrameReturnValue, fn(bs1))
 		if err != nil {
 			return nil, err
 		}
@@ -1329,9 +1334,9 @@ func (f *Factory) FuncIsOie(fn func(string) (int, error)) FuncCallable {
 		}
 		res, err := fn(s1)
 		if err != nil {
-			return f.NewObjectError(err), nil
+			return f.NewObjectError(FrameReturnValue, err), nil
 		}
-		return f.NewInt(int64(res)), nil
+		return f.NewInt(FrameReturnValue, int64(res)), nil
 	}
 }
 
@@ -1349,12 +1354,12 @@ func (f *Factory) FuncIsObSe(fn func(string) ([]byte, error)) FuncCallable {
 		}
 		res, err := fn(s1)
 		if err != nil {
-			return f.NewObjectError(err), nil
+			return f.NewObjectError(FrameReturnValue, err), nil
 		}
 		if len(res) > MaxBytesLen {
 			return nil, ErrBytesLimit
 		}
-		return f.NewBytes(res), nil
+		return f.NewBytes(FrameReturnValue, res), nil
 	}
 }
 
@@ -1370,14 +1375,14 @@ func (f *Factory) FuncIiOsSe(fn func(int) ([]string, error)) FuncCallable {
 		}
 		res, err := fn(int(i1))
 		if err != nil {
-			return f.NewObjectError(err), nil
+			return f.NewObjectError(FrameReturnValue, err), nil
 		}
-		arr := f.NewArray(nil)
+		arr := f.NewArray(FrameReturnValue, nil)
 		for _, r := range res {
 			if len(r) > MaxStringLen {
 				return nil, ErrStringLimit
 			}
-			v, err := f.NewString(r)
+			v, err := f.NewString(FrameReturnValue, r)
 			if err != nil {
 				return nil, err
 			}
@@ -1399,7 +1404,7 @@ func (f *Factory) FuncIiOs(fn func(int) string) FuncCallable {
 			return nil, err
 		}
 		s := fn(int(i1))
-		v, err := f.NewString(s)
+		v, err := f.NewString(FrameReturnValue, s)
 		if err != nil {
 			return nil, err
 		}

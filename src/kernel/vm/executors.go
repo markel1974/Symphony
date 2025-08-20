@@ -74,7 +74,7 @@ func (op *OpBinary) Execute(v *VM) {
 	left := v.stack.Pop()
 	opcode := v.currFrame.Get(v.ip)
 	operator := objects.Operator(opcode)
-	res, err := left.BinaryOp(operator, right)
+	res, err := left.BinaryOp(v.currFrame.ID(), operator, right)
 	if err != nil {
 		v.SetError(err)
 		return
@@ -206,7 +206,7 @@ func (op *OpBComplement) Execute(v *VM) {
 	operand := v.stack.Pop()
 	switch x := operand.(type) {
 	case *objects.Int:
-		res := op.Factory().NewInt(^x.Value())
+		res := op.Factory().NewInt(v.currFrame.ID(), ^x.Value())
 		v.stack.Push(res)
 	default:
 		v.SetError(fmt.Errorf("invalid operation: ^%s", operand.TypeName()))
@@ -231,10 +231,10 @@ func (op *OpMinus) Execute(v *VM) {
 	operand := v.stack.Pop()
 	switch x := operand.(type) {
 	case *objects.Int:
-		res := op.Factory().NewInt(-x.Value())
+		res := op.Factory().NewInt(v.currFrame.ID(), -x.Value())
 		v.stack.Push(res)
 	case *objects.Float:
-		res := op.Factory().NewFloat(-x.Value())
+		res := op.Factory().NewFloat(v.currFrame.ID(), -x.Value())
 		v.stack.Push(res)
 	default:
 		v.SetError(fmt.Errorf("invalid operation: -%s", operand.TypeName()))
@@ -361,7 +361,7 @@ func (op *OpSetSelGlobal) Execute(v *VM) {
 	val := v.stack.PeekOffset(-numSelectors - 1)
 	v.stack.DecrementCount(int(numSelectors) + 1)
 	glObj := v.constants.Get(uint(globalIndex))
-	if err := v.IndexAssign(glObj, val, selectors); err != nil {
+	if err := v.IndexAssign(v.currFrame.ID(), glObj, val, selectors); err != nil {
 		v.SetError(err)
 		return
 	}
@@ -406,7 +406,7 @@ func (op *OpArray) Execute(v *VM) {
 	v.ip += 2
 	numElements := v.currFrame.Pos(v.ip, v.ip-1)
 	elements := v.stack.PopArrayElements(numElements)
-	arr := op.Factory().NewArray(elements)
+	arr := op.Factory().NewArray(v.currFrame.ID(), elements)
 	v.stack.Push(arr)
 }
 
@@ -425,7 +425,7 @@ func (op *OpMap) Execute(v *VM) {
 	v.ip += 2
 	numElements := v.currFrame.Pos(v.ip, v.ip-1)
 	mElem := v.stack.PopMapElements(numElements)
-	v.stack.Push(op.Factory().NewMap(mElem))
+	v.stack.Push(op.Factory().NewMap(v.currFrame.ID(), mElem))
 }
 
 // OpStruct is a wrapper around bytecode.OpcodeDetails, representing a struct creation operation in bytecode execution.
@@ -443,7 +443,7 @@ func (op *OpStruct) Execute(v *VM) {
 	v.ip += 2
 	numElements := v.currFrame.Pos(v.ip, v.ip-1)
 	mElem := v.stack.PopMapElements(numElements)
-	v.stack.Push(op.Factory().NewMap(mElem))
+	v.stack.Push(op.Factory().NewMap(v.currFrame.ID(), mElem))
 }
 
 // OpError represents an operation that creates and assigns an error object in a virtual machine's runtime environment.
@@ -459,7 +459,7 @@ func NewOpError(op *bytecode.Opcodes) *OpError {
 // Execute converts the top value on the VM stack into an error object and replaces it on the stack.
 func (op *OpError) Execute(v *VM) {
 	value := v.stack.Peek()
-	e := op.Factory().NewError(value)
+	e := op.Factory().NewError(v.currFrame.ID(), value)
 	v.stack.Set(e)
 }
 
@@ -478,10 +478,10 @@ func (op *OpImmutable) Execute(v *VM) {
 	val := v.stack.Peek()
 	switch value := val.(type) {
 	case *objects.Array:
-		obj := op.Factory().NewArrayImmutable(value.Values())
+		obj := op.Factory().NewArrayImmutable(v.currFrame.ID(), value.Values())
 		v.stack.Set(obj)
 	case *objects.Map:
-		obj := op.Factory().NewMapImmutable(value.Values())
+		obj := op.Factory().NewMapImmutable(v.currFrame.ID(), value.Values())
 		v.stack.Set(obj)
 	}
 }
@@ -500,7 +500,7 @@ func NewOpIndex(op *bytecode.Opcodes) *OpIndex {
 func (op *OpIndex) Execute(v *VM) {
 	index := v.stack.Pop()
 	left := v.stack.Pop()
-	val, err := left.IndexGet(index)
+	val, err := left.IndexGet(v.currFrame.ID(), index)
 	if err != nil {
 		if objects.Is(err, objects.ErrNotIndexable) {
 			v.SetError(fmt.Errorf("not indexable: %s", index.TypeName()))
@@ -543,16 +543,16 @@ func (op *OpSliceIndex) Execute(v *VM) {
 	var val objects.IObject = nil
 	switch left := leftStack.(type) {
 	case *objects.Array:
-		val = op.Factory().NewArray(left.Values()[lowIdx:highIdx])
+		val = op.Factory().NewArray(v.currFrame.ID(), left.Values()[lowIdx:highIdx])
 	case *objects.ArrayImmutable:
-		val = op.Factory().NewArray(left.Values()[lowIdx:highIdx])
+		val = op.Factory().NewArray(v.currFrame.ID(), left.Values()[lowIdx:highIdx])
 	case *objects.String:
-		if val, err = op.Factory().NewString(left.Value()[lowIdx:highIdx]); err != nil {
+		if val, err = op.Factory().NewString(v.currFrame.ID(), left.Value()[lowIdx:highIdx]); err != nil {
 			v.SetError(err)
 			return
 		}
 	case *objects.Bytes:
-		val = op.Factory().NewBytes(left.Value()[lowIdx:highIdx])
+		val = op.Factory().NewBytes(v.currFrame.ID(), left.Value()[lowIdx:highIdx])
 	}
 	if val != nil {
 		v.stack.Push(val)
@@ -600,7 +600,7 @@ func (op *OpCall) Execute(v *VM) {
 
 	if callee, ok := value.(*objects.FuncCompiled); ok {
 		if callee.VarArgs() {
-			v.stack.PushVarArgs(numArgs, callee.NumParameters()-1)
+			v.stack.PushVarArgs(v.currFrame.ID(), numArgs, callee.NumParameters()-1)
 			numArgs = callee.NumParameters()
 		}
 		if numArgs != callee.NumParameters() {
@@ -766,7 +766,7 @@ func (op *OpSetSelLocal) Execute(v *VM) {
 	if obj, ok := dst.(*objects.ObjectPointer); ok {
 		dst = *obj.Value()
 	}
-	if err := v.IndexAssign(dst, val, selectors); err != nil {
+	if err := v.IndexAssign(v.currFrame.ID(), dst, val, selectors); err != nil {
 		v.SetError(err)
 		return
 	}
@@ -822,11 +822,11 @@ func (op *OpClosure) Execute(v *VM) {
 			free[i] = freeVar
 		default:
 			t := v.stack.PeekOffset(-numFree + i)
-			free[i] = op.Factory().NewObjectPointer(&t)
+			free[i] = op.Factory().NewObjectPointer(v.currFrame.ID(), &t)
 		}
 	}
 	v.stack.DecrementCount(numFree)
-	cl := op.Factory().NewFuncCompiled("closure", fn.Instructions().Data(), fn.NumLocals(), fn.NumParameters(), fn.VarArgs(), nil, free)
+	cl := op.Factory().NewFuncCompiled(v.currFrame.ID(), "closure", fn.Instructions().Data(), fn.NumLocals(), fn.NumParameters(), fn.VarArgs(), nil, free)
 	v.stack.Push(cl)
 }
 
@@ -905,7 +905,7 @@ func (op *OpGetLocalPtr) Execute(v *VM) {
 		v.stack.Push(obj)
 		return
 	}
-	freeVar := op.Factory().NewObjectPointer(&val)
+	freeVar := op.Factory().NewObjectPointer(v.currFrame.ID(), &val)
 	v.stack.SetAbsolute(sp, freeVar)
 	v.stack.Push(freeVar)
 }
@@ -933,7 +933,7 @@ func (op *OpSetSelFree) Execute(v *VM) {
 	val := v.stack.PeekOffset(-numSelectors - 1)
 	v.stack.DecrementCount(numSelectors + 1)
 	fvi := v.currFrame.FreeVarsIndex(freeIndex)
-	if err := v.IndexAssign(*fvi.Value(), val, selectors); err != nil {
+	if err := v.IndexAssign(v.currFrame.ID(), *fvi.Value(), val, selectors); err != nil {
 		v.SetError(err)
 		return
 	}
@@ -959,7 +959,7 @@ func (op *OpIteratorInit) Execute(v *VM) {
 		v.SetError(fmt.Errorf("not iterable: %s", iterable.TypeName()))
 		return
 	}
-	iterator := iterable.Iterate()
+	iterator := iterable.Iterate(v.currFrame.ID())
 	destSlot := v.currFrame.BasePointer() + localIndex
 	v.stack.SetAbsolute(destSlot, iterator)
 }
@@ -1011,7 +1011,7 @@ func (op *OpIteratorKey) Execute(v *VM) {
 		v.SetError(fmt.Errorf("not an iterator: %s", iteratorObj.TypeName()))
 		return
 	}
-	v.stack.Push(iterator.Key())
+	v.stack.Push(iterator.Key(v.currFrame.ID()))
 }
 
 // OpIteratorValue retrieves the value from the current iterator position.
@@ -1035,7 +1035,7 @@ func (op *OpIteratorValue) Execute(v *VM) {
 		v.SetError(fmt.Errorf("not an iterator: %s", iteratorObj.TypeName()))
 		return
 	}
-	v.stack.Push(iterator.Value())
+	v.stack.Push(iterator.Value(v.currFrame.ID()))
 }
 
 // OpReferences extends OpcodeDetails to represent operations specifically related to reference handling in the bytecode.

@@ -17,9 +17,9 @@ type ArrayImmutable struct {
 }
 
 // NewArrayImmutable creates a new ArrayImmutable instance with the given slice of IObject, ensuring it is immutable.
-func _newArrayImmutable(factory *Factory, value []IObject) *ArrayImmutable {
+func _newArrayImmutable(factory *Factory, frame int, value []IObject) *ArrayImmutable {
 	return &ArrayImmutable{
-		Object: factory.NewObject(),
+		Object: factory.NewObject(frame),
 		values: value,
 	}
 }
@@ -57,11 +57,11 @@ func (o *ArrayImmutable) String() string {
 }
 
 // BinaryOp performs a binary operation using the provided operator and right-hand side object. Returns the result or an error.
-func (o *ArrayImmutable) BinaryOp(op Operator, rhs IObject) (IObject, error) {
+func (o *ArrayImmutable) BinaryOp(frame int, op Operator, rhs IObject) (IObject, error) {
 	if ia, ok := rhs.(*ArrayImmutable); ok {
 		switch op {
 		case OperatorAdd:
-			return o.Factory().NewArray(append(o.values, ia.values...)), nil
+			return o.Factory().NewArray(frame, append(o.values, ia.values...)), nil
 		default:
 			return nil, ErrInvalidOperator
 		}
@@ -70,12 +70,12 @@ func (o *ArrayImmutable) BinaryOp(op Operator, rhs IObject) (IObject, error) {
 }
 
 // Copy creates and returns a new copy of the ArrayImmutable, with all its elements deeply copied.
-func (o *ArrayImmutable) Copy() IObject {
+func (o *ArrayImmutable) Copy(frame int) IObject {
 	var c []IObject
 	for _, elem := range o.values {
-		c = append(c, elem.Copy())
+		c = append(c, elem.Copy(frame))
 	}
-	return o.Factory().NewArray(c)
+	return o.Factory().NewArray(frame, c)
 }
 
 // Boolean checks if the ArrayImmutable is considered falsy, returning true if its Value slice has no elements.
@@ -106,7 +106,7 @@ func (o *ArrayImmutable) Equals(in IObject) bool {
 }
 
 // IndexGet retrieves an element from the array at the specified index. Returns error for invalid index type or out of bounds.
-func (o *ArrayImmutable) IndexGet(index IObject) (res IObject, err error) {
+func (o *ArrayImmutable) IndexGet(_ int, index IObject) (res IObject, err error) {
 	intIdx, ok := index.(*Int)
 	if !ok {
 		err = ErrInvalidIndexType
@@ -127,6 +127,6 @@ func (o *ArrayImmutable) CanIterate() bool {
 }
 
 // Iterate returns an IIterator to traverse the elements of the ArrayImmutable sequentially.
-func (o *ArrayImmutable) Iterate() IIterator {
-	return o.Factory().NewArrayIterator(o.values)
+func (o *ArrayImmutable) Iterate(frame int) IIterator {
+	return o.Factory().NewArrayIterator(frame, o.values)
 }

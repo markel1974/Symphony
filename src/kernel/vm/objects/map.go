@@ -16,9 +16,9 @@ type Map struct {
 }
 
 // NewMap creates and returns a new instance of Map initialized with the provided map of string keys to IObject values.
-func _newMap(factory *Factory, value map[string]IObject) *Map {
+func _newMap(factory *Factory, frame int, value map[string]IObject) *Map {
 	return &Map{
-		Object: factory.NewObject(),
+		Object: factory.NewObject(frame),
 		values: value,
 	}
 }
@@ -69,12 +69,12 @@ func (o *Map) String() string {
 }
 
 // Copy creates and returns a deep copy of the Map object, duplicating all key-values pairs recursively.
-func (o *Map) Copy() IObject {
+func (o *Map) Copy(frame int) IObject {
 	c := make(map[string]IObject)
 	for k, v := range o.values {
-		c[k] = v.Copy()
+		c[k] = v.Copy(frame)
 	}
-	return o.Factory().NewMap(c)
+	return o.Factory().NewMap(frame, c)
 }
 
 // Boolean returns true if the map contains no key-values pairs, indicating it is empty.
@@ -107,7 +107,7 @@ func (o *Map) Equals(in IObject) bool {
 
 // IndexGet retrieves the values associated with the given index in the map. Returns UndefinedValue if the index does not exist.
 // An error is returned if the index type is invalid.
-func (o *Map) IndexGet(index IObject) (res IObject, err error) {
+func (o *Map) IndexGet(_ int, index IObject) (res IObject, err error) {
 	strIdx, ok := o.Factory().ToString(index)
 	if !ok {
 		err = ErrInvalidIndexType
@@ -132,8 +132,8 @@ func (o *Map) IndexSet(index, value IObject) (err error) {
 }
 
 // Iterate creates and returns an iterator for the Map, allowing iteration over its keys and associated values.
-func (o *Map) Iterate() IIterator {
-	return o.Factory().NewMapIterator(o.values)
+func (o *Map) Iterate(frame int) IIterator {
+	return o.Factory().NewMapIterator(frame, o.values)
 }
 
 // CanIterate returns true, indicating that the Map object supports iteration over its elements.

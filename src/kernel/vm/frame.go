@@ -7,6 +7,7 @@ import (
 // Frame represents a structure used for maintaining function call frames in a virtual machine execution context.
 // It encapsulates the execution state, free variables, instruction pointer, and base pointer of a function call.
 type Frame struct {
+	id               int
 	compiledFunction *objects.FuncCompiled
 	freeVars         []*objects.ObjectPointer
 	ip               int
@@ -16,11 +17,16 @@ type Frame struct {
 }
 
 // NewFunctionCallFrame creates and returns a new Frame instance with its instruction pointer initialized to -1.
-func NewFunctionCallFrame(errSignal func(err error)) *Frame {
+func NewFunctionCallFrame(id int, errSignal func(err error)) *Frame {
 	return &Frame{
+		id:        id,
 		ip:        resetIp,
 		errSignal: errSignal,
 	}
+}
+
+func (f *Frame) ID() int {
+	return f.id
 }
 
 // Bind initializes the frame with the given instruction pointer, compiled function, and base pointer values.
