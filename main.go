@@ -20,6 +20,7 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/process"
 	"github.com/markel1974/c64emu/src/kernel/vm"
 	"github.com/markel1974/c64emu/src/kernel/vm/bytecode"
+	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 	"github.com/markel1974/c64emu/src/renderers/audio"
 	"github.com/markel1974/c64emu/src/renderers/graphics"
 	"github.com/markel1974/c64emu/src/version"
@@ -133,17 +134,18 @@ func BuildDrives(d string) ([]*config.Drive, error) {
 }
 
 func vmTest() {
-	comp := compiler.New()
-	bc, err := comp.Compile("example.go", stub.Source5)
+	factory := objects.NewFactory()
+	op := bytecode.NewOpcodes(factory)
+	comp := compiler.New(factory)
+	err := comp.Compile("example.go", stub.Source5)
 	if err != nil {
 		log.Fatalf("compiler error: %s", err)
 	}
-
+	bc := bytecode.NewBytecode(factory, op, comp.Constants(), comp.References())
 	d := bytecode.NewDisassembler(bc)
 	d.Disassemble(log.Writer())
-
-	loader := sdk.NewLoader()
-	machine := vm.New(nil, 100000)
+	loader := sdk.NewLoader(factory)
+	machine := vm.New(factory, op, nil, 100000)
 	if err = machine.Run(loader, bc, "main", 1, 2); err != nil {
 		machine.Print(log.Writer())
 		log.Fatalf("VM runtime error: %s", err)
@@ -162,7 +164,7 @@ func (nw *NilWriter) Write(p []byte) (int, error) {
 func main() {
 	//benchmark.VIC(1000000, 20, 10, 1)
 
-	//vmTest()
+	vmTest()
 
 	var showHelp bool
 	var showVersion bool

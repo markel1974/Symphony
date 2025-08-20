@@ -20,80 +20,109 @@ import (
 //	bS		bytes-Slice		[]byte		A slice (array) of bytes.
 //  iS      int-Slice		[]int       A slice (array) of int.
 
+// Factory is a type responsible for creating and managing IObject instances, including primitive and complex types.
+// It provides pre-instantiated objects for `true`, `false`, and `undefined` values for efficient reuse.
+// The Factory may also include object pooling for specific types to optimize memory usage and performance.
 type Factory struct {
 	trueValue      IObject
 	falseValue     IObject
 	undefinedValue IObject
+
+	// Aggiungiamo i pool per gli oggetti
+	//intPool   sync.Pool
+	//floatPool sync.Pool
+	//charPool  sync.Pool
 }
 
+// NewFactory initializes a new Factory instance and sets up default bool and undefined values.
 func NewFactory() *Factory {
 	f := &Factory{}
 	f.trueValue = _newBool(f, true)
 	f.falseValue = _newBool(f, false)
 	f.undefinedValue = _newUndefined(f)
+
+	//f.intPool.New = func() interface{} {
+	//	return &_newInt(f, 0) // Crea un Int con valore di default
+	//}
 	return f
 }
 
+// FalseValue returns the false representation as an IObject from the Factory instance.
 func (f *Factory) FalseValue() IObject {
 	return f.falseValue
 }
 
+// TrueValue returns the IObject instance representing the true value from the Factory.
 func (f *Factory) TrueValue() IObject {
 	return f.trueValue
 }
 
+// UndefinedValue returns the undefined value of the Factory as an IObject.
 func (f *Factory) UndefinedValue() IObject {
 	return f.undefinedValue
 }
 
+// NewObject creates and returns a new instance of Object with its factory field set to the receiving Factory instance.
 func (f *Factory) NewObject() *Object {
 	return _newObject(f)
 }
 
+// NewArray creates and returns a new Array populated with the provided slice of IObject elements.
 func (f *Factory) NewArray(values []IObject) *Array {
 	return _newArray(f, values)
 }
 
+// NewArrayImmutable constructs a new ArrayImmutable instance with the provided slice of IObject, ensuring immutability.
 func (f *Factory) NewArrayImmutable(values []IObject) *ArrayImmutable {
 	return _newArrayImmutable(f, values)
 }
 
+// NewArrayIterator creates a new ArrayIterator for iterating over the provided slice of IObject values.
 func (f *Factory) NewArrayIterator(values []IObject) *ArrayIterator {
 	return _newArrayIterator(f, values)
 }
 
+// NewBool creates and returns a new Bool object initialized with the specified boolean value.
 func (f *Factory) NewBool(value bool) *Bool {
 	return _newBool(f, value)
 }
 
+// NewBuiltin creates a new Builtin object with the specified name and index using the Factory.
 func (f *Factory) NewBuiltin(name string, index int) *Builtin {
 	return _newBuiltin(f, name, index)
 }
 
+// NewBytes creates and returns a new instance of Bytes initialized with the provided byte slice and factory context.
 func (f *Factory) NewBytes(value []byte) *Bytes {
 	return _newBytes(f, value)
 }
 
+// NewBytesIterator creates a new BytesIterator for iterating over the provided byte slice `v` using the specified Factory.
 func (f *Factory) NewBytesIterator(v []byte) *BytesIterator {
 	return _newBytesIterator(f, v)
 }
 
+// NewChar creates a new Char instance associated with the Factory, initialized with the given rune value.
 func (f *Factory) NewChar(value rune) *Char {
 	return _newChar(f, value)
 }
 
+// NewError creates and returns a new Error instance based on the provided IObject value and the associated Factory.
 func (f *Factory) NewError(value IObject) *Error {
 	return _newError(f, value)
 }
 
+// NewFuncCompiled creates and returns a new FuncCompiled instance using the provided function metadata and bytecode.
 func (f *Factory) NewFuncCompiled(name string, instructions []byte, numLocals int, numParameters int, varArgs bool, sourceMap map[int]int, free []*ObjectPointer) *FuncCompiled {
 	return _newFuncCompiled(f, name, instructions, numLocals, numParameters, varArgs, sourceMap, free)
 }
 
+// NewFuncPackage creates a new instance of FuncPackage with the specified kind, name, and callable function.
 func (f *Factory) NewFuncPackage(kind string, name string, fn FuncCallable) *FuncPackage {
 	return _newFuncPackage(f, kind, name, fn)
 }
 
+// NewObjectError creates a new IObject based on the provided error. Returns TrueValue if the error is nil, otherwise an error object.
 func (f *Factory) NewObjectError(err error) IObject {
 	if err == nil {
 		return f.TrueValue()
@@ -101,50 +130,71 @@ func (f *Factory) NewObjectError(err error) IObject {
 	return f.NewError(f.NewStringNoSize(err.Error()))
 }
 
+// NewFloat creates a new Float instance with the given float64 value, using the Factory for initialization.
 func (f *Factory) NewFloat(v float64) *Float {
 	return _newFloat(f, v)
 }
 
+// NewInt creates and returns a new instance of Int initialized with the given int64 value.
 func (f *Factory) NewInt(v int64) *Int {
+	//obj := f.intPool.Get().(*Int)
+	//obj.value = v
+	//return obj
 	return _newInt(f, v)
 }
 
+//func (f *Factory) ReleaseInt(obj *Int) {
+//	// It's good practice to reset the object's state before putting it back in the pool
+//	obj.value = 0
+//	f.intPool.Put(obj)
+//}
+
+// NewObjectPointer creates a new ObjectPointer instance wrapping the provided IObject pointer.
 func (f *Factory) NewObjectPointer(value *IObject) *ObjectPointer {
 	return _newObjectPointer(f, value)
 }
 
+// NewMap creates and returns a new instance of Map initialized with the provided map of string keys and IObject values.
 func (f *Factory) NewMap(v map[string]IObject) *Map {
 	return _newMap(f, v)
 }
 
+// NewMapImmutable creates a new immutable map with string keys and IObject values from the provided map.
 func (f *Factory) NewMapImmutable(v map[string]IObject) *MapImmutable {
 	return _newMapImmutable(f, v)
 }
 
+// NewMapIterator creates and returns a new MapIterator for the provided map of string keys and IObject values.
 func (f *Factory) NewMapIterator(v map[string]IObject) *MapIterator {
 	return _newMapIterator(f, v)
 }
 
+// NewStringNoSize creates a new String instance with the provided value, omitting size initialization.
 func (f *Factory) NewStringNoSize(value string) *String {
 	return _newStringNoSize(f, value)
 }
 
+// NewString creates a new instance of String with the given value, utilizing the Factory for initialization.
 func (f *Factory) NewString(value string) (*String, error) {
 	return _newString(f, value)
 }
 
+// NewStringIterator creates a new StringIterator instance for a given slice of runes, enabling character traversal.
 func (f *Factory) NewStringIterator(v []rune) *StringIterator {
 	return _newStringIterator(f, v)
 }
 
+// NewStruct creates and returns a new instance of Struct using the provided map of string keys and IObject values.
 func (f *Factory) NewStruct(value map[string]IObject) *Struct {
 	return _newStruct(f, value)
 }
 
+// NewStructIterator creates a new StructIterator instance for iterating over a map with string keys and IObject values.
 func (f *Factory) NewStructIterator(v map[string]IObject) *StructIterator {
 	return _newStructIterator(f, v)
 }
 
+// NewTime creates a new instance of Time using the provided time.Time value and initializes it with the factory instance.
 func (f *Factory) NewTime(value time.Time) *Time {
 	return _newTime(f, value)
 }
