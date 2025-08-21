@@ -165,5 +165,10 @@ func (l *Loader) CompilePackage(name string) (*objects.MapImmutable, error) {
 		attrs[k] = v.Copy(objects.FrameStatic, 0)
 	}
 	attrs[bytecode.ModuleKey] = l.factory.NewString(objects.FrameStatic, name)
-	return l.factory.NewMapImmutable(objects.FrameStatic, attrs), nil
+	obj := l.factory.NewMapImmutable(objects.FrameStatic, attrs)
+	mImm, ok := obj.(*objects.MapImmutable)
+	if !ok {
+		return nil, fmt.Errorf("can't compile module %s", name)
+	}
+	return mImm, nil
 }

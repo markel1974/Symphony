@@ -540,7 +540,7 @@ func (t *Process) handleMessageProcessStart(msg interfaces.IMessage) {
 	}
 	if t.cmd.HasScript() {
 		if t.opcodes == nil {
-			t.opcodes = bytecode.NewOpcodes(objects.NewFactory())
+			t.opcodes = bytecode.NewOpcodes(objects.NewFactory(0))
 		}
 		if t.compiler == nil {
 			t.compiler = compiler.New(t.opcodes.Factory())
@@ -556,7 +556,7 @@ func (t *Process) handleMessageProcessStart(msg interfaces.IMessage) {
 			t.loader.AddPackage("kernel", NewLibrary(t.opcodes.Factory(), t).Package())
 		}
 		if t.vm == nil {
-			t.vm = vm.New(t.opcodes.Factory(), t.opcodes, nil, 1024)
+			t.vm = vm.New(t.opcodes.Factory(), t.opcodes, nil)
 		}
 		if err = t.vm.Run(t.loader, bc, "main", mt.Args()); err != nil {
 			log.Printf("Process [%s]: error running script: %s", t.cmd.Name(), err.Error())

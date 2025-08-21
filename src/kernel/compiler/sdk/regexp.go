@@ -1,6 +1,7 @@
 package sdk
 
 import (
+	"fmt"
 	"regexp"
 
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
@@ -84,7 +85,11 @@ func (r *Regexp) find(frame int, args ...objects.IObject) (objects.IObject, erro
 		if m == nil {
 			return r.factory.UndefinedValue(), nil
 		}
-		arr := r.factory.NewArray(frame, nil)
+		obj := r.factory.NewArray(frame, nil)
+		arr, ok := obj.(*objects.Array)
+		if !ok {
+			return nil, fmt.Errorf("expected Array, got %T", obj)
+		}
 		for i := 0; i < len(m); i += 2 {
 			arr.Append(r.factory.NewMapImmutable(frame, map[string]objects.IObject{
 				RegexpTextDef:  r.factory.NewString(frame, s2[m[i]:m[i+1]]),
@@ -102,9 +107,17 @@ func (r *Regexp) find(frame int, args ...objects.IObject) (objects.IObject, erro
 	if mFA == nil {
 		return r.factory.UndefinedValue(), nil
 	}
-	arr := r.factory.NewArray(frame, nil)
+	base := r.factory.NewArray(frame, nil)
+	arr, ok := base.(*objects.Array)
+	if !ok {
+		return nil, fmt.Errorf("expected Array, got %T", base)
+	}
 	for _, m := range mFA {
-		subMatch := r.factory.NewArray(frame, nil)
+		obj := r.factory.NewArray(frame, nil)
+		subMatch, ok := obj.(*objects.Array)
+		if !ok {
+			return nil, fmt.Errorf("expected Array, got %T", obj)
+		}
 		for i := 0; i < len(m); i += 2 {
 			subMatch.Append(r.factory.NewMapImmutable(frame, map[string]objects.IObject{
 				RegexpTextDef:  r.factory.NewString(frame, s2[m[i]:m[i+1]]),
@@ -142,7 +155,11 @@ func (r *Regexp) split(frame int, args ...objects.IObject) (objects.IObject, err
 	if err != nil {
 		return r.factory.NewError(frame, err.Error()), nil
 	}
-	arr := r.factory.NewArray(frame, nil)
+	base := r.factory.NewArray(frame, nil)
+	arr, ok := base.(*objects.Array)
+	if !ok {
+		return nil, fmt.Errorf("expected Array, got %T", base)
+	}
 	for _, s := range re.Split(s2, int(i3)) {
 		v := r.factory.NewString(frame, s)
 		arr.Append(v)
@@ -163,7 +180,29 @@ func (r *Regexp) compile(frame int, args ...objects.IObject) (objects.IObject, e
 	if err != nil {
 		return r.factory.NewError(frame, err.Error()), nil
 	}
-	return r.compileOptions(frame, re), nil
+
+	obj := r.factory.NewMapImmutable(frame,
+		map[string]objects.IObject{
+			// match(text) => bool
+			"Match": r.factory.NewFuncPackageFrame(frame, objects.FuncPackageDef, "Match", func(frame int, args ...objects.IObject) (objects.IObject, error) {
+				return r.compileOptionMatch(frame, re, args...)
+			}),
+			"Find": r.factory.NewFuncPackageFrame(frame, objects.FuncPackageDef, "Find", func(frame int, args ...objects.IObject) (objects.IObject, error) {
+				return r.compileOptionFind(frame, re, args...)
+			}),
+			"Replace": r.factory.NewFuncPackageFrame(frame, objects.FuncPackageDef, "Replace", func(frame int, args ...objects.IObject) (objects.IObject, error) {
+				return r.compileOptionReplace(frame, re, args...)
+			}),
+			"Split": r.factory.NewFuncPackageFrame(frame, objects.FuncPackageDef, "Split", func(frame int, args ...objects.IObject) (objects.IObject, error) {
+				return r.compileOptionSplit(frame, re, args...)
+			}),
+		},
+	)
+	mImm, ok := obj.(*objects.MapImmutable)
+	if !ok {
+		return nil, fmt.Errorf("unexpected object type: %T", obj)
+	}
+	return mImm, nil
 }
 
 // Replace performs a regex-based replacement on the input string with the specified replacement string and returns the result.
@@ -190,27 +229,6 @@ func (r *Regexp) replace(frame int, args ...objects.IObject) (objects.IObject, e
 	s := r.replaceInternal(re, s2, s3)
 	v := r.factory.NewString(frame, s)
 	return v, nil
-}
-
-// CompileOptions returns a MapImmutable containing methods for operations like match, find, replace, and split using a compiled regexp.
-func (r *Regexp) compileOptions(frame int, re *regexp.Regexp) *objects.MapImmutable {
-	return r.factory.NewMapImmutable(frame,
-		map[string]objects.IObject{
-			// match(text) => bool
-			"Match": r.factory.NewFuncFramePackage(frame, objects.FuncPackageDef, "Match", func(frame int, args ...objects.IObject) (objects.IObject, error) {
-				return r.compileOptionMatch(frame, re, args...)
-			}),
-			"Find": r.factory.NewFuncFramePackage(frame, objects.FuncPackageDef, "Find", func(frame int, args ...objects.IObject) (objects.IObject, error) {
-				return r.compileOptionFind(frame, re, args...)
-			}),
-			"Replace": r.factory.NewFuncFramePackage(frame, objects.FuncPackageDef, "Replace", func(frame int, args ...objects.IObject) (objects.IObject, error) {
-				return r.compileOptionReplace(frame, re, args...)
-			}),
-			"Split": r.factory.NewFuncFramePackage(frame, objects.FuncPackageDef, "Split", func(frame int, args ...objects.IObject) (objects.IObject, error) {
-				return r.compileOptionSplit(frame, re, args...)
-			}),
-		},
-	)
 }
 
 // CompileOptionMatch checks if the given regular expression matches the provided string argument and returns a boolean result.
@@ -246,7 +264,11 @@ func (r *Regexp) compileOptionFind(frame int, re *regexp.Regexp, args ...objects
 		if mRe == nil {
 			return r.factory.UndefinedValue(), nil
 		}
-		arr := r.factory.NewArray(frame, nil)
+		base := r.factory.NewArray(frame, nil)
+		arr, ok := base.(*objects.Array)
+		if !ok {
+			return nil, fmt.Errorf("expected Array, got %T", base)
+		}
 		for i := 0; i < len(mRe); i += 2 {
 			arr.Append(r.factory.NewMapImmutable(frame,
 				map[string]objects.IObject{
@@ -265,9 +287,17 @@ func (r *Regexp) compileOptionFind(frame int, re *regexp.Regexp, args ...objects
 	if mRe == nil {
 		return r.factory.UndefinedValue(), nil
 	}
-	arr := r.factory.NewArray(frame, nil)
+	base := r.factory.NewArray(frame, nil)
+	arr, ok := base.(*objects.Array)
+	if !ok {
+		return nil, fmt.Errorf("expected Array, got %T", base)
+	}
 	for _, m := range mRe {
-		subMatch := r.factory.NewArray(frame, nil)
+		obj := r.factory.NewArray(frame, nil)
+		subMatch, ok := base.(*objects.Array)
+		if !ok {
+			return nil, fmt.Errorf("expected Array, got %T", obj)
+		}
 		for i := 0; i < len(m); i += 2 {
 			subMatch.Append(r.factory.NewMapImmutable(frame,
 				map[string]objects.IObject{
@@ -315,7 +345,11 @@ func (r *Regexp) compileOptionSplit(frame int, re *regexp.Regexp, args ...object
 			return nil, err
 		}
 	}
-	arr := r.factory.NewArray(frame, nil)
+	base := r.factory.NewArray(frame, nil)
+	arr, ok := base.(*objects.Array)
+	if !ok {
+		return nil, fmt.Errorf("expected Array, got %T", base)
+	}
 	for _, s := range re.Split(s1, int(i2)) {
 		v := r.factory.NewString(frame, s)
 		arr.Append(v)

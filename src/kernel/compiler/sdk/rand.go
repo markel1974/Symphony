@@ -61,14 +61,14 @@ func (z *Rand) rand(frame int, args ...objects.IObject) (objects.IObject, error)
 	r := rand.New(src)
 	return z.factory.NewMapImmutable(frame,
 		map[string]objects.IObject{
-			"Int63":       z.factory.NewFuncFramePackage(frame, objects.FuncPackageDef, "Int63", z.factory.FuncInOi64(r.Int63)),
-			"Float64":     z.factory.NewFuncFramePackage(frame, objects.FuncPackageDef, "Float64", z.factory.FuncInOf64(r.Float64)),
-			"Int63n":      z.factory.NewFuncFramePackage(frame, objects.FuncPackageDef, "Int63n", z.factory.FuncIi64Oi64(r.Int63n)),
-			"ExpFloat64":  z.factory.NewFuncFramePackage(frame, objects.FuncPackageDef, "ExpFloat64", z.factory.FuncInOf64(r.ExpFloat64)),
-			"NormFloat64": z.factory.NewFuncFramePackage(frame, objects.FuncPackageDef, "NormFloat64", z.factory.FuncInOf64(r.NormFloat64)),
-			"Perm":        z.factory.NewFuncFramePackage(frame, objects.FuncPackageDef, "Perm", z.factory.FuncIiOiS(r.Perm)),
-			"Seed":        z.factory.NewFuncFramePackage(frame, objects.FuncPackageDef, "Seed", z.factory.FuncIi64On(r.Seed)),
-			"Read": z.factory.NewFuncFramePackage(frame, objects.FuncPackageDef, "Read", func(frame int, args ...objects.IObject) (objects.IObject, error) {
+			"Int63":       z.factory.NewFuncPackageFrame(frame, objects.FuncPackageDef, "Int63", z.factory.FuncInOi64(r.Int63)),
+			"Float64":     z.factory.NewFuncPackageFrame(frame, objects.FuncPackageDef, "Float64", z.factory.FuncInOf64(r.Float64)),
+			"Int63n":      z.factory.NewFuncPackageFrame(frame, objects.FuncPackageDef, "Int63n", z.factory.FuncIi64Oi64(r.Int63n)),
+			"ExpFloat64":  z.factory.NewFuncPackageFrame(frame, objects.FuncPackageDef, "ExpFloat64", z.factory.FuncInOf64(r.ExpFloat64)),
+			"NormFloat64": z.factory.NewFuncPackageFrame(frame, objects.FuncPackageDef, "NormFloat64", z.factory.FuncInOf64(r.NormFloat64)),
+			"Perm":        z.factory.NewFuncPackageFrame(frame, objects.FuncPackageDef, "Perm", z.factory.FuncIiOiS(r.Perm)),
+			"Seed":        z.factory.NewFuncPackageFrame(frame, objects.FuncPackageDef, "Seed", z.factory.FuncIi64On(r.Seed)),
+			"Read": z.factory.NewFuncPackageFrame(frame, objects.FuncPackageDef, "Read", func(frame int, args ...objects.IObject) (objects.IObject, error) {
 				return z.randOptionsRead(r, frame, args...)
 			}),
 		}), nil

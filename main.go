@@ -134,7 +134,7 @@ func BuildDrives(d string) ([]*config.Drive, error) {
 }
 
 func vmTest() {
-	factory := objects.NewFactory()
+	factory := objects.NewFactory(0)
 	op := bytecode.NewOpcodes(factory)
 	comp := compiler.New(factory)
 	err := comp.Compile("example.go", stub.Source5)
@@ -145,7 +145,7 @@ func vmTest() {
 	d := bytecode.NewDisassembler(bc)
 	d.Disassemble(log.Writer())
 	loader := sdk.NewLoader(factory)
-	machine := vm.New(factory, op, nil, 100000)
+	machine := vm.New(factory, op, nil)
 	if err = machine.Run(loader, bc, "main", 1, 2); err != nil {
 		machine.Print(log.Writer())
 		log.Fatalf("VM runtime error: %s", err)
