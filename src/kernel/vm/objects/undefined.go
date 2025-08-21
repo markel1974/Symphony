@@ -7,12 +7,12 @@ const (
 
 // Undefined represents an undefined values.
 type Undefined struct {
-	*Object
+	IObject
 }
 
 func newUndefined(factory *GateKeeper, frame int) *Undefined {
 	return &Undefined{
-		Object: factory.NewObject(frame),
+		IObject: factory.newObject(frame),
 	}
 }
 
@@ -26,8 +26,8 @@ func (o *Undefined) String() string {
 }
 
 // Copy returns a copy of the type.
-func (o *Undefined) Copy(frame int, _ int) IObject {
-	return o.GateKeeper().NewUndefined(frame)
+func (o *Undefined) Copy(_ int, _ int) IObject {
+	return o
 }
 
 // Boolean returns true.

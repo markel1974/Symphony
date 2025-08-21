@@ -10,23 +10,19 @@ import (
 // Stack represents a data structure that operates on a LIFO (Last In, First Out) principle.
 // It manages a slice of objects implementing the IObject interface and tracks the stack pointer.
 type Stack struct {
-	factory        *objects.GateKeeper
-	stack          []objects.IObject
-	sp             int
-	allocations    int64
-	maxAllocations int64
-	errSignal      func(err error)
+	factory   *objects.GateKeeper
+	stack     []objects.IObject
+	sp        int
+	errSignal func(err error)
 }
 
 // NewStack creates and initializes a new Stack with the specified size and returns a pointer to it.
-func NewStack(factory *objects.GateKeeper, size int, maxAllocations int64, errSignal func(err error)) *Stack {
+func NewStack(factory *objects.GateKeeper, size int, errSignal func(err error)) *Stack {
 	s := &Stack{
-		factory:        factory,
-		sp:             0,
-		stack:          make([]objects.IObject, size),
-		maxAllocations: maxAllocations,
-		allocations:    maxAllocations + 1,
-		errSignal:      errSignal,
+		factory:   factory,
+		sp:        0,
+		stack:     make([]objects.IObject, size),
+		errSignal: errSignal,
 	}
 	for i := range s.stack {
 		s.stack[i] = factory.UndefinedValue()
@@ -46,7 +42,6 @@ func (v *Stack) SetStackPointer(sp int) {
 
 // Reset resets the stack pointer to zero, effectively clearing the stack.
 func (v *Stack) Reset() {
-	v.allocations = v.maxAllocations + 1
 	v.sp = 0
 }
 
@@ -61,10 +56,6 @@ func (v *Stack) DecrementCount(count int) {
 
 // SetAbsolute assigns the specified object to the stack at the given absolute index.
 func (v *Stack) SetAbsolute(absolute int, obj objects.IObject) {
-	if v.allocations--; v.allocations == 0 {
-		v.errSignal(objects.ErrObjectAllocLimit)
-		return
-	}
 	if absolute < 0 || absolute >= len(v.stack) {
 		v.errSignal(objects.ErrIndexOutOfBounds)
 		return
@@ -74,10 +65,6 @@ func (v *Stack) SetAbsolute(absolute int, obj objects.IObject) {
 
 // Set assigns the given object to the position indicated by the current stack pointer minus one.
 func (v *Stack) Set(obj objects.IObject) {
-	if v.allocations--; v.allocations == 0 {
-		v.errSignal(objects.ErrObjectAllocLimit)
-		return
-	}
 	sp := v.sp - 1
 	if sp < 0 || sp >= len(v.stack) {
 		v.errSignal(objects.ErrIndexOutOfBounds)
@@ -88,10 +75,6 @@ func (v *Stack) Set(obj objects.IObject) {
 
 // Push adds the provided object to the top of the stack and increments the stack pointer.
 func (v *Stack) Push(obj objects.IObject) {
-	if v.allocations--; v.allocations == 0 {
-		v.errSignal(objects.ErrObjectAllocLimit)
-		return
-	}
 	if v.sp < 0 || v.sp >= len(v.stack) {
 		v.errSignal(objects.ErrIndexOutOfBounds)
 		return
@@ -104,10 +87,6 @@ func (v *Stack) Push(obj objects.IObject) {
 func (v *Stack) PushVarArgs(frame int, numArgs int, realArgs int) {
 	varArgs := numArgs - realArgs
 	if varArgs < 0 {
-		return
-	}
-	if v.allocations--; v.allocations <= 0 {
-		v.errSignal(objects.ErrObjectAllocLimit)
 		return
 	}
 	numArgs = realArgs + 1

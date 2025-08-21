@@ -17,9 +17,12 @@ const (
 // It provides pre-instantiated objects for `true`, `false`, and `undefined` values for efficient reuse.
 // The GateKeeper may also include object pooling for specific types to optimize memory usage and performance.
 type GateKeeper struct {
-	trueValue      IObject
-	falseValue     IObject
-	undefinedValue IObject
+	trueValue         IObject
+	falseValue        IObject
+	undefinedValue    IObject
+	counter           int64
+	maxAllocations    int64
+	undefinedIterator *UndefinedIterator
 
 	// Aggiungiamo i pool per gli oggetti
 	//intPool   sync.Pool
@@ -32,16 +35,33 @@ const (
 )
 
 // NewFactory initializes a new GateKeeper instance and sets up default bool and undefined values.
-func NewFactory() *GateKeeper {
-	f := &GateKeeper{}
+func NewFactory(maxAllocations int64) *GateKeeper {
+	f := &GateKeeper{
+		maxAllocations: maxAllocations,
+	}
 	f.trueValue = newBool(f, FrameStatic, true)
 	f.falseValue = newBool(f, FrameStatic, false)
 	f.undefinedValue = newUndefined(f, FrameStatic)
-
+	f.undefinedIterator = newUndefinedIterator(f, FrameStatic)
+	f.maxAllocations = maxAllocations
 	//f.intPool.New = func() interface{} {
 	//	return &_newInt(f, 0) // Crea un Int con valore di default
 	//}
 	return f
+}
+
+func (f *GateKeeper) acquireObject() error {
+	f.counter++
+	if f.maxAllocations > 0 {
+		if f.counter > f.maxAllocations {
+			return ErrObjectAllocLimit
+		}
+	}
+	return nil
+}
+
+func (f *GateKeeper) Reset() {
+	f.counter = 0
 }
 
 // FalseValue returns the false representation as an IObject from the GateKeeper instance.
@@ -60,77 +80,146 @@ func (f *GateKeeper) UndefinedValue() IObject {
 }
 
 // NewObject creates and returns a new instance of Object with its factory field set to the receiving GateKeeper instance.
-func (f *GateKeeper) NewObject(frame int) *Object {
+func (f *GateKeeper) newObject(frame int) IObject {
+	if err := f.acquireObject(); err != nil {
+		return f.undefinedValue
+	}
 	return newObject(f, frame)
 }
 
-// NewArray creates and returns a new Array populated with the provided slice of IObject elements.
-func (f *GateKeeper) NewArray(frame int, values []IObject) *Array {
-	return newArray(f, frame, values)
-}
-
-// NewArrayImmutable constructs a new ArrayImmutable instance with the provided slice of IObject, ensuring immutability.
-func (f *GateKeeper) NewArrayImmutable(frame int, values []IObject) *ArrayImmutable {
-	return newArrayImmutable(f, frame, values)
-}
-
-// NewArrayIterator creates a new ArrayIterator for iterating over the provided slice of IObject values.
-func (f *GateKeeper) NewArrayIterator(frame int, values []IObject) *ArrayIterator {
-	return newArrayIterator(f, frame, values)
-}
-
-// NewBool creates and returns a new Bool object initialized with the specified boolean value.
-func (f *GateKeeper) NewBool(frame int, value bool) *Bool {
-	return newBool(f, frame, value)
-}
-
-// NewBuiltin creates a new Builtin object with the specified name and index using the GateKeeper.
-func (f *GateKeeper) NewBuiltin(frame int, name string, index int) *Builtin {
-	return newBuiltin(f, frame, name, index)
-}
-
-// NewBytes creates and returns a new instance of Bytes initialized with the provided byte slice and factory context.
-func (f *GateKeeper) NewBytes(frame int, value []byte) *Bytes {
-	return newBytes(f, frame, value)
-}
-
 // NewBytesIterator creates a new BytesIterator for iterating over the provided byte slice `v` using the specified GateKeeper.
-func (f *GateKeeper) NewBytesIterator(frame int, v []byte) *BytesIterator {
-	return newBytesIterator(f, frame, v)
+func (f *GateKeeper) newBytesIterator(frame int, v []byte, index int) IIterator {
+	if err := f.acquireObject(); err != nil {
+		return f.undefinedIterator
+	}
+	return newBytesIterator(f, frame, v, index)
 }
 
-// NewChar creates a new Char instance associated with the GateKeeper, initialized with the given rune value.
-func (f *GateKeeper) NewChar(frame int, value rune) *Char {
-	return newChar(f, frame, value)
+// newArrayIterator creates a new ArrayIterator for iterating over the provided slice of IObject values.
+func (f *GateKeeper) newArrayIterator(frame int, values []IObject, index int) IIterator {
+	if err := f.acquireObject(); err != nil {
+		return f.undefinedIterator
+	}
+	return newArrayIterator(f, frame, values, index)
 }
 
-// NewError creates and returns a new Error instance based on the provided IObject value and the associated GateKeeper.
-func (f *GateKeeper) NewError(frame int, e string) *Error {
-	return newError(f, frame, e)
+// NewStringIterator creates a new StringIterator instance for a given slice of runes, enabling character traversal.
+func (f *GateKeeper) newStringIterator(frame int, v []rune, index int) IIterator {
+	if err := f.acquireObject(); err != nil {
+		return f.undefinedIterator
+	}
+	return newStringIterator(f, frame, v, index)
+}
+
+// NewStructIterator creates a new StructIterator instance for iterating over a map with string keys and IObject values.
+func (f *GateKeeper) newStructIterator(frame int, v map[string]IObject, index int) IIterator {
+	if err := f.acquireObject(); err != nil {
+		return f.undefinedIterator
+	}
+	return newStructIterator(f, frame, v, index)
+}
+
+// NewMapIterator creates and returns a new MapIterator for the provided map of string keys and IObject values.
+func (f *GateKeeper) newMapIterator(frame int, v map[string]IObject, index int) IIterator {
+	if err := f.acquireObject(); err != nil {
+		return f.undefinedIterator
+	}
+	return newMapIterator(f, frame, v, index)
 }
 
 // NewFuncCompiled creates and returns a new FuncCompiled instance using the provided function metadata and bytecode.
 func (f *GateKeeper) NewFuncCompiled(frame int, name string, instructions []byte, numLocals int, numParameters int, varArgs bool, sourceMap map[int]int, free []*ObjectPointer) *FuncCompiled {
+	//if err := f.acquireObject(); err != nil {
+	//	return nil //f.undefinedValue
+	//}
 	return newFuncCompiled(f, frame, name, instructions, numLocals, numParameters, varArgs, sourceMap, free)
 }
 
 // NewFuncPackage creates a new instance of FuncPackage with the specified kind, name, and callable function.
 func (f *GateKeeper) NewFuncPackage(kind string, name string, fn FuncCallable) *FuncPackage {
+	//if err := f.acquireObject(); err != nil {
+	//	return nil //f.undefinedValue
+	//}
 	return newFuncPackage(f, FrameStatic, kind, name, fn)
 }
 
-// NewFuncFramePackage creates a new instance of FuncPackage with the specified kind, name, and callable function.
-func (f *GateKeeper) NewFuncFramePackage(frame int, kind string, name string, fn FuncCallable) *FuncPackage {
+// NewFuncPackageFrame creates a new instance of FuncPackage with the specified kind, name, and callable function.
+func (f *GateKeeper) NewFuncPackageFrame(frame int, kind string, name string, fn FuncCallable) *FuncPackage {
+	//if err := f.acquireObject(); err != nil {
+	//	return nil //f.undefinedValue
+	//}
 	return newFuncPackage(f, frame, kind, name, fn)
 }
 
+// NewBuiltin creates a new Builtin object with the specified name and index using the GateKeeper.
+func (f *GateKeeper) NewBuiltin(frame int, name string, index int) *Builtin {
+	//if err := f.acquireObject(); err != nil {
+	//	return nil //f.undefinedValue
+	//}
+	return newBuiltin(f, frame, name, index)
+}
+
+// NewArray creates and returns a new Array populated with the provided slice of IObject elements.
+func (f *GateKeeper) NewArray(frame int, values []IObject) IObject {
+	if err := f.acquireObject(); err != nil {
+		return f.undefinedValue
+	}
+	return newArray(f, frame, values)
+}
+
+// NewArrayImmutable constructs a new ArrayImmutable instance with the provided slice of IObject, ensuring immutability.
+func (f *GateKeeper) NewArrayImmutable(frame int, values []IObject) IObject {
+	if err := f.acquireObject(); err != nil {
+		return f.undefinedValue
+	}
+	return newArrayImmutable(f, frame, values)
+}
+
+// NewBool creates and returns a new Bool object initialized with the specified boolean value.
+func (f *GateKeeper) NewBool(frame int, value bool) IObject {
+	if err := f.acquireObject(); err != nil {
+		return f.undefinedValue
+	}
+	return newBool(f, frame, value)
+}
+
+// NewBytes creates and returns a new instance of Bytes initialized with the provided byte slice and factory context.
+func (f *GateKeeper) NewBytes(frame int, value []byte) IObject {
+	if err := f.acquireObject(); err != nil {
+		return f.undefinedValue
+	}
+	return newBytes(f, frame, value)
+}
+
+// NewChar creates a new Char instance associated with the GateKeeper, initialized with the given rune value.
+func (f *GateKeeper) NewChar(frame int, value rune) IObject {
+	if err := f.acquireObject(); err != nil {
+		return f.undefinedValue
+	}
+	return newChar(f, frame, value)
+}
+
+// NewError creates and returns a new Error instance based on the provided IObject value and the associated GateKeeper.
+func (f *GateKeeper) NewError(frame int, e string) IObject {
+	if err := f.acquireObject(); err != nil {
+		return f.undefinedValue
+	}
+	return newError(f, frame, e)
+}
+
 // NewFloat creates a new Float instance with the given float64 value, using the GateKeeper for initialization.
-func (f *GateKeeper) NewFloat(frame int, v float64) *Float {
+func (f *GateKeeper) NewFloat(frame int, v float64) IObject {
+	if err := f.acquireObject(); err != nil {
+		return f.undefinedValue
+	}
 	return newFloat(f, frame, v)
 }
 
 // NewInt creates and returns a new instance of Int initialized with the given int64 value.
-func (f *GateKeeper) NewInt(frame int, v int64) *Int {
+func (f *GateKeeper) NewInt(frame int, v int64) IObject {
+	if err := f.acquireObject(); err != nil {
+		return f.undefinedValue
+	}
 	//obj := f.intPool.Get().(*Int)
 	//obj.value = v
 	//return obj
@@ -144,52 +233,51 @@ func (f *GateKeeper) NewInt(frame int, v int64) *Int {
 //}
 
 // NewObjectPointer creates a new ObjectPointer instance wrapping the provided IObject pointer.
-func (f *GateKeeper) NewObjectPointer(frame int, value *IObject) *ObjectPointer {
+func (f *GateKeeper) NewObjectPointer(frame int, value *IObject) IObject {
+	if err := f.acquireObject(); err != nil {
+		return f.undefinedValue
+	}
 	return newObjectPointer(f, frame, value)
 }
 
 // NewMap creates and returns a new instance of Map initialized with the provided map of string keys and IObject values.
-func (f *GateKeeper) NewMap(frame int, v map[string]IObject) *Map {
+func (f *GateKeeper) NewMap(frame int, v map[string]IObject) IObject {
+	if err := f.acquireObject(); err != nil {
+		return f.undefinedValue
+	}
 	return newMap(f, frame, v)
 }
 
 // NewMapImmutable creates a new immutable map with string keys and IObject values from the provided map.
-func (f *GateKeeper) NewMapImmutable(frame int, v map[string]IObject) *MapImmutable {
+func (f *GateKeeper) NewMapImmutable(frame int, v map[string]IObject) IObject {
+	if err := f.acquireObject(); err != nil {
+		return f.undefinedValue
+	}
 	return newMapImmutable(f, frame, v)
 }
 
-// NewMapIterator creates and returns a new MapIterator for the provided map of string keys and IObject values.
-func (f *GateKeeper) NewMapIterator(frame int, v map[string]IObject) *MapIterator {
-	return newMapIterator(f, frame, v)
-}
-
 // NewString creates a new instance of String with the given value, utilizing the GateKeeper for initialization.
-func (f *GateKeeper) NewString(frame int, value string) *String {
+func (f *GateKeeper) NewString(frame int, value string) IObject {
+	if err := f.acquireObject(); err != nil {
+		return f.undefinedValue
+	}
 	return newString(f, frame, value)
 }
 
-// NewStringIterator creates a new StringIterator instance for a given slice of runes, enabling character traversal.
-func (f *GateKeeper) NewStringIterator(frame int, v []rune) *StringIterator {
-	return newStringIterator(f, frame, v)
-}
-
 // NewStruct creates and returns a new instance of Struct using the provided map of string keys and IObject values.
-func (f *GateKeeper) NewStruct(frame int, value map[string]IObject) *Struct {
+func (f *GateKeeper) NewStruct(frame int, value map[string]IObject) IObject {
+	if err := f.acquireObject(); err != nil {
+		return f.undefinedValue
+	}
 	return newStruct(f, frame, value)
 }
 
-// NewStructIterator creates a new StructIterator instance for iterating over a map with string keys and IObject values.
-func (f *GateKeeper) NewStructIterator(frame int, v map[string]IObject) *StructIterator {
-	return newStructIterator(f, frame, v)
-}
-
 // NewTime creates a new instance of Time using the provided time.Time value and initializes it with the factory instance.
-func (f *GateKeeper) NewTime(frame int, value time.Time) *Time {
+func (f *GateKeeper) NewTime(frame int, value time.Time) IObject {
+	if err := f.acquireObject(); err != nil {
+		return f.undefinedValue
+	}
 	return newTime(f, frame, value)
-}
-
-func (f *GateKeeper) NewUndefined(frame int) *Undefined {
-	return newUndefined(f, frame)
 }
 
 // ToInterface converts an IObject to its corresponding native Go representation, such as int, string, float64, bool, etc.

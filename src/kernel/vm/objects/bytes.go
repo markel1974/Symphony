@@ -11,7 +11,7 @@ const (
 // Bytes represents a data type for handling a sequence of bytes.
 // It embeds Object and provides behaviors like indexing, iteration, and binary operations.
 type Bytes struct {
-	*Object
+	IObject
 	values []byte
 }
 
@@ -21,8 +21,8 @@ func newBytes(factory *GateKeeper, frame int, value []byte) *Bytes {
 		value = value[0:maxBytesLen]
 	}
 	return &Bytes{
-		Object: factory.NewObject(frame),
-		values: value,
+		IObject: factory.newObject(frame),
+		values:  value,
 	}
 }
 
@@ -107,5 +107,5 @@ func (o *Bytes) CanIterate() bool {
 
 // Iterate returns an iterator for the Bytes object, enabling sequential access to its byte values.
 func (o *Bytes) Iterate(frame int) IIterator {
-	return o.GateKeeper().NewBytesIterator(frame, o.values)
+	return o.GateKeeper().newBytesIterator(frame, o.values, 0)
 }

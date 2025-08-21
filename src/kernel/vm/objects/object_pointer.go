@@ -9,15 +9,15 @@ const (
 // It embeds Object, inheriting default behaviors for the IObject interface methods.
 // The value field holds the actual IObject instance being wrapped.
 type ObjectPointer struct {
-	*Object
+	IObject
 	value *IObject
 }
 
 // NewObjectPointer creates a new ObjectPointer instance wrapping the provided IObject pointer.// NewObjectPointer creates a new ObjectPointer instance with the provided IObject values.
 func newObjectPointer(factory *GateKeeper, frame int, value *IObject) *ObjectPointer {
 	return &ObjectPointer{
-		Object: factory.NewObject(frame),
-		value:  value,
+		IObject: factory.newObject(frame),
+		value:   value,
 	}
 }
 

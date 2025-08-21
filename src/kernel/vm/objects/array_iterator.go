@@ -8,19 +8,19 @@ const (
 // ArrayIterator is an iterator type for traversing elements of an array.
 // It implements the IIterator interface to provide sequential access to array elements.
 type ArrayIterator struct {
-	*Object
+	IObject
 	values []IObject
 	index  int
 	length int
 }
 
 // NewArrayIterator creates and returns a new ArrayIterator instance with the given slice of IObject.
-func newArrayIterator(factory *GateKeeper, frame int, v []IObject) *ArrayIterator {
+func newArrayIterator(factory *GateKeeper, frame int, v []IObject, index int) *ArrayIterator {
 	return &ArrayIterator{
-		Object: factory.NewObject(frame),
-		values: v,
-		length: len(v),
-		index:  0,
+		IObject: factory.newObject(frame),
+		values:  v,
+		length:  len(v),
+		index:   index,
 	}
 }
 
@@ -46,8 +46,7 @@ func (i *ArrayIterator) Equals(IObject) bool {
 
 // Copy creates and returns a duplicate of the ArrayIterator, preserving its current state.
 func (i *ArrayIterator) Copy(frame int, _ int) IObject {
-	ret := i.GateKeeper().NewArrayIterator(frame, i.values)
-	ret.index = i.index
+	ret := i.GateKeeper().newArrayIterator(frame, i.values, i.index)
 	return ret
 }
 

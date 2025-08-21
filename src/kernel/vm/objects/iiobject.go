@@ -16,6 +16,8 @@ package objects
 // CanCall checks whether the object supports being called as a function.
 // Length returns the length of the object, if applicable.
 type IObject interface {
+	GateKeeper() *GateKeeper
+
 	TypeName() string
 
 	String() string

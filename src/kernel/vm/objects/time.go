@@ -10,15 +10,15 @@ const (
 
 // Time represents a custom object encapsulating a Go time.Time values with extended behaviors and operations.
 type Time struct {
-	*Object
+	IObject
 	value time.Time
 }
 
 // NewTime creates a new instance of Time wrapping the provided time.Time values.
 func newTime(factory *GateKeeper, frame int, value time.Time) *Time {
 	return &Time{
-		Object: factory.NewObject(frame),
-		value:  value,
+		IObject: factory.newObject(frame),
+		value:   value,
 	}
 }
 

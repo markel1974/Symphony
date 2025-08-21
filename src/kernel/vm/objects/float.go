@@ -13,15 +13,15 @@ const (
 // It embeds Object to implement common interface methods and extends behavior where necessary.
 // The value field holds the actual float64 values encapsulated by the Float type.
 type Float struct {
-	*Object
+	IObject
 	value float64
 }
 
 // NewFloat creates and returns a pointer to a new Float object initialized with the specified float64 values.
 func newFloat(factory *GateKeeper, frame int, value float64) *Float {
 	return &Float{
-		Object: factory.NewObject(frame),
-		value:  value,
+		IObject: factory.newObject(frame),
+		value:   value,
 	}
 }
 

@@ -12,7 +12,7 @@ const (
 // This type embeds Object and supports operations like indexing, iteration, comparison, and copying.
 // It implements IObject and provides a richer functionality for string manipulation within the runtime system.
 type String struct {
-	*Object
+	IObject
 	value   string
 	runeStr []rune
 }
@@ -23,8 +23,8 @@ func newString(factory *GateKeeper, frame int, value string) *String {
 		value = value[0:MaxStringLen]
 	}
 	return &String{
-		Object: factory.NewObject(frame),
-		value:  value,
+		IObject: factory.newObject(frame),
+		value:   value,
 	}
 }
 
@@ -151,5 +151,5 @@ func (o *String) Iterate(frame int) IIterator {
 	if o.runeStr == nil {
 		o.runeStr = []rune(o.value)
 	}
-	return o.GateKeeper().NewStringIterator(frame, o.runeStr)
+	return o.GateKeeper().newStringIterator(frame, o.runeStr, 0)
 }

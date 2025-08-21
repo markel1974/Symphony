@@ -11,7 +11,7 @@ const (
 
 // Builtin defines a struct representing a built-in object with a name and an integer value.
 type Builtin struct {
-	*Object
+	IObject
 	name  string
 	index int
 }
@@ -19,9 +19,9 @@ type Builtin struct {
 // NewBuiltin creates a new instance of Builtin with the specified name and value.
 func newBuiltin(factory *GateKeeper, frame int, name string, index int) *Builtin {
 	return &Builtin{
-		Object: factory.NewObject(frame),
-		name:   name,
-		index:  index,
+		IObject: factory.newObject(frame),
+		name:    name,
+		index:   index,
 	}
 }
 

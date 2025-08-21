@@ -11,7 +11,7 @@ const (
 
 // Array represents a collection of IObject elements, providing methods for manipulation, indexing, and iteration.
 type Array struct {
-	*Object
+	IObject
 	values []IObject
 }
 
@@ -21,8 +21,8 @@ func newArray(factory *GateKeeper, frame int, value []IObject) *Array {
 		value = value[0:maxArrayLen]
 	}
 	return &Array{
-		Object: factory.NewObject(frame),
-		values: value,
+		IObject: factory.newObject(frame),
+		values:  value,
 	}
 }
 
@@ -79,7 +79,7 @@ func (o *Array) String() string {
 	for _, e := range o.values {
 		elements = append(elements, e.String())
 	}
-	return fmt.Sprintf("[%s]", strings.Join(elements, ", "))
+	return fmt.Sprintf("[%s]", strings.Join(elements, "; "))
 }
 
 // BinaryOp performs a binary operation on the Array with the given operator and right-hand side object.
@@ -180,5 +180,5 @@ func (o *Array) CanIterate() bool {
 
 // Iterate returns an IIterator for the Array instance, allowing sequential access to its elements.
 func (o *Array) Iterate(frame int) IIterator {
-	return o.GateKeeper().NewArrayIterator(frame, o.values)
+	return o.GateKeeper().newArrayIterator(frame, o.values, 0)
 }

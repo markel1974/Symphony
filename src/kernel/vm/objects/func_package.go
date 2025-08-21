@@ -10,7 +10,7 @@ type FuncCallable = func(frame int, args ...IObject) (ret IObject, err error)
 
 // FuncPackage is a callable object type that encapsulates a function and provides execution context information.
 type FuncPackage struct {
-	*Object
+	IObject
 	kind  string
 	name  string
 	value FuncCallable
@@ -19,10 +19,10 @@ type FuncPackage struct {
 // NewFuncPackage creates a new FuncPackage instance with the specified ID and callable function.
 func newFuncPackage(factory *GateKeeper, frame int, kind string, name string, fn FuncCallable) *FuncPackage {
 	return &FuncPackage{
-		Object: factory.NewObject(frame),
-		kind:   kind,
-		name:   name,
-		value:  fn,
+		IObject: factory.newObject(frame),
+		kind:    kind,
+		name:    name,
+		value:   fn,
 	}
 }
 
@@ -43,7 +43,7 @@ func (o *FuncPackage) String() string {
 
 // Copy creates and returns a new FuncPackage instance with the same Value field as the original object.
 func (o *FuncPackage) Copy(frame int, _ int) IObject {
-	return o.GateKeeper().NewFuncFramePackage(frame, o.kind, o.name, o.value)
+	return o.GateKeeper().NewFuncPackageFrame(frame, o.kind, o.name, o.value)
 }
 
 // Equals checks whether the current FuncPackage is equal to another object of type IObject. Always returns false.

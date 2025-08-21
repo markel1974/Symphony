@@ -9,15 +9,15 @@ const (
 
 // Bool is a custom type representing a boolean values, implementing IObject interface and encapsulating a boolean value.
 type Bool struct {
-	*Object
+	IObject
 	value bool
 }
 
 // NewBool creates and returns a new Bool object with the specified boolean value.
 func newBool(factory *GateKeeper, frame int, value bool) *Bool {
 	return &Bool{
-		Object: factory.NewObject(frame),
-		value:  value,
+		IObject: factory.newObject(frame),
+		value:   value,
 	}
 }
 
@@ -36,7 +36,7 @@ func (o *Bool) TypeName() string {
 
 // Copy creates and returns a reference to the current Bool object.
 func (o *Bool) Copy(frame int, _ int) IObject {
-	return o.factory.NewBool(frame, o.value)
+	return o.GateKeeper().NewBool(frame, o.value)
 }
 
 // Boolean returns true if the Bool value is false, otherwise returns false.

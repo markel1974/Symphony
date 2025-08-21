@@ -7,7 +7,7 @@ const (
 
 // FuncCompiled represents a compiled function with bytecode instructions, metadata, and associated free variables.
 type FuncCompiled struct {
-	*Object
+	IObject
 	name          string
 	instructions  *Instructions
 	numLocals     int
@@ -23,7 +23,7 @@ func newFuncCompiled(factory *GateKeeper, frame int, name string, instructions [
 		sourceMap = make(map[int]int)
 	}
 	return &FuncCompiled{
-		Object:        factory.NewObject(frame),
+		IObject:       factory.newObject(frame),
 		name:          name,
 		instructions:  _newInstructions(instructions),
 		numLocals:     numLocals,

@@ -12,7 +12,7 @@ const (
 
 // Struct is a composite object that implements the IObject interface and stores a collection of key-value pairs.
 type Struct struct {
-	*Object
+	IObject
 	values map[string]IObject
 }
 
@@ -29,8 +29,8 @@ func newStruct(factory *GateKeeper, frame int, value map[string]IObject) *Struct
 		value = nv
 	}
 	return &Struct{
-		Object: factory.NewObject(frame),
-		values: value,
+		IObject: factory.newObject(frame),
+		values:  value,
 	}
 }
 
@@ -126,7 +126,7 @@ func (o *Struct) Equals(in IObject) bool {
 
 // Iterate returns an IIterator for traversing the key-value pairs in the Struct's internal map.
 func (o *Struct) Iterate(frame int) IIterator {
-	return o.GateKeeper().NewStructIterator(frame, o.values)
+	return o.GateKeeper().newStructIterator(frame, o.values, 0)
 }
 
 // CanIterate checks if the object can be iterated over. Always returns true for this implementation.

@@ -10,15 +10,15 @@ const (
 
 // Int represents an integer type with a 64-bit value and methods for operations, equality, and object behavior.
 type Int struct {
-	*Object
+	IObject
 	value int64
 }
 
 // NewInt creates and returns a new instance of the Int struct initialized with the specified int64 value.
 func newInt(factory *GateKeeper, frame int, value int64) *Int {
 	return &Int{
-		Object: factory.NewObject(frame),
-		value:  value,
+		IObject: factory.newObject(frame),
+		value:   value,
 	}
 }
 

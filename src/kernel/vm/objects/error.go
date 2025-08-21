@@ -14,7 +14,7 @@ const (
 
 // Error represents an object that encapsulates an error and implements the IObject interface.
 type Error struct {
-	*Object
+	IObject
 	err   string
 	value IObject
 }
@@ -25,9 +25,9 @@ func newError(factory *GateKeeper, frame int, err string) *Error {
 		err = err[:maxErrorLen]
 	}
 	return &Error{
-		Object: factory.NewObject(frame),
-		value:  factory.NewString(frame, err),
-		err:    err,
+		IObject: factory.newObject(frame),
+		value:   factory.NewString(frame, err),
+		err:     err,
 	}
 }
 

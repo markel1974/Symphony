@@ -7,26 +7,25 @@ const (
 
 // StringIterator represents an iterator for traversing over the characters of a string, implemented as runes.
 type StringIterator struct {
-	*Object
+	IObject
 	values []rune
 	index  int
 	length int
 }
 
 // NewStringIterator creates and returns a new instance of StringIterator with the given rune slice.
-func newStringIterator(factory *GateKeeper, frame int, v []rune) *StringIterator {
+func newStringIterator(factory *GateKeeper, frame int, v []rune, index int) *StringIterator {
 	return &StringIterator{
-		Object: factory.NewObject(frame),
-		values: v,
-		length: len(v),
-		index:  0,
+		IObject: factory.newObject(frame),
+		values:  v,
+		length:  len(v),
+		index:   index,
 	}
 }
 
 // Copy creates and returns a new instance of StringIterator with the same state as the current one.
 func (i *StringIterator) Copy(frame int, _ int) IObject {
-	ret := i.GateKeeper().NewStringIterator(frame, i.values)
-	ret.index = i.index
+	ret := i.GateKeeper().newStringIterator(frame, i.values, i.index)
 	return ret
 }
 

@@ -11,15 +11,15 @@ const (
 
 // MapImmutable represents a read-only map structure where keys are strings and values are of type IObject.
 type MapImmutable struct {
-	*Object
+	IObject
 	values map[string]IObject
 }
 
 // NewMapImmutable creates a new instance of MapImmutable with the provided map of string keys and IObject values.
 func newMapImmutable(factory *GateKeeper, frame int, value map[string]IObject) *MapImmutable {
 	return &MapImmutable{
-		Object: factory.NewObject(frame),
-		values: value,
+		IObject: factory.newObject(frame),
+		values:  value,
 	}
 }
 
@@ -112,7 +112,7 @@ func (o *MapImmutable) Equals(in IObject) bool {
 
 // Iterate returns an iterator for traversing the key-values pairs in the immutable map.
 func (o *MapImmutable) Iterate(frame int) IIterator {
-	return o.GateKeeper().NewMapIterator(frame, o.values)
+	return o.GateKeeper().newMapIterator(frame, o.values, 0)
 }
 
 // CanIterate returns true, indicating that the MapImmutable supports iteration.

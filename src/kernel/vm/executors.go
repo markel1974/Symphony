@@ -821,7 +821,13 @@ func (op *OpClosure) Execute(v *VM) {
 			free[i] = freeVar
 		default:
 			t := v.stack.PeekOffset(-numFree + i)
-			free[i] = op.Factory().NewObjectPointer(v.currFrame.ID(), &t)
+			obj := op.Factory().NewObjectPointer(v.currFrame.ID(), &t)
+			ptr, ok := obj.(*objects.ObjectPointer)
+			if !ok {
+				v.SetError(fmt.Errorf("not a pointer: %s", t.TypeName()))
+				return
+			}
+			free[i] = ptr
 		}
 	}
 	v.stack.DecrementCount(numFree)

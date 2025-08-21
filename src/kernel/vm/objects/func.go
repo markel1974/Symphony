@@ -1,5 +1,7 @@
 package objects
 
+import "fmt"
+
 // Code		Meaning		Go-Type			Description
 //	I		Input			-			Prefix indicating input parameters.
 //	O		Output			-			Prefix indicating return values.
@@ -175,7 +177,11 @@ func funcInOsS(f *GateKeeper, fn func() []string) FuncCallable {
 		if len(args) != 0 {
 			return nil, ErrWrongNumArguments
 		}
-		arr := f.NewArray(frame, nil)
+		obj := f.NewArray(frame, nil)
+		arr, ok := obj.(*Array)
+		if !ok {
+			return nil, fmt.Errorf("expected Array, got %T", obj)
+		}
 		for _, elem := range fn() {
 			v := f.NewString(frame, elem)
 			arr.Append(v)
@@ -196,7 +202,11 @@ func funcInOiSe(f *GateKeeper, fn func() ([]int, error)) FuncCallable {
 		if err != nil {
 			return f.NewError(frame, err.Error()), nil
 		}
-		arr := f.NewArray(frame, nil)
+		obj := f.NewArray(frame, nil)
+		arr, ok := obj.(*Array)
+		if !ok {
+			return nil, fmt.Errorf("expected Array, got %T", obj)
+		}
 		for _, v := range res {
 			arr.Append(f.NewInt(frame, int64(v)))
 		}
@@ -215,7 +225,11 @@ func funcIiOiS(f *GateKeeper, fn func(int) []int) FuncCallable {
 			return nil, err
 		}
 		res := fn(int(i1))
-		arr := f.NewArray(frame, nil)
+		obj := f.NewArray(frame, nil)
+		arr, ok := obj.(*Array)
+		if !ok {
+			return nil, fmt.Errorf("expected Array, got %T", obj)
+		}
 		for _, v := range res {
 			arr.Append(f.NewInt(frame, int64(v)))
 		}
@@ -415,7 +429,11 @@ func funcIsOsS(f *GateKeeper, fn func(string) []string) FuncCallable {
 			return nil, err
 		}
 		res := fn(s1)
-		arr := f.NewArray(frame, nil)
+		obj := f.NewArray(frame, nil)
+		arr, ok := obj.(*Array)
+		if !ok {
+			return nil, fmt.Errorf("expected Array, got %T", obj)
+		}
 		for _, elem := range res {
 			v := f.NewString(frame, elem)
 			arr.Append(v)
@@ -503,7 +521,11 @@ func funcIssOsS(f *GateKeeper, fn func(string, string) []string) FuncCallable {
 		if err != nil {
 			return nil, err
 		}
-		arr := f.NewArray(frame, nil)
+		obj := f.NewArray(frame, nil)
+		arr, ok := obj.(*Array)
+		if !ok {
+			return nil, fmt.Errorf("expected Array, got %T", obj)
+		}
 		for _, res := range fn(s1, s2) {
 			v := f.NewString(frame, res)
 			arr.Append(v)
@@ -532,7 +554,11 @@ func funcIssiOsS(f *GateKeeper, fn func(string, string, int) []string) FuncCalla
 		if err != nil {
 			return nil, err
 		}
-		arr := f.NewArray(frame, nil)
+		obj := f.NewArray(frame, nil)
+		arr, ok := obj.(*Array)
+		if !ok {
+			return nil, fmt.Errorf("expected Array, got %T", obj)
+		}
 		for _, res := range fn(s1, s2, int(i3)) {
 			v := f.NewString(frame, res)
 			arr.Append(v)
@@ -822,7 +848,11 @@ func funcIiOsSe(f *GateKeeper, fn func(int) ([]string, error)) FuncCallable {
 		if err != nil {
 			return f.NewError(frame, err.Error()), nil
 		}
-		arr := f.NewArray(frame, nil)
+		obj := f.NewArray(frame, nil)
+		arr, ok := obj.(*Array)
+		if !ok {
+			return nil, fmt.Errorf("expected Array, got %T", obj)
+		}
 		for _, r := range res {
 			v := f.NewString(frame, r)
 			arr.Append(v)

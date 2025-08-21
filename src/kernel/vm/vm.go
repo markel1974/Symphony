@@ -43,10 +43,7 @@ type VM struct {
 }
 
 // New initializes and returns a new virtual machine instance configured with the provided components and settings.
-func New(factory *objects.GateKeeper, op *bytecode.Opcodes, sequencer ISequencer, maxAllocations int64) *VM {
-	if maxAllocations < 10 {
-		maxAllocations = 10
-	}
+func New(factory *objects.GateKeeper, op *bytecode.Opcodes, sequencer ISequencer) *VM {
 	//op := bytecode.NewOpcodes(factory)
 	v := &VM{
 		factory:     factory,
@@ -56,7 +53,7 @@ func New(factory *objects.GateKeeper, op *bytecode.Opcodes, sequencer ISequencer
 		references:  nil,
 	}
 	v.constants = NewConstants(factory, v.SetError)
-	v.stack = NewStack(factory, stackSize, maxAllocations, v.SetError)
+	v.stack = NewStack(factory, stackSize, v.SetError)
 	v.frames = NewFrames(factory, maxFrames, v.SetError)
 	if sequencer == nil {
 		sequencer = NewSequencer(op)
@@ -83,6 +80,7 @@ func (v *VM) Print(writer io.Writer) {
 // Reset reinitializes the virtual machine's state, clears the stack and frames, and resets execution-related variables.
 func (v *VM) Reset() {
 	v.ip = resetIp
+	v.factory.Reset()
 	v.stack.Reset()
 	v.frames.Reset()
 	v.err = nil

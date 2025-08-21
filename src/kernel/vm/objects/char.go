@@ -6,15 +6,15 @@ const (
 
 // Char represents a character type, encapsulating a single rune values and inheriting behavior from Object.
 type Char struct {
-	*Object
+	IObject
 	value rune
 }
 
 // NewChar creates and returns a new Char object with the specified rune values.
 func newChar(factory *GateKeeper, frame int, value rune) *Char {
 	return &Char{
-		Object: factory.NewObject(frame),
-		value:  value,
+		IObject: factory.newObject(frame),
+		value:   value,
 	}
 }
 

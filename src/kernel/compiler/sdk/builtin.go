@@ -301,22 +301,31 @@ func (h *BuiltinFunctions) rangeInit(frame int, args ...objects.IObject) (object
 		return nil, objects.ErrWrongNumArguments
 	}
 	if step == nil {
-		step = h.factory.NewInt(frame, int64(1))
+		ok := false
+		st := h.factory.NewInt(frame, int64(1))
+		if step, ok = st.(*objects.Int); !ok {
+			return nil, objects.ErrExceedingLimit
+		}
+		//step = h.factory.NewInt(frame, int64(1))
 	}
 	startV := start.Value()
 	stopV := stop.Value()
 	stepV := step.Value()
-	ret := h.factory.NewArray(frame, nil)
+	obj := h.factory.NewArray(frame, nil)
+	arr, ok := obj.(*objects.Array)
+	if !ok {
+		return nil, fmt.Errorf("expected Array, got %T", obj)
+	}
 	if startV <= stopV {
 		for i := startV; i < stopV; i += stepV {
-			ret.Append(h.factory.NewInt(frame, i))
+			arr.Append(h.factory.NewInt(frame, i))
 		}
 	} else {
 		for i := startV; i > stopV; i -= stepV {
-			ret.Append(h.factory.NewInt(frame, i))
+			arr.Append(h.factory.NewInt(frame, i))
 		}
 	}
-	return ret, nil
+	return arr, nil
 }
 
 // Format applies a format string to a variable number of arguments, returning the formatted result as a String object.

@@ -7,18 +7,18 @@ const (
 
 // BytesIterator is an iterator for traversing elements of a byte slice, implementing the IIterator interface.
 type BytesIterator struct {
-	*Object
+	IObject
 	values []byte
 	index  int
 	length int
 }
 
-func newBytesIterator(factory *GateKeeper, frame int, v []byte) *BytesIterator {
+func newBytesIterator(factory *GateKeeper, frame int, v []byte, index int) *BytesIterator {
 	return &BytesIterator{
-		Object: factory.NewObject(frame),
-		values: v,
-		length: len(v),
-		index:  0,
+		IObject: factory.newObject(frame),
+		values:  v,
+		length:  len(v),
+		index:   index,
 	}
 }
 
@@ -39,8 +39,7 @@ func (i *BytesIterator) Equals(IObject) bool {
 
 // Copy creates and returns a new instance of BytesIterator with the same state as the current instance.
 func (i *BytesIterator) Copy(frame int, _ int) IObject {
-	ret := i.GateKeeper().NewBytesIterator(frame, i.values)
-	ret.index = i.index
+	ret := i.GateKeeper().newBytesIterator(frame, i.values, i.index)
 	return ret
 }
 
