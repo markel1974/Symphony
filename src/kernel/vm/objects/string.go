@@ -12,20 +12,48 @@ const (
 // This type embeds Object and supports operations like indexing, iteration, comparison, and copying.
 // It implements IObject and provides a richer functionality for string manipulation within the runtime system.
 type String struct {
-	IObject
+	factory *GateKeeper
+	frame   int
 	value   string
 	runeStr []rune
 }
 
 // NewString creates and returns a new String object initialized with the provided string values.
-func newString(factory *GateKeeper, frame int, value string) *String {
+func newString(factory *GateKeeper, frame int, value string) IObject {
 	if len(value) > MaxStringLen {
 		value = value[0:MaxStringLen]
 	}
 	return &String{
-		IObject: factory.newObject(frame),
+		factory: factory,
+		frame:   frame,
 		value:   value,
 	}
+}
+
+// GateKeeper returns a reference to the GateKeeper associated with the Object.
+func (o *String) GateKeeper() *GateKeeper {
+	return o.factory
+}
+
+// Frame returns the current frame value of the Object.
+func (o *String) Frame() int {
+	return o.frame
+}
+
+// IndexSet attempts to assign a value to an index in the object but always returns ErrNotIndexAssignable,
+// as this operation is unsupported.
+func (o *String) IndexSet(_, _ IObject) (err error) {
+	return ErrNotIndexAssignable
+}
+
+// Call invokes the Object with the provided arguments, returning a result object and an error, if any.
+func (o *String) Call(_ int, _ ...IObject) (ret IObject, err error) {
+	return nil, nil
+}
+
+// CanCall determines if the object can be invoked as a callable. Returns false for non-callable objects.
+func (o *String) CanCall() bool {
+	return false
 }
 
 // Value returns the string values of the String object.

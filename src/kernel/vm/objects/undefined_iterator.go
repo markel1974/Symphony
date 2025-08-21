@@ -9,14 +9,68 @@ const (
 
 // UndefinedIterator represents an iterator that is implicitly undefined and cannot traverse any elements.
 type UndefinedIterator struct {
-	IObject
+	factory *GateKeeper
+	frame   int
 }
 
 // newUndefinedIterator creates a new instance of UndefinedIterator initialized with an undefined object from the GateKeeper.
-func newUndefinedIterator(factory *GateKeeper, frame int) *UndefinedIterator {
+func newUndefinedIterator(factory *GateKeeper, frame int) IIterator {
 	return &UndefinedIterator{
-		IObject: factory.newObject(frame),
+		factory: factory,
+		frame:   frame,
 	}
+}
+
+// GateKeeper returns a reference to the GateKeeper associated with the Object.
+func (o *UndefinedIterator) GateKeeper() *GateKeeper {
+	return o.factory
+}
+
+// Frame returns the current frame value of the Object.
+func (o *UndefinedIterator) Frame() int {
+	return o.frame
+}
+
+// BinaryOp performs a binary operation on the current object and another object using the specified operator.
+// Returns the result of the operation or an error if the operation is not supported.
+func (o *UndefinedIterator) BinaryOp(_ int, _ Operator, _ IObject) (IObject, error) {
+	return nil, ErrInvalidOperator
+}
+
+// IndexGet attempts to retrieve a value at the given index and returns an error if the object is not indexable.
+func (o *UndefinedIterator) IndexGet(_ int, _ IObject) (res IObject, err error) {
+	return nil, ErrNotIndexable
+}
+
+// IndexSet attempts to assign a value to an index in the object but always returns ErrNotIndexAssignable,
+// as this operation is unsupported.
+func (o *UndefinedIterator) IndexSet(_, _ IObject) (err error) {
+	return ErrNotIndexAssignable
+}
+
+// Iterate returns an IIterator to traverse over the elements of the object. If iteration is not supported, it returns nil.
+func (o *UndefinedIterator) Iterate(_ int) IIterator {
+	return nil
+}
+
+// CanIterate determines if the object can be iterated over and returns false for this implementation.
+func (o *UndefinedIterator) CanIterate() bool {
+	return false
+}
+
+// Call invokes the Object with the provided arguments, returning a result object and an error, if any.
+func (o *UndefinedIterator) Call(_ int, _ ...IObject) (ret IObject, err error) {
+	return nil, nil
+}
+
+// CanCall determines if the object can be invoked as a callable. Returns false for non-callable objects.
+func (o *UndefinedIterator) CanCall() bool {
+	return false
+}
+
+// Length returns the length of the Int object.
+func (o *UndefinedIterator) Length() int {
+	return 0
 }
 
 // Copy creates and returns a reference to the same UndefinedIterator, ignoring the input parameters.

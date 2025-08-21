@@ -11,19 +11,47 @@ const (
 // Bytes represents a data type for handling a sequence of bytes.
 // It embeds Object and provides behaviors like indexing, iteration, and binary operations.
 type Bytes struct {
-	IObject
+	gk     *GateKeeper
+	frame  int
 	values []byte
 }
 
 // NewBytes creates and returns a new Bytes object initialized with the provided byte slice.
-func newBytes(factory *GateKeeper, frame int, value []byte) *Bytes {
+func newBytes(factory *GateKeeper, frame int, value []byte) IObject {
 	if len(value) > maxBytesLen {
 		value = value[0:maxBytesLen]
 	}
 	return &Bytes{
-		IObject: factory.newObject(frame),
-		values:  value,
+		gk:     factory,
+		frame:  frame,
+		values: value,
 	}
+}
+
+// GateKeeper returns a reference to the GateKeeper associated with the Object.
+func (o *Bytes) GateKeeper() *GateKeeper {
+	return o.gk
+}
+
+// Frame returns the current frame value of the Object.
+func (o *Bytes) Frame() int {
+	return o.frame
+}
+
+// IndexSet attempts to assign a value to an index in the object but always returns ErrNotIndexAssignable,
+// as this operation is unsupported.
+func (o *Bytes) IndexSet(_, _ IObject) (err error) {
+	return ErrNotIndexAssignable
+}
+
+// Call invokes the Object with the provided arguments, returning a result object and an error, if any.
+func (o *Bytes) Call(_ int, _ ...IObject) (ret IObject, err error) {
+	return nil, nil
+}
+
+// CanCall determines if the object can be invoked as a callable. Returns false for non-callable objects.
+func (o *Bytes) CanCall() bool {
+	return false
 }
 
 // Length returns the length of the Bytes object, which is the number of bytes in the underlying byte slice.

@@ -1,5 +1,6 @@
 package objects
 
+/*
 // Object is a default implementation of the IObject interface with unimplemented or default behavior for methods.
 type Object struct {
 	factory *GateKeeper
@@ -90,3 +91,5 @@ func (o *Object) CanCall() bool {
 func (o *Object) Length() int {
 	return 0
 }
+
+*/

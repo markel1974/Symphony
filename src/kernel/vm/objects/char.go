@@ -6,16 +6,64 @@ const (
 
 // Char represents a character type, encapsulating a single rune values and inheriting behavior from Object.
 type Char struct {
-	IObject
+	gk    *GateKeeper
+	frame int
 	value rune
 }
 
 // NewChar creates and returns a new Char object with the specified rune values.
-func newChar(factory *GateKeeper, frame int, value rune) *Char {
+func newChar(factory *GateKeeper, frame int, value rune) IObject {
 	return &Char{
-		IObject: factory.newObject(frame),
-		value:   value,
+		gk:    factory,
+		frame: frame,
+		value: value,
 	}
+}
+
+// GateKeeper returns a reference to the GateKeeper associated with the Object.
+func (o *Char) GateKeeper() *GateKeeper {
+	return o.gk
+}
+
+// Frame returns the current frame value of the Object.
+func (o *Char) Frame() int {
+	return o.frame
+}
+
+// IndexGet attempts to retrieve a value at the given index and returns an error if the object is not indexable.
+func (o *Char) IndexGet(_ int, _ IObject) (res IObject, err error) {
+	return nil, ErrNotIndexable
+}
+
+// IndexSet attempts to assign a value to an index in the object but always returns ErrNotIndexAssignable,
+// as this operation is unsupported.
+func (o *Char) IndexSet(_, _ IObject) (err error) {
+	return ErrNotIndexAssignable
+}
+
+// Iterate returns an IIterator to traverse over the elements of the object. If iteration is not supported, it returns nil.
+func (o *Char) Iterate(_ int) IIterator {
+	return nil
+}
+
+// CanIterate determines if the object can be iterated over and returns false for this implementation.
+func (o *Char) CanIterate() bool {
+	return false
+}
+
+// Call invokes the Object with the provided arguments, returning a result object and an error, if any.
+func (o *Char) Call(_ int, _ ...IObject) (ret IObject, err error) {
+	return nil, nil
+}
+
+// CanCall determines if the object can be invoked as a callable. Returns false for non-callable objects.
+func (o *Char) CanCall() bool {
+	return false
+}
+
+// Length returns the length of the Int object.
+func (o *Char) Length() int {
+	return 0
 }
 
 // Value returns the rune values stored in the Char object.

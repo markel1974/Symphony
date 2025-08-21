@@ -11,12 +11,13 @@ const (
 
 // Map represents a collection of key-values pairs where keys are strings and values implement the IObject interface.
 type Map struct {
-	IObject
-	values map[string]IObject
+	factory *GateKeeper
+	frame   int
+	values  map[string]IObject
 }
 
 // NewMap creates and returns a new instance of Map initialized with the provided map of string keys to IObject values.
-func newMap(factory *GateKeeper, frame int, value map[string]IObject) *Map {
+func newMap(factory *GateKeeper, frame int, value map[string]IObject) IObject {
 	if len(value) > maxMapLen {
 		nv := make(map[string]IObject)
 		for k, v := range value {
@@ -28,9 +29,36 @@ func newMap(factory *GateKeeper, frame int, value map[string]IObject) *Map {
 		value = nv
 	}
 	return &Map{
-		IObject: factory.newObject(frame),
+		factory: factory,
+		frame:   frame,
 		values:  value,
 	}
+}
+
+// GateKeeper returns a reference to the GateKeeper associated with the Object.
+func (o *Map) GateKeeper() *GateKeeper {
+	return o.factory
+}
+
+// Frame returns the current frame value of the Object.
+func (o *Map) Frame() int {
+	return o.frame
+}
+
+// BinaryOp performs a binary operation on the current object and another object using the specified operator.
+// Returns the result of the operation or an error if the operation is not supported.
+func (o *Map) BinaryOp(_ int, _ Operator, _ IObject) (IObject, error) {
+	return nil, ErrInvalidOperator
+}
+
+// Call invokes the Object with the provided arguments, returning a result object and an error, if any.
+func (o *Map) Call(_ int, _ ...IObject) (ret IObject, err error) {
+	return nil, nil
+}
+
+// CanCall determines if the object can be invoked as a callable. Returns false for non-callable objects.
+func (o *Map) CanCall() bool {
+	return false
 }
 
 // Get retrieves the values associated with the specified key from the map. If the key is not found, it returns nil.

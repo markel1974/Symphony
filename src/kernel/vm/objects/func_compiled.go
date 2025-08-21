@@ -7,7 +7,8 @@ const (
 
 // FuncCompiled represents a compiled function with bytecode instructions, metadata, and associated free variables.
 type FuncCompiled struct {
-	IObject
+	gk            *GateKeeper
+	frame         int
 	name          string
 	instructions  *Instructions
 	numLocals     int
@@ -18,12 +19,13 @@ type FuncCompiled struct {
 }
 
 // NewFunctionCompiled creates a new instance of FuncCompiled with the given instructions, locals, parameters, varArgs, sourceMap, and free vars.
-func newFuncCompiled(factory *GateKeeper, frame int, name string, instructions []byte, numLocals int, numParameters int, varArgs bool, sourceMap map[int]int, free []*ObjectPointer) *FuncCompiled {
+func newFuncCompiled(factory *GateKeeper, frame int, name string, instructions []byte, numLocals int, numParameters int, varArgs bool, sourceMap map[int]int, free []*ObjectPointer) IObject {
 	if sourceMap == nil {
 		sourceMap = make(map[int]int)
 	}
 	return &FuncCompiled{
-		IObject:       factory.newObject(frame),
+		gk:            factory,
+		frame:         frame,
 		name:          name,
 		instructions:  _newInstructions(instructions),
 		numLocals:     numLocals,
@@ -32,6 +34,58 @@ func newFuncCompiled(factory *GateKeeper, frame int, name string, instructions [
 		sourceMap:     sourceMap,
 		free:          free,
 	}
+}
+
+// GateKeeper returns a reference to the GateKeeper associated with the Object.
+func (o *FuncCompiled) GateKeeper() *GateKeeper {
+	return o.gk
+}
+
+// Frame returns the current frame value of the Object.
+func (o *FuncCompiled) Frame() int {
+	return o.frame
+}
+
+// BinaryOp performs a binary operation on the current object and another object using the specified operator.
+// Returns the result of the operation or an error if the operation is not supported.
+func (o *FuncCompiled) BinaryOp(_ int, _ Operator, _ IObject) (IObject, error) {
+	return nil, ErrInvalidOperator
+}
+
+// Boolean returns false for all objects.
+func (o *FuncCompiled) Boolean() bool {
+	return false
+}
+
+// IndexGet attempts to retrieve a value at the given index and returns an error if the object is not indexable.
+func (o *FuncCompiled) IndexGet(_ int, _ IObject) (res IObject, err error) {
+	return nil, ErrNotIndexable
+}
+
+// IndexSet attempts to assign a value to an index in the object but always returns ErrNotIndexAssignable,
+// as this operation is unsupported.
+func (o *FuncCompiled) IndexSet(_, _ IObject) (err error) {
+	return ErrNotIndexAssignable
+}
+
+// Iterate returns an IIterator to traverse over the elements of the object. If iteration is not supported, it returns nil.
+func (o *FuncCompiled) Iterate(_ int) IIterator {
+	return nil
+}
+
+// CanIterate determines if the object can be iterated over and returns false for this implementation.
+func (o *FuncCompiled) CanIterate() bool {
+	return false
+}
+
+// Call invokes the Object with the provided arguments, returning a result object and an error, if any.
+func (o *FuncCompiled) Call(_ int, _ ...IObject) (ret IObject, err error) {
+	return nil, nil
+}
+
+// Length returns the length of the Int object.
+func (o *FuncCompiled) Length() int {
+	return 0
 }
 
 // Name returns the name of the compiled function.

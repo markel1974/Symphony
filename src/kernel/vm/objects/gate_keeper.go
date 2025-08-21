@@ -22,7 +22,7 @@ type GateKeeper struct {
 	undefinedValue    IObject
 	counter           int64
 	maxAllocations    int64
-	undefinedIterator *UndefinedIterator
+	undefinedIterator IIterator
 
 	// Aggiungiamo i pool per gli oggetti
 	//intPool   sync.Pool
@@ -77,14 +77,6 @@ func (f *GateKeeper) TrueValue() IObject {
 // UndefinedValue returns the undefined value of the GateKeeper as an IObject.
 func (f *GateKeeper) UndefinedValue() IObject {
 	return f.undefinedValue
-}
-
-// NewObject creates and returns a new instance of Object with its factory field set to the receiving GateKeeper instance.
-func (f *GateKeeper) newObject(frame int) IObject {
-	if err := f.acquireObject(); err != nil {
-		return f.undefinedValue
-	}
-	return newObject(f, frame)
 }
 
 // NewBytesIterator creates a new BytesIterator for iterating over the provided byte slice `v` using the specified GateKeeper.
@@ -144,10 +136,10 @@ func (f *GateKeeper) NewFuncPackage(kind string, name string, fn FuncCallable) I
 }
 
 // NewFuncPackageFrame creates a new instance of FuncPackage with the specified kind, name, and callable function.
-func (f *GateKeeper) NewFuncPackageFrame(frame int, kind string, name string, fn FuncCallable) *FuncPackage {
-	//if err := f.acquireObject(); err != nil {
-	//	return nil //f.undefinedValue
-	//}
+func (f *GateKeeper) NewFuncPackageFrame(frame int, kind string, name string, fn FuncCallable) IObject {
+	if err := f.acquireObject(); err != nil {
+		return f.undefinedValue
+	}
 	return newFuncPackage(f, frame, kind, name, fn)
 }
 
@@ -183,7 +175,7 @@ func (f *GateKeeper) NewBool(frame int, value bool) IObject {
 	return newBool(f, frame, value)
 }
 
-// NewBytes creates and returns a new instance of Bytes initialized with the provided byte slice and factory context.
+// NewBytes creates and returns a new instance of Bytes initialized with the provided byte slice and gk context.
 func (f *GateKeeper) NewBytes(frame int, value []byte) IObject {
 	if err := f.acquireObject(); err != nil {
 		return f.undefinedValue
@@ -272,7 +264,7 @@ func (f *GateKeeper) NewStruct(frame int, value map[string]IObject) IObject {
 	return newStruct(f, frame, value)
 }
 
-// NewTime creates a new instance of Time using the provided time.Time value and initializes it with the factory instance.
+// NewTime creates a new instance of Time using the provided time.Time value and initializes it with the gk instance.
 func (f *GateKeeper) NewTime(frame int, value time.Time) IObject {
 	if err := f.acquireObject(); err != nil {
 		return f.undefinedValue

@@ -11,16 +11,50 @@ const (
 
 // MapImmutable represents a read-only map structure where keys are strings and values are of type IObject.
 type MapImmutable struct {
-	IObject
-	values map[string]IObject
+	factory *GateKeeper
+	frame   int
+	values  map[string]IObject
 }
 
 // NewMapImmutable creates a new instance of MapImmutable with the provided map of string keys and IObject values.
-func newMapImmutable(factory *GateKeeper, frame int, value map[string]IObject) *MapImmutable {
+func newMapImmutable(factory *GateKeeper, frame int, value map[string]IObject) IObject {
 	return &MapImmutable{
-		IObject: factory.newObject(frame),
+		factory: factory,
+		frame:   frame,
 		values:  value,
 	}
+}
+
+// GateKeeper returns a reference to the GateKeeper associated with the Object.
+func (o *MapImmutable) GateKeeper() *GateKeeper {
+	return o.factory
+}
+
+// Frame returns the current frame value of the Object.
+func (o *MapImmutable) Frame() int {
+	return o.frame
+}
+
+// BinaryOp performs a binary operation on the current object and another object using the specified operator.
+// Returns the result of the operation or an error if the operation is not supported.
+func (o *MapImmutable) BinaryOp(_ int, _ Operator, _ IObject) (IObject, error) {
+	return nil, ErrInvalidOperator
+}
+
+// IndexSet attempts to assign a value to an index in the object but always returns ErrNotIndexAssignable,
+// as this operation is unsupported.
+func (o *MapImmutable) IndexSet(_, _ IObject) (err error) {
+	return ErrNotIndexAssignable
+}
+
+// Call invokes the Object with the provided arguments, returning a result object and an error, if any.
+func (o *MapImmutable) Call(_ int, _ ...IObject) (ret IObject, err error) {
+	return nil, nil
+}
+
+// CanCall determines if the object can be invoked as a callable. Returns false for non-callable objects.
+func (o *MapImmutable) CanCall() bool {
+	return false
 }
 
 // Values returns the underlying map of string keys and IObject values.
@@ -33,16 +67,19 @@ func (o *MapImmutable) Length() int {
 	return len(o.values)
 }
 
+// SetValue assigns the given value to the specified key in the MapImmutable.
 func (o *MapImmutable) SetValue(k string, v IObject) {
 	o.values[k] = v
 }
 
+// GetValue retrieves the value associated with the specified key from the MapImmutable.
+// Returns the value and a boolean indicating if the key exists.
 func (o *MapImmutable) GetValue(k string) (IObject, bool) {
 	v, ok := o.values[k]
 	return v, ok
 }
 
-// TypeName returns the type name of the MapImmutable as a string.
+// TypeName returns the string representation of the type of the MapImmutable object.
 func (o *MapImmutable) TypeName() string {
 	return MapImmutableType
 }

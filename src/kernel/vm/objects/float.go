@@ -13,16 +13,64 @@ const (
 // It embeds Object to implement common interface methods and extends behavior where necessary.
 // The value field holds the actual float64 values encapsulated by the Float type.
 type Float struct {
-	IObject
+	gk    *GateKeeper
+	frame int
 	value float64
 }
 
 // NewFloat creates and returns a pointer to a new Float object initialized with the specified float64 values.
-func newFloat(factory *GateKeeper, frame int, value float64) *Float {
+func newFloat(gk *GateKeeper, frame int, value float64) IObject {
 	return &Float{
-		IObject: factory.newObject(frame),
-		value:   value,
+		gk:    gk,
+		frame: frame,
+		value: value,
 	}
+}
+
+// GateKeeper returns a reference to the GateKeeper associated with the Object.
+func (o *Float) GateKeeper() *GateKeeper {
+	return o.gk
+}
+
+// Frame returns the current frame value of the Object.
+func (o *Float) Frame() int {
+	return o.frame
+}
+
+// IndexGet attempts to retrieve a value at the given index and returns an error if the object is not indexable.
+func (o *Float) IndexGet(_ int, _ IObject) (res IObject, err error) {
+	return nil, ErrNotIndexable
+}
+
+// IndexSet attempts to assign a value to an index in the object but always returns ErrNotIndexAssignable,
+// as this operation is unsupported.
+func (o *Float) IndexSet(_, _ IObject) (err error) {
+	return ErrNotIndexAssignable
+}
+
+// Iterate returns an IIterator to traverse over the elements of the object. If iteration is not supported, it returns nil.
+func (o *Float) Iterate(_ int) IIterator {
+	return nil
+}
+
+// CanIterate determines if the object can be iterated over and returns false for this implementation.
+func (o *Float) CanIterate() bool {
+	return false
+}
+
+// Call invokes the Object with the provided arguments, returning a result object and an error, if any.
+func (o *Float) Call(_ int, _ ...IObject) (ret IObject, err error) {
+	return nil, nil
+}
+
+// CanCall determines if the object can be invoked as a callable. Returns false for non-callable objects.
+func (o *Float) CanCall() bool {
+	return false
+}
+
+// Length returns the length of the Int object.
+func (o *Float) Length() int {
+	return 0
 }
 
 func (o *Float) Value() float64 {

@@ -14,21 +14,70 @@ const (
 
 // Error represents an object that encapsulates an error and implements the IObject interface.
 type Error struct {
-	IObject
+	gk    *GateKeeper
+	frame int
 	err   string
 	value IObject
 }
 
 // NewError creates and returns a new Error object with the specified values.
-func newError(factory *GateKeeper, frame int, err string) *Error {
+func newError(factory *GateKeeper, frame int, err string) IObject {
 	if len(err) > maxErrorLen {
 		err = err[:maxErrorLen]
 	}
 	return &Error{
-		IObject: factory.newObject(frame),
-		value:   factory.NewString(frame, err),
-		err:     err,
+		gk:    factory,
+		frame: frame,
+		value: factory.NewString(frame, err),
+		err:   err,
 	}
+}
+
+// GateKeeper returns a reference to the GateKeeper associated with the Object.
+func (o *Error) GateKeeper() *GateKeeper {
+	return o.gk
+}
+
+// Frame returns the current frame value of the Object.
+func (o *Error) Frame() int {
+	return o.frame
+}
+
+// BinaryOp performs a binary operation on the current object and another object using the specified operator.
+// Returns the result of the operation or an error if the operation is not supported.
+func (o *Error) BinaryOp(_ int, _ Operator, _ IObject) (IObject, error) {
+	return nil, ErrInvalidOperator
+}
+
+// IndexSet attempts to assign a value to an index in the object but always returns ErrNotIndexAssignable,
+// as this operation is unsupported.
+func (o *Error) IndexSet(_, _ IObject) (err error) {
+	return ErrNotIndexAssignable
+}
+
+// Iterate returns an IIterator to traverse over the elements of the object. If iteration is not supported, it returns nil.
+func (o *Error) Iterate(_ int) IIterator {
+	return nil
+}
+
+// CanIterate determines if the object can be iterated over and returns false for this implementation.
+func (o *Error) CanIterate() bool {
+	return false
+}
+
+// Call invokes the Object with the provided arguments, returning a result object and an error, if any.
+func (o *Error) Call(_ int, _ ...IObject) (ret IObject, err error) {
+	return nil, nil
+}
+
+// CanCall determines if the object can be invoked as a callable. Returns false for non-callable objects.
+func (o *Error) CanCall() bool {
+	return false
+}
+
+// Length returns the length of the Int object.
+func (o *Error) Length() int {
+	return 0
 }
 
 // Value returns the underlying IObject value of the Error object.

@@ -11,19 +11,41 @@ const (
 
 // Array represents a collection of IObject elements, providing methods for manipulation, indexing, and iteration.
 type Array struct {
-	IObject
+	gk     *GateKeeper
+	frame  int
 	values []IObject
 }
 
 // NewArray creates and returns a new Array object initialized with the provided slice of IObject elements.
-func newArray(factory *GateKeeper, frame int, value []IObject) *Array {
+func newArray(factory *GateKeeper, frame int, value []IObject) IObject {
 	if len(value) > maxArrayLen {
 		value = value[0:maxArrayLen]
 	}
 	return &Array{
-		IObject: factory.newObject(frame),
-		values:  value,
+		gk:     factory,
+		frame:  frame,
+		values: value,
 	}
+}
+
+// GateKeeper returns the GateKeeper instance associated with the current Array.
+func (o *Array) GateKeeper() *GateKeeper {
+	return o.gk
+}
+
+// Frame retrieves the current execution frame associated with the Array instance.
+func (o *Array) Frame() int {
+	return o.frame
+}
+
+// Call executes the Array instance as a callable object, passing the given arguments, and returns the result or an error.
+func (o *Array) Call(frame int, args ...IObject) (ret IObject, err error) {
+	return nil, nil
+}
+
+// CanCall determines if the Array object supports being called as a function. Always returns false.
+func (o *Array) CanCall() bool {
+	return false
 }
 
 // TypeName returns the string "array", representing the type name of the Array object.
@@ -94,7 +116,7 @@ func (o *Array) BinaryOp(frame int, op Operator, in IObject) (IObject, error) {
 			if len(o.values)+len(rhs.values) > maxArrayLen {
 				return nil, ErrExceedingLimit
 			}
-			return o.GateKeeper().NewArray(frame, append(o.values, rhs.values...)), nil
+			return o.gk.NewArray(frame, append(o.values, rhs.values...)), nil
 		default:
 			return nil, ErrInvalidOperator
 		}
@@ -111,7 +133,7 @@ func (o *Array) Copy(frame int, depth int) IObject {
 		}
 		c = append(c, elem.Copy(frame, depth+1))
 	}
-	return o.GateKeeper().NewArray(frame, c)
+	return o.gk.NewArray(frame, c)
 }
 
 // Boolean returns true if the array is empty, otherwise false.

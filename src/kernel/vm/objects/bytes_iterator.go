@@ -7,19 +7,78 @@ const (
 
 // BytesIterator is an iterator for traversing elements of a byte slice, implementing the IIterator interface.
 type BytesIterator struct {
-	IObject
+	gk     *GateKeeper
+	frame  int
 	values []byte
 	index  int
 	length int
 }
 
-func newBytesIterator(factory *GateKeeper, frame int, v []byte, index int) *BytesIterator {
+func newBytesIterator(factory *GateKeeper, frame int, v []byte, index int) IIterator {
 	return &BytesIterator{
-		IObject: factory.newObject(frame),
-		values:  v,
-		length:  len(v),
-		index:   index,
+		gk:     factory,
+		frame:  frame,
+		values: v,
+		length: len(v),
+		index:  index,
 	}
+}
+
+// GateKeeper returns a reference to the GateKeeper associated with the Object.
+func (o *BytesIterator) GateKeeper() *GateKeeper {
+	return o.gk
+}
+
+// Frame returns the current frame value of the Object.
+func (o *BytesIterator) Frame() int {
+	return o.frame
+}
+
+// BinaryOp performs a binary operation on the current object and another object using the specified operator.
+// Returns the result of the operation or an error if the operation is not supported.
+func (o *BytesIterator) BinaryOp(_ int, _ Operator, _ IObject) (IObject, error) {
+	return nil, ErrInvalidOperator
+}
+
+// Boolean returns false for all objects.
+func (o *BytesIterator) Boolean() bool {
+	return false
+}
+
+// IndexGet attempts to retrieve a value at the given index and returns an error if the object is not indexable.
+func (o *BytesIterator) IndexGet(_ int, _ IObject) (res IObject, err error) {
+	return nil, ErrNotIndexable
+}
+
+// IndexSet attempts to assign a value to an index in the object but always returns ErrNotIndexAssignable,
+// as this operation is unsupported.
+func (o *BytesIterator) IndexSet(_, _ IObject) (err error) {
+	return ErrNotIndexAssignable
+}
+
+// Iterate returns an IIterator to traverse over the elements of the object. If iteration is not supported, it returns nil.
+func (o *BytesIterator) Iterate(_ int) IIterator {
+	return nil
+}
+
+// CanIterate determines if the object can be iterated over and returns false for this implementation.
+func (o *BytesIterator) CanIterate() bool {
+	return false
+}
+
+// Call invokes the Object with the provided arguments, returning a result object and an error, if any.
+func (o *BytesIterator) Call(_ int, _ ...IObject) (ret IObject, err error) {
+	return nil, nil
+}
+
+// CanCall determines if the object can be invoked as a callable. Returns false for non-callable objects.
+func (o *BytesIterator) CanCall() bool {
+	return false
+}
+
+// Length returns the length of the Int object.
+func (o *BytesIterator) Length() int {
+	return 0
 }
 
 // TypeName returns the string representation of the type name, which is "bytes-iterator".

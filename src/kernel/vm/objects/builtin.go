@@ -11,18 +11,72 @@ const (
 
 // Builtin defines a struct representing a built-in object with a name and an integer value.
 type Builtin struct {
-	IObject
+	gk    *GateKeeper
+	frame int
 	name  string
 	index int
 }
 
 // NewBuiltin creates a new instance of Builtin with the specified name and value.
-func newBuiltin(factory *GateKeeper, frame int, name string, index int) *Builtin {
+func newBuiltin(factory *GateKeeper, frame int, name string, index int) IObject {
 	return &Builtin{
-		IObject: factory.newObject(frame),
-		name:    name,
-		index:   index,
+		gk:    factory,
+		frame: frame,
+		name:  name,
+		index: index,
 	}
+}
+
+// GateKeeper returns a reference to the GateKeeper associated with the Object.
+func (o *Builtin) GateKeeper() *GateKeeper {
+	return o.gk
+}
+
+// Frame returns the current frame value of the Object.
+func (o *Builtin) Frame() int {
+	return o.frame
+}
+
+// BinaryOp performs a binary operation on the current object and another object using the specified operator.
+// Returns the result of the operation or an error if the operation is not supported.
+func (o *Builtin) BinaryOp(_ int, _ Operator, _ IObject) (IObject, error) {
+	return nil, ErrInvalidOperator
+}
+
+// IndexGet attempts to retrieve a value at the given index and returns an error if the object is not indexable.
+func (o *Builtin) IndexGet(_ int, _ IObject) (res IObject, err error) {
+	return nil, ErrNotIndexable
+}
+
+// IndexSet attempts to assign a value to an index in the object but always returns ErrNotIndexAssignable,
+// as this operation is unsupported.
+func (o *Builtin) IndexSet(_, _ IObject) (err error) {
+	return ErrNotIndexAssignable
+}
+
+// Iterate returns an IIterator to traverse over the elements of the object. If iteration is not supported, it returns nil.
+func (o *Builtin) Iterate(_ int) IIterator {
+	return nil
+}
+
+// CanIterate determines if the object can be iterated over and returns false for this implementation.
+func (o *Builtin) CanIterate() bool {
+	return false
+}
+
+// Call invokes the Object with the provided arguments, returning a result object and an error, if any.
+func (o *Builtin) Call(_ int, _ ...IObject) (ret IObject, err error) {
+	return nil, nil
+}
+
+// CanCall determines if the object can be invoked as a callable. Returns false for non-callable objects.
+func (o *Builtin) CanCall() bool {
+	return false
+}
+
+// Length returns the length of the Int object.
+func (o *Builtin) Length() int {
+	return 0
 }
 
 // Name returns the name of the Builtin object.

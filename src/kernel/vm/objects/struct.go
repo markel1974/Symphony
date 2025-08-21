@@ -12,12 +12,13 @@ const (
 
 // Struct is a composite object that implements the IObject interface and stores a collection of key-value pairs.
 type Struct struct {
-	IObject
-	values map[string]IObject
+	factory *GateKeeper
+	frame   int
+	values  map[string]IObject
 }
 
 // NewStruct creates a new instance of MapImmutable with the provided map of string keys and IObject values.
-func newStruct(factory *GateKeeper, frame int, value map[string]IObject) *Struct {
+func newStruct(factory *GateKeeper, frame int, value map[string]IObject) IObject {
 	if len(value) > maxStructLen {
 		nv := make(map[string]IObject)
 		for k, v := range value {
@@ -29,9 +30,42 @@ func newStruct(factory *GateKeeper, frame int, value map[string]IObject) *Struct
 		value = nv
 	}
 	return &Struct{
-		IObject: factory.newObject(frame),
+		factory: factory,
+		frame:   frame,
 		values:  value,
 	}
+}
+
+// GateKeeper returns a reference to the GateKeeper associated with the Object.
+func (o *Struct) GateKeeper() *GateKeeper {
+	return o.factory
+}
+
+// Frame returns the current frame value of the Object.
+func (o *Struct) Frame() int {
+	return o.frame
+}
+
+// BinaryOp performs a binary operation on the current object and another object using the specified operator.
+// Returns the result of the operation or an error if the operation is not supported.
+func (o *Struct) BinaryOp(_ int, _ Operator, _ IObject) (IObject, error) {
+	return nil, ErrInvalidOperator
+}
+
+// IndexSet attempts to assign a value to an index in the object but always returns ErrNotIndexAssignable,
+// as this operation is unsupported.
+func (o *Struct) IndexSet(_, _ IObject) (err error) {
+	return ErrNotIndexAssignable
+}
+
+// Call invokes the Object with the provided arguments, returning a result object and an error, if any.
+func (o *Struct) Call(_ int, _ ...IObject) (ret IObject, err error) {
+	return nil, nil
+}
+
+// CanCall determines if the object can be invoked as a callable. Returns false for non-callable objects.
+func (o *Struct) CanCall() bool {
+	return false
 }
 
 // Values returns the underlying map of string keys to IObject values contained within the Struct.

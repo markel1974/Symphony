@@ -10,16 +10,64 @@ const (
 
 // Time represents a custom object encapsulating a Go time.Time values with extended behaviors and operations.
 type Time struct {
-	IObject
-	value time.Time
+	factory *GateKeeper
+	frame   int
+	value   time.Time
 }
 
 // NewTime creates a new instance of Time wrapping the provided time.Time values.
-func newTime(factory *GateKeeper, frame int, value time.Time) *Time {
+func newTime(factory *GateKeeper, frame int, value time.Time) IObject {
 	return &Time{
-		IObject: factory.newObject(frame),
+		factory: factory,
+		frame:   frame,
 		value:   value,
 	}
+}
+
+// GateKeeper returns a reference to the GateKeeper associated with the Object.
+func (o *Time) GateKeeper() *GateKeeper {
+	return o.factory
+}
+
+// Frame returns the current frame value of the Object.
+func (o *Time) Frame() int {
+	return o.frame
+}
+
+// IndexGet attempts to retrieve a value at the given index and returns an error if the object is not indexable.
+func (o *Time) IndexGet(_ int, _ IObject) (res IObject, err error) {
+	return nil, ErrNotIndexable
+}
+
+// IndexSet attempts to assign a value to an index in the object but always returns ErrNotIndexAssignable,
+// as this operation is unsupported.
+func (o *Time) IndexSet(_, _ IObject) (err error) {
+	return ErrNotIndexAssignable
+}
+
+// Iterate returns an IIterator to traverse over the elements of the object. If iteration is not supported, it returns nil.
+func (o *Time) Iterate(_ int) IIterator {
+	return nil
+}
+
+// CanIterate determines if the object can be iterated over and returns false for this implementation.
+func (o *Time) CanIterate() bool {
+	return false
+}
+
+// Call invokes the Object with the provided arguments, returning a result object and an error, if any.
+func (o *Time) Call(_ int, _ ...IObject) (ret IObject, err error) {
+	return nil, nil
+}
+
+// CanCall determines if the object can be invoked as a callable. Returns false for non-callable objects.
+func (o *Time) CanCall() bool {
+	return false
+}
+
+// Length returns the length of the Int object.
+func (o *Time) Length() int {
+	return 0
 }
 
 // Value returns the underlying time.Time values of the Time object.

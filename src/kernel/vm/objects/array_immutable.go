@@ -12,16 +12,38 @@ const (
 // ArrayImmutable represents an array that cannot be modified after creation.
 // Implements IObject and supports iteration, comparison, and copying.
 type ArrayImmutable struct {
-	IObject
+	gk     *GateKeeper
+	frame  int
 	values []IObject
 }
 
 // NewArrayImmutable creates a new ArrayImmutable instance with the given slice of IObject, ensuring it is immutable.
-func newArrayImmutable(factory *GateKeeper, frame int, value []IObject) *ArrayImmutable {
+func newArrayImmutable(factory *GateKeeper, frame int, value []IObject) IObject {
 	return &ArrayImmutable{
-		IObject: factory.newObject(frame),
-		values:  value,
+		gk:     factory,
+		frame:  frame,
+		values: value,
 	}
+}
+
+// GateKeeper returns the GateKeeper instance associated with the ArrayImmutable.
+func (o *ArrayImmutable) GateKeeper() *GateKeeper {
+	return o.gk
+}
+
+// Frame returns the current execution frame associated with the ArrayImmutable instance.
+func (o *ArrayImmutable) Frame() int {
+	return o.frame
+}
+
+// Call invokes the ArrayImmutable as a callable function with the given arguments, always returning nil and no error.
+func (o *ArrayImmutable) Call(_ int, _ ...IObject) (ret IObject, err error) {
+	return nil, nil
+}
+
+// CanCall checks if the ArrayImmutable object supports being called as a function. Always returns false.
+func (o *ArrayImmutable) CanCall() bool {
+	return false
 }
 
 // Values returns the underlying slice of IObject stored in the ArrayImmutable, ensuring immutability.
@@ -106,6 +128,10 @@ func (o *ArrayImmutable) Equals(in IObject) bool {
 		}
 	}
 	return true
+}
+
+func (o *ArrayImmutable) IndexSet(_, _ IObject) error {
+	return ErrNotIndexAssignable
 }
 
 // IndexGet retrieves an element from the array at the specified index. Returns error for invalid index type or out of bounds.
