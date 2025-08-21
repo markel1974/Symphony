@@ -162,7 +162,7 @@ func (l *Loader) CompilePackage(name string) (*objects.MapImmutable, error) {
 	}
 	attrs := make(map[string]objects.IObject, len(module.container))
 	for k, v := range module.container {
-		attrs[k] = v.Copy(objects.FrameStatic)
+		attrs[k] = v.Copy(objects.FrameStatic, 0)
 	}
 	attrs[bytecode.ModuleKey] = l.factory.NewStringNoSize(objects.FrameStatic, name)
 	return l.factory.NewMapImmutable(objects.FrameStatic, attrs), nil
