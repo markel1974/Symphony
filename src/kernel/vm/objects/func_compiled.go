@@ -81,7 +81,7 @@ func (o *FuncCompiled) String() string {
 
 // Copy creates and returns a new instance of FuncCompiled, duplicating its state, except for its variable pointers.
 func (o *FuncCompiled) Copy(frame int) IObject {
-	ret := o.Factory().NewFuncCompiled(frame, o.name, nil, o.numLocals, o.numParameters, o.varArgs, nil, nil)
+	ret := o.GateKeeper().NewFuncCompiled(frame, o.name, nil, o.numLocals, o.numParameters, o.varArgs, nil, nil)
 	ret.instructions = o.instructions.Copy()
 	ret.free = append([]*ObjectPointer{}, o.free...)
 	return ret

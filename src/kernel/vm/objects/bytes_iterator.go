@@ -39,7 +39,7 @@ func (i *BytesIterator) Equals(IObject) bool {
 
 // Copy creates and returns a new instance of BytesIterator with the same state as the current instance.
 func (i *BytesIterator) Copy(frame int) IObject {
-	ret := i.Factory().NewBytesIterator(frame, i.values)
+	ret := i.GateKeeper().NewBytesIterator(frame, i.values)
 	ret.index = i.index
 	return ret
 }
@@ -52,10 +52,10 @@ func (i *BytesIterator) Next() bool {
 
 // Key returns the current index of the iterator as an IObject, decremented by one from the internal index tracker.
 func (i *BytesIterator) Key(frame int) IObject {
-	return i.Factory().NewInt(frame, int64(i.index-1))
+	return i.GateKeeper().NewInt(frame, int64(i.index-1))
 }
 
 // Value returns the values of the current byte in the iteration as an IObject, wrapped in an Int struct.
 func (i *BytesIterator) Value(frame int) IObject {
-	return i.Factory().NewInt(frame, int64(i.values[i.index-1]))
+	return i.GateKeeper().NewInt(frame, int64(i.values[i.index-1]))
 }

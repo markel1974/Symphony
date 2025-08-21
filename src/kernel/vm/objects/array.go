@@ -82,7 +82,7 @@ func (o *Array) BinaryOp(frame int, op Operator, in IObject) (IObject, error) {
 			if len(rhs.values) == 0 {
 				return o, nil
 			}
-			return o.Factory().NewArray(frame, append(o.values, rhs.values...)), nil
+			return o.GateKeeper().NewArray(frame, append(o.values, rhs.values...)), nil
 		default:
 			return nil, ErrInvalidOperator
 		}
@@ -96,7 +96,7 @@ func (o *Array) Copy(frame int) IObject {
 	for _, elem := range o.values {
 		c = append(c, elem.Copy(frame))
 	}
-	return o.Factory().NewArray(frame, c)
+	return o.GateKeeper().NewArray(frame, c)
 }
 
 // Boolean returns true if the array is empty, otherwise false.
@@ -135,7 +135,7 @@ func (o *Array) IndexGet(_ int, index IObject) (res IObject, err error) {
 	}
 	idxVal := int(intIdx.value)
 	if idxVal < 0 || idxVal >= len(o.values) {
-		res = o.Factory().UndefinedValue()
+		res = o.GateKeeper().UndefinedValue()
 		return
 	}
 	res = o.values[idxVal]
@@ -144,7 +144,7 @@ func (o *Array) IndexGet(_ int, index IObject) (res IObject, err error) {
 
 // IndexSet assigns a given values to the specified index in the array, returning an error if the operation is invalid.
 func (o *Array) IndexSet(index IObject, value IObject) (err error) {
-	idx, ok := o.Factory().ToInt64(index)
+	idx, ok := o.GateKeeper().ToInt64(index)
 	if !ok {
 		err = ErrInvalidIndexType
 		return
@@ -165,5 +165,5 @@ func (o *Array) CanIterate() bool {
 
 // Iterate returns an IIterator for the Array instance, allowing sequential access to its elements.
 func (o *Array) Iterate(frame int) IIterator {
-	return o.Factory().NewArrayIterator(frame, o.values)
+	return o.GateKeeper().NewArrayIterator(frame, o.values)
 }

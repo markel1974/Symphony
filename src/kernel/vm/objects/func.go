@@ -14,9 +14,9 @@ package objects
 //	bS		bytes-Slice		[]byte		A slice (array) of bytes.
 //  iS      int-Slice		[]int       A slice (array) of int.
 
-// FuncInOn converts a no-argument, no-return Go function into a FuncCallable type that can be called with zero arguments.
-// Returns ErrWrongNumArguments if any arguments are passed.
-// Invokes the provided function and returns UndefinedValue upon successful execution.
+// funcInOn converts a no-argument void Go function into a FuncCallable for integration with the IObject system.
+// Returns ErrWrongNumArguments if arguments are passed during invocation.
+// Executes the provided function and returns the UndefinedValue from GateKeeper upon completion.
 func funcInOn(f *GateKeeper, fn func()) FuncCallable {
 	return func(frame int, args ...IObject) (ret IObject, err error) {
 		if len(args) != 0 {
@@ -27,8 +27,8 @@ func funcInOn(f *GateKeeper, fn func()) FuncCallable {
 	}
 }
 
-// FuncInOi wraps a no-argument integer-returning function into a callable functional interface of type FuncCallable.
-// Returns an error if arguments are provided. Converts the integer result into an IObject using NewInt.
+// funcInOi wraps a no-argument integer-returning function into a FuncCallable interface, returning an IObject representation of the result.
+// It requires a GateKeeper for object creation and fails with ErrWrongNumArguments if any arguments are provided.
 func funcInOi(f *GateKeeper, fn func() int) FuncCallable {
 	return func(frame int, args ...IObject) (ret IObject, err error) {
 		if len(args) != 0 {
@@ -38,9 +38,9 @@ func funcInOi(f *GateKeeper, fn func() int) FuncCallable {
 	}
 }
 
-// FuncInOi64 wraps a function returning int64 into a FuncCallable with no arguments.
-// Returns ErrWrongNumArguments if arguments are passed.
-// Converts the result to an IObject using NewInt before returning.
+// funcInOi64 wraps a function returning int64 into a FuncCallable accepting no arguments.
+// Returns ErrWrongNumArguments if arguments are provided to the invocation.
+// Converts the return value of the function to an IObject using GateKeeper's NewInt method.
 func funcInOi64(f *GateKeeper, fn func() int64) FuncCallable {
 	return func(frame int, args ...IObject) (ret IObject, err error) {
 		if len(args) != 0 {
@@ -50,7 +50,9 @@ func funcInOi64(f *GateKeeper, fn func() int64) FuncCallable {
 	}
 }
 
-// FuncIi64Oi64 wraps a function that takes int64 and returns int64, into a FuncCallable compatible with IObject interface.
+// funcIi64Oi64 wraps a function taking int64 and returning int64 into a FuncCallable compatible with IObject interface.
+// It validates a single IObject argument, converts it to an int64, applies the wrapped function, and returns the result.
+// Returns ErrWrongNumArguments if provided argument count is not 1 or an error on argument conversion.
 func funcIi64Oi64(f *GateKeeper, fn func(int64) int64) FuncCallable {
 	return func(frame int, args ...IObject) (ret IObject, err error) {
 		if len(args) != 1 {
@@ -64,7 +66,9 @@ func funcIi64Oi64(f *GateKeeper, fn func(int64) int64) FuncCallable {
 	}
 }
 
-// FuncIi64On wraps a function that accepts a single int64 argument into a FuncCallable that works with IObject arguments.
+// funcIi64On wraps a function taking an int64 as a FuncCallable that operates on IObject arguments.
+// It validates the argument count and type before invoking the provided function.
+// Returns an IObject output or an error.
 func funcIi64On(f *GateKeeper, fn func(int64)) FuncCallable {
 	return func(frame int, args ...IObject) (ret IObject, err error) {
 		if len(args) != 1 {
@@ -79,7 +83,8 @@ func funcIi64On(f *GateKeeper, fn func(int64)) FuncCallable {
 	}
 }
 
-// FuncInOb wraps a zero-argument boolean function into a FuncCallable that returns TrueValue or FalseValue.
+// funcInOb transforms a zero-argument boolean function into a FuncCallable returning TrueValue or FalseValue based on its result.
+// Returns an error if extra arguments are passed during invocation.
 func funcInOb(f *GateKeeper, fn func() bool) FuncCallable {
 	return func(frame int, args ...IObject) (ret IObject, err error) {
 		if len(args) != 0 {
@@ -92,9 +97,9 @@ func funcInOb(f *GateKeeper, fn func() bool) FuncCallable {
 	}
 }
 
-// FuncInOe creates a FuncCallable wrapper around a zero-argument function that returns an error.
-// Returns ErrWrongNumArguments if arguments are provided.
-// Wraps the error returned by the given function into an IObject-compatible error object.
+// funcInOe wraps a zero-argument function returning an error into a FuncCallable compatible function.
+// Returns an error object if the wrapped function fails.
+// Returns ErrWrongNumArguments if called with any arguments.
 func funcInOe(f *GateKeeper, fn func() error) FuncCallable {
 	return func(frame int, args ...IObject) (IObject, error) {
 		if len(args) != 0 {
@@ -108,8 +113,8 @@ func funcInOe(f *GateKeeper, fn func() error) FuncCallable {
 	}
 }
 
-// FuncInOs wraps a function that returns a string, creating a FuncCallable with IObject arguments and results.
-// If called with arguments, it returns ErrWrongNumArguments. Otherwise, it returns a string-wrapped IObject result.
+// funcInOs creates a FuncCallable that wraps a function returning a string, converting it to an IObject within a given frame.
+// Returns ErrWrongNumArguments if called with any arguments, otherwise wraps and returns the function's string output as an IObject.
 func funcInOs(f *GateKeeper, fn func() string) FuncCallable {
 	return func(frame int, args ...IObject) (IObject, error) {
 		if len(args) != 0 {
@@ -123,8 +128,7 @@ func funcInOs(f *GateKeeper, fn func() string) FuncCallable {
 	}
 }
 
-// FuncInOse wraps a function that returns a string and error into a FuncCallable that accepts no arguments.
-// Returns an error if arguments are provided or if the wrapped function encounters an error.
+// funcInOse wraps a function returning a string and error into a FuncCallable that takes no arguments and handles errors.
 func funcInOse(f *GateKeeper, fn func() (string, error)) FuncCallable {
 	return func(frame int, args ...IObject) (IObject, error) {
 		if len(args) != 0 {
@@ -142,8 +146,8 @@ func funcInOse(f *GateKeeper, fn func() (string, error)) FuncCallable {
 	}
 }
 
-// FuncInObSe converts a function returning ([]byte, error) into a FuncCallable that adheres to IObject function standards.
-// It ensures the argument count is zero, wraps errors into IObject-compatible errors, and enforces byte slice size limits.
+// funcInObSe converts a function returning ([]byte, error) into a FuncCallable that wraps logic for IObject compatibility.
+// Ensures no arguments are passed, wraps errors into IObject errors, and enforces a byte slice size limit.
 func funcInObSe(f *GateKeeper, fn func() ([]byte, error)) FuncCallable {
 	return func(frame int, args ...IObject) (IObject, error) {
 		if len(args) != 0 {
@@ -160,9 +164,9 @@ func funcInObSe(f *GateKeeper, fn func() ([]byte, error)) FuncCallable {
 	}
 }
 
-// FuncInOf64 wraps a zero-argument function that returns a float64 into a FuncCallable returning an IObject and an error.
+// funcInOf64 wraps a zero-argument function returning float64 into a FuncCallable returning an IObject and an error.
 // Returns ErrWrongNumArguments if called with arguments.
-// Converts the float64 output of the provided function into an IObject using NewFloat.
+// Converts the float64 result of fn into an IObject using the provided GateKeeper instance.
 func funcInOf64(f *GateKeeper, fn func() float64) FuncCallable {
 	return func(frame int, args ...IObject) (ret IObject, err error) {
 		if len(args) != 0 {
@@ -172,9 +176,9 @@ func funcInOf64(f *GateKeeper, fn func() float64) FuncCallable {
 	}
 }
 
-// FuncInOsS takes a function that returns a slice of strings and wraps it into a FuncCallable returning an Array of strings.
-// The FuncCallable expects zero arguments; passing others results in ErrWrongNumArguments.
-// Converts each string from the slice into a String object and appends it to the Array.
+// funcInOsS wraps a function that returns a slice of strings into a FuncCallable, returning an Array object of the strings.
+// The resulting FuncCallable accepts no arguments. Passing arguments results in ErrWrongNumArguments.
+// Each string is converted to an IObject representation and added to the Array.
 func funcInOsS(f *GateKeeper, fn func() []string) FuncCallable {
 	return func(frame int, args ...IObject) (ret IObject, err error) {
 		if len(args) != 0 {
@@ -192,9 +196,9 @@ func funcInOsS(f *GateKeeper, fn func() []string) FuncCallable {
 	}
 }
 
-// FuncInOiSe wraps a function that returns a slice of integers and an error into a FuncCallable compatible function.
-// It validates zero arguments, invokes the wrapped function, wraps any error, and converts the slice to an array of IObject.
-// Returns an IObject array containing the integers or a wrapped error if the wrapped function fails.
+// funcInOiSe wraps a function returning a slice of integers and an error into a FuncCallable-compatible function.
+// Validates no arguments, calls the function, handles errors, and converts the result into an IObject array.
+// Returns an IObject array of integers or a wrapped error if the function execution fails.
 func funcInOiSe(f *GateKeeper, fn func() ([]int, error)) FuncCallable {
 	return func(frame int, args ...IObject) (IObject, error) {
 		if len(args) != 0 {
@@ -212,7 +216,7 @@ func funcInOiSe(f *GateKeeper, fn func() ([]int, error)) FuncCallable {
 	}
 }
 
-// FuncIiOiS takes a function that converts an integer to a slice of integers and returns it as a callable function.
+// funcIiOiS converts a function from int to a slice of int into a FuncCallable for use in the system's callable context.
 func funcIiOiS(f *GateKeeper, fn func(int) []int) FuncCallable {
 	return func(frame int, args ...IObject) (ret IObject, err error) {
 		if len(args) != 1 {
@@ -231,9 +235,9 @@ func funcIiOiS(f *GateKeeper, fn func(int) []int) FuncCallable {
 	}
 }
 
-// FuncIf64Of64 converts a single-argument float64 function into a FuncCallable compatible with IObject arguments.
-// It validates the input argument as a float-compatible type.
-// Returns a new IObject representing the result or an appropriate error if validation fails.
+// funcIf64Of64 wraps a float64-to-float64 function as a FuncCallable compatible with IObject arguments.
+// Converts the first IObject argument to float64, applies the function, and returns the result as an IObject.
+// Returns ErrWrongNumArguments if the arguments length is not exactly 1 or an error on conversion failure.
 func funcIf64Of64(f *GateKeeper, fn func(float64) float64) FuncCallable {
 	return func(frame int, args ...IObject) (ret IObject, err error) {
 		if len(args) != 1 {
@@ -247,9 +251,7 @@ func funcIf64Of64(f *GateKeeper, fn func(float64) float64) FuncCallable {
 	}
 }
 
-// FuncIiOn wraps a function with an int parameter to conform to the FuncCallable signature for custom runtime calls.
-// It validates the argument count and type, invoking the provided function with the argument as an integer.
-// Returns UndefinedValue on success or an error if the argument is invalid.
+// funcIiOn wraps a function with an int parameter into a FuncCallable, ensuring proper argument validation and conversion.
 func funcIiOn(f *GateKeeper, fn func(int)) FuncCallable {
 	return func(frame int, args ...IObject) (ret IObject, err error) {
 		if len(args) != 1 {
@@ -264,9 +266,9 @@ func funcIiOn(f *GateKeeper, fn func(int)) FuncCallable {
 	}
 }
 
-// FuncIiOf64 wraps a function of type func(int) float64 as a FuncCallable, enabling its use within the IObject interface ecosystem.
-// It validates that exactly one argument is provided and converts it to an int before calling the wrapped function.
-// If the argument type is incompatible or the wrong number of arguments are passed, an appropriate error is returned.
+// funcIiOf64 wraps a func(int) float64 as a FuncCallable, validating input and converting arguments to match the function's signature.
+// It ensures exactly one argument is passed, converts it to int64, and invokes the provided function, returning a float result.
+// Returns an error if argument count or type is invalid.
 func funcIiOf64(f *GateKeeper, fn func(int) float64) FuncCallable {
 	return func(frame int, args ...IObject) (ret IObject, err error) {
 		if len(args) != 1 {
@@ -280,8 +282,9 @@ func funcIiOf64(f *GateKeeper, fn func(int) float64) FuncCallable {
 	}
 }
 
-// FuncIf64Oi wraps a function transforming a float64 to an int, making it callable with IObject arguments.
-// Returns an error if incorrect number or type of arguments are provided.
+// funcIf64Oi converts a float64-to-int function into a FuncCallable compatible with the IObject interface.
+// Returns ErrWrongNumArguments if provided arguments don't match the expected count or type.
+// Leverages GateKeeper for argument parsing and construction of the return value.
 func funcIf64Oi(f *GateKeeper, fn func(float64) int) FuncCallable {
 	return func(frame int, args ...IObject) (ret IObject, err error) {
 		if len(args) != 1 {
@@ -295,8 +298,8 @@ func funcIf64Oi(f *GateKeeper, fn func(float64) int) FuncCallable {
 	}
 }
 
-// FuncIf64f64Of64 creates a FuncCallable that applies the given binary float64 function to two converted IObject arguments.
-// Returns an error if arguments are not exactly two or cannot be converted to float64.
+// funcIf64f64Of64 creates a FuncCallable that applies a binary float64 function to two IObject arguments after conversion.
+// Returns an error if the argument count is not exactly two or if conversion to float64 fails.
 func funcIf64f64Of64(f *GateKeeper, fn func(float64, float64) float64) FuncCallable {
 	return func(frame int, args ...IObject) (ret IObject, err error) {
 		if len(args) != 2 {
@@ -314,8 +317,8 @@ func funcIf64f64Of64(f *GateKeeper, fn func(float64, float64) float64) FuncCalla
 	}
 }
 
-// FuncIif64Of64 wraps a provided function accepting an int and float64, returning it as a FuncCallable compatible with IObject arguments.
-// It enforces argument type validation and handles potential type mismatches with descriptive errors.
+// funcIif64Of64 wraps a function accepting an int and float64, exposing it as a FuncCallable compatible with IObject arguments.
+// It validates the argument types, ensuring the first is convertible to int64 and the second to float64, or returns appropriate errors.
 func funcIif64Of64(f *GateKeeper, fn func(int, float64) float64) FuncCallable {
 	return func(frame int, args ...IObject) (ret IObject, err error) {
 		if len(args) != 2 {
@@ -333,9 +336,8 @@ func funcIif64Of64(f *GateKeeper, fn func(int, float64) float64) FuncCallable {
 	}
 }
 
-// FuncIf64iOf64 creates a FuncCallable wrapping a function that takes a float64 and int and returns a float64.
-// It validates input argument types and converts them to the appropriate types expected by the wrapped function.
-// Returns an IObject representing the result of the wrapped function or an error if argument validation fails.
+// funcIf64iOf64 creates a FuncCallable wrapping a function that takes float64, int arguments and returns a float64.
+// Validates and converts input arguments to expected types, returning the result or an error on validation failure.
 func funcIf64iOf64(f *GateKeeper, fn func(float64, int) float64) FuncCallable {
 	return func(frame int, args ...IObject) (ret IObject, err error) {
 		if len(args) != 2 {
@@ -353,10 +355,9 @@ func funcIf64iOf64(f *GateKeeper, fn func(float64, int) float64) FuncCallable {
 	}
 }
 
-// FuncIf64iOb wraps a function that processes a float64 and an int, exposing it as a FuncCallable compatible with the IObject interface.
-// It converts the first argument to a float64 and the second to an int, then applies the provided function.
-// Returns TrueValue if the function evaluates to true; otherwise, returns FalseValue.
-// Returns ErrWrongNumArguments if the argument count is not 2 or NewInvalidArgumentError on type conversion failures.
+// funcIf64iOb converts the first argument to float64 and the second to int, then applies the provided boolean function.
+// Returns TrueValue/FalseValue based on the function's result or an error if arguments are invalid or conversion fails.
+// Returns ErrWrongNumArguments if the number of arguments is not 2.
 func funcIf64iOb(f *GateKeeper, fn func(float64, int) bool) FuncCallable {
 	return func(frame int, args ...IObject) (ret IObject, err error) {
 		if len(args) != 2 {
@@ -377,7 +378,10 @@ func funcIf64iOb(f *GateKeeper, fn func(float64, int) bool) FuncCallable {
 	}
 }
 
-// FuncIf64Ob wraps a function accepting a float64 and returning a boolean into a FuncCallable compatible with the IObject interface.
+// funcIf64Ob converts a function that takes a float64 and returns a boolean into a FuncCallable-compatible wrapper.
+// Returns `true` or `false` IObject based on the function's result.
+// Ensures the input arguments are valid and converts the first argument to float64 or raises an error.
+// Errors if an incorrect number of arguments is provided.
 func funcIf64Ob(f *GateKeeper, fn func(float64) bool) FuncCallable {
 	return func(frame int, args ...IObject) (ret IObject, err error) {
 		if len(args) != 1 {
@@ -394,7 +398,9 @@ func funcIf64Ob(f *GateKeeper, fn func(float64) bool) FuncCallable {
 	}
 }
 
-// FuncIsOs creates a FuncCallable that applies a provided string-to-string function to the first argument and returns the result.
+// funcIsOs creates a FuncCallable that applies a string-to-string function to the first argument and returns the result.
+// It ensures the correct number of arguments and converts the input to a string before processing.
+// Returns the transformed string as an IObject or an error if the input is invalid.
 func funcIsOs(f *GateKeeper, fn func(string) string) FuncCallable {
 	return func(frame int, args ...IObject) (IObject, error) {
 		if len(args) != 1 {
@@ -412,9 +418,8 @@ func funcIsOs(f *GateKeeper, fn func(string) string) FuncCallable {
 	}
 }
 
-// FuncIsOsS converts a string-to-string-array function into a FuncCallable that operates on IObject arguments.
-// It takes one string-compatible argument, applies the provided function, and returns the result as an Array of strings.
-// If argument count or type is invalid, it returns an error.
+// funcIsOsS creates a FuncCallable that converts IObject arguments to strings, applies a string-to-string-array function, and returns the result as an Array.
+// It validates the argument count and type, returning an error for invalid inputs.
 func funcIsOsS(f *GateKeeper, fn func(string) []string) FuncCallable {
 	return func(frame int, args ...IObject) (IObject, error) {
 		if len(args) != 1 {
@@ -437,7 +442,7 @@ func funcIsOsS(f *GateKeeper, fn func(string) []string) FuncCallable {
 	}
 }
 
-// FuncIsOse wraps a string transformation function and adapts it to a FuncCallable with argument validation logic.
+// funcIsOse adapts a string transformation function to a FuncCallable, validating arguments and managing errors.
 func funcIsOse(f *GateKeeper, fn func(string) (string, error)) FuncCallable {
 	return func(frame int, args ...IObject) (IObject, error) {
 		if len(args) != 1 {
@@ -459,10 +464,10 @@ func funcIsOse(f *GateKeeper, fn func(string) (string, error)) FuncCallable {
 	}
 }
 
-// FuncIsOe converts a string-to-error function into a FuncCallable that operates on IObject arguments.
-// It expects exactly one argument convertible to a string and returns an IObject error or result.
-// Returns ErrWrongNumArguments if called with an incorrect number of arguments.
-// Returns an invalid argument error if the first argument is not string-compatible.
+// funcIsOe wraps a string-to-error function into a FuncCallable compatible with the system's IObject interface.
+// It validates the argument count, ensures the first argument is string-convertible, and propagates any errors.
+// Returns ErrWrongNumArguments if the number of arguments is invalid or an IObject error for argument issues.
+// On success, it returns f.TrueValue() indicating successful execution of the given function.
 func funcIsOe(f *GateKeeper, fn func(string) error) FuncCallable {
 	return func(frame int, args ...IObject) (IObject, error) {
 		if len(args) != 1 {
@@ -480,8 +485,9 @@ func funcIsOe(f *GateKeeper, fn func(string) error) FuncCallable {
 	}
 }
 
-// FuncIssOe wraps a function accepting two strings and returning an error into a FuncCallable compatible with the IObject interface.
-// It ensures the function is called with exactly two string arguments and returns an appropriate error for incorrect usage.
+// funcIssOe wraps a function taking two strings and returning an error into a FuncCallable compatible with IObject.
+// Ensures the function is invoked with exactly two string arguments, returning an error for invalid input.
+// Returns a TrueValue IObject upon successful execution or an error message as a new error object.
 func funcIssOe(f *GateKeeper, fn func(string, string) error) FuncCallable {
 	return func(frame int, args ...IObject) (IObject, error) {
 		if len(args) != 2 {
@@ -503,8 +509,8 @@ func funcIssOe(f *GateKeeper, fn func(string, string) error) FuncCallable {
 	}
 }
 
-// FuncIssOsS converts a function that takes two strings and returns a slice of strings into a FuncCallable.
-// The returned FuncCallable validates its arguments, invokes the provided function, and returns the results as an array.
+// funcIssOsS converts a function accepting two strings and returning a slice of strings into a FuncCallable.
+// It validates arguments, invokes the function, and returns the results as an IObject Array.
 func funcIssOsS(f *GateKeeper, fn func(string, string) []string) FuncCallable {
 	return func(frame int, args ...IObject) (IObject, error) {
 		if len(args) != 2 {
@@ -530,9 +536,9 @@ func funcIssOsS(f *GateKeeper, fn func(string, string) []string) FuncCallable {
 	}
 }
 
-// FuncIssiOsS converts a function with parameters (string, string, int) -> []string into a FuncCallable.
-// It validates arguments, applies the function, and wraps the output in an IObject-compatible Array.
-// Returns an error if argument validation fails or function results cannot be converted to a String.
+// funcIssiOsS converts a function with parameters (string, string, int) -> []string into a FuncCallable with type validation.
+// It processes arguments, executes the provided function, and wraps the output into an IObject-compatible array.
+// Returns an error if argument count or types are invalid, or if conversion to IObject fails.
 func funcIssiOsS(f *GateKeeper, fn func(string, string, int) []string) FuncCallable {
 	return func(frame int, args ...IObject) (IObject, error) {
 		if len(args) != 3 {
@@ -562,10 +568,9 @@ func funcIssiOsS(f *GateKeeper, fn func(string, string, int) []string) FuncCalla
 	}
 }
 
-// FuncIssOi converts a function with two string inputs and an int output into a FuncCallable type.
-// The returned FuncCallable validates that exactly two arguments are passed and they are string-compatible.
-// If arguments are valid, the wrapped function is invoked, and its integer result is wrapped in an IObject.
-// Returns an error if the number of arguments is incorrect or conversion to strings fails.
+// funcIssOi converts a function with two string arguments and an int return type into a FuncCallable.
+// It validates that exactly two arguments are passed, converts them to strings, and wraps the result in an IObject.
+// Returns an error if the argument count is incorrect or conversion to strings fails.
 func funcIssOi(f *GateKeeper, fn func(string, string) int) FuncCallable {
 	return func(frame int, args ...IObject) (IObject, error) {
 		if len(args) != 2 {
@@ -583,9 +588,9 @@ func funcIssOi(f *GateKeeper, fn func(string, string) int) FuncCallable {
 	}
 }
 
-// FuncIssOs wraps a function that takes two strings and returns a string into a FuncCallable accepting IObject arguments.
-// It validates argument types and ensures exactly two arguments are passed or returns an appropriate error.
-// The wrapped function's result is converted to an IObject before being returned.
+// funcIssOs wraps a two-string-argument function into a FuncCallable for arguments of type IObject.
+// It ensures exactly two arguments are provided and converts them into strings or returns an error if conversion fails.
+// The wrapped function's result is converted back into an IObject before being returned.
 func funcIssOs(f *GateKeeper, fn func(string, string) string) FuncCallable {
 	return func(frame int, args ...IObject) (IObject, error) {
 		if len(args) != 2 {
@@ -608,10 +613,9 @@ func funcIssOs(f *GateKeeper, fn func(string, string) string) FuncCallable {
 	}
 }
 
-// FuncIssOb wraps a binary comparison function for strings as a callable function in the IObject system.
-// The returned FuncCallable validates arguments, applies the provided function, and returns TrueValue or FalseValue.
-// It expects the function to take two string arguments and return a boolean indicating the comparison result.
-// Returns an error if the number of arguments is incorrect or arguments are not string-compatible.
+// funcIssOb wraps a binary string comparison function as a FuncCallable for the IObject system with validation and error handling.
+// It ensures two arguments are provided, converts them to strings, applies the comparison function, and returns TrueValue or FalseValue.
+// An error is returned if argument count is invalid or type conversion fails.
 func funcIssOb(f *GateKeeper, fn func(string, string) bool) FuncCallable {
 	return func(frame int, args ...IObject) (IObject, error) {
 		if len(args) != 2 {
@@ -632,7 +636,8 @@ func funcIssOb(f *GateKeeper, fn func(string, string) bool) FuncCallable {
 	}
 }
 
-// FuncIsSsOs creates a FuncCallable that processes a string slice and a string, applying the given transformation function.
+// funcIsSsOs constructs a FuncCallable that processes arguments as an array of strings and a single string, returning a new string.
+// It validates input types, transforms them, applies a provided function, and creates a new result object or error.
 func funcIsSsOs(f *GateKeeper, fn func([]string, string) string) FuncCallable {
 	return func(frame int, args ...IObject) (IObject, error) {
 		if len(args) != 2 {
@@ -671,9 +676,9 @@ func funcIsSsOs(f *GateKeeper, fn func([]string, string) string) FuncCallable {
 	}
 }
 
-// FuncIsi64Oe transforms a function accepting a string and int64 into a FuncCallable that operates on IObject arguments.
-// Takes exactly two arguments; the first must be string-compatible, the second int64-compatible, or errors are returned.
-// Wraps the result of the provided function into an IObject or returns an appropriate error if validation fails.
+// funcIsi64Oe converts a function accepting string and int64 into a FuncCallable operating on IObject arguments.
+// Validates arguments count, ensures the first is string-compatible and second int64-compatible, then invokes the function.
+// Returns the result as IObject or an error in case of validation or function execution failure.
 func funcIsi64Oe(f *GateKeeper, fn func(string, int64) error) FuncCallable {
 	return func(frame int, args ...IObject) (ret IObject, err error) {
 		if len(args) != 2 {
@@ -695,7 +700,7 @@ func funcIsi64Oe(f *GateKeeper, fn func(string, int64) error) FuncCallable {
 	}
 }
 
-// FuncIiiOe wraps a function taking two integers and returning an error into a FuncCallable accepting two IObject arguments.
+// funcIiiOe converts a function with two integer inputs and an error return to a FuncCallable that operates on IObject inputs.
 func funcIiiOe(f *GateKeeper, fn func(int, int) error) FuncCallable {
 	return func(frame int, args ...IObject) (ret IObject, err error) {
 		if len(args) != 2 {
@@ -717,9 +722,7 @@ func funcIiiOe(f *GateKeeper, fn func(int, int) error) FuncCallable {
 	}
 }
 
-// FuncIsiOs wraps a function that takes a string and int as inputs and returns a string, converting it to a FuncCallable.
-// It validates the arguments, calls the wrapped function, and converts the result to an IObject.
-// Returns an error if arguments are of invalid types or wrong number of arguments is supplied.
+// funcIsiOs converts a function with a string and int as inputs to a FuncCallable, ensuring argument validation and type conversion.
 func funcIsiOs(f *GateKeeper, fn func(string, int) string) FuncCallable {
 	return func(frame int, args ...IObject) (ret IObject, err error) {
 		if len(args) != 2 {
@@ -741,7 +744,8 @@ func funcIsiOs(f *GateKeeper, fn func(string, int) string) FuncCallable {
 	}
 }
 
-// FuncIsiiOe converts a function with string, int, int inputs, and an error return into a FuncCallable with variadic IObject arguments.
+// funcIsiiOe converts a function with string, int, int inputs and an error return into a FuncCallable with IObject arguments.
+// It validates the number of arguments and converts them to the appropriate types before invoking the provided function.
 func funcIsiiOe(f *GateKeeper, fn func(string, int, int) error) FuncCallable {
 	return func(frame int, args ...IObject) (ret IObject, err error) {
 		if len(args) != 3 {
@@ -767,11 +771,10 @@ func funcIsiiOe(f *GateKeeper, fn func(string, int, int) error) FuncCallable {
 	}
 }
 
-// FuncIbSOie wraps a function that takes a byte slice and returns an int and error into a FuncCallable for IObject use.
-// It ensures the input argument is a single byte-compatible IObject and converts its result to IObject format.
-// Returns ErrWrongNumArguments if called with more or less than one argument.
-// Returns NewInvalidArgumentError if the input argument isn't byte-compatible.
-// Converts the function's error output into an appropriate IObject error.
+// funcIbSOie wraps a function into a FuncCallable compatible with IObject, handling argument validation and conversion.
+// Ensures the function accepts a single byte-compatible argument and converts the result to an IObject type.
+// Returns ErrWrongNumArguments if the wrong number of arguments are provided.
+// Converts the wrapped function's error into an IObject error using the GateKeeper's error handling.
 func funcIbSOie(f *GateKeeper, fn func([]byte) (int, error)) FuncCallable {
 	return func(frame int, args ...IObject) (ret IObject, err error) {
 		if len(args) != 1 {
@@ -789,9 +792,7 @@ func funcIbSOie(f *GateKeeper, fn func([]byte) (int, error)) FuncCallable {
 	}
 }
 
-// FuncIbSOs wraps a function that converts a byte slice to a string, returning it as a FuncCallable in the custom object system.
-// It ensures the input is a single argument of type bytes-compatible, and returns an error for invalid or unsupported types.
-// The resulting FuncCallable checks argument validity, applies the provided function, and returns a new String object.
+// funcIbSOs creates a FuncCallable that transforms a byte slice into a string using a provided function and handles argument validation.
 func funcIbSOs(f *GateKeeper, fn func([]byte) string) FuncCallable {
 	return func(frame int, args ...IObject) (ret IObject, err error) {
 		if len(args) != 1 {
@@ -809,7 +810,9 @@ func funcIbSOs(f *GateKeeper, fn func([]byte) string) FuncCallable {
 	}
 }
 
-// FuncIsOie wraps a string-to-int function into a FuncCallable compatible with IObject interface arguments and error handling.
+// funcIsOie converts a string-to-int function into a FuncCallable that handles IObject arguments and errors.
+// It validates argument length, converts the first argument to a string, and processes the function result.
+// Returns an IObject-based integer result or an error encapsulated in IObject.
 func funcIsOie(f *GateKeeper, fn func(string) (int, error)) FuncCallable {
 	return func(frame int, args ...IObject) (ret IObject, err error) {
 		if len(args) != 1 {
@@ -827,9 +830,7 @@ func funcIsOie(f *GateKeeper, fn func(string) (int, error)) FuncCallable {
 	}
 }
 
-// FuncIsObSe returns a FuncCallable that wraps a function converting a string to a byte slice and error output.
-// It validates input, reports invalid arguments, enforces byte length limits, and converts output to IObject format.
-// Uses ErrWrongNumArguments, NewInvalidArgumentError, and ErrBytesLimit for error handling.
+// funcIsObSe constructs a FuncCallable that wraps a string-to-byte transformation while enforcing argument and byte limits.
 func funcIsObSe(f *GateKeeper, fn func(string) ([]byte, error)) FuncCallable {
 	return func(frame int, args ...IObject) (ret IObject, err error) {
 		if len(args) != 1 {
@@ -850,7 +851,7 @@ func funcIsObSe(f *GateKeeper, fn func(string) ([]byte, error)) FuncCallable {
 	}
 }
 
-// FuncIiOsSe converts a function mapping an integer to a slice of strings and an error into a FuncCallable.
+// funcIiOsSe wraps a function of type func(int) ([]string, error) into a callable function with error handling and array conversion.
 func funcIiOsSe(f *GateKeeper, fn func(int) ([]string, error)) FuncCallable {
 	return func(frame int, args ...IObject) (ret IObject, err error) {
 		if len(args) != 1 {
@@ -879,8 +880,7 @@ func funcIiOsSe(f *GateKeeper, fn func(int) ([]string, error)) FuncCallable {
 	}
 }
 
-// FuncIiOs wraps a function of type `func(int) string` into a FuncCallable compatible with the IObject interface system.
-// It validates argument count and type, executes the provided function, and converts the result into an IObject.
+// funcIiOs wraps a `func(int) string` as a FuncCallable compatible with IObject, validating arguments and managing errors.
 func funcIiOs(f *GateKeeper, fn func(int) string) FuncCallable {
 	return func(frame int, args ...IObject) (ret IObject, err error) {
 		if len(args) != 1 {

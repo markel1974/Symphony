@@ -43,33 +43,33 @@ func (o *Char) BinaryOp(frame int, op Operator, in IObject) (IObject, error) {
 			if r == o.value {
 				return o, nil
 			}
-			return o.Factory().NewChar(frame, r), nil
+			return o.GateKeeper().NewChar(frame, r), nil
 		case OperatorSub:
 			r := o.value - rhs.value
 			if r == o.value {
 				return o, nil
 			}
-			return o.Factory().NewChar(frame, r), nil
+			return o.GateKeeper().NewChar(frame, r), nil
 		case OperatorLess:
 			if o.value < rhs.value {
-				return o.Factory().TrueValue(), nil
+				return o.GateKeeper().TrueValue(), nil
 			}
-			return o.Factory().FalseValue(), nil
+			return o.GateKeeper().FalseValue(), nil
 		case OperatorGreater:
 			if o.value > rhs.value {
-				return o.Factory().TrueValue(), nil
+				return o.GateKeeper().TrueValue(), nil
 			}
-			return o.Factory().FalseValue(), nil
+			return o.GateKeeper().FalseValue(), nil
 		case OperatorLessEq:
 			if o.value <= rhs.value {
-				return o.Factory().TrueValue(), nil
+				return o.GateKeeper().TrueValue(), nil
 			}
-			return o.Factory().FalseValue(), nil
+			return o.GateKeeper().FalseValue(), nil
 		case OperatorGreaterEq:
 			if o.value >= rhs.value {
-				return o.Factory().TrueValue(), nil
+				return o.GateKeeper().TrueValue(), nil
 			}
-			return o.Factory().FalseValue(), nil
+			return o.GateKeeper().FalseValue(), nil
 		default:
 			return nil, ErrInvalidOperator
 		}
@@ -80,33 +80,33 @@ func (o *Char) BinaryOp(frame int, op Operator, in IObject) (IObject, error) {
 			if r == o.value {
 				return o, nil
 			}
-			return o.Factory().NewChar(frame, r), nil
+			return o.GateKeeper().NewChar(frame, r), nil
 		case OperatorSub:
 			r := o.value - rune(rhs.value)
 			if r == o.value {
 				return o, nil
 			}
-			return o.Factory().NewChar(frame, r), nil
+			return o.GateKeeper().NewChar(frame, r), nil
 		case OperatorLess:
 			if int64(o.Value()) < rhs.value {
-				return o.Factory().TrueValue(), nil
+				return o.GateKeeper().TrueValue(), nil
 			}
-			return o.Factory().FalseValue(), nil
+			return o.GateKeeper().FalseValue(), nil
 		case OperatorGreater:
 			if int64(o.Value()) > rhs.value {
-				return o.Factory().TrueValue(), nil
+				return o.GateKeeper().TrueValue(), nil
 			}
-			return o.Factory().FalseValue(), nil
+			return o.GateKeeper().FalseValue(), nil
 		case OperatorLessEq:
 			if int64(o.Value()) <= rhs.value {
-				return o.Factory().TrueValue(), nil
+				return o.GateKeeper().TrueValue(), nil
 			}
-			return o.Factory().FalseValue(), nil
+			return o.GateKeeper().FalseValue(), nil
 		case OperatorGreaterEq:
 			if int64(o.Value()) >= rhs.value {
-				return o.Factory().TrueValue(), nil
+				return o.GateKeeper().TrueValue(), nil
 			}
-			return o.Factory().FalseValue(), nil
+			return o.GateKeeper().FalseValue(), nil
 		default:
 			return nil, ErrInvalidOperator
 		}
@@ -116,7 +116,7 @@ func (o *Char) BinaryOp(frame int, op Operator, in IObject) (IObject, error) {
 
 // Copy creates and returns a new instance of the Char object with the same values.
 func (o *Char) Copy(frame int) IObject {
-	return o.Factory().NewChar(frame, o.value)
+	return o.GateKeeper().NewChar(frame, o.value)
 }
 
 // Boolean checks whether the Char object represents a falsy state, returning true if the underlying values is 0.

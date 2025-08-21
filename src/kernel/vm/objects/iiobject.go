@@ -1,21 +1,20 @@
 package objects
 
-// IObject defines a generic interface for objects that can perform various operations and support multiple behaviors.
-// TypeName returns the type name of the object.
-// String returns the string representation of the object.
-// Frame returns the frame number of the object.
-// SetFrame sets the frame number of the object.
-// BinaryOp performs a binary operation between the object and a right-hand side operand.
-// Boolean checks if the object represents a falsy value.
-// Equals checks whether the object is equal to another object.
-// Copy creates and returns a copy of the object.
-// IndexGet retrieves the values at the specified index from the object.
-// IndexSet assigns a value to the specified index within the object.
-// Iterate returns an iterator for the object, enabling iteration.
-// CanIterate checks if the object can be iterated over.
-// Call invokes the object as a callable function with provided arguments.
-// CanCall checks if the object can be called as a function.
-// Length returns the length of the object.
+// IObject represents a generic interface for any object in the system.
+// TypeName returns the name of the type of the object.
+// String returns a string representation of the object.
+// Frame retrieves the current execution frame associated with the object.
+// BinaryOp performs a binary operation using the specified operator and operands, returning the result or an error.
+// Boolean evaluates and returns the boolean value of the object.
+// Equals returns true if the object is equal to another given object.
+// Copy creates and returns a deep copy of the object within the given frame.
+// IndexGet retrieves the value at a given index from the object, returning the value or an error.
+// IndexSet updates the value at a given index within the object, returning an error if the operation fails.
+// Iterate returns an iterator for the object, enabling traversal over its elements.
+// CanIterate checks whether the object supports iteration.
+// Call invokes the object as a callable function with the provided arguments, returning the result or an error.
+// CanCall checks whether the object supports being called as a function.
+// Length returns the length of the object, if applicable.
 type IObject interface {
 	TypeName() string
 

@@ -50,45 +50,45 @@ func (o *Float) BinaryOp(frame int, op Operator, rhs IObject) (IObject, error) {
 			if r == o.value {
 				return o, nil
 			}
-			return o.Factory().NewFloat(frame, r), nil
+			return o.GateKeeper().NewFloat(frame, r), nil
 		case OperatorSub:
 			r := o.value - rhs.value
 			if r == o.value {
 				return o, nil
 			}
-			return o.Factory().NewFloat(frame, r), nil
+			return o.GateKeeper().NewFloat(frame, r), nil
 		case OperatorMul:
 			r := o.value * rhs.value
 			if r == o.value {
 				return o, nil
 			}
-			return o.Factory().NewFloat(frame, r), nil
+			return o.GateKeeper().NewFloat(frame, r), nil
 		case OperatorQuo:
 			r := o.value / rhs.value
 			if r == o.value {
 				return o, nil
 			}
-			return o.Factory().NewFloat(frame, r), nil
+			return o.GateKeeper().NewFloat(frame, r), nil
 		case OperatorLess:
 			if o.value < rhs.value {
-				return o.Factory().TrueValue(), nil
+				return o.GateKeeper().TrueValue(), nil
 			}
-			return o.Factory().FalseValue(), nil
+			return o.GateKeeper().FalseValue(), nil
 		case OperatorGreater:
 			if o.value > rhs.value {
-				return o.Factory().TrueValue(), nil
+				return o.GateKeeper().TrueValue(), nil
 			}
-			return o.Factory().FalseValue(), nil
+			return o.GateKeeper().FalseValue(), nil
 		case OperatorLessEq:
 			if o.value <= rhs.value {
-				return o.Factory().TrueValue(), nil
+				return o.GateKeeper().TrueValue(), nil
 			}
-			return o.Factory().FalseValue(), nil
+			return o.GateKeeper().FalseValue(), nil
 		case OperatorGreaterEq:
 			if o.value >= rhs.value {
-				return o.Factory().TrueValue(), nil
+				return o.GateKeeper().TrueValue(), nil
 			}
-			return o.Factory().FalseValue(), nil
+			return o.GateKeeper().FalseValue(), nil
 		default:
 			return nil, ErrInvalidOperator
 		}
@@ -99,45 +99,45 @@ func (o *Float) BinaryOp(frame int, op Operator, rhs IObject) (IObject, error) {
 			if r == o.value {
 				return o, nil
 			}
-			return o.Factory().NewFloat(frame, r), nil
+			return o.GateKeeper().NewFloat(frame, r), nil
 		case OperatorSub:
 			r := o.value - float64(rhs.value)
 			if r == o.value {
 				return o, nil
 			}
-			return o.Factory().NewFloat(frame, r), nil
+			return o.GateKeeper().NewFloat(frame, r), nil
 		case OperatorMul:
 			r := o.value * float64(rhs.value)
 			if r == o.value {
 				return o, nil
 			}
-			return o.Factory().NewFloat(frame, r), nil
+			return o.GateKeeper().NewFloat(frame, r), nil
 		case OperatorQuo:
 			r := o.value / float64(rhs.value)
 			if r == o.value {
 				return o, nil
 			}
-			return o.Factory().NewFloat(frame, r), nil
+			return o.GateKeeper().NewFloat(frame, r), nil
 		case OperatorLess:
 			if o.value < float64(rhs.value) {
-				return o.Factory().TrueValue(), nil
+				return o.GateKeeper().TrueValue(), nil
 			}
-			return o.Factory().FalseValue(), nil
+			return o.GateKeeper().FalseValue(), nil
 		case OperatorGreater:
 			if o.value > float64(rhs.value) {
-				return o.Factory().TrueValue(), nil
+				return o.GateKeeper().TrueValue(), nil
 			}
-			return o.Factory().FalseValue(), nil
+			return o.GateKeeper().FalseValue(), nil
 		case OperatorLessEq:
 			if o.value <= float64(rhs.value) {
-				return o.Factory().TrueValue(), nil
+				return o.GateKeeper().TrueValue(), nil
 			}
-			return o.Factory().FalseValue(), nil
+			return o.GateKeeper().FalseValue(), nil
 		case OperatorGreaterEq:
 			if o.value >= float64(rhs.value) {
-				return o.Factory().TrueValue(), nil
+				return o.GateKeeper().TrueValue(), nil
 			}
-			return o.Factory().FalseValue(), nil
+			return o.GateKeeper().FalseValue(), nil
 		default:
 			return nil, ErrInvalidOperator
 		}
@@ -147,7 +147,7 @@ func (o *Float) BinaryOp(frame int, op Operator, rhs IObject) (IObject, error) {
 
 // Copy creates and returns a new instance of the Float object, duplicating its current state.
 func (o *Float) Copy(frame int) IObject {
-	return o.Factory().NewFloat(frame, o.value)
+	return o.GateKeeper().NewFloat(frame, o.value)
 }
 
 // Boolean determines if the float object is considered falsy, returning true if the values is NaN; otherwise, false.

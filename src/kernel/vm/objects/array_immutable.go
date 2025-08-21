@@ -61,7 +61,7 @@ func (o *ArrayImmutable) BinaryOp(frame int, op Operator, rhs IObject) (IObject,
 	if ia, ok := rhs.(*ArrayImmutable); ok {
 		switch op {
 		case OperatorAdd:
-			return o.Factory().NewArray(frame, append(o.values, ia.values...)), nil
+			return o.GateKeeper().NewArray(frame, append(o.values, ia.values...)), nil
 		default:
 			return nil, ErrInvalidOperator
 		}
@@ -75,7 +75,7 @@ func (o *ArrayImmutable) Copy(frame int) IObject {
 	for _, elem := range o.values {
 		c = append(c, elem.Copy(frame))
 	}
-	return o.Factory().NewArray(frame, c)
+	return o.GateKeeper().NewArray(frame, c)
 }
 
 // Boolean checks if the ArrayImmutable is considered falsy, returning true if its Value slice has no elements.
@@ -114,7 +114,7 @@ func (o *ArrayImmutable) IndexGet(_ int, index IObject) (res IObject, err error)
 	}
 	idxVal := int(intIdx.value)
 	if idxVal < 0 || idxVal >= len(o.values) {
-		res = o.Factory().UndefinedValue()
+		res = o.GateKeeper().UndefinedValue()
 		return
 	}
 	res = o.values[idxVal]
@@ -128,5 +128,5 @@ func (o *ArrayImmutable) CanIterate() bool {
 
 // Iterate returns an IIterator to traverse the elements of the ArrayImmutable sequentially.
 func (o *ArrayImmutable) Iterate(frame int) IIterator {
-	return o.Factory().NewArrayIterator(frame, o.values)
+	return o.GateKeeper().NewArrayIterator(frame, o.values)
 }

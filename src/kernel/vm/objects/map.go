@@ -74,7 +74,7 @@ func (o *Map) Copy(frame int) IObject {
 	for k, v := range o.values {
 		c[k] = v.Copy(frame)
 	}
-	return o.Factory().NewMap(frame, c)
+	return o.GateKeeper().NewMap(frame, c)
 }
 
 // Boolean returns true if the map contains no key-values pairs, indicating it is empty.
@@ -108,21 +108,21 @@ func (o *Map) Equals(in IObject) bool {
 // IndexGet retrieves the values associated with the given index in the map. Returns UndefinedValue if the index does not exist.
 // An error is returned if the index type is invalid.
 func (o *Map) IndexGet(_ int, index IObject) (res IObject, err error) {
-	strIdx, ok := o.Factory().ToString(index)
+	strIdx, ok := o.GateKeeper().ToString(index)
 	if !ok {
 		err = ErrInvalidIndexType
 		return
 	}
 	res, ok = o.values[strIdx]
 	if !ok {
-		res = o.Factory().UndefinedValue()
+		res = o.GateKeeper().UndefinedValue()
 	}
 	return
 }
 
 // IndexSet sets the specified values at the given string-convertible index in the Map. Returns an error for invalid index types.
 func (o *Map) IndexSet(index, value IObject) (err error) {
-	strIdx, ok := o.Factory().ToString(index)
+	strIdx, ok := o.GateKeeper().ToString(index)
 	if !ok {
 		err = ErrInvalidIndexType
 		return
@@ -133,7 +133,7 @@ func (o *Map) IndexSet(index, value IObject) (err error) {
 
 // Iterate creates and returns an iterator for the Map, allowing iteration over its keys and associated values.
 func (o *Map) Iterate(frame int) IIterator {
-	return o.Factory().NewMapIterator(frame, o.values)
+	return o.GateKeeper().NewMapIterator(frame, o.values)
 }
 
 // CanIterate returns true, indicating that the Map object supports iteration over its elements.

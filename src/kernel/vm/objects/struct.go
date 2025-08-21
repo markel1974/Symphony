@@ -65,7 +65,7 @@ func (o *Struct) Copy(frame int) IObject {
 	for k, v := range o.values {
 		c[k] = v.Copy(frame)
 	}
-	return o.Factory().NewStruct(frame, c)
+	return o.GateKeeper().NewStruct(frame, c)
 }
 
 // Boolean returns true if the Struct contains no values, otherwise false.
@@ -75,14 +75,14 @@ func (o *Struct) Boolean() bool {
 
 // IndexGet retrieves the value associated with the given index within the Struct. Returns an error for invalid index types.
 func (o *Struct) IndexGet(_ int, index IObject) (res IObject, err error) {
-	strIdx, ok := o.Factory().ToString(index)
+	strIdx, ok := o.GateKeeper().ToString(index)
 	if !ok {
 		err = ErrInvalidIndexType
 		return
 	}
 	res, ok = o.values[strIdx]
 	if !ok {
-		res = o.Factory().UndefinedValue()
+		res = o.GateKeeper().UndefinedValue()
 	}
 	return
 }
@@ -110,7 +110,7 @@ func (o *Struct) Equals(in IObject) bool {
 
 // Iterate returns an IIterator for traversing the key-value pairs in the Struct's internal map.
 func (o *Struct) Iterate(frame int) IIterator {
-	return o.Factory().NewStructIterator(frame, o.values)
+	return o.GateKeeper().NewStructIterator(frame, o.values)
 }
 
 // CanIterate checks if the object can be iterated over. Always returns true for this implementation.

@@ -6,6 +6,7 @@ type Object struct {
 	frame   int
 }
 
+// newObject creates and returns a new instance of Object initialized with the provided GateKeeper and frame values.
 func newObject(factory *GateKeeper, frame int) *Object {
 	return &Object{
 		factory: factory,
@@ -14,7 +15,7 @@ func newObject(factory *GateKeeper, frame int) *Object {
 }
 
 // GateKeeper returns a reference to the GateKeeper associated with the Object.
-func (o *Object) Factory() *GateKeeper {
+func (o *Object) GateKeeper() *GateKeeper {
 	return o.factory
 }
 
@@ -22,15 +23,6 @@ func (o *Object) Factory() *GateKeeper {
 func (o *Object) Frame() int {
 	return o.frame
 }
-
-// SetFrame updates the frame field of the Object with the specified frame value.
-//func (o *Object) SetFrame(frame int) error {
-//	if o.frame == FrameUndefined {
-//		o.frame = frame
-//		return nil
-//	}
-//	return ErrUnsupported
-//}
 
 // TypeName returns the name of the object type. This method must be implemented by objects inheriting Object.
 func (o *Object) TypeName() string {

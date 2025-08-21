@@ -47,149 +47,155 @@ func (o *Int) BinaryOp(frame int, op Operator, rhs IObject) (IObject, error) {
 			if r == o.value {
 				return o, nil
 			}
-			return o.Factory().NewInt(frame, r), nil
+			return o.GateKeeper().NewInt(frame, r), nil
 		case OperatorSub:
 			r := o.value - rhs.value
 			if r == o.value {
 				return o, nil
 			}
-			return o.Factory().NewInt(frame, r), nil
+			return o.GateKeeper().NewInt(frame, r), nil
 		case OperatorMul:
 			r := o.value * rhs.value
 			if r == o.value {
 				return o, nil
 			}
-			return o.Factory().NewInt(frame, r), nil
+			return o.GateKeeper().NewInt(frame, r), nil
 		case OperatorQuo:
+			if rhs.value == 0 {
+				return nil, ErrDivisionByZero
+			}
 			r := o.value / rhs.value
 			if r == o.value {
 				return o, nil
 			}
-			return o.Factory().NewInt(frame, r), nil
+			return o.GateKeeper().NewInt(frame, r), nil
 		case OperatorRem:
+			if rhs.value == 0 {
+				return nil, ErrDivisionByZero
+			}
 			r := o.value % rhs.value
 			if r == o.value {
 				return o, nil
 			}
-			return o.Factory().NewInt(frame, r), nil
+			return o.GateKeeper().NewInt(frame, r), nil
 		case OperatorAnd:
 			r := o.value & rhs.value
 			if r == o.value {
 				return o, nil
 			}
-			return o.Factory().NewInt(frame, r), nil
+			return o.GateKeeper().NewInt(frame, r), nil
 		case OperatorOr:
 			r := o.value | rhs.value
 			if r == o.value {
 				return o, nil
 			}
-			return o.Factory().NewInt(frame, r), nil
+			return o.GateKeeper().NewInt(frame, r), nil
 		case OperatorXor:
 			r := o.value ^ rhs.value
 			if r == o.value {
 				return o, nil
 			}
-			return o.Factory().NewInt(frame, r), nil
+			return o.GateKeeper().NewInt(frame, r), nil
 		case OperatorAndNot:
 			r := o.value &^ rhs.value
 			if r == o.value {
 				return o, nil
 			}
-			return o.Factory().NewInt(frame, r), nil
+			return o.GateKeeper().NewInt(frame, r), nil
 		case OperatorShl:
 			r := o.value << uint64(rhs.value)
 			if r == o.value {
 				return o, nil
 			}
-			return o.Factory().NewInt(frame, r), nil
+			return o.GateKeeper().NewInt(frame, r), nil
 		case OperatorShr:
 			r := o.value >> uint64(rhs.value)
 			if r == o.value {
 				return o, nil
 			}
-			return o.Factory().NewInt(frame, r), nil
+			return o.GateKeeper().NewInt(frame, r), nil
 		case OperatorLess:
 			if o.value < rhs.value {
-				return o.Factory().TrueValue(), nil
+				return o.GateKeeper().TrueValue(), nil
 			}
-			return o.Factory().FalseValue(), nil
+			return o.GateKeeper().FalseValue(), nil
 		case OperatorGreater:
 			if o.value > rhs.value {
-				return o.Factory().TrueValue(), nil
+				return o.GateKeeper().TrueValue(), nil
 			}
-			return o.Factory().FalseValue(), nil
+			return o.GateKeeper().FalseValue(), nil
 		case OperatorLessEq:
 			if o.value <= rhs.value {
-				return o.Factory().TrueValue(), nil
+				return o.GateKeeper().TrueValue(), nil
 			}
-			return o.Factory().FalseValue(), nil
+			return o.GateKeeper().FalseValue(), nil
 		case OperatorGreaterEq:
 			if o.value >= rhs.value {
-				return o.Factory().TrueValue(), nil
+				return o.GateKeeper().TrueValue(), nil
 			}
-			return o.Factory().FalseValue(), nil
+			return o.GateKeeper().FalseValue(), nil
 		default:
 			return nil, ErrInvalidOperator
 		}
 	case *Float:
 		switch op {
 		case OperatorAdd:
-			return o.Factory().NewFloat(frame, float64(o.value)+rhs.value), nil
+			return o.GateKeeper().NewFloat(frame, float64(o.value)+rhs.value), nil
 		case OperatorSub:
-			return o.Factory().NewFloat(frame, float64(o.value)-rhs.value), nil
+			return o.GateKeeper().NewFloat(frame, float64(o.value)-rhs.value), nil
 		case OperatorMul:
-			return o.Factory().NewFloat(frame, float64(o.value)*rhs.value), nil
+			return o.GateKeeper().NewFloat(frame, float64(o.value)*rhs.value), nil
 		case OperatorQuo:
-			return o.Factory().NewFloat(frame, float64(o.value)/rhs.value), nil
+			return o.GateKeeper().NewFloat(frame, float64(o.value)/rhs.value), nil
 		case OperatorLess:
 			if float64(o.value) < rhs.value {
-				return o.Factory().TrueValue(), nil
+				return o.GateKeeper().TrueValue(), nil
 			}
-			return o.Factory().FalseValue(), nil
+			return o.GateKeeper().FalseValue(), nil
 		case OperatorGreater:
 			if float64(o.value) > rhs.value {
-				return o.Factory().TrueValue(), nil
+				return o.GateKeeper().TrueValue(), nil
 			}
-			return o.Factory().FalseValue(), nil
+			return o.GateKeeper().FalseValue(), nil
 		case OperatorLessEq:
 			if float64(o.value) <= rhs.value {
-				return o.Factory().TrueValue(), nil
+				return o.GateKeeper().TrueValue(), nil
 			}
-			return o.Factory().FalseValue(), nil
+			return o.GateKeeper().FalseValue(), nil
 		case OperatorGreaterEq:
 			if float64(o.value) >= rhs.value {
-				return o.Factory().TrueValue(), nil
+				return o.GateKeeper().TrueValue(), nil
 			}
-			return o.Factory().FalseValue(), nil
+			return o.GateKeeper().FalseValue(), nil
 		default:
 			return nil, ErrInvalidOperator
 		}
 	case *Char:
 		switch op {
 		case OperatorAdd:
-			return o.Factory().NewChar(frame, rune(o.value)+rhs.value), nil
+			return o.GateKeeper().NewChar(frame, rune(o.value)+rhs.value), nil
 		case OperatorSub:
-			return o.Factory().NewChar(frame, rune(o.value)-rhs.value), nil
+			return o.GateKeeper().NewChar(frame, rune(o.value)-rhs.value), nil
 		case OperatorLess:
 			if o.value < int64(rhs.value) {
-				return o.Factory().TrueValue(), nil
+				return o.GateKeeper().TrueValue(), nil
 			}
-			return o.Factory().FalseValue(), nil
+			return o.GateKeeper().FalseValue(), nil
 		case OperatorGreater:
 			if o.value > int64(rhs.value) {
-				return o.Factory().TrueValue(), nil
+				return o.GateKeeper().TrueValue(), nil
 			}
-			return o.Factory().FalseValue(), nil
+			return o.GateKeeper().FalseValue(), nil
 		case OperatorLessEq:
 			if o.value <= int64(rhs.value) {
-				return o.Factory().TrueValue(), nil
+				return o.GateKeeper().TrueValue(), nil
 			}
-			return o.Factory().FalseValue(), nil
+			return o.GateKeeper().FalseValue(), nil
 		case OperatorGreaterEq:
 			if o.value >= int64(rhs.value) {
-				return o.Factory().TrueValue(), nil
+				return o.GateKeeper().TrueValue(), nil
 			}
-			return o.Factory().FalseValue(), nil
+			return o.GateKeeper().FalseValue(), nil
 		default:
 			return nil, ErrInvalidOperator
 		}
@@ -199,7 +205,7 @@ func (o *Int) BinaryOp(frame int, op Operator, rhs IObject) (IObject, error) {
 
 // Copy creates and returns a new instance of the Int object with the same value as the current instance.
 func (o *Int) Copy(frame int) IObject {
-	return o.Factory().NewInt(frame, o.value)
+	return o.GateKeeper().NewInt(frame, o.value)
 }
 
 // Boolean checks whether the integer value is considered falsy. Returns true if the value is 0, otherwise false.

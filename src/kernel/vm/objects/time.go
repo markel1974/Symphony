@@ -47,39 +47,39 @@ func (o *Time) BinaryOp(frame int, op Operator, in IObject) (IObject, error) {
 			if rhs.value == 0 {
 				return o, nil
 			}
-			return o.Factory().NewTime(frame, o.value.Add(time.Duration(rhs.value))), nil
+			return o.GateKeeper().NewTime(frame, o.value.Add(time.Duration(rhs.value))), nil
 		case OperatorSub:
 			if rhs.value == 0 {
 				return o, nil
 			}
-			return o.Factory().NewTime(frame, o.value.Add(time.Duration(-rhs.value))), nil
+			return o.GateKeeper().NewTime(frame, o.value.Add(time.Duration(-rhs.value))), nil
 		default:
 			return nil, ErrInvalidOperator
 		}
 	case *Time:
 		switch op {
 		case OperatorSub:
-			return o.Factory().NewInt(frame, int64(o.value.Sub(rhs.value))), nil
+			return o.GateKeeper().NewInt(frame, int64(o.value.Sub(rhs.value))), nil
 		case OperatorLess:
 			if o.value.Before(rhs.value) {
-				return o.Factory().TrueValue(), nil
+				return o.GateKeeper().TrueValue(), nil
 			}
-			return o.Factory().FalseValue(), nil
+			return o.GateKeeper().FalseValue(), nil
 		case OperatorGreater:
 			if o.value.After(rhs.value) {
-				return o.Factory().TrueValue(), nil
+				return o.GateKeeper().TrueValue(), nil
 			}
-			return o.Factory().FalseValue(), nil
+			return o.GateKeeper().FalseValue(), nil
 		case OperatorLessEq:
 			if o.value.Equal(rhs.value) || o.value.Before(rhs.value) {
-				return o.Factory().TrueValue(), nil
+				return o.GateKeeper().TrueValue(), nil
 			}
-			return o.Factory().FalseValue(), nil
+			return o.GateKeeper().FalseValue(), nil
 		case OperatorGreaterEq:
 			if o.value.Equal(rhs.value) || o.value.After(rhs.value) {
-				return o.Factory().TrueValue(), nil
+				return o.GateKeeper().TrueValue(), nil
 			}
-			return o.Factory().FalseValue(), nil
+			return o.GateKeeper().FalseValue(), nil
 		default:
 			return nil, ErrInvalidOperator
 		}
@@ -89,7 +89,7 @@ func (o *Time) BinaryOp(frame int, op Operator, in IObject) (IObject, error) {
 
 // Copy returns a new instance of the Time object with the same internal time values, duplicating its state.
 func (o *Time) Copy(frame int) IObject {
-	return o.Factory().NewTime(frame, o.value)
+	return o.GateKeeper().NewTime(frame, o.value)
 }
 
 // Boolean returns true if the Time object's values is zero (indicating it is uninitialized or empty), otherwise false.

@@ -62,7 +62,7 @@ func (o *MapImmutable) Copy(frame int) IObject {
 	for k, v := range o.values {
 		c[k] = v.Copy(frame)
 	}
-	return o.Factory().NewMap(frame, c)
+	return o.GateKeeper().NewMap(frame, c)
 }
 
 // Boolean returns true if the map is empty, indicating it is considered "falsy", otherwise false.
@@ -72,14 +72,14 @@ func (o *MapImmutable) Boolean() bool {
 
 // IndexGet retrieves the values associated with the given index in the MapImmutable. Returns an error for invalid index types.
 func (o *MapImmutable) IndexGet(_ int, index IObject) (res IObject, err error) {
-	strIdx, ok := o.Factory().ToString(index)
+	strIdx, ok := o.GateKeeper().ToString(index)
 	if !ok {
 		err = ErrInvalidIndexType
 		return
 	}
 	res, ok = o.values[strIdx]
 	if !ok {
-		res = o.Factory().UndefinedValue()
+		res = o.GateKeeper().UndefinedValue()
 	}
 	return
 }
@@ -109,7 +109,7 @@ func (o *MapImmutable) Equals(in IObject) bool {
 
 // Iterate returns an iterator for traversing the key-values pairs in the immutable map.
 func (o *MapImmutable) Iterate(frame int) IIterator {
-	return o.Factory().NewMapIterator(frame, o.values)
+	return o.GateKeeper().NewMapIterator(frame, o.values)
 }
 
 // CanIterate returns true, indicating that the MapImmutable supports iteration.

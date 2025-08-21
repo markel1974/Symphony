@@ -59,7 +59,7 @@ func (o *Bytes) BinaryOp(frame int, op Operator, in IObject) (IObject, error) {
 			if len(o.values)+len(rhs.values) > MaxBytesLen {
 				return nil, ErrBytesLimit
 			}
-			return o.Factory().NewBytes(frame, append(o.values, rhs.values...)), nil
+			return o.GateKeeper().NewBytes(frame, append(o.values, rhs.values...)), nil
 		}
 	default:
 		return nil, ErrInvalidOperator
@@ -69,7 +69,7 @@ func (o *Bytes) BinaryOp(frame int, op Operator, in IObject) (IObject, error) {
 
 // Copy creates and returns a new `Bytes` object with a duplicated values slice, ensuring no reference sharing.
 func (o *Bytes) Copy(frame int) IObject {
-	return o.Factory().NewBytes(frame, append([]byte{}, o.values...))
+	return o.GateKeeper().NewBytes(frame, append([]byte{}, o.values...))
 }
 
 // Boolean determines if the Bytes object is considered falsy by checking if it contains no values. Returns true if empty.
@@ -95,10 +95,10 @@ func (o *Bytes) IndexGet(frame int, index IObject) (res IObject, err error) {
 	}
 	idxVal := int(intIdx.value)
 	if idxVal < 0 || idxVal >= len(o.values) {
-		res = o.Factory().UndefinedValue()
+		res = o.GateKeeper().UndefinedValue()
 		return
 	}
-	res = o.Factory().NewInt(frame, int64(o.values[idxVal]))
+	res = o.GateKeeper().NewInt(frame, int64(o.values[idxVal]))
 	return
 }
 
@@ -109,5 +109,5 @@ func (o *Bytes) CanIterate() bool {
 
 // Iterate returns an iterator for the Bytes object, enabling sequential access to its byte values.
 func (o *Bytes) Iterate(frame int) IIterator {
-	return o.Factory().NewBytesIterator(frame, o.values)
+	return o.GateKeeper().NewBytesIterator(frame, o.values)
 }

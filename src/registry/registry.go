@@ -13,7 +13,7 @@ var _componentFactoryHelper = make(map[string]references.IFactory)
 
 // RegisterComponentFactory adds a new component factory to the global registry for structured component instantiation.
 // The function logs an error and halts the program if the factory is nil, has an empty identifier, or is already registered.
-// Factory identifiers must be unique, and the registry updates the helper map and list upon successful registration.
+// GateKeeper identifiers must be unique, and the registry updates the helper map and list upon successful registration.
 func RegisterComponentFactory(factory references.IFactory) {
 	if factory == nil {
 		log.Fatal("cannot register nil component factory")

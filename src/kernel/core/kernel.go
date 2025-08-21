@@ -33,7 +33,7 @@ type Kernel struct {
 	running      map[int]*KernelProcess                               // Registry of active kernel processes
 	shellPath    string                                               // Default shell executable path
 	messageChan  chan interfaces.IMessage                             // Main message processing queue
-	pf           *process_factory.ProcessFactory                      // Factory for creating new processes
+	pf           *process_factory.ProcessFactory                      // GateKeeper for creating new processes
 	timersChan   chan *adaptiveticker.TimerHandler                    // Timer event delivery channel
 	servers      []interfaces.IServer                                 // Registered system servers
 	exit         bool                                                 // System shutdown flag

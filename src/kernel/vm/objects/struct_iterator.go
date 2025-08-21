@@ -36,7 +36,7 @@ func newStructIterator(factory *GateKeeper, frame int, v map[string]IObject) *St
 
 // Copy creates and returns a duplicate instance of the current StructIterator with the same internal state.
 func (i *StructIterator) Copy(frame int) IObject {
-	ret := i.Factory().NewStructIterator(frame, i.values)
+	ret := i.GateKeeper().NewStructIterator(frame, i.values)
 	ret.index = i.index
 	return ret
 }

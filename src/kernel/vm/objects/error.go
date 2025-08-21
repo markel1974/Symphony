@@ -56,7 +56,7 @@ func (o *Error) Boolean() bool {
 
 // Copy creates and returns a new instance of the Error object with the same underlying values.
 func (o *Error) Copy(frame int) IObject {
-	return o.Factory().NewError(frame, o.err)
+	return o.GateKeeper().NewError(frame, o.err)
 }
 
 // Equals checks if the current Error object is equal to another object using pointer equality.
@@ -66,7 +66,7 @@ func (o *Error) Equals(x IObject) bool {
 
 // IndexGet retrieves the values associated with the "values" index in an Error object or returns an error for invalid indices.
 func (o *Error) IndexGet(_ int, index IObject) (res IObject, err error) {
-	if strIdx, _ := o.Factory().ToString(index); strIdx != "values" {
+	if strIdx, _ := o.GateKeeper().ToString(index); strIdx != "values" {
 		err = ErrInvalidIndexOnError
 		return
 	}

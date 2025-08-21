@@ -19,6 +19,8 @@ import (
 // ErrNotIndexAssignable is an error where an Object is not index-assignable.
 // ErrInvalidRangeStep is an error where the range step is less than or equal to 0 in the range function.
 var (
+	ErrDivisionByZero = errors.New("division by zero")
+
 	ErrStackOverflow = errors.New("stack overflow")
 
 	ErrObjectAllocLimit = errors.New("object allocation limit exceeded")

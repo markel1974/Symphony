@@ -43,7 +43,7 @@ func (o *FuncPackage) String() string {
 
 // Copy creates and returns a new FuncPackage instance with the same Value field as the original object.
 func (o *FuncPackage) Copy(_ int) IObject {
-	return o.Factory().NewFuncPackage(o.kind, o.name, o.value)
+	return o.GateKeeper().NewFuncPackage(o.kind, o.name, o.value)
 }
 
 // Equals checks whether the current FuncPackage is equal to another object of type IObject. Always returns false.

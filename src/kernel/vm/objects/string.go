@@ -73,45 +73,45 @@ func (o *String) BinaryOp(frame int, op Operator, rhs IObject) (IObject, error) 
 			if len(o.value)+len(rhs.value) > MaxStringLen {
 				return nil, ErrStringLimit
 			}
-			return o.Factory().NewString(frame, o.value+rhs.value)
+			return o.GateKeeper().NewString(frame, o.value+rhs.value)
 		default:
 			rhsStr := rhs.String()
 			if len(o.value)+len(rhsStr) > MaxStringLen {
 				return nil, ErrStringLimit
 			}
-			return o.Factory().NewString(frame, o.value+rhsStr)
+			return o.GateKeeper().NewString(frame, o.value+rhsStr)
 		}
 	case OperatorLess:
 		switch rhs := rhs.(type) {
 		case *String:
 			if o.value < rhs.value {
-				return o.Factory().TrueValue(), nil
+				return o.GateKeeper().TrueValue(), nil
 			}
-			return o.Factory().FalseValue(), nil
+			return o.GateKeeper().FalseValue(), nil
 		}
 	case OperatorLessEq:
 		switch rhs := rhs.(type) {
 		case *String:
 			if o.value <= rhs.value {
-				return o.Factory().TrueValue(), nil
+				return o.GateKeeper().TrueValue(), nil
 			}
-			return o.Factory().FalseValue(), nil
+			return o.GateKeeper().FalseValue(), nil
 		}
 	case OperatorGreater:
 		switch rhs := rhs.(type) {
 		case *String:
 			if o.value > rhs.value {
-				return o.Factory().TrueValue(), nil
+				return o.GateKeeper().TrueValue(), nil
 			}
-			return o.Factory().FalseValue(), nil
+			return o.GateKeeper().FalseValue(), nil
 		}
 	case OperatorGreaterEq:
 		switch rhs := rhs.(type) {
 		case *String:
 			if o.value >= rhs.value {
-				return o.Factory().TrueValue(), nil
+				return o.GateKeeper().TrueValue(), nil
 			}
-			return o.Factory().FalseValue(), nil
+			return o.GateKeeper().FalseValue(), nil
 		}
 	default:
 		return nil, ErrInvalidOperator
@@ -126,7 +126,7 @@ func (o *String) Boolean() bool {
 
 // Copy creates and returns a new String instance with the same values as the original.
 func (o *String) Copy(frame int) IObject {
-	return o.Factory().NewStringNoSize(frame, o.value)
+	return o.GateKeeper().NewStringNoSize(frame, o.value)
 }
 
 // Equals checks whether the current String object is equal to the provided IObject by comparing their values.
@@ -150,9 +150,9 @@ func (o *String) IndexGet(frame int, index IObject) (IObject, error) {
 		o.runeStr = []rune(o.value)
 	}
 	if idxVal < 0 || idxVal >= len(o.runeStr) {
-		return o.Factory().UndefinedValue(), nil
+		return o.GateKeeper().UndefinedValue(), nil
 	}
-	return o.Factory().NewChar(frame, o.runeStr[idxVal]), nil
+	return o.GateKeeper().NewChar(frame, o.runeStr[idxVal]), nil
 }
 
 // CanIterate checks if the String object supports iteration and always returns true.
@@ -165,5 +165,5 @@ func (o *String) Iterate(frame int) IIterator {
 	if o.runeStr == nil {
 		o.runeStr = []rune(o.value)
 	}
-	return o.Factory().NewStringIterator(frame, o.runeStr)
+	return o.GateKeeper().NewStringIterator(frame, o.runeStr)
 }

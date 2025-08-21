@@ -27,7 +27,7 @@ func (o *Undefined) String() string {
 
 // Copy returns a copy of the type.
 func (o *Undefined) Copy(frame int) IObject {
-	return _newUndefined(o.Factory(), frame)
+	return _newUndefined(o.GateKeeper(), frame)
 }
 
 // Boolean returns true.
@@ -43,7 +43,7 @@ func (o *Undefined) Equals(x IObject) bool {
 
 // IndexGet returns an element at a given index.
 func (o *Undefined) IndexGet(_ int, _ IObject) (IObject, error) {
-	return o.Factory().UndefinedValue(), nil
+	return o.GateKeeper().UndefinedValue(), nil
 }
 
 // Iterate creates a map iterator.

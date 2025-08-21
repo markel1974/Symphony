@@ -47,7 +47,7 @@ func (o *Builtin) TypeName() string {
 
 // Copy creates and returns a new Builtin object with the same name and value as the current instance.
 func (o *Builtin) Copy(frame int) IObject {
-	return o.Factory().NewBuiltin(frame, o.name, o.index)
+	return o.GateKeeper().NewBuiltin(frame, o.name, o.index)
 }
 
 // Boolean returns false, indicating the boolean representation of the Builtin object is always false.
