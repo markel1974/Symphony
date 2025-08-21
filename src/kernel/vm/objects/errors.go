@@ -43,6 +43,8 @@ var (
 
 	ErrNotIndexAssignable = errors.New("not index-assignable")
 
+	ErrUnsupported = errors.New("operation not supported")
+
 	ErrInvalidRangeStep = errors.New("range step must be greater than 0")
 )
 

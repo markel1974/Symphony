@@ -80,7 +80,7 @@ func (s *Strings) Replace(args ...objects.IObject) (objects.IObject, error) {
 	if !ok {
 		return nil, objects.ErrStringLimit
 	}
-	return s.factory.NewString(objects.FrameReturnValue, ret)
+	return s.factory.NewString(objects.FrameUndefined, ret)
 }
 
 // Substring extracts a portion of a string based on the starting and ending indices provided as arguments.
@@ -118,7 +118,7 @@ func (s *Strings) Substring(args ...objects.IObject) (objects.IObject, error) {
 	} else if i3 > strlen {
 		i3 = strlen
 	}
-	return s.factory.NewString(objects.FrameReturnValue, s1[i2:i3])
+	return s.factory.NewString(objects.FrameUndefined, s1[i2:i3])
 }
 
 // PadLeft adds padding to the left of a string to ensure its total length is at least the specified value.
@@ -141,7 +141,7 @@ func (s *Strings) PadLeft(args ...objects.IObject) (objects.IObject, error) {
 	}
 	sLen := int64(len(s1))
 	if sLen >= i2 {
-		return s.factory.NewString(objects.FrameReturnValue, s1)
+		return s.factory.NewString(objects.FrameUndefined, s1)
 	}
 	s3 := " "
 	if argsLen == 3 {
@@ -152,11 +152,11 @@ func (s *Strings) PadLeft(args ...objects.IObject) (objects.IObject, error) {
 	}
 	padStrLen := int64(len(s3))
 	if padStrLen == 0 {
-		return s.factory.NewString(objects.FrameReturnValue, s1)
+		return s.factory.NewString(objects.FrameUndefined, s1)
 	}
 	padCount := ((i2 - padStrLen) / padStrLen) + 1
 	retStr := strings.Repeat(s3, int(padCount)) + s1
-	return s.factory.NewString(objects.FrameReturnValue, retStr[int64(len(retStr))-i2:])
+	return s.factory.NewString(objects.FrameUndefined, retStr[int64(len(retStr))-i2:])
 }
 
 // PadRight pads the input string on the right with a specified string or space until it reaches the desired length.
@@ -175,7 +175,7 @@ func (s *Strings) PadRight(args ...objects.IObject) (objects.IObject, error) {
 	}
 	sLen := int64(len(s1))
 	if sLen >= i2 {
-		return s.factory.NewString(objects.FrameReturnValue, s1)
+		return s.factory.NewString(objects.FrameUndefined, s1)
 	}
 	s3 := " "
 	if argsLen == 3 {
@@ -186,11 +186,11 @@ func (s *Strings) PadRight(args ...objects.IObject) (objects.IObject, error) {
 	}
 	padStrLen := int64(len(s3))
 	if padStrLen == 0 {
-		return s.factory.NewString(objects.FrameReturnValue, s1)
+		return s.factory.NewString(objects.FrameUndefined, s1)
 	}
 	padCount := ((i2 - padStrLen) / padStrLen) + 1
 	retStr := s1 + strings.Repeat(s3, int(padCount))
-	return s.factory.NewString(objects.FrameReturnValue, retStr[:i2])
+	return s.factory.NewString(objects.FrameUndefined, retStr[:i2])
 }
 
 // Repeat repeats the input string a specified number of times and returns the concatenated result.
@@ -206,7 +206,7 @@ func (s *Strings) Repeat(args ...objects.IObject) (objects.IObject, error) {
 	if err != nil {
 		return nil, err
 	}
-	return s.factory.NewString(objects.FrameReturnValue, strings.Repeat(s1, int(i2)))
+	return s.factory.NewString(objects.FrameUndefined, strings.Repeat(s1, int(i2)))
 }
 
 // Join concatenates elements of an array into a single string, using a specified separator string.
@@ -242,7 +242,7 @@ func (s *Strings) Join(args ...objects.IObject) (ret objects.IObject, err error)
 	if err != nil {
 		return nil, err
 	}
-	return s.factory.NewString(objects.FrameReturnValue, strings.Join(ss1, s2))
+	return s.factory.NewString(objects.FrameUndefined, strings.Join(ss1, s2))
 }
 
 // stringsReplace replaces up to n occurrences of the substring old with the substring new in the input string str.

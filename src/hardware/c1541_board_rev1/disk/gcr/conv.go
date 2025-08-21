@@ -193,7 +193,7 @@ func BuildTrackImage(trackIdx uint8, sectorsData map[uint8][blockBytesLen]uint8,
 
 	// --- PASSO 3: Calcola e aggiungi il "Tail Gap" finale ---
 	// Questo è lo spazio vuoto alla fine della traccia per completare i 200,000µs.
-	currentLength := trackBuffer.Len()
+	currentLength := trackBuffer.len()
 	tailGapSize := totalTrackBytes - currentLength
 
 	if tailGapSize > 0 {

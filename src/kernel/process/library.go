@@ -215,9 +215,9 @@ func (l *Library) doGetScreenSize(args ...objects.IObject) (ret objects.IObject,
 		return nil, errors.New("invalid number of arguments")
 	}
 	w, h := l.process.GetScreenSize()
-	return l.factory.NewMap(objects.FrameReturnValue, map[string]objects.IObject{
-		"width":  l.factory.NewInt(objects.FrameReturnValue, int64(w)),
-		"height": l.factory.NewInt(objects.FrameReturnValue, int64(h)),
+	return l.factory.NewMap(objects.FrameUndefined, map[string]objects.IObject{
+		"width":  l.factory.NewInt(objects.FrameUndefined, int64(w)),
+		"height": l.factory.NewInt(objects.FrameUndefined, int64(h)),
 	}), nil
 }
 
@@ -228,7 +228,7 @@ func (l *Library) doCWDDirectoryListing(args ...objects.IObject) (ret objects.IO
 		return nil, errors.New("invalid number of arguments")
 	}
 	v := l.process.CWDDirectoryListing()
-	return l.factory.FromStringArray(objects.FrameReturnValue, v)
+	return l.factory.FromStringArray(objects.FrameUndefined, v)
 }
 
 // doCWDSet sets the current working directory (CWD) using the provided string argument. Returns a boolean as IObject.
@@ -250,7 +250,7 @@ func (l *Library) doCWDPath(args ...objects.IObject) (ret objects.IObject, err e
 		return nil, errors.New("invalid number of arguments")
 	}
 	v := l.process.CWDPath()
-	return l.factory.NewString(objects.FrameReturnValue, v)
+	return l.factory.NewString(objects.FrameUndefined, v)
 }
 
 // doCWDName retrieves the current working directory name, returns it as a string object, and validates argument count.
@@ -259,7 +259,7 @@ func (l *Library) doCWDName(args ...objects.IObject) (ret objects.IObject, err e
 		return nil, errors.New("invalid number of arguments")
 	}
 	v := l.process.CWDName()
-	return l.factory.NewString(objects.FrameReturnValue, v)
+	return l.factory.NewString(objects.FrameUndefined, v)
 }
 
 // doHelp retrieves and returns a help string for the provided argument, which must be a single string-compatible object.
@@ -275,7 +275,7 @@ func (l *Library) doHelp(args ...objects.IObject) (ret objects.IObject, err erro
 	if err != nil {
 		return nil, err
 	}
-	return l.factory.NewString(objects.FrameReturnValue, v)
+	return l.factory.NewString(objects.FrameUndefined, v)
 }
 
 // doSuggestion processes two arguments: a string and an integer, to trigger the Suggestion functionality within the library.
@@ -491,14 +491,14 @@ func (l *Library) doProcessList(args ...objects.IObject) (ret objects.IObject, e
 	res := make(map[string]objects.IObject)
 	for _, p := range l.process.ProcessList() {
 		c := map[string]objects.IObject{
-			"line": l.factory.NewStringNoSize(objects.FrameReturnValue, p.Line()),
-			"name": l.factory.NewStringNoSize(objects.FrameReturnValue, p.Name()),
-			"time": l.factory.NewTime(objects.FrameReturnValue, p.Time()),
-			"pid":  l.factory.NewInt(objects.FrameReturnValue, int64(p.PID())),
+			"line": l.factory.NewStringNoSize(objects.FrameUndefined, p.Line()),
+			"name": l.factory.NewStringNoSize(objects.FrameUndefined, p.Name()),
+			"time": l.factory.NewTime(objects.FrameUndefined, p.Time()),
+			"pid":  l.factory.NewInt(objects.FrameUndefined, int64(p.PID())),
 		}
-		res[p.Name()] = l.factory.NewMap(objects.FrameReturnValue, c)
+		res[p.Name()] = l.factory.NewMap(objects.FrameUndefined, c)
 	}
-	return l.factory.NewMap(objects.FrameReturnValue, res), nil
+	return l.factory.NewMap(objects.FrameUndefined, res), nil
 }
 
 // doWindowsSelectionPrevious navigates to the previous selection in the Windows selection context.

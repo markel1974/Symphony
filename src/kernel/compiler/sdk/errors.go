@@ -31,5 +31,5 @@ func (e *Errors) New(args ...objects.IObject) (ret objects.IObject, err error) {
 	if err != nil {
 		return nil, err
 	}
-	return e.factory.NewError(objects.FrameReturnValue, s), nil
+	return e.factory.NewError(objects.FrameUndefined, s), nil
 }

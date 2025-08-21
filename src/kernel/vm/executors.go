@@ -639,7 +639,10 @@ func (op *OpCall) Execute(v *VM) {
 		if ret == nil {
 			v.stack.Push(op.Factory().UndefinedValue())
 		} else {
-			ret.SetFrame(v.currFrame.ID())
+			if err = ret.SetFrame(v.currFrame.ID()); err != nil {
+				v.SetError(err)
+				return
+			}
 			v.stack.Push(ret)
 		}
 	}

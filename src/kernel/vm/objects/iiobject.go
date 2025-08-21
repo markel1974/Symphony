@@ -23,7 +23,7 @@ type IObject interface {
 
 	Frame() int
 
-	SetFrame(frame int)
+	SetFrame(frame int) error
 
 	BinaryOp(frame int, op Operator, rightHandSide IObject) (IObject, error)
 

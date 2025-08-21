@@ -62,8 +62,8 @@ func (t *Track) Overlap() bool {
 	return t.overlap
 }
 
-// Len returns the number of bytes stored in the track's data slice.
-func (t *Track) Len() int {
+// len returns the number of bytes stored in the track's data slice.
+func (t *Track) len() int {
 	return len(t.data)
 }
 

@@ -18,19 +18,19 @@ func NewFmt(factory *objects.Factory) *Fmt {
 		factory: factory,
 	}
 	container := []*objects.FuncPackage{
-		factory.NewFuncPackage(objects.FuncPackageDef, "Print", f.Print),
-		factory.NewFuncPackage(objects.FuncPackageDef, "Printf", f.Printf),
-		factory.NewFuncPackage(objects.FuncPackageDef, "Println", f.Println),
-		factory.NewFuncPackage(objects.FuncPackageDef, "Sprintf", f.Sprint),
-		factory.NewFuncPackage(objects.FuncPackageDef, "Sprintf", f.Sprintf),
-		factory.NewFuncPackage(objects.FuncPackageDef, "Errorf", f.Errorf),
+		factory.NewFuncPackage(objects.FuncPackageDef, "Print", f.print),
+		factory.NewFuncPackage(objects.FuncPackageDef, "Printf", f.printf),
+		factory.NewFuncPackage(objects.FuncPackageDef, "Println", f.println),
+		factory.NewFuncPackage(objects.FuncPackageDef, "Sprintf", f.sprint),
+		factory.NewFuncPackage(objects.FuncPackageDef, "Sprintf", f.sprintf),
+		factory.NewFuncPackage(objects.FuncPackageDef, "Errorf", f.errorf),
 	}
 	f.Package = NewPackage("fmt", container, nil)
 	return f
 }
 
 // Print writes the string representations of the provided arguments to the standard output without appending a newline.
-func (f *Fmt) Print(args ...objects.IObject) (ret objects.IObject, err error) {
+func (f *Fmt) print(args ...objects.IObject) (ret objects.IObject, err error) {
 	var printArgs []interface{}
 	for _, arg := range args {
 		printArgs = append(printArgs, f.factory.ToInterface(arg))
@@ -42,7 +42,7 @@ func (f *Fmt) Print(args ...objects.IObject) (ret objects.IObject, err error) {
 // Printf formats and outputs a string using the provided format and arguments, implementing similar behavior to fmt.Printf.
 // The first argument must be a format string, with additional arguments used to populate the format specifiers.
 // Returns an error if the number of arguments is insufficient or if the format argument is incompatible.
-func (f *Fmt) Printf(args ...objects.IObject) (ret objects.IObject, err error) {
+func (f *Fmt) printf(args ...objects.IObject) (ret objects.IObject, err error) {
 	argsLen := len(args)
 	if argsLen == 0 {
 		return nil, objects.ErrWrongNumArguments
@@ -64,7 +64,7 @@ func (f *Fmt) Printf(args ...objects.IObject) (ret objects.IObject, err error) {
 }
 
 // Println writes the given arguments to the standard output with a newline and returns nil and no error.
-func (f *Fmt) Println(args ...objects.IObject) (ret objects.IObject, err error) {
+func (f *Fmt) println(args ...objects.IObject) (ret objects.IObject, err error) {
 	var printArgs []interface{}
 	for _, arg := range args {
 		printArgs = append(printArgs, f.factory.ToInterface(arg))
@@ -74,7 +74,7 @@ func (f *Fmt) Println(args ...objects.IObject) (ret objects.IObject, err error) 
 }
 
 // Sprint formats and concatenates the provided arguments into a single string and returns it as a new String object.
-func (f *Fmt) Sprint(args ...objects.IObject) (ret objects.IObject, err error) {
+func (f *Fmt) sprint(args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) == 0 {
 		return nil, objects.ErrWrongNumArguments
 	}
@@ -82,11 +82,11 @@ func (f *Fmt) Sprint(args ...objects.IObject) (ret objects.IObject, err error) {
 	for _, v := range args {
 		ar = append(ar, f.factory.ToInterface(v))
 	}
-	return f.factory.NewString(objects.FrameReturnValue, fmt.Sprint(ar))
+	return f.factory.NewString(objects.FrameUndefined, fmt.Sprint(ar))
 }
 
 // Sprintf formats a string using a format specifier and optional arguments, returning it as a new string object.
-func (f *Fmt) Sprintf(args ...objects.IObject) (ret objects.IObject, err error) {
+func (f *Fmt) sprintf(args ...objects.IObject) (ret objects.IObject, err error) {
 	argsLen := len(args)
 	if argsLen == 0 {
 		return nil, objects.ErrWrongNumArguments
@@ -96,17 +96,17 @@ func (f *Fmt) Sprintf(args ...objects.IObject) (ret objects.IObject, err error) 
 		return nil, err
 	}
 	if len(args) == 1 {
-		return f.factory.NewString(objects.FrameReturnValue, s1)
+		return f.factory.NewString(objects.FrameUndefined, s1)
 	}
 	var ar []interface{}
 	for _, v := range args[1:] {
 		ar = append(ar, f.factory.ToInterface(v))
 	}
-	return f.factory.NewString(objects.FrameReturnValue, fmt.Sprintf(s1, ar...))
+	return f.factory.NewString(objects.FrameUndefined, fmt.Sprintf(s1, ar...))
 }
 
 // Errorf formats an error message using a format string and arguments, returning an IObject error representation.
-func (f *Fmt) Errorf(args ...objects.IObject) (ret objects.IObject, err error) {
+func (f *Fmt) errorf(args ...objects.IObject) (ret objects.IObject, err error) {
 	argsLen := len(args)
 	if argsLen == 0 {
 		return nil, objects.ErrWrongNumArguments
@@ -116,11 +116,11 @@ func (f *Fmt) Errorf(args ...objects.IObject) (ret objects.IObject, err error) {
 		return nil, err
 	}
 	if len(args) == 1 {
-		return f.factory.NewError(objects.FrameReturnValue, s1), nil
+		return f.factory.NewError(objects.FrameUndefined, s1), nil
 	}
 	var ar []interface{}
 	for _, v := range args[1:] {
 		ar = append(ar, f.factory.ToInterface(v))
 	}
-	return f.factory.NewError(objects.FrameReturnValue, s1), nil
+	return f.factory.NewError(objects.FrameUndefined, s1), nil
 }

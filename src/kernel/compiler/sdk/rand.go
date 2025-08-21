@@ -43,9 +43,9 @@ func (z *Rand) Read(args ...objects.IObject) (objects.IObject, error) {
 	}
 	res, err := rand.Read(bs1)
 	if err != nil {
-		return z.factory.NewError(objects.FrameReturnValue, err.Error()), nil
+		return z.factory.NewError(objects.FrameUndefined, err.Error()), nil
 	}
-	return z.factory.NewInt(objects.FrameReturnValue, int64(res)), nil
+	return z.factory.NewInt(objects.FrameUndefined, int64(res)), nil
 }
 
 // Rand generates a new random number generator using the provided seed argument and returns its options as a map.
@@ -63,7 +63,7 @@ func (z *Rand) Rand(args ...objects.IObject) (objects.IObject, error) {
 
 // RandOptions returns an immutable map of utility functions for the provided *rand.Rand object, enabling random operations.
 func (z *Rand) RandOptions(r *rand.Rand) *objects.MapImmutable {
-	return z.factory.NewMapImmutable(objects.FrameReturnValue,
+	return z.factory.NewMapImmutable(objects.FrameUndefined,
 		map[string]objects.IObject{
 			"Int63":       z.factory.NewFuncPackage(objects.FuncPackageDef, "Int63", z.factory.FuncInOi64(r.Int63)),
 			"Float64":     z.factory.NewFuncPackage(objects.FuncPackageDef, "Float64", z.factory.FuncInOf64(r.Float64)),
@@ -88,7 +88,7 @@ func (z *Rand) RandOptionsRead(r *rand.Rand, args ...objects.IObject) (objects.I
 	}
 	res, err := r.Read(bs1)
 	if err != nil {
-		return z.factory.NewError(objects.FrameReturnValue, err.Error()), nil
+		return z.factory.NewError(objects.FrameUndefined, err.Error()), nil
 	}
-	return z.factory.NewInt(objects.FrameReturnValue, int64(res)), nil
+	return z.factory.NewInt(objects.FrameUndefined, int64(res)), nil
 }

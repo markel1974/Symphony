@@ -45,9 +45,9 @@ func (j *Json) Unmarshal(args ...objects.IObject) (ret objects.IObject, err erro
 	}
 	d := make(map[string]interface{})
 	if err = json.Unmarshal(data, &d); err != nil {
-		return j.factory.NewError(objects.FrameReturnValue, err.Error()), nil
+		return j.factory.NewError(objects.FrameUndefined, err.Error()), nil
 	}
-	result := j.factory.NewMap(objects.FrameReturnValue, j.factory.FromMap(objects.FrameReturnValue, d))
+	result := j.factory.NewMap(objects.FrameUndefined, j.factory.FromMap(objects.FrameUndefined, d))
 	return result, nil
 }
 
@@ -58,9 +58,9 @@ func (j *Json) Marshal(args ...objects.IObject) (ret objects.IObject, err error)
 	}
 	result, err := json.Marshal(j.factory.ToInterface(args[0]))
 	if err != nil {
-		return j.factory.NewError(objects.FrameReturnValue, err.Error()), nil
+		return j.factory.NewError(objects.FrameUndefined, err.Error()), nil
 	}
-	return j.factory.NewBytes(objects.FrameReturnValue, result), nil
+	return j.factory.NewBytes(objects.FrameUndefined, result), nil
 }
 
 // Indent takes a JSON object (bytes or string), a prefix, and an indent string, and returns the indented JSON.
@@ -81,16 +81,16 @@ func (j *Json) Indent(args ...objects.IObject) (ret objects.IObject, err error) 
 		var dst bytes.Buffer
 		err = json.Indent(&dst, o.Value(), prefix, indent)
 		if err != nil {
-			return j.factory.NewError(objects.FrameReturnValue, err.Error()), nil
+			return j.factory.NewError(objects.FrameUndefined, err.Error()), nil
 		}
-		return j.factory.NewBytes(objects.FrameReturnValue, dst.Bytes()), nil
+		return j.factory.NewBytes(objects.FrameUndefined, dst.Bytes()), nil
 	case *objects.String:
 		var dst bytes.Buffer
 		err = json.Indent(&dst, []byte(o.Value()), prefix, indent)
 		if err != nil {
-			return j.factory.NewError(objects.FrameReturnValue, err.Error()), nil
+			return j.factory.NewError(objects.FrameUndefined, err.Error()), nil
 		}
-		return j.factory.NewBytes(objects.FrameReturnValue, dst.Bytes()), nil
+		return j.factory.NewBytes(objects.FrameUndefined, dst.Bytes()), nil
 	default:
 		return nil, objects.NewInvalidArgumentError(0, "bytes/string", args[0].TypeName())
 	}
@@ -108,11 +108,11 @@ func (j *Json) HTMLEscape(args ...objects.IObject) (ret objects.IObject, err err
 	case *objects.Bytes:
 		var dst bytes.Buffer
 		json.HTMLEscape(&dst, o.Value())
-		return j.factory.NewBytes(objects.FrameReturnValue, dst.Bytes()), nil
+		return j.factory.NewBytes(objects.FrameUndefined, dst.Bytes()), nil
 	case *objects.String:
 		var dst bytes.Buffer
 		json.HTMLEscape(&dst, []byte(o.Value()))
-		return j.factory.NewBytes(objects.FrameReturnValue, dst.Bytes()), nil
+		return j.factory.NewBytes(objects.FrameUndefined, dst.Bytes()), nil
 	default:
 		return nil, objects.NewInvalidArgumentError(0, "bytes/string", args[0].TypeName())
 	}

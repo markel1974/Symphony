@@ -19,36 +19,36 @@ func NewBuiltinFunctions(factory *objects.Factory) *BuiltinFunctions {
 		factory: factory,
 	}
 	b.pkg = []*objects.FuncPackage{
-		factory.NewFuncPackage(objects.FuncBuiltinDef, "len", b.Len),
-		factory.NewFuncPackage(objects.FuncBuiltinDef, "copy", b.Copy),
-		factory.NewFuncPackage(objects.FuncBuiltinDef, "append", b.Append),
-		factory.NewFuncPackage(objects.FuncBuiltinDef, "delete", b.Delete),
-		factory.NewFuncPackage(objects.FuncBuiltinDef, "splice", b.Splice),
-		factory.NewFuncPackage(objects.FuncBuiltinDef, "format", b.Format),
-		factory.NewFuncPackage(objects.FuncBuiltinDef, "string", b.String),
-		factory.NewFuncPackage(objects.FuncBuiltinDef, "int", b.Int),
-		factory.NewFuncPackage(objects.FuncBuiltinDef, "bool", b.Bool),
-		factory.NewFuncPackage(objects.FuncBuiltinDef, "float", b.Float),
+		factory.NewFuncPackage(objects.FuncBuiltinDef, "len", b.len),
+		factory.NewFuncPackage(objects.FuncBuiltinDef, "copy", b.copy),
+		factory.NewFuncPackage(objects.FuncBuiltinDef, "append", b.append),
+		factory.NewFuncPackage(objects.FuncBuiltinDef, "delete", b.delete),
+		factory.NewFuncPackage(objects.FuncBuiltinDef, "splice", b.splice),
+		factory.NewFuncPackage(objects.FuncBuiltinDef, "format", b.format),
+		factory.NewFuncPackage(objects.FuncBuiltinDef, "string", b.string),
+		factory.NewFuncPackage(objects.FuncBuiltinDef, "int", b.int),
+		factory.NewFuncPackage(objects.FuncBuiltinDef, "bool", b.bool),
+		factory.NewFuncPackage(objects.FuncBuiltinDef, "float", b.float),
 		factory.NewFuncPackage(objects.FuncBuiltinDef, "char", b.Char),
-		factory.NewFuncPackage(objects.FuncBuiltinDef, "bytes", b.Bytes),
-		factory.NewFuncPackage(objects.FuncBuiltinDef, "time", b.Time),
+		factory.NewFuncPackage(objects.FuncBuiltinDef, "bytes", b.bytes),
+		factory.NewFuncPackage(objects.FuncBuiltinDef, "time", b.time),
 		factory.NewFuncPackage(objects.FuncBuiltinDef, "type_name", b.TypeName),
-		factory.NewFuncPackage(objects.FuncBuiltinDef, "is_int", b.IsInt),
-		factory.NewFuncPackage(objects.FuncBuiltinDef, "is_float", b.IsFloat),
-		factory.NewFuncPackage(objects.FuncBuiltinDef, "is_string", b.IsString),
-		factory.NewFuncPackage(objects.FuncBuiltinDef, "is_bool", b.IsBool),
-		factory.NewFuncPackage(objects.FuncBuiltinDef, "is_char", b.IsChar),
-		factory.NewFuncPackage(objects.FuncBuiltinDef, "is_bytes", b.IsBytes),
-		factory.NewFuncPackage(objects.FuncBuiltinDef, "is_array", b.IsArray),
-		factory.NewFuncPackage(objects.FuncBuiltinDef, "is_immutable_array", b.IsImmutableArray),
-		factory.NewFuncPackage(objects.FuncBuiltinDef, "is_map", b.IsMap),
-		factory.NewFuncPackage(objects.FuncBuiltinDef, "is_immutable_map", b.IsImmutableMap),
-		factory.NewFuncPackage(objects.FuncBuiltinDef, "is_iterable", b.IsIterable),
-		factory.NewFuncPackage(objects.FuncBuiltinDef, "is_time", b.IsTime),
-		factory.NewFuncPackage(objects.FuncBuiltinDef, "is_error", b.IsError),
-		factory.NewFuncPackage(objects.FuncBuiltinDef, "is_undefined", b.IsUndefined),
-		factory.NewFuncPackage(objects.FuncBuiltinDef, "is_function", b.IsFunction),
-		factory.NewFuncPackage(objects.FuncBuiltinDef, "is_callable", b.IsCallable),
+		factory.NewFuncPackage(objects.FuncBuiltinDef, "is_int", b.isInt),
+		factory.NewFuncPackage(objects.FuncBuiltinDef, "is_float", b.isFloat),
+		factory.NewFuncPackage(objects.FuncBuiltinDef, "is_string", b.isString),
+		factory.NewFuncPackage(objects.FuncBuiltinDef, "is_bool", b.isBool),
+		factory.NewFuncPackage(objects.FuncBuiltinDef, "is_char", b.isChar),
+		factory.NewFuncPackage(objects.FuncBuiltinDef, "is_bytes", b.isBytes),
+		factory.NewFuncPackage(objects.FuncBuiltinDef, "is_array", b.isArray),
+		factory.NewFuncPackage(objects.FuncBuiltinDef, "is_immutable_array", b.isImmutableArray),
+		factory.NewFuncPackage(objects.FuncBuiltinDef, "is_map", b.isMap),
+		factory.NewFuncPackage(objects.FuncBuiltinDef, "is_immutable_map", b.isImmutableMap),
+		factory.NewFuncPackage(objects.FuncBuiltinDef, "is_iterable", b.isIterable),
+		factory.NewFuncPackage(objects.FuncBuiltinDef, "is_time", b.isTime),
+		factory.NewFuncPackage(objects.FuncBuiltinDef, "is_error", b.isError),
+		factory.NewFuncPackage(objects.FuncBuiltinDef, "is_undefined", b.isUndefined),
+		factory.NewFuncPackage(objects.FuncBuiltinDef, "is_function", b.isFunction),
+		factory.NewFuncPackage(objects.FuncBuiltinDef, "is_callable", b.isCallable),
 	}
 	return b
 }
@@ -68,11 +68,11 @@ func (h *BuiltinFunctions) TypeName(args ...objects.IObject) (objects.IObject, e
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}
-	return h.factory.NewString(objects.FrameReturnValue, args[0].TypeName())
+	return h.factory.NewString(objects.FrameUndefined, args[0].TypeName())
 }
 
 // IsString checks if the given argument is of type String and returns TrueValue if it is, otherwise FalseValue.
-func (h *BuiltinFunctions) IsString(args ...objects.IObject) (objects.IObject, error) {
+func (h *BuiltinFunctions) isString(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}
@@ -83,7 +83,7 @@ func (h *BuiltinFunctions) IsString(args ...objects.IObject) (objects.IObject, e
 }
 
 // IsInt checks if the provided argument is of type Int. Returns true if it is, otherwise false. Returns an error if the number of arguments is not exactly one.
-func (h *BuiltinFunctions) IsInt(args ...objects.IObject) (objects.IObject, error) {
+func (h *BuiltinFunctions) isInt(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}
@@ -94,7 +94,7 @@ func (h *BuiltinFunctions) IsInt(args ...objects.IObject) (objects.IObject, erro
 }
 
 // IsFloat checks if the provided argument is of type Float and returns a boolean result wrapped in an IObject.
-func (h *BuiltinFunctions) IsFloat(args ...objects.IObject) (objects.IObject, error) {
+func (h *BuiltinFunctions) isFloat(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}
@@ -105,7 +105,7 @@ func (h *BuiltinFunctions) IsFloat(args ...objects.IObject) (objects.IObject, er
 }
 
 // IsBool checks if the given argument is of type Bool. It returns TrueValue if true, and FalseValue otherwise.
-func (h *BuiltinFunctions) IsBool(args ...objects.IObject) (objects.IObject, error) {
+func (h *BuiltinFunctions) isBool(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}
@@ -116,7 +116,7 @@ func (h *BuiltinFunctions) IsBool(args ...objects.IObject) (objects.IObject, err
 }
 
 // IsChar checks if the given argument is of type Char. Returns TrueValue if true, otherwise FalseValue.
-func (h *BuiltinFunctions) IsChar(args ...objects.IObject) (objects.IObject, error) {
+func (h *BuiltinFunctions) isChar(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}
@@ -127,7 +127,7 @@ func (h *BuiltinFunctions) IsChar(args ...objects.IObject) (objects.IObject, err
 }
 
 // IsBytes checks if the given argument is of type *Bytes. Returns TrueValue if true, otherwise FalseValue.
-func (h *BuiltinFunctions) IsBytes(args ...objects.IObject) (objects.IObject, error) {
+func (h *BuiltinFunctions) isBytes(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}
@@ -138,7 +138,7 @@ func (h *BuiltinFunctions) IsBytes(args ...objects.IObject) (objects.IObject, er
 }
 
 // IsArray determines whether the first argument is of type Array. Returns TrueValue if true and FalseValue otherwise.
-func (h *BuiltinFunctions) IsArray(args ...objects.IObject) (objects.IObject, error) {
+func (h *BuiltinFunctions) isArray(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}
@@ -149,7 +149,7 @@ func (h *BuiltinFunctions) IsArray(args ...objects.IObject) (objects.IObject, er
 }
 
 // IsImmutableArray checks if the provided argument is of type ArrayImmutable. Returns TrueValue if true, otherwise FalseValue.
-func (h *BuiltinFunctions) IsImmutableArray(args ...objects.IObject) (objects.IObject, error) {
+func (h *BuiltinFunctions) isImmutableArray(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}
@@ -160,7 +160,7 @@ func (h *BuiltinFunctions) IsImmutableArray(args ...objects.IObject) (objects.IO
 }
 
 // IsMap checks if the provided argument is of type Map and returns TrueValue if true; otherwise, FalseValue.
-func (h *BuiltinFunctions) IsMap(args ...objects.IObject) (objects.IObject, error) {
+func (h *BuiltinFunctions) isMap(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}
@@ -172,7 +172,7 @@ func (h *BuiltinFunctions) IsMap(args ...objects.IObject) (objects.IObject, erro
 
 // IsImmutableMap checks if the first argument is of type MapImmutable and returns TrueValue if true, otherwise FalseValue.
 // Returns an error if the number of arguments provided is not exactly one.
-func (h *BuiltinFunctions) IsImmutableMap(args ...objects.IObject) (objects.IObject, error) {
+func (h *BuiltinFunctions) isImmutableMap(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}
@@ -183,7 +183,7 @@ func (h *BuiltinFunctions) IsImmutableMap(args ...objects.IObject) (objects.IObj
 }
 
 // IsTime determines if the provided argument is of type Time and returns TrueValue if so, otherwise FalseValue.
-func (h *BuiltinFunctions) IsTime(args ...objects.IObject) (objects.IObject, error) {
+func (h *BuiltinFunctions) isTime(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}
@@ -194,7 +194,7 @@ func (h *BuiltinFunctions) IsTime(args ...objects.IObject) (objects.IObject, err
 }
 
 // IsError checks if the provided argument is of type Error. Returns TrueValue if it is, else FalseValue.
-func (h *BuiltinFunctions) IsError(args ...objects.IObject) (objects.IObject, error) {
+func (h *BuiltinFunctions) isError(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}
@@ -205,7 +205,7 @@ func (h *BuiltinFunctions) IsError(args ...objects.IObject) (objects.IObject, er
 }
 
 // IsUndefined checks if the provided argument is the undefined value. Returns true if undefined, otherwise false.
-func (h *BuiltinFunctions) IsUndefined(args ...objects.IObject) (objects.IObject, error) {
+func (h *BuiltinFunctions) isUndefined(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}
@@ -216,7 +216,7 @@ func (h *BuiltinFunctions) IsUndefined(args ...objects.IObject) (objects.IObject
 }
 
 // IsFunction checks if the provided argument is a compiled function and returns true or false accordingly.
-func (h *BuiltinFunctions) IsFunction(args ...objects.IObject) (objects.IObject, error) {
+func (h *BuiltinFunctions) isFunction(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}
@@ -228,7 +228,7 @@ func (h *BuiltinFunctions) IsFunction(args ...objects.IObject) (objects.IObject,
 }
 
 // IsCallable determines if the provided argument is callable and returns true or false accordingly. Returns an error if the number of arguments is not exactly one.
-func (h *BuiltinFunctions) IsCallable(args ...objects.IObject) (objects.IObject, error) {
+func (h *BuiltinFunctions) isCallable(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}
@@ -240,7 +240,7 @@ func (h *BuiltinFunctions) IsCallable(args ...objects.IObject) (objects.IObject,
 
 // IsIterable checks if the provided argument is iterable and returns a Boolean object indicating the result.
 // Returns objects.ErrWrongNumArguments if the number of arguments is not exactly one.
-func (h *BuiltinFunctions) IsIterable(args ...objects.IObject) (objects.IObject, error) {
+func (h *BuiltinFunctions) isIterable(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}
@@ -250,37 +250,36 @@ func (h *BuiltinFunctions) IsIterable(args ...objects.IObject) (objects.IObject,
 	return h.factory.FalseValue(), nil
 }
 
-// Len determines the length of an array, string, bytes, or map. Returns an error if the argument type is unsupported.
-func (h *BuiltinFunctions) Len(args ...objects.IObject) (objects.IObject, error) {
+// len determines the length of an array, string, bytes, or map. Returns an error if the argument type is unsupported.
+func (h *BuiltinFunctions) len(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}
 	switch arg := args[0].(type) {
 	case *objects.Array:
-		return h.factory.NewInt(objects.FrameReturnValue, int64(arg.Length())), nil
+		return h.factory.NewInt(objects.FrameUndefined, int64(arg.Length())), nil
 	case *objects.ArrayImmutable:
-		return h.factory.NewInt(objects.FrameReturnValue, int64(arg.Length())), nil
+		return h.factory.NewInt(objects.FrameUndefined, int64(arg.Length())), nil
 	case *objects.String:
-		return h.factory.NewInt(objects.FrameReturnValue, int64(arg.Length())), nil
+		return h.factory.NewInt(objects.FrameUndefined, int64(arg.Length())), nil
 	case *objects.Bytes:
-		return h.factory.NewInt(objects.FrameReturnValue, int64(arg.Length())), nil
+		return h.factory.NewInt(objects.FrameUndefined, int64(arg.Length())), nil
 	case *objects.Map:
-		return h.factory.NewInt(objects.FrameReturnValue, int64(arg.Length())), nil
+		return h.factory.NewInt(objects.FrameUndefined, int64(arg.Length())), nil
 	case *objects.MapImmutable:
-		return h.factory.NewInt(objects.FrameReturnValue, int64(arg.Length())), nil
+		return h.factory.NewInt(objects.FrameUndefined, int64(arg.Length())), nil
 	default:
 		return nil, objects.NewInvalidArgumentError(0, "container", arg.TypeName())
 	}
 }
 
 // Range generates a range of integers, requiring 2-3 arguments: start, stop, and an optional step (> 0). Returns an IObject or error.
-func (h *BuiltinFunctions) Range(args ...objects.IObject) (objects.IObject, error) {
+func (h *BuiltinFunctions) rangeInit(args ...objects.IObject) (objects.IObject, error) {
 	numArgs := len(args)
 	if numArgs < 2 || numArgs > 3 {
 		return nil, objects.ErrWrongNumArguments
 	}
 	var start, stop, step *objects.Int
-
 	for i, arg := range args {
 		v, ok := args[i].(*objects.Int)
 		if !ok {
@@ -302,28 +301,26 @@ func (h *BuiltinFunctions) Range(args ...objects.IObject) (objects.IObject, erro
 		return nil, objects.ErrWrongNumArguments
 	}
 	if step == nil {
-		step = h.factory.NewInt(objects.FrameReturnValue, int64(1))
+		step = h.factory.NewInt(objects.FrameUndefined, int64(1))
 	}
-	return h.rangeCreate(start.Value(), stop.Value(), step.Value()), nil
-}
-
-// rangeCreate generates an array with elements starting from `start`, ending before `stop`, incremented by `step`.
-func (h *BuiltinFunctions) rangeCreate(start int64, stop int64, step int64) *objects.Array {
-	array := h.factory.NewArray(objects.FrameReturnValue, nil)
-	if start <= stop {
-		for i := start; i < stop; i += step {
-			array.Append(h.factory.NewInt(objects.FrameReturnValue, i))
+	startV := start.Value()
+	stopV := stop.Value()
+	stepV := step.Value()
+	ret := h.factory.NewArray(objects.FrameUndefined, nil)
+	if startV <= stopV {
+		for i := startV; i < stopV; i += stepV {
+			ret.Append(h.factory.NewInt(objects.FrameUndefined, i))
 		}
 	} else {
-		for i := start; i > stop; i -= step {
-			array.Append(h.factory.NewInt(objects.FrameReturnValue, i))
+		for i := startV; i > stopV; i -= stepV {
+			ret.Append(h.factory.NewInt(objects.FrameUndefined, i))
 		}
 	}
-	return array
+	return ret, nil
 }
 
 // Format applies a format string to a variable number of arguments, returning the formatted result as a String object.
-func (h *BuiltinFunctions) Format(args ...objects.IObject) (objects.IObject, error) {
+func (h *BuiltinFunctions) format(args ...objects.IObject) (objects.IObject, error) {
 	numArgs := len(args)
 	if numArgs == 0 {
 		return nil, objects.ErrWrongNumArguments
@@ -339,19 +336,19 @@ func (h *BuiltinFunctions) Format(args ...objects.IObject) (objects.IObject, err
 	for _, v := range args[1:] {
 		ar = append(ar, h.factory.ToInterface(v))
 	}
-	return h.factory.NewString(objects.FrameReturnValue, fmt.Sprintf(formatString.Value(), ar...))
+	return h.factory.NewString(objects.FrameUndefined, fmt.Sprintf(formatString.Value(), ar...))
 }
 
 // Copy returns a copy of the provided object. It accepts exactly one argument and raises an error on invalid input.
-func (h *BuiltinFunctions) Copy(args ...objects.IObject) (objects.IObject, error) {
+func (h *BuiltinFunctions) copy(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}
-	return args[0].Copy(objects.FrameReturnValue), nil
+	return args[0].Copy(objects.FrameUndefined), nil
 }
 
 // String converts an object to a string representation or returns a default value if conversion is not possible.
-func (h *BuiltinFunctions) String(args ...objects.IObject) (objects.IObject, error) {
+func (h *BuiltinFunctions) string(args ...objects.IObject) (objects.IObject, error) {
 	argsLen := len(args)
 	if !(argsLen == 1 || argsLen == 2) {
 		return nil, objects.ErrWrongNumArguments
@@ -361,7 +358,7 @@ func (h *BuiltinFunctions) String(args ...objects.IObject) (objects.IObject, err
 	}
 	v, ok := h.factory.ToString(args[0])
 	if ok {
-		return h.factory.NewString(objects.FrameReturnValue, v)
+		return h.factory.NewString(objects.FrameUndefined, v)
 	}
 	if argsLen == 2 {
 		return args[1], nil
@@ -370,7 +367,7 @@ func (h *BuiltinFunctions) String(args ...objects.IObject) (objects.IObject, err
 }
 
 // Int converts the first argument to an integer type, or returns the second argument or undefined if the conversion fails.
-func (h *BuiltinFunctions) Int(args ...objects.IObject) (objects.IObject, error) {
+func (h *BuiltinFunctions) int(args ...objects.IObject) (objects.IObject, error) {
 	argsLen := len(args)
 	if !(argsLen == 1 || argsLen == 2) {
 		return nil, objects.ErrWrongNumArguments
@@ -380,7 +377,7 @@ func (h *BuiltinFunctions) Int(args ...objects.IObject) (objects.IObject, error)
 	}
 	v, ok := h.factory.ToInt64(args[0])
 	if ok {
-		return h.factory.NewInt(objects.FrameReturnValue, v), nil
+		return h.factory.NewInt(objects.FrameUndefined, v), nil
 	}
 	if argsLen == 2 {
 		return args[1], nil
@@ -389,7 +386,7 @@ func (h *BuiltinFunctions) Int(args ...objects.IObject) (objects.IObject, error)
 }
 
 // Float converts the provided argument to a Float object if possible, returning an error for invalid or unsupported input.
-func (h *BuiltinFunctions) Float(args ...objects.IObject) (objects.IObject, error) {
+func (h *BuiltinFunctions) float(args ...objects.IObject) (objects.IObject, error) {
 	argsLen := len(args)
 	if !(argsLen == 1 || argsLen == 2) {
 		return nil, objects.ErrWrongNumArguments
@@ -399,7 +396,7 @@ func (h *BuiltinFunctions) Float(args ...objects.IObject) (objects.IObject, erro
 	}
 	v, ok := h.factory.ToFloat64(args[0])
 	if ok {
-		return h.factory.NewFloat(objects.FrameReturnValue, v), nil
+		return h.factory.NewFloat(objects.FrameUndefined, v), nil
 	}
 	if argsLen == 2 {
 		return args[1], nil
@@ -408,7 +405,7 @@ func (h *BuiltinFunctions) Float(args ...objects.IObject) (objects.IObject, erro
 }
 
 // Bool converts the provided argument to a boolean type if possible, or returns an error if the argument count is invalid.
-func (h *BuiltinFunctions) Bool(args ...objects.IObject) (objects.IObject, error) {
+func (h *BuiltinFunctions) bool(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}
@@ -436,7 +433,7 @@ func (h *BuiltinFunctions) Char(args ...objects.IObject) (objects.IObject, error
 	}
 	v, ok := h.factory.ToRune(args[0])
 	if ok {
-		return h.factory.NewChar(objects.FrameReturnValue, v), nil
+		return h.factory.NewChar(objects.FrameUndefined, v), nil
 	}
 	if argsLen == 2 {
 		return args[1], nil
@@ -446,7 +443,7 @@ func (h *BuiltinFunctions) Char(args ...objects.IObject) (objects.IObject, error
 
 // Bytes creates a new byte slice object from the given input or returns an error if the arguments are invalid.
 // Accepts one or two arguments: a size as an *objects.Int or convertible byte data; optional default value.
-func (h *BuiltinFunctions) Bytes(args ...objects.IObject) (objects.IObject, error) {
+func (h *BuiltinFunctions) bytes(args ...objects.IObject) (objects.IObject, error) {
 	argsLen := len(args)
 	if !(argsLen == 1 || argsLen == 2) {
 		return nil, objects.ErrWrongNumArguments
@@ -455,14 +452,14 @@ func (h *BuiltinFunctions) Bytes(args ...objects.IObject) (objects.IObject, erro
 		if n.Value() > int64(objects.MaxBytesLen) {
 			return nil, objects.ErrBytesLimit
 		}
-		return h.factory.NewBytes(objects.FrameReturnValue, make([]byte, int(n.Value()))), nil
+		return h.factory.NewBytes(objects.FrameUndefined, make([]byte, int(n.Value()))), nil
 	}
 	v, ok := h.factory.ToByteSlice(args[0])
 	if ok {
 		if len(v) > objects.MaxBytesLen {
 			return nil, objects.ErrBytesLimit
 		}
-		return h.factory.NewBytes(objects.FrameReturnValue, v), nil
+		return h.factory.NewBytes(objects.FrameUndefined, v), nil
 	}
 	if argsLen == 2 {
 		return args[1], nil
@@ -471,7 +468,7 @@ func (h *BuiltinFunctions) Bytes(args ...objects.IObject) (objects.IObject, erro
 }
 
 // Time converts the input argument(s) to a Time object if compatible, else returns a fallback or undefined values.
-func (h *BuiltinFunctions) Time(args ...objects.IObject) (objects.IObject, error) {
+func (h *BuiltinFunctions) time(args ...objects.IObject) (objects.IObject, error) {
 	argsLen := len(args)
 	if !(argsLen == 1 || argsLen == 2) {
 		return nil, objects.ErrWrongNumArguments
@@ -481,7 +478,7 @@ func (h *BuiltinFunctions) Time(args ...objects.IObject) (objects.IObject, error
 	}
 	v, ok := h.factory.ToTime(args[0])
 	if ok {
-		return h.factory.NewTime(objects.FrameReturnValue, v), nil
+		return h.factory.NewTime(objects.FrameUndefined, v), nil
 	}
 	if argsLen == 2 {
 		return args[1], nil
@@ -490,22 +487,22 @@ func (h *BuiltinFunctions) Time(args ...objects.IObject) (objects.IObject, error
 }
 
 // Append adds one or more elements to an array or immutable array and returns the updated array or an error.
-func (h *BuiltinFunctions) Append(args ...objects.IObject) (objects.IObject, error) {
+func (h *BuiltinFunctions) append(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) < 2 {
 		return nil, objects.ErrWrongNumArguments
 	}
 	switch arg := args[0].(type) {
 	case *objects.Array:
-		return h.factory.NewArray(objects.FrameReturnValue, append(arg.Values(), args[1:]...)), nil
+		return h.factory.NewArray(objects.FrameUndefined, append(arg.Values(), args[1:]...)), nil
 	case *objects.ArrayImmutable:
-		return h.factory.NewArray(objects.FrameReturnValue, append(arg.Values(), args[1:]...)), nil
+		return h.factory.NewArray(objects.FrameUndefined, append(arg.Values(), args[1:]...)), nil
 	default:
 		return nil, objects.NewInvalidArgumentError(0, "array", arg.TypeName())
 	}
 }
 
 // Delete removes a key-value pair from a map. Requires a map as the first argument and a string key as the second argument.
-func (h *BuiltinFunctions) Delete(args ...objects.IObject) (objects.IObject, error) {
+func (h *BuiltinFunctions) delete(args ...objects.IObject) (objects.IObject, error) {
 	argsLen := len(args)
 	if argsLen != 2 {
 		return nil, objects.ErrWrongNumArguments
@@ -523,7 +520,7 @@ func (h *BuiltinFunctions) Delete(args ...objects.IObject) (objects.IObject, err
 }
 
 // Splice removes or replaces existing elements and/or adds new elements in an array, returning a new array of deleted elements.
-func (h *BuiltinFunctions) Splice(args ...objects.IObject) (objects.IObject, error) {
+func (h *BuiltinFunctions) splice(args ...objects.IObject) (objects.IObject, error) {
 	argsLen := len(args)
 	if argsLen == 0 {
 		return nil, objects.ErrWrongNumArguments
@@ -574,5 +571,5 @@ func (h *BuiltinFunctions) Splice(args ...objects.IObject) (objects.IObject, err
 	}
 	items = append(items, array.Values()[endIdx:]...)
 	array.Assign(append(head, items...))
-	return h.factory.NewArray(objects.FrameReturnValue, deleted), nil
+	return h.factory.NewArray(objects.FrameUndefined, deleted), nil
 }

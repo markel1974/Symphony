@@ -34,7 +34,7 @@ func funcInOi(f *Factory, fn func() int) FuncCallable {
 		if len(args) != 0 {
 			return nil, ErrWrongNumArguments
 		}
-		return f.NewInt(FrameReturnValue, int64(fn())), nil
+		return f.NewInt(FrameUndefined, int64(fn())), nil
 	}
 }
 
@@ -46,7 +46,7 @@ func funcInOi64(f *Factory, fn func() int64) FuncCallable {
 		if len(args) != 0 {
 			return nil, ErrWrongNumArguments
 		}
-		return f.NewInt(FrameReturnValue, fn()), nil
+		return f.NewInt(FrameUndefined, fn()), nil
 	}
 }
 
@@ -60,7 +60,7 @@ func funcIi64Oi64(f *Factory, fn func(int64) int64) FuncCallable {
 		if err != nil {
 			return nil, err
 		}
-		return f.NewInt(FrameReturnValue, fn(i1)), nil
+		return f.NewInt(FrameUndefined, fn(i1)), nil
 	}
 }
 
@@ -102,7 +102,7 @@ func funcInOe(f *Factory, fn func() error) FuncCallable {
 		}
 		err := fn()
 		if err != nil {
-			return f.NewError(FrameReturnValue, err.Error()), nil
+			return f.NewError(FrameUndefined, err.Error()), nil
 		}
 		return f.TrueValue(), nil
 	}
@@ -115,7 +115,7 @@ func funcInOs(f *Factory, fn func() string) FuncCallable {
 		if len(args) != 0 {
 			return nil, ErrWrongNumArguments
 		}
-		v, err := f.NewString(FrameReturnValue, fn())
+		v, err := f.NewString(FrameUndefined, fn())
 		if err != nil {
 			return nil, err
 		}
@@ -132,9 +132,9 @@ func funcInOse(f *Factory, fn func() (string, error)) FuncCallable {
 		}
 		res, err := fn()
 		if err != nil {
-			return f.NewError(FrameReturnValue, err.Error()), nil
+			return f.NewError(FrameUndefined, err.Error()), nil
 		}
-		v, err := f.NewString(FrameReturnValue, res)
+		v, err := f.NewString(FrameUndefined, res)
 		if err != nil {
 			return nil, err
 		}
@@ -151,12 +151,12 @@ func funcInObSe(f *Factory, fn func() ([]byte, error)) FuncCallable {
 		}
 		res, err := fn()
 		if err != nil {
-			return f.NewError(FrameReturnValue, err.Error()), nil
+			return f.NewError(FrameUndefined, err.Error()), nil
 		}
 		if len(res) > MaxBytesLen {
 			return nil, ErrBytesLimit
 		}
-		return f.NewBytes(FrameReturnValue, res), nil
+		return f.NewBytes(FrameUndefined, res), nil
 	}
 }
 
@@ -168,7 +168,7 @@ func funcInOf64(f *Factory, fn func() float64) FuncCallable {
 		if len(args) != 0 {
 			return nil, ErrWrongNumArguments
 		}
-		return f.NewFloat(FrameReturnValue, fn()), nil
+		return f.NewFloat(FrameUndefined, fn()), nil
 	}
 }
 
@@ -180,9 +180,9 @@ func funcInOsS(f *Factory, fn func() []string) FuncCallable {
 		if len(args) != 0 {
 			return nil, ErrWrongNumArguments
 		}
-		arr := f.NewArray(FrameReturnValue, nil)
+		arr := f.NewArray(FrameUndefined, nil)
 		for _, elem := range fn() {
-			v, err := f.NewString(FrameReturnValue, elem)
+			v, err := f.NewString(FrameUndefined, elem)
 			if err != nil {
 				return nil, err
 			}
@@ -202,11 +202,11 @@ func funcInOiSe(f *Factory, fn func() ([]int, error)) FuncCallable {
 		}
 		res, err := fn()
 		if err != nil {
-			return f.NewError(FrameReturnValue, err.Error()), nil
+			return f.NewError(FrameUndefined, err.Error()), nil
 		}
-		arr := f.NewArray(FrameReturnValue, nil)
+		arr := f.NewArray(FrameUndefined, nil)
 		for _, v := range res {
-			arr.Append(f.NewInt(FrameReturnValue, int64(v)))
+			arr.Append(f.NewInt(FrameUndefined, int64(v)))
 		}
 		return arr, nil
 	}
@@ -223,9 +223,9 @@ func funcIiOiS(f *Factory, fn func(int) []int) FuncCallable {
 			return nil, err
 		}
 		res := fn(int(i1))
-		arr := f.NewArray(FrameReturnValue, nil)
+		arr := f.NewArray(FrameUndefined, nil)
 		for _, v := range res {
-			arr.Append(f.NewInt(FrameReturnValue, int64(v)))
+			arr.Append(f.NewInt(FrameUndefined, int64(v)))
 		}
 		return arr, nil
 	}
@@ -243,7 +243,7 @@ func funcIf64Of64(f *Factory, fn func(float64) float64) FuncCallable {
 		if err != nil {
 			return nil, err
 		}
-		return f.NewFloat(FrameReturnValue, fn(f1)), nil
+		return f.NewFloat(FrameUndefined, fn(f1)), nil
 	}
 }
 
@@ -276,7 +276,7 @@ func funcIiOf64(f *Factory, fn func(int) float64) FuncCallable {
 		if err != nil {
 			return nil, err
 		}
-		return f.NewFloat(FrameReturnValue, fn(int(i1))), nil
+		return f.NewFloat(FrameUndefined, fn(int(i1))), nil
 	}
 }
 
@@ -291,7 +291,7 @@ func funcIf64Oi(f *Factory, fn func(float64) int) FuncCallable {
 		if err != nil {
 			return nil, err
 		}
-		return f.NewInt(FrameReturnValue, int64(fn(f1))), nil
+		return f.NewInt(FrameUndefined, int64(fn(f1))), nil
 	}
 }
 
@@ -310,7 +310,7 @@ func funcIf64f64Of64(f *Factory, fn func(float64, float64) float64) FuncCallable
 		if err != nil {
 			return nil, err
 		}
-		return f.NewFloat(FrameReturnValue, fn(f1, f2)), nil
+		return f.NewFloat(FrameUndefined, fn(f1, f2)), nil
 	}
 }
 
@@ -329,7 +329,7 @@ func funcIif64Of64(f *Factory, fn func(int, float64) float64) FuncCallable {
 		if err != nil {
 			return nil, err
 		}
-		return f.NewFloat(FrameReturnValue, fn(int(i1), f2)), nil
+		return f.NewFloat(FrameUndefined, fn(int(i1), f2)), nil
 	}
 }
 
@@ -349,7 +349,7 @@ func funcIf64iOf64(f *Factory, fn func(float64, int) float64) FuncCallable {
 		if err != nil {
 			return nil, err
 		}
-		return f.NewFloat(FrameReturnValue, fn(f1, int(i2))), nil
+		return f.NewFloat(FrameUndefined, fn(f1, int(i2))), nil
 	}
 }
 
@@ -404,7 +404,7 @@ func funcIsOs(f *Factory, fn func(string) string) FuncCallable {
 		if err != nil {
 			return nil, err
 		}
-		v, err := f.NewString(FrameReturnValue, fn(s1))
+		v, err := f.NewString(FrameUndefined, fn(s1))
 		if err != nil {
 			return nil, err
 		}
@@ -425,9 +425,9 @@ func funcIsOsS(f *Factory, fn func(string) []string) FuncCallable {
 			return nil, err
 		}
 		res := fn(s1)
-		arr := f.NewArray(FrameReturnValue, nil)
+		arr := f.NewArray(FrameUndefined, nil)
 		for _, elem := range res {
-			v, err := f.NewString(FrameReturnValue, elem)
+			v, err := f.NewString(FrameUndefined, elem)
 			if err != nil {
 				return nil, err
 			}
@@ -449,9 +449,9 @@ func funcIsOse(f *Factory, fn func(string) (string, error)) FuncCallable {
 		}
 		res, err := fn(s1)
 		if err != nil {
-			return f.NewError(FrameReturnValue, err.Error()), nil
+			return f.NewError(FrameUndefined, err.Error()), nil
 		}
-		v, err := f.NewString(FrameReturnValue, res)
+		v, err := f.NewString(FrameUndefined, res)
 		if err != nil {
 			return nil, err
 		}
@@ -474,7 +474,7 @@ func funcIsOe(f *Factory, fn func(string) error) FuncCallable {
 		}
 		err = fn(s1)
 		if err != nil {
-			return f.NewError(FrameReturnValue, err.Error()), nil
+			return f.NewError(FrameUndefined, err.Error()), nil
 		}
 		return f.TrueValue(), nil
 	}
@@ -497,7 +497,7 @@ func funcIssOe(f *Factory, fn func(string, string) error) FuncCallable {
 		}
 		err = fn(s1, s2)
 		if err != nil {
-			return f.NewError(FrameReturnValue, err.Error()), nil
+			return f.NewError(FrameUndefined, err.Error()), nil
 		}
 		return f.TrueValue(), nil
 	}
@@ -518,9 +518,9 @@ func funcIssOsS(f *Factory, fn func(string, string) []string) FuncCallable {
 		if err != nil {
 			return nil, err
 		}
-		arr := f.NewArray(FrameReturnValue, nil)
+		arr := f.NewArray(FrameUndefined, nil)
 		for _, res := range fn(s1, s2) {
-			v, err := f.NewString(FrameReturnValue, res)
+			v, err := f.NewString(FrameUndefined, res)
 			if err != nil {
 				return nil, err
 			}
@@ -550,9 +550,9 @@ func funcIssiOsS(f *Factory, fn func(string, string, int) []string) FuncCallable
 		if err != nil {
 			return nil, err
 		}
-		arr := f.NewArray(FrameReturnValue, nil)
+		arr := f.NewArray(FrameUndefined, nil)
 		for _, res := range fn(s1, s2, int(i3)) {
-			v, err := f.NewString(FrameReturnValue, res)
+			v, err := f.NewString(FrameUndefined, res)
 			if err != nil {
 				return nil, err
 			}
@@ -579,7 +579,7 @@ func funcIssOi(f *Factory, fn func(string, string) int) FuncCallable {
 		if err != nil {
 			return nil, err
 		}
-		return f.NewInt(FrameReturnValue, int64(fn(s1, s2))), nil
+		return f.NewInt(FrameUndefined, int64(fn(s1, s2))), nil
 	}
 }
 
@@ -599,7 +599,7 @@ func funcIssOs(f *Factory, fn func(string, string) string) FuncCallable {
 		if err != nil {
 			return nil, err
 		}
-		v, err := f.NewString(FrameReturnValue, fn(s1, s2))
+		v, err := f.NewString(FrameUndefined, fn(s1, s2))
 		if err != nil {
 			return nil, err
 		}
@@ -663,7 +663,7 @@ func funcIsSsOs(f *Factory, fn func([]string, string) string) FuncCallable {
 		if err != nil {
 			return nil, err
 		}
-		v, err := f.NewString(FrameReturnValue, fn(ss1, s2))
+		v, err := f.NewString(FrameUndefined, fn(ss1, s2))
 		if err != nil {
 			return nil, err
 		}
@@ -689,7 +689,7 @@ func funcIsi64Oe(f *Factory, fn func(string, int64) error) FuncCallable {
 		}
 		err = fn(s1, i2)
 		if err != nil {
-			return f.NewError(FrameReturnValue, err.Error()), nil
+			return f.NewError(FrameUndefined, err.Error()), nil
 		}
 		return f.TrueValue(), nil
 	}
@@ -711,7 +711,7 @@ func funcIiiOe(f *Factory, fn func(int, int) error) FuncCallable {
 		}
 		err = fn(int(i1), int(i2))
 		if err != nil {
-			return f.NewError(FrameReturnValue, err.Error()), nil
+			return f.NewError(FrameUndefined, err.Error()), nil
 		}
 		return f.TrueValue(), nil
 	}
@@ -733,7 +733,7 @@ func funcIsiOs(f *Factory, fn func(string, int) string) FuncCallable {
 		if err != nil {
 			return nil, err
 		}
-		v, err := f.NewString(FrameReturnValue, fn(s1, int(i2)))
+		v, err := f.NewString(FrameUndefined, fn(s1, int(i2)))
 		if err != nil {
 			return nil, err
 		}
@@ -761,7 +761,7 @@ func funcIsiiOe(f *Factory, fn func(string, int, int) error) FuncCallable {
 		}
 		err = fn(s1, int(i2), int(i3))
 		if err != nil {
-			return f.NewError(FrameReturnValue, err.Error()), nil
+			return f.NewError(FrameUndefined, err.Error()), nil
 		}
 		return f.TrueValue(), nil
 	}
@@ -783,9 +783,9 @@ func funcIbSOie(f *Factory, fn func([]byte) (int, error)) FuncCallable {
 		}
 		res, err := fn(bs1)
 		if err != nil {
-			return f.NewError(FrameReturnValue, err.Error()), nil
+			return f.NewError(FrameUndefined, err.Error()), nil
 		}
-		return f.NewInt(FrameReturnValue, int64(res)), nil
+		return f.NewInt(FrameUndefined, int64(res)), nil
 	}
 }
 
@@ -801,7 +801,7 @@ func funcIbSOs(f *Factory, fn func([]byte) string) FuncCallable {
 		if err != nil {
 			return nil, err
 		}
-		v, err := f.NewString(FrameReturnValue, fn(bs1))
+		v, err := f.NewString(FrameUndefined, fn(bs1))
 		if err != nil {
 			return nil, err
 		}
@@ -821,9 +821,9 @@ func funcIsOie(f *Factory, fn func(string) (int, error)) FuncCallable {
 		}
 		res, err := fn(s1)
 		if err != nil {
-			return f.NewError(FrameReturnValue, err.Error()), nil
+			return f.NewError(FrameUndefined, err.Error()), nil
 		}
-		return f.NewInt(FrameReturnValue, int64(res)), nil
+		return f.NewInt(FrameUndefined, int64(res)), nil
 	}
 }
 
@@ -841,12 +841,12 @@ func funcIsObSe(f *Factory, fn func(string) ([]byte, error)) FuncCallable {
 		}
 		res, err := fn(s1)
 		if err != nil {
-			return f.NewError(FrameReturnValue, err.Error()), nil
+			return f.NewError(FrameUndefined, err.Error()), nil
 		}
 		if len(res) > MaxBytesLen {
 			return nil, ErrBytesLimit
 		}
-		return f.NewBytes(FrameReturnValue, res), nil
+		return f.NewBytes(FrameUndefined, res), nil
 	}
 }
 
@@ -862,14 +862,14 @@ func funcIiOsSe(f *Factory, fn func(int) ([]string, error)) FuncCallable {
 		}
 		res, err := fn(int(i1))
 		if err != nil {
-			return f.NewError(FrameReturnValue, err.Error()), nil
+			return f.NewError(FrameUndefined, err.Error()), nil
 		}
-		arr := f.NewArray(FrameReturnValue, nil)
+		arr := f.NewArray(FrameUndefined, nil)
 		for _, r := range res {
 			if len(r) > MaxStringLen {
 				return nil, ErrStringLimit
 			}
-			v, err := f.NewString(FrameReturnValue, r)
+			v, err := f.NewString(FrameUndefined, r)
 			if err != nil {
 				return nil, err
 			}
@@ -891,7 +891,7 @@ func funcIiOs(f *Factory, fn func(int) string) FuncCallable {
 			return nil, err
 		}
 		s := fn(int(i1))
-		v, err := f.NewString(FrameReturnValue, s)
+		v, err := f.NewString(FrameUndefined, s)
 		if err != nil {
 			return nil, err
 		}

@@ -19,8 +19,8 @@ type Factory struct {
 }
 
 const (
-	FrameStatic      = -1
-	FrameReturnValue = -2
+	FrameUndefined = -1
+	FrameStatic    = -2
 )
 
 // NewFactory initializes a new Factory instance and sets up default bool and undefined values.
