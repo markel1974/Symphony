@@ -23,7 +23,7 @@ func NewErrors(factory *objects.Factory) *Errors {
 }
 
 // New creates a new error object from the provided argument, ensuring it is a valid string and returning an error if not.
-func (e *Errors) New(args ...objects.IObject) (ret objects.IObject, err error) {
+func (e *Errors) New(frame int, args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}
@@ -31,5 +31,5 @@ func (e *Errors) New(args ...objects.IObject) (ret objects.IObject, err error) {
 	if err != nil {
 		return nil, err
 	}
-	return e.factory.NewError(objects.FrameUndefined, s), nil
+	return e.factory.NewError(frame, s), nil
 }

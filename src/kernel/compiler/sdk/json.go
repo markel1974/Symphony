@@ -19,17 +19,17 @@ func NewJson(factory *objects.Factory) *Json {
 		factory: factory,
 	}
 	container := []*objects.FuncPackage{
-		factory.NewFuncPackage(objects.FuncPackageDef, "Unmarshal", j.Unmarshal),
-		factory.NewFuncPackage(objects.FuncPackageDef, "Marshal", j.Marshal),
-		factory.NewFuncPackage(objects.FuncPackageDef, "Indent", j.Indent),
-		factory.NewFuncPackage(objects.FuncPackageDef, "html_escape", j.HTMLEscape),
+		factory.NewFuncPackage(objects.FuncPackageDef, "Unmarshal", j.unmarshal),
+		factory.NewFuncPackage(objects.FuncPackageDef, "Marshal", j.marshal),
+		factory.NewFuncPackage(objects.FuncPackageDef, "Indent", j.indent),
+		factory.NewFuncPackage(objects.FuncPackageDef, "HTMLEscape", j.htmlEscape),
 	}
 	j.Package = NewPackage("json", container, nil)
 	return j
 }
 
 // Unmarshal parses a JSON-encoded string or byte slice into a Map object and returns it as IObject.
-func (j *Json) Unmarshal(args ...objects.IObject) (ret objects.IObject, err error) {
+func (j *Json) unmarshal(frame int, args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}
@@ -45,26 +45,26 @@ func (j *Json) Unmarshal(args ...objects.IObject) (ret objects.IObject, err erro
 	}
 	d := make(map[string]interface{})
 	if err = json.Unmarshal(data, &d); err != nil {
-		return j.factory.NewError(objects.FrameUndefined, err.Error()), nil
+		return j.factory.NewError(frame, err.Error()), nil
 	}
-	result := j.factory.NewMap(objects.FrameUndefined, j.factory.FromMap(objects.FrameUndefined, d))
+	result := j.factory.NewMap(frame, j.factory.FromMap(frame, d))
 	return result, nil
 }
 
 // Marshal serializes a single IObject into a JSON-encoded byte slice and returns it as a Bytes object.
-func (j *Json) Marshal(args ...objects.IObject) (ret objects.IObject, err error) {
+func (j *Json) marshal(frame int, args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}
 	result, err := json.Marshal(j.factory.ToInterface(args[0]))
 	if err != nil {
-		return j.factory.NewError(objects.FrameUndefined, err.Error()), nil
+		return j.factory.NewError(frame, err.Error()), nil
 	}
-	return j.factory.NewBytes(objects.FrameUndefined, result), nil
+	return j.factory.NewBytes(frame, result), nil
 }
 
 // Indent takes a JSON object (bytes or string), a prefix, and an indent string, and returns the indented JSON.
-func (j *Json) Indent(args ...objects.IObject) (ret objects.IObject, err error) {
+func (j *Json) indent(frame int, args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 3 {
 		return nil, objects.ErrWrongNumArguments
 	}
@@ -81,16 +81,16 @@ func (j *Json) Indent(args ...objects.IObject) (ret objects.IObject, err error) 
 		var dst bytes.Buffer
 		err = json.Indent(&dst, o.Value(), prefix, indent)
 		if err != nil {
-			return j.factory.NewError(objects.FrameUndefined, err.Error()), nil
+			return j.factory.NewError(frame, err.Error()), nil
 		}
-		return j.factory.NewBytes(objects.FrameUndefined, dst.Bytes()), nil
+		return j.factory.NewBytes(frame, dst.Bytes()), nil
 	case *objects.String:
 		var dst bytes.Buffer
 		err = json.Indent(&dst, []byte(o.Value()), prefix, indent)
 		if err != nil {
-			return j.factory.NewError(objects.FrameUndefined, err.Error()), nil
+			return j.factory.NewError(frame, err.Error()), nil
 		}
-		return j.factory.NewBytes(objects.FrameUndefined, dst.Bytes()), nil
+		return j.factory.NewBytes(frame, dst.Bytes()), nil
 	default:
 		return nil, objects.NewInvalidArgumentError(0, "bytes/string", args[0].TypeName())
 	}
@@ -100,7 +100,7 @@ func (j *Json) Indent(args ...objects.IObject) (ret objects.IObject, err error) 
 // Accepts one argument of type `*objects.Bytes` or `*objects.String`.
 // Returns a new `*objects.Bytes` containing the escaped output or an error if an invalid argument type is provided.
 // Errors if the number of arguments is not exactly one.
-func (j *Json) HTMLEscape(args ...objects.IObject) (ret objects.IObject, err error) {
+func (j *Json) htmlEscape(frame int, args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}
@@ -108,11 +108,11 @@ func (j *Json) HTMLEscape(args ...objects.IObject) (ret objects.IObject, err err
 	case *objects.Bytes:
 		var dst bytes.Buffer
 		json.HTMLEscape(&dst, o.Value())
-		return j.factory.NewBytes(objects.FrameUndefined, dst.Bytes()), nil
+		return j.factory.NewBytes(frame, dst.Bytes()), nil
 	case *objects.String:
 		var dst bytes.Buffer
 		json.HTMLEscape(&dst, []byte(o.Value()))
-		return j.factory.NewBytes(objects.FrameUndefined, dst.Bytes()), nil
+		return j.factory.NewBytes(frame, dst.Bytes()), nil
 	default:
 		return nil, objects.NewInvalidArgumentError(0, "bytes/string", args[0].TypeName())
 	}

@@ -14,7 +14,7 @@ func CreateCPUUsage() interfaces.ICommand {
 	run := func(process interfaces.IUserProcess, args []string) error {
 		process.WriteLn("Computing cpu usage")
 		idle0, total0 := getCPUSample()
-		time.Sleep(3 * time.Second)
+		time.sleep(3 * time.Second)
 		idle1, total1 := getCPUSample()
 		idleTicks := float64(idle1 - idle0)
 		totalTicks := float64(total1 - total0)

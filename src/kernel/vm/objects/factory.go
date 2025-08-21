@@ -19,8 +19,8 @@ type Factory struct {
 }
 
 const (
-	FrameUndefined = -1
-	FrameStatic    = -2
+	//FrameUndefined = -1
+	FrameStatic = -2
 )
 
 // NewFactory initializes a new Factory instance and sets up default bool and undefined values.
@@ -108,7 +108,12 @@ func (f *Factory) NewFuncCompiled(frame int, name string, instructions []byte, n
 
 // NewFuncPackage creates a new instance of FuncPackage with the specified kind, name, and callable function.
 func (f *Factory) NewFuncPackage(kind string, name string, fn FuncCallable) *FuncPackage {
-	return newFuncPackage(f, kind, name, fn)
+	return newFuncPackage(f, FrameStatic, kind, name, fn)
+}
+
+// NewFuncFramePackage creates a new instance of FuncPackage with the specified kind, name, and callable function.
+func (f *Factory) NewFuncFramePackage(frame int, kind string, name string, fn FuncCallable) *FuncPackage {
+	return newFuncPackage(f, frame, kind, name, fn)
 }
 
 // NewFloat creates a new Float instance with the given float64 value, using the Factory for initialization.

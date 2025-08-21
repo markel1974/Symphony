@@ -129,7 +129,7 @@ func (s *DynamicThrottle) Update() {
 	if interval := s.frameInterval - diff; interval < s.frameInterval {
 		duration := now + interval
 		if sleep := interval - s.tuning; sleep > 1 {
-			time.Sleep(time.Duration(sleep) * time.Nanosecond)
+			time.sleep(time.Duration(sleep) * time.Nanosecond)
 			now = time.Now().UnixNano()
 		}
 		s.tuning = now - duration

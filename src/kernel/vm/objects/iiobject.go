@@ -23,8 +23,6 @@ type IObject interface {
 
 	Frame() int
 
-	SetFrame(frame int) error
-
 	BinaryOp(frame int, op Operator, rightHandSide IObject) (IObject, error)
 
 	Boolean() bool
@@ -41,7 +39,7 @@ type IObject interface {
 
 	CanIterate() bool
 
-	Call(args ...IObject) (ret IObject, err error)
+	Call(frame int, args ...IObject) (ret IObject, err error)
 
 	CanCall() bool
 

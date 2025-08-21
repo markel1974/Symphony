@@ -24,13 +24,13 @@ func (o *Object) Frame() int {
 }
 
 // SetFrame updates the frame field of the Object with the specified frame value.
-func (o *Object) SetFrame(frame int) error {
-	if o.frame == FrameUndefined {
-		o.frame = frame
-		return nil
-	}
-	return ErrUnsupported
-}
+//func (o *Object) SetFrame(frame int) error {
+//	if o.frame == FrameUndefined {
+//		o.frame = frame
+//		return nil
+//	}
+//	return ErrUnsupported
+//}
 
 // TypeName returns the name of the object type. This method must be implemented by objects inheriting Object.
 func (o *Object) TypeName() string {
@@ -85,7 +85,7 @@ func (o *Object) CanIterate() bool {
 }
 
 // Call invokes the Object with the provided arguments, returning a result object and an error, if any.
-func (o *Object) Call(_ ...IObject) (ret IObject, err error) {
+func (o *Object) Call(_ int, _ ...IObject) (ret IObject, err error) {
 	return nil, nil
 }
 

@@ -625,7 +625,7 @@ func (op *OpCall) Execute(v *VM) {
 	} else {
 		var args []objects.IObject
 		args = append(args, v.stack.PeekArrayObject(numArgs)...)
-		ret, err := value.Call(args...)
+		ret, err := value.Call(v.currFrame.ID(), args...)
 		// Cleans the stack from the function and its arguments
 		v.stack.DecrementCount(numArgs + 1)
 		if err != nil {
@@ -639,10 +639,10 @@ func (op *OpCall) Execute(v *VM) {
 		if ret == nil {
 			v.stack.Push(op.Factory().UndefinedValue())
 		} else {
-			if err = ret.SetFrame(v.currFrame.ID()); err != nil {
-				v.SetError(err)
-				return
-			}
+			//if err = ret.SetFrame(v.currFrame.ID()); err != nil {
+			//	v.SetError(err)
+			//	return
+			//}
 			v.stack.Push(ret)
 		}
 	}

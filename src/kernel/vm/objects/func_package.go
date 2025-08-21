@@ -6,7 +6,7 @@ const (
 )
 
 // FuncCallable is a type alias for a function that takes a variadic list of IObject arguments and returns an IObject and an error.
-type FuncCallable = func(args ...IObject) (ret IObject, err error)
+type FuncCallable = func(frame int, args ...IObject) (ret IObject, err error)
 
 // FuncPackage is a callable object type that encapsulates a function and provides execution context information.
 type FuncPackage struct {
@@ -17,9 +17,9 @@ type FuncPackage struct {
 }
 
 // NewFuncPackage creates a new FuncPackage instance with the specified ID and callable function.
-func newFuncPackage(factory *Factory, kind string, name string, fn FuncCallable) *FuncPackage {
+func newFuncPackage(factory *Factory, frame int, kind string, name string, fn FuncCallable) *FuncPackage {
 	return &FuncPackage{
-		Object: factory.NewObject(FrameStatic),
+		Object: factory.NewObject(frame),
 		kind:   kind,
 		name:   name,
 		value:  fn,
@@ -52,8 +52,8 @@ func (o *FuncPackage) Equals(_ IObject) bool {
 }
 
 // Call invokes the function encapsulated within the FuncPackage with the provided arguments and returns the result or an error.
-func (o *FuncPackage) Call(args ...IObject) (IObject, error) {
-	return o.value(args...)
+func (o *FuncPackage) Call(frame int, args ...IObject) (IObject, error) {
+	return o.value(frame, args...)
 }
 
 // CanCall checks whether the FuncPackage instance can be invoked as a callable function. Always returns true.
