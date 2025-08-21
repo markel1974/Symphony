@@ -8,11 +8,6 @@ const (
 	StringType = "string"
 )
 
-// MaxStringLen defines the maximum allowed byte-length for string values across all compiler/VM instances in the process.
-const (
-	MaxStringLen = 2147483647
-)
-
 // String represents a wrapper around a standard string with additional behavior and methods for runtime operations.
 // This type embeds Object and supports operations like indexing, iteration, comparison, and copying.
 // It implements IObject and provides a richer functionality for string manipulation within the runtime system.

@@ -6,7 +6,8 @@ import (
 
 const (
 	maxDepth     = 256
-	maxBytesLen  = 2147483647
+	maxBytesLen  = 268435455
+	MaxStringLen = 268435455
 	maxMapLen    = 100000
 	maxArrayLen  = 100000
 	maxStructLen = 100000
