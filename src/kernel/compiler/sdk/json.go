@@ -9,12 +9,12 @@ import (
 
 // Json represents a module containing JSON-related operations and utilities.
 type Json struct {
-	factory *objects.Factory
+	factory *objects.GateKeeper
 	*Package
 }
 
 // NewJson creates and returns a new instance of Json containing predefined JSON operation modules.
-func NewJson(factory *objects.Factory) *Json {
+func NewJson(factory *objects.GateKeeper) *Json {
 	j := &Json{
 		factory: factory,
 	}

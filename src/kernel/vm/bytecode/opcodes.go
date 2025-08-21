@@ -105,14 +105,14 @@ const (
 
 // OpcodeDetails represents the details of an opcode, including its identifier, its operands, and its name.
 type OpcodeDetails struct {
-	factory  *objects.Factory
+	factory  *objects.GateKeeper
 	opcode   Opcode
 	operands []int
 	name     string
 }
 
 // NewOpcodeDetails creates a new OpcodeDetails instance, initializing its opcode, operands, and name fields.
-func NewOpcodeDetails(factory *objects.Factory, opcode Opcode, operands []int, name string) *OpcodeDetails {
+func NewOpcodeDetails(factory *objects.GateKeeper, opcode Opcode, operands []int, name string) *OpcodeDetails {
 	od := &OpcodeDetails{
 		factory:  factory,
 		opcode:   opcode,
@@ -127,7 +127,7 @@ func (od *OpcodeDetails) Opcode() Opcode {
 	return od.opcode
 }
 
-func (od *OpcodeDetails) Factory() *objects.Factory {
+func (od *OpcodeDetails) Factory() *objects.GateKeeper {
 	return od.factory
 }
 
@@ -142,11 +142,11 @@ func (od *OpcodeDetails) Operands() []int {
 }
 
 type Opcodes struct {
-	factory *objects.Factory
+	factory *objects.GateKeeper
 	details []*OpcodeDetails
 }
 
-func NewOpcodes(factory *objects.Factory) *Opcodes {
+func NewOpcodes(factory *objects.GateKeeper) *Opcodes {
 	op := &Opcodes{
 		factory: factory,
 		details: make([]*OpcodeDetails, OpcodesLen),
@@ -201,12 +201,12 @@ func NewOpcodes(factory *objects.Factory) *Opcodes {
 }
 
 // Factory returns the factory associated with the Opcodes instance.
-func (op *Opcodes) Factory() *objects.Factory {
+func (op *Opcodes) Factory() *objects.GateKeeper {
 	return op.factory
 }
 
 // createOpcodeDetails associates opcode details with a specific opcode, storing it in a global lookup by applying a mask.
-func (op *Opcodes) createOpcodeDetails(factory *objects.Factory, opcode Opcode, operands []int, name string) {
+func (op *Opcodes) createOpcodeDetails(factory *objects.GateKeeper, opcode Opcode, operands []int, name string) {
 	od := NewOpcodeDetails(factory, opcode, operands, name)
 	op.details[od.opcode&OpcodesMask] = od
 }

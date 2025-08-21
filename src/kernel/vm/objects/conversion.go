@@ -8,7 +8,7 @@ import (
 )
 
 // ToInterface converts an IObject to its corresponding native Go representation, such as int, string, float64, bool, etc.
-func toInterface(factory *Factory, in IObject) (res interface{}) {
+func toInterface(factory *GateKeeper, in IObject) (res interface{}) {
 	switch o := in.(type) {
 	case *Int:
 		res = o.value
@@ -55,7 +55,7 @@ func toInterface(factory *Factory, in IObject) (res interface{}) {
 }
 
 // FromInterface converts a native Go value of various types into a corresponding IObject implementation.
-func fromInterface(factory *Factory, frame int, in interface{}) IObject {
+func fromInterface(factory *GateKeeper, frame int, in interface{}) IObject {
 	switch v := in.(type) {
 	case nil:
 		return factory.UndefinedValue()
@@ -134,7 +134,7 @@ func fromInterface(factory *Factory, frame int, in interface{}) IObject {
 }
 
 // ToMap converts an IObject to a map[string]interface{} if the object is a *Map, recursively applying ToInterface.
-func toMap(factory *Factory, o IObject) (res map[string]interface{}) {
+func toMap(factory *GateKeeper, o IObject) (res map[string]interface{}) {
 	switch o := o.(type) {
 	case *Map:
 		res = make(map[string]interface{})
@@ -146,7 +146,7 @@ func toMap(factory *Factory, o IObject) (res map[string]interface{}) {
 }
 
 // FromMap converts a map with string keys and interface{} values into a map with string keys and IObject values.
-func fromMap(factory *Factory, frame int, v map[string]interface{}) map[string]IObject {
+func fromMap(factory *GateKeeper, frame int, v map[string]interface{}) map[string]IObject {
 	kv := make(map[string]IObject)
 	for key, val := range v {
 		kv[key] = fromInterface(factory, frame, val)
@@ -156,7 +156,7 @@ func fromMap(factory *Factory, frame int, v map[string]interface{}) map[string]I
 
 // ToInt64 attempts to convert the given IObject to an int64 value.
 // It returns the converted value and a boolean indicating success or failure.
-func toInt64(factory *Factory, o IObject) (int64, bool) {
+func toInt64(factory *GateKeeper, o IObject) (int64, bool) {
 	switch o := o.(type) {
 	case *Int:
 		return o.value, true
@@ -181,7 +181,7 @@ func toInt64(factory *Factory, o IObject) (int64, bool) {
 }
 
 // ToInt64Arg converts an IObject to an int64, returning an error if the conversion is not possible or the type is invalid.
-func toInt64Arg(factory *Factory, index int, o IObject) (int64, error) {
+func toInt64Arg(factory *GateKeeper, index int, o IObject) (int64, error) {
 	v, ok := toInt64(factory, o)
 	if !ok {
 		return 0, NewInvalidArgumentError(index, "int(compatible)", o.TypeName())
@@ -203,7 +203,7 @@ func toRune(o IObject) (v rune, ok bool) {
 }
 
 // ToString converts an IObject to its string representation and determines whether the conversion is valid.
-func toString(factory *Factory, o IObject) (string, bool) {
+func toString(factory *GateKeeper, o IObject) (string, bool) {
 	if o == nil {
 		return "", false
 	}
@@ -217,7 +217,7 @@ func toString(factory *Factory, o IObject) (string, bool) {
 }
 
 // ToStringArg attempts to convert an IObject to a string. Returns an error if conversion fails or type is incompatible.
-func toStringArg(factory *Factory, index int, o IObject) (string, error) {
+func toStringArg(factory *GateKeeper, index int, o IObject) (string, error) {
 	v, ok := toString(factory, o)
 	if !ok {
 		return "", NewInvalidArgumentError(index, "string(compatible)", o.TypeName())
@@ -226,7 +226,7 @@ func toStringArg(factory *Factory, index int, o IObject) (string, error) {
 }
 
 // ToStringArrayArg attempts to convert an array of IObjects to a slice of strings.
-func toStringArrayArg(factory *Factory, index int, arr []IObject) ([]string, error) {
+func toStringArrayArg(factory *GateKeeper, index int, arr []IObject) ([]string, error) {
 	var sArr []string
 	for idx, elem := range arr {
 		str, ok := toString(factory, elem)
@@ -252,7 +252,7 @@ func toByteSlice(o IObject) ([]byte, bool) {
 }
 
 // ToByteSliceArg attempts to convert an IObject to a byte slice. Returns an error if the conversion fails or the type is incompatible.
-func toByteSliceArg(factory *Factory, index int, o IObject) ([]byte, error) {
+func toByteSliceArg(factory *GateKeeper, index int, o IObject) ([]byte, error) {
 	b, ok := toByteSlice(o)
 	if !ok {
 		return nil, NewInvalidArgumentError(index, "byte slice(compatible)", o.TypeName())
@@ -261,7 +261,7 @@ func toByteSliceArg(factory *Factory, index int, o IObject) ([]byte, error) {
 }
 
 // ToFloat64 attempts to convert an IObject to a float64 and returns the values along with a success flag.
-func toFloat64(factory *Factory, o IObject) (float64, bool) {
+func toFloat64(factory *GateKeeper, o IObject) (float64, bool) {
 	switch o := o.(type) {
 	case *Int:
 		return float64(o.value), true
@@ -286,7 +286,7 @@ func toFloat64(factory *Factory, o IObject) (float64, bool) {
 }
 
 // ToFloat64Arg converts an IObject to a float64 and returns an error if the conversion fails or the type is incompatible.
-func toFloat64Arg(factory *Factory, index int, o IObject) (float64, error) {
+func toFloat64Arg(factory *GateKeeper, index int, o IObject) (float64, error) {
 	v, ok := toFloat64(factory, o)
 	if !ok {
 		return 0, NewInvalidArgumentError(index, "float64(compatible)", o.TypeName())
@@ -322,7 +322,7 @@ func toBool(o IObject) (v bool, ok bool) {
 }
 
 // FromBool converts a boolean values into its corresponding IObject representation, returning TrueValue or FalseValue.
-func fromBool(factory *Factory, v bool) IObject {
+func fromBool(factory *GateKeeper, v bool) IObject {
 	if v {
 		return factory.TrueValue()
 	}
@@ -339,7 +339,7 @@ func toBoolArg(index int, o IObject) (bool, error) {
 }
 
 // FromStringArray converts a slice of strings into an array of IObjects.
-func fromStringArray(factory *Factory, frame int, in []string) (IObject, error) {
+func fromStringArray(factory *GateKeeper, frame int, in []string) (IObject, error) {
 	var data []IObject
 	if len(in) > 0 {
 		data = make([]IObject, len(in))

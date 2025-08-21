@@ -47,13 +47,13 @@ type BuiltinWrapper struct {
 
 // Loader represents a mechanism to manage and load packages and built-in objects in the system.
 type Loader struct {
-	factory  *objects.Factory
+	factory  *objects.GateKeeper
 	packages map[string]*Package
 	builtin  []*BuiltinWrapper
 }
 
 // NewLoader initializes and returns a new Loader instance with predefined standard packages and built-in functions.
-func NewLoader(factory *objects.Factory) *Loader {
+func NewLoader(factory *objects.GateKeeper) *Loader {
 	builtin := NewBuiltinFunctions(factory).Package()
 	packages := []*Package{
 		NewErrors(factory).Package,

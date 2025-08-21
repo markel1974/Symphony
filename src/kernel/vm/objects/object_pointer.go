@@ -14,7 +14,7 @@ type ObjectPointer struct {
 }
 
 // NewObjectPointer creates a new ObjectPointer instance wrapping the provided IObject pointer.// NewObjectPointer creates a new ObjectPointer instance with the provided IObject values.
-func newObjectPointer(factory *Factory, frame int, value *IObject) *ObjectPointer {
+func newObjectPointer(factory *GateKeeper, frame int, value *IObject) *ObjectPointer {
 	return &ObjectPointer{
 		Object: factory.NewObject(frame),
 		value:  value,

@@ -25,7 +25,7 @@ type String struct {
 }
 
 // NewString creates and returns a new String object initialized with the provided string values.
-func newString(factory *Factory, frame int, value string) (*String, error) {
+func newString(factory *GateKeeper, frame int, value string) (*String, error) {
 	if len(value) > MaxStringLen {
 		return nil, ErrStringLimit
 	}
@@ -35,7 +35,7 @@ func newString(factory *Factory, frame int, value string) (*String, error) {
 	}, nil
 }
 
-func newStringNoSize(factory *Factory, frame int, value string) *String {
+func newStringNoSize(factory *GateKeeper, frame int, value string) *String {
 	return &String{
 		Object: factory.NewObject(frame),
 		value:  value,

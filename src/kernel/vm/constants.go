@@ -8,13 +8,13 @@ import (
 
 // Constants is a structure that manages global objects and handles error signaling through a callback function.
 type Constants struct {
-	factory   *objects.Factory
+	factory   *objects.GateKeeper
 	constants []objects.IObject
 	errSignal func(err error)
 }
 
 // NewConstants initializes and returns a new Constants instance with provided global objects and error signaling function.
-func NewConstants(factory *objects.Factory, errSignal func(err error)) *Constants {
+func NewConstants(factory *objects.GateKeeper, errSignal func(err error)) *Constants {
 	return &Constants{
 		factory:   factory,
 		constants: nil,

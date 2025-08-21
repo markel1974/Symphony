@@ -10,7 +10,7 @@ import (
 // Stack represents a data structure that operates on a LIFO (Last In, First Out) principle.
 // It manages a slice of objects implementing the IObject interface and tracks the stack pointer.
 type Stack struct {
-	factory        *objects.Factory
+	factory        *objects.GateKeeper
 	stack          []objects.IObject
 	sp             int
 	allocations    int64
@@ -19,7 +19,7 @@ type Stack struct {
 }
 
 // NewStack creates and initializes a new Stack with the specified size and returns a pointer to it.
-func NewStack(factory *objects.Factory, size int, maxAllocations int64, errSignal func(err error)) *Stack {
+func NewStack(factory *objects.GateKeeper, size int, maxAllocations int64, errSignal func(err error)) *Stack {
 	s := &Stack{
 		factory:        factory,
 		sp:             0,

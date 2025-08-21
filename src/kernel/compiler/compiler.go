@@ -22,13 +22,13 @@ const (
 
 // Compiler represents a structure to manage the compilation process, including scopes and associated token file sets.
 type Compiler struct {
-	factory *objects.Factory
+	factory *objects.GateKeeper
 	scopes  *Scopes
 	fileSet *token.FileSet
 }
 
 // New creates and returns a new instance of Compiler with initialized scopes using a standard library loader.
-func New(factory *objects.Factory) *Compiler {
+func New(factory *objects.GateKeeper) *Compiler {
 	loader := sdk.NewLoader(factory)
 	op := bytecode.NewOpcodes(factory)
 	c := &Compiler{

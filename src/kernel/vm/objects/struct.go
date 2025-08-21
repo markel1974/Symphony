@@ -17,7 +17,7 @@ type Struct struct {
 }
 
 // NewStruct creates a new instance of MapImmutable with the provided map of string keys and IObject values.
-func newStruct(factory *Factory, frame int, value map[string]IObject) *Struct {
+func newStruct(factory *GateKeeper, frame int, value map[string]IObject) *Struct {
 	return &Struct{
 		Object: factory.NewObject(frame),
 		values: value,

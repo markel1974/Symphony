@@ -18,7 +18,7 @@ type FuncCompiled struct {
 }
 
 // NewFunctionCompiled creates a new instance of FuncCompiled with the given instructions, locals, parameters, varArgs, sourceMap, and free vars.
-func newFuncCompiled(factory *Factory, frame int, name string, instructions []byte, numLocals int, numParameters int, varArgs bool, sourceMap map[int]int, free []*ObjectPointer) *FuncCompiled {
+func newFuncCompiled(factory *GateKeeper, frame int, name string, instructions []byte, numLocals int, numParameters int, varArgs bool, sourceMap map[int]int, free []*ObjectPointer) *FuncCompiled {
 	if sourceMap == nil {
 		sourceMap = make(map[int]int)
 	}

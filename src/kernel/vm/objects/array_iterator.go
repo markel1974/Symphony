@@ -15,7 +15,7 @@ type ArrayIterator struct {
 }
 
 // NewArrayIterator creates and returns a new ArrayIterator instance with the given slice of IObject.
-func newArrayIterator(factory *Factory, frame int, v []IObject) *ArrayIterator {
+func newArrayIterator(factory *GateKeeper, frame int, v []IObject) *ArrayIterator {
 	return &ArrayIterator{
 		Object: factory.NewObject(frame),
 		values: v,

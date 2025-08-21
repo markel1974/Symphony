@@ -16,7 +16,7 @@ type Array struct {
 }
 
 // NewArray creates and returns a new Array object initialized with the provided slice of IObject elements.
-func newArray(factory *Factory, frame int, value []IObject) *Array {
+func newArray(factory *GateKeeper, frame int, value []IObject) *Array {
 	return &Array{
 		Object: factory.NewObject(frame),
 		values: value,

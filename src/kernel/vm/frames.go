@@ -7,14 +7,14 @@ import (
 // Frames is a structure that manages function call frames in a virtual machine execution context.
 // It maintains a stack of frames and tracks the current frame index for managing execution state.
 type Frames struct {
-	factory     *objects.Factory
+	factory     *objects.GateKeeper
 	frames      []*Frame
 	framesIndex uint
 	errSignal   func(err error)
 }
 
 // NewFrames initializes and returns a new Frames instance with the specified main function and maximum frame count.
-func NewFrames(factory *objects.Factory, maxFrames int, errSignal func(err error)) *Frames {
+func NewFrames(factory *objects.GateKeeper, maxFrames int, errSignal func(err error)) *Frames {
 	f := &Frames{
 		factory:     factory,
 		frames:      make([]*Frame, maxFrames),

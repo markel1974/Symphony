@@ -15,7 +15,7 @@ type Int struct {
 }
 
 // NewInt creates and returns a new instance of the Int struct initialized with the specified int64 value.
-func newInt(factory *Factory, frame int, value int64) *Int {
+func newInt(factory *GateKeeper, frame int, value int64) *Int {
 	return &Int{
 		Object: factory.NewObject(frame),
 		value:  value,

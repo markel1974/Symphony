@@ -20,7 +20,7 @@ type Error struct {
 }
 
 // NewError creates and returns a new Error object with the specified values.
-func newError(factory *Factory, frame int, err string) *Error {
+func newError(factory *GateKeeper, frame int, err string) *Error {
 	if len(err) > maxErrorLen {
 		err = err[:maxErrorLen]
 	}

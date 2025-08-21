@@ -11,7 +11,7 @@ type Char struct {
 }
 
 // NewChar creates and returns a new Char object with the specified rune values.
-func newChar(factory *Factory, frame int, value rune) *Char {
+func newChar(factory *GateKeeper, frame int, value rune) *Char {
 	return &Char{
 		Object: factory.NewObject(frame),
 		value:  value,

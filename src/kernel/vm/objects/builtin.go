@@ -17,7 +17,7 @@ type Builtin struct {
 }
 
 // NewBuiltin creates a new instance of Builtin with the specified name and value.
-func newBuiltin(factory *Factory, frame int, name string, index int) *Builtin {
+func newBuiltin(factory *GateKeeper, frame int, name string, index int) *Builtin {
 	return &Builtin{
 		Object: factory.NewObject(frame),
 		name:   name,

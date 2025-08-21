@@ -15,7 +15,7 @@ import (
 type IOpExecutor interface {
 	Opcode() bytecode.Opcode
 
-	Factory() *objects.Factory
+	Factory() *objects.GateKeeper
 
 	Name() string
 

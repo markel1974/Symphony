@@ -16,7 +16,7 @@ type Map struct {
 }
 
 // NewMap creates and returns a new instance of Map initialized with the provided map of string keys to IObject values.
-func newMap(factory *Factory, frame int, value map[string]IObject) *Map {
+func newMap(factory *GateKeeper, frame int, value map[string]IObject) *Map {
 	return &Map{
 		Object: factory.NewObject(frame),
 		values: value,

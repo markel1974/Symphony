@@ -10,12 +10,12 @@ import (
 // Strings provides a collection of string operations and functionality wrapped in a module.
 // It includes functions for manipulation, comparison, trimming, padding, splitting, and other string-related utilities.
 type Strings struct {
-	factory *objects.Factory
+	factory *objects.GateKeeper
 	*Package
 }
 
 // NewStrings creates and returns a new instance of Strings with a preconfigured map of string utility functions.
-func NewStrings(factory *objects.Factory) *Strings {
+func NewStrings(factory *objects.GateKeeper) *Strings {
 	s := &Strings{factory: factory}
 	container := []*objects.FuncPackage{
 		factory.NewFuncPackage(objects.FuncPackageDef, "Compare", factory.FuncIssOi(strings.Compare)),

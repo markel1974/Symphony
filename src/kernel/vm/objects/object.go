@@ -2,19 +2,19 @@ package objects
 
 // Object is a default implementation of the IObject interface with unimplemented or default behavior for methods.
 type Object struct {
-	factory *Factory
+	factory *GateKeeper
 	frame   int
 }
 
-func newObject(factory *Factory, frame int) *Object {
+func newObject(factory *GateKeeper, frame int) *Object {
 	return &Object{
 		factory: factory,
 		frame:   frame,
 	}
 }
 
-// Factory returns a reference to the Factory associated with the Object.
-func (o *Object) Factory() *Factory {
+// GateKeeper returns a reference to the GateKeeper associated with the Object.
+func (o *Object) Factory() *GateKeeper {
 	return o.factory
 }
 

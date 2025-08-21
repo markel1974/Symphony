@@ -10,7 +10,7 @@ type Undefined struct {
 	*Object
 }
 
-func _newUndefined(factory *Factory, frame int) *Undefined {
+func _newUndefined(factory *GateKeeper, frame int) *Undefined {
 	return &Undefined{
 		Object: factory.NewObject(frame),
 	}

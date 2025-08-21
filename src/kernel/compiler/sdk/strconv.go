@@ -8,12 +8,12 @@ import (
 
 // Strconv is a type that provides a module containing string conversion functions implemented using strconv.
 type Strconv struct {
-	factory *objects.Factory
+	factory *objects.GateKeeper
 	*Package
 }
 
 // NewStrconv initializes and returns a pointer to a new Strconv instance containing predefined module functions.
-func NewStrconv(factory *objects.Factory) *Strconv {
+func NewStrconv(factory *objects.GateKeeper) *Strconv {
 	s := &Strconv{
 		factory: factory,
 	}

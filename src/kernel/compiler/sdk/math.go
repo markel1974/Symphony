@@ -8,12 +8,12 @@ import (
 
 // Math serves as a container for mathematical operations and modules, mapping module names to their respective objects.
 type Math struct {
-	factory *objects.Factory
+	factory *objects.GateKeeper
 	*Package
 }
 
 // NewMath initializes and returns a new instance of Math with predefined mathematical constants and function modules.
-func NewMath(factory *objects.Factory) *Math {
+func NewMath(factory *objects.GateKeeper) *Math {
 	m := &Math{
 		factory: factory,
 	}

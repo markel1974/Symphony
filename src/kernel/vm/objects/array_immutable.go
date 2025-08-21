@@ -17,7 +17,7 @@ type ArrayImmutable struct {
 }
 
 // NewArrayImmutable creates a new ArrayImmutable instance with the given slice of IObject, ensuring it is immutable.
-func newArrayImmutable(factory *Factory, frame int, value []IObject) *ArrayImmutable {
+func newArrayImmutable(factory *GateKeeper, frame int, value []IObject) *ArrayImmutable {
 	return &ArrayImmutable{
 		Object: factory.NewObject(frame),
 		values: value,
