@@ -39,9 +39,7 @@ var (
 
 	ErrWrongNumArguments = errors.New("wrong number of arguments")
 
-	ErrBytesLimit = errors.New("exceeding bytes size limit")
-
-	ErrStringLimit = errors.New("exceeding string size limit")
+	ErrExceedingLimit = errors.New("exceeding size limit")
 
 	ErrNotIndexable = errors.New("not indexable")
 

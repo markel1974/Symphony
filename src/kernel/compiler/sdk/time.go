@@ -16,21 +16,21 @@ type Time struct {
 func NewTime(factory *objects.GateKeeper) *Time {
 	t := &Time{factory: factory}
 	constants := map[string]objects.IObject{
-		"ANSIC":       factory.NewStringNoSize(objects.FrameStatic, time.ANSIC),
-		"UnixDate":    factory.NewStringNoSize(objects.FrameStatic, time.UnixDate),
-		"RubyDate":    factory.NewStringNoSize(objects.FrameStatic, time.RubyDate),
-		"RFC822":      factory.NewStringNoSize(objects.FrameStatic, time.RFC822),
-		"RFC822Z":     factory.NewStringNoSize(objects.FrameStatic, time.RFC822Z),
-		"RFC850":      factory.NewStringNoSize(objects.FrameStatic, time.RFC850),
-		"RFC1123":     factory.NewStringNoSize(objects.FrameStatic, time.RFC1123),
-		"RFC1123Z":    factory.NewStringNoSize(objects.FrameStatic, time.RFC1123Z),
-		"RFC3339":     factory.NewStringNoSize(objects.FrameStatic, time.RFC3339),
-		"RFC3339Nano": factory.NewStringNoSize(objects.FrameStatic, time.RFC3339Nano),
-		"Kitchen":     factory.NewStringNoSize(objects.FrameStatic, time.Kitchen),
-		"Stamp":       factory.NewStringNoSize(objects.FrameStatic, time.Stamp),
-		"StampMilli":  factory.NewStringNoSize(objects.FrameStatic, time.StampMilli),
-		"StampMicro":  factory.NewStringNoSize(objects.FrameStatic, time.StampMicro),
-		"StampNano":   factory.NewStringNoSize(objects.FrameStatic, time.StampNano),
+		"ANSIC":       factory.NewString(objects.FrameStatic, time.ANSIC),
+		"UnixDate":    factory.NewString(objects.FrameStatic, time.UnixDate),
+		"RubyDate":    factory.NewString(objects.FrameStatic, time.RubyDate),
+		"RFC822":      factory.NewString(objects.FrameStatic, time.RFC822),
+		"RFC822Z":     factory.NewString(objects.FrameStatic, time.RFC822Z),
+		"RFC850":      factory.NewString(objects.FrameStatic, time.RFC850),
+		"RFC1123":     factory.NewString(objects.FrameStatic, time.RFC1123),
+		"RFC1123Z":    factory.NewString(objects.FrameStatic, time.RFC1123Z),
+		"RFC3339":     factory.NewString(objects.FrameStatic, time.RFC3339),
+		"RFC3339Nano": factory.NewString(objects.FrameStatic, time.RFC3339Nano),
+		"Kitchen":     factory.NewString(objects.FrameStatic, time.Kitchen),
+		"Stamp":       factory.NewString(objects.FrameStatic, time.Stamp),
+		"StampMilli":  factory.NewString(objects.FrameStatic, time.StampMilli),
+		"StampMicro":  factory.NewString(objects.FrameStatic, time.StampMicro),
+		"StampNano":   factory.NewString(objects.FrameStatic, time.StampNano),
 		"Nanosecond":  factory.NewInt(objects.FrameStatic, int64(time.Nanosecond)),
 		"Microsecond": factory.NewInt(objects.FrameStatic, int64(time.Microsecond)),
 		"Millisecond": factory.NewInt(objects.FrameStatic, int64(time.Millisecond)),
@@ -209,7 +209,7 @@ func (t *Time) durationString(frame int, args ...objects.IObject) (objects.IObje
 	if err != nil {
 		return nil, err
 	}
-	return t.factory.NewString(frame, time.Duration(i1).String())
+	return t.factory.NewString(frame, time.Duration(i1).String()), nil
 }
 
 // monthString takes a single integer argument, converts it to a month, and returns its string representation.
@@ -222,7 +222,7 @@ func (t *Time) monthString(frame int, args ...objects.IObject) (objects.IObject,
 	if err != nil {
 		return nil, err
 	}
-	return t.factory.NewStringNoSize(frame, time.Month(i1).String()), nil
+	return t.factory.NewString(frame, time.Month(i1).String()), nil
 }
 
 // Date creates a new Time object using the specified year, month, day, hour, minute, second, and nanosecond values.
@@ -540,7 +540,7 @@ func (t *Time) timeFormat(frame int, args ...objects.IObject) (objects.IObject, 
 		return nil, err
 	}
 	s := t1.Format(s2)
-	return t.factory.NewString(frame, s)
+	return t.factory.NewString(frame, s), nil
 }
 
 // isZero checks if the provided time argument is zero and returns TrueValue if it is, otherwise returns FalseValue.
@@ -591,7 +591,7 @@ func (t *Time) timeLocation(frame int, args ...objects.IObject) (objects.IObject
 	if err != nil {
 		return nil, err
 	}
-	return t.factory.NewString(frame, t1.Location().String())
+	return t.factory.NewString(frame, t1.Location().String()), nil
 }
 
 // timeString converts a time instance to its string representation. It requires exactly one argument of type IObject.
@@ -603,5 +603,5 @@ func (t *Time) timeString(frame int, args ...objects.IObject) (objects.IObject, 
 	if err != nil {
 		return nil, err
 	}
-	return t.factory.NewString(frame, t1.String())
+	return t.factory.NewString(frame, t1.String()), nil
 }

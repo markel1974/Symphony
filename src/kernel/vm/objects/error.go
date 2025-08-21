@@ -26,7 +26,7 @@ func newError(factory *GateKeeper, frame int, err string) *Error {
 	}
 	return &Error{
 		Object: factory.NewObject(frame),
-		value:  factory.NewStringNoSize(frame, err),
+		value:  factory.NewString(frame, err),
 		err:    err,
 	}
 }

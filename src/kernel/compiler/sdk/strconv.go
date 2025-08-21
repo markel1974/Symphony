@@ -44,9 +44,9 @@ func (s *Strconv) formatBool(frame int, args ...objects.IObject) (objects.IObjec
 		return nil, err
 	}
 	if b1 {
-		return s.factory.NewString(frame, "true")
+		return s.factory.NewString(frame, "true"), nil
 	}
-	return s.factory.NewString(frame, "false")
+	return s.factory.NewString(frame, "false"), nil
 }
 
 // FormatFloat converts a float64 into a string representation according to the specified format, precision, and bit size.
@@ -70,7 +70,7 @@ func (s *Strconv) formatFloat(frame int, args ...objects.IObject) (objects.IObje
 	if err != nil {
 		return nil, err
 	}
-	return s.factory.NewString(frame, strconv.FormatFloat(f1, s2[0], int(i3), int(i4)))
+	return s.factory.NewString(frame, strconv.FormatFloat(f1, s2[0], int(i3), int(i4))), nil
 }
 
 // FormatInt formats an int64 number as a string in the specified base, provided by the second argument.
@@ -86,7 +86,7 @@ func (s *Strconv) formatInt(frame int, args ...objects.IObject) (objects.IObject
 	if err != nil {
 		return nil, err
 	}
-	return s.factory.NewString(frame, strconv.FormatInt(i1, int(i2)))
+	return s.factory.NewString(frame, strconv.FormatInt(i1, int(i2))), nil
 }
 
 // ParseBool parses a string representation of a boolean value and returns the corresponding boolean object or an error.

@@ -68,7 +68,7 @@ func (h *BuiltinFunctions) typeName(frame int, args ...objects.IObject) (objects
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}
-	return h.factory.NewString(frame, args[0].TypeName())
+	return h.factory.NewString(frame, args[0].TypeName()), nil
 }
 
 // IsString checks if the given argument is of type String and returns TrueValue if it is, otherwise FalseValue.
@@ -336,7 +336,7 @@ func (h *BuiltinFunctions) format(frame int, args ...objects.IObject) (objects.I
 	for _, v := range args[1:] {
 		ar = append(ar, h.factory.ToInterface(v))
 	}
-	return h.factory.NewString(frame, fmt.Sprintf(formatString.Value(), ar...))
+	return h.factory.NewString(frame, fmt.Sprintf(formatString.Value(), ar...)), nil
 }
 
 // Copy returns a copy of the provided object. It accepts exactly one argument and raises an error on invalid input.
@@ -358,7 +358,7 @@ func (h *BuiltinFunctions) string(frame int, args ...objects.IObject) (objects.I
 	}
 	v, ok := h.factory.ToString(args[0])
 	if ok {
-		return h.factory.NewString(frame, v)
+		return h.factory.NewString(frame, v), nil
 	}
 	if argsLen == 2 {
 		return args[1], nil
@@ -449,16 +449,10 @@ func (h *BuiltinFunctions) bytes(frame int, args ...objects.IObject) (objects.IO
 		return nil, objects.ErrWrongNumArguments
 	}
 	if n, ok := args[0].(*objects.Int); ok {
-		if n.Value() > int64(objects.MaxBytesLen) {
-			return nil, objects.ErrBytesLimit
-		}
 		return h.factory.NewBytes(frame, make([]byte, int(n.Value()))), nil
 	}
 	v, ok := h.factory.ToByteSlice(args[0])
 	if ok {
-		if len(v) > objects.MaxBytesLen {
-			return nil, objects.ErrBytesLimit
-		}
 		return h.factory.NewBytes(frame, v), nil
 	}
 	if argsLen == 2 {

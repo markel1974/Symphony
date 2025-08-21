@@ -60,7 +60,7 @@ func (o *MapImmutable) String() string {
 func (o *MapImmutable) Copy(frame int, depth int) IObject {
 	c := make(map[string]IObject)
 	for k, v := range o.values {
-		if depth >= MaxDepth {
+		if depth >= maxDepth {
 			break
 		}
 		c[k] = v.Copy(frame, depth+1)

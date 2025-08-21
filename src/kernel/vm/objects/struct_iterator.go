@@ -74,7 +74,7 @@ func (i *StructIterator) Key(frame int) IObject {
 		return i.GateKeeper().UndefinedValue()
 	}
 	k := i.keys[idx]
-	return i.factory.NewStringNoSize(frame, k)
+	return i.factory.NewString(frame, k)
 }
 
 // Value retrieves the value of the current element in the iteration based on the iterator's current position.

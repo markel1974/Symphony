@@ -401,7 +401,7 @@ func (c *Compiler) doAssignStmt(node *ast.AssignStmt) error {
 			return fmt.Errorf("undefined variable: %s", receiverIdent.Name)
 		}
 		fieldName := lhs.Sel.Name
-		keyConst := c.scopes.ConstantsAddOrGet(c.factory.NewStringNoSize(objects.FrameStatic, fieldName))
+		keyConst := c.scopes.ConstantsAddOrGet(c.factory.NewString(objects.FrameStatic, fieldName))
 		if _, err := c.scopes.Emit(bytecode.OpConstant, keyConst); err != nil {
 			return err
 		}
@@ -441,7 +441,7 @@ func (c *Compiler) doCallExpr(node *ast.CallExpr) error {
 			found := false
 			fnIndex, found = c.scopes.ReferencesGet(fnName)
 			if !found {
-				attrArray := c.factory.NewArray(objects.FrameStatic, []objects.IObject{c.factory.NewStringNoSize(objects.FrameStatic, receiverIdent.Name), c.factory.NewStringNoSize(objects.FrameStatic, selExpr.Sel.Name)})
+				attrArray := c.factory.NewArray(objects.FrameStatic, []objects.IObject{c.factory.NewString(objects.FrameStatic, receiverIdent.Name), c.factory.NewString(objects.FrameStatic, selExpr.Sel.Name)})
 				fnIndex = c.scopes.ReferencesAdd(fnName, attrArray)
 			}
 			for _, arg := range node.Args {
@@ -610,7 +610,7 @@ func (c *Compiler) doCompositeLit(node *ast.CompositeLit) error {
 		for idx := range symbol.Fields {
 			fieldName := symbol.Fields[idx].Name()
 			fieldNode := symbol.Fields[idx].Node()
-			keyConst := c.scopes.ConstantsAddOrGet(c.factory.NewStringNoSize(objects.FrameStatic, fieldName))
+			keyConst := c.scopes.ConstantsAddOrGet(c.factory.NewString(objects.FrameStatic, fieldName))
 			if _, err := c.scopes.Emit(bytecode.OpConstant, keyConst); err != nil {
 				return err
 			}
@@ -1084,7 +1084,7 @@ func (c *Compiler) doSelectorExpr(node *ast.SelectorExpr) error {
 		cacheKey := GetMangledName(receiverIdent.Name, node.Sel.Name)
 		nameIndex, found := c.scopes.ReferencesGet(cacheKey)
 		if !found {
-			attrArray := c.factory.NewArray(objects.FrameStatic, []objects.IObject{c.factory.NewStringNoSize(objects.FrameStatic, receiverIdent.Name), c.factory.NewStringNoSize(objects.FrameStatic, node.Sel.Name)})
+			attrArray := c.factory.NewArray(objects.FrameStatic, []objects.IObject{c.factory.NewString(objects.FrameStatic, receiverIdent.Name), c.factory.NewString(objects.FrameStatic, node.Sel.Name)})
 			nameIndex = c.scopes.ReferencesAdd(cacheKey, attrArray)
 		}
 		if _, err := c.scopes.Emit(bytecode.OpReferences, nameIndex); err != nil {
@@ -1095,7 +1095,7 @@ func (c *Compiler) doSelectorExpr(node *ast.SelectorExpr) error {
 			return err
 		}
 		fieldName := node.Sel.Name
-		keyConst := c.scopes.ConstantsAddOrGet(c.factory.NewStringNoSize(objects.FrameStatic, fieldName))
+		keyConst := c.scopes.ConstantsAddOrGet(c.factory.NewString(objects.FrameStatic, fieldName))
 		if _, err := c.scopes.Emit(bytecode.OpConstant, keyConst); err != nil {
 			return err
 		}

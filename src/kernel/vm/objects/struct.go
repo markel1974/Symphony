@@ -18,6 +18,16 @@ type Struct struct {
 
 // NewStruct creates a new instance of MapImmutable with the provided map of string keys and IObject values.
 func newStruct(factory *GateKeeper, frame int, value map[string]IObject) *Struct {
+	if len(value) > maxStructLen {
+		nv := make(map[string]IObject)
+		for k, v := range value {
+			if len(nv) > maxStructLen {
+				break
+			}
+			nv[k] = v
+		}
+		value = nv
+	}
 	return &Struct{
 		Object: factory.NewObject(frame),
 		values: value,
@@ -36,6 +46,9 @@ func (o *Struct) Length() int {
 
 // SetValue sets the specified key to the given value in the values map of the Struct.
 func (o *Struct) SetValue(k string, v IObject) {
+	if len(o.values) > maxStructLen {
+		return
+	}
 	o.values[k] = v
 }
 
@@ -63,7 +76,7 @@ func (o *Struct) String() string {
 func (o *Struct) Copy(frame int, depth int) IObject {
 	c := make(map[string]IObject)
 	for k, v := range o.values {
-		if depth >= MaxDepth {
+		if depth >= maxDepth {
 			break
 		}
 		c[k] = v.Copy(frame, depth+1)

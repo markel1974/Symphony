@@ -5,7 +5,11 @@ import (
 )
 
 const (
-	MaxDepth = 256
+	maxDepth     = 256
+	maxBytesLen  = 2147483647
+	maxMapLen    = 100000
+	maxArrayLen  = 100000
+	maxStructLen = 100000
 )
 
 // GateKeeper is a type responsible for creating and managing IObject instances, including primitive and complex types.
@@ -158,13 +162,8 @@ func (f *GateKeeper) NewMapIterator(frame int, v map[string]IObject) *MapIterato
 	return newMapIterator(f, frame, v)
 }
 
-// NewStringNoSize creates a new String instance with the provided value, omitting size initialization.
-func (f *GateKeeper) NewStringNoSize(frame int, value string) *String {
-	return newStringNoSize(f, frame, value)
-}
-
 // NewString creates a new instance of String with the given value, utilizing the GateKeeper for initialization.
-func (f *GateKeeper) NewString(frame int, value string) (*String, error) {
+func (f *GateKeeper) NewString(frame int, value string) *String {
 	return newString(f, frame, value)
 }
 

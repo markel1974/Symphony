@@ -60,10 +60,7 @@ func fromInterface(factory *GateKeeper, frame int, in interface{}) IObject {
 	case nil:
 		return factory.UndefinedValue()
 	case string:
-		if len(v) > MaxStringLen {
-			return factory.NewStringNoSize(frame, v[0:MaxStringLen])
-		}
-		return factory.NewStringNoSize(frame, v)
+		return factory.NewString(frame, v)
 	case int64:
 		return factory.NewInt(frame, v)
 	case int:
@@ -80,9 +77,6 @@ func fromInterface(factory *GateKeeper, frame int, in interface{}) IObject {
 	case float64:
 		return factory.NewFloat(frame, v)
 	case []byte:
-		if len(v) > MaxBytesLen {
-			return factory.NewBytes(frame, v[0:MaxBytesLen])
-		}
 		return factory.NewBytes(frame, v)
 	case error:
 		return factory.NewError(frame, v.Error())
@@ -344,10 +338,7 @@ func fromStringArray(factory *GateKeeper, frame int, in []string) (IObject, erro
 	if len(in) > 0 {
 		data = make([]IObject, len(in))
 		for idx, v := range in {
-			r, err := factory.NewString(frame, v)
-			if err != nil {
-				return nil, err
-			}
+			r := factory.NewString(frame, v)
 			data[idx] = r
 		}
 	}

@@ -120,10 +120,7 @@ func funcInOs(f *GateKeeper, fn func() string) FuncCallable {
 		if len(args) != 0 {
 			return nil, ErrWrongNumArguments
 		}
-		v, err := f.NewString(frame, fn())
-		if err != nil {
-			return nil, err
-		}
+		v := f.NewString(frame, fn())
 		return v, nil
 	}
 }
@@ -138,10 +135,7 @@ func funcInOse(f *GateKeeper, fn func() (string, error)) FuncCallable {
 		if err != nil {
 			return f.NewError(frame, err.Error()), nil
 		}
-		v, err := f.NewString(frame, res)
-		if err != nil {
-			return nil, err
-		}
+		v := f.NewString(frame, res)
 		return v, nil
 	}
 }
@@ -156,9 +150,6 @@ func funcInObSe(f *GateKeeper, fn func() ([]byte, error)) FuncCallable {
 		res, err := fn()
 		if err != nil {
 			return f.NewError(frame, err.Error()), nil
-		}
-		if len(res) > MaxBytesLen {
-			return nil, ErrBytesLimit
 		}
 		return f.NewBytes(frame, res), nil
 	}
@@ -186,10 +177,7 @@ func funcInOsS(f *GateKeeper, fn func() []string) FuncCallable {
 		}
 		arr := f.NewArray(frame, nil)
 		for _, elem := range fn() {
-			v, err := f.NewString(frame, elem)
-			if err != nil {
-				return nil, err
-			}
+			v := f.NewString(frame, elem)
 			arr.Append(v)
 		}
 		return arr, nil
@@ -410,10 +398,7 @@ func funcIsOs(f *GateKeeper, fn func(string) string) FuncCallable {
 		if err != nil {
 			return nil, err
 		}
-		v, err := f.NewString(frame, fn(s1))
-		if err != nil {
-			return nil, err
-		}
+		v := f.NewString(frame, fn(s1))
 		return v, nil
 	}
 }
@@ -432,10 +417,7 @@ func funcIsOsS(f *GateKeeper, fn func(string) []string) FuncCallable {
 		res := fn(s1)
 		arr := f.NewArray(frame, nil)
 		for _, elem := range res {
-			v, err := f.NewString(frame, elem)
-			if err != nil {
-				return nil, err
-			}
+			v := f.NewString(frame, elem)
 			arr.Append(v)
 		}
 		return arr, nil
@@ -456,10 +438,7 @@ func funcIsOse(f *GateKeeper, fn func(string) (string, error)) FuncCallable {
 		if err != nil {
 			return f.NewError(frame, err.Error()), nil
 		}
-		v, err := f.NewString(frame, res)
-		if err != nil {
-			return nil, err
-		}
+		v := f.NewString(frame, res)
 		return v, nil
 	}
 }
@@ -526,10 +505,7 @@ func funcIssOsS(f *GateKeeper, fn func(string, string) []string) FuncCallable {
 		}
 		arr := f.NewArray(frame, nil)
 		for _, res := range fn(s1, s2) {
-			v, err := f.NewString(frame, res)
-			if err != nil {
-				return nil, err
-			}
+			v := f.NewString(frame, res)
 			arr.Append(v)
 		}
 		return arr, nil
@@ -558,10 +534,7 @@ func funcIssiOsS(f *GateKeeper, fn func(string, string, int) []string) FuncCalla
 		}
 		arr := f.NewArray(frame, nil)
 		for _, res := range fn(s1, s2, int(i3)) {
-			v, err := f.NewString(frame, res)
-			if err != nil {
-				return nil, err
-			}
+			v := f.NewString(frame, res)
 			arr.Append(v)
 		}
 		return arr, nil
@@ -604,12 +577,8 @@ func funcIssOs(f *GateKeeper, fn func(string, string) string) FuncCallable {
 		if err != nil {
 			return nil, err
 		}
-		v, err := f.NewString(frame, fn(s1, s2))
-		if err != nil {
-			return nil, err
-		}
+		v := f.NewString(frame, fn(s1, s2))
 		return v, nil
-
 	}
 }
 
@@ -668,10 +637,7 @@ func funcIsSsOs(f *GateKeeper, fn func([]string, string) string) FuncCallable {
 		if err != nil {
 			return nil, err
 		}
-		v, err := f.NewString(frame, fn(ss1, s2))
-		if err != nil {
-			return nil, err
-		}
+		v := f.NewString(frame, fn(ss1, s2))
 		return v, nil
 	}
 }
@@ -736,10 +702,7 @@ func funcIsiOs(f *GateKeeper, fn func(string, int) string) FuncCallable {
 		if err != nil {
 			return nil, err
 		}
-		v, err := f.NewString(frame, fn(s1, int(i2)))
-		if err != nil {
-			return nil, err
-		}
+		v := f.NewString(frame, fn(s1, int(i2)))
 		return v, nil
 	}
 }
@@ -802,10 +765,7 @@ func funcIbSOs(f *GateKeeper, fn func([]byte) string) FuncCallable {
 		if err != nil {
 			return nil, err
 		}
-		v, err := f.NewString(frame, fn(bs1))
-		if err != nil {
-			return nil, err
-		}
+		v := f.NewString(frame, fn(bs1))
 		return v, nil
 	}
 }
@@ -844,9 +804,6 @@ func funcIsObSe(f *GateKeeper, fn func(string) ([]byte, error)) FuncCallable {
 		if err != nil {
 			return f.NewError(frame, err.Error()), nil
 		}
-		if len(res) > MaxBytesLen {
-			return nil, ErrBytesLimit
-		}
 		return f.NewBytes(frame, res), nil
 	}
 }
@@ -867,13 +824,7 @@ func funcIiOsSe(f *GateKeeper, fn func(int) ([]string, error)) FuncCallable {
 		}
 		arr := f.NewArray(frame, nil)
 		for _, r := range res {
-			if len(r) > MaxStringLen {
-				return nil, ErrStringLimit
-			}
-			v, err := f.NewString(frame, r)
-			if err != nil {
-				return nil, err
-			}
+			v := f.NewString(frame, r)
 			arr.Append(v)
 		}
 		return arr, nil
@@ -891,10 +842,7 @@ func funcIiOs(f *GateKeeper, fn func(int) string) FuncCallable {
 			return nil, err
 		}
 		s := fn(int(i1))
-		v, err := f.NewString(frame, s)
-		if err != nil {
-			return nil, err
-		}
+		v := f.NewString(frame, s)
 		return v, nil
 	}
 }

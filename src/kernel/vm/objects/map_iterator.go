@@ -72,7 +72,7 @@ func (i *MapIterator) Key(frame int) IObject {
 		return i.GateKeeper().UndefinedValue()
 	}
 	k := i.keys[idx]
-	return i.GateKeeper().NewStringNoSize(frame, k)
+	return i.GateKeeper().NewString(frame, k)
 }
 
 // Value retrieves the values of the current element in the iteration based on the iterator's current position.

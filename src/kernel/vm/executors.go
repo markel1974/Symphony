@@ -547,10 +547,7 @@ func (op *OpSliceIndex) Execute(v *VM) {
 	case *objects.ArrayImmutable:
 		val = op.Factory().NewArray(v.currFrame.ID(), left.Values()[lowIdx:highIdx])
 	case *objects.String:
-		if val, err = op.Factory().NewString(v.currFrame.ID(), left.Value()[lowIdx:highIdx]); err != nil {
-			v.SetError(err)
-			return
-		}
+		val = op.Factory().NewString(v.currFrame.ID(), left.Value()[lowIdx:highIdx])
 	case *objects.Bytes:
 		val = op.Factory().NewBytes(v.currFrame.ID(), left.Value()[lowIdx:highIdx])
 	}

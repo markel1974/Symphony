@@ -255,11 +255,8 @@ func (c *Scopes) EmitLiteral(node *ast.BasicLit) error {
 		}
 	case token.STRING:
 		val, _ := strconv.Unquote(node.Value)
-		s, err := c.factory.NewString(objects.FrameStatic, val)
-		if err != nil {
-			return err
-		}
-		if _, err = c.Emit(bytecode.OpConstant, c.ConstantsAdd("", s)); err != nil {
+		s := c.factory.NewString(objects.FrameStatic, val)
+		if _, err := c.Emit(bytecode.OpConstant, c.ConstantsAdd("", s)); err != nil {
 			return err
 		}
 	default:

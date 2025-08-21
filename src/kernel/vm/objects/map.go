@@ -17,6 +17,16 @@ type Map struct {
 
 // NewMap creates and returns a new instance of Map initialized with the provided map of string keys to IObject values.
 func newMap(factory *GateKeeper, frame int, value map[string]IObject) *Map {
+	if len(value) > maxMapLen {
+		nv := make(map[string]IObject)
+		for k, v := range value {
+			if len(nv) > maxMapLen {
+				break
+			}
+			nv[k] = v
+		}
+		value = nv
+	}
 	return &Map{
 		Object: factory.NewObject(frame),
 		values: value,
@@ -30,6 +40,9 @@ func (o *Map) Get(key string) IObject {
 
 // Set assigns the specified values to the given key in the Map. Overrides the values if the key already exists.
 func (o *Map) Set(key string, value IObject) {
+	if len(o.values) > maxMapLen {
+		return
+	}
 	o.values[key] = value
 }
 
@@ -72,7 +85,7 @@ func (o *Map) String() string {
 func (o *Map) Copy(frame int, depth int) IObject {
 	c := make(map[string]IObject)
 	for k, v := range o.values {
-		if depth > MaxDepth {
+		if depth > maxDepth {
 			break
 		}
 		c[k] = v.Copy(frame, depth+1)

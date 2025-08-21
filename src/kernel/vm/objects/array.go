@@ -17,6 +17,9 @@ type Array struct {
 
 // NewArray creates and returns a new Array object initialized with the provided slice of IObject elements.
 func newArray(factory *GateKeeper, frame int, value []IObject) *Array {
+	if len(value) > maxArrayLen {
+		value = value[0:maxArrayLen]
+	}
 	return &Array{
 		Object: factory.NewObject(frame),
 		values: value,
@@ -56,11 +59,17 @@ func (o *Array) SetValue(idx int, value IObject) {
 
 // Append adds an element to the end of the Array.
 func (o *Array) Append(elem IObject) {
+	if len(o.values) >= maxArrayLen {
+		return
+	}
 	o.values = append(o.values, elem)
 }
 
 // Assign replaces the current slice of elements with the provided slice.
 func (o *Array) Assign(v []IObject) {
+	if len(v) > maxArrayLen {
+		v = v[0:maxArrayLen]
+	}
 	o.values = v
 }
 
@@ -82,6 +91,9 @@ func (o *Array) BinaryOp(frame int, op Operator, in IObject) (IObject, error) {
 			if len(rhs.values) == 0 {
 				return o, nil
 			}
+			if len(o.values)+len(rhs.values) > maxArrayLen {
+				return nil, ErrExceedingLimit
+			}
 			return o.GateKeeper().NewArray(frame, append(o.values, rhs.values...)), nil
 		default:
 			return nil, ErrInvalidOperator
@@ -94,7 +106,7 @@ func (o *Array) BinaryOp(frame int, op Operator, in IObject) (IObject, error) {
 func (o *Array) Copy(frame int, depth int) IObject {
 	var c []IObject
 	for _, elem := range o.values {
-		if depth >= MaxDepth {
+		if depth >= maxDepth {
 			break
 		}
 		c = append(c, elem.Copy(frame, depth+1))

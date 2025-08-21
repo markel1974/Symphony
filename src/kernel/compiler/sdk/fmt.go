@@ -82,7 +82,7 @@ func (f *Fmt) sprint(frame int, args ...objects.IObject) (ret objects.IObject, e
 	for _, v := range args {
 		ar = append(ar, f.factory.ToInterface(v))
 	}
-	return f.factory.NewString(frame, fmt.Sprint(ar))
+	return f.factory.NewString(frame, fmt.Sprint(ar)), nil
 }
 
 // Sprintf formats a string using a format specifier and optional arguments, returning it as a new string object.
@@ -96,13 +96,13 @@ func (f *Fmt) sprintf(frame int, args ...objects.IObject) (ret objects.IObject, 
 		return nil, err
 	}
 	if len(args) == 1 {
-		return f.factory.NewString(frame, s1)
+		return f.factory.NewString(frame, s1), nil
 	}
 	var ar []interface{}
 	for _, v := range args[1:] {
 		ar = append(ar, f.factory.ToInterface(v))
 	}
-	return f.factory.NewString(frame, fmt.Sprintf(s1, ar...))
+	return f.factory.NewString(frame, fmt.Sprintf(s1, ar...)), nil
 }
 
 // Errorf formats an error message using a format string and arguments, returning an IObject error representation.

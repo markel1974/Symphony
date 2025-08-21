@@ -73,7 +73,7 @@ func (o *ArrayImmutable) BinaryOp(frame int, op Operator, rhs IObject) (IObject,
 func (o *ArrayImmutable) Copy(frame int, depth int) IObject {
 	var c []IObject
 	for _, elem := range o.values {
-		if depth >= MaxDepth {
+		if depth >= maxDepth {
 			break
 		}
 		c = append(c, elem.Copy(frame, depth+1))

@@ -8,11 +8,6 @@ const (
 	BytesType = "bytes"
 )
 
-// MaxBytesLen is the maximum allowed size for byte slices across all instances, ensuring consistency in size limits.
-const (
-	MaxBytesLen = 2147483647
-)
-
 // Bytes represents a data type for handling a sequence of bytes.
 // It embeds Object and provides behaviors like indexing, iteration, and binary operations.
 type Bytes struct {
@@ -22,6 +17,9 @@ type Bytes struct {
 
 // NewBytes creates and returns a new Bytes object initialized with the provided byte slice.
 func newBytes(factory *GateKeeper, frame int, value []byte) *Bytes {
+	if len(value) > maxBytesLen {
+		value = value[0:maxBytesLen]
+	}
 	return &Bytes{
 		Object: factory.NewObject(frame),
 		values: value,
@@ -56,8 +54,8 @@ func (o *Bytes) BinaryOp(frame int, op Operator, in IObject) (IObject, error) {
 	case OperatorAdd:
 		switch rhs := in.(type) {
 		case *Bytes:
-			if len(o.values)+len(rhs.values) > MaxBytesLen {
-				return nil, ErrBytesLimit
+			if len(o.values)+len(rhs.values) > maxBytesLen {
+				return nil, ErrExceedingLimit
 			}
 			return o.GateKeeper().NewBytes(frame, append(o.values, rhs.values...)), nil
 		}

@@ -10,8 +10,6 @@ const (
 
 // MaxStringLen defines the maximum allowed byte-length for string values across all compiler/VM instances in the process.
 const (
-	// MaxStringLen is the maximum byte-length for string values. Note this
-	// limit applies to all compiler/VM instances in the process.
 	MaxStringLen = 2147483647
 )
 
@@ -25,17 +23,10 @@ type String struct {
 }
 
 // NewString creates and returns a new String object initialized with the provided string values.
-func newString(factory *GateKeeper, frame int, value string) (*String, error) {
+func newString(factory *GateKeeper, frame int, value string) *String {
 	if len(value) > MaxStringLen {
-		return nil, ErrStringLimit
+		value = value[0:MaxStringLen]
 	}
-	return &String{
-		Object: factory.NewObject(frame),
-		value:  value,
-	}, nil
-}
-
-func newStringNoSize(factory *GateKeeper, frame int, value string) *String {
 	return &String{
 		Object: factory.NewObject(frame),
 		value:  value,
@@ -71,15 +62,15 @@ func (o *String) BinaryOp(frame int, op Operator, rhs IObject) (IObject, error) 
 		switch rhs := rhs.(type) {
 		case *String:
 			if len(o.value)+len(rhs.value) > MaxStringLen {
-				return nil, ErrStringLimit
+				return nil, ErrExceedingLimit
 			}
-			return o.GateKeeper().NewString(frame, o.value+rhs.value)
+			return o.GateKeeper().NewString(frame, o.value+rhs.value), nil
 		default:
 			rhsStr := rhs.String()
 			if len(o.value)+len(rhsStr) > MaxStringLen {
-				return nil, ErrStringLimit
+				return nil, ErrExceedingLimit
 			}
-			return o.GateKeeper().NewString(frame, o.value+rhsStr)
+			return o.GateKeeper().NewString(frame, o.value+rhsStr), nil
 		}
 	case OperatorLess:
 		switch rhs := rhs.(type) {
@@ -126,7 +117,7 @@ func (o *String) Boolean() bool {
 
 // Copy creates and returns a new String instance with the same values as the original.
 func (o *String) Copy(frame int, _ int) IObject {
-	return o.GateKeeper().NewStringNoSize(frame, o.value)
+	return o.GateKeeper().NewString(frame, o.value)
 }
 
 // Equals checks whether the current String object is equal to the provided IObject by comparing their values.

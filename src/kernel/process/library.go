@@ -250,7 +250,7 @@ func (l *Library) doCWDPath(frame int, args ...objects.IObject) (ret objects.IOb
 		return nil, errors.New("invalid number of arguments")
 	}
 	v := l.process.CWDPath()
-	return l.factory.NewString(frame, v)
+	return l.factory.NewString(frame, v), nil
 }
 
 // doCWDName retrieves the current working directory name, returns it as a string object, and validates argument count.
@@ -259,7 +259,7 @@ func (l *Library) doCWDName(frame int, args ...objects.IObject) (ret objects.IOb
 		return nil, errors.New("invalid number of arguments")
 	}
 	v := l.process.CWDName()
-	return l.factory.NewString(frame, v)
+	return l.factory.NewString(frame, v), nil
 }
 
 // doHelp retrieves and returns a help string for the provided argument, which must be a single string-compatible object.
@@ -275,7 +275,7 @@ func (l *Library) doHelp(frame int, args ...objects.IObject) (ret objects.IObjec
 	if err != nil {
 		return nil, err
 	}
-	return l.factory.NewString(frame, v)
+	return l.factory.NewString(frame, v), nil
 }
 
 // doSuggestion processes two arguments: a string and an integer, to trigger the Suggestion functionality within the library.
@@ -487,8 +487,8 @@ func (l *Library) doProcessList(frame int, args ...objects.IObject) (ret objects
 	res := make(map[string]objects.IObject)
 	for _, p := range l.process.ProcessList() {
 		c := map[string]objects.IObject{
-			"line": l.factory.NewStringNoSize(frame, p.Line()),
-			"name": l.factory.NewStringNoSize(frame, p.Name()),
+			"line": l.factory.NewString(frame, p.Line()),
+			"name": l.factory.NewString(frame, p.Name()),
 			"time": l.factory.NewTime(frame, p.Time()),
 			"pid":  l.factory.NewInt(frame, int64(p.PID())),
 		}
