@@ -204,7 +204,7 @@ func (o *Int) BinaryOp(frame int, op Operator, rhs IObject) (IObject, error) {
 }
 
 // Copy creates and returns a new instance of the Int object with the same value as the current instance.
-func (o *Int) Copy(frame int) IObject {
+func (o *Int) Copy(frame int, _ int) IObject {
 	return o.GateKeeper().NewInt(frame, o.value)
 }
 

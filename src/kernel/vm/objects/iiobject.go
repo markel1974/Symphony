@@ -28,7 +28,7 @@ type IObject interface {
 
 	Equals(other IObject) bool
 
-	Copy(frame int) IObject
+	Copy(frame int, depth int) IObject
 
 	IndexGet(frame int, index IObject) (value IObject, err error)
 

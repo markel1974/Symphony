@@ -68,7 +68,7 @@ func (o *Bytes) BinaryOp(frame int, op Operator, in IObject) (IObject, error) {
 }
 
 // Copy creates and returns a new `Bytes` object with a duplicated values slice, ensuring no reference sharing.
-func (o *Bytes) Copy(frame int) IObject {
+func (o *Bytes) Copy(frame int, _ int) IObject {
 	return o.GateKeeper().NewBytes(frame, append([]byte{}, o.values...))
 }
 

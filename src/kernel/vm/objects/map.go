@@ -69,10 +69,13 @@ func (o *Map) String() string {
 }
 
 // Copy creates and returns a deep copy of the Map object, duplicating all key-values pairs recursively.
-func (o *Map) Copy(frame int) IObject {
+func (o *Map) Copy(frame int, depth int) IObject {
 	c := make(map[string]IObject)
 	for k, v := range o.values {
-		c[k] = v.Copy(frame)
+		if depth > MaxDepth {
+			break
+		}
+		c[k] = v.Copy(frame, depth+1)
 	}
 	return o.GateKeeper().NewMap(frame, c)
 }

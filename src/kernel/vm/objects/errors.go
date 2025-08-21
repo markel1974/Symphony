@@ -21,6 +21,8 @@ import (
 var (
 	ErrDivisionByZero = errors.New("division by zero")
 
+	ErrNegativeShift = errors.New("negative shift count not allowed")
+
 	ErrStackOverflow = errors.New("stack overflow")
 
 	ErrObjectAllocLimit = errors.New("object allocation limit exceeded")

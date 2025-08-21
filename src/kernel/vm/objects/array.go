@@ -91,10 +91,13 @@ func (o *Array) BinaryOp(frame int, op Operator, in IObject) (IObject, error) {
 }
 
 // Copy creates and returns a deep copy of the Array and its elements.
-func (o *Array) Copy(frame int) IObject {
+func (o *Array) Copy(frame int, depth int) IObject {
 	var c []IObject
 	for _, elem := range o.values {
-		c = append(c, elem.Copy(frame))
+		if depth >= MaxDepth {
+			break
+		}
+		c = append(c, elem.Copy(frame, depth+1))
 	}
 	return o.GateKeeper().NewArray(frame, c)
 }

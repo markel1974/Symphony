@@ -33,7 +33,7 @@ func newMapIterator(factory *GateKeeper, frame int, v map[string]IObject) *MapIt
 }
 
 // Copy creates and returns a new instance of MapIterator, duplicating its current state.
-func (i *MapIterator) Copy(frame int) IObject {
+func (i *MapIterator) Copy(frame int, _ int) IObject {
 	ret := i.GateKeeper().NewMapIterator(frame, i.values)
 	ret.index = i.index
 	return ret
@@ -67,12 +67,20 @@ func (i *MapIterator) Next() bool {
 
 // Key retrieves the key of the current element in the iteration as an IObject.
 func (i *MapIterator) Key(frame int) IObject {
-	k := i.keys[i.index-1]
+	idx := i.index - 1
+	if idx < 0 || idx >= i.length {
+		return i.GateKeeper().UndefinedValue()
+	}
+	k := i.keys[idx]
 	return i.GateKeeper().NewStringNoSize(frame, k)
 }
 
 // Value retrieves the values of the current element in the iteration based on the iterator's current position.
 func (i *MapIterator) Value(_ int) IObject {
-	k := i.keys[i.index-1]
+	idx := i.index - 1
+	if idx < 0 || idx >= i.length {
+		return i.GateKeeper().UndefinedValue()
+	}
+	k := i.keys[idx]
 	return i.values[k]
 }

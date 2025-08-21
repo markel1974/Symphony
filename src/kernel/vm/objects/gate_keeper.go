@@ -4,6 +4,10 @@ import (
 	"time"
 )
 
+const (
+	MaxDepth = 256
+)
+
 // GateKeeper is a type responsible for creating and managing IObject instances, including primitive and complex types.
 // It provides pre-instantiated objects for `true`, `false`, and `undefined` values for efficient reuse.
 // The GateKeeper may also include object pooling for specific types to optimize memory usage and performance.
@@ -27,7 +31,7 @@ func NewFactory() *GateKeeper {
 	f := &GateKeeper{}
 	f.trueValue = newBool(f, FrameStatic, true)
 	f.falseValue = newBool(f, FrameStatic, false)
-	f.undefinedValue = _newUndefined(f, FrameStatic)
+	f.undefinedValue = newUndefined(f, FrameStatic)
 
 	//f.intPool.New = func() interface{} {
 	//	return &_newInt(f, 0) // Crea un Int con valore di default
@@ -182,6 +186,10 @@ func (f *GateKeeper) NewStructIterator(frame int, v map[string]IObject) *StructI
 // NewTime creates a new instance of Time using the provided time.Time value and initializes it with the factory instance.
 func (f *GateKeeper) NewTime(frame int, value time.Time) *Time {
 	return newTime(f, frame, value)
+}
+
+func (f *GateKeeper) NewUndefined(frame int) *Undefined {
+	return newUndefined(f, frame)
 }
 
 // ToInterface converts an IObject to its corresponding native Go representation, such as int, string, float64, bool, etc.

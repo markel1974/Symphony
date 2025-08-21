@@ -125,7 +125,7 @@ func (o *String) Boolean() bool {
 }
 
 // Copy creates and returns a new String instance with the same values as the original.
-func (o *String) Copy(frame int) IObject {
+func (o *String) Copy(frame int, _ int) IObject {
 	return o.GateKeeper().NewStringNoSize(frame, o.value)
 }
 

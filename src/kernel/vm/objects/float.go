@@ -146,7 +146,7 @@ func (o *Float) BinaryOp(frame int, op Operator, rhs IObject) (IObject, error) {
 }
 
 // Copy creates and returns a new instance of the Float object, duplicating its current state.
-func (o *Float) Copy(frame int) IObject {
+func (o *Float) Copy(frame int, _ int) IObject {
 	return o.GateKeeper().NewFloat(frame, o.value)
 }
 

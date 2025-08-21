@@ -55,7 +55,7 @@ func (o *Error) Boolean() bool {
 }
 
 // Copy creates and returns a new instance of the Error object with the same underlying values.
-func (o *Error) Copy(frame int) IObject {
+func (o *Error) Copy(frame int, _ int) IObject {
 	return o.GateKeeper().NewError(frame, o.err)
 }
 

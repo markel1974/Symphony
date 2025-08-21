@@ -35,7 +35,7 @@ func (o *Bool) TypeName() string {
 }
 
 // Copy creates and returns a reference to the current Bool object.
-func (o *Bool) Copy(frame int) IObject {
+func (o *Bool) Copy(frame int, _ int) IObject {
 	return o.factory.NewBool(frame, o.value)
 }
 

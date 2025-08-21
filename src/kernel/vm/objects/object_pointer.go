@@ -42,7 +42,7 @@ func (o *ObjectPointer) TypeName() string {
 }
 
 // Copy creates and returns a duplicate of the object implementing the IObject interface.
-func (o *ObjectPointer) Copy(_ int) IObject {
+func (o *ObjectPointer) Copy(_ int, _ int) IObject {
 	return o
 }
 

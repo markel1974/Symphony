@@ -24,7 +24,7 @@ func newStringIterator(factory *GateKeeper, frame int, v []rune) *StringIterator
 }
 
 // Copy creates and returns a new instance of StringIterator with the same state as the current one.
-func (i *StringIterator) Copy(frame int) IObject {
+func (i *StringIterator) Copy(frame int, _ int) IObject {
 	ret := i.GateKeeper().NewStringIterator(frame, i.values)
 	ret.index = i.index
 	return ret
@@ -58,10 +58,18 @@ func (i *StringIterator) Next() bool {
 
 // Key returns the zero-based index of the current element in the iteration as an Int object.
 func (i *StringIterator) Key(frame int) IObject {
-	return i.GateKeeper().NewInt(frame, int64(i.index-1))
+	idx := i.index - 1
+	if idx < 0 || idx >= i.length {
+		return i.GateKeeper().UndefinedValue()
+	}
+	return i.GateKeeper().NewInt(frame, int64(idx))
 }
 
 // Value returns the current character as an IObject wrapped in a Char instance from the internal rune slice.
 func (i *StringIterator) Value(frame int) IObject {
-	return i.GateKeeper().NewChar(frame, i.values[i.index-1])
+	idx := i.index - 1
+	if idx < 0 || idx >= i.length {
+		return i.GateKeeper().UndefinedValue()
+	}
+	return i.GateKeeper().NewChar(frame, i.values[idx])
 }

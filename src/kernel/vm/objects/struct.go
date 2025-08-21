@@ -60,10 +60,13 @@ func (o *Struct) String() string {
 }
 
 // Copy creates and returns a new IObject by duplicating the internal state of the Struct instance.
-func (o *Struct) Copy(frame int) IObject {
+func (o *Struct) Copy(frame int, depth int) IObject {
 	c := make(map[string]IObject)
 	for k, v := range o.values {
-		c[k] = v.Copy(frame)
+		if depth >= MaxDepth {
+			break
+		}
+		c[k] = v.Copy(frame, depth+1)
 	}
 	return o.GateKeeper().NewStruct(frame, c)
 }

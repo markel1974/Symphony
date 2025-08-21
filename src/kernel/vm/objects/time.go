@@ -88,7 +88,7 @@ func (o *Time) BinaryOp(frame int, op Operator, in IObject) (IObject, error) {
 }
 
 // Copy returns a new instance of the Time object with the same internal time values, duplicating its state.
-func (o *Time) Copy(frame int) IObject {
+func (o *Time) Copy(frame int, _ int) IObject {
 	return o.GateKeeper().NewTime(frame, o.value)
 }
 

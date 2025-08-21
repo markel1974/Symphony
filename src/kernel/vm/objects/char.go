@@ -115,7 +115,7 @@ func (o *Char) BinaryOp(frame int, op Operator, in IObject) (IObject, error) {
 }
 
 // Copy creates and returns a new instance of the Char object with the same values.
-func (o *Char) Copy(frame int) IObject {
+func (o *Char) Copy(frame int, _ int) IObject {
 	return o.GateKeeper().NewChar(frame, o.value)
 }
 

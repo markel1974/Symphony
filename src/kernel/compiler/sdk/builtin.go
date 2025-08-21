@@ -344,7 +344,7 @@ func (h *BuiltinFunctions) copy(frame int, args ...objects.IObject) (objects.IOb
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}
-	return args[0].Copy(frame), nil
+	return args[0].Copy(frame, 0), nil
 }
 
 // String converts an object to a string representation or returns a default value if conversion is not possible.

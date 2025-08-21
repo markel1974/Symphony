@@ -70,10 +70,13 @@ func (o *ArrayImmutable) BinaryOp(frame int, op Operator, rhs IObject) (IObject,
 }
 
 // Copy creates and returns a new copy of the ArrayImmutable, with all its elements deeply copied.
-func (o *ArrayImmutable) Copy(frame int) IObject {
+func (o *ArrayImmutable) Copy(frame int, depth int) IObject {
 	var c []IObject
 	for _, elem := range o.values {
-		c = append(c, elem.Copy(frame))
+		if depth >= MaxDepth {
+			break
+		}
+		c = append(c, elem.Copy(frame, depth+1))
 	}
 	return o.GateKeeper().NewArray(frame, c)
 }

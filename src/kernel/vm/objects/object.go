@@ -41,7 +41,7 @@ func (o *Object) BinaryOp(_ int, _ Operator, _ IObject) (IObject, error) {
 }
 
 // Copy creates and returns a new instance of the object, duplicating its state.
-func (o *Object) Copy(_ int) IObject {
+func (o *Object) Copy(_ int, _ int) IObject {
 	return nil
 }
 

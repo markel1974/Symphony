@@ -45,7 +45,7 @@ func (i *ArrayIterator) Equals(IObject) bool {
 }
 
 // Copy creates and returns a duplicate of the ArrayIterator, preserving its current state.
-func (i *ArrayIterator) Copy(frame int) IObject {
+func (i *ArrayIterator) Copy(frame int, _ int) IObject {
 	ret := i.GateKeeper().NewArrayIterator(frame, i.values)
 	ret.index = i.index
 	return ret
@@ -59,10 +59,18 @@ func (i *ArrayIterator) Next() bool {
 
 // Key returns the index of the current element in the iteration as an IObject.
 func (i *ArrayIterator) Key(frame int) IObject {
-	return i.GateKeeper().NewInt(frame, int64(i.index-1))
+	idx := int64(i.index - 1)
+	if idx < 0 || idx >= int64(i.length) {
+		return i.GateKeeper().UndefinedValue()
+	}
+	return i.GateKeeper().NewInt(frame, idx)
 }
 
 // Value returns the current element in the iteration based on the iterator's internal position.
 func (i *ArrayIterator) Value(frame int) IObject {
-	return i.values[i.index-1]
+	idx := int64(i.index - 1)
+	if idx < 0 || idx >= int64(i.length) {
+		return i.GateKeeper().UndefinedValue()
+	}
+	return i.values[idx]
 }

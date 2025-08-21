@@ -35,7 +35,7 @@ func newStructIterator(factory *GateKeeper, frame int, v map[string]IObject) *St
 }
 
 // Copy creates and returns a duplicate instance of the current StructIterator with the same internal state.
-func (i *StructIterator) Copy(frame int) IObject {
+func (i *StructIterator) Copy(frame int, _ int) IObject {
 	ret := i.GateKeeper().NewStructIterator(frame, i.values)
 	ret.index = i.index
 	return ret
@@ -69,12 +69,20 @@ func (i *StructIterator) Next() bool {
 
 // Key retrieves the key of the current element in the MapIterator as an IObject.
 func (i *StructIterator) Key(frame int) IObject {
-	k := i.keys[i.index-1]
+	idx := i.index - 1
+	if idx < 0 || idx >= i.length {
+		return i.GateKeeper().UndefinedValue()
+	}
+	k := i.keys[idx]
 	return i.factory.NewStringNoSize(frame, k)
 }
 
 // Value retrieves the value of the current element in the iteration based on the iterator's current position.
 func (i *StructIterator) Value(_ int) IObject {
-	k := i.keys[i.index-1]
+	idx := i.index - 1
+	if idx < 0 || idx >= i.length {
+		return i.GateKeeper().UndefinedValue()
+	}
+	k := i.keys[idx]
 	return i.values[k]
 }
