@@ -17,7 +17,7 @@ func NewRand(factory *objects.GateKeeper) *Rand {
 	z := &Rand{
 		factory: factory,
 	}
-	container := []*objects.FuncPackage{
+	container := []objects.IObject{
 		factory.NewFuncPackage(objects.FuncPackageDef, "Int63", factory.FuncInOi64(rand.Int63)),
 		factory.NewFuncPackage(objects.FuncPackageDef, "Float64", factory.FuncInOf64(rand.Float64)),
 		factory.NewFuncPackage(objects.FuncPackageDef, "Int63n", factory.FuncIi64Oi64(rand.Int63n)),

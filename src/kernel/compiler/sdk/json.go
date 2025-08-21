@@ -18,7 +18,7 @@ func NewJson(factory *objects.GateKeeper) *Json {
 	j := &Json{
 		factory: factory,
 	}
-	container := []*objects.FuncPackage{
+	container := []objects.IObject{
 		factory.NewFuncPackage(objects.FuncPackageDef, "Unmarshal", j.unmarshal),
 		factory.NewFuncPackage(objects.FuncPackageDef, "Marshal", j.marshal),
 		factory.NewFuncPackage(objects.FuncPackageDef, "Indent", j.indent),

@@ -50,7 +50,7 @@ func NewTime(factory *objects.GateKeeper) *Time {
 		"November":    factory.NewInt(objects.FrameStatic, int64(time.November)),
 		"December":    factory.NewInt(objects.FrameStatic, int64(time.December)),
 	}
-	container := []*objects.FuncPackage{
+	container := []objects.IObject{
 		factory.NewFuncPackage(objects.FuncPackageDef, "Sleep", t.sleep),
 		factory.NewFuncPackage(objects.FuncPackageDef, "ParseDuration", t.parseDuration),
 		factory.NewFuncPackage(objects.FuncPackageDef, "Since", t.since),

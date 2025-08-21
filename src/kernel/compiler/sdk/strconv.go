@@ -17,7 +17,7 @@ func NewStrconv(factory *objects.GateKeeper) *Strconv {
 	s := &Strconv{
 		factory: factory,
 	}
-	container := []*objects.FuncPackage{
+	container := []objects.IObject{
 		factory.NewFuncPackage(objects.FuncPackageDef, "Atoi", factory.FuncIsOie(strconv.Atoi)),
 		factory.NewFuncPackage(objects.FuncPackageDef, "FormatBool", s.formatBool),
 		factory.NewFuncPackage(objects.FuncPackageDef, "FormatFloat", s.formatFloat),

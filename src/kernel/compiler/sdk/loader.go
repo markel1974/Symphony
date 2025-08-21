@@ -20,13 +20,18 @@ type Package struct {
 // functions is a slice of FuncPackage objects to include in the package.
 // constants is a map of constant objects to include in the package, keyed by their IDs.
 // Returns the newly created Package instance.
-func NewPackage(name string, functions []*objects.FuncPackage, constants map[string]objects.IObject) *Package {
+func NewPackage(name string, functions []objects.IObject, constants map[string]objects.IObject) *Package {
 	p := &Package{
 		name:      name,
 		container: make(map[string]objects.IObject),
 	}
-	for _, fn := range functions {
-		p.container[fn.Name()] = fn
+
+	// *objects.FuncPackage
+	for _, obj := range functions {
+		fn, ok := obj.(*objects.FuncPackage)
+		if ok {
+			p.container[fn.Name()] = fn
+		}
 	}
 	for id, c := range constants {
 		p.container[id] = c
@@ -73,8 +78,16 @@ func NewLoader(factory *objects.GateKeeper) *Loader {
 		packages: make(map[string]*Package),
 		builtin:  make([]*BuiltinWrapper, len(builtin)),
 	}
-	for i, fn := range builtin {
-		wrapper := factory.NewBuiltin(objects.FrameStatic, fn.Name(), i)
+	for i, obj := range builtin {
+		fn, ok := obj.(*objects.FuncPackage)
+		if !ok {
+			continue
+		}
+		b := factory.NewBuiltin(objects.FrameStatic, fn.Name(), i)
+		wrapper, ok := b.(*objects.Builtin)
+		if !ok {
+			continue
+		}
 		loader.builtin[i] = &BuiltinWrapper{wrapper: wrapper, object: fn}
 	}
 	for _, p := range packages {

@@ -23,7 +23,7 @@ func NewLibrary(factory *objects.GateKeeper, process *Process) *Library {
 		process: process,
 		pkg:     make(map[string]objects.IObject),
 	}
-	container := []*objects.FuncPackage{
+	container := []objects.IObject{
 		factory.NewFuncPackage(objects.FuncPackageDef, "Printf", l.doPrintf),
 		factory.NewFuncPackage(objects.FuncPackageDef, "CreateTimer", l.doCreateTimer),
 		factory.NewFuncPackage(objects.FuncPackageDef, "IsActive", l.doIsActive),
@@ -59,8 +59,10 @@ func NewLibrary(factory *objects.GateKeeper, process *Process) *Library {
 		factory.NewFuncPackage(objects.FuncPackageDef, "Suggestion", l.doSuggestion),
 		factory.NewFuncPackage(objects.FuncPackageDef, "Help", l.doHelp),
 	}
-	for _, v := range container {
-		l.pkg[v.Name()] = v
+	for _, obj := range container {
+		if fn, ok := obj.(*objects.FuncPackage); ok {
+			l.pkg[fn.Name()] = fn
+		}
 	}
 	return l
 }

@@ -15,7 +15,7 @@ func NewErrors(factory *objects.GateKeeper) *Errors {
 	e := &Errors{
 		factory: factory,
 	}
-	container := []*objects.FuncPackage{
+	container := []objects.IObject{
 		factory.NewFuncPackage(objects.FuncPackageDef, "New", e.New),
 	}
 	e.Package = NewPackage("errors", container, nil)

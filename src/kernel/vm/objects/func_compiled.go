@@ -81,7 +81,11 @@ func (o *FuncCompiled) String() string {
 
 // Copy creates and returns a new instance of FuncCompiled, duplicating its state, except for its variable pointers.
 func (o *FuncCompiled) Copy(frame int, _ int) IObject {
-	ret := o.GateKeeper().NewFuncCompiled(frame, o.name, nil, o.numLocals, o.numParameters, o.varArgs, nil, nil)
+	obj := o.GateKeeper().NewFuncCompiled(frame, o.name, nil, o.numLocals, o.numParameters, o.varArgs, nil, nil)
+	ret, ok := obj.(*FuncCompiled)
+	if !ok {
+		return o.GateKeeper().UndefinedValue()
+	}
 	ret.instructions = o.instructions.Copy()
 	ret.free = append([]*ObjectPointer{}, o.free...)
 	return ret

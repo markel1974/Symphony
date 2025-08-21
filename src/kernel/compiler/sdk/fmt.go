@@ -17,7 +17,7 @@ func NewFmt(factory *objects.GateKeeper) *Fmt {
 	f := &Fmt{
 		factory: factory,
 	}
-	container := []*objects.FuncPackage{
+	container := []objects.IObject{
 		factory.NewFuncPackage(objects.FuncPackageDef, "Print", f.print),
 		factory.NewFuncPackage(objects.FuncPackageDef, "Printf", f.printf),
 		factory.NewFuncPackage(objects.FuncPackageDef, "Println", f.println),

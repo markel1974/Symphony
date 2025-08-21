@@ -17,7 +17,7 @@ type Strings struct {
 // NewStrings creates and returns a new instance of Strings with a preconfigured map of string utility functions.
 func NewStrings(factory *objects.GateKeeper) *Strings {
 	s := &Strings{factory: factory}
-	container := []*objects.FuncPackage{
+	container := []objects.IObject{
 		factory.NewFuncPackage(objects.FuncPackageDef, "Compare", factory.FuncIssOi(strings.Compare)),
 		factory.NewFuncPackage(objects.FuncPackageDef, "Contains", factory.FuncIssOb(strings.Contains)),
 		factory.NewFuncPackage(objects.FuncPackageDef, "ContainsAny", factory.FuncIssOb(strings.ContainsAny)),

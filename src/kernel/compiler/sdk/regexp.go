@@ -25,7 +25,7 @@ type Regexp struct {
 // NewRegexp creates and returns a new instance of the Regexp struct with initialized module functions.
 func NewRegexp(factory *objects.GateKeeper) *Regexp {
 	r := &Regexp{factory: factory}
-	container := []*objects.FuncPackage{
+	container := []objects.IObject{
 		factory.NewFuncPackage(objects.FuncPackageDef, "Match", r.match),
 		factory.NewFuncPackage(objects.FuncPackageDef, "Find", r.find),
 		factory.NewFuncPackage(objects.FuncPackageDef, "Replace", r.replace),

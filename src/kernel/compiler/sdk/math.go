@@ -30,7 +30,7 @@ func NewMath(factory *objects.GateKeeper) *Math {
 		"Ln10":    factory.NewFloat(objects.FrameStatic, math.Ln10),
 		"Log10E":  factory.NewFloat(objects.FrameStatic, math.Log10E),
 	}
-	container := []*objects.FuncPackage{
+	container := []objects.IObject{
 		factory.NewFuncPackage(objects.FuncPackageDef, "Abs", factory.FuncIf64Of64(math.Abs)),
 		factory.NewFuncPackage(objects.FuncPackageDef, "Acos", factory.FuncIf64Of64(math.Acos)),
 		factory.NewFuncPackage(objects.FuncPackageDef, "Acosh", factory.FuncIf64Of64(math.Acosh)),

@@ -17,7 +17,7 @@ func NewHex(factory *objects.GateKeeper) *Hex {
 	h := &Hex{
 		factory: factory,
 	}
-	container := []*objects.FuncPackage{
+	container := []objects.IObject{
 		factory.NewFuncPackage(objects.FuncPackageDef, "EncodeToString", factory.FuncIbSOs(hex.EncodeToString)),
 		factory.NewFuncPackage(objects.FuncPackageDef, "DecodeString", factory.FuncIsObSe(hex.DecodeString)),
 	}

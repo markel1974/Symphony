@@ -128,18 +128,18 @@ func (f *GateKeeper) newMapIterator(frame int, v map[string]IObject, index int) 
 }
 
 // NewFuncCompiled creates and returns a new FuncCompiled instance using the provided function metadata and bytecode.
-func (f *GateKeeper) NewFuncCompiled(frame int, name string, instructions []byte, numLocals int, numParameters int, varArgs bool, sourceMap map[int]int, free []*ObjectPointer) *FuncCompiled {
-	//if err := f.acquireObject(); err != nil {
-	//	return nil //f.undefinedValue
-	//}
+func (f *GateKeeper) NewFuncCompiled(frame int, name string, instructions []byte, numLocals int, numParameters int, varArgs bool, sourceMap map[int]int, free []*ObjectPointer) IObject {
+	if err := f.acquireObject(); err != nil {
+		return f.undefinedValue
+	}
 	return newFuncCompiled(f, frame, name, instructions, numLocals, numParameters, varArgs, sourceMap, free)
 }
 
 // NewFuncPackage creates a new instance of FuncPackage with the specified kind, name, and callable function.
-func (f *GateKeeper) NewFuncPackage(kind string, name string, fn FuncCallable) *FuncPackage {
-	//if err := f.acquireObject(); err != nil {
-	//	return nil //f.undefinedValue
-	//}
+func (f *GateKeeper) NewFuncPackage(kind string, name string, fn FuncCallable) IObject {
+	if err := f.acquireObject(); err != nil {
+		return f.undefinedValue
+	}
 	return newFuncPackage(f, FrameStatic, kind, name, fn)
 }
 
@@ -152,10 +152,10 @@ func (f *GateKeeper) NewFuncPackageFrame(frame int, kind string, name string, fn
 }
 
 // NewBuiltin creates a new Builtin object with the specified name and index using the GateKeeper.
-func (f *GateKeeper) NewBuiltin(frame int, name string, index int) *Builtin {
-	//if err := f.acquireObject(); err != nil {
-	//	return nil //f.undefinedValue
-	//}
+func (f *GateKeeper) NewBuiltin(frame int, name string, index int) IObject {
+	if err := f.acquireObject(); err != nil {
+		return f.undefinedValue
+	}
 	return newBuiltin(f, frame, name, index)
 }
 
