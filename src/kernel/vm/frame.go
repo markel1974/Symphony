@@ -51,8 +51,8 @@ func (f *Frame) Get8(index int) uint8 {
 
 // Get16 retrieves a 16-bit unsigned integer from instructions at specified indices x and y in the current frame.
 // If an error occurs during retrieval, it signals the error and returns 0.
-func (f *Frame) Get16(x int, y int) uint16 {
-	v, err := f.instructions.Get16(x, y)
+func (f *Frame) Get16(low int) uint16 {
+	v, err := f.instructions.Get16(low)
 	if err != nil {
 		f.errSignal(err)
 		return 0

@@ -31,21 +31,22 @@ func (i *Instructions) Length() int {
 
 // Get8 retrieves a single byte from the instructions at the specified index.
 // Returns an error if the index is out of bounds.
-func (i *Instructions) Get8(index int) (uint8, error) {
-	if index < 0 || index >= len(i.data) {
-		return 0, fmt.Errorf("invalid instruction index: %d", index)
+func (i *Instructions) Get8(base int) (uint8, error) {
+	if base < 0 || base >= len(i.data) {
+		return 0, fmt.Errorf("invalid instruction index: %d", base)
 	}
-	return i.data[index], nil
+	return i.data[base], nil
 }
 
-// Get16 retrieves a 16-bit unsigned integer from two byte positions in the byte slice, given their low and high indices.
+// Get16 retrieves a 16-bit unsigned integer composed of two bytes from the instructions at indices low and low-1.
 // Returns an error if the provided indices are out of bounds.
-func (i *Instructions) Get16(low int, high int) (uint16, error) {
-	if low < 0 || low >= len(i.data) {
-		return 0, fmt.Errorf("invalid instruction low index: %d", low)
+func (i *Instructions) Get16(base int) (uint16, error) {
+	high := base - 1
+	if base < 0 || base >= len(i.data) {
+		return 0, fmt.Errorf("invalid instruction base index: %d", base)
 	}
 	if high < 0 || high >= len(i.data) {
 		return 0, fmt.Errorf("invalid instruction high index: %d", high)
 	}
-	return uint16(i.data[low]) | uint16(i.data[high])<<8, nil
+	return uint16(i.data[base]) | uint16(i.data[high])<<8, nil
 }
