@@ -278,7 +278,7 @@ func (op *OpJumpFalsy) Execute(v *VM, operands *[]int) {
 		//if pos != int(v.currFrame.Get16(v.ip)) {
 		//	panic("invalid jump position")
 		//}
-		v.ip = pos - 1
+		v.SetIp(pos - 1)
 	}
 }
 
@@ -301,7 +301,7 @@ func (op *OpAndJump) Execute(v *VM, operands *[]int) {
 		//if pos != int(v.currFrame.Get16(v.ip)) {
 		//	panic("invalid jump position")
 		//}
-		v.ip = pos - 1
+		v.SetIp(pos - 1)
 	} else {
 		v.stack.Decrement()
 	}
@@ -328,7 +328,7 @@ func (op *OpOrJump) Execute(v *VM, operands *[]int) {
 		//if pos !=  int(v.currFrame.Get16(v.ip)) {
 		//	panic("invalid jump position")
 		//}
-		v.ip = pos - 1
+		v.SetIp(pos - 1)
 	}
 }
 
@@ -349,7 +349,7 @@ func (op *OpJump) Execute(v *VM, operands *[]int) {
 	//if pos !=  int(v.currFrame.Get16(v.ip)) {
 	//	panic("invalid jump position")
 	//}
-	v.ip = pos - 1
+	v.SetIp(pos - 1)
 }
 
 // OpSetGlobal represents a bytecode operation for setting a global variable's value in the virtual machine.
@@ -635,7 +635,7 @@ func (op *OpCall) Execute(v *VM, operands *[]int) {
 		v.SetError(fmt.Errorf("%s is not callable: %s", value.String(), value.TypeName()))
 		return
 	}
-	spread := v.currFrame.Get8(v.ip + 2)
+	spread := v.currFrame.Get8(v.GetIp() + 2)
 	if spread == 1 {
 		arrObj := v.stack.Pop()
 		switch z := arrObj.(type) {
@@ -672,13 +672,13 @@ func (op *OpCall) Execute(v *VM, operands *[]int) {
 		v.currFrame = v.frames.Get()
 		v.frames.Next()
 		bp := v.stack.StackPointer() - numArgs
-		v.currFrame.Bind(v.ip, callee, bp)
+		v.currFrame.Bind(v.GetIp(), callee, bp)
 		// Reserve space for *all* local variables of the new function
 		// by simply advancing the stack pointer.
 		// This ensures that space for temporary calculations starts *after*
 		// the space reserved for local variables, avoiding collisions.
 		v.stack.SetStackPointer(v.stack.StackPointer() + callee.NumLocals())
-		v.ip = resetIp
+		v.ReseIp()
 	} else {
 		var args []objects.IObject
 		args = append(args, v.stack.PeekArrayObject(numArgs)...)
@@ -714,41 +714,43 @@ func NewOpReturn(op *bytecode.Opcodes) *OpReturn {
 // Execute performs the return operation for the current frame, manages the stack, and transitions between frames in the VM.
 func (op *OpReturn) Execute(v *VM, operands *[]int) {
 	// Operands Offset 1
-	// read the number of return values from the bytecode operand.
-	numReturnVals := (*operands)[0]
 	//if numReturnVals != int(v.currFrame.Get8(v.ip)) {
 	//	panic("num return vals mismatch")
 	//}
 
 	// collect return values from the stack using Pop(),
 	// this is necessary to uncover the underlying values.
-	returnValues := make([]objects.IObject, numReturnVals)
-	for i := 0; i < numReturnVals; i++ {
-		returnValues[i] = v.stack.Pop()
+	var returnValues []objects.IObject
+	if numReturnVals := (*operands)[0]; numReturnVals > 0 {
+		returnValues = make([]objects.IObject, (*operands)[0])
+		for i := 0; i < numReturnVals; i++ {
+			returnValues[i] = v.stack.Pop()
+		}
 	}
 
-	//leavingFrameBasePointer := v.currFrame.BasePointer()
+	shutdown := false
+	prevIp := v.currFrame.SavedIP()
+	leavingFrameBasePointer := v.currFrame.BasePointer()
 	//v.stack.ReleaseObjects(leavingFrameBasePointer, v.stack.StackPointer())
-
-	// handle frame transition.
 	if v.frames.Index() > 1 {
-		leavingFrameBasePointer := v.currFrame.BasePointer()
-		prevIp := v.currFrame.SavedIP()
 		v.frames.Previous()
 		v.currFrame = v.frames.GetPrev()
-		v.ip = prevIp
-		v.stack.SetStackPointer(leavingFrameBasePointer)
-
-		// push return values onto the new stack (caller's stack).
-		if numReturnVals == 0 {
-			v.stack.Push(op.Factory().UndefinedValue())
-		} else {
-			// iterate over the slice in reverse to restore the original order.
-			for i := numReturnVals - 1; i >= 0; i-- {
-				v.stack.Push(returnValues[i])
-			}
+		v.SetIp(prevIp)
+	} else {
+		shutdown = true
+	}
+	v.stack.SetStackPointer(leavingFrameBasePointer)
+	// push return values onto the new stack (caller's stack).
+	if lRet := len(returnValues); lRet > 0 {
+		// iterate over the slice in reverse to restore the original order.
+		for i := lRet - 1; i >= 0; i-- {
+			v.stack.Push(returnValues[i])
 		}
 	} else {
+		v.stack.Push(op.Factory().UndefinedValue())
+	}
+
+	if shutdown {
 		v.Shutdown()
 	}
 }
@@ -1213,5 +1215,5 @@ func (op *OpUnknown) Execute(v *VM, operands *[]int) {
 	//if nameIndex != int(v.currFrame.Get8(v.ip)) {
 	//	panic("name index mismatch: %d != %d", nameIndex, int(v.currFrame.Get16(v.ip)))
 	//}
-	v.SetError(fmt.Errorf("unknown opcode at: %d, %v", v.ip, operands))
+	v.SetError(fmt.Errorf("unknown opcode at: %d, %v", v.GetIp(), operands))
 }

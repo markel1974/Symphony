@@ -153,6 +153,7 @@ func vmTest() {
 		log.Fatalf("VM runtime error: %s", err)
 	}
 	machine.Print(log.Writer())
+	log.Println("RETURN VALUE", machine.GetReturnValue(0))
 	os.Exit(0)
 }
 

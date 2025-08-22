@@ -110,6 +110,21 @@ func (v *VM) Reset() {
 	v.shutdown = false
 }
 
+// SetIp sets the virtual machine's instruction pointer to the specified value.
+func (v *VM) SetIp(ip int) {
+	v.ip = ip
+}
+
+// GetIp retrieves the current instruction pointer value from the virtual machine.
+func (v *VM) GetIp() int {
+	return v.ip
+}
+
+// ReseIp resets the instruction pointer of the virtual machine to its initial reset state defined by `resetIp`.
+func (v *VM) ReseIp() {
+	v.ip = resetIp
+}
+
 // Run executes the virtual machine's bytecode, managing the stack, frames, and instruction pointer state.
 func (v *VM) Run(loader bytecode.ILoader, bc *bytecode.Bytecode, mainId string, args ...interface{}) error {
 	references, err := loader.ResolveSymbols(bc.References())
@@ -162,6 +177,28 @@ func (v *VM) Run(loader bytecode.ILoader, bc *bytecode.Bytecode, mainId string, 
 		return err
 	}
 	return nil
+}
+
+// GetReturnValue returns the value from the top of the stack as an interface value.
+func (v *VM) GetReturnValue(idx int) interface{} {
+	obj := v.stack.PeekAbsolute(idx)
+	if obj == nil {
+		return nil
+	}
+	return v.factory.ToInterface(obj)
+}
+
+// GetReturnValues returns the values from the top of the stack as an array of interface values.
+func (v *VM) GetReturnValues() []interface{} {
+	values := v.stack.StackPointer()
+	if values == 0 {
+		return nil
+	}
+	out := make([]interface{}, values)
+	for x := 0; x < values; x++ {
+		out[x] = v.GetReturnValue(x)
+	}
+	return out
 }
 
 // SetError sets the internal error state of the VM and marks it for shutdown.

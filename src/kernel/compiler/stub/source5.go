@@ -25,5 +25,6 @@ func main(a int, b int) {
 	//y := a - b
 	//x := a * b
 	//fmt.Println(input, a, b, results, z, z, y, x)
+	return 10
 }
 `
