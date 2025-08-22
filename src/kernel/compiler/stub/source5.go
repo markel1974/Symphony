@@ -5,6 +5,10 @@ package main
 
 import "fmt"
 
+func test() int {
+	return 10
+}
+
 func main(a int, b int) {
 	//var input string = "INPUT"
 	//results := "RESULTS"
@@ -12,7 +16,8 @@ func main(a int, b int) {
 	//	fmt.Printf("y:%d -> %s\n", y, "CIAO")
 	//}
 	y:=len("CIAO")
-	fmt.Printf("y:%d -> %s\n", y, "CIAO")
+	k := test()
+	fmt.Printf("y:%d -> %s %d\n", y, "CIAO", k)
 	for y:=0; y<10; y++ {
 		fmt.Printf("y:%d -> %s\n", y, "CIAO")
 	}

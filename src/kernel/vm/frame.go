@@ -10,7 +10,7 @@ type Frame struct {
 	id               int
 	compiledFunction *objects.FuncCompiled
 	freeVars         []*objects.ObjectPointer
-	ip               int
+	savedIp          int
 	basePointer      int
 	instructions     *objects.Instructions
 	errSignal        func(err error)
@@ -20,7 +20,7 @@ type Frame struct {
 func NewFunctionCallFrame(id int, errSignal func(err error)) *Frame {
 	return &Frame{
 		id:        id,
-		ip:        resetIp,
+		savedIp:   resetIp,
 		errSignal: errSignal,
 	}
 }
@@ -31,7 +31,7 @@ func (f *Frame) ID() int {
 
 // Bind initializes the frame with the given instruction pointer, compiled function, and base pointer values.
 func (f *Frame) Bind(startIp int, compiledFunction *objects.FuncCompiled, basePointer int) {
-	f.ip = startIp
+	f.savedIp = startIp
 	f.basePointer = basePointer
 	f.compiledFunction = compiledFunction
 	f.instructions = f.compiledFunction.Instructions()
@@ -65,9 +65,9 @@ func (f *Frame) FreeVarsIndex(idx int) *objects.ObjectPointer {
 	return f.freeVars[idx]
 }
 
-// StartIP retrieves the current instruction pointer (ip) of the frame, indicating the execution position in bytecode.
-func (f *Frame) StartIP() int {
-	return f.ip
+// SavedIP retrieves the current instruction pointer (ip) of the frame, indicating the execution position in bytecode.
+func (f *Frame) SavedIP() int {
+	return f.savedIp
 }
 
 // BasePointer retrieves the base pointer value of the current frame, indicating the starting position of its variables.

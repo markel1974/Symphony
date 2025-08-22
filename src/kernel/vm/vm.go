@@ -27,8 +27,24 @@ type ISequencer interface {
 }
 
 type SequencerData struct {
-	execute func(vm *VM)
-	decode  func() int
+	execute  func(vm *VM, operands *[]int)
+	operands []func(*Frame, int) (int, int)
+}
+
+func NewSequencerData(execute func(vm *VM, operands *[]int), operands []int) *SequencerData {
+	sd := &SequencerData{
+		execute:  execute,
+		operands: make([]func(*Frame, int) (int, int), len(operands)),
+	}
+	for i, width := range operands {
+		switch width {
+		case 1:
+			sd.operands[i] = func(frame *Frame, ip int) (int, int) { return int(frame.Get8(ip)), 1 }
+		case 2:
+			sd.operands[i] = func(frame *Frame, ip int) (int, int) { return int(frame.Get16(ip)), 2 }
+		}
+	}
+	return sd
 }
 
 // VM represents a virtual machine that executes bytecode instructions, handles stack, and manages execution frames.
@@ -66,7 +82,7 @@ func New(factory *objects.GateKeeper, op *bytecode.Opcodes, sequencer ISequencer
 	seq := sequencer.Create()
 	v.sequencer = make([]*SequencerData, len(seq))
 	for i, s := range seq {
-		v.sequencer[i] = &SequencerData{execute: s.Execute, decode: s.OperandsOffset}
+		v.sequencer[i] = NewSequencerData(s.Execute, s.Operands())
 	}
 	v.Reset()
 	return v
@@ -138,7 +154,7 @@ func (v *VM) Run(loader bytecode.ILoader, bc *bytecode.Bytecode, mainId string, 
 		filePos, _ := v.sourceFiles.Position(v.currFrame.SourcePos(v.ip - 1))
 		err = fmt.Errorf("runtime error %w at %s", v.err, filePos)
 		for _, frame := range v.frames.Unroll() {
-			filePos, _ = v.sourceFiles.Position(frame.SourcePos(frame.StartIP() - 1))
+			filePos, _ = v.sourceFiles.Position(frame.SourcePos(frame.SavedIP() - 1))
 			err = fmt.Errorf("%w at %s", err, filePos)
 		}
 		return err
@@ -219,13 +235,24 @@ func (v *VM) IndexAssign(frame int, dst objects.IObject, src objects.IObject, se
 
 // loop executes the main instruction loop for the virtual machine, updating the instruction pointer and processing opcodes.
 func (v *VM) loop() {
+	cOperands := make([]int, 16)
+	cOperandsPtr := &cOperands
 	for {
 		v.ip++
 		inst := v.currFrame.Get8(v.ip)
 		opcode := inst & bytecode.OpcodesMask
+		data := v.sequencer[opcode]
+		if len(data.operands) > 0 {
+			readOffset := v.ip + 1
+			for idx, fn := range data.operands {
+				val, offset := fn(v.currFrame, readOffset)
+				cOperands[idx] = val
+				readOffset += offset
+				v.ip += offset
+			}
+		}
 		//log.Println("Executing instruction ", opcode, bytecode.OpcodeNames(opcode))
-		v.ip += v.sequencer[opcode].decode()
-		v.sequencer[opcode].execute(v)
+		data.execute(v, cOperandsPtr)
 		if v.shutdown {
 			break
 		}

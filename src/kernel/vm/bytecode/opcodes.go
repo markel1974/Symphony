@@ -108,6 +108,7 @@ type OpcodeDetails struct {
 	factory        *objects.GateKeeper
 	opcode         Opcode
 	operands       []int
+	operandsPtr    *[]int
 	name           string
 	operandsOffset int
 }
@@ -118,6 +119,7 @@ func NewOpcodeDetails(factory *objects.GateKeeper, opcode Opcode, operands []int
 		factory:        factory,
 		opcode:         opcode,
 		operands:       operands,
+		operandsPtr:    &operands,
 		name:           name,
 		operandsOffset: 0,
 	}
