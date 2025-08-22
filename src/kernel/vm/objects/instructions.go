@@ -29,23 +29,23 @@ func (i *Instructions) Length() int {
 	return len(i.data)
 }
 
-// Get retrieves the byte at the specified index in the Instructions data slice.
-func (i *Instructions) Get(index int) (int, error) {
+// Get8 retrieves a single byte from the instructions at the specified index.
+// Returns an error if the index is out of bounds.
+func (i *Instructions) Get8(index int) (uint8, error) {
 	if index < 0 || index >= len(i.data) {
 		return 0, fmt.Errorf("invalid instruction index: %d", index)
 	}
-	return int(i.data[index]), nil
+	return i.data[index], nil
 }
 
-// Pos returns the position of the instruction at the specified indices.
-func (i *Instructions) Pos(x int, y int) (int, error) {
-	a, err := i.Get(x)
-	if err != nil {
-		return 0, err
+// Get16 retrieves a 16-bit unsigned integer from two byte positions in the byte slice, given their low and high indices.
+// Returns an error if the provided indices are out of bounds.
+func (i *Instructions) Get16(low int, high int) (uint16, error) {
+	if low < 0 || low >= len(i.data) {
+		return 0, fmt.Errorf("invalid instruction low index: %d", low)
 	}
-	b, err := i.Get(y)
-	if err != nil {
-		return 0, err
+	if high < 0 || high >= len(i.data) {
+		return 0, fmt.Errorf("invalid instruction high index: %d", high)
 	}
-	return a | b<<8, nil
+	return uint16(i.data[low]) | uint16(i.data[high])<<8, nil
 }

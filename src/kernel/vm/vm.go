@@ -216,8 +216,8 @@ func (v *VM) IndexAssign(frame int, dst objects.IObject, src objects.IObject, se
 func (v *VM) loop() {
 	for {
 		v.ip++
-		inst := v.currFrame.Get(v.ip)
-		opcode := bytecode.Opcode(inst & bytecode.OpcodesMask)
+		inst := v.currFrame.Get8(v.ip)
+		opcode := inst & bytecode.OpcodesMask
 		//log.Println("Executing instruction ", opcode, bytecode.OpcodeNames(opcode))
 		v.sequencer[opcode](v)
 		if v.shutdown {

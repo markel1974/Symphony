@@ -38,9 +38,10 @@ func (f *Frame) Bind(startIp int, compiledFunction *objects.FuncCompiled, basePo
 	f.freeVars = f.compiledFunction.Free()
 }
 
-// Get retrieves the integer value at the specified index from the instructions in the current frame.
-func (f *Frame) Get(index int) int {
-	v, err := f.instructions.Get(index)
+// Get8 retrieves an 8-bit unsigned integer from the instructions at the specified index in the current frame.
+// It signals an error if the retrieval fails and returns 0.
+func (f *Frame) Get8(index int) uint8 {
+	v, err := f.instructions.Get8(index)
 	if err != nil {
 		f.errSignal(err)
 		return 0
@@ -48,9 +49,10 @@ func (f *Frame) Get(index int) int {
 	return v
 }
 
-// Pos calculates and returns an instruction position based on the given indices in the frame's instruction set.
-func (f *Frame) Pos(x int, y int) int {
-	v, err := f.instructions.Pos(x, y)
+// Get16 retrieves a 16-bit unsigned integer from instructions at specified indices x and y in the current frame.
+// If an error occurs during retrieval, it signals the error and returns 0.
+func (f *Frame) Get16(x int, y int) uint16 {
+	v, err := f.instructions.Get16(x, y)
 	if err != nil {
 		f.errSignal(err)
 		return 0
