@@ -26,6 +26,11 @@ type ISequencer interface {
 	Create() []IOpExecutor
 }
 
+type SequencerData struct {
+	execute func(vm *VM)
+	decode  func() int
+}
+
 // VM represents a virtual machine that executes bytecode instructions, handles stack, and manages execution frames.
 type VM struct {
 	factory     *objects.GateKeeper
@@ -36,7 +41,7 @@ type VM struct {
 	ip          int
 	shutdown    bool
 	err         error
-	sequencer   []func(vm *VM)
+	sequencer   []*SequencerData
 	references  []objects.IObject
 	loader      bytecode.ILoader
 	constants   *Constants
@@ -59,9 +64,9 @@ func New(factory *objects.GateKeeper, op *bytecode.Opcodes, sequencer ISequencer
 		sequencer = NewSequencer(op)
 	}
 	seq := sequencer.Create()
-	v.sequencer = make([]func(vm *VM), len(seq))
+	v.sequencer = make([]*SequencerData, len(seq))
 	for i, s := range seq {
-		v.sequencer[i] = s.Execute
+		v.sequencer[i] = &SequencerData{execute: s.Execute, decode: s.OperandsOffset}
 	}
 	v.Reset()
 	return v
@@ -219,7 +224,8 @@ func (v *VM) loop() {
 		inst := v.currFrame.Get8(v.ip)
 		opcode := inst & bytecode.OpcodesMask
 		//log.Println("Executing instruction ", opcode, bytecode.OpcodeNames(opcode))
-		v.sequencer[opcode](v)
+		v.ip += v.sequencer[opcode].decode()
+		v.sequencer[opcode].execute(v)
 		if v.shutdown {
 			break
 		}
