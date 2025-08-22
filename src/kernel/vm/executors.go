@@ -2,7 +2,6 @@ package vm
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/markel1974/c64emu/src/kernel/vm/bytecode"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
@@ -23,8 +22,6 @@ type IOpExecutor interface {
 	Operands() []int
 
 	Execute(vm *VM, operands *[]int)
-
-	OperandsOffset() int
 }
 
 // OpConstant represents an operation used to load a constant onto the stack.
@@ -300,7 +297,10 @@ func (op *OpAndJump) Execute(v *VM, operands *[]int) {
 	// Operands Offset  2
 	obj := v.stack.Peek()
 	if obj.Boolean() {
-		pos := int(v.currFrame.Get16(v.ip))
+		pos := (*operands)[0]
+		//if pos != int(v.currFrame.Get16(v.ip)) {
+		//	panic("invalid jump position")
+		//}
 		v.ip = pos - 1
 	} else {
 		v.stack.Decrement()
@@ -324,7 +324,10 @@ func (op *OpOrJump) Execute(v *VM, operands *[]int) {
 	if obj.Boolean() {
 		v.stack.Decrement()
 	} else {
-		pos := int(v.currFrame.Get16(v.ip))
+		pos := (*operands)[0]
+		//if pos !=  int(v.currFrame.Get16(v.ip)) {
+		//	panic("invalid jump position")
+		//}
 		v.ip = pos - 1
 	}
 }
@@ -342,7 +345,10 @@ func NewOpJump(op *bytecode.Opcodes) *OpJump {
 // Execute updates the instruction pointer (`ip`) in the virtual machine (`VM`) to a calculated position in the frame.
 func (op *OpJump) Execute(v *VM, operands *[]int) {
 	// Operands Offset  2
-	pos := int(v.currFrame.Get16(v.ip))
+	pos := (*operands)[0]
+	//if pos !=  int(v.currFrame.Get16(v.ip)) {
+	//	panic("invalid jump position")
+	//}
 	v.ip = pos - 1
 }
 
@@ -359,7 +365,10 @@ func NewOpSetGlobal(op *bytecode.Opcodes) *OpSetGlobal {
 // Execute updates the instruction pointer, calculates a global variable position, and sets its value from the stack.
 func (op *OpSetGlobal) Execute(v *VM, operands *[]int) {
 	// Operands Offset  2
-	pos := v.currFrame.Get16(v.ip)
+	pos := (*operands)[0]
+	//if pos !=  int(v.currFrame.Get16(v.ip)) {
+	//	panic("invalid jump position")
+	//}
 	val := v.stack.Peek()
 	v.constants.Set(uint(pos), val)
 }
@@ -377,15 +386,21 @@ func NewOpSetSelGlobal(op *bytecode.Opcodes) *OpSetSelGlobal {
 // Execute performs the operation defined by OpSetSelGlobal, updating the VM state and handling global index assignment.
 func (op *OpSetSelGlobal) Execute(v *VM, operands *[]int) {
 	// Operands Offset  3
-	globalIndex := uint(v.currFrame.Get16(v.ip - 1))
-	numSelectors := int(v.currFrame.Get8(v.ip))
+	numSelectors := (*operands)[0]
+	//if numSelectors !=  int(v.currFrame.Get8(v.ip)) {
+	//	panic("invalid jump position")
+	//}
+	globalIndex := (*operands)[1]
+	//if globalIndex !=  uint(v.currFrame.Get16(v.ip - 1)) {
+	//	panic("invalid jump position")
+	//}
 	selectors := make([]objects.IObject, numSelectors)
 	for i := 0; i < numSelectors; i++ {
 		selectors[i] = v.stack.PeekOffset(-numSelectors + i)
 	}
 	val := v.stack.PeekOffset(-numSelectors - 1)
 	v.stack.DecrementCount(numSelectors + 1)
-	glObj := v.constants.Get(globalIndex)
+	glObj := v.constants.Get(uint(globalIndex))
 	if err := v.IndexAssign(v.currFrame.ID(), glObj, val, selectors); err != nil {
 		v.SetError(err)
 		return
@@ -406,7 +421,10 @@ func NewOpGetGlobal(op *bytecode.Opcodes) *OpGetGlobal {
 // Execute retrieves a global object using its index, pushes it onto the stack, and advances the instruction pointer.
 func (op *OpGetGlobal) Execute(v *VM, operands *[]int) {
 	// Operands Offset  2
-	glIndex := v.currFrame.Get16(v.ip)
+	glIndex := (*operands)[0]
+	//if glIndex != v.currFrame.Get16(v.ip) {
+	//	panic("invalid jump position")
+	//}
 	glObj := v.constants.Get(uint(glIndex))
 	if glObj == nil {
 		v.SetError(fmt.Errorf("undefined global: %d", glIndex))
@@ -429,7 +447,10 @@ func NewOpArray(op *bytecode.Opcodes) *OpArray {
 // Execute processes the OpArray instruction, constructing an array from stack elements and pushing it onto the stack.
 func (op *OpArray) Execute(v *VM, operands *[]int) {
 	// Operands Offset 2
-	numElements := int(v.currFrame.Get16(v.ip))
+	numElements := (*operands)[0]
+	//if numElements != v.currFrame.Get16(v.ip {
+	//	panic("invalid OpArray position")
+	//}
 	elements := v.stack.PopArrayElements(numElements)
 	arr := op.Factory().NewArray(v.currFrame.ID(), elements)
 	v.stack.Push(arr)
@@ -448,7 +469,10 @@ func NewOpMap(op *bytecode.Opcodes) *OpMap {
 // Execute processes the OpMap instruction, adjusts the instruction pointer, and pushes a new map object onto the stack.
 func (op *OpMap) Execute(v *VM, operands *[]int) {
 	// Operands Offset  2
-	numElements := int(v.currFrame.Get16(v.ip))
+	numElements := (*operands)[0]
+	//if numElements != int(v.currFrame.Get16(v.ip)) {
+	//	panic("invalid OpMap position")
+	//}
 	mElem := v.stack.PopMapElements(numElements)
 	v.stack.Push(op.Factory().NewMap(v.currFrame.ID(), mElem))
 }
@@ -466,7 +490,10 @@ func NewOpStruct(op *bytecode.Opcodes) *OpStruct {
 // Execute processes the OpMap instruction, adjusts the instruction pointer, and pushes a new map object onto the stack.
 func (op *OpStruct) Execute(v *VM, operands *[]int) {
 	// Operands Offset  2
-	numElements := int(v.currFrame.Get16(v.ip))
+	numElements := (*operands)[0]
+	//if numElements != int(v.currFrame.Get16(v.ip)) {
+	//	panic("invalid OpMap position")
+	//}
 	mElem := v.stack.PopMapElements(numElements)
 	v.stack.Push(op.Factory().NewMap(v.currFrame.ID(), mElem))
 }
@@ -739,7 +766,10 @@ func NewOpDefineLocal(op *bytecode.Opcodes) *OpDefineLocal {
 // Execute increments the instruction pointer, retrieves a local index, and assigns a stack value to a designated slot.
 func (op *OpDefineLocal) Execute(v *VM, operands *[]int) {
 	// Operands Offset 1
-	localIndex := int(v.currFrame.Get8(v.ip))
+	localIndex := (*operands)[0]
+	//if localIndex != int(v.currFrame.Get8(v.ip)) {
+	//	panic("invalid OpDefineLocal position")
+	//}
 	val := v.stack.Peek()
 	destSlot := v.currFrame.BasePointer() + localIndex
 	v.stack.SetAbsolute(destSlot, val)
@@ -788,8 +818,14 @@ func NewOpSetSelLocal(op *bytecode.Opcodes) *OpSetSelLocal {
 // Execute performs the operation of retrieving, modifying, and reassigning a value using selectors in the local scope.
 func (op *OpSetSelLocal) Execute(v *VM, operands *[]int) {
 	// Operands Offset 2
-	localIndex := int(v.currFrame.Get8(v.ip - 1))
-	numSelectors := int(v.currFrame.Get8(v.ip))
+	numSelectors := (*operands)[0]
+	//if localIndex != int(v.currFrame.Get8(v.ip)) {
+	//	panic("local OpSetSelLocal mismatch")
+	//}
+	localIndex := (*operands)[1]
+	//if localIndex != int(v.currFrame.Get8(v.ip - 1)) {
+	//	panic("local OpSetSelLocal mismatch")
+	//}
 	selectors := make([]objects.IObject, numSelectors)
 	for i := 0; i < numSelectors; i++ {
 		selectors[i] = v.stack.PeekOffset(-numSelectors + i)
@@ -821,7 +857,7 @@ func (op *OpGetLocal) Execute(v *VM, operands *[]int) {
 	// Operands Offset 1
 	localIndex := (*operands)[0]
 	//if localIndex != int(v.currFrame.Get8(v.ip)) {
-	//	panic("local index mismatch")
+	//	panic("local OpGetLocal mismatch")
 	//}
 	val := v.stack.PeekAbsolute(v.currFrame.BasePointer() + localIndex)
 	if obj, ok := val.(*objects.ObjectPointer); ok {
@@ -843,8 +879,14 @@ func NewOpClosure(op *bytecode.Opcodes) *OpClosure {
 // Execute performs the operation associated with the OpClosure opcode, creating a closure and pushing it onto the stack.
 func (op *OpClosure) Execute(v *VM, operands *[]int) {
 	// Operands Offset 3
-	constIndex := int(v.currFrame.Get16(v.ip - 1))
-	numFree := int(v.currFrame.Get8(v.ip))
+	numFree := (*operands)[0]
+	//if numFree != int(v.currFrame.Get8(v.ip)) {
+	//	panic("local OpClosure mismatch")
+	//}
+	constIndex := (*operands)[1]
+	//if constIndex != int(v.currFrame.Get16(v.ip - 1)) {
+	//	panic("local OpClosure mismatch")
+	//}
 	glObj := v.constants.Get(uint(constIndex))
 	fn, ok := glObj.(*objects.FuncCompiled)
 	if !ok {
@@ -887,7 +929,10 @@ func NewOpGetFreePtr(op *bytecode.Opcodes) *OpGetFreePtr {
 // Execute executes the OpGetFreePtr operation, pushing a free variable onto the stack based on the current instruction pointer.
 func (op *OpGetFreePtr) Execute(v *VM, operands *[]int) {
 	// Operands Offset 1
-	freeIndex := int(v.currFrame.Get8(v.ip))
+	freeIndex := (*operands)[0]
+	//if freeIndex != int(v.currFrame.Get8(v.ip)) {
+	//	panic("local OpGetFreePtr mismatch")
+	//}
 	val := v.currFrame.FreeVarsIndex(freeIndex)
 	v.stack.Push(val)
 }
@@ -905,7 +950,10 @@ func NewOpGetFree(op *bytecode.Opcodes) *OpGetFree {
 // Execute increments the instruction pointer, retrieves a value using free variable index, and pushes it onto the stack.
 func (op *OpGetFree) Execute(v *VM, operands *[]int) {
 	// Operands Offset 1
-	freeIndex := int(v.currFrame.Get8(v.ip))
+	freeIndex := (*operands)[0]
+	//if freeIndex != int(v.currFrame.Get8(v.ip)) {
+	//	panic("local OpGetFree mismatch")
+	//}
 	val := *v.currFrame.FreeVarsIndex(freeIndex).Value()
 	v.stack.Push(val)
 }
@@ -923,7 +971,10 @@ func NewOpSetFree(op *bytecode.Opcodes) *OpSetFree {
 // Execute increments the instruction pointer, retrieves a free variable index, and sets its value from the stack.
 func (op *OpSetFree) Execute(v *VM, operands *[]int) {
 	// Operands Offset 1
-	freeIndex := int(v.currFrame.Get8(v.ip))
+	freeIndex := (*operands)[0]
+	//if freeIndex != int(v.currFrame.Get8(v.ip)) {
+	//	panic("local OpSetFree mismatch")
+	//}
 	o := v.stack.Pop()
 	v.currFrame.FreeVarsIndex(freeIndex).SetValue(o)
 }
@@ -941,7 +992,10 @@ func NewOpGetLocalPtr(op *bytecode.Opcodes) *OpGetLocalPtr {
 // Execute advances the instruction pointer, retrieves a local variable, and pushes an ObjectPointer to the stack.
 func (op *OpGetLocalPtr) Execute(v *VM, operands *[]int) {
 	// Operands Offset 1
-	localIndex := int(v.currFrame.Get8(v.ip))
+	localIndex := (*operands)[0]
+	//if localIndex != int(v.currFrame.Get8(v.ip)) {
+	//	panic("local OpGetLocalPtr mismatch")
+	//}
 	sp := v.currFrame.BasePointer() + localIndex
 	val := v.stack.PeekAbsolute(sp)
 	if obj, ok := val.(*objects.ObjectPointer); ok {
@@ -966,8 +1020,14 @@ func NewOpSetSelFree(op *bytecode.Opcodes) *OpSetSelFree {
 // Execute updates the instruction pointer, retrieves operands, processes selectors, and performs indexed assignment in the VM.
 func (op *OpSetSelFree) Execute(v *VM, operands *[]int) {
 	// Operands Offset 2
-	freeIndex := int(v.currFrame.Get8(v.ip - 1))
-	numSelectors := int(v.currFrame.Get8(v.ip))
+	numSelectors := (*operands)[0]
+	//if numSelectors != int(v.currFrame.Get8(v.ip)) {
+	//	panic("local OpSetSelFree mismatch")
+	//}
+	freeIndex := (*operands)[1]
+	//if freeIndex != int(v.currFrame.Get8(v.ip - 1)) {
+	//	panic("local OpSetSelFree mismatch")
+	//}
 	selectors := make([]objects.IObject, numSelectors)
 	for i := 0; i < numSelectors; i++ {
 		selectors[i] = v.stack.PeekOffset(-numSelectors + i)
@@ -995,7 +1055,10 @@ func NewOpIteratorInit(op *bytecode.Opcodes) *OpIteratorInit {
 // Execute initializes an iterator for an iterable object and stores it in the specified local slot in the current frame.
 func (op *OpIteratorInit) Execute(v *VM, operands *[]int) {
 	// Operands Offset 1
-	localIndex := int(v.currFrame.Get8(v.ip))
+	localIndex := (*operands)[0]
+	//if localIndex != int(v.currFrame.Get8(v.ip)) {
+	//	panic("local OpIteratorInit mismatch")
+	//}
 	iterable := v.stack.Pop()
 	if !iterable.CanIterate() {
 		v.SetError(fmt.Errorf("not iterable: %s", iterable.TypeName()))
@@ -1019,7 +1082,11 @@ func NewOpIteratorNext(op *bytecode.Opcodes) *OpIteratorNext {
 // Execute processes the next iterator state in the current frame, pushing a boolean to the stack indicating iteration status.
 func (op *OpIteratorNext) Execute(v *VM, operands *[]int) {
 	// Operands Offset 1
-	localIndex := int(v.currFrame.Get8(v.ip))
+	localIndex := (*operands)[0]
+	//if localIndex != int(v.currFrame.Get8(v.ip)) {
+	//	panic("local OpIteratorNext mismatch")
+	//}
+
 	iteratorObj := v.stack.PeekAbsolute(v.currFrame.BasePointer() + localIndex)
 	iterator, ok := iteratorObj.(objects.IIterator)
 	if !ok {
@@ -1046,7 +1113,11 @@ func NewOpIteratorKey(op *bytecode.Opcodes) *OpIteratorKey {
 // Execute processes the "iterator key" operation, retrieves the iterator key, and pushes it onto the VM stack.
 func (op *OpIteratorKey) Execute(v *VM, operands *[]int) {
 	// Operands Offset 1
-	localIndex := int(v.currFrame.Get8(v.ip))
+	localIndex := (*operands)[0]
+	//if localIndex != int(v.currFrame.Get8(v.ip)) {
+	//	panic("local OpIteratorKey mismatch")
+	//}
+
 	iteratorObj := v.stack.PeekAbsolute(v.currFrame.BasePointer() + localIndex)
 	iterator, ok := iteratorObj.(objects.IIterator)
 	if !ok {
@@ -1070,7 +1141,10 @@ func NewOpIteratorValue(op *bytecode.Opcodes) *OpIteratorValue {
 // Execute processes the next instruction to retrieve and push the current value of an iterator onto the stack.
 func (op *OpIteratorValue) Execute(v *VM, operands *[]int) {
 	// Operands Offset 1
-	localIndex := int(v.currFrame.Get8(v.ip))
+	localIndex := (*operands)[0]
+	//if localIndex != int(v.currFrame.Get8(v.ip)) {
+	//	panic("local OpIteratorValue mismatch")
+	//}
 	iteratorObj := v.stack.PeekAbsolute(v.currFrame.BasePointer() + localIndex)
 	iterator, ok := iteratorObj.(objects.IIterator)
 	if !ok {
@@ -1094,9 +1168,9 @@ func NewOpReferences(op *bytecode.Opcodes) *OpReferences {
 func (op *OpReferences) Execute(v *VM, operands *[]int) {
 	// Operands Offset 2
 	nameIndex := (*operands)[0]
-	if nameIndex != int(v.currFrame.Get16(v.ip)) {
-		log.Panicf("name index mismatch: %d != %d", nameIndex, int(v.currFrame.Get16(v.ip)))
-	}
+	//if nameIndex != int(v.currFrame.Get16(v.ip)) {
+	//	panic("name index mismatch: %d != %d", nameIndex, int(v.currFrame.Get16(v.ip)))
+	//}
 	//nameIndex := int(v.currFrame.Get16(v.ip))
 	if nameIndex < 0 || nameIndex >= len(v.references) {
 		v.SetError(fmt.Errorf("invalid attribute index %d", nameIndex))
@@ -1117,7 +1191,7 @@ func NewOpSuspend(op *bytecode.Opcodes) *OpSuspend {
 }
 
 // Execute performs the suspend operation on the given virtual machine by setting its shutdown state to true.
-func (op *OpSuspend) Execute(v *VM, operands *[]int) {
+func (op *OpSuspend) Execute(v *VM, _ *[]int) {
 	// Operands Offset 0
 	v.shutdown = true
 }
@@ -1135,6 +1209,9 @@ func NewOpUnknown(op *bytecode.Opcodes) *OpUnknown {
 // Execute handles the execution of an unknown opcode, sets an error state, and stops the virtual machine.
 func (op *OpUnknown) Execute(v *VM, operands *[]int) {
 	// Operands Offset 0
-	pos := v.currFrame.Get8(v.ip)
-	v.SetError(fmt.Errorf("unknown opcode: %d", pos))
+	//currentIp := int(v.currFrame.Get8(v.ip))
+	//if nameIndex != int(v.currFrame.Get8(v.ip)) {
+	//	panic("name index mismatch: %d != %d", nameIndex, int(v.currFrame.Get16(v.ip)))
+	//}
+	v.SetError(fmt.Errorf("unknown opcode at: %d, %v", v.ip, operands))
 }
