@@ -179,6 +179,62 @@ func (v *VM) Run(loader bytecode.ILoader, bc *bytecode.Bytecode, mainId string, 
 	return nil
 }
 
+// BinaryOpInt64 performs a binary operation on two integer values and returns the result.
+func (v *VM) BinaryOpInt64(op objects.Operator, lhs int64, rhs int64) (int64, error) {
+	switch op {
+	case objects.OperatorAdd:
+		return lhs + rhs, nil
+	case objects.OperatorSub:
+		return lhs - rhs, nil
+	case objects.OperatorMul:
+		return lhs * rhs, nil
+	case objects.OperatorQuo:
+		if rhs == 0 {
+			return 0, objects.ErrDivisionByZero
+		}
+		return lhs / rhs, nil
+	case objects.OperatorRem:
+		if rhs == 0 {
+			return 0, objects.ErrDivisionByZero
+		}
+		return lhs % rhs, nil
+	case objects.OperatorAnd:
+		return lhs & rhs, nil
+	case objects.OperatorOr:
+		return lhs | rhs, nil
+	case objects.OperatorXor:
+		return lhs ^ rhs, nil
+	case objects.OperatorAndNot:
+		return lhs &^ rhs, nil
+	case objects.OperatorShl:
+		return lhs << uint64(rhs), nil
+	case objects.OperatorShr:
+		return lhs >> uint64(rhs), nil
+	case objects.OperatorLess:
+		if lhs < rhs {
+			return 1, nil
+		}
+		return 0, nil
+	case objects.OperatorGreater:
+		if lhs > rhs {
+			return 1, nil
+		}
+		return 0, nil
+	case objects.OperatorLessEq:
+		if lhs <= rhs {
+			return 1, nil
+		}
+		return 0, nil
+	case objects.OperatorGreaterEq:
+		if lhs >= rhs {
+			return 1, nil
+		}
+		return 0, nil
+	default:
+		return 0, objects.ErrInvalidOperator
+	}
+}
+
 // GetReturnValue returns the value from the top of the stack as an interface value.
 func (v *VM) GetReturnValue(idx int) interface{} {
 	obj := v.stack.PeekAbsolute(idx)
