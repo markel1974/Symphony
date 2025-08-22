@@ -68,7 +68,6 @@ type VM struct {
 
 // New initializes and returns a new virtual machine instance configured with the provided components and settings.
 func New(factory *objects.GateKeeper, op *bytecode.Opcodes, sequencer ISequencer) *VM {
-	//op := bytecode.NewOpcodes(factory)
 	v := &VM{
 		factory:     factory,
 		ip:          resetIp,

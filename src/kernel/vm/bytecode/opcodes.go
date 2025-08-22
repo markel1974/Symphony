@@ -105,26 +105,19 @@ const (
 
 // OpcodeDetails represents the details of an opcode, including its identifier, its operands, and its name.
 type OpcodeDetails struct {
-	factory        *objects.GateKeeper
-	opcode         Opcode
-	operands       []int
-	operandsPtr    *[]int
-	name           string
-	operandsOffset int
+	factory  *objects.GateKeeper
+	opcode   Opcode
+	operands []int
+	name     string
 }
 
 // NewOpcodeDetails creates a new OpcodeDetails instance, initializing its opcode, operands, and name fields.
 func NewOpcodeDetails(factory *objects.GateKeeper, opcode Opcode, operands []int, name string) *OpcodeDetails {
 	od := &OpcodeDetails{
-		factory:        factory,
-		opcode:         opcode,
-		operands:       operands,
-		operandsPtr:    &operands,
-		name:           name,
-		operandsOffset: 0,
-	}
-	for _, o := range operands {
-		od.operandsOffset += o
+		factory:  factory,
+		opcode:   opcode,
+		operands: operands,
+		name:     name,
 	}
 	return od
 }
@@ -146,11 +139,6 @@ func (od *OpcodeDetails) Name() string {
 // Operands retrieve the list of integer operands associated with the OpcodeDetails instance.
 func (od *OpcodeDetails) Operands() []int {
 	return od.operands
-}
-
-// OperandsOffset returns the total byte offset for the operands of the OpcodeDetails instance.
-func (od *OpcodeDetails) OperandsOffset() int {
-	return od.operandsOffset
 }
 
 type Opcodes struct {
