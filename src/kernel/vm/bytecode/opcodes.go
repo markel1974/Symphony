@@ -98,6 +98,7 @@ const (
 	OpIteratorValue               // Iterator value
 	OpBinary                      // Binary operation
 	OpReferences
+	OpIntOp
 	OpSuspend // Suspend VM
 	OpError   // Error object
 	OpUnknown
@@ -195,6 +196,7 @@ func NewOpcodes(factory *objects.GateKeeper) *Opcodes {
 	op.createOpcodeDetails(factory, OpIteratorValue, []int{1}, "OpIteratorValue")
 	op.createOpcodeDetails(factory, OpBinary, []int{1}, "OpBinary")
 	op.createOpcodeDetails(factory, OpReferences, []int{2}, "OpReferences")
+	op.createOpcodeDetails(factory, OpIntOp, []int{2, 1}, "OpIntOp")
 	op.createOpcodeDetails(factory, OpSuspend, []int{}, "OpSuspend")
 	op.createOpcodeDetails(factory, OpError, []int{}, "OpError")
 	return op

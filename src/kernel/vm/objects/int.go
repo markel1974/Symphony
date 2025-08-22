@@ -75,6 +75,11 @@ func (o *Int) Value() int64 {
 	return o.value
 }
 
+// SetValue sets the underlying int64 value of the Int object.
+func (o *Int) SetValue(value int64) {
+	o.value = value
+}
+
 // String returns the string representation of the Int value using base 10 format.
 func (o *Int) String() string {
 	return strconv.FormatInt(o.value, 10)

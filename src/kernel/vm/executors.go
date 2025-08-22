@@ -1182,6 +1182,42 @@ func (op *OpReferences) Execute(v *VM, operands *[]int) {
 	v.stack.Push(symbol)
 }
 
+// OpIntOp extends OpcodeDetails and represents integer operations performed on a virtual machine.
+type OpIntOp struct {
+	*bytecode.OpcodeDetails
+}
+
+// NewOpIntOp initializes and returns a new instance of OpIntOp with relevant opcode details provided by bytecode.Opcodes.
+func NewOpIntOp(op *bytecode.Opcodes) *OpIntOp {
+	return &OpIntOp{OpcodeDetails: op.OpcodeToDetails(bytecode.OpIntOp)}
+}
+
+// Execute performs a specified binary operation between two integers from the stack and stores the result in a destination slot.
+// It retrieves operands, validates types, and executes the operation, setting an error on unsupported cases or type mismatches.
+func (op *OpIntOp) Execute(v *VM, operands *[]int) {
+	destSlot := (*operands)[0]
+	binaryOp := objects.Operator((*operands)[1])
+
+	rhs := v.stack.Pop().(*objects.Int)
+	lhs := v.stack.Pop().(*objects.Int)
+	var resultValue int64
+	switch binaryOp {
+	case objects.OperatorAdd:
+		resultValue = lhs.Value() + rhs.Value()
+	case objects.OperatorSub:
+		resultValue = lhs.Value() - rhs.Value()
+	default:
+		v.SetError(fmt.Errorf("unsuppoterd binary op"))
+		return
+	}
+	destinationObject, ok := v.stack.PeekAbsolute(destSlot).(*objects.Int)
+	if !ok {
+		v.SetError(fmt.Errorf("not an integer: %s", v.stack.PeekAbsolute(destSlot).TypeName()))
+		return
+	}
+	destinationObject.SetValue(resultValue)
+}
+
 // OpSuspend represents an operation that suspends the execution of the virtual machine.
 type OpSuspend struct {
 	*bytecode.OpcodeDetails
