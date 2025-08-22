@@ -137,6 +137,8 @@ func vmTest() {
 	factory := objects.NewFactory(0)
 	op := bytecode.NewOpcodes(factory)
 	comp := compiler.New(factory)
+	//var args []interface{} = nil
+	args := []interface{}{1, 2}
 	err := comp.Compile("example.go", stub.Source5)
 	if err != nil {
 		log.Fatalf("compiler error: %s", err)
@@ -146,7 +148,7 @@ func vmTest() {
 	d.Disassemble(log.Writer())
 	loader := sdk.NewLoader(factory)
 	machine := vm.New(factory, op, nil)
-	if err = machine.Run(loader, bc, "main", 1, 2); err != nil {
+	if err = machine.Run(loader, bc, "main", args...); err != nil {
 		machine.Print(log.Writer())
 		log.Fatalf("VM runtime error: %s", err)
 	}

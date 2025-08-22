@@ -27,14 +27,16 @@ type ISequencer interface {
 }
 
 type SequencerData struct {
-	execute  func(vm *VM, operands *[]int)
-	operands []func(*Frame, int) (int, int)
+	execute   func(vm *VM, operands *[]int)
+	operands  []func(*Frame, int) (int, int)
+	fullWidth int
 }
 
 func NewSequencerData(execute func(vm *VM, operands *[]int), operands []int) *SequencerData {
 	sd := &SequencerData{
-		execute:  execute,
-		operands: make([]func(*Frame, int) (int, int), len(operands)),
+		execute:   execute,
+		operands:  make([]func(*Frame, int) (int, int), len(operands)),
+		fullWidth: 0,
 	}
 	for i, width := range operands {
 		switch width {
@@ -43,6 +45,7 @@ func NewSequencerData(execute func(vm *VM, operands *[]int), operands []int) *Se
 		case 2:
 			sd.operands[i] = func(frame *Frame, ip int) (int, int) { return int(frame.Get16(ip)), 2 }
 		}
+		sd.fullWidth += width
 	}
 	return sd
 }
@@ -242,13 +245,13 @@ func (v *VM) loop() {
 		inst := v.currFrame.Get8(v.ip)
 		opcode := inst & bytecode.OpcodesMask
 		data := v.sequencer[opcode]
-		if len(data.operands) > 0 {
-			readOffset := v.ip + 1
+		if data.fullWidth > 0 {
+			v.ip += data.fullWidth
+			readOffset := v.ip
 			for idx, fn := range data.operands {
-				val, offset := fn(v.currFrame, readOffset)
+				val, width := fn(v.currFrame, readOffset)
 				cOperands[idx] = val
-				readOffset += offset
-				v.ip += offset
+				readOffset -= width
 			}
 		}
 		//log.Println("Executing instruction ", opcode, bytecode.OpcodeNames(opcode))
