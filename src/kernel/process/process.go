@@ -550,7 +550,7 @@ func (t *Process) handleMessageProcessStart(msg interfaces.IMessage) {
 			log.Printf("Process [%s]: error compiling script: %s", t.cmd.Name(), err.Error())
 			return
 		}
-		bc := bytecode.NewBytecode(t.opcodes.Factory(), t.opcodes, t.compiler.Constants(), t.compiler.References())
+		bc := bytecode.NewBytecode(t.opcodes.Factory(), t.opcodes, t.compiler.Constants(), t.compiler.References(), t.compiler.Global())
 		if t.loader == nil {
 			t.loader = sdk.NewLoader(t.opcodes.Factory())
 			t.loader.AddPackage("kernel", NewLibrary(t.opcodes.Factory(), t).Package())

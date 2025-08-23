@@ -41,16 +41,18 @@ type Bytecode struct {
 	files      *Files
 	constants  []objects.IObject
 	references []objects.IObject
+	global     []objects.IObject
 }
 
 // NewBytecode creates and returns a new instance of Bytecode with an initialized Files object.
-func NewBytecode(factory *objects.GateKeeper, op *Opcodes, constants []objects.IObject, references []objects.IObject) *Bytecode {
+func NewBytecode(factory *objects.GateKeeper, op *Opcodes, constants []objects.IObject, references []objects.IObject, global []objects.IObject) *Bytecode {
 	return &Bytecode{
 		factory:    factory,
 		opcodes:    op,
 		files:      NewFiles(),
 		constants:  constants,
 		references: references,
+		global:     global,
 	}
 }
 
@@ -79,6 +81,11 @@ func (b *Bytecode) Constants() []objects.IObject {
 // References retrieves the list of IObject references stored in the Bytecode.
 func (b *Bytecode) References() []objects.IObject {
 	return b.references
+}
+
+// Global retrieves the list of IObject references stored in the Bytecode.
+func (b *Bytecode) Global() []objects.IObject {
+	return b.global
 }
 
 // Encode serializes the Bytecode object and writes it to the provided io.Writer in gob format. Returns an error if encoding fails.

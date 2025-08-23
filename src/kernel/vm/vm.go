@@ -64,6 +64,7 @@ type VM struct {
 	references  []objects.IObject
 	loader      bytecode.ILoader
 	constants   *Constants
+	global      *Constants
 }
 
 // New initializes and returns a new virtual machine instance configured with the provided components and settings.
@@ -76,6 +77,7 @@ func New(factory *objects.GateKeeper, op *bytecode.Opcodes, sequencer ISequencer
 		references:  nil,
 	}
 	v.constants = NewConstants(factory, v.SetError)
+	v.global = NewConstants(factory, v.SetError)
 	v.stack = NewStack(factory, stackSize, v.SetError)
 	v.frames = NewFrames(factory, maxFrames, v.SetError)
 	if sequencer == nil {
@@ -148,13 +150,15 @@ func (v *VM) Run(loader bytecode.ILoader, bc *bytecode.Bytecode, mainId string, 
 			}
 		}
 	}
+
 	if mainFn == nil {
 		return fmt.Errorf("main function not found")
 	}
 	v.loader = loader
 	v.sourceFiles = bc.SourceFiles()
 	v.references = references
-	v.constants.SetConstants(constants)
+	v.constants.SetContainer(constants)
+	v.global.SetContainer(bc.Global())
 	v.currFrame = v.frames.Head()
 	v.currFrame.Bind(v.ip, mainFn, 0)
 	v.stack.SetStackPointer(v.currFrame.NumLocals())

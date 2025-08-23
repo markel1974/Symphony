@@ -42,23 +42,25 @@ func (f *FieldDef) SetNode(node ast.Node) {
 
 // Symbol represents an identifier with associated metadata such as name, scope, index, fields, and type information.
 type Symbol struct {
-	name   string
-	scope  SymbolScope
-	index  int
-	object string
-	types  []string
-	Fields []*FieldDef
+	name      string
+	scope     SymbolScope
+	index     int
+	container string
+	isStruct  bool
+	types     []string
+	Fields    []*FieldDef
 }
 
 // NewSymbol creates a new Symbol instance with the provided name, index, scope, and associated object.
-func NewSymbol(name string, index int, scope SymbolScope, obj string) *Symbol {
+func NewSymbol(name string, index int, scope SymbolScope, container string, isStruct bool) *Symbol {
 	symbol := &Symbol{
-		name:   name,
-		index:  index,
-		scope:  scope,
-		object: obj,
-		types:  []string{},
-		Fields: []*FieldDef{},
+		name:      name,
+		index:     index,
+		scope:     scope,
+		container: container,
+		isStruct:  isStruct,
+		types:     []string{},
+		Fields:    []*FieldDef{},
 	}
 	return symbol
 }
@@ -73,6 +75,11 @@ func (s *Symbol) Index() int {
 	return s.index
 }
 
+// IsStruct returns a boolean indicating whether the Symbol represents an struct.
+func (s *Symbol) IsStruct() bool {
+	return s.isStruct
+}
+
 // SetTypes assigns a slice of type names to the Symbol's types field. Use this to define the types associated with a Symbol.
 func (s *Symbol) SetTypes(t []string) {
 	s.types = t
@@ -83,9 +90,9 @@ func (s *Symbol) Types() []string {
 	return s.types
 }
 
-// Object returns the internal object string associated with the Symbol.
-func (s *Symbol) Object() string {
-	return s.object
+// Container returns the name of the container associated with the Symbol.
+func (s *Symbol) Container() string {
+	return s.container
 }
 
 // Scope returns the scope of the Symbol, indicating its visibility and context within the program.

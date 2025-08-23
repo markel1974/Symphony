@@ -53,7 +53,7 @@ func (c *Compiler) Compile(filename string, source any) error {
 			return fmt.Errorf("builtin %d not found", idx)
 		}
 		c.constants.Add(bi.Name(), bi)
-		c.scopes.SymbolDefine(bi.Name(), GlobalScope)
+		//c.scopes.SymbolDefine(bi.Name(), GlobalScope, false)
 	}
 	c.fileSet = token.NewFileSet()
 	astFile, err := parser.ParseFile(c.fileSet, filename, source, 0)
@@ -74,6 +74,15 @@ func (c *Compiler) Constants() []objects.IObject {
 // References retrieves a list of IObject references from the current compiler scope.
 func (c *Compiler) References() []objects.IObject {
 	return c.references.Retrieve()
+}
+
+// Global retrieves and returns all global objects from the root scope and any objects tracked by references.
+func (c *Compiler) Global() []objects.IObject {
+	var ret []objects.IObject
+	for _, obj := range c.scopes.root.symbols {
+		ret = append(ret, c.factory.NewString(objects.FrameStatic, obj.name))
+	}
+	return ret
 }
 
 // Print writes the content of the internal scopes to the provided writer, typically for debugging or inspection.
@@ -198,13 +207,13 @@ func (c *Compiler) doFile(node *ast.File) error {
 			}
 			fnName = GetMangledName(recvTypeIdent.Name, fn.Name.Name)
 			symbol, ok := c.scopes.SymbolResolve(recvTypeIdent.Name)
-			if !ok || symbol.Scope() != TypeScope {
+			if !ok || !symbol.IsStruct() {
 				return fmt.Errorf("unknown type '%s' for method receiver", recvTypeIdent.Name)
 			}
 			fnSymbol = symbol
 		} else { // Function
 			fnName = fn.Name.Name
-			fnSymbol = c.scopes.SymbolDefine(fnName, UnknownScope)
+			fnSymbol = c.scopes.SymbolDefine(fnName, UnknownScope, false)
 		}
 		if fnSymbol == nil {
 			return fmt.Errorf("unknown function '%s'", fn.Name.Name)
@@ -260,13 +269,13 @@ func (c *Compiler) compileFuncBody(node *ast.FuncDecl, objName string, mangledNa
 	if node.Recv != nil && len(node.Recv.List) > 0 {
 		for _, p := range node.Recv.List {
 			for _, name := range p.Names {
-				c.scopes.SymbolDefine(name.Name, UnknownScope)
+				c.scopes.SymbolDefine(name.Name, UnknownScope, false)
 			}
 		}
 	}
 	for _, p := range node.Type.Params.List {
 		for _, name := range p.Names {
-			c.scopes.SymbolDefine(name.Name, UnknownScope)
+			c.scopes.SymbolDefine(name.Name, UnknownScope, false)
 		}
 	}
 	if err := c.compile(node.Body); err != nil {
@@ -342,7 +351,7 @@ func (c *Compiler) doAssignStmt(node *ast.AssignStmt) error {
 			}
 			var symbol *Symbol
 			if node.Tok == token.DEFINE {
-				symbol = c.scopes.SymbolDefine(ident.Name, UnknownScope)
+				symbol = c.scopes.SymbolDefine(ident.Name, UnknownScope, false)
 			} else {
 				var found bool
 				symbol, found = c.scopes.SymbolResolve(ident.Name)
@@ -370,7 +379,7 @@ func (c *Compiler) doAssignStmt(node *ast.AssignStmt) error {
 	switch rhs := node.Rhs[0].(type) {
 	case *ast.CompositeLit: // check for variable assignment
 		if ident, ok := rhs.Type.(*ast.Ident); ok {
-			if typeSymbol, ok := c.scopes.SymbolResolve(ident.Name); ok && typeSymbol.Scope() == TypeScope {
+			if typeSymbol, ok := c.scopes.SymbolResolve(ident.Name); ok && typeSymbol.IsStruct() {
 				assignedTypeName = []string{typeSymbol.Name()}
 			}
 		}
@@ -387,7 +396,7 @@ func (c *Compiler) doAssignStmt(node *ast.AssignStmt) error {
 		name := lhs.Name
 		var symbol *Symbol
 		if node.Tok == token.DEFINE {
-			symbol = c.scopes.SymbolDefine(name, UnknownScope)
+			symbol = c.scopes.SymbolDefine(name, UnknownScope, false)
 		} else {
 			var ok bool
 			symbol, ok = c.scopes.SymbolResolve(name)
@@ -516,7 +525,7 @@ func (c *Compiler) doCallExpr(node *ast.CallExpr) error {
 				return err
 			}
 			// 1.2. Create a unique temporary local variable.
-			tempSymbol := c.scopes.SymbolDefineUnique("__temp_call", LocalScope)
+			tempSymbol := c.scopes.SymbolDefineUnique("__temp_call", LocalScope, false)
 			tempSymbolMap[arg] = tempSymbol // Store the symbol for the second pass
 			// 1.3. Emit code to store the result into the temp variable.
 			// This generates OpSetLocal, correctly storing the result.
@@ -556,89 +565,6 @@ func (c *Compiler) doCallExpr(node *ast.CallExpr) error {
 	}
 	return nil
 }
-
-/*
-// doCallExpr compiles a call expression node into bytecode, handling method calls, package functions, or standalone functions.
-func (c *Compiler) doCallExpr(node *ast.CallExpr) error {
-	fnOpType := bytecode.OpConstant
-	fnIndex := -1
-	fnName := ""
-	var fnArgs []ast.Node
-	if selExpr, isSelector := node.Fun.(*ast.SelectorExpr); isSelector {
-		receiverIdent, ok := selExpr.X.(*ast.Ident)
-		if !ok {
-			return fmt.Errorf("unsupported receiver for selector expression: %T", selExpr.X)
-		}
-		receiverSymbol, ok := c.scopes.SymbolResolve(receiverIdent.Name)
-		if !ok {
-			return fmt.Errorf("undefined variable: %s", receiverIdent.Name)
-		}
-		if receiverSymbol.Scope() == ImportScope {
-			fnOpType = bytecode.OpReferences
-			fnName = GetMangledName(receiverIdent.Name, selExpr.Sel.Name)
-			found := false
-			fnIndex, found = c.references.Get(fnName)
-			if !found {
-				attrArray := c.factory.NewArray(objects.FrameStatic, []objects.IObject{c.factory.NewString(objects.FrameStatic, receiverIdent.Name), c.factory.NewString(objects.FrameStatic, selExpr.Sel.Name)})
-				fnIndex = c.references.Add(fnName, attrArray)
-			}
-			for _, arg := range node.Args {
-				fnArgs = append(fnArgs, arg)
-			}
-		} else if len(receiverSymbol.Types()) > 0 {
-			// struct method
-			structTypeName := receiverSymbol.Types()[0] // Prende il primo (e unico) tipo del simbolo
-			typeSymbol, ok := c.scopes.SymbolResolve(structTypeName)
-			if !ok {
-				return fmt.Errorf("undefined type: %s", structTypeName)
-			}
-			methodName := selExpr.Sel.Name
-			fnName = GetMangledName(typeSymbol.Name(), methodName)
-			fnIndex, ok = c.constants.Get(fnName)
-			if !ok {
-				return fmt.Errorf("undefined method '%s' for type '%s'", methodName, typeSymbol.Name())
-			}
-			// the receiver (struct instance) is the first argument of the method
-			fnArgs = append(fnArgs, selExpr.X)
-			for _, arg := range node.Args {
-				fnArgs = append(fnArgs, arg)
-			}
-		} else {
-			return fmt.Errorf("cannot call method on untyped variable or undefined package '%s'", receiverSymbol.Name())
-		}
-	} else {
-		// normal function call
-		ident, ok := node.Fun.(*ast.Ident)
-		if !ok {
-			return fmt.Errorf("unsupported function call: %T", node.Fun)
-		}
-		fnName = ident.Name
-		fnIndex, ok = c.constants.Get(fnName)
-		if !ok {
-			return fmt.Errorf("undefined function: %s", ident.Name)
-		}
-		for _, arg := range node.Args {
-			fnArgs = append(fnArgs, arg)
-		}
-	}
-	if fnIndex < 0 {
-		return fmt.Errorf("could not resolve function index for '%s'", fnName)
-	}
-	if _, err := c.scopes.Emit(fnOpType, fnIndex); err != nil {
-		return err
-	}
-	for _, arg := range fnArgs {
-		if err := c.compile(arg); err != nil {
-			return err
-		}
-	}
-	if _, err := c.scopes.Emit(bytecode.OpCall, len(fnArgs), 0); err != nil {
-		return err
-	}
-	return nil
-}
-
-*/
 
 // doDeclStmt processes a declaration statement node by compiling its declaration content. Returns an error if compilation fails.
 func (c *Compiler) doDeclStmt(node *ast.DeclStmt) error {
@@ -693,8 +619,10 @@ func (c *Compiler) doTypeSpec(node *ast.TypeSpec) error {
 			}
 		}
 	}
-	symbol := c.scopes.SymbolDefine(structName, UnknownScope)
-	symbol.SetScope(TypeScope)
+	symbol := c.scopes.SymbolDefine(structName, UnknownScope, true)
+	//symbol.Scope() == GlobalScope
+	//c.constants.Add("", c.factory.NewStruct(objects.FrameStatic, map[string]objects.IObject{}))
+	//symbol.SetScope(TypeScope)
 	//symbol := c.scopes.SymbolDefine(structName, TypeScope)
 	symbol.Fields = fields
 	return nil
@@ -708,7 +636,7 @@ func (c *Compiler) doCompositeLit(node *ast.CompositeLit) error {
 	case *ast.Ident:
 		// struct literal (es. MyStruct{...})
 		symbol, ok := c.scopes.SymbolResolve(t.Name)
-		if !ok || symbol.Scope() != TypeScope {
+		if !ok || !symbol.IsStruct() {
 			return fmt.Errorf("unknown composite literal type: %s", t.Name)
 		}
 		if len(node.Elts) > len(symbol.Fields) {
@@ -819,13 +747,13 @@ func (c *Compiler) doValueSpec(node *ast.ValueSpec) error {
 		if err := c.compile(node.Values[i]); err != nil {
 			return err
 		}
-		symbol := c.scopes.SymbolDefine(name.Name, UnknownScope)
+		symbol := c.scopes.SymbolDefine(name.Name, UnknownScope, false)
 
 		// 3. Inferenza del tipo, ora coerente con la nuova logica
 		var assignedTypeNames []string
 		if compLit, ok := node.Values[i].(*ast.CompositeLit); ok {
 			if ident, ok := compLit.Type.(*ast.Ident); ok {
-				if typeSymbol, isType := c.scopes.SymbolResolve(ident.Name); isType && typeSymbol.Scope() == TypeScope {
+				if typeSymbol, isType := c.scopes.SymbolResolve(ident.Name); isType && typeSymbol.IsStruct() {
 					assignedTypeNames = []string{typeSymbol.Name()}
 				}
 			}
@@ -1009,19 +937,19 @@ func (c *Compiler) doRangeStmt(node *ast.RangeStmt) error {
 	if err != nil {
 		return err
 	}
-	iteratorSymbol := c.scopes.SymbolDefineUnique("__iterator", UnknownScope)
+	iteratorSymbol := c.scopes.SymbolDefineUnique("__iterator", UnknownScope, false)
 	if _, err = c.scopes.Emit(bytecode.OpIteratorInit, iteratorSymbol.Index()); err != nil {
 		return err
 	}
 	var keySymbol, valueSymbol *Symbol
 	if node.Key != nil {
 		if ident, ok := node.Key.(*ast.Ident); ok && ident.Name != "_" {
-			keySymbol = c.scopes.SymbolDefine(ident.Name, UnknownScope)
+			keySymbol = c.scopes.SymbolDefine(ident.Name, UnknownScope, false)
 		}
 	}
 	if node.Value != nil {
 		if ident, ok := node.Value.(*ast.Ident); ok && ident.Name != "_" {
-			valueSymbol = c.scopes.SymbolDefine(ident.Name, UnknownScope)
+			valueSymbol = c.scopes.SymbolDefine(ident.Name, UnknownScope, false)
 		}
 	}
 	// Loop start
@@ -1141,7 +1069,7 @@ func (c *Compiler) doUnaryExpr(node *ast.UnaryExpr) error {
 			if err := c.compile(operand); err != nil {
 				return err
 			}
-			tempSymbol := c.scopes.SymbolDefineUnique("__temp_struct", LocalScope)
+			tempSymbol := c.scopes.SymbolDefineUnique("__temp_struct", LocalScope, false)
 			if err := c.scopes.EmitSymbolDefine(tempSymbol); err != nil {
 				return err
 			}
@@ -1169,21 +1097,21 @@ func (c *Compiler) doUnaryExpr(node *ast.UnaryExpr) error {
 
 // doBasicLit processes an AST BasicLit node and emits the corresponding literal into the current scope.
 func (c *Compiler) doBasicLit(node *ast.BasicLit) error {
-	var symbol objects.IObject
+	var obj objects.IObject
 	switch node.Kind {
 	case token.INT:
 		val, _ := strconv.ParseInt(node.Value, 0, 64)
-		symbol = c.factory.NewInt(objects.FrameStatic, val)
+		obj = c.factory.NewInt(objects.FrameStatic, val)
 	case token.FLOAT:
 		val, _ := strconv.ParseFloat(node.Value, 64)
-		symbol = c.factory.NewFloat(objects.FrameStatic, val)
+		obj = c.factory.NewFloat(objects.FrameStatic, val)
 	case token.STRING:
 		val, _ := strconv.Unquote(node.Value)
-		symbol = c.factory.NewString(objects.FrameStatic, val)
+		obj = c.factory.NewString(objects.FrameStatic, val)
 	default:
 		return fmt.Errorf("unhandled literal: %s", node.Kind)
 	}
-	id := c.constants.Add("", symbol)
+	id := c.constants.Add("", obj)
 	if _, err := c.scopes.Emit(bytecode.OpConstant, id); err != nil {
 		return err
 	}
@@ -1217,7 +1145,7 @@ func (c *Compiler) doIdent(node *ast.Ident) error {
 // doImportSpec handles an import specification by defining the imported module name in the current scope.
 func (c *Compiler) doImportSpec(node *ast.ImportSpec) error {
 	moduleName := node.Path.Value
-	c.scopes.SymbolDefine(strings.Trim(moduleName, "\"'"), ImportScope)
+	c.scopes.SymbolDefine(strings.Trim(moduleName, "\"'"), ImportScope, false)
 	return nil
 }
 
@@ -1245,7 +1173,8 @@ func (c *Compiler) doSelectorExpr(node *ast.SelectorExpr) error {
 		if _, err := c.scopes.Emit(bytecode.OpReferences, nameIndex); err != nil {
 			return err
 		}
-	} else if len(receiverSymbol.Object()) > 0 { // struct
+		//} else if len(receiverSymbol.Object()) > 0 { // struct
+	} else if receiverSymbol.IsStruct() { // struct
 		if err := c.compile(node.X); err != nil {
 			return err
 		}

@@ -22,14 +22,18 @@ func NewDisassembler(b *Bytecode) *Disassembler {
 
 // Disassemble parses and logs details of objects, constants, and references within the associated bytecode.
 func (d *Disassembler) Disassemble(writer io.Writer) {
-	_, _ = fmt.Fprintf(writer, "--- Object Count ---")
+	_, _ = fmt.Fprintf(writer, "--- Object Count ---\n")
 	_, _ = fmt.Fprintf(writer, "%d", d.CountObjects())
-	_, _ = fmt.Fprintf(writer, "--- Constants ---")
+	_, _ = fmt.Fprintf(writer, "--- Constants ---\n")
 	for idx, v := range d.disassembleConstants() {
 		_, _ = fmt.Fprintf(writer, "%04d => %s\n", idx, v)
 	}
-	_, _ = fmt.Fprintf(writer, "--- References ---")
+	_, _ = fmt.Fprintf(writer, "--- References ---\n")
 	for idx, v := range d.disassembleReferences() {
+		_, _ = fmt.Fprintf(writer, "%04d => %s\n", idx, v)
+	}
+	_, _ = fmt.Fprintf(writer, "--- Global ---\n")
+	for idx, v := range d.disassembleGlobal() {
 		_, _ = fmt.Fprintf(writer, "%04d => %s\n", idx, v)
 	}
 }
@@ -38,6 +42,15 @@ func (d *Disassembler) Disassemble(writer io.Writer) {
 func (d *Disassembler) disassembleConstants() []string {
 	var output []string
 	for cIdx, constant := range d.bc.Constants() {
+		output = append(output, d.disassembleObject(cIdx, constant)...)
+	}
+	return output
+}
+
+// disassembleConstants iterates through bytecode constants, disassembles each, and returns the results as a slice of strings.
+func (d *Disassembler) disassembleGlobal() []string {
+	var output []string
+	for cIdx, constant := range d.bc.Global() {
 		output = append(output, d.disassembleObject(cIdx, constant)...)
 	}
 	return output

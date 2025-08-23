@@ -33,20 +33,14 @@ func NewScopes(factory *objects.GateKeeper, op *bytecode.Opcodes) *Scopes {
 	return c
 }
 
-// Setup initializes the Scopes structure.
-func (c *Scopes) Setup(globalStart int) error {
-	c.root.SetNumDefinitions(globalStart)
-	return nil
-}
-
 // SymbolDefineUnique defines a new symbol in the current scope and adds it to the symbol table. Returns the defined Symbol.
-func (c *Scopes) SymbolDefineUnique(symbol string, scope SymbolScope) *Symbol {
-	return c.symbolTable.DefineUnique(symbol, scope)
+func (c *Scopes) SymbolDefineUnique(symbol string, scope SymbolScope, isObj bool) *Symbol {
+	return c.symbolTable.DefineUnique(symbol, scope, isObj)
 }
 
 // SymbolDefine defines a new symbol in the current scope and adds it to the symbol table. Returns the defined Symbol.
-func (c *Scopes) SymbolDefine(symbol string, scope SymbolScope) *Symbol {
-	return c.symbolTable.Define(symbol, scope)
+func (c *Scopes) SymbolDefine(symbol string, scope SymbolScope, isStruct bool) *Symbol {
+	return c.symbolTable.Define(symbol, scope, isStruct)
 }
 
 // SymbolResolve attempts to find a symbol in the current scope and returns it along with a boolean indicating success.
@@ -145,12 +139,12 @@ func (c *Scopes) InstructionGet(pos int) (byte, error) {
 }
 
 // Enter creates a new compilation scope, updates the symbol table to be enclosed, and increments the scope index.
-func (c *Scopes) Enter(obj string) error {
+func (c *Scopes) Enter(fnName string) error {
 	if c.scopeIndex > maxScope {
 		return fmt.Errorf("maximum scope depth exceeded: %d", maxScope)
 	}
 	scope := NewCompilationScope()
-	c.symbolTable = NewEnclosedSymbolTable(c.symbolTable, obj)
+	c.symbolTable = NewEnclosedSymbolTable(c.symbolTable, fnName)
 	c.scopes = append(c.scopes, scope)
 	c.scopeIndex++
 	return nil

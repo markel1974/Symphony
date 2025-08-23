@@ -9,7 +9,7 @@ import (
 // Constants is a structure that manages global objects and handles error signaling through a callback function.
 type Constants struct {
 	factory   *objects.GateKeeper
-	constants []objects.IObject
+	container []objects.IObject
 	errSignal func(err error)
 }
 
@@ -17,31 +17,31 @@ type Constants struct {
 func NewConstants(factory *objects.GateKeeper, errSignal func(err error)) *Constants {
 	return &Constants{
 		factory:   factory,
-		constants: nil,
+		container: nil,
 		errSignal: errSignal,
 	}
 }
 
-// SetConstants updates the constants pool with the provided values.
-func (g *Constants) SetConstants(constants []objects.IObject) {
-	g.constants = constants
+// SetContainer updates the constants pool with the provided values.
+func (g *Constants) SetContainer(constants []objects.IObject) {
+	g.container = constants
 }
 
 // Get retrieves the object from the constants pool at the specified index. Returns UndefinedValue if the index is invalid.
 func (g *Constants) Get(index uint) objects.IObject {
-	if index >= uint(len(g.constants)) {
+	if index >= uint(len(g.container)) {
 		g.errSignal(fmt.Errorf("invalid constant index: %d", index))
 		return g.factory.UndefinedValue()
 	}
-	return g.constants[index]
+	return g.container[index]
 }
 
 // Set updates the global variable at the specified index with the given value.
 // Triggers an error signal if the index is invalid.
 func (g *Constants) Set(index uint, value objects.IObject) {
-	if index > uint(len(g.constants)) {
+	if index > uint(len(g.container)) {
 		g.errSignal(fmt.Errorf("invalid constant index: %d", index))
 		return
 	}
-	g.constants[index] = value
+	g.container[index] = value
 }

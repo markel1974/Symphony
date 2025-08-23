@@ -8,13 +8,13 @@ import "fmt"
 type TestResult struct {
     Name    string
     Passed  bool
-    Message string
 }
 
-//var testResults []TestResult = []TestResult{ { "test1", true, "ok" }, { "test2", false, "error" }}
-var testResults = TestResult{ "test2", false, "error" }
-
+//var testResults []TestResult = []TestResult{ { "var1", true}, { "var2", false }}
+var testResults = TestResult{ "var1", false }
+//var testResults = 1
 func main(a int, b int) {
+	var testResults = TestResult{ "var1", false }
 	fmt.Println(testResults)
 }
 `

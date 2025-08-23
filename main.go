@@ -143,7 +143,7 @@ func vmTest() {
 	if err != nil {
 		log.Fatalf("compiler error: %s", err)
 	}
-	bc := bytecode.NewBytecode(factory, op, comp.Constants(), comp.References())
+	bc := bytecode.NewBytecode(factory, op, comp.Constants(), comp.References(), comp.Global())
 	d := bytecode.NewDisassembler(bc)
 	d.Disassemble(log.Writer())
 	loader := sdk.NewLoader(factory)
