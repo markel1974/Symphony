@@ -8,6 +8,7 @@ import (
 	"go/printer"
 	"go/token"
 	"io"
+	"strconv"
 	"strings"
 
 	"github.com/markel1974/c64emu/src/kernel/compiler/sdk"
@@ -1029,7 +1030,22 @@ func (c *Compiler) doUnaryExpr(node *ast.UnaryExpr) error {
 
 // doBasicLit processes an AST BasicLit node and emits the corresponding literal into the current scope.
 func (c *Compiler) doBasicLit(node *ast.BasicLit) error {
-	if err := c.scopes.EmitLiteral(node); err != nil {
+	var symbol objects.IObject
+	switch node.Kind {
+	case token.INT:
+		val, _ := strconv.ParseInt(node.Value, 0, 64)
+		symbol = c.factory.NewInt(objects.FrameStatic, val)
+	case token.FLOAT:
+		val, _ := strconv.ParseFloat(node.Value, 64)
+		symbol = c.factory.NewFloat(objects.FrameStatic, val)
+	case token.STRING:
+		val, _ := strconv.Unquote(node.Value)
+		symbol = c.factory.NewString(objects.FrameStatic, val)
+	default:
+		return fmt.Errorf("unhandled literal: %s", node.Kind)
+	}
+	id := c.scopes.ConstantsAdd("", symbol)
+	if _, err := c.scopes.Emit(bytecode.OpConstant, id); err != nil {
 		return err
 	}
 	return nil

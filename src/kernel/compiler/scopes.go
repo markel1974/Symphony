@@ -3,10 +3,7 @@ package compiler
 import (
 	"errors"
 	"fmt"
-	"go/ast"
-	"go/token"
 	"io"
-	"strconv"
 
 	"github.com/markel1974/c64emu/src/kernel/vm/bytecode"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
@@ -238,86 +235,57 @@ func (c *Scopes) Emit(op bytecode.Opcode, operands ...int) (int, error) {
 	return pos, nil
 }
 
-// EmitLiteral compiles a basic literal node into bytecode and adds the constant to the constant pool.
-// It handles integer, float, and string literal types, emitting the corresponding constant operation.
-// Returns an error if the literal type is not supported or an issue occurs during bytecode emission.
-func (c *Scopes) EmitLiteral(node *ast.BasicLit) error {
-	switch node.Kind {
-	case token.INT:
-		val, _ := strconv.ParseInt(node.Value, 0, 64)
-		if _, err := c.Emit(bytecode.OpConstant, c.ConstantsAdd("", c.factory.NewInt(objects.FrameStatic, val))); err != nil {
-			return err
-		}
-	case token.FLOAT:
-		val, _ := strconv.ParseFloat(node.Value, 64)
-		if _, err := c.Emit(bytecode.OpConstant, c.ConstantsAdd("", c.factory.NewFloat(objects.FrameStatic, val))); err != nil {
-			return err
-		}
-	case token.STRING:
-		val, _ := strconv.Unquote(node.Value)
-		s := c.factory.NewString(objects.FrameStatic, val)
-		if _, err := c.Emit(bytecode.OpConstant, c.ConstantsAdd("", s)); err != nil {
-			return err
-		}
+// EmitSymbolDefine emits the opcode for *defining* a variable.
+func (c *Scopes) EmitSymbolDefine(s *Symbol) error {
+	var op bytecode.Opcode
+	switch s.Scope {
+	case GlobalScope:
+		op = bytecode.OpSetGlobal
+	case LocalScope:
+		op = bytecode.OpDefineLocal // Use new opcode for local variables
 	default:
-		return fmt.Errorf("unhandled literal: %s", node.Kind)
+		return fmt.Errorf("unsupported symbol scope: %v", s.Scope)
+	}
+	if _, err := c.Emit(op, s.Index); err != nil {
+		return err
 	}
 	return nil
 }
 
 // EmitSymbolSet generates bytecode instructions to set the value of a symbol in its appropriate scope (global, local, or free).
 func (c *Scopes) EmitSymbolSet(s *Symbol) error {
+	var op bytecode.Opcode
 	switch s.Scope {
 	case GlobalScope:
-		if _, err := c.Emit(bytecode.OpSetGlobal, s.Index); err != nil {
-			return err
-		}
+		op = bytecode.OpSetGlobal
 	case LocalScope:
-		if _, err := c.Emit(bytecode.OpSetLocal, s.Index); err != nil {
-			return err
-		}
+		op = bytecode.OpSetLocal
 	case FreeScope:
-		if _, err := c.Emit(bytecode.OpSetFree, s.Index); err != nil {
-			return err
-		}
+		op = bytecode.OpSetFree
+	default:
+		return fmt.Errorf("unsupported symbol scope: %v", s.Scope)
 	}
-	return nil
-}
-
-// EmitSymbolDefine emits the opcode for *defining* a variable.
-func (c *Scopes) EmitSymbolDefine(s *Symbol) error {
-	switch s.Scope {
-	case GlobalScope:
-		// For global scope, define is same as assign
-		if _, err := c.Emit(bytecode.OpSetGlobal, s.Index); err != nil {
-			return err
-		}
-	case LocalScope:
-		// Use new opcode for local variables
-		//fmt.Println("Emitting New Local Symbol:", s.Index, s.Name, c.scopeIndex)
-		if _, err := c.Emit(bytecode.OpDefineLocal, s.Index); err != nil {
-			return err
-		}
+	if _, err := c.Emit(op, s.Index); err != nil {
+		return err
 	}
 	return nil
 }
 
 // EmitSymbolGet generates bytecode instructions to retrieve a symbol's value based on its scope and index.
 func (c *Scopes) EmitSymbolGet(s *Symbol) error {
+	var op bytecode.Opcode
 	switch s.Scope {
 	case GlobalScope:
-		if _, err := c.Emit(bytecode.OpGetGlobal, s.Index); err != nil {
-			return err
-		}
+		op = bytecode.OpGetGlobal
 	case LocalScope:
-		//fmt.Println("Emitting Update Local Symbol:", s.Index, s.Name, c.scopeIndex)
-		if _, err := c.Emit(bytecode.OpGetLocal, s.Index); err != nil {
-			return err
-		}
+		op = bytecode.OpGetLocal
 	case FreeScope:
-		if _, err := c.Emit(bytecode.OpGetFree, s.Index); err != nil {
-			return err
-		}
+		op = bytecode.OpGetFree
+	default:
+		return fmt.Errorf("unsupported symbol scope: %v", s.Scope)
+	}
+	if _, err := c.Emit(op, s.Index); err != nil {
+		return err
 	}
 	return nil
 }
