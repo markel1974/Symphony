@@ -68,6 +68,9 @@ func (d *Disassembler) disassembleReferences() []string {
 // disassembleObject generates a disassembled representation of a constant object, including detailed instructions for functions.
 func (d *Disassembler) disassembleObject(cIdx int, constant objects.IObject) []string {
 	var output []string
+	if constant == nil {
+		return []string{fmt.Sprintf("[% 3d] nil", cIdx)}
+	}
 	switch cn := constant.(type) {
 	case *objects.FuncCompiled:
 		output = append(output, fmt.Sprintf("[% 3d] %s (Compiled Function|%p)", cIdx, cn.Name(), &cn))

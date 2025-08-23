@@ -52,12 +52,6 @@ func (o *Struct) BinaryOp(_ int, _ Operator, _ IObject) (IObject, error) {
 	return nil, ErrInvalidOperator
 }
 
-// IndexSet attempts to assign a value to an index in the object but always returns ErrNotIndexAssignable,
-// as this operation is unsupported.
-func (o *Struct) IndexSet(_, _ IObject) (err error) {
-	return ErrNotIndexAssignable
-}
-
 // Call invokes the Object with the provided arguments, returning a result object and an error, if any.
 func (o *Struct) Call(_ int, _ ...IObject) (ret IObject, err error) {
 	return nil, nil
@@ -135,6 +129,17 @@ func (o *Struct) IndexGet(_ int, index IObject) (res IObject, err error) {
 		res = o.GateKeeper().UndefinedValue()
 	}
 	return
+}
+
+// IndexSet updates or assigns a value to the specified index within the Struct. Returns an error for invalid index types.
+func (o *Struct) IndexSet(index, value IObject) (err error) {
+	strIdx, ok := o.GateKeeper().ToString(index)
+	if !ok {
+		err = ErrInvalidIndexType
+		return
+	}
+	o.values[strIdx] = value
+	return nil
 }
 
 // Equals checks if the current Struct is equal to another IObject by comparing their key-value pairs and lengths.

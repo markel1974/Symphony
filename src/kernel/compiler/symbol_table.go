@@ -90,7 +90,7 @@ func (s *SymbolTable) FreeSymbolsLen() int {
 }
 
 // DefineUnique generates a unique symbol name using a provided base name and counter, then defines and returns the symbol.
-func (s *SymbolTable) DefineUnique(name string, scope SymbolScope, isObj bool) *Symbol {
+func (s *SymbolTable) DefineUnique(name string, scope SymbolScope, isObj bool) (*Symbol, error) {
 	uniqueName := name + strconv.Itoa(s.uniqueCounter)
 	s.uniqueCounter++
 	return s.Define(uniqueName, scope, isObj)
@@ -102,8 +102,12 @@ func (s *SymbolTable) Scope() SymbolScope {
 	return LocalScope
 }
 
-// Define creates a new Symbol with the given name, assigns it a scope and index, and stores it in the symbol table.
-func (s *SymbolTable) Define(name string, scope SymbolScope, isObj bool) *Symbol {
+// Reset resets the scope and index of a symbol in the symbol table.
+func (s *SymbolTable) Reset(name string, scope SymbolScope, isStruct bool) (*Symbol, error) {
+	symbol, ok := s.symbols[name]
+	if !ok {
+		return nil, fmt.Errorf("symbol '%s' not found", name)
+	}
 	if scope == UnknownScope {
 		if s.outer == nil {
 			scope = GlobalScope
@@ -111,10 +115,26 @@ func (s *SymbolTable) Define(name string, scope SymbolScope, isObj bool) *Symbol
 			scope = LocalScope
 		}
 	}
-	symbol := NewSymbol(name, len(s.definitions), scope, s.structName, s.funcName, isObj)
+	symbol.Reset(symbol.Name(), symbol.Index(), scope, s.structName, s.funcName, isStruct)
+	return symbol, nil
+}
+
+// Define creates a new Symbol with the given name, assigns it a scope and index, and stores it in the symbol table.
+func (s *SymbolTable) Define(name string, scope SymbolScope, isStruct bool) (*Symbol, error) {
+	if _, ok := s.symbols[name]; ok {
+		return nil, fmt.Errorf("symbol '%s' already defined", name)
+	}
+	if scope == UnknownScope {
+		if s.outer == nil {
+			scope = GlobalScope
+		} else {
+			scope = LocalScope
+		}
+	}
+	symbol := NewSymbol(name, len(s.definitions), scope, s.structName, s.funcName, isStruct)
 	s.definitions = append(s.definitions, symbol)
 	s.symbols[name] = symbol
-	return symbol
+	return symbol, nil
 }
 
 // Resolve attempts to look up a symbol by name in the current SymbolTable and outer scopes, if applicable.

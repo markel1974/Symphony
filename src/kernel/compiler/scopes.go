@@ -36,14 +36,20 @@ func NewScopes(factory *objects.GateKeeper, op *bytecode.Opcodes) *Scopes {
 	return c
 }
 
-// SymbolDefineUnique defines a new symbol in the current scope and adds it to the symbol table. Returns the defined Symbol.
-func (c *Scopes) SymbolDefineUnique(symbol string, scope SymbolScope, isObj bool) *Symbol {
+// SymbolDefineUnique defines a unique symbol in the current symbol table with the specified scope and object type.
+func (c *Scopes) SymbolDefineUnique(symbol string, scope SymbolScope, isObj bool) (*Symbol, error) {
 	return c.symbolTable.DefineUnique(symbol, scope, isObj)
 }
 
-// SymbolDefine defines a new symbol in the current scope and adds it to the symbol table. Returns the defined Symbol.
-func (c *Scopes) SymbolDefine(symbol string, scope SymbolScope, isStruct bool) *Symbol {
+// SymbolDefine defines a new symbol in the current symbol table with the specified name, scope, and struct flag.
+// It returns the created symbol or an error if the operation fails.
+func (c *Scopes) SymbolDefine(symbol string, scope SymbolScope, isStruct bool) (*Symbol, error) {
 	return c.symbolTable.Define(symbol, scope, isStruct)
+}
+
+// SymbolReset resets the symbol in the current scope with the specified name, scope, and struct flag.
+func (c *Scopes) SymbolReset(symbol string, scope SymbolScope, isStruct bool) (*Symbol, error) {
+	return c.symbolTable.Reset(symbol, scope, isStruct)
 }
 
 // SymbolResolve attempts to find a symbol in the current scope and returns it along with a boolean indicating success.

@@ -16,14 +16,18 @@ func NewSequencerData(execute func(vm *VM, operands *[]int), operands []int) *Se
 		operands:  make([]func(*Frame, int) (int, int), len(operands)),
 		fullWidth: 0,
 	}
-	for i, width := range operands {
+	idx := 0
+	for i := len(operands) - 1; i >= 0; i-- {
+		//for i, width := range operands {
+		width := operands[i]
 		switch width {
 		case 1:
-			sd.operands[i] = func(frame *Frame, ip int) (int, int) { return int(frame.Get8(ip)), 1 }
+			sd.operands[idx] = func(frame *Frame, ip int) (int, int) { return int(frame.Get8(ip)), 1 }
 		case 2:
-			sd.operands[i] = func(frame *Frame, ip int) (int, int) { return int(frame.Get16(ip)), 2 }
+			sd.operands[idx] = func(frame *Frame, ip int) (int, int) { return int(frame.Get16(ip)), 2 }
 		}
 		sd.fullWidth += width
+		idx++
 	}
 	return sd
 }

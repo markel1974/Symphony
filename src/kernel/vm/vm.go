@@ -321,9 +321,13 @@ func (v *VM) loop() {
 		inst := v.currFrame.Get8(v.ip)
 		opcode := inst & bytecode.OpcodesMask
 		data := v.sequencer[opcode]
+		//if opcode == bytecode.OpSetSelGlobal {
+		//	fmt.Println("HEERE")
+		//}
 		if data.fullWidth > 0 {
 			v.ip += data.fullWidth
 			readOffset := v.ip
+
 			for idx, fn := range data.operands {
 				val, width := fn(v.currFrame, readOffset)
 				cOperands[idx] = val

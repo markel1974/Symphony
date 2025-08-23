@@ -49,26 +49,30 @@ type Symbol struct {
 	index      int
 	structName string
 	funcName   string
-	isStruct   bool
 	types      []string
+	isStruct   bool
 	Fields     []*FieldDef
 	object     objects.IObject
 }
 
 // NewSymbol creates a new Symbol instance with the provided name, index, scope, and associated object.
 func NewSymbol(name string, index int, scope SymbolScope, structName string, funcName string, isStruct bool) *Symbol {
-	symbol := &Symbol{
-		name:       name,
-		index:      index,
-		scope:      scope,
-		structName: structName,
-		funcName:   funcName,
-		isStruct:   isStruct,
-		types:      []string{},
-		object:     nil,
-		Fields:     []*FieldDef{},
-	}
+	symbol := &Symbol{}
+	symbol.Reset(name, index, scope, structName, funcName, isStruct)
 	return symbol
+}
+
+// Reset resets the Symbol to its initial state with the provided name, index, scope, and associated object.
+func (s *Symbol) Reset(name string, index int, scope SymbolScope, structName string, funcName string, isStruct bool) {
+	s.name = name
+	s.index = index
+	s.scope = scope
+	s.structName = structName
+	s.funcName = funcName
+	s.types = []string{}
+	s.object = nil
+	s.isStruct = isStruct
+	s.Fields = []*FieldDef{}
 }
 
 // Name returns the name of the Symbol.

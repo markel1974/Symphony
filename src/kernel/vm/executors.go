@@ -387,12 +387,14 @@ func NewOpSetSelGlobal(op *bytecode.Opcodes) *OpSetSelGlobal {
 func (op *OpSetSelGlobal) Execute(v *VM, operands *[]int) {
 	// Operands Offset  3
 	numSelectors := (*operands)[0]
-	//if numSelectors !=  int(v.currFrame.Get8(v.ip)) {
-	//	panic("invalid jump position")
+	//numSelectors := int(v.currFrame.Get8(v.ip))
+	//if numSelectors != tst {
+	//	panic("invalid OpSetSelGlobal position")
 	//}
+	//globalIndex := int(v.currFrame.Get16(v.ip - 1))
 	globalIndex := (*operands)[1]
-	//if globalIndex !=  uint(v.currFrame.Get16(v.ip - 1)) {
-	//	panic("invalid jump position")
+	//if globalIndex != int(v.currFrame.Get16(v.ip-1)) {
+	//	panic("OpSetSelGlobal jump position")
 	//}
 	selectors := make([]objects.IObject, numSelectors)
 	for i := 0; i < numSelectors; i++ {
@@ -400,7 +402,7 @@ func (op *OpSetSelGlobal) Execute(v *VM, operands *[]int) {
 	}
 	val := v.stack.PeekOffset(-numSelectors - 1)
 	v.stack.DecrementCount(numSelectors + 1)
-	glObj := v.constants.Get(uint(globalIndex))
+	glObj := v.globals.Get(uint(globalIndex))
 	if err := v.IndexAssign(v.currFrame.ID(), glObj, val, selectors); err != nil {
 		v.SetError(err)
 		return

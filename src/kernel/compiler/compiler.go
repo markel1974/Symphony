@@ -21,6 +21,15 @@ const (
 	maxScope = 1024
 )
 
+type FunctionDescription struct {
+	Name     string
+	Struct   string
+	Types    []string
+	Params   []string
+	Recv     []string
+	FuncDecl *ast.FuncDecl
+}
+
 // Compiler represents a structure to manage the compilation process, including scopes and associated token file sets.
 type Compiler struct {
 	factory    *objects.GateKeeper
@@ -80,10 +89,12 @@ func (c *Compiler) References() []objects.IObject {
 func (c *Compiler) Global() []objects.IObject {
 	ret := make([]objects.IObject, len(c.scopes.initSymbolTable.symbols))
 	for _, obj := range c.scopes.initSymbolTable.definitions {
-		if obj.GetObject() == nil {
-			ret[obj.index] = c.factory.UndefinedValue()
+		target := obj.GetObject()
+		if target != nil {
+			ret[obj.index] = target
 		} else {
-			ret[obj.index] = obj.GetObject()
+			ret[obj.index] = c.factory.NewString(objects.FrameStatic, obj.Name()+"_placeHolder")
+			//ret[obj.index] = c.factory.UndefinedValue()
 		}
 	}
 	return ret
@@ -164,13 +175,13 @@ func (c *Compiler) doFile(node *ast.File) error {
 	var importDecls []ast.Decl
 	var typeDecls []ast.Decl
 	var otherDecls []ast.Decl
-	var funcDecls []*ast.FuncDecl
+	var funcDecls []*FunctionDescription
 
 	// step 1: Separate declarations by category
 	for _, decl := range node.Decls {
 		switch d := decl.(type) {
 		case *ast.FuncDecl:
-			funcDecls = append(funcDecls, d)
+			funcDecls = append(funcDecls, &FunctionDescription{FuncDecl: d})
 		case *ast.GenDecl:
 			if d.Tok == token.IMPORT {
 				importDecls = append(importDecls, d)
@@ -199,35 +210,13 @@ func (c *Compiler) doFile(node *ast.File) error {
 	}
 
 	// step 4: pre-define all functions AND methods, including their return types.
-	funcIndexes := make(map[string]*Symbol)
-
-	for _, fn := range funcDecls {
-		receiverNames, err := GetReceivers(fn.Type.Results)
-		if err != nil {
+	for _, fd := range funcDecls {
+		if err := c.funcBodyPrepare(fd); err != nil {
 			return err
-		}
-		var fnSymbol *Symbol
-		if fn.Recv != nil && len(fn.Recv.List) > 0 {
-			recvTypeIdent := GetIdent(fn.Recv.List[0])
-			if recvTypeIdent == nil {
-				return fmt.Errorf("unsupported method receiver type")
-			}
-			baseSymbol, ok := c.scopes.SymbolResolve(recvTypeIdent.Name)
-			if !ok || !baseSymbol.IsStruct() {
-				return fmt.Errorf("unknown type '%s' for method receiver", recvTypeIdent.Name)
-			}
-			mangledName := GetMangledName(recvTypeIdent.Name, fn.Name.Name)
-			fnSymbol = c.scopes.SymbolDefine(mangledName, UnknownScope, false)
-			funcIndexes[mangledName] = fnSymbol
-		} else {
-			fnSymbol = c.scopes.SymbolDefine(fn.Name.Name, UnknownScope, false)
-			funcIndexes[fn.Name.Name] = fnSymbol
-		}
-		if len(receiverNames) > 0 {
-			fnSymbol.SetTypes(receiverNames)
 		}
 	}
 
+	// step 5: compile all other declarations (constants, variables, etc.)
 	for _, decl := range otherDecls {
 		if err := c.compile(decl); err != nil {
 			return err
@@ -236,21 +225,7 @@ func (c *Compiler) doFile(node *ast.File) error {
 
 	// step 6: compile the actual bodies of functions and methods
 	for _, fn := range funcDecls {
-		var objName string
-		var mangledName string
-		if fn.Recv != nil && len(fn.Recv.List) > 0 {
-			recvTypeIdent := GetIdent(fn.Recv.List[0])
-			objName = recvTypeIdent.Name
-			mangledName = GetMangledName(objName, fn.Name.Name)
-		} else {
-			mangledName = fn.Name.Name
-		}
-		//v, ok := funcIndexes[x].(*objects.FuncCompiled)
-		symbol, ok := funcIndexes[mangledName]
-		if !ok {
-			return fmt.Errorf("unknown function '%s'", mangledName)
-		}
-		if err := c.compileFuncBody(fn, objName, mangledName, symbol); err != nil {
+		if err := c.funcBodyCompile(fn); err != nil {
 			return err
 		}
 	}
@@ -262,30 +237,68 @@ func (c *Compiler) doFile(node *ast.File) error {
 	}
 	initFuncCode := c.scopes.compilations[0].Instructions()
 	numLocals := c.scopes.SymbolCount()
-	initSymbols := c.scopes.SymbolDefine("__init__", UnknownScope, false)
+	initSymbols, err := c.scopes.SymbolDefine("__init__", UnknownScope, false)
+	if err != nil {
+		return err
+	}
 	compiledInitFn := c.factory.NewFuncCompiled(objects.FrameStatic, initSymbols.Name(), initFuncCode, numLocals, 0, false, nil, nil)
 	initSymbols.SetObject(compiledInitFn)
-	initSymbols.SetScope(GlobalScope)
-
 	return nil
 }
 
-// compileFuncBody compiles the body of a function declaration and generates the necessary bytecode instructions.
-func (c *Compiler) compileFuncBody(node *ast.FuncDecl, structName string, funcName string, fnSymbol *Symbol) error {
-	if err := c.scopes.Enter(structName, funcName); err != nil {
+// funcBodyPrepare prepares the function body by processing its declaration and receiver, and defining its symbol in the scope.
+// It returns an error if the receiver type is unsupported or if symbol definition fails.
+func (c *Compiler) funcBodyPrepare(fd *FunctionDescription) error {
+	node := fd.FuncDecl
+	var err error
+	if fd.Types, err = GetReceivers(node.Type.Results); err != nil {
 		return err
-	}
-	// Aggiunge il ricevitore e i parametri come variabili locali.
-	if node.Recv != nil && len(node.Recv.List) > 0 {
-		for _, p := range node.Recv.List {
-			for _, name := range p.Names {
-				c.scopes.SymbolDefine(name.Name, UnknownScope, false)
-			}
-		}
 	}
 	for _, p := range node.Type.Params.List {
 		for _, name := range p.Names {
-			c.scopes.SymbolDefine(name.Name, UnknownScope, false)
+			fd.Params = append(fd.Params, name.Name)
+		}
+	}
+	if node.Recv != nil && len(node.Recv.List) > 0 {
+		for _, p := range node.Recv.List {
+			for _, name := range p.Names {
+				fd.Recv = append(fd.Recv, name.Name)
+			}
+		}
+		recvTypeIdent := GetIdent(node.Recv.List[0])
+		if recvTypeIdent == nil {
+			return fmt.Errorf("unsupported method receiver type")
+		}
+		baseSymbol, ok := c.scopes.SymbolResolve(recvTypeIdent.Name)
+		if !ok || !baseSymbol.IsStruct() {
+			return fmt.Errorf("unknown type '%s' for method receiver", recvTypeIdent.Name)
+		}
+		fd.Name = GetMangledName(recvTypeIdent.Name, node.Name.Name)
+		fd.Struct = recvTypeIdent.Name
+	} else {
+		fd.Name = node.Name.Name
+		fd.Struct = ""
+	}
+	if _, err = c.scopes.SymbolDefine(fd.Name, UnknownScope, false); err != nil {
+		return err
+	}
+	return nil
+}
+
+// funcBodyCompile compiles the body of a function declaration and generates the necessary bytecode instructions.
+func (c *Compiler) funcBodyCompile(fd *FunctionDescription) error {
+	node := fd.FuncDecl
+	if err := c.scopes.Enter(fd.Struct, fd.Name); err != nil {
+		return err
+	}
+	for _, p := range fd.Recv {
+		if _, err := c.scopes.SymbolDefine(p, UnknownScope, false); err != nil {
+			return err
+		}
+	}
+	for _, p := range fd.Params {
+		if _, err := c.scopes.SymbolDefine(p, UnknownScope, false); err != nil {
+			return err
 		}
 	}
 	if err := c.compile(node.Body); err != nil {
@@ -316,9 +329,13 @@ func (c *Compiler) compileFuncBody(node *ast.FuncDecl, structName string, funcNa
 	if node.Recv != nil && len(node.Recv.List) > 0 {
 		nParams++
 	}
-	compiledFn := c.factory.NewFuncCompiled(objects.FrameStatic, funcName, code, nLocals, nParams, false, nil, freeSymbols)
+	fnSymbol, err := c.scopes.SymbolReset(fd.Name, UnknownScope, false)
+	if err != nil {
+		return err
+	}
+	compiledFn := c.factory.NewFuncCompiled(objects.FrameStatic, fd.Name, code, nLocals, nParams, false, nil, freeSymbols)
 	fnSymbol.SetObject(compiledFn)
-	fnSymbol.SetScope(c.scopes.SymbolScope())
+	fnSymbol.SetTypes(fd.Types)
 
 	if node.Recv == nil && c.scopes.scopeIndex > 0 {
 		if _, err = c.scopes.Emit(bytecode.OpClosure, fnSymbol.Index(), numFree); err != nil {
@@ -361,7 +378,11 @@ func (c *Compiler) doAssignStmt(node *ast.AssignStmt) error {
 			}
 			var symbol *Symbol
 			if node.Tok == token.DEFINE {
-				symbol = c.scopes.SymbolDefine(ident.Name, UnknownScope, false)
+				var err error
+				symbol, err = c.scopes.SymbolDefine(ident.Name, UnknownScope, false)
+				if err != nil {
+					return err
+				}
 			} else {
 				var found bool
 				symbol, found = c.scopes.SymbolResolve(ident.Name)
@@ -406,7 +427,11 @@ func (c *Compiler) doAssignStmt(node *ast.AssignStmt) error {
 		name := lhs.Name
 		var symbol *Symbol
 		if node.Tok == token.DEFINE {
-			symbol = c.scopes.SymbolDefine(name, UnknownScope, false)
+			var err error
+			symbol, err = c.scopes.SymbolDefine(name, UnknownScope, false)
+			if err != nil {
+				return err
+			}
 		} else {
 			var ok bool
 			symbol, ok = c.scopes.SymbolResolve(name)
@@ -535,16 +560,19 @@ func (c *Compiler) doCallExpr(node *ast.CallExpr) error {
 				return err
 			}
 			// 1.2. Create a unique temporary local variable.
-			tempSymbol := c.scopes.SymbolDefineUnique("__temp_call", LocalScope, false)
+			tempSymbol, err := c.scopes.SymbolDefineUnique("__temp_call", LocalScope, false)
+			if err != nil {
+				return err
+			}
 			tempSymbolMap[arg] = tempSymbol // Store the symbol for the second pass
 			// 1.3. Emit code to store the result into the temp variable.
 			// This generates OpSetLocal, correctly storing the result.
-			if err := c.scopes.EmitSymbolSet(tempSymbol); err != nil {
+			if err = c.scopes.EmitSymbolSet(tempSymbol); err != nil {
 				return err
 			}
 			// 1.4. Pop the result from the stack to keep it clean for the next operations.
 			// This is crucial as OpSetLocal only peeks at the stack value.
-			if _, err := c.scopes.Emit(bytecode.OpPop); err != nil {
+			if _, err = c.scopes.Emit(bytecode.OpPop); err != nil {
 				return err
 			}
 		}
@@ -629,7 +657,16 @@ func (c *Compiler) doTypeSpec(node *ast.TypeSpec) error {
 			}
 		}
 	}
-	symbol := c.scopes.SymbolDefine(structName, UnknownScope, true)
+	symbol, err := c.scopes.SymbolDefine(structName, UnknownScope, true)
+	if err != nil {
+		return err
+	}
+	m := make(map[string]objects.IObject)
+	for _, field := range fields {
+		m[field.Name()] = c.factory.NewString(objects.FrameStatic, field.Type())
+	}
+	m["__struct__"] = c.factory.NewString(objects.FrameStatic, structName)
+	symbol.SetObject(c.factory.NewStruct(objects.FrameStatic, m))
 	symbol.Fields = fields
 	return nil
 }
@@ -753,7 +790,10 @@ func (c *Compiler) doValueSpec(node *ast.ValueSpec) error {
 		if err := c.compile(node.Values[i]); err != nil {
 			return err
 		}
-		symbol := c.scopes.SymbolDefine(name.Name, UnknownScope, false)
+		symbol, err := c.scopes.SymbolDefine(name.Name, UnknownScope, false)
+		if err != nil {
+			return err
+		}
 
 		// 3. Inferenza del tipo, ora coerente con la nuova logica
 		var assignedTypeNames []string
@@ -943,19 +983,28 @@ func (c *Compiler) doRangeStmt(node *ast.RangeStmt) error {
 	if err != nil {
 		return err
 	}
-	iteratorSymbol := c.scopes.SymbolDefineUnique("__iterator", UnknownScope, false)
+	iteratorSymbol, err := c.scopes.SymbolDefineUnique("__iterator", UnknownScope, false)
+	if err != nil {
+		return err
+	}
 	if _, err = c.scopes.Emit(bytecode.OpIteratorInit, iteratorSymbol.Index()); err != nil {
 		return err
 	}
 	var keySymbol, valueSymbol *Symbol
 	if node.Key != nil {
 		if ident, ok := node.Key.(*ast.Ident); ok && ident.Name != "_" {
-			keySymbol = c.scopes.SymbolDefine(ident.Name, UnknownScope, false)
+			keySymbol, err = c.scopes.SymbolDefine(ident.Name, UnknownScope, false)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	if node.Value != nil {
 		if ident, ok := node.Value.(*ast.Ident); ok && ident.Name != "_" {
-			valueSymbol = c.scopes.SymbolDefine(ident.Name, UnknownScope, false)
+			valueSymbol, err = c.scopes.SymbolDefine(ident.Name, UnknownScope, false)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	// Loop start
@@ -1075,11 +1124,14 @@ func (c *Compiler) doUnaryExpr(node *ast.UnaryExpr) error {
 			if err := c.compile(operand); err != nil {
 				return err
 			}
-			tempSymbol := c.scopes.SymbolDefineUnique("__temp_struct", LocalScope, false)
-			if err := c.scopes.EmitSymbolDefine(tempSymbol); err != nil {
+			tempSymbol, err := c.scopes.SymbolDefineUnique("__temp_struct", LocalScope, false)
+			if err != nil {
 				return err
 			}
-			if _, err := c.scopes.Emit(bytecode.OpGetLocalPtr, tempSymbol.Index()); err != nil {
+			if err = c.scopes.EmitSymbolDefine(tempSymbol); err != nil {
+				return err
+			}
+			if _, err = c.scopes.Emit(bytecode.OpGetLocalPtr, tempSymbol.Index()); err != nil {
 				return err
 			}
 		default:
@@ -1151,7 +1203,9 @@ func (c *Compiler) doIdent(node *ast.Ident) error {
 // doImportSpec handles an import specification by defining the imported module name in the current scope.
 func (c *Compiler) doImportSpec(node *ast.ImportSpec) error {
 	moduleName := node.Path.Value
-	c.scopes.SymbolDefine(strings.Trim(moduleName, "\"'"), ImportScope, false)
+	if _, err := c.scopes.SymbolDefine(strings.Trim(moduleName, "\"'"), ImportScope, false); err != nil {
+		return err
+	}
 	return nil
 }
 
