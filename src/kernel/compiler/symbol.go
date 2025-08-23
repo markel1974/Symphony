@@ -94,6 +94,6 @@ func (s *Symbol) Scope() SymbolScope {
 }
 
 // SetScope assigns a new scope to the Symbol.
-//func (s *Symbol) SetScope(scope SymbolScope) {
-//	s.scope = scope
-//}
+func (s *Symbol) SetScope(scope SymbolScope) {
+	s.scope = scope
+}

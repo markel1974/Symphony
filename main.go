@@ -139,7 +139,7 @@ func vmTest() {
 	comp := compiler.New(factory)
 	//var args []interface{} = nil
 	args := []interface{}{1, 2}
-	err := comp.Compile("example.go", stub.Source5)
+	err := comp.Compile("example.go", stub.Source6)
 	if err != nil {
 		log.Fatalf("compiler error: %s", err)
 	}

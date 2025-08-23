@@ -14,7 +14,7 @@ type Scopes struct {
 	factory     *objects.GateKeeper
 	op          *bytecode.Opcodes
 	symbolTable *SymbolTable
-	builtin     *SymbolTable
+	root        *SymbolTable
 	scopeIndex  int
 	scopes      []*CompilationScope
 }
@@ -22,18 +22,20 @@ type Scopes struct {
 // NewScopes initializes and returns a Scopes structure with a new symbol table, main compilation scope, and scope index set to 0.
 func NewScopes(factory *objects.GateKeeper, op *bytecode.Opcodes) *Scopes {
 	c := &Scopes{
-		factory:     factory,
-		op:          op,
-		builtin:     NewBuiltinSymbolTable(),
+		factory: factory,
+		op:      op,
+		//builtin:     NewBuiltinSymbolTable(),
 		symbolTable: NewSymbolTable(),
 		scopeIndex:  0,
 		scopes:      []*CompilationScope{NewCompilationScope()},
 	}
+	c.root = c.symbolTable
 	return c
 }
 
 // Setup initializes the Scopes structure.
-func (c *Scopes) Setup() error {
+func (c *Scopes) Setup(globalStart int) error {
+	c.root.SetNumDefinitions(globalStart)
 	return nil
 }
 
@@ -49,7 +51,7 @@ func (c *Scopes) SymbolDefine(symbol string, scope SymbolScope) *Symbol {
 
 // SymbolResolve attempts to find a symbol in the current scope and returns it along with a boolean indicating success.
 func (c *Scopes) SymbolResolve(symbol string) (*Symbol, bool) {
-	if obj, ok := c.builtin.Resolve(symbol); ok {
+	if obj, ok := c.root.Resolve(symbol); ok {
 		return obj, true
 	}
 	return c.symbolTable.Resolve(symbol)

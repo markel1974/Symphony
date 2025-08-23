@@ -24,6 +24,7 @@ const (
 // Compiler represents a structure to manage the compilation process, including scopes and associated token file sets.
 type Compiler struct {
 	factory    *objects.GateKeeper
+	loader     *sdk.Loader
 	scopes     *Scopes
 	constants  *Constants
 	references *Constants
@@ -36,23 +37,23 @@ func New(factory *objects.GateKeeper) *Compiler {
 	op := bytecode.NewOpcodes(factory)
 	c := &Compiler{
 		factory:    factory,
+		loader:     loader,
+		constants:  NewConstants(),
+		references: NewConstants(),
 		scopes:     NewScopes(factory, op),
-		constants:  NewConstants(loader, loader.BuiltinLen()),
-		references: NewConstants(loader, 0),
 	}
 	return c
 }
 
 // Compile parses the provided source file and compiles it into bytecode. Returns compiled bytecode or an error.
 func (c *Compiler) Compile(filename string, source any) error {
-	if err := c.constants.Setup(); err != nil {
-		return err
-	}
-	if err := c.references.Setup(); err != nil {
-		return err
-	}
-	if err := c.scopes.Setup(); err != nil {
-		return err
+	for idx := 0; idx < c.loader.BuiltinLen(); idx++ {
+		bi := c.loader.Builtin(idx)
+		if bi == nil {
+			return fmt.Errorf("builtin %d not found", idx)
+		}
+		c.constants.Add(bi.Name(), bi)
+		c.scopes.SymbolDefine(bi.Name(), GlobalScope)
 	}
 	c.fileSet = token.NewFileSet()
 	astFile, err := parser.ParseFile(c.fileSet, filename, source, 0)
@@ -438,6 +439,125 @@ func (c *Compiler) doAssignStmt(node *ast.AssignStmt) error {
 	}
 }
 
+// doCallExpr processes a single CallExpr node and generates bytecode for function or method calls.
+// It resolves the function or method being called, handles arguments, and emits corresponding bytecode.
+// It also manages nested function calls by pre-evaluating them and storing results in temporary variables.
+// Returns an error if the call expression contains invalid or unresolved references.
+func (c *Compiler) doCallExpr(node *ast.CallExpr) error {
+	// Step 1: Resolve the function and its arguments for analysis. This part doesn't emit bytecode yet.
+	fnOpType := bytecode.OpConstant
+	fnIndex := -1
+	fnName := ""
+	var fnArgs []ast.Expr
+
+	if selExpr, isSelector := node.Fun.(*ast.SelectorExpr); isSelector {
+		// Method call
+		receiverIdent, ok := selExpr.X.(*ast.Ident)
+		if !ok {
+			return fmt.Errorf("unsupported receiver for selector expression: %T", selExpr.X)
+		}
+		receiverSymbol, ok := c.scopes.SymbolResolve(receiverIdent.Name)
+		if !ok {
+			return fmt.Errorf("undefined variable: %s", receiverIdent.Name)
+		}
+		if receiverSymbol.Scope() == ImportScope {
+			fnOpType = bytecode.OpReferences
+			fnName = GetMangledName(receiverIdent.Name, selExpr.Sel.Name)
+			found := false
+			fnIndex, found = c.references.Get(fnName)
+			if !found {
+				attrArray := c.factory.NewArray(objects.FrameStatic, []objects.IObject{c.factory.NewString(objects.FrameStatic, receiverIdent.Name), c.factory.NewString(objects.FrameStatic, selExpr.Sel.Name)})
+				fnIndex = c.references.Add(fnName, attrArray)
+			}
+			fnArgs = node.Args
+		} else if len(receiverSymbol.Types()) > 0 { // struct method
+			structTypeName := receiverSymbol.Types()[0]
+			typeSymbol, ok := c.scopes.SymbolResolve(structTypeName)
+			if !ok {
+				return fmt.Errorf("undefined type: %s", structTypeName)
+			}
+			methodName := selExpr.Sel.Name
+			fnName = GetMangledName(typeSymbol.Name(), methodName)
+			fnIndex, ok = c.constants.Get(fnName)
+			if !ok {
+				return fmt.Errorf("undefined method '%s' for type '%s'", methodName, typeSymbol.Name())
+			}
+			fnArgs = append(fnArgs, selExpr.X) // The receiver is the first argument
+			fnArgs = append(fnArgs, node.Args...)
+		} else {
+			return fmt.Errorf("cannot call method on untyped variable or undefined package '%s'", receiverSymbol.Name())
+		}
+	} else {
+		//Function call
+		ident, ok := node.Fun.(*ast.Ident)
+		if !ok {
+			return fmt.Errorf("unsupported function call: %T", node.Fun)
+		}
+		fnName = ident.Name
+		fnIndex, ok = c.constants.Get(fnName)
+		if !ok {
+			return fmt.Errorf("undefined function: %s", ident.Name)
+		}
+		fnArgs = node.Args
+	}
+	if fnIndex < 0 {
+		return fmt.Errorf("could not resolve function index for '%s'", fnName)
+	}
+
+	// 2 pass logic
+	// Pass 1: Pre-evaluate nested function calls and store their results in temporary variables.
+	// We use a map to link an argument expression to the temporary symbol that holds its result.
+	tempSymbolMap := make(map[ast.Expr]*Symbol)
+	for _, arg := range fnArgs {
+		if call, isCall := arg.(*ast.CallExpr); isCall {
+			// This argument is a nested function call.
+			// 1.1. Compile the nested call. Its result will be on the stack.
+			if err := c.compile(call); err != nil {
+				return err
+			}
+			// 1.2. Create a unique temporary local variable.
+			tempSymbol := c.scopes.SymbolDefineUnique("__temp_call", LocalScope)
+			tempSymbolMap[arg] = tempSymbol // Store the symbol for the second pass
+			// 1.3. Emit code to store the result into the temp variable.
+			// This generates OpSetLocal, correctly storing the result.
+			if err := c.scopes.EmitSymbolSet(tempSymbol); err != nil {
+				return err
+			}
+			// 1.4. Pop the result from the stack to keep it clean for the next operations.
+			// This is crucial as OpSetLocal only peeks at the stack value.
+			if _, err := c.scopes.Emit(bytecode.OpPop); err != nil {
+				return err
+			}
+		}
+	}
+
+	// Step 2: Push the main function object itself onto the stack.
+	// This ensures the stack layout is [function, ...args]
+	if _, err := c.scopes.Emit(fnOpType, fnIndex); err != nil {
+		return err
+	}
+	// Pass 3: Push all final arguments for the main call onto the stack.
+	for _, arg := range fnArgs {
+		if tempSymbol, ok := tempSymbolMap[arg]; ok {
+			// This was a nested call; load its pre-computed result from the temporary variable.
+			if err := c.scopes.EmitSymbolGet(tempSymbol); err != nil {
+				return err
+			}
+		} else {
+			// This is a regular argument; compile it directly to push its value.
+			if err := c.compile(arg); err != nil {
+				return err
+			}
+		}
+	}
+	// Step 4: Emit the final OpCall instruction.
+	if _, err := c.scopes.Emit(bytecode.OpCall, len(fnArgs), 0); err != nil {
+		return err
+	}
+	return nil
+}
+
+/*
 // doCallExpr compiles a call expression node into bytecode, handling method calls, package functions, or standalone functions.
 func (c *Compiler) doCallExpr(node *ast.CallExpr) error {
 	fnOpType := bytecode.OpConstant
@@ -518,6 +638,8 @@ func (c *Compiler) doCallExpr(node *ast.CallExpr) error {
 	return nil
 }
 
+*/
+
 // doDeclStmt processes a declaration statement node by compiling its declaration content. Returns an error if compilation fails.
 func (c *Compiler) doDeclStmt(node *ast.DeclStmt) error {
 	if err := c.compile(node.Decl); err != nil {
@@ -571,9 +693,9 @@ func (c *Compiler) doTypeSpec(node *ast.TypeSpec) error {
 			}
 		}
 	}
-	//symbol := c.scopes.SymbolDefine(structName, UnknownScope)
-	//symbol.SetScope(TypeScope)
-	symbol := c.scopes.SymbolDefine(structName, TypeScope)
+	symbol := c.scopes.SymbolDefine(structName, UnknownScope)
+	symbol.SetScope(TypeScope)
+	//symbol := c.scopes.SymbolDefine(structName, TypeScope)
 	symbol.Fields = fields
 	return nil
 }
@@ -731,7 +853,6 @@ func (c *Compiler) doValueSpec(node *ast.ValueSpec) error {
 		if err := c.scopes.EmitSymbolDefine(symbol); err != nil {
 			return err
 		}
-
 		// 5. Pulisce lo stack dal valore ora che è stato assegnato.
 		if _, err := c.scopes.Emit(bytecode.OpPop); err != nil {
 			return err

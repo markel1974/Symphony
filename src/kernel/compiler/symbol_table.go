@@ -39,17 +39,21 @@ type SymbolTable struct {
 // NewSymbolTable initializes and returns a new instance of SymbolTable with an empty container and counter set to zero.
 func NewSymbolTable() *SymbolTable {
 	s := &SymbolTable{
-		obj:           "",
-		symbols:       make(map[string]*Symbol),
-		uniqueCounter: 0,
+		obj:            "",
+		symbols:        make(map[string]*Symbol),
+		uniqueCounter:  0,
+		numDefinitions: 0,
 	}
 	return s
 }
 
+/*
 func NewBuiltinSymbolTable() *SymbolTable {
 	st := NewSymbolTable()
 	return st
 }
+
+*/
 
 // NewEnclosedSymbolTable creates a new symbol table enclosed by the provided outer symbol table.
 func NewEnclosedSymbolTable(outer *SymbolTable, obj string) *SymbolTable {
@@ -57,6 +61,12 @@ func NewEnclosedSymbolTable(outer *SymbolTable, obj string) *SymbolTable {
 	s.obj = obj
 	s.outer = outer
 	return s
+}
+
+func (s *SymbolTable) SetNumDefinitions(numDefinitions int) {
+	if numDefinitions >= 0 {
+		s.numDefinitions = numDefinitions
+	}
 }
 
 // Print displays the symbols stored in the SymbolTable, excluding those with the "BUILTIN" scope.

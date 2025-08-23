@@ -4,52 +4,22 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/markel1974/c64emu/src/kernel/vm/bytecode"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
 // Constants is a structure that manages a collection of objects and provides indexing functionality for efficient retrieval.
 type Constants struct {
-	constants  []objects.IObject
-	cache      map[string]int
-	loader     bytecode.ILoader
-	builtinLen int
+	constants []objects.IObject
+	cache     map[string]int
 }
 
 // NewConstants initializes and returns a new instance of the Constants struct with empty data structures.
-func NewConstants(loader bytecode.ILoader, builtinLen int) *Constants {
+func NewConstants() *Constants {
 	c := &Constants{
-		constants:  nil,
-		cache:      make(map[string]int),
-		loader:     loader,
-		builtinLen: builtinLen,
+		constants: nil,
+		cache:     make(map[string]int),
 	}
 	return c
-}
-
-// Setup initializes the constants slice with the built-in functions.
-func (c *Constants) Setup() error {
-	c.cache = make(map[string]int)
-	c.constants = make([]objects.IObject, c.builtinLen)
-	if c.builtinLen == 0 {
-		return nil
-	}
-	for idx := 0; idx < c.builtinLen; idx++ {
-		bi := c.loader.Builtin(idx)
-		if bi == nil {
-			return fmt.Errorf("builtin %d not found", idx)
-		}
-		c.constants[idx] = bi
-		c.cache[bi.Name()] = idx
-	}
-	return nil
-}
-
-// Print prints the constants to the provided writer.
-func (c *Constants) Print(writer io.Writer) {
-	for idx, v := range c.constants {
-		_, _ = fmt.Fprintf(writer, "%d => %s", idx, v.String())
-	}
 }
 
 // Add appends the given object to the constants slice and returns its index; caches the index if an ID is provided.
@@ -105,4 +75,11 @@ func (c *Constants) GetByIndex(index int) (objects.IObject, bool) {
 // Retrieve returns the list of all constant objects stored in the Constants structure.
 func (c *Constants) Retrieve() []objects.IObject {
 	return c.constants
+}
+
+// Print prints the constants to the provided writer.
+func (c *Constants) Print(writer io.Writer) {
+	for idx, v := range c.constants {
+		_, _ = fmt.Fprintf(writer, "%d => %s", idx, v.String())
+	}
 }
