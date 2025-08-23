@@ -13,8 +13,6 @@ import (
 type Scopes struct {
 	factory     *objects.GateKeeper
 	op          *bytecode.Opcodes
-	constants   *Constants
-	references  *Constants
 	symbolTable *SymbolTable
 	builtin     *SymbolTable
 	scopeIndex  int
@@ -22,13 +20,11 @@ type Scopes struct {
 }
 
 // NewScopes initializes and returns a Scopes structure with a new symbol table, main compilation scope, and scope index set to 0.
-func NewScopes(factory *objects.GateKeeper, op *bytecode.Opcodes, loader bytecode.ILoader) *Scopes {
+func NewScopes(factory *objects.GateKeeper, op *bytecode.Opcodes) *Scopes {
 	c := &Scopes{
 		factory:     factory,
 		op:          op,
 		builtin:     NewBuiltinSymbolTable(),
-		constants:   NewConstants(loader),
-		references:  NewConstants(nil),
 		symbolTable: NewSymbolTable(),
 		scopeIndex:  0,
 		scopes:      []*CompilationScope{NewCompilationScope()},
@@ -36,44 +32,9 @@ func NewScopes(factory *objects.GateKeeper, op *bytecode.Opcodes, loader bytecod
 	return c
 }
 
-// ReferencesAdd adds a constant object with the given id to the scope and returns its internal index.
-func (c *Scopes) ReferencesAdd(id string, obj objects.IObject) int {
-	return c.references.Add(id, obj)
-}
-
-// ReferencesGet retrieves the constant identified by the provided id and returns its value along with a boolean for existence.
-func (c *Scopes) ReferencesGet(id string) (int, bool) {
-	return c.references.Get(id)
-}
-
-// ReferencesRetrieve retrieves a slice of IObject constants from the scope's internal constants collection.
-func (c *Scopes) ReferencesRetrieve() []objects.IObject {
-	return c.references.Retrieve()
-}
-
-// ConstantsAdd adds a constant object with the given id to the scope and returns its internal index.
-func (c *Scopes) ConstantsAdd(id string, obj objects.IObject) int {
-	return c.constants.Add(id, obj)
-}
-
-// ConstantsAddOrGet retrieves the index of the constant if it exists or adds it to the constants pool and returns the index.
-func (c *Scopes) ConstantsAddOrGet(obj objects.IObject) int {
-	return c.constants.AddOrGet("", obj)
-}
-
-// ConstantsGet retrieves the constant identified by the provided id and returns its value along with a boolean for existence.
-func (c *Scopes) ConstantsGet(id string) (int, bool) {
-	return c.constants.Get(id)
-}
-
-// ConstantsSetIndex sets the object at the specified index in the constant collection and returns an error if it fails.
-func (c *Scopes) ConstantsSetIndex(index int, object objects.IObject) error {
-	return c.constants.SetIndex(index, object)
-}
-
-// ConstantsRetrieve retrieves a slice of IObject constants from the scope's internal constants collection.
-func (c *Scopes) ConstantsRetrieve() []objects.IObject {
-	return c.constants.Retrieve()
+// Setup initializes the Scopes structure.
+func (c *Scopes) Setup() error {
+	return nil
 }
 
 // SymbolDefineUnique defines a new symbol in the current scope and adds it to the symbol table. Returns the defined Symbol.
@@ -238,15 +199,15 @@ func (c *Scopes) Emit(op bytecode.Opcode, operands ...int) (int, error) {
 // EmitSymbolDefine emits the opcode for *defining* a variable.
 func (c *Scopes) EmitSymbolDefine(s *Symbol) error {
 	var op bytecode.Opcode
-	switch s.Scope {
+	switch s.Scope() {
 	case GlobalScope:
 		op = bytecode.OpSetGlobal
 	case LocalScope:
 		op = bytecode.OpDefineLocal // Use new opcode for local variables
 	default:
-		return fmt.Errorf("unsupported symbol scope: %v", s.Scope)
+		return fmt.Errorf("unsupported symbol scope: %v", s.Scope())
 	}
-	if _, err := c.Emit(op, s.Index); err != nil {
+	if _, err := c.Emit(op, s.Index()); err != nil {
 		return err
 	}
 	return nil
@@ -255,7 +216,7 @@ func (c *Scopes) EmitSymbolDefine(s *Symbol) error {
 // EmitSymbolSet generates bytecode instructions to set the value of a symbol in its appropriate scope (global, local, or free).
 func (c *Scopes) EmitSymbolSet(s *Symbol) error {
 	var op bytecode.Opcode
-	switch s.Scope {
+	switch s.Scope() {
 	case GlobalScope:
 		op = bytecode.OpSetGlobal
 	case LocalScope:
@@ -263,9 +224,9 @@ func (c *Scopes) EmitSymbolSet(s *Symbol) error {
 	case FreeScope:
 		op = bytecode.OpSetFree
 	default:
-		return fmt.Errorf("unsupported symbol scope: %v", s.Scope)
+		return fmt.Errorf("unsupported symbol scope: %v", s.Scope())
 	}
-	if _, err := c.Emit(op, s.Index); err != nil {
+	if _, err := c.Emit(op, s.Index()); err != nil {
 		return err
 	}
 	return nil
@@ -274,7 +235,7 @@ func (c *Scopes) EmitSymbolSet(s *Symbol) error {
 // EmitSymbolGet generates bytecode instructions to retrieve a symbol's value based on its scope and index.
 func (c *Scopes) EmitSymbolGet(s *Symbol) error {
 	var op bytecode.Opcode
-	switch s.Scope {
+	switch s.Scope() {
 	case GlobalScope:
 		op = bytecode.OpGetGlobal
 	case LocalScope:
@@ -282,9 +243,9 @@ func (c *Scopes) EmitSymbolGet(s *Symbol) error {
 	case FreeScope:
 		op = bytecode.OpGetFree
 	default:
-		return fmt.Errorf("unsupported symbol scope: %v", s.Scope)
+		return fmt.Errorf("unsupported symbol scope: %v", s.Scope())
 	}
-	if _, err := c.Emit(op, s.Index); err != nil {
+	if _, err := c.Emit(op, s.Index()); err != nil {
 		return err
 	}
 	return nil
@@ -292,10 +253,6 @@ func (c *Scopes) EmitSymbolGet(s *Symbol) error {
 
 // Print prints the contents of the Scopes structure to the console.
 func (c *Scopes) Print(writer io.Writer) {
-	_, _ = fmt.Fprintf(writer, "----- Constants -----")
-	c.constants.Print(writer)
-	_, _ = fmt.Fprintf(writer, "----- References -----")
-	c.references.Print(writer)
 	_, _ = fmt.Fprintf(writer, "----- Symbols -----")
 	c.symbolTable.Print(writer)
 	_, _ = fmt.Fprintf(writer, "--------------------")

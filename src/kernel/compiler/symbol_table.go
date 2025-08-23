@@ -65,10 +65,10 @@ func (s *SymbolTable) Print(writer io.Writer) {
 		s.outer.Print(writer)
 	}
 	for k, v := range s.symbols {
-		_, _ = fmt.Fprintf(writer, "%s %s %v %d %v", k, v.Name, v.Scope, v.Index, v.Fields)
+		_, _ = fmt.Fprintf(writer, "%s %s %v %d %v", k, v.Name(), v.Scope(), v.Index(), v.Fields)
 	}
 	for idx, v := range s.freeSymbols {
-		_, _ = fmt.Fprintf(writer, "%d %s %v %d %v", idx, v.Name, v.Scope, v.Index, v.Fields)
+		_, _ = fmt.Fprintf(writer, "%d %s %v %d %v", idx, v.Name(), v.Scope(), v.Index(), v.Fields)
 	}
 }
 
@@ -130,11 +130,11 @@ func (s *SymbolTable) Resolve(name string) (*Symbol, bool) {
 	}
 	// Types, global variables, and builtin functions are directly accessible
 	// from inner scopes and should not be converted to "free variables".
-	if obj.Scope == ImportScope || obj.Scope == GlobalScope || obj.Scope == TypeScope {
+	if obj.Scope() == ImportScope || obj.Scope() == GlobalScope || obj.Scope() == TypeScope {
 		return obj, true
 	}
 	s.freeSymbols = append(s.freeSymbols, obj)
-	symbol := NewSymbol(obj.Name, len(s.freeSymbols)-1, FreeScope, s.obj)
-	s.symbols[obj.Name] = symbol
+	symbol := NewSymbol(obj.Name(), len(s.freeSymbols)-1, FreeScope, s.obj)
+	s.symbols[obj.Name()] = symbol
 	return symbol, true
 }

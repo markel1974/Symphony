@@ -23,9 +23,11 @@ const (
 
 // Compiler represents a structure to manage the compilation process, including scopes and associated token file sets.
 type Compiler struct {
-	factory *objects.GateKeeper
-	scopes  *Scopes
-	fileSet *token.FileSet
+	factory    *objects.GateKeeper
+	scopes     *Scopes
+	constants  *Constants
+	references *Constants
+	fileSet    *token.FileSet
 }
 
 // New creates and returns a new instance of Compiler with initialized scopes using a standard library loader.
@@ -33,14 +35,25 @@ func New(factory *objects.GateKeeper) *Compiler {
 	loader := sdk.NewLoader(factory)
 	op := bytecode.NewOpcodes(factory)
 	c := &Compiler{
-		factory: factory,
-		scopes:  NewScopes(factory, op, loader),
+		factory:    factory,
+		scopes:     NewScopes(factory, op),
+		constants:  NewConstants(loader, loader.BuiltinLen()),
+		references: NewConstants(loader, 0),
 	}
 	return c
 }
 
 // Compile parses the provided source file and compiles it into bytecode. Returns compiled bytecode or an error.
 func (c *Compiler) Compile(filename string, source any) error {
+	if err := c.constants.Setup(); err != nil {
+		return err
+	}
+	if err := c.references.Setup(); err != nil {
+		return err
+	}
+	if err := c.scopes.Setup(); err != nil {
+		return err
+	}
 	c.fileSet = token.NewFileSet()
 	astFile, err := parser.ParseFile(c.fileSet, filename, source, 0)
 	if err != nil {
@@ -54,16 +67,20 @@ func (c *Compiler) Compile(filename string, source any) error {
 
 // Constants retrieves a slice of IObject containing all constants stored in the current compiler scopes.
 func (c *Compiler) Constants() []objects.IObject {
-	return c.scopes.ConstantsRetrieve()
+	return c.constants.Retrieve()
 }
 
 // References retrieves a list of IObject references from the current compiler scope.
 func (c *Compiler) References() []objects.IObject {
-	return c.scopes.ReferencesRetrieve()
+	return c.references.Retrieve()
 }
 
 // Print writes the content of the internal scopes to the provided writer, typically for debugging or inspection.
 func (c *Compiler) Print(writer io.Writer) {
+	_, _ = fmt.Fprintf(writer, "----- Constants -----")
+	c.constants.Print(writer)
+	_, _ = fmt.Fprintf(writer, "----- References -----")
+	c.references.Print(writer)
 	c.scopes.Print(writer)
 }
 
@@ -180,7 +197,7 @@ func (c *Compiler) doFile(node *ast.File) error {
 			}
 			fnName = GetMangledName(recvTypeIdent.Name, fn.Name.Name)
 			symbol, ok := c.scopes.SymbolResolve(recvTypeIdent.Name)
-			if !ok || symbol.Scope != TypeScope {
+			if !ok || symbol.Scope() != TypeScope {
 				return fmt.Errorf("unknown type '%s' for method receiver", recvTypeIdent.Name)
 			}
 			fnSymbol = symbol
@@ -194,7 +211,7 @@ func (c *Compiler) doFile(node *ast.File) error {
 
 		// function pre-definition
 		placeholder := c.factory.NewFuncCompiled(objects.FrameStatic, fnName, nil, 0, 0, false, nil, nil)
-		funcIndexes[fnName] = c.scopes.ConstantsAdd(fnName, placeholder)
+		funcIndexes[fnName] = c.constants.Add(fnName, placeholder)
 		receiverNames, err := GetReceivers(fn.Type.Results)
 		if err != nil {
 			return err
@@ -280,7 +297,7 @@ func (c *Compiler) compileFuncBody(node *ast.FuncDecl, objName string, mangledNa
 		nParams++
 	}
 	compiledFn := c.factory.NewFuncCompiled(objects.FrameStatic, mangledName, code, nLocals, nParams, false, nil, freeSymbols)
-	if err = c.scopes.ConstantsSetIndex(constIndex, compiledFn); err != nil {
+	if err = c.constants.SetIndex(constIndex, compiledFn); err != nil {
 		return err
 	}
 	if node.Recv == nil {
@@ -352,8 +369,8 @@ func (c *Compiler) doAssignStmt(node *ast.AssignStmt) error {
 	switch rhs := node.Rhs[0].(type) {
 	case *ast.CompositeLit: // check for variable assignment
 		if ident, ok := rhs.Type.(*ast.Ident); ok {
-			if typeSymbol, ok := c.scopes.SymbolResolve(ident.Name); ok && typeSymbol.Scope == TypeScope {
-				assignedTypeName = []string{typeSymbol.Name}
+			if typeSymbol, ok := c.scopes.SymbolResolve(ident.Name); ok && typeSymbol.Scope() == TypeScope {
+				assignedTypeName = []string{typeSymbol.Name()}
 			}
 		}
 	case *ast.CallExpr: // check for function call assignment
@@ -402,16 +419,16 @@ func (c *Compiler) doAssignStmt(node *ast.AssignStmt) error {
 			return fmt.Errorf("undefined variable: %s", receiverIdent.Name)
 		}
 		fieldName := lhs.Sel.Name
-		keyConst := c.scopes.ConstantsAddOrGet(c.factory.NewString(objects.FrameStatic, fieldName))
+		keyConst := c.constants.AddOrGet("", c.factory.NewString(objects.FrameStatic, fieldName))
 		if _, err := c.scopes.Emit(bytecode.OpConstant, keyConst); err != nil {
 			return err
 		}
-		if symbol.Scope == GlobalScope {
-			if _, err := c.scopes.Emit(bytecode.OpSetSelGlobal, symbol.Index, 1); err != nil {
+		if symbol.Scope() == GlobalScope {
+			if _, err := c.scopes.Emit(bytecode.OpSetSelGlobal, symbol.Index(), 1); err != nil {
 				return err
 			}
 		} else {
-			if _, err := c.scopes.Emit(bytecode.OpSetSelLocal, symbol.Index, 1); err != nil {
+			if _, err := c.scopes.Emit(bytecode.OpSetSelLocal, symbol.Index(), 1); err != nil {
 				return err
 			}
 		}
@@ -436,14 +453,14 @@ func (c *Compiler) doCallExpr(node *ast.CallExpr) error {
 		if !ok {
 			return fmt.Errorf("undefined variable: %s", receiverIdent.Name)
 		}
-		if receiverSymbol.Scope == ImportScope {
+		if receiverSymbol.Scope() == ImportScope {
 			fnOpType = bytecode.OpReferences
 			fnName = GetMangledName(receiverIdent.Name, selExpr.Sel.Name)
 			found := false
-			fnIndex, found = c.scopes.ReferencesGet(fnName)
+			fnIndex, found = c.references.Get(fnName)
 			if !found {
 				attrArray := c.factory.NewArray(objects.FrameStatic, []objects.IObject{c.factory.NewString(objects.FrameStatic, receiverIdent.Name), c.factory.NewString(objects.FrameStatic, selExpr.Sel.Name)})
-				fnIndex = c.scopes.ReferencesAdd(fnName, attrArray)
+				fnIndex = c.references.Add(fnName, attrArray)
 			}
 			for _, arg := range node.Args {
 				fnArgs = append(fnArgs, arg)
@@ -456,10 +473,10 @@ func (c *Compiler) doCallExpr(node *ast.CallExpr) error {
 				return fmt.Errorf("undefined type: %s", structTypeName)
 			}
 			methodName := selExpr.Sel.Name
-			fnName = GetMangledName(typeSymbol.Name, methodName)
-			fnIndex, ok = c.scopes.ConstantsGet(fnName)
+			fnName = GetMangledName(typeSymbol.Name(), methodName)
+			fnIndex, ok = c.constants.Get(fnName)
 			if !ok {
-				return fmt.Errorf("undefined method '%s' for type '%s'", methodName, typeSymbol.Name)
+				return fmt.Errorf("undefined method '%s' for type '%s'", methodName, typeSymbol.Name())
 			}
 			// the receiver (struct instance) is the first argument of the method
 			fnArgs = append(fnArgs, selExpr.X)
@@ -467,7 +484,7 @@ func (c *Compiler) doCallExpr(node *ast.CallExpr) error {
 				fnArgs = append(fnArgs, arg)
 			}
 		} else {
-			return fmt.Errorf("cannot call method on untyped variable or undefined package '%s'", receiverSymbol.Name)
+			return fmt.Errorf("cannot call method on untyped variable or undefined package '%s'", receiverSymbol.Name())
 		}
 	} else {
 		// normal function call
@@ -476,7 +493,7 @@ func (c *Compiler) doCallExpr(node *ast.CallExpr) error {
 			return fmt.Errorf("unsupported function call: %T", node.Fun)
 		}
 		fnName = ident.Name
-		fnIndex, ok = c.scopes.ConstantsGet(fnName)
+		fnIndex, ok = c.constants.Get(fnName)
 		if !ok {
 			return fmt.Errorf("undefined function: %s", ident.Name)
 		}
@@ -554,8 +571,9 @@ func (c *Compiler) doTypeSpec(node *ast.TypeSpec) error {
 			}
 		}
 	}
-	symbol := c.scopes.SymbolDefine(structName, UnknownScope)
-	symbol.Scope = TypeScope
+	//symbol := c.scopes.SymbolDefine(structName, UnknownScope)
+	//symbol.SetScope(TypeScope)
+	symbol := c.scopes.SymbolDefine(structName, TypeScope)
 	symbol.Fields = fields
 	return nil
 }
@@ -568,11 +586,11 @@ func (c *Compiler) doCompositeLit(node *ast.CompositeLit) error {
 	case *ast.Ident:
 		// struct literal (es. MyStruct{...})
 		symbol, ok := c.scopes.SymbolResolve(t.Name)
-		if !ok || symbol.Scope != TypeScope {
+		if !ok || symbol.Scope() != TypeScope {
 			return fmt.Errorf("unknown composite literal type: %s", t.Name)
 		}
 		if len(node.Elts) > len(symbol.Fields) {
-			return fmt.Errorf("too many values in positional struct literal for type '%s'", symbol.Name)
+			return fmt.Errorf("too many values in positional struct literal for type '%s'", symbol.Name())
 		}
 		for idx := range symbol.Fields {
 			symbol.Fields[idx].SetNode(nil)
@@ -611,7 +629,7 @@ func (c *Compiler) doCompositeLit(node *ast.CompositeLit) error {
 		for idx := range symbol.Fields {
 			fieldName := symbol.Fields[idx].Name()
 			fieldNode := symbol.Fields[idx].Node()
-			keyConst := c.scopes.ConstantsAddOrGet(c.factory.NewString(objects.FrameStatic, fieldName))
+			keyConst := c.constants.AddOrGet("", c.factory.NewString(objects.FrameStatic, fieldName))
 			if _, err := c.scopes.Emit(bytecode.OpConstant, keyConst); err != nil {
 				return err
 			}
@@ -685,8 +703,8 @@ func (c *Compiler) doValueSpec(node *ast.ValueSpec) error {
 		var assignedTypeNames []string
 		if compLit, ok := node.Values[i].(*ast.CompositeLit); ok {
 			if ident, ok := compLit.Type.(*ast.Ident); ok {
-				if typeSymbol, isType := c.scopes.SymbolResolve(ident.Name); isType && typeSymbol.Scope == TypeScope {
-					assignedTypeNames = []string{typeSymbol.Name}
+				if typeSymbol, isType := c.scopes.SymbolResolve(ident.Name); isType && typeSymbol.Scope() == TypeScope {
+					assignedTypeNames = []string{typeSymbol.Name()}
 				}
 			}
 		} else if callExpr, ok := node.Values[i].(*ast.CallExpr); ok {
@@ -783,7 +801,7 @@ func (c *Compiler) doIncDecStmt(node *ast.IncDecStmt) error {
 		return err
 	}
 	// adds constant '1' to the stack
-	constIndex := c.scopes.ConstantsAdd("", c.factory.NewInt(objects.FrameStatic, 1))
+	constIndex := c.constants.Add("", c.factory.NewInt(objects.FrameStatic, 1))
 	if _, err := c.scopes.Emit(bytecode.OpConstant, constIndex); err != nil {
 		return err
 	}
@@ -871,7 +889,7 @@ func (c *Compiler) doRangeStmt(node *ast.RangeStmt) error {
 		return err
 	}
 	iteratorSymbol := c.scopes.SymbolDefineUnique("__iterator", UnknownScope)
-	if _, err = c.scopes.Emit(bytecode.OpIteratorInit, iteratorSymbol.Index); err != nil {
+	if _, err = c.scopes.Emit(bytecode.OpIteratorInit, iteratorSymbol.Index()); err != nil {
 		return err
 	}
 	var keySymbol, valueSymbol *Symbol
@@ -888,7 +906,7 @@ func (c *Compiler) doRangeStmt(node *ast.RangeStmt) error {
 	// Loop start
 	loopStartPos := scope.InstructionsLen()
 	// Check if there are more elements, passing the iterator index
-	if _, err := c.scopes.Emit(bytecode.OpIteratorNext, iteratorSymbol.Index); err != nil {
+	if _, err := c.scopes.Emit(bytecode.OpIteratorNext, iteratorSymbol.Index()); err != nil {
 		return err
 	}
 	jumpNotTruthyPos, err := c.scopes.Emit(bytecode.OpJumpFalsy, 9999)
@@ -897,7 +915,7 @@ func (c *Compiler) doRangeStmt(node *ast.RangeStmt) error {
 	}
 	// Assign values and clean operand stack
 	if valueSymbol != nil {
-		if _, err = c.scopes.Emit(bytecode.OpIteratorValue, iteratorSymbol.Index); err != nil {
+		if _, err = c.scopes.Emit(bytecode.OpIteratorValue, iteratorSymbol.Index()); err != nil {
 			return err
 		}
 		if err = c.scopes.EmitSymbolSet(valueSymbol); err != nil {
@@ -908,10 +926,10 @@ func (c *Compiler) doRangeStmt(node *ast.RangeStmt) error {
 		}
 	}
 	if keySymbol != nil {
-		if _, err = c.scopes.Emit(bytecode.OpIteratorKey, iteratorSymbol.Index); err != nil {
+		if _, err = c.scopes.Emit(bytecode.OpIteratorKey, iteratorSymbol.Index()); err != nil {
 			return err
 		}
-		if _, err = c.scopes.Emit(bytecode.OpIteratorValue, iteratorSymbol.Index); err != nil {
+		if _, err = c.scopes.Emit(bytecode.OpIteratorValue, iteratorSymbol.Index()); err != nil {
 			return err
 		}
 		if err = c.scopes.EmitSymbolSet(keySymbol); err != nil {
@@ -985,13 +1003,13 @@ func (c *Compiler) doUnaryExpr(node *ast.UnaryExpr) error {
 			if !ok {
 				return fmt.Errorf("undefined variable: %s", operand.Name)
 			}
-			switch symbol.Scope {
+			switch symbol.Scope() {
 			case LocalScope:
-				if _, err := c.scopes.Emit(bytecode.OpGetLocalPtr, symbol.Index); err != nil {
+				if _, err := c.scopes.Emit(bytecode.OpGetLocalPtr, symbol.Index()); err != nil {
 					return err
 				}
 			case FreeScope:
-				if _, err := c.scopes.Emit(bytecode.OpGetFreePtr, symbol.Index); err != nil {
+				if _, err := c.scopes.Emit(bytecode.OpGetFreePtr, symbol.Index()); err != nil {
 					return err
 				}
 			default:
@@ -1006,7 +1024,7 @@ func (c *Compiler) doUnaryExpr(node *ast.UnaryExpr) error {
 			if err := c.scopes.EmitSymbolDefine(tempSymbol); err != nil {
 				return err
 			}
-			if _, err := c.scopes.Emit(bytecode.OpGetLocalPtr, tempSymbol.Index); err != nil {
+			if _, err := c.scopes.Emit(bytecode.OpGetLocalPtr, tempSymbol.Index()); err != nil {
 				return err
 			}
 		default:
@@ -1044,7 +1062,7 @@ func (c *Compiler) doBasicLit(node *ast.BasicLit) error {
 	default:
 		return fmt.Errorf("unhandled literal: %s", node.Kind)
 	}
-	id := c.scopes.ConstantsAdd("", symbol)
+	id := c.constants.Add("", symbol)
 	if _, err := c.scopes.Emit(bytecode.OpConstant, id); err != nil {
 		return err
 	}
@@ -1096,12 +1114,12 @@ func (c *Compiler) doSelectorExpr(node *ast.SelectorExpr) error {
 	if !ok {
 		return fmt.Errorf("undefined variable: %s", receiverIdent.Name)
 	}
-	if receiverSymbol.Scope == ImportScope {
+	if receiverSymbol.Scope() == ImportScope {
 		cacheKey := GetMangledName(receiverIdent.Name, node.Sel.Name)
-		nameIndex, found := c.scopes.ReferencesGet(cacheKey)
+		nameIndex, found := c.references.Get(cacheKey)
 		if !found {
 			attrArray := c.factory.NewArray(objects.FrameStatic, []objects.IObject{c.factory.NewString(objects.FrameStatic, receiverIdent.Name), c.factory.NewString(objects.FrameStatic, node.Sel.Name)})
-			nameIndex = c.scopes.ReferencesAdd(cacheKey, attrArray)
+			nameIndex = c.references.Add(cacheKey, attrArray)
 		}
 		if _, err := c.scopes.Emit(bytecode.OpReferences, nameIndex); err != nil {
 			return err
@@ -1111,7 +1129,7 @@ func (c *Compiler) doSelectorExpr(node *ast.SelectorExpr) error {
 			return err
 		}
 		fieldName := node.Sel.Name
-		keyConst := c.scopes.ConstantsAddOrGet(c.factory.NewString(objects.FrameStatic, fieldName))
+		keyConst := c.constants.AddOrGet("", c.factory.NewString(objects.FrameStatic, fieldName))
 		if _, err := c.scopes.Emit(bytecode.OpConstant, keyConst); err != nil {
 			return err
 		}

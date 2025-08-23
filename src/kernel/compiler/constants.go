@@ -10,27 +10,39 @@ import (
 
 // Constants is a structure that manages a collection of objects and provides indexing functionality for efficient retrieval.
 type Constants struct {
-	constants []objects.IObject
-	cache     map[string]int
+	constants  []objects.IObject
+	cache      map[string]int
+	loader     bytecode.ILoader
+	builtinLen int
 }
 
 // NewConstants initializes and returns a new instance of the Constants struct with empty data structures.
-func NewConstants(loader bytecode.ILoader) *Constants {
+func NewConstants(loader bytecode.ILoader, builtinLen int) *Constants {
 	c := &Constants{
-		constants: []objects.IObject{},
-		cache:     make(map[string]int),
-	}
-	if loader != nil {
-		if bl := loader.BuiltinLen(); bl > 0 {
-			c.constants = make([]objects.IObject, bl)
-			for idx := 0; idx < bl; idx++ {
-				bi := loader.Builtin(idx)
-				c.constants[idx] = bi
-				c.cache[bi.Name()] = idx
-			}
-		}
+		constants:  nil,
+		cache:      make(map[string]int),
+		loader:     loader,
+		builtinLen: builtinLen,
 	}
 	return c
+}
+
+// Setup initializes the constants slice with the built-in functions.
+func (c *Constants) Setup() error {
+	c.cache = make(map[string]int)
+	c.constants = make([]objects.IObject, c.builtinLen)
+	if c.builtinLen == 0 {
+		return nil
+	}
+	for idx := 0; idx < c.builtinLen; idx++ {
+		bi := c.loader.Builtin(idx)
+		if bi == nil {
+			return fmt.Errorf("builtin %d not found", idx)
+		}
+		c.constants[idx] = bi
+		c.cache[bi.Name()] = idx
+	}
+	return nil
 }
 
 // Print prints the constants to the provided writer.
