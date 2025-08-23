@@ -255,6 +255,7 @@ func (c *Compiler) doFile(node *ast.File) error {
 		}
 	}
 
+	// step 7: compile the __init__ function
 	c.scopes.scopeIndex = 0
 	if _, err := c.scopes.Emit(bytecode.OpReturn, 0); err != nil {
 		return err
@@ -614,7 +615,6 @@ func (c *Compiler) doTypeSpec(node *ast.TypeSpec) error {
 	if _, ok := c.scopes.SymbolResolve(structName); ok {
 		return fmt.Errorf("type '%s' already defined", structName)
 	}
-	//properties := make(map[string]objects.IObject)
 	var fields []*FieldDef
 	if structType.Fields != nil {
 		for _, field := range structType.Fields.List {
@@ -624,18 +624,12 @@ func (c *Compiler) doTypeSpec(node *ast.TypeSpec) error {
 			}
 			fieldType := typeNameBuf.String()
 			for _, name := range field.Names {
-				//properties[name.Name] = c.factory.UndefinedValue()
 				// here we could add a check for duplicate fields.
 				fields = append(fields, NewFieldDef(name.Name, fieldType, nil))
 			}
 		}
 	}
 	symbol := c.scopes.SymbolDefine(structName, UnknownScope, true)
-	//symbol.SetObject(c.factory.NewStruct(objects.FrameStatic, properties))
-	//symbol.Scope() == GlobalScope
-	//c.constants.Add("", c.factory.NewStruct(objects.FrameStatic, map[string]objects.IObject{}))
-	//symbol.SetScope(TypeScope)
-	//symbol := c.scopes.SymbolDefine(structName, TypeScope)
 	symbol.Fields = fields
 	return nil
 }

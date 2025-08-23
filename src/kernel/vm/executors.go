@@ -370,7 +370,7 @@ func (op *OpSetGlobal) Execute(v *VM, operands *[]int) {
 	//	panic("invalid jump position")
 	//}
 	val := v.stack.Peek()
-	v.global.Set(uint(pos), val)
+	v.globals.Set(uint(pos), val)
 }
 
 // OpSetSelGlobal represents an operation for setting a global variable's value using selectors for indexing or access.
@@ -425,7 +425,7 @@ func (op *OpGetGlobal) Execute(v *VM, operands *[]int) {
 	//if glIndex != v.currFrame.Get16(v.ip) {
 	//	panic("invalid jump position")
 	//}
-	glObj := v.global.Get(uint(glIndex))
+	glObj := v.globals.Get(uint(glIndex))
 	if glObj == nil {
 		v.SetError(fmt.Errorf("undefined global: %d", glIndex))
 		return

@@ -21,35 +21,6 @@ const (
 	maxFrames = 1024
 )
 
-// ISequencer defines an interface to generate a sequence of functions for a given Virtual Machine instance.
-type ISequencer interface {
-	Create() []IOpExecutor
-}
-
-type SequencerData struct {
-	execute   func(vm *VM, operands *[]int)
-	operands  []func(*Frame, int) (int, int)
-	fullWidth int
-}
-
-func NewSequencerData(execute func(vm *VM, operands *[]int), operands []int) *SequencerData {
-	sd := &SequencerData{
-		execute:   execute,
-		operands:  make([]func(*Frame, int) (int, int), len(operands)),
-		fullWidth: 0,
-	}
-	for i, width := range operands {
-		switch width {
-		case 1:
-			sd.operands[i] = func(frame *Frame, ip int) (int, int) { return int(frame.Get8(ip)), 1 }
-		case 2:
-			sd.operands[i] = func(frame *Frame, ip int) (int, int) { return int(frame.Get16(ip)), 2 }
-		}
-		sd.fullWidth += width
-	}
-	return sd
-}
-
 // VM represents a virtual machine that executes bytecode instructions, handles stack, and manages execution frames.
 type VM struct {
 	factory     *objects.GateKeeper
@@ -64,7 +35,7 @@ type VM struct {
 	references  []objects.IObject
 	loader      bytecode.ILoader
 	constants   *Constants
-	global      *Constants
+	globals     *Globals
 	entryPoints map[string]*objects.FuncCompiled
 }
 
@@ -78,8 +49,8 @@ func New(factory *objects.GateKeeper, op *bytecode.Opcodes, sequencer ISequencer
 		references:  nil,
 		entryPoints: make(map[string]*objects.FuncCompiled),
 	}
-	v.constants = NewConstants(factory, "constants", v.SetError)
-	v.global = NewConstants(factory, "global", v.SetError)
+	v.constants = NewConstants(factory, v.SetError)
+	v.globals = NewGlobals(factory, v.SetError)
 	v.stack = NewStack(factory, stackSize, v.SetError)
 	v.frames = NewFrames(factory, maxFrames, v.SetError)
 	if sequencer == nil {
@@ -121,7 +92,7 @@ func (v *VM) Setup(loader bytecode.ILoader, bc *bytecode.Bytecode) error {
 	v.sourceFiles = bc.SourceFiles()
 	v.references = references
 	v.constants.SetContainer(constants)
-	v.global.SetContainer(bc.Global())
+	v.globals.SetContainer(bc.Global())
 	return nil
 }
 
