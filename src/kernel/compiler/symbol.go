@@ -97,7 +97,14 @@ func (s *Symbol) GetObject() objects.IObject {
 
 // IsStruct returns a boolean indicating whether the Symbol represents an struct.
 func (s *Symbol) IsStruct() bool {
-	return s.isStruct
+	//if len(s.structName) > 0 {
+	//	return true
+	//}
+	if s.isStruct {
+		return true
+	}
+	return false
+	//return s.isStruct
 }
 
 // SetTypes assigns a slice of type names to the Symbol's types field. Use this to define the types associated with a Symbol.

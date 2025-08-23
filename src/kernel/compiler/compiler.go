@@ -22,12 +22,13 @@ const (
 )
 
 type FunctionDescription struct {
-	Name     string
-	Struct   string
-	Types    []string
-	Params   []string
-	Recv     []string
-	FuncDecl *ast.FuncDecl
+	Name       string
+	Struct     string
+	Types      []string
+	Params     []string
+	Recv       []string
+	FuncDecl   *ast.FuncDecl
+	StructType bool
 }
 
 // Compiler represents a structure to manage the compilation process, including scopes and associated token file sets.
@@ -38,6 +39,7 @@ type Compiler struct {
 	constants  *Constants
 	references *Constants
 	fileSet    *token.FileSet
+	imports    map[string]bool
 }
 
 // New creates and returns a new instance of Compiler with initialized scopes using a standard library loader.
@@ -50,6 +52,7 @@ func New(factory *objects.GateKeeper) *Compiler {
 		constants:  NewConstants(),
 		references: NewConstants(),
 		scopes:     NewScopes(factory, op),
+		imports:    make(map[string]bool),
 	}
 	return c
 }
@@ -270,14 +273,19 @@ func (c *Compiler) funcBodyPrepare(fd *FunctionDescription) error {
 			return fmt.Errorf("unsupported method receiver type")
 		}
 		baseSymbol, ok := c.scopes.SymbolResolve(recvTypeIdent.Name)
-		if !ok || !baseSymbol.IsStruct() {
+		if !ok {
+			return fmt.Errorf("undefined type '%s' for method receiver", recvTypeIdent.Name)
+		}
+		if !baseSymbol.IsStruct() {
 			return fmt.Errorf("unknown type '%s' for method receiver", recvTypeIdent.Name)
 		}
 		fd.Name = GetMangledName(recvTypeIdent.Name, node.Name.Name)
 		fd.Struct = recvTypeIdent.Name
+		fd.StructType = true
 	} else {
 		fd.Name = node.Name.Name
 		fd.Struct = ""
+		fd.StructType = false
 	}
 	if _, err = c.scopes.SymbolDefine(fd.Name, UnknownScope, false); err != nil {
 		return err
@@ -292,7 +300,7 @@ func (c *Compiler) funcBodyCompile(fd *FunctionDescription) error {
 		return err
 	}
 	for _, p := range fd.Recv {
-		if _, err := c.scopes.SymbolDefine(p, UnknownScope, false); err != nil {
+		if _, err := c.scopes.SymbolDefine(p, UnknownScope, fd.StructType); err != nil {
 			return err
 		}
 	}
@@ -495,16 +503,12 @@ func (c *Compiler) doCallExpr(node *ast.CallExpr) error {
 	var fnArgs []ast.Expr
 
 	if selExpr, isSelector := node.Fun.(*ast.SelectorExpr); isSelector {
-		// Method call
+		// Import or Method call
 		receiverIdent, ok := selExpr.X.(*ast.Ident)
 		if !ok {
 			return fmt.Errorf("unsupported receiver for selector expression: %T", selExpr.X)
 		}
-		receiverSymbol, ok := c.scopes.SymbolResolve(receiverIdent.Name)
-		if !ok {
-			return fmt.Errorf("undefined variable: %s", receiverIdent.Name)
-		}
-		if receiverSymbol.Scope() == ImportScope {
+		if _, ok = c.imports[receiverIdent.Name]; ok {
 			fnOpType = bytecode.OpReferences
 			fnName = GetMangledName(receiverIdent.Name, selExpr.Sel.Name)
 			found := false
@@ -514,22 +518,28 @@ func (c *Compiler) doCallExpr(node *ast.CallExpr) error {
 				fnIndex = c.references.Add(fnName, attrArray)
 			}
 			fnArgs = node.Args
-		} else if len(receiverSymbol.Types()) > 0 { // struct method
-			structTypeName := receiverSymbol.Types()[0]
-			typeSymbol, ok := c.scopes.SymbolResolve(structTypeName)
-			if !ok {
-				return fmt.Errorf("undefined type: %s", structTypeName)
-			}
-			methodName := selExpr.Sel.Name
-			fnName = GetMangledName(typeSymbol.Name(), methodName)
-			fnIndex, ok = c.constants.Get(fnName)
-			if !ok {
-				return fmt.Errorf("undefined method '%s' for type '%s'", methodName, typeSymbol.Name())
-			}
-			fnArgs = append(fnArgs, selExpr.X) // The receiver is the first argument
-			fnArgs = append(fnArgs, node.Args...)
 		} else {
-			return fmt.Errorf("cannot call method on untyped variable or undefined package '%s'", receiverSymbol.Name())
+			receiverSymbol, ok := c.scopes.SymbolResolve(receiverIdent.Name)
+			if !ok {
+				return fmt.Errorf("undefined variable: %s", receiverIdent.Name)
+			}
+			if len(receiverSymbol.Types()) > 0 { // struct method
+				structTypeName := receiverSymbol.Types()[0]
+				typeSymbol, ok := c.scopes.SymbolResolve(structTypeName)
+				if !ok {
+					return fmt.Errorf("undefined type: %s", structTypeName)
+				}
+				methodName := selExpr.Sel.Name
+				fnName = GetMangledName(typeSymbol.Name(), methodName)
+				fnIndex, ok = c.constants.Get(fnName)
+				if !ok {
+					return fmt.Errorf("undefined method '%s' for type '%s'", methodName, typeSymbol.Name())
+				}
+				fnArgs = append(fnArgs, selExpr.X) // The receiver is the first argument
+				fnArgs = append(fnArgs, node.Args...)
+			} else {
+				return fmt.Errorf("cannot call method on untyped variable or undefined package '%s'", receiverSymbol.Name())
+			}
 		}
 	} else {
 		//Function call
@@ -661,12 +671,12 @@ func (c *Compiler) doTypeSpec(node *ast.TypeSpec) error {
 	if err != nil {
 		return err
 	}
-	m := make(map[string]objects.IObject)
+
+	var structData []string
 	for _, field := range fields {
-		m[field.Name()] = c.factory.NewString(objects.FrameStatic, field.Type())
+		structData = append(structData, "["+field.Name()+" "+field.Type()+"]")
 	}
-	m["__struct__"] = c.factory.NewString(objects.FrameStatic, structName)
-	symbol.SetObject(c.factory.NewStruct(objects.FrameStatic, m))
+	symbol.SetObject(c.factory.NewString(objects.FrameStatic, structName+":"+strings.Join(structData, ",")))
 	symbol.Fields = fields
 	return nil
 }
@@ -679,7 +689,10 @@ func (c *Compiler) doCompositeLit(node *ast.CompositeLit) error {
 	case *ast.Ident:
 		// struct literal (es. MyStruct{...})
 		symbol, ok := c.scopes.SymbolResolve(t.Name)
-		if !ok || !symbol.IsStruct() {
+		if !ok {
+			return fmt.Errorf("undefined type: %s", t.Name)
+		}
+		if !symbol.IsStruct() {
 			return fmt.Errorf("unknown composite literal type: %s", t.Name)
 		}
 		if len(node.Elts) > len(symbol.Fields) {
@@ -790,17 +803,16 @@ func (c *Compiler) doValueSpec(node *ast.ValueSpec) error {
 		if err := c.compile(node.Values[i]); err != nil {
 			return err
 		}
-		symbol, err := c.scopes.SymbolDefine(name.Name, UnknownScope, false)
-		if err != nil {
-			return err
-		}
+
+		isStruct := false
 
 		// 3. Inferenza del tipo, ora coerente con la nuova logica
 		var assignedTypeNames []string
 		if compLit, ok := node.Values[i].(*ast.CompositeLit); ok {
 			if ident, ok := compLit.Type.(*ast.Ident); ok {
-				if typeSymbol, isType := c.scopes.SymbolResolve(ident.Name); isType && typeSymbol.IsStruct() {
+				if typeSymbol, ok := c.scopes.SymbolResolve(ident.Name); ok && typeSymbol.IsStruct() {
 					assignedTypeNames = []string{typeSymbol.Name()}
+					isStruct = true
 				}
 			}
 		} else if callExpr, ok := node.Values[i].(*ast.CallExpr); ok {
@@ -819,12 +831,20 @@ func (c *Compiler) doValueSpec(node *ast.ValueSpec) error {
 			}
 		}
 
+		symbol2, err := c.scopes.SymbolDefine(name.Name, UnknownScope, isStruct)
+		if err != nil {
+			return err
+		}
+
 		if len(assignedTypeNames) > 0 {
-			symbol.SetTypes(assignedTypeNames)
+			symbol2.SetTypes(assignedTypeNames)
+			symbol2.SetObject(c.factory.NewString(objects.FrameStatic, symbol2.Name()+":"+strings.Join(assignedTypeNames, " ")))
+		} else {
+			symbol2.SetObject(c.factory.NewString(objects.FrameStatic, symbol2.Name()))
 		}
 
 		// 4. Emette bytecode per assegnare il valore dalla cima dello stack alla variabile.
-		if err := c.scopes.EmitSymbolDefine(symbol); err != nil {
+		if err = c.scopes.EmitSymbolDefine(symbol2); err != nil {
 			return err
 		}
 		// 5. Pulisce lo stack dal valore ora che è stato assegnato.
@@ -1203,9 +1223,8 @@ func (c *Compiler) doIdent(node *ast.Ident) error {
 // doImportSpec handles an import specification by defining the imported module name in the current scope.
 func (c *Compiler) doImportSpec(node *ast.ImportSpec) error {
 	moduleName := node.Path.Value
-	if _, err := c.scopes.SymbolDefine(strings.Trim(moduleName, "\"'"), ImportScope, false); err != nil {
-		return err
-	}
+	moduleName = strings.Trim(moduleName, "\"'")
+	c.imports[moduleName] = true
 	return nil
 }
 
@@ -1219,11 +1238,7 @@ func (c *Compiler) doSelectorExpr(node *ast.SelectorExpr) error {
 		// currently not handling complex cases like a[0].field
 		return fmt.Errorf("unsupported receiver for selector expression: %T", node.X)
 	}
-	receiverSymbol, ok := c.scopes.SymbolResolve(receiverIdent.Name)
-	if !ok {
-		return fmt.Errorf("undefined variable: %s", receiverIdent.Name)
-	}
-	if receiverSymbol.Scope() == ImportScope {
+	if _, ok = c.imports[receiverIdent.Name]; ok { //receiverSymbol.Scope() == ImportScope {
 		cacheKey := GetMangledName(receiverIdent.Name, node.Sel.Name)
 		nameIndex, found := c.references.Get(cacheKey)
 		if !found {
@@ -1233,8 +1248,13 @@ func (c *Compiler) doSelectorExpr(node *ast.SelectorExpr) error {
 		if _, err := c.scopes.Emit(bytecode.OpReferences, nameIndex); err != nil {
 			return err
 		}
-		//} else if len(receiverSymbol.Object()) > 0 { // struct
-	} else if receiverSymbol.IsStruct() { // struct
+		return nil
+	}
+	receiverSymbol, ok := c.scopes.SymbolResolve(receiverIdent.Name)
+	if !ok {
+		return fmt.Errorf("undefined variable: %s", receiverIdent.Name)
+	}
+	if receiverSymbol.IsStruct() { // struct
 		if err := c.compile(node.X); err != nil {
 			return err
 		}

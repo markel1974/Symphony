@@ -10,6 +10,11 @@ type TestResult struct {
     Passed  bool
 }
 
+
+func (tr * TestResult) Print() {
+	fmt.Println(tr.Name, tr.Passed)
+}
+
 //var testResults []TestResult = []TestResult{ { "var1", true}, { "var2", false }}
 var testResults = TestResult{ "var1", false }
 //var testResults = 1

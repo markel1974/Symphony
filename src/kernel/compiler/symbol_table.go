@@ -16,7 +16,6 @@ type SymbolScope string
 // FreeScope represents a free variable captured from an enclosing scope.
 // TypeScope represents a custom type definition in the scope.
 const (
-	ImportScope  SymbolScope = "IMPORT"
 	GlobalScope  SymbolScope = "GLOBAL"
 	LocalScope   SymbolScope = "LOCAL"
 	FreeScope    SymbolScope = "FREE"
@@ -152,7 +151,7 @@ func (s *SymbolTable) Resolve(name string) (*Symbol, bool) {
 	}
 	// Types, global variables, and builtin functions are directly accessible
 	// from inner scopes and should not be converted to "free variables".
-	if obj.Scope() == ImportScope || obj.Scope() == GlobalScope {
+	if obj.Scope() == GlobalScope {
 		return obj, true
 	}
 	s.freeSymbols = append(s.freeSymbols, obj)
