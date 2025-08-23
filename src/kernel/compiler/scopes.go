@@ -11,25 +11,28 @@ import (
 
 // Scopes manages a collection of compilation scopes and the associated symbol table for nested compilation contexts.
 type Scopes struct {
-	factory     *objects.GateKeeper
-	op          *bytecode.Opcodes
-	symbolTable *SymbolTable
-	root        *SymbolTable
-	scopeIndex  int
-	scopes      []*CompilationScope
+	factory              *objects.GateKeeper
+	op                   *bytecode.Opcodes
+	symbolTable          *SymbolTable
+	initSymbolTable      *SymbolTable
+	scopeIndex           int
+	compilations         []*CompilationScope
+	initCompilationScope *CompilationScope
 }
 
 // NewScopes initializes and returns a Scopes structure with a new symbol table, main compilation scope, and scope index set to 0.
 func NewScopes(factory *objects.GateKeeper, op *bytecode.Opcodes) *Scopes {
 	c := &Scopes{
-		factory: factory,
-		op:      op,
-		//builtin:     NewBuiltinSymbolTable(),
-		symbolTable: NewSymbolTable(),
-		scopeIndex:  0,
-		scopes:      []*CompilationScope{NewCompilationScope()},
+		factory:              factory,
+		op:                   op,
+		initSymbolTable:      NewSymbolTable(),
+		symbolTable:          nil,
+		scopeIndex:           0,
+		compilations:         []*CompilationScope{},
+		initCompilationScope: NewCompilationScope(),
 	}
-	c.root = c.symbolTable
+	c.compilations = append(c.compilations, c.initCompilationScope)
+	c.symbolTable = c.initSymbolTable
 	return c
 }
 
@@ -45,15 +48,20 @@ func (c *Scopes) SymbolDefine(symbol string, scope SymbolScope, isStruct bool) *
 
 // SymbolResolve attempts to find a symbol in the current scope and returns it along with a boolean indicating success.
 func (c *Scopes) SymbolResolve(symbol string) (*Symbol, bool) {
-	if obj, ok := c.root.Resolve(symbol); ok {
+	if obj, ok := c.initSymbolTable.Resolve(symbol); ok {
 		return obj, true
 	}
 	return c.symbolTable.Resolve(symbol)
 }
 
+// SymbolScope returns the current scope's symbol table's scope.
+func (c *Scopes) SymbolScope() SymbolScope {
+	return c.symbolTable.Scope()
+}
+
 // SymbolCount returns the number of symbol definitions in the symbol table.
 func (c *Scopes) SymbolCount() int {
-	return c.symbolTable.NumDefinitions()
+	return c.symbolTable.Count()
 }
 
 // SymbolFreeConvert converts and retrieves free symbols from the symbol table as a slice of ObjectPointer.
@@ -68,14 +76,18 @@ func (c *Scopes) SymbolFreeCount() int {
 
 // Current returns the current CompilationScope based on the internal scope index. Returns an error if the index is invalid.
 func (c *Scopes) Current() (*CompilationScope, error) {
-	if c.scopeIndex < 0 || c.scopeIndex >= len(c.scopes) {
+	if c.scopeIndex < 0 || c.scopeIndex >= len(c.compilations) {
 		return nil, fmt.Errorf("invalid scope index: %d", c.scopeIndex)
 	}
-	return c.scopes[c.scopeIndex], nil
+	return c.compilations[c.scopeIndex], nil
 }
 
-// AddInstructions appends the given byte slice to the current scope's instructions and returns the starting position or an error.
-func (c *Scopes) AddInstructions(ins []byte) (int, error) {
+func (c *Scopes) InstructionsInit() ([]byte, int) {
+	return c.initCompilationScope.Instructions(), c.initSymbolTable.Count()
+}
+
+// InstructionsAdd appends the given byte slice to the current scope's instructions and returns the starting position or an error.
+func (c *Scopes) InstructionsAdd(ins []byte) (int, error) {
 	scope, err := c.Current()
 	if err != nil {
 		return 0, err
@@ -87,9 +99,9 @@ func (c *Scopes) AddInstructions(ins []byte) (int, error) {
 	return posNewInstruction, nil
 }
 
-// SetLastInstruction updates the last emitted instruction for the current scope and tracks the previous one.
+// InstructionSetLast updates the last emitted instruction for the current scope and tracks the previous one.
 // It returns an error if the current scope cannot be retrieved.
-func (c *Scopes) SetLastInstruction(op bytecode.Opcode, pos int) error {
+func (c *Scopes) InstructionSetLast(op bytecode.Opcode, pos int) error {
 	scope, err := c.Current()
 	if err != nil {
 		return err
@@ -139,20 +151,20 @@ func (c *Scopes) InstructionGet(pos int) (byte, error) {
 }
 
 // Enter creates a new compilation scope, updates the symbol table to be enclosed, and increments the scope index.
-func (c *Scopes) Enter(fnName string) error {
+func (c *Scopes) Enter(structName string, funcName string) error {
 	if c.scopeIndex > maxScope {
 		return fmt.Errorf("maximum scope depth exceeded: %d", maxScope)
 	}
 	scope := NewCompilationScope()
-	c.symbolTable = NewEnclosedSymbolTable(c.symbolTable, fnName)
-	c.scopes = append(c.scopes, scope)
+	c.symbolTable = NewEnclosedSymbolTable(c.symbolTable, structName, funcName)
+	c.compilations = append(c.compilations, scope)
 	c.scopeIndex++
 	return nil
 }
 
 // Leave removes the current scope and reverts to the previous one, returning the instructions of the removed scope.
 func (c *Scopes) Leave() ([]byte, error) {
-	scopesLen := len(c.scopes)
+	scopesLen := len(c.compilations)
 	if scopesLen <= 0 {
 		return nil, errors.New("no scopes to leave")
 	}
@@ -161,7 +173,7 @@ func (c *Scopes) Leave() ([]byte, error) {
 		return nil, err
 	}
 	c.symbolTable = c.symbolTable.Outer()
-	c.scopes = c.scopes[:scopesLen-1]
+	c.compilations = c.compilations[:scopesLen-1]
 	c.scopeIndex--
 	return scope.Instructions(), nil
 }
@@ -182,11 +194,11 @@ func (c *Scopes) ChangeOperand(opPos int, operand int) error {
 // Emit generates and adds a new instruction to the current scope and updates the last emitted instruction info.
 func (c *Scopes) Emit(op bytecode.Opcode, operands ...int) (int, error) {
 	ins := c.op.CompileInstruction(op, operands...)
-	pos, err := c.AddInstructions(ins)
+	pos, err := c.InstructionsAdd(ins)
 	if err != nil {
 		return 0, err
 	}
-	if err = c.SetLastInstruction(op, pos); err != nil {
+	if err = c.InstructionSetLast(op, pos); err != nil {
 		return 0, err
 	}
 	return pos, nil

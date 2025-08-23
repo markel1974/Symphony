@@ -65,6 +65,7 @@ type VM struct {
 	loader      bytecode.ILoader
 	constants   *Constants
 	global      *Constants
+	entryPoints map[string]*objects.FuncCompiled
 }
 
 // New initializes and returns a new virtual machine instance configured with the provided components and settings.
@@ -75,9 +76,10 @@ func New(factory *objects.GateKeeper, op *bytecode.Opcodes, sequencer ISequencer
 		loader:      nil,
 		sourceFiles: nil,
 		references:  nil,
+		entryPoints: make(map[string]*objects.FuncCompiled),
 	}
-	v.constants = NewConstants(factory, v.SetError)
-	v.global = NewConstants(factory, v.SetError)
+	v.constants = NewConstants(factory, "constants", v.SetError)
+	v.global = NewConstants(factory, "global", v.SetError)
 	v.stack = NewStack(factory, stackSize, v.SetError)
 	v.frames = NewFrames(factory, maxFrames, v.SetError)
 	if sequencer == nil {
@@ -88,18 +90,39 @@ func New(factory *objects.GateKeeper, op *bytecode.Opcodes, sequencer ISequencer
 	for i, s := range seq {
 		v.sequencer[i] = NewSequencerData(s.Execute, s.Operands())
 	}
-	v.Reset()
 	return v
 }
 
-// Shutdown gracefully shuts down the virtual machine by setting its internal state to signify termination.
-func (v *VM) Shutdown() {
-	v.shutdown = true
-}
-
-// Print prints the current state of the virtual machine's stack to the console.'
-func (v *VM) Print(writer io.Writer) {
-	v.stack.Print(writer)
+// Setup initializes the virtual machine with the provided bytecode and loader components.
+func (v *VM) Setup(loader bytecode.ILoader, bc *bytecode.Bytecode) error {
+	references, err := loader.ResolveSymbols(bc.References())
+	if err != nil {
+		return err
+	}
+	constants := make([]objects.IObject, len(bc.Constants()))
+	for idx, constant := range bc.Constants() {
+		constants[idx] = constant
+		switch c := constant.(type) {
+		case *objects.Builtin:
+			symbol := loader.BuiltinResolve(idx)
+			if symbol == nil {
+				return fmt.Errorf("builtin symbol not found: %s", c.Name())
+			}
+			constants[idx] = symbol
+		}
+	}
+	for _, global := range bc.Global() {
+		switch c := global.(type) {
+		case *objects.FuncCompiled:
+			v.entryPoints[c.Name()] = c
+		}
+	}
+	v.loader = loader
+	v.sourceFiles = bc.SourceFiles()
+	v.references = references
+	v.constants.SetContainer(constants)
+	v.global.SetContainer(bc.Global())
+	return nil
 }
 
 // Reset reinitializes the virtual machine's state, clears the stack and frames, and resets execution-related variables.
@@ -110,6 +133,38 @@ func (v *VM) Reset() {
 	v.frames.Reset()
 	v.err = nil
 	v.shutdown = false
+}
+
+// Run executes the virtual machine's bytecode, managing the stack, frames, and instruction pointer state.
+func (v *VM) Run(mainId string, args ...interface{}) error {
+	v.Reset()
+	mainFn, ok := v.entryPoints[mainId]
+	if !ok {
+		return fmt.Errorf("entry point not found: %s", mainId)
+	}
+	v.currFrame = v.frames.Head()
+	v.currFrame.Bind(v.ip, mainFn, 0)
+	v.stack.SetStackPointer(v.currFrame.NumLocals())
+	if v.currFrame.NumParameters() != len(args) {
+		return fmt.Errorf("[%s] wrong number of arguments provided: want=%d, got=%d", mainId, v.currFrame.NumParameters(), len(args))
+	}
+	for idx, arg := range args {
+		argObj := v.factory.FromInterface(objects.FrameStatic, arg)
+		v.stack.SetAbsolute(idx, argObj)
+	}
+
+	v.loop()
+
+	if v.err != nil {
+		filePos, _ := v.sourceFiles.Position(v.currFrame.SourcePos(v.ip - 1))
+		err := fmt.Errorf("runtime error %w at %s", v.err, filePos)
+		for _, frame := range v.frames.Unroll() {
+			filePos, _ = v.sourceFiles.Position(frame.SourcePos(frame.SavedIP() - 1))
+			err = fmt.Errorf("%w at %s", err, filePos)
+		}
+		return err
+	}
+	return nil
 }
 
 // SetIp sets the virtual machine's instruction pointer to the specified value.
@@ -125,62 +180,6 @@ func (v *VM) GetIp() int {
 // ReseIp resets the instruction pointer of the virtual machine to its initial reset state defined by `resetIp`.
 func (v *VM) ReseIp() {
 	v.ip = resetIp
-}
-
-// Run executes the virtual machine's bytecode, managing the stack, frames, and instruction pointer state.
-func (v *VM) Run(loader bytecode.ILoader, bc *bytecode.Bytecode, mainId string, args ...interface{}) error {
-	references, err := loader.ResolveSymbols(bc.References())
-	if err != nil {
-		return err
-	}
-	var mainFn *objects.FuncCompiled
-	constants := make([]objects.IObject, len(bc.Constants()))
-	for idx, constant := range bc.Constants() {
-		constants[idx] = constant
-		switch c := constant.(type) {
-		case *objects.Builtin:
-			symbol := loader.BuiltinResolve(idx)
-			if symbol == nil {
-				return fmt.Errorf("builtin symbol not found: %s", c.Name())
-			}
-			constants[idx] = symbol
-		case *objects.FuncCompiled:
-			if mainId == c.Name() {
-				mainFn = c
-			}
-		}
-	}
-
-	if mainFn == nil {
-		return fmt.Errorf("main function not found")
-	}
-	v.loader = loader
-	v.sourceFiles = bc.SourceFiles()
-	v.references = references
-	v.constants.SetContainer(constants)
-	v.global.SetContainer(bc.Global())
-	v.currFrame = v.frames.Head()
-	v.currFrame.Bind(v.ip, mainFn, 0)
-	v.stack.SetStackPointer(v.currFrame.NumLocals())
-	if v.currFrame.NumParameters() != len(args) {
-		return fmt.Errorf("[%s] wrong number of arguments provided: want=%d, got=%d", mainId, v.currFrame.NumParameters(), len(args))
-	}
-	for idx, arg := range args {
-		argObj := v.factory.FromInterface(objects.FrameStatic, arg)
-		v.stack.SetAbsolute(idx, argObj)
-	}
-	v.loop()
-
-	if v.err != nil {
-		filePos, _ := v.sourceFiles.Position(v.currFrame.SourcePos(v.ip - 1))
-		err = fmt.Errorf("runtime error %w at %s", v.err, filePos)
-		for _, frame := range v.frames.Unroll() {
-			filePos, _ = v.sourceFiles.Position(frame.SourcePos(frame.SavedIP() - 1))
-			err = fmt.Errorf("%w at %s", err, filePos)
-		}
-		return err
-	}
-	return nil
 }
 
 // BinaryOpInt64 performs a binary operation on two integer values and returns the result.
@@ -237,6 +236,16 @@ func (v *VM) BinaryOpInt64(op objects.Operator, lhs int64, rhs int64) (int64, er
 	default:
 		return 0, objects.ErrInvalidOperator
 	}
+}
+
+// Shutdown gracefully shuts down the virtual machine by setting its internal state to signify termination.
+func (v *VM) Shutdown() {
+	v.shutdown = true
+}
+
+// Print prints the current state of the virtual machine's stack to the console.'
+func (v *VM) Print(writer io.Writer) {
+	v.stack.Print(writer)
 }
 
 // GetReturnValue returns the value from the top of the stack as an interface value.

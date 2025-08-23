@@ -78,9 +78,13 @@ func (c *Compiler) References() []objects.IObject {
 
 // Global retrieves and returns all global objects from the root scope and any objects tracked by references.
 func (c *Compiler) Global() []objects.IObject {
-	var ret []objects.IObject
-	for _, obj := range c.scopes.root.symbols {
-		ret = append(ret, c.factory.NewString(objects.FrameStatic, obj.name))
+	ret := make([]objects.IObject, len(c.scopes.initSymbolTable.symbols))
+	for _, obj := range c.scopes.initSymbolTable.definitions {
+		if obj.GetObject() == nil {
+			ret[obj.index] = c.factory.UndefinedValue()
+		} else {
+			ret[obj.index] = obj.GetObject()
+		}
 	}
 	return ret
 }
@@ -195,43 +199,35 @@ func (c *Compiler) doFile(node *ast.File) error {
 	}
 
 	// step 4: pre-define all functions AND methods, including their return types.
-	funcIndexes := make(map[string]int)
+	funcIndexes := make(map[string]*Symbol)
 
 	for _, fn := range funcDecls {
+		receiverNames, err := GetReceivers(fn.Type.Results)
+		if err != nil {
+			return err
+		}
 		var fnSymbol *Symbol
-		fnName := ""
-		if fn.Recv != nil && len(fn.Recv.List) > 0 { // Method
+		if fn.Recv != nil && len(fn.Recv.List) > 0 {
 			recvTypeIdent := GetIdent(fn.Recv.List[0])
 			if recvTypeIdent == nil {
 				return fmt.Errorf("unsupported method receiver type")
 			}
-			fnName = GetMangledName(recvTypeIdent.Name, fn.Name.Name)
-			symbol, ok := c.scopes.SymbolResolve(recvTypeIdent.Name)
-			if !ok || !symbol.IsStruct() {
+			baseSymbol, ok := c.scopes.SymbolResolve(recvTypeIdent.Name)
+			if !ok || !baseSymbol.IsStruct() {
 				return fmt.Errorf("unknown type '%s' for method receiver", recvTypeIdent.Name)
 			}
-			fnSymbol = symbol
-		} else { // Function
-			fnName = fn.Name.Name
-			fnSymbol = c.scopes.SymbolDefine(fnName, UnknownScope, false)
-		}
-		if fnSymbol == nil {
-			return fmt.Errorf("unknown function '%s'", fn.Name.Name)
-		}
-
-		// function pre-definition
-		placeholder := c.factory.NewFuncCompiled(objects.FrameStatic, fnName, nil, 0, 0, false, nil, nil)
-		funcIndexes[fnName] = c.constants.Add(fnName, placeholder)
-		receiverNames, err := GetReceivers(fn.Type.Results)
-		if err != nil {
-			return err
+			mangledName := GetMangledName(recvTypeIdent.Name, fn.Name.Name)
+			fnSymbol = c.scopes.SymbolDefine(mangledName, UnknownScope, false)
+			funcIndexes[mangledName] = fnSymbol
+		} else {
+			fnSymbol = c.scopes.SymbolDefine(fn.Name.Name, UnknownScope, false)
+			funcIndexes[fn.Name.Name] = fnSymbol
 		}
 		if len(receiverNames) > 0 {
 			fnSymbol.SetTypes(receiverNames)
 		}
 	}
 
-	// step 5: compile all other non-function code
 	for _, decl := range otherDecls {
 		if err := c.compile(decl); err != nil {
 			return err
@@ -249,20 +245,33 @@ func (c *Compiler) doFile(node *ast.File) error {
 		} else {
 			mangledName = fn.Name.Name
 		}
-		idx, ok := funcIndexes[mangledName]
+		//v, ok := funcIndexes[x].(*objects.FuncCompiled)
+		symbol, ok := funcIndexes[mangledName]
 		if !ok {
 			return fmt.Errorf("unknown function '%s'", mangledName)
 		}
-		if err := c.compileFuncBody(fn, objName, mangledName, idx); err != nil {
+		if err := c.compileFuncBody(fn, objName, mangledName, symbol); err != nil {
 			return err
 		}
 	}
+
+	c.scopes.scopeIndex = 0
+	if _, err := c.scopes.Emit(bytecode.OpReturn, 0); err != nil {
+		return err
+	}
+	initFuncCode := c.scopes.compilations[0].Instructions()
+	numLocals := c.scopes.SymbolCount()
+	initSymbols := c.scopes.SymbolDefine("__init__", UnknownScope, false)
+	compiledInitFn := c.factory.NewFuncCompiled(objects.FrameStatic, initSymbols.Name(), initFuncCode, numLocals, 0, false, nil, nil)
+	initSymbols.SetObject(compiledInitFn)
+	initSymbols.SetScope(GlobalScope)
+
 	return nil
 }
 
 // compileFuncBody compiles the body of a function declaration and generates the necessary bytecode instructions.
-func (c *Compiler) compileFuncBody(node *ast.FuncDecl, objName string, mangledName string, constIndex int) error {
-	if err := c.scopes.Enter(objName); err != nil {
+func (c *Compiler) compileFuncBody(node *ast.FuncDecl, structName string, funcName string, fnSymbol *Symbol) error {
+	if err := c.scopes.Enter(structName, funcName); err != nil {
 		return err
 	}
 	// Aggiunge il ricevitore e i parametri come variabili locali.
@@ -306,12 +315,12 @@ func (c *Compiler) compileFuncBody(node *ast.FuncDecl, objName string, mangledNa
 	if node.Recv != nil && len(node.Recv.List) > 0 {
 		nParams++
 	}
-	compiledFn := c.factory.NewFuncCompiled(objects.FrameStatic, mangledName, code, nLocals, nParams, false, nil, freeSymbols)
-	if err = c.constants.SetIndex(constIndex, compiledFn); err != nil {
-		return err
-	}
-	if node.Recv == nil {
-		if _, err = c.scopes.Emit(bytecode.OpClosure, constIndex, numFree); err != nil {
+	compiledFn := c.factory.NewFuncCompiled(objects.FrameStatic, funcName, code, nLocals, nParams, false, nil, freeSymbols)
+	fnSymbol.SetObject(compiledFn)
+	fnSymbol.SetScope(c.scopes.SymbolScope())
+
+	if node.Recv == nil && c.scopes.scopeIndex > 0 {
+		if _, err = c.scopes.Emit(bytecode.OpClosure, fnSymbol.Index(), numFree); err != nil {
 			return err
 		}
 		symbol, _ := c.scopes.SymbolResolve(node.Name.Name)
@@ -605,6 +614,7 @@ func (c *Compiler) doTypeSpec(node *ast.TypeSpec) error {
 	if _, ok := c.scopes.SymbolResolve(structName); ok {
 		return fmt.Errorf("type '%s' already defined", structName)
 	}
+	//properties := make(map[string]objects.IObject)
 	var fields []*FieldDef
 	if structType.Fields != nil {
 		for _, field := range structType.Fields.List {
@@ -614,12 +624,14 @@ func (c *Compiler) doTypeSpec(node *ast.TypeSpec) error {
 			}
 			fieldType := typeNameBuf.String()
 			for _, name := range field.Names {
+				//properties[name.Name] = c.factory.UndefinedValue()
 				// here we could add a check for duplicate fields.
 				fields = append(fields, NewFieldDef(name.Name, fieldType, nil))
 			}
 		}
 	}
 	symbol := c.scopes.SymbolDefine(structName, UnknownScope, true)
+	//symbol.SetObject(c.factory.NewStruct(objects.FrameStatic, properties))
 	//symbol.Scope() == GlobalScope
 	//c.constants.Add("", c.factory.NewStruct(objects.FrameStatic, map[string]objects.IObject{}))
 	//symbol.SetScope(TypeScope)

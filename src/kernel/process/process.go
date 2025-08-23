@@ -558,7 +558,10 @@ func (t *Process) handleMessageProcessStart(msg interfaces.IMessage) {
 		if t.vm == nil {
 			t.vm = vm.New(t.opcodes.Factory(), t.opcodes, nil)
 		}
-		if err = t.vm.Run(t.loader, bc, "main", mt.Args()); err != nil {
+		if err = t.vm.Setup(t.loader, bc); err != nil {
+			log.Printf("Process [%s]: error setting up VM: %s", t.cmd.Name(), err.Error())
+		}
+		if err = t.vm.Run("main", mt.Args()); err != nil {
 			log.Printf("Process [%s]: error running script: %s", t.cmd.Name(), err.Error())
 		}
 	} else {

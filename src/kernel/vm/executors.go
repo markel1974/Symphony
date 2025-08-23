@@ -495,7 +495,7 @@ func (op *OpStruct) Execute(v *VM, operands *[]int) {
 	//	panic("invalid OpMap position")
 	//}
 	mElem := v.stack.PopMapElements(numElements)
-	v.stack.Push(op.Factory().NewMap(v.currFrame.ID(), mElem))
+	v.stack.Push(op.Factory().NewStruct(v.currFrame.ID(), mElem))
 }
 
 // OpError represents an operation that creates and assigns an error object in a virtual machine's runtime environment.

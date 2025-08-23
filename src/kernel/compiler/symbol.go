@@ -2,6 +2,8 @@ package compiler
 
 import (
 	"go/ast"
+
+	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
 // FieldDef represents the definition of a field, including its name, type, and associated AST node.
@@ -42,25 +44,29 @@ func (f *FieldDef) SetNode(node ast.Node) {
 
 // Symbol represents an identifier with associated metadata such as name, scope, index, fields, and type information.
 type Symbol struct {
-	name      string
-	scope     SymbolScope
-	index     int
-	container string
-	isStruct  bool
-	types     []string
-	Fields    []*FieldDef
+	name       string
+	scope      SymbolScope
+	index      int
+	structName string
+	funcName   string
+	isStruct   bool
+	types      []string
+	Fields     []*FieldDef
+	object     objects.IObject
 }
 
 // NewSymbol creates a new Symbol instance with the provided name, index, scope, and associated object.
-func NewSymbol(name string, index int, scope SymbolScope, container string, isStruct bool) *Symbol {
+func NewSymbol(name string, index int, scope SymbolScope, structName string, funcName string, isStruct bool) *Symbol {
 	symbol := &Symbol{
-		name:      name,
-		index:     index,
-		scope:     scope,
-		container: container,
-		isStruct:  isStruct,
-		types:     []string{},
-		Fields:    []*FieldDef{},
+		name:       name,
+		index:      index,
+		scope:      scope,
+		structName: structName,
+		funcName:   funcName,
+		isStruct:   isStruct,
+		types:      []string{},
+		object:     nil,
+		Fields:     []*FieldDef{},
 	}
 	return symbol
 }
@@ -73,6 +79,16 @@ func (s *Symbol) Name() string {
 // Index returns the index of the Symbol within the program.
 func (s *Symbol) Index() int {
 	return s.index
+}
+
+// SetObject assigns the provided IObject implementation to the Symbol, allowing it to associate with specific metadata.
+func (s *Symbol) SetObject(obj objects.IObject) {
+	s.object = obj
+}
+
+// GetObject retrieves the associated IObject instance from the Symbol.
+func (s *Symbol) GetObject() objects.IObject {
+	return s.object
 }
 
 // IsStruct returns a boolean indicating whether the Symbol represents an struct.
@@ -90,9 +106,9 @@ func (s *Symbol) Types() []string {
 	return s.types
 }
 
-// Container returns the name of the container associated with the Symbol.
-func (s *Symbol) Container() string {
-	return s.container
+// StructName returns the name of the container associated with the Symbol.
+func (s *Symbol) StructName() string {
+	return s.structName
 }
 
 // Scope returns the scope of the Symbol, indicating its visibility and context within the program.

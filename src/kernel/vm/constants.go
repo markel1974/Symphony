@@ -10,14 +10,16 @@ import (
 type Constants struct {
 	factory   *objects.GateKeeper
 	container []objects.IObject
+	kind      string
 	errSignal func(err error)
 }
 
 // NewConstants initializes and returns a new Constants instance with provided global objects and error signaling function.
-func NewConstants(factory *objects.GateKeeper, errSignal func(err error)) *Constants {
+func NewConstants(factory *objects.GateKeeper, kind string, errSignal func(err error)) *Constants {
 	return &Constants{
 		factory:   factory,
 		container: nil,
+		kind:      kind,
 		errSignal: errSignal,
 	}
 }
@@ -30,7 +32,7 @@ func (g *Constants) SetContainer(constants []objects.IObject) {
 // Get retrieves the object from the constants pool at the specified index. Returns UndefinedValue if the index is invalid.
 func (g *Constants) Get(index uint) objects.IObject {
 	if index >= uint(len(g.container)) {
-		g.errSignal(fmt.Errorf("invalid constant index: %d", index))
+		g.errSignal(fmt.Errorf("invalid %s index: %d", g.kind, index))
 		return g.factory.UndefinedValue()
 	}
 	return g.container[index]

@@ -16,11 +16,10 @@ type SymbolScope string
 // FreeScope represents a free variable captured from an enclosing scope.
 // TypeScope represents a custom type definition in the scope.
 const (
-	ImportScope SymbolScope = "IMPORT"
-	GlobalScope SymbolScope = "GLOBAL"
-	LocalScope  SymbolScope = "LOCAL"
-	FreeScope   SymbolScope = "FREE"
-	//TypeScope    SymbolScope = "TYPE"
+	ImportScope  SymbolScope = "IMPORT"
+	GlobalScope  SymbolScope = "GLOBAL"
+	LocalScope   SymbolScope = "LOCAL"
+	FreeScope    SymbolScope = "FREE"
 	UnknownScope SymbolScope = "UNKNOWN"
 )
 
@@ -28,31 +27,37 @@ const (
 // It supports adding, resolving, and managing symbols across nested and global scopes.
 // The structure tracks variable and function definitions and handles free symbols for closures.
 type SymbolTable struct {
-	outer          *SymbolTable
-	symbols        map[string]*Symbol
-	numDefinitions int
-	freeSymbols    []*Symbol
-	uniqueCounter  int
-	container      string
+	outer         *SymbolTable
+	symbols       map[string]*Symbol
+	definitions   []*Symbol
+	freeSymbols   []*Symbol
+	uniqueCounter int
+	structName    string
+	funcName      string
 }
 
 // NewSymbolTable initializes and returns a new instance of SymbolTable with an empty container and counter set to zero.
 func NewSymbolTable() *SymbolTable {
 	s := &SymbolTable{
-		container:      "",
-		symbols:        make(map[string]*Symbol),
-		uniqueCounter:  0,
-		numDefinitions: 0,
+		structName:    "",
+		funcName:      "",
+		symbols:       make(map[string]*Symbol),
+		uniqueCounter: 0,
 	}
 	return s
 }
 
 // NewEnclosedSymbolTable creates a new symbol table enclosed by the provided outer symbol table.
-func NewEnclosedSymbolTable(outer *SymbolTable, container string) *SymbolTable {
+func NewEnclosedSymbolTable(outer *SymbolTable, structName string, funcName string) *SymbolTable {
 	s := NewSymbolTable()
-	s.container = container
+	s.structName = structName
+	s.funcName = funcName
 	s.outer = outer
 	return s
+}
+
+func (s *SymbolTable) Count() int {
+	return len(s.definitions)
 }
 
 // Print displays the symbols stored in the SymbolTable, excluding those with the "BUILTIN" scope.
@@ -66,11 +71,6 @@ func (s *SymbolTable) Print(writer io.Writer) {
 	for idx, v := range s.freeSymbols {
 		_, _ = fmt.Fprintf(writer, "%d %s %v %d %v", idx, v.Name(), v.Scope(), v.Index(), v.Fields)
 	}
-}
-
-// NumDefinitions returns the number of symbols defined in the symbol table.
-func (s *SymbolTable) NumDefinitions() int {
-	return s.numDefinitions
 }
 
 // Outer returns the outer SymbolTable linked to the current SymbolTable, or nil if no outer SymbolTable exists.
@@ -95,6 +95,12 @@ func (s *SymbolTable) DefineUnique(name string, scope SymbolScope, isObj bool) *
 	s.uniqueCounter++
 	return s.Define(uniqueName, scope, isObj)
 }
+func (s *SymbolTable) Scope() SymbolScope {
+	if s.outer == nil {
+		return GlobalScope
+	}
+	return LocalScope
+}
 
 // Define creates a new Symbol with the given name, assigns it a scope and index, and stores it in the symbol table.
 func (s *SymbolTable) Define(name string, scope SymbolScope, isObj bool) *Symbol {
@@ -105,9 +111,9 @@ func (s *SymbolTable) Define(name string, scope SymbolScope, isObj bool) *Symbol
 			scope = LocalScope
 		}
 	}
-	symbol := NewSymbol(name, s.numDefinitions, scope, s.container, isObj)
+	symbol := NewSymbol(name, len(s.definitions), scope, s.structName, s.funcName, isObj)
+	s.definitions = append(s.definitions, symbol)
 	s.symbols[name] = symbol
-	s.numDefinitions++
 	return symbol
 }
 
@@ -130,7 +136,7 @@ func (s *SymbolTable) Resolve(name string) (*Symbol, bool) {
 		return obj, true
 	}
 	s.freeSymbols = append(s.freeSymbols, obj)
-	symbol := NewSymbol(obj.Name(), len(s.freeSymbols)-1, FreeScope, s.container, obj.IsStruct())
+	symbol := NewSymbol(obj.Name(), len(s.freeSymbols)-1, FreeScope, s.structName, s.funcName, obj.IsStruct())
 	s.symbols[obj.Name()] = symbol
 	return symbol, true
 }
