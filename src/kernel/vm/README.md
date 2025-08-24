@@ -23,35 +23,29 @@ The heart of the VM's consistency lies in `vm/bytecode/opcodes.go`. Instead of s
 -   **Automated Behavior:** Components like the compiler, disassembler, and the VM's execution loop *query* this central source to understand how to build, format, or execute bytecode. For example, to advance the instruction pointer, the VM uses `OpcodeToOperandsOffset` to automatically determine how many bytes to skip.
 -   **Effortless Maintenance:** To modify an instruction (e.g., add an operand), only the central definition in `opcodes.go` needs to be changed. The rest of the system adapts automatically, drastically reducing the risk of bugs.
 
-### 2. The Execution Engine: The Strategy Pattern
+### 2. The Execution Engine: A Strategic Choice for Modularity
 
-The VM's core execution loop avoids a monolithic and unmaintainable `switch` statement. Instead, it uses the **Strategy Pattern** in its purest form, implemented across `vm/sequencer.go` and `vm/executors.go`.
+The VM's core execution loop deliberately avoids a monolithic `switch` statement. Instead, it uses the **Strategy Pattern** in its purest form, implemented across `vm/sequencer.go` and `vm/executors.go`. This is a fundamental architectural decision that prioritizes long-term health and flexibility over trivial micro-optimizations.
 
+-   **Architecture Over Micro-Performance:** Even if a giant `switch` statement were to be faster by a small margin, it would be a complicated choice. The value of this architecture is not measured in clock cycles, but in **flexibility and maintainability**.
 -   **Encapsulated Logic:** The logic for each opcode is encapsulated in its own dedicated `struct` (e.g., `OpConstant`, `OpBinary`), which implements the `IOpExecutor` interface. Each executor is a small, focused "specialist."
--   **Self-Describing Executors:** In a Go-idiomatic design, each executor `struct` **embeds** its own `*bytecode.OpcodeDetails`. This means that at runtime, inside the `Execute` method, an instruction knows everything about itself—its name, its opcode, and the layout of its operands—without needing to query an external source. This is a powerful example of **composition over inheritance**.
--   **Pragmatic Performance:** While the design uses interfaces for flexibility, the critical execution loop is highly optimized. During initialization, the `Sequencer` creates a slice of **direct function pointers** to each executor's `Execute` method. This means the main loop performs a direct function call, which is extremely fast, avoiding any dynamic dispatch overhead at runtime.
+-   **Pragmatic Performance:** While prioritizing design, the system remains performant. During initialization, the `Sequencer` creates a slice of **direct function pointers** to each executor's `Execute` method. This means the main loop performs a direct function call, which is extremely fast, avoiding any dynamic dispatch overhead at runtime.
 
 ### 3. Modular Architecture: The Sequencer as an Interchangeable Engine
 
-The `sequencer` architecture is not just an elegant implementation of the Strategy Pattern for executing the VM's native bytecode; it is the cornerstone of a much deeper flexibility that allows the very purpose of the virtual machine to be radically redefined.
+The `sequencer` architecture is not just an elegant implementation of the Strategy Pattern; it is the cornerstone of a much deeper flexibility. The Instruction Set Architecture (ISA) is not hardwired into the VM's core. It is, in effect, an **interchangeable "instruction disk."**
 
-The Instruction Set Architecture (ISA) is not hardwired into the VM's core. Instead, thanks to the clear separation of concerns, the entire instruction set is, in effect, an interchangeable "plugin."
-
-#### Beyond Compilation: Pure Emulation
-
-While an obvious approach to running a different language would be to write a new compiler that targets the VM's bytecode, this architecture enables a far more powerful and performant alternative: **replacing the sequencer itself**.
+This enables a far more powerful and performant alternative to cross-compilation: **replacing the sequencer itself**.
 
 ##### Concrete Example: Transforming the VM into a Z80 CPU Emulator
 
-Instead of writing a compiler from Z80 assembly to the VM's bytecode (a process that would require multiple VM instructions to emulate a single hardware instruction), one could create a dedicated `Z80_Sequencer`:
+Instead of writing a compiler from Z80 assembly to the VM's bytecode, one could create a dedicated `Z80_Sequencer`:
 
 1.  **New Executors**: Implement an `IOpExecutor` for each opcode of the Z80 CPU (e.g., `LD_A_n_Executor`, `ADD_A_B_Executor`, etc.).
 2.  **1-to-1 Dispatch**: The sequencer's array would become a direct dispatch table mapping the Z80's binary opcodes (0x00 to 0xFF) to the corresponding executor.
-3.  **Native Execution**: The logic within each executor would no longer manipulate the VM's high-level stack but would operate directly on a data structure representing the Z80 CPU's registers and memory.
+3.  **Native Execution**: The logic within each executor would operate directly on a data structure representing the Z80 CPU's registers and memory.
 
-In this scenario, the VM's execution loop (`v.sequencer[opcode](v)`) is no longer interpreting a scripting language. It is, in effect, performing the **fetch-decode-execute cycle of an emulated Z80 CPU**, with the maximum efficiency afforded by direct function pointer dispatch.
-
-This ability to transform a high-level language VM into a high-performance, low-level CPU emulator—simply by "swapping the instruction disk"—is the ultimate testament to the robustness and brilliance of this architecture.
+In this scenario, the VM's execution loop is no longer interpreting a scripting language. It is, in effect, performing the **fetch-decode-execute cycle of an emulated Z80 CPU**, with the maximum efficiency afforded by direct function pointer dispatch. This ability to transform a high-level language VM into a high-performance, low-level CPU emulator—simply by "swapping the instruction disk"—is the ultimate testament to the robustness and brilliance of this architecture.
 
 ### 4. The Object System: Dynamic and Rich
 
@@ -71,4 +65,4 @@ The combination of a data-driven instruction set, the Strategy Pattern for execu
 
 -   ✅ **Robust:** The system's behavior is predictable and consistent, with strong guards against common bugs.
 -   ✅ **Maintainable:** The code is a pleasure to read, debug, and manage.
--   ✅ **Scalable:** The architecture is built to evolve, allowing new features and instructions to be added with confidence.
+-   ✅ **Scalable:** The architecture is built to evolve, allowing new features and even entirely new instruction sets to be added with confidence.
