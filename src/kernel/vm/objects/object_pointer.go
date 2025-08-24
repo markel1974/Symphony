@@ -9,13 +9,13 @@ const (
 // It embeds Object, inheriting default behaviors for the IObject interface methods.
 // The value field holds the actual IObject instance being wrapped.
 type ObjectPointer struct {
-	factory *GateKeeper
+	factory IGateKeeper
 	frame   int
 	value   *IObject
 }
 
 // NewObjectPointer creates a new ObjectPointer instance wrapping the provided IObject pointer.// NewObjectPointer creates a new ObjectPointer instance with the provided IObject values.
-func newObjectPointer(factory *GateKeeper, frame int, value *IObject) IObject {
+func newObjectPointer(factory IGateKeeper, frame int, value *IObject) IObject {
 	return &ObjectPointer{
 		factory: factory,
 		frame:   frame,
@@ -24,7 +24,7 @@ func newObjectPointer(factory *GateKeeper, frame int, value *IObject) IObject {
 }
 
 // GateKeeper returns a reference to the GateKeeper associated with the Object.
-func (o *ObjectPointer) GateKeeper() *GateKeeper {
+func (o *ObjectPointer) GateKeeper() IGateKeeper {
 	return o.factory
 }
 

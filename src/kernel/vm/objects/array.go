@@ -11,25 +11,25 @@ const (
 
 // Array represents a collection of IObject elements, providing methods for manipulation, indexing, and iteration.
 type Array struct {
-	gk     *GateKeeper
+	gk     IGateKeeper
 	frame  int
 	values []IObject
 }
 
 // NewArray creates and returns a new Array object initialized with the provided slice of IObject elements.
-func newArray(factory *GateKeeper, frame int, value []IObject) IObject {
+func newArray(gk IGateKeeper, frame int, value []IObject) IObject {
 	if len(value) > maxArrayLen {
 		value = value[0:maxArrayLen]
 	}
 	return &Array{
-		gk:     factory,
+		gk:     gk,
 		frame:  frame,
 		values: value,
 	}
 }
 
 // GateKeeper returns the GateKeeper instance associated with the current Array.
-func (o *Array) GateKeeper() *GateKeeper {
+func (o *Array) GateKeeper() IGateKeeper {
 	return o.gk
 }
 
@@ -202,5 +202,5 @@ func (o *Array) CanIterate() bool {
 
 // Iterate returns an IIterator for the Array instance, allowing sequential access to its elements.
 func (o *Array) Iterate(frame int) IIterator {
-	return o.GateKeeper().newArrayIterator(frame, o.values, 0)
+	return o.GateKeeper().NewArrayIterator(frame, o.values, 0)
 }

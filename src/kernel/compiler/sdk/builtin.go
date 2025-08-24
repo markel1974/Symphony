@@ -8,13 +8,13 @@ import (
 
 // BuiltinFunctions is a structure that encapsulates and provides access to predefined built-in function modules.
 type BuiltinFunctions struct {
-	factory *objects.GateKeeper
+	factory objects.IGateKeeper
 	pkg     []objects.IObject
 }
 
 // NewBuiltinFunctions initializes a new BuiltinFunctions instance with predefined standard functions.
 // It returns a pointer to the newly created BuiltinFunctions object.
-func NewBuiltinFunctions(factory *objects.GateKeeper) *BuiltinFunctions {
+func NewBuiltinFunctions(factory objects.IGateKeeper) *BuiltinFunctions {
 	b := &BuiltinFunctions{
 		factory: factory,
 	}

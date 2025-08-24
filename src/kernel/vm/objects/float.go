@@ -13,13 +13,13 @@ const (
 // It embeds Object to implement common interface methods and extends behavior where necessary.
 // The value field holds the actual float64 values encapsulated by the Float type.
 type Float struct {
-	gk    *GateKeeper
+	gk    IGateKeeper
 	frame int
 	value float64
 }
 
 // NewFloat creates and returns a pointer to a new Float object initialized with the specified float64 values.
-func newFloat(gk *GateKeeper, frame int, value float64) IObject {
+func newFloat(gk IGateKeeper, frame int, value float64) IObject {
 	return &Float{
 		gk:    gk,
 		frame: frame,
@@ -28,7 +28,7 @@ func newFloat(gk *GateKeeper, frame int, value float64) IObject {
 }
 
 // GateKeeper returns a reference to the GateKeeper associated with the Object.
-func (o *Float) GateKeeper() *GateKeeper {
+func (o *Float) GateKeeper() IGateKeeper {
 	return o.gk
 }
 

@@ -36,7 +36,7 @@ func init() {
 // Bytecode represents a construct that encapsulates compiled code, associated constants, and object references.
 // It aggregates information like source files, constant pool, and referenced objects required for execution.
 type Bytecode struct {
-	factory    *objects.GateKeeper
+	factory    objects.IGateKeeper
 	opcodes    *Opcodes
 	files      *Files
 	constants  []objects.IObject
@@ -45,7 +45,7 @@ type Bytecode struct {
 }
 
 // NewBytecode creates and returns a new instance of Bytecode with an initialized Files object.
-func NewBytecode(factory *objects.GateKeeper, op *Opcodes, constants []objects.IObject, references []objects.IObject, global []objects.IObject) *Bytecode {
+func NewBytecode(factory objects.IGateKeeper, op *Opcodes, constants []objects.IObject, references []objects.IObject, global []objects.IObject) *Bytecode {
 	return &Bytecode{
 		factory:    factory,
 		opcodes:    op,

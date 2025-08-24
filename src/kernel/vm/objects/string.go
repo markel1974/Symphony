@@ -12,14 +12,14 @@ const (
 // This type embeds Object and supports operations like indexing, iteration, comparison, and copying.
 // It implements IObject and provides a richer functionality for string manipulation within the runtime system.
 type String struct {
-	factory *GateKeeper
+	factory IGateKeeper
 	frame   int
 	value   string
 	runeStr []rune
 }
 
 // NewString creates and returns a new String object initialized with the provided string values.
-func newString(factory *GateKeeper, frame int, value string) IObject {
+func newString(factory IGateKeeper, frame int, value string) IObject {
 	if len(value) > MaxStringLen {
 		value = value[0:MaxStringLen]
 	}
@@ -31,7 +31,7 @@ func newString(factory *GateKeeper, frame int, value string) IObject {
 }
 
 // GateKeeper returns a reference to the GateKeeper associated with the Object.
-func (o *String) GateKeeper() *GateKeeper {
+func (o *String) GateKeeper() IGateKeeper {
 	return o.factory
 }
 
@@ -179,5 +179,5 @@ func (o *String) Iterate(frame int) IIterator {
 	if o.runeStr == nil {
 		o.runeStr = []rune(o.value)
 	}
-	return o.GateKeeper().newStringIterator(frame, o.runeStr, 0)
+	return o.GateKeeper().NewStringIterator(frame, o.runeStr, 0)
 }

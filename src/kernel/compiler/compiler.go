@@ -19,7 +19,7 @@ const (
 
 // Compiler represents a structure to manage the compilation process, including scopes and associated token file sets.
 type Compiler struct {
-	gk           *objects.GateKeeper
+	gk           objects.IGateKeeper
 	loader       *sdk.Loader
 	scopes       *Scopes
 	constants    *Constants
@@ -33,7 +33,7 @@ type Compiler struct {
 }
 
 // New creates and returns a new instance of Compiler with initialized scopes using a standard library loader.
-func New(gk *objects.GateKeeper) *Compiler {
+func New(gk objects.IGateKeeper) *Compiler {
 	loader := sdk.NewLoader(gk)
 	op := bytecode.NewOpcodes(gk)
 	scopes := NewScopes(gk, op)

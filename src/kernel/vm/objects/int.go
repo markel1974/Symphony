@@ -10,13 +10,13 @@ const (
 
 // Int represents an integer type with a 64-bit value and methods for operations, equality, and object behavior.
 type Int struct {
-	gk    *GateKeeper
+	gk    IGateKeeper
 	frame int
 	value int64
 }
 
 // NewInt creates and returns a new instance of the Int struct initialized with the specified int64 value.
-func newInt(factory *GateKeeper, frame int, value int64) IObject {
+func newInt(factory IGateKeeper, frame int, value int64) IObject {
 	return &Int{
 		gk:    factory,
 		frame: frame,
@@ -25,7 +25,7 @@ func newInt(factory *GateKeeper, frame int, value int64) IObject {
 }
 
 // GateKeeper returns a reference to the GateKeeper associated with the Object.
-func (o *Int) GateKeeper() *GateKeeper {
+func (o *Int) GateKeeper() IGateKeeper {
 	return o.gk
 }
 

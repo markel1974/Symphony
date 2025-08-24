@@ -7,7 +7,7 @@ const (
 
 // FuncCompiled represents a compiled function with bytecode instructions, metadata, and associated free variables.
 type FuncCompiled struct {
-	gk            *GateKeeper
+	gk            IGateKeeper
 	frame         int
 	name          string
 	instructions  *Instructions
@@ -19,7 +19,7 @@ type FuncCompiled struct {
 }
 
 // NewFunctionCompiled creates a new instance of FuncCompiled with the given instructions, locals, parameters, varArgs, sourceMap, and free vars.
-func newFuncCompiled(factory *GateKeeper, frame int, name string, instructions []byte, numLocals int, numParameters int, varArgs bool, sourceMap map[int]int, free []*ObjectPointer) IObject {
+func newFuncCompiled(factory IGateKeeper, frame int, name string, instructions []byte, numLocals int, numParameters int, varArgs bool, sourceMap map[int]int, free []*ObjectPointer) IObject {
 	if sourceMap == nil {
 		sourceMap = make(map[int]int)
 	}
@@ -37,7 +37,7 @@ func newFuncCompiled(factory *GateKeeper, frame int, name string, instructions [
 }
 
 // GateKeeper returns a reference to the GateKeeper associated with the Object.
-func (o *FuncCompiled) GateKeeper() *GateKeeper {
+func (o *FuncCompiled) GateKeeper() IGateKeeper {
 	return o.gk
 }
 

@@ -14,14 +14,14 @@ import (
 )
 
 type Declarations struct {
-	gk         *objects.GateKeeper
+	gk         objects.IGateKeeper
 	references *Constants
 	constants  *Constants
 	scopes     *Scopes
 	fileSet    *token.FileSet
 }
 
-func NewDeclarations(gk *objects.GateKeeper, references *Constants, constants *Constants, scopes *Scopes) *Declarations {
+func NewDeclarations(gk objects.IGateKeeper, references *Constants, constants *Constants, scopes *Scopes) *Declarations {
 	return &Declarations{
 		gk: gk, references: references, constants: constants, scopes: scopes,
 	}

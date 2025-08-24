@@ -7,11 +7,11 @@ const (
 
 // Undefined represents an undefined values.
 type Undefined struct {
-	factory *GateKeeper
+	factory IGateKeeper
 	frame   int
 }
 
-func newUndefined(factory *GateKeeper, frame int) IObject {
+func newUndefined(factory IGateKeeper, frame int) IObject {
 	return &Undefined{
 		factory: factory,
 		frame:   frame,
@@ -19,7 +19,7 @@ func newUndefined(factory *GateKeeper, frame int) IObject {
 }
 
 // GateKeeper returns a reference to the GateKeeper associated with the Object.
-func (o *Undefined) GateKeeper() *GateKeeper {
+func (o *Undefined) GateKeeper() IGateKeeper {
 	return o.factory
 }
 

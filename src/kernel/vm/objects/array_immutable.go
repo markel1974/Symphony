@@ -12,13 +12,13 @@ const (
 // ArrayImmutable represents an array that cannot be modified after creation.
 // Implements IObject and supports iteration, comparison, and copying.
 type ArrayImmutable struct {
-	gk     *GateKeeper
+	gk     IGateKeeper
 	frame  int
 	values []IObject
 }
 
 // NewArrayImmutable creates a new ArrayImmutable instance with the given slice of IObject, ensuring it is immutable.
-func newArrayImmutable(factory *GateKeeper, frame int, value []IObject) IObject {
+func newArrayImmutable(factory IGateKeeper, frame int, value []IObject) IObject {
 	return &ArrayImmutable{
 		gk:     factory,
 		frame:  frame,
@@ -27,7 +27,7 @@ func newArrayImmutable(factory *GateKeeper, frame int, value []IObject) IObject 
 }
 
 // GateKeeper returns the GateKeeper instance associated with the ArrayImmutable.
-func (o *ArrayImmutable) GateKeeper() *GateKeeper {
+func (o *ArrayImmutable) GateKeeper() IGateKeeper {
 	return o.gk
 }
 
@@ -157,5 +157,5 @@ func (o *ArrayImmutable) CanIterate() bool {
 
 // Iterate returns an IIterator to traverse the elements of the ArrayImmutable sequentially.
 func (o *ArrayImmutable) Iterate(frame int) IIterator {
-	return o.GateKeeper().newArrayIterator(frame, o.values, 0)
+	return o.GateKeeper().NewArrayIterator(frame, o.values, 0)
 }

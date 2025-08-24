@@ -11,7 +11,7 @@ import (
 
 // Scopes manages a collection of compilation scopes and the associated symbol table for nested compilation contexts.
 type Scopes struct {
-	factory              *objects.GateKeeper
+	factory              objects.IGateKeeper
 	op                   *bytecode.Opcodes
 	symbolTable          *SymbolTable
 	initSymbolTable      *SymbolTable
@@ -21,7 +21,7 @@ type Scopes struct {
 }
 
 // NewScopes initializes and returns a Scopes structure with a new symbol table, main compilation scope, and scope index set to 0.
-func NewScopes(factory *objects.GateKeeper, op *bytecode.Opcodes) *Scopes {
+func NewScopes(factory objects.IGateKeeper, op *bytecode.Opcodes) *Scopes {
 	c := &Scopes{
 		factory:              factory,
 		op:                   op,

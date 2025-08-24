@@ -10,13 +10,13 @@ const (
 
 // Time represents a custom object encapsulating a Go time.Time values with extended behaviors and operations.
 type Time struct {
-	factory *GateKeeper
+	factory IGateKeeper
 	frame   int
 	value   time.Time
 }
 
 // NewTime creates a new instance of Time wrapping the provided time.Time values.
-func newTime(factory *GateKeeper, frame int, value time.Time) IObject {
+func newTime(factory IGateKeeper, frame int, value time.Time) IObject {
 	return &Time{
 		factory: factory,
 		frame:   frame,
@@ -25,7 +25,7 @@ func newTime(factory *GateKeeper, frame int, value time.Time) IObject {
 }
 
 // GateKeeper returns a reference to the GateKeeper associated with the Object.
-func (o *Time) GateKeeper() *GateKeeper {
+func (o *Time) GateKeeper() IGateKeeper {
 	return o.factory
 }
 

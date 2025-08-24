@@ -29,7 +29,7 @@ func NewFunctionDescription(funcDecl *ast.FuncDecl) *FunctionDescription {
 
 // Functions is a collection that manages a list of function descriptions.
 type Functions struct {
-	gk           *objects.GateKeeper
+	gk           objects.IGateKeeper
 	constants    *Constants
 	scopes       *Scopes
 	imports      *Imports
@@ -38,7 +38,7 @@ type Functions struct {
 }
 
 // NewFunctions initializes and returns a new Functions instance.
-func NewFunctions(gk *objects.GateKeeper, constants *Constants, scopes *Scopes, imports *Imports, declarations *Declarations) *Functions {
+func NewFunctions(gk objects.IGateKeeper, constants *Constants, scopes *Scopes, imports *Imports, declarations *Declarations) *Functions {
 	return &Functions{
 		gk:           gk,
 		constants:    constants,

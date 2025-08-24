@@ -8,13 +8,13 @@ import (
 
 // Globals encapsulates shared system-wide data like objects, kind, and error signals for centralized management.
 type Globals struct {
-	factory   *objects.GateKeeper
+	factory   objects.IGateKeeper
 	container []objects.IObject
 	errSignal func(err error)
 }
 
 // NewGlobals initializes and returns a new Globals instance with the provided factory, kind, and error signal handler.
-func NewGlobals(factory *objects.GateKeeper, errSignal func(err error)) *Globals {
+func NewGlobals(factory objects.IGateKeeper, errSignal func(err error)) *Globals {
 	return &Globals{
 		factory:   factory,
 		container: nil,

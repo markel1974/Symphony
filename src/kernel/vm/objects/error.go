@@ -14,14 +14,14 @@ const (
 
 // Error represents an object that encapsulates an error and implements the IObject interface.
 type Error struct {
-	gk    *GateKeeper
+	gk    IGateKeeper
 	frame int
 	err   string
 	value IObject
 }
 
 // NewError creates and returns a new Error object with the specified values.
-func newError(factory *GateKeeper, frame int, err string) IObject {
+func newError(factory IGateKeeper, frame int, err string) IObject {
 	if len(err) > maxErrorLen {
 		err = err[:maxErrorLen]
 	}
@@ -34,7 +34,7 @@ func newError(factory *GateKeeper, frame int, err string) IObject {
 }
 
 // GateKeeper returns a reference to the GateKeeper associated with the Object.
-func (o *Error) GateKeeper() *GateKeeper {
+func (o *Error) GateKeeper() IGateKeeper {
 	return o.gk
 }
 

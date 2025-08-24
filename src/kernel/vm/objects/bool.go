@@ -9,13 +9,13 @@ const (
 
 // Bool is a custom type representing a boolean values, implementing IObject interface and encapsulating a boolean value.
 type Bool struct {
-	gk    *GateKeeper
+	gk    IGateKeeper
 	frame int
 	value bool
 }
 
 // NewBool creates and returns a new Bool object with the specified boolean value.
-func newBool(factory *GateKeeper, frame int, value bool) IObject {
+func newBool(factory IGateKeeper, frame int, value bool) IObject {
 	return &Bool{
 		gk:    factory,
 		frame: frame,
@@ -24,7 +24,7 @@ func newBool(factory *GateKeeper, frame int, value bool) IObject {
 }
 
 // GateKeeper returns a reference to the GateKeeper associated with the Object.
-func (o *Bool) GateKeeper() *GateKeeper {
+func (o *Bool) GateKeeper() IGateKeeper {
 	return o.gk
 }
 

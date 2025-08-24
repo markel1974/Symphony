@@ -12,7 +12,7 @@ type Base64 struct {
 }
 
 // NewBase64 initializes a new Base64 instance with predefined encoding and decoding functions in the module map.
-func NewBase64(f *objects.GateKeeper) *Base64 {
+func NewBase64(f objects.IGateKeeper) *Base64 {
 	b := &Base64{}
 	container := []objects.IObject{
 		f.NewFuncPackage(objects.FuncPackageDef, "EncodeToString", f.FuncIbSOs(base64.StdEncoding.EncodeToString)),

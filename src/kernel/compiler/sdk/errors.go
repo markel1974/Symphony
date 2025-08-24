@@ -6,12 +6,12 @@ import (
 
 // Errors is a type that encapsulates a map of module functions accessible as objects.
 type Errors struct {
-	factory *objects.GateKeeper
+	factory objects.IGateKeeper
 	*Package
 }
 
 // NewErrors initializes and returns a new Errors instance with pre-defined function modules.
-func NewErrors(factory *objects.GateKeeper) *Errors {
+func NewErrors(factory objects.IGateKeeper) *Errors {
 	e := &Errors{
 		factory: factory,
 	}

@@ -8,12 +8,12 @@ import (
 
 // Fmt represents a struct that provides formatted output methods using a map of predefined functions.
 type Fmt struct {
-	factory *objects.GateKeeper
+	factory objects.IGateKeeper
 	*Package
 }
 
 // NewFmt initializes and returns a new Fmt instance with predefined formatting functions as module properties.
-func NewFmt(factory *objects.GateKeeper) *Fmt {
+func NewFmt(factory objects.IGateKeeper) *Fmt {
 	f := &Fmt{
 		factory: factory,
 	}

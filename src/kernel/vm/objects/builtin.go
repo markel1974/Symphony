@@ -11,14 +11,14 @@ const (
 
 // Builtin defines a struct representing a built-in object with a name and an integer value.
 type Builtin struct {
-	gk    *GateKeeper
+	gk    IGateKeeper
 	frame int
 	name  string
 	index int
 }
 
 // NewBuiltin creates a new instance of Builtin with the specified name and value.
-func newBuiltin(factory *GateKeeper, frame int, name string, index int) IObject {
+func newBuiltin(factory IGateKeeper, frame int, name string, index int) IObject {
 	return &Builtin{
 		gk:    factory,
 		frame: frame,
@@ -28,7 +28,7 @@ func newBuiltin(factory *GateKeeper, frame int, name string, index int) IObject 
 }
 
 // GateKeeper returns a reference to the GateKeeper associated with the Object.
-func (o *Builtin) GateKeeper() *GateKeeper {
+func (o *Builtin) GateKeeper() IGateKeeper {
 	return o.gk
 }
 

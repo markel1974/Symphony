@@ -9,11 +9,11 @@ import (
 // Rand is a struct that encapsulates a module mapping of string keys to objects implementing the IObject interface.
 type Rand struct {
 	*Package
-	factory *objects.GateKeeper
+	factory objects.IGateKeeper
 }
 
 // NewRand creates a new instance of Rand with a pre-defined set of random number generation functions.
-func NewRand(factory *objects.GateKeeper) *Rand {
+func NewRand(factory objects.IGateKeeper) *Rand {
 	z := &Rand{
 		factory: factory,
 	}

@@ -8,12 +8,12 @@ import (
 
 // Time represents a structure that manages a collection of modules implementing the IObject interface.
 type Time struct {
-	factory *objects.GateKeeper
+	factory objects.IGateKeeper
 	*Package
 }
 
 // NewTime initializes and returns a new instance of Time with predefined constants and functions mapped to the module.
-func NewTime(factory *objects.GateKeeper) *Time {
+func NewTime(factory objects.IGateKeeper) *Time {
 	t := &Time{factory: factory}
 	constants := map[string]objects.IObject{
 		"ANSIC":       factory.NewString(objects.FrameStatic, time.ANSIC),

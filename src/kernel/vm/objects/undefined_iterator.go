@@ -9,12 +9,12 @@ const (
 
 // UndefinedIterator represents an iterator that is implicitly undefined and cannot traverse any elements.
 type UndefinedIterator struct {
-	factory *GateKeeper
+	factory IGateKeeper
 	frame   int
 }
 
 // newUndefinedIterator creates a new instance of UndefinedIterator initialized with an undefined object from the GateKeeper.
-func newUndefinedIterator(factory *GateKeeper, frame int) IIterator {
+func newUndefinedIterator(factory IGateKeeper, frame int) IIterator {
 	return &UndefinedIterator{
 		factory: factory,
 		frame:   frame,
@@ -22,7 +22,7 @@ func newUndefinedIterator(factory *GateKeeper, frame int) IIterator {
 }
 
 // GateKeeper returns a reference to the GateKeeper associated with the Object.
-func (o *UndefinedIterator) GateKeeper() *GateKeeper {
+func (o *UndefinedIterator) GateKeeper() IGateKeeper {
 	return o.factory
 }
 

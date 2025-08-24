@@ -18,12 +18,12 @@ const (
 
 // Regexp represents a structure providing regular expression functionality through associated operations and methods.
 type Regexp struct {
-	factory *objects.GateKeeper
+	factory objects.IGateKeeper
 	*Package
 }
 
 // NewRegexp creates and returns a new instance of the Regexp struct with initialized module functions.
-func NewRegexp(factory *objects.GateKeeper) *Regexp {
+func NewRegexp(factory objects.IGateKeeper) *Regexp {
 	r := &Regexp{factory: factory}
 	container := []objects.IObject{
 		factory.NewFuncPackage(objects.FuncPackageDef, "Match", r.match),

@@ -11,7 +11,7 @@ import (
 
 // Imports represents a structure to manage import declarations and track imported modules in the build process.
 type Imports struct {
-	gk         *objects.GateKeeper
+	gk         objects.IGateKeeper
 	references *Constants
 	scopes     *Scopes
 	imports    map[string]bool
@@ -19,7 +19,7 @@ type Imports struct {
 }
 
 // NewImports creates and returns a new instance of Imports with an initialized map to manage import declarations.
-func NewImports(gk *objects.GateKeeper, references *Constants, scopes *Scopes) *Imports {
+func NewImports(gk objects.IGateKeeper, references *Constants, scopes *Scopes) *Imports {
 	return &Imports{
 		gk:         gk,
 		references: references,

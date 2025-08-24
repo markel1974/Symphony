@@ -179,7 +179,7 @@ func (nw *NilWriter) Write(p []byte) (int, error) {
 func main() {
 	//benchmark.VIC(1000000, 20, 10, 1)
 
-	vmTest()
+	//vmTest()
 
 	var showHelp bool
 	var showVersion bool

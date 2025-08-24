@@ -23,7 +23,7 @@ const (
 
 // VM represents a virtual machine that executes bytecode instructions, handles stack, and manages execution frames.
 type VM struct {
-	factory     *objects.GateKeeper
+	factory     objects.IGateKeeper
 	sourceFiles *bytecode.Files
 	stack       *Stack
 	frames      *Frames
@@ -40,7 +40,7 @@ type VM struct {
 }
 
 // New initializes and returns a new virtual machine instance configured with the provided components and settings.
-func New(factory *objects.GateKeeper, op *bytecode.Opcodes, sequencer ISequencer) *VM {
+func New(factory objects.IGateKeeper, op *bytecode.Opcodes, sequencer ISequencer) *VM {
 	v := &VM{
 		factory:     factory,
 		ip:          resetIp,

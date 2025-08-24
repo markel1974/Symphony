@@ -12,13 +12,13 @@ const (
 
 // Struct is a composite object that implements the IObject interface and stores a collection of key-value pairs.
 type Struct struct {
-	factory *GateKeeper
+	factory IGateKeeper
 	frame   int
 	values  map[string]IObject
 }
 
 // NewStruct creates a new instance of MapImmutable with the provided map of string keys and IObject values.
-func newStruct(factory *GateKeeper, frame int, value map[string]IObject) IObject {
+func newStruct(factory IGateKeeper, frame int, value map[string]IObject) IObject {
 	if len(value) > maxStructLen {
 		nv := make(map[string]IObject)
 		for k, v := range value {
@@ -37,7 +37,7 @@ func newStruct(factory *GateKeeper, frame int, value map[string]IObject) IObject
 }
 
 // GateKeeper returns a reference to the GateKeeper associated with the Object.
-func (o *Struct) GateKeeper() *GateKeeper {
+func (o *Struct) GateKeeper() IGateKeeper {
 	return o.factory
 }
 
@@ -165,7 +165,7 @@ func (o *Struct) Equals(in IObject) bool {
 
 // Iterate returns an IIterator for traversing the key-value pairs in the Struct's internal map.
 func (o *Struct) Iterate(frame int) IIterator {
-	return o.GateKeeper().newStructIterator(frame, o.values, 0)
+	return o.GateKeeper().NewStructIterator(frame, o.values, 0)
 }
 
 // CanIterate checks if the object can be iterated over. Always returns true for this implementation.

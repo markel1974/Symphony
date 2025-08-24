@@ -12,7 +12,7 @@ const (
 // The keys and values are stored in separate slices to facilitate order-preserving iteration.
 // The index tracks the current position within the iteration, and length is the total number of elements.
 type StructIterator struct {
-	factory *GateKeeper
+	factory IGateKeeper
 	frame   int
 	values  map[string]IObject
 	keys    []string
@@ -21,7 +21,7 @@ type StructIterator struct {
 }
 
 // NewStructIterator initializes and returns a new StructIterator for the given map of string keys to IObject values.
-func newStructIterator(factory *GateKeeper, frame int, v map[string]IObject, index int) IIterator {
+func newStructIterator(factory IGateKeeper, frame int, v map[string]IObject, index int) IIterator {
 	var keys []string
 	for k := range v {
 		keys = append(keys, k)
@@ -37,7 +37,7 @@ func newStructIterator(factory *GateKeeper, frame int, v map[string]IObject, ind
 }
 
 // GateKeeper returns a reference to the GateKeeper associated with the Object.
-func (o *StructIterator) GateKeeper() *GateKeeper {
+func (o *StructIterator) GateKeeper() IGateKeeper {
 	return o.factory
 }
 
@@ -90,7 +90,7 @@ func (o *StructIterator) Length() int {
 
 // Copy creates and returns a duplicate instance of the current StructIterator with the same internal state.
 func (i *StructIterator) Copy(frame int, _ int) IObject {
-	ret := i.GateKeeper().newStructIterator(frame, i.values, i.index)
+	ret := i.GateKeeper().NewStructIterator(frame, i.values, i.index)
 	return ret
 }
 

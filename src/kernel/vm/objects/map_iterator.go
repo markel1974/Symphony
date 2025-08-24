@@ -10,7 +10,7 @@ const (
 // The embedded Object provides default implementations for methods from the IObject interface.
 // The internal state includes the map (values), keys (keys), current position index (index), and total keys length (length).
 type MapIterator struct {
-	factory *GateKeeper
+	factory IGateKeeper
 	frame   int
 	values  map[string]IObject
 	keys    []string
@@ -19,7 +19,7 @@ type MapIterator struct {
 }
 
 // NewMapIterator creates and returns a new instance of MapIterator.
-func newMapIterator(factory *GateKeeper, frame int, v map[string]IObject, index int) IIterator {
+func newMapIterator(factory IGateKeeper, frame int, v map[string]IObject, index int) IIterator {
 	var keys []string
 	for k := range v {
 		keys = append(keys, k)
@@ -35,7 +35,7 @@ func newMapIterator(factory *GateKeeper, frame int, v map[string]IObject, index 
 }
 
 // GateKeeper returns a reference to the GateKeeper associated with the Object.
-func (o *MapIterator) GateKeeper() *GateKeeper {
+func (o *MapIterator) GateKeeper() IGateKeeper {
 	return o.factory
 }
 
@@ -88,7 +88,7 @@ func (o *MapIterator) Length() int {
 
 // Copy creates and returns a new instance of MapIterator, duplicating its current state.
 func (i *MapIterator) Copy(frame int, _ int) IObject {
-	ret := i.GateKeeper().newMapIterator(frame, i.values, i.index)
+	ret := i.GateKeeper().NewMapIterator(frame, i.values, i.index)
 	return ret
 }
 

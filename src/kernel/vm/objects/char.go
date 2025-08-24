@@ -6,13 +6,13 @@ const (
 
 // Char represents a character type, encapsulating a single rune values and inheriting behavior from Object.
 type Char struct {
-	gk    *GateKeeper
+	gk    IGateKeeper
 	frame int
 	value rune
 }
 
 // NewChar creates and returns a new Char object with the specified rune values.
-func newChar(factory *GateKeeper, frame int, value rune) IObject {
+func newChar(factory IGateKeeper, frame int, value rune) IObject {
 	return &Char{
 		gk:    factory,
 		frame: frame,
@@ -21,7 +21,7 @@ func newChar(factory *GateKeeper, frame int, value rune) IObject {
 }
 
 // GateKeeper returns a reference to the GateKeeper associated with the Object.
-func (o *Char) GateKeeper() *GateKeeper {
+func (o *Char) GateKeeper() IGateKeeper {
 	return o.gk
 }
 

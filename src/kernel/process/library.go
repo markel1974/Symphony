@@ -11,13 +11,13 @@ import (
 // Library represents a collection of modules that interact with system processes and provide various functionalities.
 // It contains a reference to a Process and a map of module names to their respective objects.
 type Library struct {
-	factory *objects.GateKeeper
+	factory objects.IGateKeeper
 	process *Process
 	pkg     map[string]objects.IObject
 }
 
 // NewLibrary creates and initializes a new Library instance with the provided Process.
-func NewLibrary(factory *objects.GateKeeper, process *Process) *Library {
+func NewLibrary(factory objects.IGateKeeper, process *Process) *Library {
 	l := &Library{
 		factory: factory,
 		process: process,

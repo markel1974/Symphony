@@ -11,13 +11,13 @@ const (
 
 // Map represents a collection of key-values pairs where keys are strings and values implement the IObject interface.
 type Map struct {
-	factory *GateKeeper
+	factory IGateKeeper
 	frame   int
 	values  map[string]IObject
 }
 
 // NewMap creates and returns a new instance of Map initialized with the provided map of string keys to IObject values.
-func newMap(factory *GateKeeper, frame int, value map[string]IObject) IObject {
+func newMap(factory IGateKeeper, frame int, value map[string]IObject) IObject {
 	if len(value) > maxMapLen {
 		nv := make(map[string]IObject)
 		for k, v := range value {
@@ -36,7 +36,7 @@ func newMap(factory *GateKeeper, frame int, value map[string]IObject) IObject {
 }
 
 // GateKeeper returns a reference to the GateKeeper associated with the Object.
-func (o *Map) GateKeeper() *GateKeeper {
+func (o *Map) GateKeeper() IGateKeeper {
 	return o.factory
 }
 
@@ -177,7 +177,7 @@ func (o *Map) IndexSet(index, value IObject) (err error) {
 
 // Iterate creates and returns an iterator for the Map, allowing iteration over its keys and associated values.
 func (o *Map) Iterate(frame int) IIterator {
-	return o.GateKeeper().newMapIterator(frame, o.values, 0)
+	return o.GateKeeper().NewMapIterator(frame, o.values, 0)
 }
 
 // CanIterate returns true, indicating that the Map object supports iteration over its elements.
