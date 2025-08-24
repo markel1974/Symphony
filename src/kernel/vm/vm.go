@@ -109,16 +109,19 @@ func (v *VM) Reset() {
 // Run executes the virtual machine's bytecode, managing the stack, frames, and instruction pointer state.
 func (v *VM) Run(mainId string, args ...interface{}) error {
 	v.Reset()
+
 	mainFn, ok := v.entryPoints[mainId]
 	if !ok {
 		return fmt.Errorf("entry point not found: %s", mainId)
 	}
+
 	v.currFrame = v.frames.Head()
 	v.currFrame.Bind(v.ip, mainFn, 0)
 	v.stack.SetStackPointer(v.currFrame.NumLocals())
 	if v.currFrame.NumParameters() != len(args) {
 		return fmt.Errorf("[%s] wrong number of arguments provided: want=%d, got=%d", mainId, v.currFrame.NumParameters(), len(args))
 	}
+
 	for idx, arg := range args {
 		argObj := v.factory.FromInterface(objects.FrameStatic, arg)
 		v.stack.SetAbsolute(idx, argObj)
