@@ -325,7 +325,7 @@ func (v *VM) loop() {
 		decoder = v.sequencer[opcode]
 		v.ip = decoder.Decode(v.currFrame, v.ip)
 		//log.Println("Executing instruction ", opcode, bytecode.OpcodeNames(opcode))
-		decoder.execute(v, decoder)
+		decoder.Execute(v)
 		if v.shutdown {
 			break
 		}

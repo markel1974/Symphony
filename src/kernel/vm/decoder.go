@@ -54,6 +54,11 @@ func (d *Decoder) Decode(frame *Frame, ip int) int {
 	return ip
 }
 
+// Execute runs the logic associated with the current instruction using the provided virtual machine instance.
+func (d *Decoder) Execute(v *VM) {
+	d.execute(v, d)
+}
+
 // Read retrieves a decoded operand from the `decodedOperands` slice using a masked index derived from the input parameter.
 func (d *Decoder) Read(x int) int {
 	return d.decodedOperands[x&operandsMask]
