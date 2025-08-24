@@ -21,16 +21,6 @@ const (
 	maxScope = 1024
 )
 
-type FunctionDescription struct {
-	Name       string
-	Struct     string
-	Types      []string
-	Params     []string
-	Recv       []string
-	FuncDecl   *ast.FuncDecl
-	StructType bool
-}
-
 // Compiler represents a structure to manage the compilation process, including scopes and associated token file sets.
 type Compiler struct {
 	factory    *objects.GateKeeper
@@ -39,20 +29,23 @@ type Compiler struct {
 	constants  *Constants
 	references *Constants
 	fileSet    *token.FileSet
-	imports    map[string]bool
+	imports    *Imports
+	functions  *Functions
 }
 
 // New creates and returns a new instance of Compiler with initialized scopes using a standard library loader.
 func New(factory *objects.GateKeeper) *Compiler {
 	loader := sdk.NewLoader(factory)
 	op := bytecode.NewOpcodes(factory)
+	scopes := NewScopes(factory, op)
 	c := &Compiler{
 		factory:    factory,
 		loader:     loader,
+		scopes:     scopes,
 		constants:  NewConstants(),
 		references: NewConstants(),
-		scopes:     NewScopes(factory, op),
-		imports:    make(map[string]bool),
+		imports:    NewImports(scopes),
+		functions:  NewFunctions(),
 	}
 	return c
 }
@@ -159,8 +152,8 @@ func (c *Compiler) compile(in ast.Node) error {
 		err = c.doReturnStmt(node)
 	case *ast.SelectorExpr:
 		err = c.doSelectorExpr(node)
-	case *ast.ImportSpec:
-		err = c.doImportSpec(node)
+	//case *ast.ImportSpec:
+	//	err = c.doImportSpec(node)
 	default:
 		err = fmt.Errorf("unsupported expression type: %T", node)
 	}
@@ -175,19 +168,17 @@ func (c *Compiler) compile(in ast.Node) error {
 // Non-function code is compiled after imports and type declarations are processed.
 // Finally, the bodies of all functions and methods are compiled for execution.
 func (c *Compiler) doFile(node *ast.File) error {
-	var importDecls []ast.Decl
 	var typeDecls []ast.Decl
 	var otherDecls []ast.Decl
-	var funcDecls []*FunctionDescription
 
 	// step 1: Separate declarations by category
 	for _, decl := range node.Decls {
 		switch d := decl.(type) {
 		case *ast.FuncDecl:
-			funcDecls = append(funcDecls, &FunctionDescription{FuncDecl: d})
+			c.functions.Declare(d)
 		case *ast.GenDecl:
 			if d.Tok == token.IMPORT {
-				importDecls = append(importDecls, d)
+				c.imports.Declare(d)
 			} else if d.Tok == token.TYPE {
 				typeDecls = append(typeDecls, d)
 			} else {
@@ -198,10 +189,8 @@ func (c *Compiler) doFile(node *ast.File) error {
 		}
 	}
 	// step 2: compile all import definitions
-	for _, decl := range importDecls {
-		if err := c.compile(decl); err != nil {
-			return err
-		}
+	if err := c.imports.Compile(); err != nil {
+		return err
 	}
 	// step 3: compile all type definitions (structs)
 	for _, decl := range typeDecls {
@@ -210,7 +199,7 @@ func (c *Compiler) doFile(node *ast.File) error {
 		}
 	}
 	// step 4: pre-define all functions AND methods, including their return types.
-	for _, fd := range funcDecls {
+	for _, fd := range c.functions.container {
 		if err := c.funcBodyPrepare(fd); err != nil {
 			return err
 		}
@@ -222,7 +211,7 @@ func (c *Compiler) doFile(node *ast.File) error {
 		}
 	}
 	// step 6: compile the actual bodies of functions and methods
-	for _, fn := range funcDecls {
+	for _, fn := range c.functions.container {
 		if err := c.funcBodyCompile(fn); err != nil {
 			return err
 		}
@@ -502,7 +491,7 @@ func (c *Compiler) doCallExpr(node *ast.CallExpr) error {
 		if !ok {
 			return fmt.Errorf("unsupported receiver for selector expression: %T", selExpr.X)
 		}
-		if _, ok = c.imports[receiverIdent.Name]; ok {
+		if c.imports.Contains(receiverIdent.Name) {
 			fnOpType = bytecode.OpReferences
 			fnName = GetMangledName(receiverIdent.Name, selExpr.Sel.Name)
 			found := false
@@ -1214,14 +1203,6 @@ func (c *Compiler) doIdent(node *ast.Ident) error {
 	return nil
 }
 
-// doImportSpec handles an import specification by defining the imported module name in the current scope.
-func (c *Compiler) doImportSpec(node *ast.ImportSpec) error {
-	moduleName := node.Path.Value
-	moduleName = strings.Trim(moduleName, "\"'")
-	c.imports[moduleName] = true
-	return nil
-}
-
 // doSelectorExpr processes a selector expression, resolving fields, methods, or package attributes.
 // It distinguishes between struct field accesses and package-level selectors.
 // Emits appropriate bytecode instructions for each case or returns an error if unsupported.
@@ -1232,7 +1213,7 @@ func (c *Compiler) doSelectorExpr(node *ast.SelectorExpr) error {
 		// currently not handling complex cases like a[0].field
 		return fmt.Errorf("unsupported receiver for selector expression: %T", node.X)
 	}
-	if _, ok = c.imports[receiverIdent.Name]; ok { //receiverSymbol.Scope() == ImportScope {
+	if c.imports.Contains(receiverIdent.Name) { //receiverSymbol.Scope() == ImportScope {
 		cacheKey := GetMangledName(receiverIdent.Name, node.Sel.Name)
 		nameIndex, found := c.references.Get(cacheKey)
 		if !found {
