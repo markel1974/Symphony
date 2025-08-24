@@ -197,42 +197,36 @@ func (c *Compiler) doFile(node *ast.File) error {
 			otherDecls = append(otherDecls, d)
 		}
 	}
-
 	// step 2: compile all import definitions
 	for _, decl := range importDecls {
 		if err := c.compile(decl); err != nil {
 			return err
 		}
 	}
-
 	// step 3: compile all type definitions (structs)
 	for _, decl := range typeDecls {
 		if err := c.compile(decl); err != nil {
 			return err
 		}
 	}
-
 	// step 4: pre-define all functions AND methods, including their return types.
 	for _, fd := range funcDecls {
 		if err := c.funcBodyPrepare(fd); err != nil {
 			return err
 		}
 	}
-
 	// step 5: compile all other declarations (constants, variables, etc.)
 	for _, decl := range otherDecls {
 		if err := c.compile(decl); err != nil {
 			return err
 		}
 	}
-
 	// step 6: compile the actual bodies of functions and methods
 	for _, fn := range funcDecls {
 		if err := c.funcBodyCompile(fn); err != nil {
 			return err
 		}
 	}
-
 	// step 7: compile the __init__ function
 	c.scopes.scopeIndex = 0
 	if _, err := c.scopes.Emit(bytecode.OpReturn, 0); err != nil {
@@ -287,6 +281,7 @@ func (c *Compiler) funcBodyPrepare(fd *FunctionDescription) error {
 		fd.Struct = ""
 		fd.StructType = false
 	}
+	//function symbol placeholder (this is not the real function, it's just a placeholder to be able to compile the body)
 	if _, err = c.scopes.SymbolDefine(fd.Name, UnknownScope, false); err != nil {
 		return err
 	}
@@ -408,12 +403,11 @@ func (c *Compiler) doAssignStmt(node *ast.AssignStmt) error {
 		}
 		return nil
 	}
-
 	//single assignment
 	if err := c.compile(node.Rhs[0]); err != nil {
 		return err
 	}
-	//inferenza del tipo
+	//inference type check
 	var assignedTypeName []string
 	switch rhs := node.Rhs[0].(type) {
 	case *ast.CompositeLit: // check for variable assignment
