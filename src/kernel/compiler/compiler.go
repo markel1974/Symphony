@@ -29,6 +29,7 @@ type Compiler struct {
 	types        *Types
 	others       *Others
 	declarations *Declarations
+	rootNode     *ast.File
 }
 
 // New creates and returns a new instance of Compiler with initialized scopes using a standard library loader.
@@ -54,6 +55,7 @@ func New(gk *objects.GateKeeper) *Compiler {
 		declarations: declarations,
 		types:        types,
 		others:       others,
+		rootNode:     nil,
 	}
 	return c
 }
@@ -127,9 +129,10 @@ func (c *Compiler) compile(in ast.Node) error {
 	return err
 }
 
-// doFile processes the given AST file node, categorizes declarations, and compiles them in a defined order while handling errors.
-func (c *Compiler) doFile(node *ast.File) error {
-	compilationOrder := []func() error{
+// defaultPipeline returns a default compilation pipeline for the compiler.
+func (c *Compiler) defaultPipeline() []func() error {
+	pipeline := []func() error{
+		c.collectDeclarations,
 		c.imports.Prepare,
 		c.imports.Compile,
 		c.types.Prepare,
@@ -138,9 +141,30 @@ func (c *Compiler) doFile(node *ast.File) error {
 		c.others.Prepare,
 		c.others.Compile,
 		c.functions.Compile,
+		c.createInit,
+	}
+	return pipeline
+}
+
+// doFile processes the given AST file node, categorizes declarations, and compiles them in a defined order while handling errors.
+func (c *Compiler) doFile(node *ast.File) error {
+	c.rootNode = node
+	pipeline := c.defaultPipeline()
+	for _, fn := range pipeline {
+		if err := fn(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// collectDeclarations separates declarations by category and stores them in the appropriate category.
+func (c *Compiler) collectDeclarations() error {
+	if c.rootNode == nil {
+		return fmt.Errorf("nil file node")
 	}
 	// step 1: Separate declarations by category
-	for _, decl := range node.Decls {
+	for _, decl := range c.rootNode.Decls {
 		switch d := decl.(type) {
 		case *ast.FuncDecl:
 			c.functions.Declare(d)
@@ -156,17 +180,6 @@ func (c *Compiler) doFile(node *ast.File) error {
 			c.others.Declare(d)
 		}
 	}
-
-	for _, fn := range compilationOrder {
-		if err := fn(); err != nil {
-			return err
-		}
-	}
-
-	if err := c.createInit(); err != nil {
-		return err
-	}
-
 	return nil
 }
 

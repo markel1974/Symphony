@@ -38,7 +38,6 @@ This multi-pass architecture is what enables the compiler to correctly handle a 
 
 One of the compiler's most powerful features is its standard library, which exposes the richness of Go's native `stdlib` to the scripting environment.
 
--   **Elegant Wrapper Pattern:** The system uses a set of clever function wrappers (e.g., `FuncASRS`, `FuncAIIRE` defined in `objects/function.go`) to adapt native Go functions to the VM's `IObject` interface.
 -   **Extensive Functionality:** This approach provides the scripting language with powerful, high-performance modules for file I/O (`os`), text manipulation (`text`, `regexp`), JSON processing (`json`), mathematics (`math`), and more, with minimal effort.
 -   **Modular and Resolvable:** The `Loader` component manages these modules, allowing the compiler to resolve selector expressions like `fmt.Println` into a `OpReferences` instruction that the VM can use to look up the correct function at runtime.
 
