@@ -21,7 +21,7 @@ type IOpExecutor interface {
 
 	Operands() []int
 
-	Execute(vm *VM, operands *[]int)
+	Execute(vm *VM, data *Decoder)
 }
 
 // OpConstant represents an operation used to load a constant onto the stack.
@@ -35,9 +35,9 @@ func NewOpConstant(op *bytecode.Opcodes) *OpConstant {
 }
 
 // Execute executes the OpConstant instruction in the virtual machine, pushing a global constant onto the stack.
-func (op *OpConstant) Execute(v *VM, operands *[]int) {
+func (op *OpConstant) Execute(v *VM, data *Decoder) {
 	// Operands Offset 2
-	cIdx := (*operands)[0]
+	cIdx := data.Read(0)
 	//if cIdx != int(v.currFrame.Get16(v.ip)) {
 	//	panic("invalid constant index")
 	//}
@@ -56,7 +56,7 @@ func NewOpNull(op *bytecode.Opcodes) *OpNull {
 }
 
 // Execute pushes an undefined value onto the virtual machine's stack.
-func (op *OpNull) Execute(v *VM, _ *[]int) {
+func (op *OpNull) Execute(v *VM, _ *Decoder) {
 	// Operands Offset 0
 	val := op.Factory().UndefinedValue()
 	v.stack.Push(val)
@@ -73,9 +73,9 @@ func NewOpBinary(op *bytecode.Opcodes) *OpBinary {
 }
 
 // Execute performs a binary operation using operands from the stack, updates the instruction pointer, and handles errors.
-func (op *OpBinary) Execute(v *VM, operands *[]int) {
+func (op *OpBinary) Execute(v *VM, data *Decoder) {
 	// Operands Offset  1
-	opcode := (*operands)[0]
+	opcode := data.Read(0)
 	//if opcode != int(v.currFrame.Get8(v.ip)) {
 	//	panic("invalid opcode")
 	//}
@@ -101,7 +101,7 @@ func NewOpEqual(op *bytecode.Opcodes) *OpEqual {
 }
 
 // Execute performs the equality comparison between the top two stack values and pushes the result (true or false) back onto the stack.
-func (op *OpEqual) Execute(v *VM, _ *[]int) {
+func (op *OpEqual) Execute(v *VM, _ *Decoder) {
 	// Operands Offset 0
 	right := v.stack.Pop()
 	left := v.stack.Pop()
@@ -124,7 +124,7 @@ func NewOpNotEqual(op *bytecode.Opcodes) *OpNotEqual {
 }
 
 // Execute evaluates whether the top two stack elements are unequal and pushes the result as a boolean onto the stack.
-func (op *OpNotEqual) Execute(v *VM, _ *[]int) {
+func (op *OpNotEqual) Execute(v *VM, _ *Decoder) {
 	// Operands Offset  0
 	right := v.stack.Pop()
 	left := v.stack.Pop()
@@ -146,7 +146,7 @@ func NewOpPop(op *bytecode.Opcodes) *OpPop {
 }
 
 // Execute performs the operation defined by OpPop, which decreases the stack pointer of the VM.
-func (op *OpPop) Execute(v *VM, _ *[]int) {
+func (op *OpPop) Execute(v *VM, _ *Decoder) {
 	// Operands Offset 0
 	v.stack.Decrement()
 }
@@ -162,7 +162,7 @@ func NewOpTrue(op *bytecode.Opcodes) *OpTrue {
 }
 
 // Execute pushes the constant true value onto the virtual machine's stack.
-func (op *OpTrue) Execute(v *VM, _ *[]int) {
+func (op *OpTrue) Execute(v *VM, _ *Decoder) {
 	// Operands Offset 0
 	val := op.Factory().TrueValue()
 	v.stack.Push(val)
@@ -179,7 +179,7 @@ func NewOpFalse(op *bytecode.Opcodes) *OpFalse {
 }
 
 // Execute pushes a predefined `FalseValue` onto the virtual machine's stack.
-func (op *OpFalse) Execute(v *VM, _ *[]int) {
+func (op *OpFalse) Execute(v *VM, _ *Decoder) {
 	// Operands Offset  0
 	val := op.Factory().FalseValue()
 	v.stack.Push(val)
@@ -196,7 +196,7 @@ func NewOpLNot(op *bytecode.Opcodes) *OpLNot {
 }
 
 // Execute performs a logical NOT operation on the operand at the top of the stack, pushing the result back onto the stack.
-func (op *OpLNot) Execute(v *VM, _ *[]int) {
+func (op *OpLNot) Execute(v *VM, _ *Decoder) {
 	// Operands Offset  0
 	operand := v.stack.Pop()
 	val := op.Factory().FalseValue()
@@ -218,7 +218,7 @@ func NewOpBComplement(op *bytecode.Opcodes) *OpBComplement {
 }
 
 // Execute performs the bitwise complement operation on the top stack value. Sets an error if the value is not an integer.
-func (op *OpBComplement) Execute(v *VM, _ *[]int) {
+func (op *OpBComplement) Execute(v *VM, _ *Decoder) {
 	// Operands Offset 0
 	operand := v.stack.Pop()
 	switch x := operand.(type) {
@@ -244,7 +244,7 @@ func NewOpMinus(op *bytecode.Opcodes) *OpMinus {
 
 // Execute performs a subtraction operation by negating the top stack element, supporting integers and floats.
 // Pushes the result back to the stack or sets an error for unsupported types.
-func (op *OpMinus) Execute(v *VM, _ *[]int) {
+func (op *OpMinus) Execute(v *VM, _ *Decoder) {
 	// Operands Offset 0
 	operand := v.stack.Pop()
 	switch x := operand.(type) {
@@ -270,11 +270,11 @@ func NewOpJumpFalsy(op *bytecode.Opcodes) *OpJumpFalsy {
 }
 
 // Execute advances the instruction pointer, evaluates the stack's top element, and updates the pointer if false.
-func (op *OpJumpFalsy) Execute(v *VM, operands *[]int) {
+func (op *OpJumpFalsy) Execute(v *VM, data *Decoder) {
 	// Operands Offset 2
 	obj := v.stack.Pop()
 	if obj.Boolean() {
-		pos := (*operands)[0]
+		pos := data.Read(0)
 		//if pos != int(v.currFrame.Get16(v.ip)) {
 		//	panic("invalid jump position")
 		//}
@@ -293,11 +293,11 @@ func NewOpAndJump(op *bytecode.Opcodes) *OpAndJump {
 }
 
 // Execute updates the instruction pointer, evaluates a condition, and adjusts or decrements the stack based on the result.
-func (op *OpAndJump) Execute(v *VM, operands *[]int) {
+func (op *OpAndJump) Execute(v *VM, data *Decoder) {
 	// Operands Offset  2
 	obj := v.stack.Peek()
 	if obj.Boolean() {
-		pos := (*operands)[0]
+		pos := data.Read(0)
 		//if pos != int(v.currFrame.Get16(v.ip)) {
 		//	panic("invalid jump position")
 		//}
@@ -318,13 +318,13 @@ func NewOpOrJump(op *bytecode.Opcodes) *OpOrJump {
 }
 
 // Execute advances the instruction pointer, evaluates the stack's top object, and updates the IP based on its boolean value.
-func (op *OpOrJump) Execute(v *VM, operands *[]int) {
+func (op *OpOrJump) Execute(v *VM, data *Decoder) {
 	// Operands Offset 2
 	obj := v.stack.Peek()
 	if obj.Boolean() {
 		v.stack.Decrement()
 	} else {
-		pos := (*operands)[0]
+		pos := data.Read(0)
 		//if pos !=  int(v.currFrame.Get16(v.ip)) {
 		//	panic("invalid jump position")
 		//}
@@ -343,9 +343,9 @@ func NewOpJump(op *bytecode.Opcodes) *OpJump {
 }
 
 // Execute updates the instruction pointer (`ip`) in the virtual machine (`VM`) to a calculated position in the frame.
-func (op *OpJump) Execute(v *VM, operands *[]int) {
+func (op *OpJump) Execute(v *VM, data *Decoder) {
 	// Operands Offset  2
-	pos := (*operands)[0]
+	pos := data.Read(0)
 	//if pos !=  int(v.currFrame.Get16(v.ip)) {
 	//	panic("invalid jump position")
 	//}
@@ -363,9 +363,9 @@ func NewOpSetGlobal(op *bytecode.Opcodes) *OpSetGlobal {
 }
 
 // Execute updates the instruction pointer, calculates a global variable position, and sets its value from the stack.
-func (op *OpSetGlobal) Execute(v *VM, operands *[]int) {
+func (op *OpSetGlobal) Execute(v *VM, data *Decoder) {
 	// Operands Offset  2
-	pos := (*operands)[0]
+	pos := data.Read(0)
 	//if pos !=  int(v.currFrame.Get16(v.ip)) {
 	//	panic("invalid jump position")
 	//}
@@ -384,15 +384,15 @@ func NewOpSetSelGlobal(op *bytecode.Opcodes) *OpSetSelGlobal {
 }
 
 // Execute performs the operation defined by OpSetSelGlobal, updating the VM state and handling global index assignment.
-func (op *OpSetSelGlobal) Execute(v *VM, operands *[]int) {
+func (op *OpSetSelGlobal) Execute(v *VM, data *Decoder) {
 	// Operands Offset  3
-	numSelectors := (*operands)[0]
+	numSelectors := data.Read(0)
 	//numSelectors := int(v.currFrame.Get8(v.ip))
 	//if numSelectors != tst {
 	//	panic("invalid OpSetSelGlobal position")
 	//}
 	//globalIndex := int(v.currFrame.Get16(v.ip - 1))
-	globalIndex := (*operands)[1]
+	globalIndex := data.Read(1)
 	//if globalIndex != int(v.currFrame.Get16(v.ip-1)) {
 	//	panic("OpSetSelGlobal jump position")
 	//}
@@ -421,9 +421,9 @@ func NewOpGetGlobal(op *bytecode.Opcodes) *OpGetGlobal {
 }
 
 // Execute retrieves a global object using its index, pushes it onto the stack, and advances the instruction pointer.
-func (op *OpGetGlobal) Execute(v *VM, operands *[]int) {
+func (op *OpGetGlobal) Execute(v *VM, data *Decoder) {
 	// Operands Offset  2
-	glIndex := (*operands)[0]
+	glIndex := data.Read(0)
 	//if glIndex != v.currFrame.Get16(v.ip) {
 	//	panic("invalid jump position")
 	//}
@@ -447,9 +447,9 @@ func NewOpArray(op *bytecode.Opcodes) *OpArray {
 }
 
 // Execute processes the OpArray instruction, constructing an array from stack elements and pushing it onto the stack.
-func (op *OpArray) Execute(v *VM, operands *[]int) {
+func (op *OpArray) Execute(v *VM, data *Decoder) {
 	// Operands Offset 2
-	numElements := (*operands)[0]
+	numElements := data.Read(0)
 	//if numElements != v.currFrame.Get16(v.ip {
 	//	panic("invalid OpArray position")
 	//}
@@ -469,9 +469,9 @@ func NewOpMap(op *bytecode.Opcodes) *OpMap {
 }
 
 // Execute processes the OpMap instruction, adjusts the instruction pointer, and pushes a new map object onto the stack.
-func (op *OpMap) Execute(v *VM, operands *[]int) {
+func (op *OpMap) Execute(v *VM, data *Decoder) {
 	// Operands Offset  2
-	numElements := (*operands)[0]
+	numElements := data.Read(0)
 	//if numElements != int(v.currFrame.Get16(v.ip)) {
 	//	panic("invalid OpMap position")
 	//}
@@ -490,9 +490,9 @@ func NewOpStruct(op *bytecode.Opcodes) *OpStruct {
 }
 
 // Execute processes the OpMap instruction, adjusts the instruction pointer, and pushes a new map object onto the stack.
-func (op *OpStruct) Execute(v *VM, operands *[]int) {
+func (op *OpStruct) Execute(v *VM, data *Decoder) {
 	// Operands Offset  2
-	numElements := (*operands)[0]
+	numElements := data.Read(0)
 	//if numElements != int(v.currFrame.Get16(v.ip)) {
 	//	panic("invalid OpMap position")
 	//}
@@ -511,7 +511,7 @@ func NewOpError(op *bytecode.Opcodes) *OpError {
 }
 
 // Execute converts the top value on the VM stack into an error object and replaces it on the stack.
-func (op *OpError) Execute(v *VM, _ *[]int) {
+func (op *OpError) Execute(v *VM, _ *Decoder) {
 	// Operands Offset  0
 	value := v.stack.Peek()
 	e := op.Factory().NewError(v.currFrame.ID(), value.String())
@@ -529,7 +529,7 @@ func NewOpImmutable(op *bytecode.Opcodes) *OpImmutable {
 }
 
 // Execute processes the top element on the stack and converts it into an immutable version if it's an array or map.
-func (op *OpImmutable) Execute(v *VM, _ *[]int) {
+func (op *OpImmutable) Execute(v *VM, _ *Decoder) {
 	// Operands Offset  0
 	val := v.stack.Peek()
 	switch value := val.(type) {
@@ -553,7 +553,7 @@ func NewOpIndex(op *bytecode.Opcodes) *OpIndex {
 }
 
 // Execute processes the index operation on the stack, retrieving a value or setting an error if indexing is invalid.
-func (op *OpIndex) Execute(v *VM, _ *[]int) {
+func (op *OpIndex) Execute(v *VM, _ *Decoder) {
 	// Operands Offset  0
 	index := v.stack.Pop()
 	left := v.stack.Pop()
@@ -588,7 +588,7 @@ func NewOpSliceIndex(op *bytecode.Opcodes) *OpSliceIndex {
 }
 
 // Execute processes the slice operation on the stack, adjusting bounds and supporting various object types like arrays and strings.
-func (op *OpSliceIndex) Execute(v *VM, _ *[]int) {
+func (op *OpSliceIndex) Execute(v *VM, _ *Decoder) {
 	// Operands Offset  0
 	highStack := v.stack.Pop()
 	lowStack := v.stack.Pop()
@@ -625,10 +625,10 @@ func NewOpCall(op *bytecode.Opcodes) *OpCall {
 }
 
 // Execute processes the OpCall instruction, invoking the callable or handling array spreads, and manages the stack state.
-func (op *OpCall) Execute(v *VM, operands *[]int) {
+func (op *OpCall) Execute(v *VM, data *Decoder) {
 	// Operands Offset 2
 	//fmt.Println("call", operands)
-	numArgs := (*operands)[1]
+	numArgs := data.Read(1)
 	//if numArgs != int(v.currFrame.Get8(v.ip-1)) {
 	//	panic("num args mismatch")
 	//}
@@ -714,7 +714,7 @@ func NewOpReturn(op *bytecode.Opcodes) *OpReturn {
 }
 
 // Execute performs the return operation for the current frame, manages the stack, and transitions between frames in the VM.
-func (op *OpReturn) Execute(v *VM, operands *[]int) {
+func (op *OpReturn) Execute(v *VM, data *Decoder) {
 	// Operands Offset 1
 	//if numReturnVals != int(v.currFrame.Get8(v.ip)) {
 	//	panic("num return vals mismatch")
@@ -723,8 +723,8 @@ func (op *OpReturn) Execute(v *VM, operands *[]int) {
 	// collect return values from the stack using Pop(),
 	// this is necessary to uncover the underlying values.
 	var returnValues []objects.IObject
-	if numReturnVals := (*operands)[0]; numReturnVals > 0 {
-		returnValues = make([]objects.IObject, (*operands)[0])
+	if numReturnVals := data.Read(0); numReturnVals > 0 {
+		returnValues = make([]objects.IObject, data.Read(0))
 		for i := 0; i < numReturnVals; i++ {
 			returnValues[i] = v.stack.Pop()
 		}
@@ -768,9 +768,9 @@ func NewOpDefineLocal(op *bytecode.Opcodes) *OpDefineLocal {
 }
 
 // Execute increments the instruction pointer, retrieves a local index, and assigns a stack value to a designated slot.
-func (op *OpDefineLocal) Execute(v *VM, operands *[]int) {
+func (op *OpDefineLocal) Execute(v *VM, data *Decoder) {
 	// Operands Offset 1
-	localIndex := (*operands)[0]
+	localIndex := data.Read(0)
 	//if localIndex != int(v.currFrame.Get8(v.ip)) {
 	//	panic("invalid OpDefineLocal position")
 	//}
@@ -791,9 +791,9 @@ func NewOpSetLocal(op *bytecode.Opcodes) *OpSetLocal {
 }
 
 // Execute updates a local variable in the current frame using the stack's top value and the local index from instructions.
-func (op *OpSetLocal) Execute(v *VM, operands *[]int) {
+func (op *OpSetLocal) Execute(v *VM, data *Decoder) {
 	// Operands Offset 1
-	localIndex := (*operands)[0]
+	localIndex := data.Read(0)
 	//if localIndex != int(v.currFrame.Get8(v.ip)) {
 	//	panic("local index mismatch")
 	//}
@@ -820,13 +820,13 @@ func NewOpSetSelLocal(op *bytecode.Opcodes) *OpSetSelLocal {
 }
 
 // Execute performs the operation of retrieving, modifying, and reassigning a value using selectors in the local scope.
-func (op *OpSetSelLocal) Execute(v *VM, operands *[]int) {
+func (op *OpSetSelLocal) Execute(v *VM, data *Decoder) {
 	// Operands Offset 2
-	numSelectors := (*operands)[0]
+	numSelectors := data.Read(0)
 	//if localIndex != int(v.currFrame.Get8(v.ip)) {
 	//	panic("local OpSetSelLocal mismatch")
 	//}
-	localIndex := (*operands)[1]
+	localIndex := data.Read(1)
 	//if localIndex != int(v.currFrame.Get8(v.ip - 1)) {
 	//	panic("local OpSetSelLocal mismatch")
 	//}
@@ -857,9 +857,9 @@ func NewOpGetLocal(op *bytecode.Opcodes) *OpGetLocal {
 }
 
 // Execute retrieves a local variable from the current frame's base pointer and pushes it onto the stack.
-func (op *OpGetLocal) Execute(v *VM, operands *[]int) {
+func (op *OpGetLocal) Execute(v *VM, data *Decoder) {
 	// Operands Offset 1
-	localIndex := (*operands)[0]
+	localIndex := data.Read(0)
 	//if localIndex != int(v.currFrame.Get8(v.ip)) {
 	//	panic("local OpGetLocal mismatch")
 	//}
@@ -881,13 +881,13 @@ func NewOpClosure(op *bytecode.Opcodes) *OpClosure {
 }
 
 // Execute performs the operation associated with the OpClosure opcode, creating a closure and pushing it onto the stack.
-func (op *OpClosure) Execute(v *VM, operands *[]int) {
+func (op *OpClosure) Execute(v *VM, data *Decoder) {
 	// Operands Offset 3
-	numFree := (*operands)[0]
+	numFree := data.Read(0)
 	//if numFree != int(v.currFrame.Get8(v.ip)) {
 	//	panic("local OpClosure mismatch")
 	//}
-	constIndex := (*operands)[1]
+	constIndex := data.Read(1)
 	//if constIndex != int(v.currFrame.Get16(v.ip - 1)) {
 	//	panic("local OpClosure mismatch")
 	//}
@@ -931,9 +931,9 @@ func NewOpGetFreePtr(op *bytecode.Opcodes) *OpGetFreePtr {
 }
 
 // Execute executes the OpGetFreePtr operation, pushing a free variable onto the stack based on the current instruction pointer.
-func (op *OpGetFreePtr) Execute(v *VM, operands *[]int) {
+func (op *OpGetFreePtr) Execute(v *VM, data *Decoder) {
 	// Operands Offset 1
-	freeIndex := (*operands)[0]
+	freeIndex := data.Read(0)
 	//if freeIndex != int(v.currFrame.Get8(v.ip)) {
 	//	panic("local OpGetFreePtr mismatch")
 	//}
@@ -952,9 +952,9 @@ func NewOpGetFree(op *bytecode.Opcodes) *OpGetFree {
 }
 
 // Execute increments the instruction pointer, retrieves a value using free variable index, and pushes it onto the stack.
-func (op *OpGetFree) Execute(v *VM, operands *[]int) {
+func (op *OpGetFree) Execute(v *VM, data *Decoder) {
 	// Operands Offset 1
-	freeIndex := (*operands)[0]
+	freeIndex := data.Read(0)
 	//if freeIndex != int(v.currFrame.Get8(v.ip)) {
 	//	panic("local OpGetFree mismatch")
 	//}
@@ -973,9 +973,9 @@ func NewOpSetFree(op *bytecode.Opcodes) *OpSetFree {
 }
 
 // Execute increments the instruction pointer, retrieves a free variable index, and sets its value from the stack.
-func (op *OpSetFree) Execute(v *VM, operands *[]int) {
+func (op *OpSetFree) Execute(v *VM, data *Decoder) {
 	// Operands Offset 1
-	freeIndex := (*operands)[0]
+	freeIndex := data.Read(0)
 	//if freeIndex != int(v.currFrame.Get8(v.ip)) {
 	//	panic("local OpSetFree mismatch")
 	//}
@@ -994,9 +994,9 @@ func NewOpGetLocalPtr(op *bytecode.Opcodes) *OpGetLocalPtr {
 }
 
 // Execute advances the instruction pointer, retrieves a local variable, and pushes an ObjectPointer to the stack.
-func (op *OpGetLocalPtr) Execute(v *VM, operands *[]int) {
+func (op *OpGetLocalPtr) Execute(v *VM, data *Decoder) {
 	// Operands Offset 1
-	localIndex := (*operands)[0]
+	localIndex := data.Read(0)
 	//if localIndex != int(v.currFrame.Get8(v.ip)) {
 	//	panic("local OpGetLocalPtr mismatch")
 	//}
@@ -1022,13 +1022,13 @@ func NewOpSetSelFree(op *bytecode.Opcodes) *OpSetSelFree {
 }
 
 // Execute updates the instruction pointer, retrieves operands, processes selectors, and performs indexed assignment in the VM.
-func (op *OpSetSelFree) Execute(v *VM, operands *[]int) {
+func (op *OpSetSelFree) Execute(v *VM, data *Decoder) {
 	// Operands Offset 2
-	numSelectors := (*operands)[0]
+	numSelectors := data.Read(0)
 	//if numSelectors != int(v.currFrame.Get8(v.ip)) {
 	//	panic("local OpSetSelFree mismatch")
 	//}
-	freeIndex := (*operands)[1]
+	freeIndex := data.Read(1)
 	//if freeIndex != int(v.currFrame.Get8(v.ip - 1)) {
 	//	panic("local OpSetSelFree mismatch")
 	//}
@@ -1057,9 +1057,9 @@ func NewOpIteratorInit(op *bytecode.Opcodes) *OpIteratorInit {
 }
 
 // Execute initializes an iterator for an iterable object and stores it in the specified local slot in the current frame.
-func (op *OpIteratorInit) Execute(v *VM, operands *[]int) {
+func (op *OpIteratorInit) Execute(v *VM, data *Decoder) {
 	// Operands Offset 1
-	localIndex := (*operands)[0]
+	localIndex := data.Read(0)
 	//if localIndex != int(v.currFrame.Get8(v.ip)) {
 	//	panic("local OpIteratorInit mismatch")
 	//}
@@ -1084,9 +1084,9 @@ func NewOpIteratorNext(op *bytecode.Opcodes) *OpIteratorNext {
 }
 
 // Execute processes the next iterator state in the current frame, pushing a boolean to the stack indicating iteration status.
-func (op *OpIteratorNext) Execute(v *VM, operands *[]int) {
+func (op *OpIteratorNext) Execute(v *VM, data *Decoder) {
 	// Operands Offset 1
-	localIndex := (*operands)[0]
+	localIndex := data.Read(0)
 	//if localIndex != int(v.currFrame.Get8(v.ip)) {
 	//	panic("local OpIteratorNext mismatch")
 	//}
@@ -1115,9 +1115,9 @@ func NewOpIteratorKey(op *bytecode.Opcodes) *OpIteratorKey {
 }
 
 // Execute processes the "iterator key" operation, retrieves the iterator key, and pushes it onto the VM stack.
-func (op *OpIteratorKey) Execute(v *VM, operands *[]int) {
+func (op *OpIteratorKey) Execute(v *VM, data *Decoder) {
 	// Operands Offset 1
-	localIndex := (*operands)[0]
+	localIndex := data.Read(0)
 	//if localIndex != int(v.currFrame.Get8(v.ip)) {
 	//	panic("local OpIteratorKey mismatch")
 	//}
@@ -1143,9 +1143,9 @@ func NewOpIteratorValue(op *bytecode.Opcodes) *OpIteratorValue {
 }
 
 // Execute processes the next instruction to retrieve and push the current value of an iterator onto the stack.
-func (op *OpIteratorValue) Execute(v *VM, operands *[]int) {
+func (op *OpIteratorValue) Execute(v *VM, data *Decoder) {
 	// Operands Offset 1
-	localIndex := (*operands)[0]
+	localIndex := data.Read(0)
 	//if localIndex != int(v.currFrame.Get8(v.ip)) {
 	//	panic("local OpIteratorValue mismatch")
 	//}
@@ -1169,9 +1169,9 @@ func NewOpReferences(op *bytecode.Opcodes) *OpReferences {
 }
 
 // Execute processes the specified VM instruction, adjusts the instruction pointer, and pushes a reference onto the stack.
-func (op *OpReferences) Execute(v *VM, operands *[]int) {
+func (op *OpReferences) Execute(v *VM, data *Decoder) {
 	// Operands Offset 2
-	nameIndex := (*operands)[0]
+	nameIndex := data.Read(0)
 	//if nameIndex != int(v.currFrame.Get16(v.ip)) {
 	//	panic("name index mismatch: %d != %d", nameIndex, int(v.currFrame.Get16(v.ip)))
 	//}
@@ -1196,9 +1196,9 @@ func NewOpIntOp(op *bytecode.Opcodes) *OpIntOp {
 
 // Execute performs a specified binary operation between two integers from the stack and stores the result in a destination slot.
 // It retrieves operands, validates types, and executes the operation, setting an error on unsupported cases or type mismatches.
-func (op *OpIntOp) Execute(v *VM, operands *[]int) {
-	dstObj := v.stack.PeekAbsolute((*operands)[0])
-	binaryOp := objects.Operator((*operands)[1])
+func (op *OpIntOp) Execute(v *VM, data *Decoder) {
+	dstObj := v.stack.PeekAbsolute(data.Read(0))
+	binaryOp := objects.Operator(data.Read(1))
 	dst, ok := dstObj.(*objects.Int)
 	if !ok {
 		v.SetError(fmt.Errorf("dst expected int, got %s", dstObj.TypeName()))
@@ -1234,7 +1234,7 @@ func NewOpSuspend(op *bytecode.Opcodes) *OpSuspend {
 }
 
 // Execute performs the suspend operation on the given virtual machine by setting its shutdown state to true.
-func (op *OpSuspend) Execute(v *VM, _ *[]int) {
+func (op *OpSuspend) Execute(v *VM, _ *Decoder) {
 	// Operands Offset 0
 	v.shutdown = true
 }
@@ -1250,11 +1250,11 @@ func NewOpUnknown(op *bytecode.Opcodes) *OpUnknown {
 }
 
 // Execute handles the execution of an unknown opcode, sets an error state, and stops the virtual machine.
-func (op *OpUnknown) Execute(v *VM, operands *[]int) {
+func (op *OpUnknown) Execute(v *VM, data *Decoder) {
 	// Operands Offset 0
 	//currentIp := int(v.currFrame.Get8(v.ip))
 	//if nameIndex != int(v.currFrame.Get8(v.ip)) {
 	//	panic("name index mismatch: %d != %d", nameIndex, int(v.currFrame.Get16(v.ip)))
 	//}
-	v.SetError(fmt.Errorf("unknown opcode at: %d, %v", v.GetIp(), operands))
+	v.SetError(fmt.Errorf("unknown opcode at: %d", v.GetIp()))
 }

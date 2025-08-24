@@ -4,34 +4,6 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/bytecode"
 )
 
-type SequencerData struct {
-	execute   func(vm *VM, operands *[]int)
-	operands  []func(*Frame, int) (int, int)
-	fullWidth int
-}
-
-func NewSequencerData(execute func(vm *VM, operands *[]int), operands []int) *SequencerData {
-	sd := &SequencerData{
-		execute:   execute,
-		operands:  make([]func(*Frame, int) (int, int), len(operands)),
-		fullWidth: 0,
-	}
-	idx := 0
-	for i := len(operands) - 1; i >= 0; i-- {
-		//for i, width := range operands {
-		width := operands[i]
-		switch width {
-		case 1:
-			sd.operands[idx] = func(frame *Frame, ip int) (int, int) { return int(frame.Get8(ip)), 1 }
-		case 2:
-			sd.operands[idx] = func(frame *Frame, ip int) (int, int) { return int(frame.Get16(ip)), 2 }
-		}
-		sd.fullWidth += width
-		idx++
-	}
-	return sd
-}
-
 // Sequencer is a type that manages a collection of IOpExecutor instances organized by their opcodes.
 // It provides methods for creating and populating the sequencer with specific opcode implementations.
 // The container field stores the IOpExecutor instances, indexed by their opcode with masking applied for efficiency.

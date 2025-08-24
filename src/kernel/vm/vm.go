@@ -31,7 +31,7 @@ type VM struct {
 	ip          int
 	shutdown    bool
 	err         error
-	sequencer   []*SequencerData
+	sequencer   []*Decoder
 	references  []objects.IObject
 	loader      bytecode.ILoader
 	constants   *Constants
@@ -57,9 +57,9 @@ func New(factory objects.IGateKeeper, op *bytecode.Opcodes, sequencer ISequencer
 		sequencer = NewSequencer(op)
 	}
 	seq := sequencer.Create()
-	v.sequencer = make([]*SequencerData, len(seq))
+	v.sequencer = make([]*Decoder, len(seq))
 	for i, s := range seq {
-		v.sequencer[i] = NewSequencerData(s.Execute, s.Operands())
+		v.sequencer[i] = NewDecoder(s.Execute, s.Operands())
 	}
 	return v
 }
@@ -314,28 +314,15 @@ func (v *VM) IndexAssign(frame int, dst objects.IObject, src objects.IObject, se
 
 // loop executes the main instruction loop for the virtual machine, updating the instruction pointer and processing opcodes.
 func (v *VM) loop() {
-	cOperands := make([]int, 16)
-	cOperandsPtr := &cOperands
+	var opcode byte
+	var decoder *Decoder
 	for {
 		v.ip++
-		inst := v.currFrame.Get8(v.ip)
-		opcode := inst & bytecode.OpcodesMask
-		data := v.sequencer[opcode]
-		//if opcode == bytecode.OpSetSelGlobal {
-		//	fmt.Println("HEERE")
-		//}
-		if data.fullWidth > 0 {
-			v.ip += data.fullWidth
-			readOffset := v.ip
-
-			for idx, fn := range data.operands {
-				val, width := fn(v.currFrame, readOffset)
-				cOperands[idx] = val
-				readOffset -= width
-			}
-		}
+		opcode = v.currFrame.Get8(v.ip)
+		decoder = v.sequencer[opcode]
+		v.ip = decoder.Decode(v.currFrame, v.ip)
 		//log.Println("Executing instruction ", opcode, bytecode.OpcodeNames(opcode))
-		data.execute(v, cOperandsPtr)
+		decoder.execute(v, decoder)
 		if v.shutdown {
 			break
 		}
