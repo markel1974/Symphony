@@ -4,20 +4,27 @@ import (
 	"fmt"
 	"go/ast"
 	"strings"
+
+	"github.com/markel1974/c64emu/src/kernel/vm/bytecode"
+	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
 // Imports represents a structure to manage import declarations and track imported modules in the build process.
 type Imports struct {
-	scopes    *Scopes
-	imports   map[string]bool
-	container []ast.Decl
+	gk         *objects.GateKeeper
+	references *Constants
+	scopes     *Scopes
+	imports    map[string]bool
+	container  []ast.Decl
 }
 
 // NewImports creates and returns a new instance of Imports with an initialized map to manage import declarations.
-func NewImports(scopes *Scopes) *Imports {
+func NewImports(gk *objects.GateKeeper, references *Constants, scopes *Scopes) *Imports {
 	return &Imports{
-		scopes:  scopes,
-		imports: make(map[string]bool),
+		gk:         gk,
+		references: references,
+		scopes:     scopes,
+		imports:    make(map[string]bool),
 	}
 }
 
@@ -29,6 +36,27 @@ func (i *Imports) Contains(name string) bool {
 // Declare adds the specified declaration to the container.
 func (i *Imports) Declare(decls ast.Decl) {
 	i.container = append(i.container, decls)
+}
+
+func (i *Imports) Create(name string, selName string) (string, int, error) {
+	mangledName := GetMangledName(name, selName)
+	nameIndex, found := i.references.Get(mangledName)
+	if !found {
+		attrArray := i.gk.NewArray(objects.FrameStatic, []objects.IObject{
+			i.gk.NewString(objects.FrameStatic, name),
+			i.gk.NewString(objects.FrameStatic, selName)},
+		)
+		nameIndex = i.references.Add(mangledName, attrArray)
+	}
+	if _, err := i.scopes.Emit(bytecode.OpReferences, nameIndex); err != nil {
+		return "", -1, err
+	}
+	return mangledName, nameIndex, nil
+}
+
+// Prepare initializes the Imports instance by setting up necessary state for processing import declarations.
+func (i *Imports) Prepare() error {
+	return nil
 }
 
 // Compile processes all stored import declarations and validates them, returning an error if compilation fails.
@@ -50,7 +78,7 @@ func (i *Imports) compile(in ast.Node) error {
 	case *ast.GenDecl:
 		err = i.doGenDecl(node)
 	default:
-		err = fmt.Errorf("unsupported expression type: %T", node)
+		err = fmt.Errorf("[imports] unsupported expression type: %T", node)
 	}
 	return err
 }
