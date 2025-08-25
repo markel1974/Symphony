@@ -94,6 +94,18 @@ type IGateConverter interface {
 
 // IGateAdapter defines an interface for adapting various function signatures into FuncCallable instances.
 type IGateAdapter interface {
+	FuncIsOs(fn func(string) string) FuncCallable
+	FuncIsOsS(fn func(string) []string) FuncCallable
+	FuncIsOse(fn func(string) (string, error)) FuncCallable
+	FuncIsOie(fn func(string) (int, error)) FuncCallable
+	FuncIsObSe(fn func(string) ([]byte, error)) FuncCallable
+	FuncIbSOs(fn func([]byte) string) FuncCallable
+	FuncIssOsS(fn func(string, string) []string) FuncCallable
+	FuncIssiOsS(fn func(string, string, int) []string) FuncCallable
+	FuncIssOi(fn func(string, string) int) FuncCallable
+	FuncIssOs(fn func(string, string) string) FuncCallable
+	FuncIssOb(fn func(string, string) bool) FuncCallable
+
 	FuncInOi64(fn func() int64) FuncCallable
 	FuncInOf64(fn func() float64) FuncCallable
 	FuncIiOf64(fn func(int) float64) FuncCallable
@@ -104,21 +116,10 @@ type IGateAdapter interface {
 	FuncIf64Of64(fn func(float64) float64) FuncCallable
 	FuncIf64Oi(fn func(float64) int) FuncCallable
 	FuncIf64Ob(fn func(float64) bool) FuncCallable
-	FuncIsOs(fn func(string) string) FuncCallable
-	FuncIsOsS(fn func(string) []string) FuncCallable
-	FuncIsOse(fn func(string) (string, error)) FuncCallable
-	FuncIsOie(fn func(string) (int, error)) FuncCallable
-	FuncIsObSe(fn func(string) ([]byte, error)) FuncCallable
-	FuncIbSOs(fn func([]byte) string) FuncCallable
 	FuncIf64f64Of64(fn func(float64, float64) float64) FuncCallable
 	FuncIif64Of64(fn func(int, float64) float64) FuncCallable
 	FuncIf64iOf64(fn func(float64, int) float64) FuncCallable
 	FuncIf64iOb(fn func(float64, int) bool) FuncCallable
-	FuncIssOsS(fn func(string, string) []string) FuncCallable
-	FuncIssiOsS(fn func(string, string, int) []string) FuncCallable
-	FuncIssOi(fn func(string, string) int) FuncCallable
-	FuncIssOs(fn func(string, string) string) FuncCallable
-	FuncIssOb(fn func(string, string) bool) FuncCallable
 
 	BinaryOpInt64(op Operator, lhs int64, rhs int64) (int64, error)
 	BoundsCheck(lowStack IObject, highStack IObject, numElements int64) (int64, int64, error)
