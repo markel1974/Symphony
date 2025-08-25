@@ -26,27 +26,6 @@ func NewGateAdapter(gk *GateKeeper) *GateAdapter {
 	return &GateAdapter{gk: gk}
 }
 
-// FuncInOn wraps a function `fn` and returns a FuncCallable that enforces zero arguments and calls `fn` on execution.
-func (ga *GateAdapter) FuncInOn(fn func()) FuncCallable {
-	return func(frame int, args ...IObject) (ret IObject, err error) {
-		if len(args) != 0 {
-			return nil, ErrWrongNumArguments
-		}
-		fn()
-		return ga.gk.UndefinedValue(), nil
-	}
-}
-
-// FuncInOi converts a no-argument function returning an int into a FuncCallable compatible with the system.
-func (ga *GateAdapter) FuncInOi(fn func() int) FuncCallable {
-	return func(frame int, args ...IObject) (ret IObject, err error) {
-		if len(args) != 0 {
-			return nil, ErrWrongNumArguments
-		}
-		return ga.gk.NewInt(frame, int64(fn())), nil
-	}
-}
-
 // FuncInOi64 wraps a function returning an int64 to provide a FuncCallable with specified frame and IObject arguments.
 func (ga *GateAdapter) FuncInOi64(fn func() int64) FuncCallable {
 	return func(frame int, args ...IObject) (ret IObject, err error) {
@@ -86,73 +65,6 @@ func (ga *GateAdapter) FuncIi64On(fn func(int64)) FuncCallable {
 	}
 }
 
-// FuncInOb wraps a boolean-returning function into a FuncCallable, returning TrueValue or FalseValue based on the result.
-func (ga *GateAdapter) FuncInOb(fn func() bool) FuncCallable {
-	return func(frame int, args ...IObject) (ret IObject, err error) {
-		if len(args) != 0 {
-			return nil, ErrWrongNumArguments
-		}
-		if fn() {
-			return ga.gk.TrueValue(), nil
-		}
-		return ga.gk.FalseValue(), nil
-	}
-}
-
-// FuncInOe converts a function returning an error into a FuncCallable while validating zero arguments. Returns TrueValue or an error.
-func (ga *GateAdapter) FuncInOe(fn func() error) FuncCallable {
-	return func(frame int, args ...IObject) (IObject, error) {
-		if len(args) != 0 {
-			return nil, ErrWrongNumArguments
-		}
-		err := fn()
-		if err != nil {
-			return ga.gk.NewError(frame, err.Error()), nil
-		}
-		return ga.gk.TrueValue(), nil
-	}
-}
-
-// FuncInOs wraps a given function returning a string and adapts it to a FuncCallable to be invoked with no arguments.
-func (ga *GateAdapter) FuncInOs(fn func() string) FuncCallable {
-	return func(frame int, args ...IObject) (IObject, error) {
-		if len(args) != 0 {
-			return nil, ErrWrongNumArguments
-		}
-		v := ga.gk.NewString(frame, fn())
-		return v, nil
-	}
-}
-
-// FuncInOse wraps a function returning a string and error into a FuncCallable, enforcing no arguments and handling errors.
-func (ga *GateAdapter) FuncInOse(fn func() (string, error)) FuncCallable {
-	return func(frame int, args ...IObject) (IObject, error) {
-		if len(args) != 0 {
-			return nil, ErrWrongNumArguments
-		}
-		res, err := fn()
-		if err != nil {
-			return ga.gk.NewError(frame, err.Error()), nil
-		}
-		v := ga.gk.NewString(frame, res)
-		return v, nil
-	}
-}
-
-// FuncInObSe wraps a provided function returning a byte slice and an error into a FuncCallable for execution within a given frame.
-func (ga *GateAdapter) FuncInObSe(fn func() ([]byte, error)) FuncCallable {
-	return func(frame int, args ...IObject) (IObject, error) {
-		if len(args) != 0 {
-			return nil, ErrWrongNumArguments
-		}
-		res, err := fn()
-		if err != nil {
-			return ga.gk.NewError(frame, err.Error()), nil
-		}
-		return ga.gk.NewBytes(frame, res), nil
-	}
-}
-
 // FuncInOf64 wraps a no-argument function returning float64 into a FuncCallable to integrate with the GateAdapter system.
 // It enforces no arguments and converts the float64 result to an IObject, returning ErrWrongNumArguments for invalid input.
 func (ga *GateAdapter) FuncInOf64(fn func() float64) FuncCallable {
@@ -161,47 +73,6 @@ func (ga *GateAdapter) FuncInOf64(fn func() float64) FuncCallable {
 			return nil, ErrWrongNumArguments
 		}
 		return ga.gk.NewFloat(frame, fn()), nil
-	}
-}
-
-// FuncInOsS wraps a function returning a string slice as a callable that constructs and returns an array of strings.
-func (ga *GateAdapter) FuncInOsS(fn func() []string) FuncCallable {
-	return func(frame int, args ...IObject) (ret IObject, err error) {
-		if len(args) != 0 {
-			return nil, ErrWrongNumArguments
-		}
-		obj := ga.gk.NewArray(frame, nil)
-		arr, ok := obj.(*Array)
-		if !ok {
-			return nil, fmt.Errorf("expected Array, got %T", obj)
-		}
-		for _, elem := range fn() {
-			v := ga.gk.NewString(frame, elem)
-			arr.Append(v)
-		}
-		return arr, nil
-	}
-}
-
-// FuncInOiSe wraps a function returning a slice of integers and an error into a FuncCallable type with proper argument checking.
-func (ga *GateAdapter) FuncInOiSe(fn func() ([]int, error)) FuncCallable {
-	return func(frame int, args ...IObject) (IObject, error) {
-		if len(args) != 0 {
-			return nil, ErrWrongNumArguments
-		}
-		res, err := fn()
-		if err != nil {
-			return ga.gk.NewError(frame, err.Error()), nil
-		}
-		obj := ga.gk.NewArray(frame, nil)
-		arr, ok := obj.(*Array)
-		if !ok {
-			return nil, fmt.Errorf("expected Array, got %T", obj)
-		}
-		for _, v := range res {
-			arr.Append(ga.gk.NewInt(frame, int64(v)))
-		}
-		return arr, nil
 	}
 }
 
@@ -241,24 +112,6 @@ func (ga *GateAdapter) FuncIf64Of64(fn func(float64) float64) FuncCallable {
 			return nil, err
 		}
 		return ga.gk.NewFloat(frame, fn(f1)), nil
-	}
-}
-
-// FuncIiOn wraps a provided function, allowing it to be called with an int argument extracted from a single IObject argument.
-// Returns a FuncCallable that enforces the correct argument count and handles errors during type conversion.
-// If argument type conversion fails, or if the number of arguments is not one, an error is returned.
-// The wrapped function operates on an int derived from the first argument.
-func (ga *GateAdapter) FuncIiOn(fn func(int)) FuncCallable {
-	return func(frame int, args ...IObject) (ret IObject, err error) {
-		if len(args) != 1 {
-			return nil, ErrWrongNumArguments
-		}
-		i1, err := ga.gk.ToInt64Arg(0, args[0])
-		if err != nil {
-			return nil, err
-		}
-		fn(int(i1))
-		return ga.gk.UndefinedValue(), nil
 	}
 }
 
@@ -451,48 +304,6 @@ func (ga *GateAdapter) FuncIsOse(fn func(string) (string, error)) FuncCallable {
 	}
 }
 
-// FuncIsOe wraps a function accepting a string and returning an error, converting it to a FuncCallable compatible signature.
-// It validates the arguments, ensuring exactly one is provided, and processes it as a string using the supplied function.
-// Returns true as an IObject on success, or an error object if the wrapped function fails.
-func (ga *GateAdapter) FuncIsOe(fn func(string) error) FuncCallable {
-	return func(frame int, args ...IObject) (IObject, error) {
-		if len(args) != 1 {
-			return nil, ErrWrongNumArguments
-		}
-		s1, err := ga.gk.ToStringArg(0, args[0])
-		if err != nil {
-			return nil, err
-		}
-		err = fn(s1)
-		if err != nil {
-			return ga.gk.NewError(frame, err.Error()), nil
-		}
-		return ga.gk.TrueValue(), nil
-	}
-}
-
-// FuncIssOe wraps a function with two string arguments into a FuncCallable, handling argument validation and error formatting.
-func (ga *GateAdapter) FuncIssOe(fn func(string, string) error) FuncCallable {
-	return func(frame int, args ...IObject) (IObject, error) {
-		if len(args) != 2 {
-			return nil, ErrWrongNumArguments
-		}
-		s1, err := ga.gk.ToStringArg(0, args[0])
-		if err != nil {
-			return nil, err
-		}
-		s2, err := ga.gk.ToStringArg(1, args[1])
-		if err != nil {
-			return nil, err
-		}
-		err = fn(s1, s2)
-		if err != nil {
-			return ga.gk.NewError(frame, err.Error()), nil
-		}
-		return ga.gk.TrueValue(), nil
-	}
-}
-
 // FuncIssOsS creates a callable function wrapping a string-transforming function and returns results as an array object.
 func (ga *GateAdapter) FuncIssOsS(fn func(string, string) []string) FuncCallable {
 	return func(frame int, args ...IObject) (IObject, error) {
@@ -610,155 +421,6 @@ func (ga *GateAdapter) FuncIssOb(fn func(string, string) bool) FuncCallable {
 	}
 }
 
-// FuncIsSsOs wraps a function that maps a string slice and a string to a string into a FuncCallable with IObject input and output.
-func (ga *GateAdapter) FuncIsSsOs(fn func([]string, string) string) FuncCallable {
-	return func(frame int, args ...IObject) (IObject, error) {
-		if len(args) != 2 {
-			return nil, ErrWrongNumArguments
-		}
-		var ss1 []string
-		switch arg0 := args[0].(type) {
-		case *Array:
-			for idx, a := range arg0.Values() {
-				as, err := ga.gk.ToStringArg(idx, a)
-				if err != nil {
-					return nil, err
-				}
-				ss1 = append(ss1, as)
-			}
-		case *ArrayImmutable:
-			for idx, a := range arg0.Values() {
-				as, err := ga.gk.ToStringArg(idx, a)
-				if err != nil {
-					return nil, err
-				}
-				ss1 = append(ss1, as)
-			}
-		default:
-			return nil, NewInvalidArgumentError(0, "array", args[0].TypeName())
-		}
-		s2, err := ga.gk.ToStringArg(1, args[1])
-		if err != nil {
-			return nil, err
-		}
-		v := ga.gk.NewString(frame, fn(ss1, s2))
-		return v, nil
-	}
-}
-
-// FuncIsi64Oe converts a function with string and int64 arguments into a FuncCallable compatible with the GateAdapter.
-// It validates the argument count and types, invoking the provided function with extracted values.
-// Returns a boolean IObject for success or a new error IObject for failures.
-func (ga *GateAdapter) FuncIsi64Oe(fn func(string, int64) error) FuncCallable {
-	return func(frame int, args ...IObject) (ret IObject, err error) {
-		if len(args) != 2 {
-			return nil, ErrWrongNumArguments
-		}
-		s1, err := ga.gk.ToStringArg(0, args[0])
-		if err != nil {
-			return nil, err
-		}
-		i2, err := ga.gk.ToInt64Arg(1, args[1])
-		if err != nil {
-			return nil, err
-		}
-		err = fn(s1, i2)
-		if err != nil {
-			return ga.gk.NewError(frame, err.Error()), nil
-		}
-		return ga.gk.TrueValue(), nil
-	}
-}
-
-// FuncIiiOe wraps a function accepting two integers and an error, converting it into a FuncCallable type.
-// It validates argument count, performs type conversions, calls the function, and returns results appropriately.
-func (ga *GateAdapter) FuncIiiOe(fn func(int, int) error) FuncCallable {
-	return func(frame int, args ...IObject) (ret IObject, err error) {
-		if len(args) != 2 {
-			return nil, ErrWrongNumArguments
-		}
-		i1, err := ga.gk.ToInt64Arg(0, args[0])
-		if err != nil {
-			return nil, err
-		}
-		i2, err := ga.gk.ToInt64Arg(1, args[1])
-		if err != nil {
-			return nil, err
-		}
-		err = fn(int(i1), int(i2))
-		if err != nil {
-			return ga.gk.NewError(frame, err.Error()), nil
-		}
-		return ga.gk.TrueValue(), nil
-	}
-}
-
-// FuncIsiOs adapts a Go function with string and int inputs into a FuncCallable used within the system's execution frame.
-func (ga *GateAdapter) FuncIsiOs(fn func(string, int) string) FuncCallable {
-	return func(frame int, args ...IObject) (ret IObject, err error) {
-		if len(args) != 2 {
-			return nil, ErrWrongNumArguments
-		}
-		s1, err := ga.gk.ToStringArg(0, args[0])
-		if err != nil {
-			return nil, err
-		}
-		i2, err := ga.gk.ToInt64Arg(1, args[1])
-		if err != nil {
-			return nil, err
-		}
-		v := ga.gk.NewString(frame, fn(s1, int(i2)))
-		return v, nil
-	}
-}
-
-// FuncIsiiOe wraps a function with the signature `func(string, int, int) error` into a FuncCallable type.
-// It validates that the provided arguments match the expected types and number before invoking the function.
-// The function returns an error if argument validation fails or if the provided function produces an error.
-// On success, it returns a true value in the system's format.
-func (ga *GateAdapter) FuncIsiiOe(fn func(string, int, int) error) FuncCallable {
-	return func(frame int, args ...IObject) (ret IObject, err error) {
-		if len(args) != 3 {
-			return nil, ErrWrongNumArguments
-		}
-		s1, err := ga.gk.ToStringArg(0, args[0])
-		if err != nil {
-			return nil, err
-		}
-		i2, err := ga.gk.ToInt64Arg(1, args[1])
-		if err != nil {
-			return nil, err
-		}
-		i3, err := ga.gk.ToInt64Arg(2, args[2])
-		if err != nil {
-			return nil, err
-		}
-		err = fn(s1, int(i2), int(i3))
-		if err != nil {
-			return ga.gk.NewError(frame, err.Error()), nil
-		}
-		return ga.gk.TrueValue(), nil
-	}
-}
-
-// FuncIbSOie creates a FuncCallable that wraps a function converting a byte slice to an integer and handles its execution.
-func (ga *GateAdapter) FuncIbSOie(fn func([]byte) (int, error)) FuncCallable {
-	return func(frame int, args ...IObject) (ret IObject, err error) {
-		if len(args) != 1 {
-			return nil, ErrWrongNumArguments
-		}
-		bs1, err := ga.gk.ToByteSliceArg(0, args[0])
-		if err != nil {
-			return nil, err
-		}
-		res, err := fn(bs1)
-		if err != nil {
-			return ga.gk.NewError(frame, err.Error()), nil
-		}
-		return ga.gk.NewInt(frame, int64(res)), nil
-	}
-}
-
 // FuncIbSOs wraps a given function to process a byte slice argument and returns a callable function for the system.
 func (ga *GateAdapter) FuncIbSOs(fn func([]byte) string) FuncCallable {
 	return func(frame int, args ...IObject) (ret IObject, err error) {
@@ -810,34 +472,6 @@ func (ga *GateAdapter) FuncIsObSe(fn func(string) ([]byte, error)) FuncCallable 
 			return ga.gk.NewError(frame, err.Error()), nil
 		}
 		return ga.gk.NewBytes(frame, res), nil
-	}
-}
-
-// FuncIiOsSe adapts a function of type func(int) ([]string, error) into a FuncCallable for use with IObject arguments.
-// It expects exactly one argument and converts IObjects to int and vice versa while handling errors gracefully.
-func (ga *GateAdapter) FuncIiOsSe(fn func(int) ([]string, error)) FuncCallable {
-	return func(frame int, args ...IObject) (ret IObject, err error) {
-		if len(args) != 1 {
-			return nil, ErrWrongNumArguments
-		}
-		i1, err := ga.gk.ToInt64Arg(0, args[0])
-		if err != nil {
-			return nil, err
-		}
-		res, err := fn(int(i1))
-		if err != nil {
-			return ga.gk.NewError(frame, err.Error()), nil
-		}
-		obj := ga.gk.NewArray(frame, nil)
-		arr, ok := obj.(*Array)
-		if !ok {
-			return nil, fmt.Errorf("expected Array, got %T", obj)
-		}
-		for _, r := range res {
-			v := ga.gk.NewString(frame, r)
-			arr.Append(v)
-		}
-		return arr, nil
 	}
 }
 

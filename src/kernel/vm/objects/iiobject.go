@@ -94,22 +94,11 @@ type IGateConverter interface {
 
 // IGateAdapter defines an interface for adapting various function signatures into FuncCallable instances.
 type IGateAdapter interface {
-	FuncInOn(fn func()) FuncCallable
-	FuncInOi(fn func() int) FuncCallable
 	FuncInOi64(fn func() int64) FuncCallable
-	FuncInOb(fn func() bool) FuncCallable
-	FuncInOe(fn func() error) FuncCallable
-	FuncInOs(fn func() string) FuncCallable
-	FuncInOse(fn func() (string, error)) FuncCallable
-	FuncInObSe(fn func() ([]byte, error)) FuncCallable
 	FuncInOf64(fn func() float64) FuncCallable
-	FuncInOsS(fn func() []string) FuncCallable
-	FuncInOiSe(fn func() ([]int, error)) FuncCallable
-	FuncIiOn(fn func(int)) FuncCallable
 	FuncIiOf64(fn func(int) float64) FuncCallable
 	FuncIiOiS(fn func(int) []int) FuncCallable
 	FuncIiOs(fn func(int) string) FuncCallable
-	FuncIiOsSe(fn func(int) ([]string, error)) FuncCallable
 	FuncIi64Oi64(fn func(int64) int64) FuncCallable
 	FuncIi64On(fn func(int64)) FuncCallable
 	FuncIf64Of64(fn func(float64) float64) FuncCallable
@@ -118,26 +107,18 @@ type IGateAdapter interface {
 	FuncIsOs(fn func(string) string) FuncCallable
 	FuncIsOsS(fn func(string) []string) FuncCallable
 	FuncIsOse(fn func(string) (string, error)) FuncCallable
-	FuncIsOe(fn func(string) error) FuncCallable
 	FuncIsOie(fn func(string) (int, error)) FuncCallable
 	FuncIsObSe(fn func(string) ([]byte, error)) FuncCallable
-	FuncIbSOie(fn func([]byte) (int, error)) FuncCallable
 	FuncIbSOs(fn func([]byte) string) FuncCallable
 	FuncIf64f64Of64(fn func(float64, float64) float64) FuncCallable
 	FuncIif64Of64(fn func(int, float64) float64) FuncCallable
 	FuncIf64iOf64(fn func(float64, int) float64) FuncCallable
 	FuncIf64iOb(fn func(float64, int) bool) FuncCallable
-	FuncIssOe(fn func(string, string) error) FuncCallable
 	FuncIssOsS(fn func(string, string) []string) FuncCallable
 	FuncIssiOsS(fn func(string, string, int) []string) FuncCallable
 	FuncIssOi(fn func(string, string) int) FuncCallable
 	FuncIssOs(fn func(string, string) string) FuncCallable
 	FuncIssOb(fn func(string, string) bool) FuncCallable
-	FuncIsSsOs(fn func([]string, string) string) FuncCallable
-	FuncIsi64Oe(fn func(string, int64) error) FuncCallable
-	FuncIiiOe(fn func(int, int) error) FuncCallable
-	FuncIsiOs(fn func(string, int) string) FuncCallable
-	FuncIsiiOe(fn func(string, int, int) error) FuncCallable
 
 	BinaryOpInt64(op Operator, lhs int64, rhs int64) (int64, error)
 	BoundsCheck(lowStack IObject, highStack IObject, numElements int64) (int64, int64, error)
