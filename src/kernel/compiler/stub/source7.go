@@ -59,7 +59,8 @@ func ProcessItems(items []interface{}) {
 	fmt.Println("\n=> Processing all items...")
 	for _, item := range items {
 		// La VM risolverà dinamicamente la chiamata al metodo corretto.
-		item.Display()
+		//item.Display()
+		//TODO 
 	}
 }
 
@@ -126,11 +127,11 @@ func main() {
 
 	allTasks := []SimpleTask{ *task1, task2, project.Tasks[0], project.Tasks[1], project.Tasks[2] }
 
-	for _, t := range allTasks {
+	//for _, t := range allTasks {
 		// Applichiamo il filtro.
-		if filterIncomplete(t) {
-			t.Display()
-		}
-	}
+	//	if filterIncomplete(t) {
+	//		t.Display()
+	//	}
+	//}
 }
 `

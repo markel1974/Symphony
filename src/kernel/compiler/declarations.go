@@ -20,16 +20,15 @@ type Declarations struct {
 	constants  *Constants
 	scopes     *Scopes
 	fileSet    *token.FileSet
+	structs    *Structs
 	compile    func(node ast.Node) error
-
-	structs *Structs
 }
 
-func NewDeclarations(gk objects.IGateKeeper, references *Constants, constants *Constants, scopes *Scopes) *Declarations {
+func NewDeclarations(gk objects.IGateKeeper, references *Constants, constants *Constants, scopes *Scopes, structs *Structs) *Declarations {
 	return &Declarations{
 		gk: gk, references: references, constants: constants, scopes: scopes,
 		compile: nil,
-		structs: NewStructs(),
+		structs: structs,
 	}
 }
 
@@ -138,20 +137,20 @@ func (c *Declarations) ValueSpec(node *ast.ValueSpec) error {
 			}
 		}
 
-		symbol2, err := c.scopes.SymbolDefine(name.Name, UnknownScope, isStruct)
+		symbol, err := c.scopes.SymbolDefine(name.Name, UnknownScope, isStruct)
 		if err != nil {
 			return err
 		}
 
 		if len(assignedTypeNames) > 0 {
-			symbol2.SetTypes(assignedTypeNames)
-			symbol2.SetObject(c.gk.NewString(objects.FrameStatic, symbol2.Name()+":"+strings.Join(assignedTypeNames, " ")))
+			symbol.SetTypes(assignedTypeNames)
+			symbol.SetObject(c.gk.NewString(objects.FrameStatic, symbol.Name()+":"+strings.Join(assignedTypeNames, " ")))
 		} else {
-			symbol2.SetObject(c.gk.NewString(objects.FrameStatic, symbol2.Name()))
+			symbol.SetObject(c.gk.NewString(objects.FrameStatic, symbol.Name()))
 		}
 
 		// 4. Emette bytecode per assegnare il valore dalla cima dello stack alla variabile.
-		if err = c.scopes.EmitSymbolDefine(symbol2); err != nil {
+		if err = c.scopes.EmitSymbolDefine(symbol); err != nil {
 			return err
 		}
 		// 5. Pulisce lo stack dal valore ora che è stato assegnato.
@@ -216,8 +215,6 @@ func (c *Declarations) Ident(node *ast.Ident) error {
 
 // AssignStmt processes an assignment statement by compiling the right-hand side and resolving variable symbols.
 // It also updates the type information for symbols or emits appropriate bytecode for assignments.
-// AssignStmt processes an assignment statement by compiling the right-hand side and resolving variable symbols.
-// It also updates the type information for symbols or emits appropriate bytecode for assignments.
 func (c *Declarations) AssignStmt(node *ast.AssignStmt) error {
 	// Gestisce l'assegnazione multipla da una chiamata di funzione (es. x, y := f())
 	if callExpr, ok := node.Rhs[0].(*ast.CallExpr); ok && len(node.Lhs) > 1 {
@@ -277,13 +274,13 @@ func (c *Declarations) AssignStmt(node *ast.AssignStmt) error {
 		var symbol *Symbol
 		if node.Tok == token.DEFINE { // Caso specifico per ':='
 			var err error
-
-			// --- INIZIO CORREZIONE ---
 			// Ispezioniamo il lato destro (RHS) per inferire il tipo
 			isStruct := false
 			var assignedTypeName []string
 
 			switch rhs := node.Rhs[0].(type) {
+			case *ast.BasicLit:
+				//nothing to do
 			case *ast.CompositeLit: // es. MyStruct{...}
 				if ident, ok := rhs.Type.(*ast.Ident); ok {
 					if typeSymbol, ok := c.scopes.SymbolResolve(ident.Name); ok && typeSymbol.IsStruct() {
@@ -314,8 +311,9 @@ func (c *Declarations) AssignStmt(node *ast.AssignStmt) error {
 						}
 					}
 				}
+			default:
+				return fmt.Errorf("unsupported right-hand side for assignment: %T", rhs)
 			}
-
 			// Definiamo il simbolo usando il valore 'isStruct' appena calcolato
 			symbol, err = c.scopes.SymbolDefine(name, UnknownScope, isStruct)
 			if err != nil {
@@ -325,8 +323,6 @@ func (c *Declarations) AssignStmt(node *ast.AssignStmt) error {
 			if len(assignedTypeName) > 0 {
 				symbol.SetTypes(assignedTypeName)
 			}
-			// --- FINE CORREZIONE ---
-
 		} else { // Caso per l'assegnazione normale '='
 			var ok bool
 			symbol, ok = c.scopes.SymbolResolve(name)

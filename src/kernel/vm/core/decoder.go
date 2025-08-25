@@ -10,6 +10,8 @@ const (
 // Decoder represents an instruction decoder used to process bytecode in a virtual machine.
 // It handles decoding operands and executing the associated instruction logic.
 type Decoder struct {
+	executor        IOpExecutor
+	name            string
 	execute         func(vm *VM, data *Decoder)
 	operands        []func(*Frame, int) (int, int)
 	fullWidth       int
@@ -17,9 +19,12 @@ type Decoder struct {
 }
 
 // NewDecoder creates a new Decoder instance with the specified execution function and operand widths.
-func NewDecoder(execute func(vm *VM, data *Decoder), operands []int) *Decoder {
+func NewDecoder(executor IOpExecutor) *Decoder {
+	operands := executor.Operands()
 	sd := &Decoder{
-		execute:         execute,
+		executor:        executor,
+		execute:         executor.Execute,
+		name:            executor.Name(),
 		operands:        make([]func(*Frame, int) (int, int), len(operands)),
 		fullWidth:       0,
 		decodedOperands: make([]int, operandsMax),
@@ -37,6 +42,11 @@ func NewDecoder(execute func(vm *VM, data *Decoder), operands []int) *Decoder {
 		idx++
 	}
 	return sd
+}
+
+// Name returns the name of the instruction.
+func (d *Decoder) Name() string {
+	return d.name
 }
 
 // Decode processes and decodes operands from the instruction pointer, updating decodedOperands and returning new ip.

@@ -3,6 +3,7 @@ package core
 import (
 	"fmt"
 	"io"
+	"log"
 
 	"github.com/markel1974/c64emu/src/kernel/vm/bytecode"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
@@ -55,7 +56,7 @@ func New(factory objects.IGateKeeper, sequencer ISequencer) *VM {
 	seq := sequencer.Create()
 	v.sequencer = make([]*Decoder, len(seq))
 	for i, s := range seq {
-		v.sequencer[i] = NewDecoder(s.Execute, s.Operands())
+		v.sequencer[i] = NewDecoder(s)
 	}
 	return v
 }
@@ -293,7 +294,7 @@ func (v *VM) loop() {
 		opcode = v.currFrame.Get8(v.ip)
 		decoder = v.sequencer[opcode]
 		v.ip = decoder.Decode(v.currFrame, v.ip)
-		//log.Println("Executing instruction ", opcode, bytecode.OpcodeNames(opcode))
+		log.Println("Executing instruction ", opcode, decoder.Name())
 		decoder.Execute(v)
 		if v.shutdown {
 			break

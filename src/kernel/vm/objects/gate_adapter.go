@@ -550,6 +550,9 @@ func (ga *GateAdapter) BoundsCheck(lowStack IObject, highStack IObject, numEleme
 // It navigates through the provided selectors and performs an assignment on the target object at the final index.
 // Returns an error if any selector is invalid, the object is not indexable, or the assignment fails.
 func (ga *GateAdapter) IndexAssign(frame int, dst IObject, src IObject, selectors []IObject) error {
+	if len(selectors) == 0 {
+		return fmt.Errorf("no selectors provided")
+	}
 	numSel := len(selectors)
 	for sIdx := numSel - 1; sIdx > 0; sIdx-- {
 		next, err := dst.IndexGet(frame, selectors[sIdx])

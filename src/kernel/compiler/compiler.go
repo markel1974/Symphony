@@ -29,6 +29,7 @@ type Compiler struct {
 	types        *Types
 	others       *Others
 	declarations *Declarations
+	structs      *Structs
 	rootNode     *ast.File
 }
 
@@ -39,9 +40,10 @@ func New(gk objects.IGateKeeper) *Compiler {
 	scopes := NewScopes(gk, op)
 	constants := NewConstants()
 	references := NewConstants()
-	declarations := NewDeclarations(gk, references, constants, scopes)
+	structs := NewStructs()
+	declarations := NewDeclarations(gk, references, constants, scopes, structs)
 	imports := NewImports(gk, references, scopes)
-	functions := NewFunctions(gk, constants, scopes, imports, declarations)
+	functions := NewFunctions(gk, constants, scopes, imports, declarations, structs)
 	types := NewTypes(declarations)
 	others := NewOthers(declarations)
 	c := &Compiler{
@@ -55,6 +57,7 @@ func New(gk objects.IGateKeeper) *Compiler {
 		declarations: declarations,
 		types:        types,
 		others:       others,
+		structs:      structs,
 		rootNode:     nil,
 	}
 	return c

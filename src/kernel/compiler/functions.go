@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"go/ast"
 	"go/token"
-	"strings"
 
 	"github.com/markel1974/c64emu/src/kernel/vm/bytecode"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
@@ -37,16 +36,18 @@ type Functions struct {
 	declarations *Declarations
 	container    []*FunctionDescription
 	compile      func(node ast.Node) error
+	structs      *Structs
 }
 
 // NewFunctions initializes and returns a new Functions instance.
-func NewFunctions(gk objects.IGateKeeper, constants *Constants, scopes *Scopes, imports *Imports, declarations *Declarations) *Functions {
+func NewFunctions(gk objects.IGateKeeper, constants *Constants, scopes *Scopes, imports *Imports, declarations *Declarations, structs *Structs) *Functions {
 	return &Functions{
 		gk:           gk,
 		constants:    constants,
 		scopes:       scopes,
 		imports:      imports,
 		declarations: declarations,
+		structs:      structs,
 		compile:      nil,
 	}
 }
@@ -122,7 +123,7 @@ func (c *Functions) funcBodyPrepare(fd *FunctionDescription) error {
 		fd.StructType = false
 	}
 	//function symbol placeholder (this is not the real function, it's just a placeholder to be able to compile the body)
-	if _, err = c.scopes.SymbolDefine(fd.Name, UnknownScope, false); err != nil {
+	if _, err = c.scopes.SymbolDefine(fd.Name, UnknownScope, fd.StructType); err != nil {
 		return err
 	}
 	return nil
@@ -135,8 +136,12 @@ func (c *Functions) funcBodyCompile(fd *FunctionDescription) error {
 		return err
 	}
 	for _, p := range fd.Recv {
-		if _, err := c.scopes.SymbolDefine(p, UnknownScope, fd.StructType); err != nil {
+		z, err := c.scopes.SymbolDefine(p, UnknownScope, fd.StructType)
+		if err != nil {
 			return err
+		}
+		if fd.StructType {
+			z.SetTypes(fd.Types)
 		}
 	}
 	for _, p := range fd.Params {
@@ -242,10 +247,12 @@ func (c *Functions) CallExpr(node *ast.CallExpr) error {
 				}
 				//methodName := selName//selExpr.Sel.Name
 				fnName = GetMangledName(typeSymbol.Name(), selName)
-				fnIndex, ok = c.constants.Get(fnName)
+				fnSymbol, ok := c.scopes.SymbolResolve(fnName)
+				//fnIndex, ok = c.constants.Get(fnName)
 				if !ok {
-					return fmt.Errorf("undefined method '%s' for type '%s'", selName, typeSymbol.Name())
+					return fmt.Errorf("undefined method '%s' for type '%s' [%s]", selName, typeSymbol.Name(), fnName)
 				}
+				fnIndex = fnSymbol.Index()
 				fnArgs = append(fnArgs, selExpr.X) // The receiver is the first argument
 				fnArgs = append(fnArgs, node.Args...)
 			} else {
@@ -516,37 +523,22 @@ func (c *Functions) RangeStmt(node *ast.RangeStmt) error {
 		if receiverIdent, ok := expr.X.(*ast.Ident); ok {
 			// 1. Risolviamo il simbolo del ricevitore (myVar)
 			if receiverSymbol, ok := c.scopes.SymbolResolve(receiverIdent.Name); ok {
-				// 2. Troviamo il nome del tipo dello struct del ricevitore
-				if len(receiverSymbol.Types()) > 0 {
-					receiverTypeName := receiverSymbol.Types()[0]
-
-					// 3. Risolviamo il simbolo del tipo per accedere alla sua definizione
-					if typeSymbol, ok := c.scopes.SymbolResolve(receiverTypeName); ok && typeSymbol.IsStruct() {
-						fieldName := expr.Sel.Name
-						// 4. Cerchiamo il campo 'Items' nella definizione dello struct
-						for _, field := range typeSymbol.Fields {
-							if field.Name() == fieldName {
-								// 5. Abbiamo trovato il campo. Il suo tipo (es. "[]MyItem")
-								// è quello che ci serve. Dobbiamo estrarre il tipo dell'elemento.
-								// Nota: questa è una semplificazione. Un vero compilatore
-								// dovrebbe parsare "[]MyItem" per estrarre "MyItem".
-								// Per il nostro sistema, assumiamo che il tipo di uno slice
-								// sia memorizzato come il nome del tipo dell'elemento.
-								collectionTypeName := field.Type() // es. "[]MyItem"
-								// Semplice estrazione per togliere "[]"
-								if strings.HasPrefix(collectionTypeName, "[]") {
-									elementTypeName := strings.TrimPrefix(collectionTypeName, "[]")
-									// Ora abbiamo il simbolo per il tipo dell'elemento
-									collectionSymbol = NewSymbol(elementTypeName, 0, UnknownScope, "", "", false)
-									collectionSymbol.SetTypes([]string{elementTypeName})
-								}
-								break
-							}
-						}
+				structFields := c.structs.Get(receiverSymbol.StructName())
+				if structFields == nil {
+					return fmt.Errorf("undefined struct: %s", receiverSymbol.StructName())
+				}
+				fieldName := expr.Sel.Name
+				for _, field := range structFields {
+					if fieldName == field.name {
+						collectionSymbol = NewSymbol(field.base, 0, UnknownScope, "", "", false)
+						collectionSymbol.SetTypes([]string{field.base})
+						break
 					}
 				}
 			}
 		}
+	default:
+		return fmt.Errorf("unsupported range expression: %T", node.X)
 	}
 
 	// Logica di inferenza unificata

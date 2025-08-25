@@ -44,6 +44,10 @@ func (s *Structs) Add(name string, def []*StructProperty) {
 	fmt.Printf("\n")
 }
 
+func (s *Structs) Get(name string) []*StructProperty {
+	return s.container[name]
+}
+
 /*
 // Get recupera la definizione di uno struct tramite il suo nome.
 func (s *Structs) Get(name string) (*StructDef, bool) {
