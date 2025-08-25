@@ -70,18 +70,6 @@ func (v *VM) Setup(loader bytecode.ILoader, bc *bytecode.Bytecode) error {
 	if err != nil {
 		return err
 	}
-	constants := make([]objects.IObject, len(bc.Constants()))
-	for idx, constant := range bc.Constants() {
-		constants[idx] = constant
-		switch c := constant.(type) {
-		case *objects.Builtin:
-			symbol := loader.BuiltinResolve(idx)
-			if symbol == nil {
-				return fmt.Errorf("builtin symbol not found: %s", c.Name())
-			}
-			constants[idx] = symbol
-		}
-	}
 	for _, global := range bc.Global() {
 		switch c := global.(type) {
 		case *objects.FuncCompiled:
@@ -91,7 +79,7 @@ func (v *VM) Setup(loader bytecode.ILoader, bc *bytecode.Bytecode) error {
 	v.loader = loader
 	v.sourceFiles = bc.SourceFiles()
 	v.references = references
-	v.constants.SetContainer(constants)
+	v.constants.SetContainer(bc.Constants())
 	v.globals.SetContainer(bc.Global())
 	return nil
 }

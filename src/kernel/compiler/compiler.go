@@ -62,17 +62,22 @@ func New(gk objects.IGateKeeper) *Compiler {
 
 // Compile parses the provided source file and compiles it into bytecode. Returns compiled bytecode or an error.
 func (c *Compiler) Compile(filename string, source any) error {
-	for idx := 0; idx < c.loader.BuiltinLen(); idx++ {
-		bi := c.loader.Builtin(idx)
-		if bi == nil {
-			return fmt.Errorf("builtin %d not found", idx)
-		}
-		c.constants.Add(bi.Name(), bi)
-		//c.scopes.SymbolDefine(bi.Name(), GlobalScope, false)
-	}
-
 	fileSet := token.NewFileSet()
-	c.declarations.Initialize(fileSet)
+	if err := c.imports.Setup(c.loader, c.compile); err != nil {
+		return err
+	}
+	if err := c.declarations.Setup(fileSet, c.compile); err != nil {
+		return err
+	}
+	if err := c.functions.Setup(c.compile); err != nil {
+		return err
+	}
+	if err := c.others.Setup(c.compile); err != nil {
+		return err
+	}
+	if err := c.types.Setup(c.compile); err != nil {
+		return err
+	}
 	astFile, err := parser.ParseFile(fileSet, filename, source, 0)
 	if err != nil {
 		return err
@@ -117,14 +122,47 @@ func (c *Compiler) Print(writer io.Writer) {
 	c.scopes.Print(writer)
 }
 
-// compile traverses the provided AST node and compiles it into bytecode, handling various node types in a switch block.
 func (c *Compiler) compile(in ast.Node) error {
 	var err error = nil
 	switch node := in.(type) {
 	case *ast.File:
-		err = c.doFile(node)
+		err = c.File(node)
+	case *ast.ImportSpec:
+		err = c.imports.ImportSpec(node)
+	case *ast.GenDecl:
+		err = c.declarations.GenDecl(node)
+	case *ast.Ident:
+		err = c.declarations.Ident(node)
+	case *ast.AssignStmt:
+		err = c.declarations.AssignStmt(node)
+	case *ast.BasicLit:
+		err = c.declarations.BasicLit(node)
+	case *ast.BlockStmt:
+		err = c.functions.BlockStmt(node)
+	case *ast.ExprStmt:
+		err = c.functions.ExprStmt(node)
+	case *ast.IfStmt:
+		err = c.functions.IfStmt(node)
+	case *ast.RangeStmt:
+		err = c.functions.RangeStmt(node)
+	case *ast.ForStmt:
+		err = c.functions.ForStmt(node)
+	case *ast.IncDecStmt:
+		err = c.functions.IncDecStmt(node)
+	case *ast.BinaryExpr:
+		err = c.functions.BinaryExpr(node)
+	case *ast.UnaryExpr:
+		err = c.functions.UnaryExpr(node)
+	case *ast.FuncDecl:
+		err = c.functions.FuncDecl(node)
+	case *ast.CallExpr:
+		err = c.functions.CallExpr(node)
+	case *ast.ReturnStmt:
+		err = c.functions.ReturnStmt(node)
+	case *ast.SelectorExpr:
+		err = c.functions.doSelectorExpr(node)
 	default:
-		err = fmt.Errorf("[compiler] unsupported expression type: %T", node)
+		err = fmt.Errorf("unsupported expression type: %T", node)
 	}
 	return err
 }
@@ -146,8 +184,8 @@ func (c *Compiler) defaultPipeline() []func() error {
 	return pipeline
 }
 
-// doFile processes the given AST file node, categorizes declarations, and compiles them in a defined order while handling errors.
-func (c *Compiler) doFile(node *ast.File) error {
+// File processes the given AST file node, categorizes declarations, and compiles them in a defined order while handling errors.
+func (c *Compiler) File(node *ast.File) error {
 	c.rootNode = node
 	pipeline := c.defaultPipeline()
 	for _, fn := range pipeline {

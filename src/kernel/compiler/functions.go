@@ -35,6 +35,7 @@ type Functions struct {
 	imports      *Imports
 	declarations *Declarations
 	container    []*FunctionDescription
+	compile      func(node ast.Node) error
 }
 
 // NewFunctions initializes and returns a new Functions instance.
@@ -45,7 +46,14 @@ func NewFunctions(gk objects.IGateKeeper, constants *Constants, scopes *Scopes, 
 		scopes:       scopes,
 		imports:      imports,
 		declarations: declarations,
+		compile:      nil,
 	}
+}
+
+// Setup initializes the `Functions` instance with a compile function used for processing AST nodes.
+func (c *Functions) Setup(compile func(node ast.Node) error) error {
+	c.compile = compile
+	return nil
 }
 
 // Declare adds a function description derived from the provided function declaration to the Functions container.
@@ -54,6 +62,7 @@ func (c *Functions) Declare(funcDecl *ast.FuncDecl) {
 	c.container = append(c.container, fd)
 }
 
+// Prepare iterates through all function descriptions in the container and prepares their bodies for compilation.
 func (c *Functions) Prepare() error {
 	for _, fd := range c.container {
 		if err := c.funcBodyPrepare(fd); err != nil {
@@ -63,6 +72,7 @@ func (c *Functions) Prepare() error {
 	return nil
 }
 
+// Compile iterates over all function descriptions in the container and compiles their bodies. Returns an error if any fails.
 func (c *Functions) Compile() error {
 	for _, fd := range c.container {
 		if err := c.funcBodyCompile(fd); err != nil {
@@ -181,76 +191,47 @@ func (c *Functions) funcBodyCompile(fd *FunctionDescription) error {
 	return nil
 }
 
-// compile traverses the provided AST node and compiles it into bytecode, handling various node types in a switch block.
-func (c *Functions) compile(in ast.Node) error {
-	var err error = nil
-
-	switch node := in.(type) {
-	case *ast.GenDecl:
-		err = c.declarations.GenDecl(node)
-	case *ast.Ident:
-		err = c.declarations.Ident(node)
-	case *ast.AssignStmt:
-		err = c.declarations.AssignStmt(node)
-	case *ast.BlockStmt:
-		err = c.doBlockStmt(node)
-	case *ast.ExprStmt:
-		err = c.doExprStmt(node)
-	case *ast.IfStmt:
-		err = c.doIfStmt(node)
-	case *ast.RangeStmt:
-		err = c.doRangeStmt(node)
-	case *ast.ForStmt:
-		err = c.doForStmt(node)
-	case *ast.IncDecStmt:
-		err = c.doIncDecStmt(node)
-	case *ast.BinaryExpr:
-		err = c.doBinaryExpr(node)
-	case *ast.UnaryExpr:
-		err = c.doUnaryExpr(node)
-	case *ast.FuncDecl:
-		err = c.doFuncDecl(node)
-	case *ast.CallExpr:
-		err = c.doCallExpr(node)
-	case *ast.ReturnStmt:
-		err = c.doReturnStmt(node)
-	case *ast.SelectorExpr:
-		err = c.doSelectorExpr(node)
-	default:
-		err = fmt.Errorf("[functions] unsupported expression type: %T", node)
-	}
-	return err
-}
-
-// doCallExpr processes a single CallExpr node and generates bytecode for function or method calls.
+// CallExpr processes a single CallExpr node and generates bytecode for function or method calls.
 // It resolves the function or method being called, handles arguments, and emits corresponding bytecode.
 // It also manages nested function calls by pre-evaluating them and storing results in temporary variables.
 // Returns an error if the call expression contains invalid or unresolved references.
-func (c *Functions) doCallExpr(node *ast.CallExpr) error {
+func (c *Functions) CallExpr(node *ast.CallExpr) error {
 	// Step 1: Resolve the function and its arguments for analysis. This part doesn't emit bytecode yet.
-	fnOpType := bytecode.OpGetGlobal
-	fnIndex := -1
-	fnName := ""
-	var fnArgs []ast.Expr
+	identName := ""
+	receiverIdentName := ""
+	selName := ""
+	commonName := ""
 
-	if selExpr, isSelector := node.Fun.(*ast.SelectorExpr); isSelector {
-		// Import or Method call
+	selExpr, isSelector := node.Fun.(*ast.SelectorExpr)
+	if isSelector {
 		receiverIdent, ok := selExpr.X.(*ast.Ident)
 		if !ok {
 			return fmt.Errorf("unsupported receiver for selector expression: %T", selExpr.X)
 		}
-		if c.imports.HasPackage(receiverIdent.Name) {
-			var err error
-			fnOpType = bytecode.OpReferences
-			fnArgs = node.Args
-			fnName, fnIndex, err = c.imports.Create(receiverIdent.Name, selExpr.Sel.Name)
-			if err != nil {
-				return err
-			}
-		} else {
-			receiverSymbol, ok := c.scopes.SymbolResolve(receiverIdent.Name)
+		commonName = receiverIdent.Name
+		receiverIdentName = receiverIdent.Name
+		selName = selExpr.Sel.Name
+
+	} else {
+		ident, ok := node.Fun.(*ast.Ident)
+		if !ok {
+			return fmt.Errorf("unsupported function call: %T", node.Fun)
+		}
+		commonName = ident.Name
+		identName = ident.Name
+	}
+
+	fnOpType := bytecode.OpGetGlobal
+	var fnArgs []ast.Expr
+	fnName, fnIndex, ok := c.imports.Attach(commonName, selName)
+	if ok {
+		fnOpType = bytecode.OpReferences
+		fnArgs = node.Args
+	} else {
+		if selExpr != nil {
+			receiverSymbol, ok := c.scopes.SymbolResolve(receiverIdentName)
 			if !ok {
-				return fmt.Errorf("undefined variable: %s", receiverIdent.Name)
+				return fmt.Errorf("undefined variable: %s", receiverIdentName)
 			}
 			if len(receiverSymbol.Types()) > 0 { // struct method
 				structTypeName := receiverSymbol.Types()[0]
@@ -258,31 +239,26 @@ func (c *Functions) doCallExpr(node *ast.CallExpr) error {
 				if !ok {
 					return fmt.Errorf("undefined type: %s", structTypeName)
 				}
-				methodName := selExpr.Sel.Name
-				fnName = GetMangledName(typeSymbol.Name(), methodName)
+				//methodName := selName//selExpr.Sel.Name
+				fnName = GetMangledName(typeSymbol.Name(), selName)
 				fnIndex, ok = c.constants.Get(fnName)
 				if !ok {
-					return fmt.Errorf("undefined method '%s' for type '%s'", methodName, typeSymbol.Name())
+					return fmt.Errorf("undefined method '%s' for type '%s'", selName, typeSymbol.Name())
 				}
 				fnArgs = append(fnArgs, selExpr.X) // The receiver is the first argument
 				fnArgs = append(fnArgs, node.Args...)
 			} else {
 				return fmt.Errorf("cannot call method on untyped variable or undefined package '%s'", receiverSymbol.Name())
 			}
+		} else {
+			symbol, ok := c.scopes.SymbolResolve(identName)
+			if !ok {
+				return fmt.Errorf("undefined function: %s", identName)
+			}
+			fnName = identName
+			fnIndex = symbol.Index()
+			fnArgs = node.Args
 		}
-	} else {
-		//Function call
-		ident, ok := node.Fun.(*ast.Ident)
-		if !ok {
-			return fmt.Errorf("unsupported function call: %T", node.Fun)
-		}
-		symbol, ok := c.scopes.SymbolResolve(ident.Name)
-		if !ok {
-			return fmt.Errorf("undefined function: %s", ident.Name)
-		}
-		fnName = ident.Name
-		fnIndex = symbol.Index()
-		fnArgs = node.Args
 	}
 	if fnIndex < 0 {
 		return fmt.Errorf("could not resolve function index for '%s'", fnName)
@@ -344,8 +320,8 @@ func (c *Functions) doCallExpr(node *ast.CallExpr) error {
 	return nil
 }
 
-// doBlockStmt compiles each statement in the provided block and returns an error if any compilation step fails.
-func (c *Functions) doBlockStmt(node *ast.BlockStmt) error {
+// BlockStmt compiles each statement in the provided block and returns an error if any compilation step fails.
+func (c *Functions) BlockStmt(node *ast.BlockStmt) error {
 	for _, s := range node.List {
 		if err := c.compile(s); err != nil {
 			return err
@@ -354,8 +330,8 @@ func (c *Functions) doBlockStmt(node *ast.BlockStmt) error {
 	return nil
 }
 
-// doExprStmt compiles an expression statement and emits a pop operation to discard its result.
-func (c *Functions) doExprStmt(node *ast.ExprStmt) error {
+// ExprStmt compiles an expression statement and emits a pop operation to discard its result.
+func (c *Functions) ExprStmt(node *ast.ExprStmt) error {
 	if err := c.compile(node.X); err != nil {
 		return err
 	}
@@ -365,8 +341,8 @@ func (c *Functions) doExprStmt(node *ast.ExprStmt) error {
 	return nil
 }
 
-// doIfStmt compiles an if statement, handling both 'then' and optional 'else' blocks with associated bytecode instructions.
-func (c *Functions) doIfStmt(node *ast.IfStmt) error {
+// IfStmt compiles an if statement, handling both 'then' and optional 'else' blocks with associated bytecode instructions.
+func (c *Functions) IfStmt(node *ast.IfStmt) error {
 	if err := c.compile(node.Cond); err != nil {
 		return err
 	}
@@ -412,8 +388,8 @@ func (c *Functions) doIfStmt(node *ast.IfStmt) error {
 	return nil
 }
 
-// doIncDecStmt handles increment and decrement statements for identifiers, updating the corresponding variables and cleaning the stack.
-func (c *Functions) doIncDecStmt(node *ast.IncDecStmt) error {
+// IncDecStmt handles increment and decrement statements for identifiers, updating the corresponding variables and cleaning the stack.
+func (c *Functions) IncDecStmt(node *ast.IncDecStmt) error {
 	ident, ok := node.X.(*ast.Ident)
 	if !ok {
 		return fmt.Errorf("unsupported IncDec statement for type %T", node.X)
@@ -451,8 +427,8 @@ func (c *Functions) doIncDecStmt(node *ast.IncDecStmt) error {
 	return nil
 }
 
-// doForStmt compiles a for loop statement, including initialization, condition, post-iteration, and body execution.
-func (c *Functions) doForStmt(node *ast.ForStmt) error {
+// ForStmt compiles a for loop statement, including initialization, condition, post-iteration, and body execution.
+func (c *Functions) ForStmt(node *ast.ForStmt) error {
 	if node.Init != nil {
 		if err := c.compile(node.Init); err != nil {
 			return err
@@ -504,8 +480,8 @@ func (c *Functions) doForStmt(node *ast.ForStmt) error {
 	return nil
 }
 
-// doRangeStmt compiles a RangeStmt node into bytecode, handling iterator initialization, key/value assignment, and looping logic.
-func (c *Functions) doRangeStmt(node *ast.RangeStmt) error {
+// RangeStmt compiles a RangeStmt node into bytecode, handling iterator initialization, key/value assignment, and looping logic.
+func (c *Functions) RangeStmt(node *ast.RangeStmt) error {
 	if err := c.compile(node.X); err != nil {
 		return err
 	}
@@ -588,8 +564,8 @@ func (c *Functions) doRangeStmt(node *ast.RangeStmt) error {
 	return nil
 }
 
-// doReturnStmt compiles a return statement, handling cases for both void and value returns, and emits corresponding bytecode.
-func (c *Functions) doReturnStmt(node *ast.ReturnStmt) error {
+// ReturnStmt compiles a return statement, handling cases for both void and value returns, and emits corresponding bytecode.
+func (c *Functions) ReturnStmt(node *ast.ReturnStmt) error {
 	if len(node.Results) == 0 {
 		if _, err := c.scopes.Emit(bytecode.OpReturn, 0); err != nil {
 			return err
@@ -607,8 +583,8 @@ func (c *Functions) doReturnStmt(node *ast.ReturnStmt) error {
 	return nil
 }
 
-// doBinaryExpr processes a binary expression node, compiling both operands and emitting the corresponding binary operation.
-func (c *Functions) doBinaryExpr(node *ast.BinaryExpr) error {
+// BinaryExpr processes a binary expression node, compiling both operands and emitting the corresponding binary operation.
+func (c *Functions) BinaryExpr(node *ast.BinaryExpr) error {
 	if err := c.compile(node.X); err != nil {
 		return err
 	}
@@ -625,10 +601,10 @@ func (c *Functions) doBinaryExpr(node *ast.BinaryExpr) error {
 	return nil
 }
 
-// doUnaryExpr compiles a unary expression by evaluating the operand and applying the specified unary operator.
+// UnaryExpr compiles a unary expression by evaluating the operand and applying the specified unary operator.
 // It handles special cases for the address-of operator '&', ensuring correct pointer behavior based on operand type.
 // Emits appropriate bytecode instructions for each unary operation or returns an error on unsupported cases.
-func (c *Functions) doUnaryExpr(node *ast.UnaryExpr) error {
+func (c *Functions) UnaryExpr(node *ast.UnaryExpr) error {
 	if node.Op == token.AND {
 		switch operand := node.X.(type) {
 		case *ast.Ident:
@@ -693,12 +669,11 @@ func (c *Functions) doSelectorExpr(node *ast.SelectorExpr) error {
 		// currently not handling complex cases like a[0].field
 		return fmt.Errorf("unsupported receiver for selector expression: %T", node.X)
 	}
-	if c.imports.HasPackage(receiverIdent.Name) {
-		if _, _, err := c.imports.Create(receiverIdent.Name, node.Sel.Name); err != nil {
-			return err
-		}
+
+	if c.imports.Emit(receiverIdent.Name, node.Sel.Name) {
 		return nil
 	}
+
 	receiverSymbol, ok := c.scopes.SymbolResolve(receiverIdent.Name)
 	if !ok {
 		return fmt.Errorf("undefined variable: %s", receiverIdent.Name)
@@ -720,7 +695,7 @@ func (c *Functions) doSelectorExpr(node *ast.SelectorExpr) error {
 	return fmt.Errorf("unsupported selector expression: %T", node.X)
 }
 
-// doFuncDecl processes the function declaration node and compiles its structure into the appropriate bytecode.
-func (c *Functions) doFuncDecl(_ *ast.FuncDecl) error {
+// FuncDecl processes the function declaration node and compiles its structure into the appropriate bytecode.
+func (c *Functions) FuncDecl(_ *ast.FuncDecl) error {
 	return nil
 }

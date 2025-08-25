@@ -19,42 +19,21 @@ type Declarations struct {
 	constants  *Constants
 	scopes     *Scopes
 	fileSet    *token.FileSet
+	compile    func(node ast.Node) error
 }
 
 func NewDeclarations(gk objects.IGateKeeper, references *Constants, constants *Constants, scopes *Scopes) *Declarations {
 	return &Declarations{
 		gk: gk, references: references, constants: constants, scopes: scopes,
+		compile: nil,
 	}
 }
 
-func (c *Declarations) Initialize(fileSet *token.FileSet) {
+// Setup initializes the `Others` instance with a compile function used for processing AST nodes.
+func (c *Declarations) Setup(fileSet *token.FileSet, compile func(node ast.Node) error) error {
 	c.fileSet = fileSet
-}
-
-// compile traverses the provided AST node and compiles it into bytecode, handling various node types in a switch block.
-func (c *Declarations) compile(in ast.Node) error {
-	var err error = nil
-	switch node := in.(type) {
-	case *ast.GenDecl:
-		err = c.GenDecl(node) // for `var` and `const` which are handled by AssignStmt
-	case *ast.DeclStmt:
-		err = c.DeclStmt(node)
-	case *ast.TypeSpec:
-		err = c.TypeSpec(node)
-	case *ast.ValueSpec: // handles 'var x = 10'
-		err = c.ValueSpec(node)
-	case *ast.CompositeLit:
-		err = c.CompositeLit(node)
-	case *ast.BasicLit:
-		err = c.BasicLit(node)
-	case *ast.Ident:
-		err = c.Ident(node)
-	case *ast.AssignStmt:
-		err = c.AssignStmt(node)
-	default:
-		err = fmt.Errorf("unsupported expression type: %T", node)
-	}
-	return err
+	c.compile = compile
+	return nil
 }
 
 // DeclStmt processes a declaration statement node by compiling its declaration content. Returns an error if compilation fails.

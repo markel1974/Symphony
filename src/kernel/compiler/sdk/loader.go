@@ -128,11 +128,23 @@ func (l *Loader) BuiltinResolve(idx int) objects.IObject {
 func (l *Loader) ResolveSymbols(symbols []objects.IObject) ([]objects.IObject, error) {
 	references := make([]objects.IObject, len(symbols))
 	for i, ref := range symbols {
-		symbol, ok := l.GetSymbol(ref)
-		if !ok {
+		if ref == nil {
 			return nil, fmt.Errorf("can't load symbols, invalid reference %d", i)
 		}
-		references[i] = symbol
+		switch c := ref.(type) {
+		case *objects.Builtin:
+			symbol := l.BuiltinResolve(i)
+			if symbol == nil {
+				return nil, fmt.Errorf("builtin symbol not found: %s", c.Name())
+			}
+			references[i] = symbol
+		default:
+			symbol, ok := l.GetSymbol(ref)
+			if !ok {
+				return nil, fmt.Errorf("can't load symbols, invalid reference %d", i)
+			}
+			references[i] = symbol
+		}
 	}
 	return references, nil
 }

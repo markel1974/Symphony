@@ -6,9 +6,11 @@ package main
 import "fmt"
 
 func test() {
+	return 10
 }
 
 func main() {
-	test()
+	x := test()
+	fmt.Println(x)
 }
 `

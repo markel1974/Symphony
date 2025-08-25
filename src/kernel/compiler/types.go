@@ -1,7 +1,6 @@
 package compiler
 
 import (
-	"fmt"
 	"go/ast"
 )
 
@@ -9,12 +8,21 @@ import (
 type Types struct {
 	declarations *Declarations
 	container    []ast.Decl
+	compile      func(node ast.Node) error
 }
 
+// NewTypes creates a new instance of Types with the provided Declarations.
 func NewTypes(declarations *Declarations) *Types {
 	return &Types{
 		declarations: declarations,
+		compile:      nil,
 	}
+}
+
+// Setup initializes the Types instance with the provided compile function for processing AST nodes.
+func (o *Types) Setup(compile func(node ast.Node) error) error {
+	o.compile = compile
+	return nil
 }
 
 // Declare adds the specified declaration to the container.
@@ -35,16 +43,4 @@ func (o *Types) Compile() error {
 		}
 	}
 	return nil
-}
-
-// compile traverses the provided AST node and compiles it into bytecode, handling various node types in a switch block.
-func (o *Types) compile(in ast.Node) error {
-	var err error = nil
-	switch node := in.(type) {
-	case *ast.GenDecl:
-		err = o.declarations.GenDecl(node)
-	default:
-		err = fmt.Errorf("[compiler] unsupported expression type: %T", node)
-	}
-	return err
 }
