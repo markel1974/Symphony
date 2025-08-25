@@ -6,7 +6,6 @@ import (
 	"go/ast"
 	"go/printer"
 	"go/token"
-	"log"
 	"strconv"
 	"strings"
 
@@ -67,8 +66,7 @@ func (c *Declarations) TypeSpec(node *ast.TypeSpec) error {
 	if _, ok := c.scopes.SymbolResolve(structName); ok {
 		return fmt.Errorf("type '%s' already defined", structName)
 	}
-	var fields []*FieldDef
-	var def []*StructProperty
+	var def []*StructField
 	if structType.Fields != nil {
 		for _, field := range structType.Fields.List {
 			var typeNameBuf bytes.Buffer
@@ -79,23 +77,11 @@ func (c *Declarations) TypeSpec(node *ast.TypeSpec) error {
 			fieldType := typeNameBuf.String()
 			for _, name := range field.Names {
 				// here we could add a check for duplicate fields.
-				fields = append(fields, NewFieldDef(name.Name, fieldType, nil))
 				def = append(def, NewStructProperty(name.Name, base, fieldType, field))
 			}
 		}
 	}
-	symbol, err := c.scopes.SymbolDefine(structName, UnknownScope, true)
-	if err != nil {
-		return err
-	}
-	var structData []string
-	for _, field := range fields {
-		structData = append(structData, "["+field.Name()+" "+field.Type()+"]")
-	}
-	symbol.SetObject(c.gk.NewString(objects.FrameStatic, structName+":"+strings.Join(structData, ",")))
-	symbol.Fields = fields
 	c.structs.Add(structName, def)
-	log.Printf("Struct '%s' defined with fields: %s", structName, strings.Join(structData, ", "))
 	return nil
 }
 
@@ -387,6 +373,9 @@ func (c *Declarations) AssignStmt(node *ast.AssignStmt) error {
 // CompositeLit processes the given composite literal node and compiles it into bytecode representation.
 // Handles struct, array, and map literals by resolving types, validating fields, and emitting appropriate instructions.
 // Returns an error if the composite literal type is unsupported or if any validation or compilation step fails.
+// CompositeLit processes the given composite literal node and compiles it into bytecode representation.
+// Handles struct, array, and map literals by resolving types, validating fields, and emitting appropriate instructions.
+// Returns an error if the composite literal type is unsupported or if any validation or compilation step fails.
 func (c *Declarations) CompositeLit(node *ast.CompositeLit) error {
 	// Handle slice literals like []int{1, 2, 3} where the parser sets Type to nil.
 	if node.Type == nil {
@@ -405,20 +394,22 @@ func (c *Declarations) CompositeLit(node *ast.CompositeLit) error {
 	switch t := node.Type.(type) {
 	case *ast.Ident:
 		// struct literal (es. MyStruct{...})
-		symbol, ok := c.scopes.SymbolResolve(t.Name)
-		if !ok {
-			return fmt.Errorf("undefined type: %s", t.Name)
-		}
-		if !symbol.IsStruct() {
+		structFields := c.structs.Get(t.Name)
+		if structFields == nil {
 			return fmt.Errorf("unknown composite literal type: %s", t.Name)
 		}
-		if len(node.Elts) > len(symbol.Fields) {
-			return fmt.Errorf("too many values in positional struct literal for type '%s'", symbol.Name())
+		if len(node.Elts) > len(structFields) {
+			return fmt.Errorf("too many values in positional struct literal for type '%s'", t.Name)
 		}
-		// ... il resto della logica per gli struct rimane invariato ...
-		for idx := range symbol.Fields {
-			symbol.Fields[idx].SetNode(nil)
+		symbol, ok := c.scopes.SymbolResolve(t.Name)
+		if !ok {
+			var err error
+			if symbol, err = c.scopes.SymbolDefine(t.Name, UnknownScope, true); err != nil {
+				return err
+			}
 		}
+		symbol.StructPropertyAssign(structFields)
+		symbol.SetTypes([]string{t.Name})
 		isKeyed := false
 		if len(node.Elts) > 0 {
 			if _, ok := node.Elts[0].(*ast.KeyValueExpr); ok {
@@ -440,19 +431,19 @@ func (c *Declarations) CompositeLit(node *ast.CompositeLit) error {
 				providedFields[keyIdent.Name] = kvExpr.Value
 			}
 			for idx := range symbol.Fields {
-				if valueExpr, ok := providedFields[symbol.Fields[idx].Name()]; ok {
-					symbol.Fields[idx].SetNode(valueExpr)
+				if valueExpr, ok := providedFields[symbol.Fields[idx].name]; ok {
+					symbol.Fields[idx].node = valueExpr
 				}
 			}
 		} else {
 			// positional literal (es. Home{"Alfa", 20, "Shanghai"}) ---
 			for i, elt := range node.Elts {
-				symbol.Fields[i].SetNode(elt)
+				symbol.Fields[i].node = elt
 			}
 		}
 		for idx := range symbol.Fields {
-			fieldName := symbol.Fields[idx].Name()
-			fieldNode := symbol.Fields[idx].Node()
+			fieldName := symbol.Fields[idx].name
+			fieldNode := symbol.Fields[idx].node
 			keyConst := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, fieldName))
 			if _, err := c.scopes.Emit(bytecode.OpConstant, keyConst); err != nil {
 				return err

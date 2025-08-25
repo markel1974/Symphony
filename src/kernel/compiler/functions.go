@@ -12,12 +12,11 @@ import (
 // FunctionDescription represents the metadata of a function including its name, associated struct, parameters, and receiver info.
 type FunctionDescription struct {
 	Name       string
-	Struct     string
 	Types      []string
 	Params     []string
 	Recv       []string
 	FuncDecl   *ast.FuncDecl
-	StructType bool
+	StructName string
 }
 
 // NewFunctionDescription creates a new instance of FunctionDescription with the provided function declaration.
@@ -107,23 +106,19 @@ func (c *Functions) funcBodyPrepare(fd *FunctionDescription) error {
 		if recvTypeIdent == nil {
 			return fmt.Errorf("unsupported method receiver type")
 		}
-		baseSymbol, ok := c.scopes.SymbolResolve(recvTypeIdent.Name)
-		if !ok {
+		fields := c.structs.Get(recvTypeIdent.Name)
+		if fields == nil {
 			return fmt.Errorf("undefined type '%s' for method receiver", recvTypeIdent.Name)
 		}
-		if !baseSymbol.IsStruct() {
-			return fmt.Errorf("unknown type '%s' for method receiver", recvTypeIdent.Name)
-		}
+		//TODO ADD FIELDS TO fd
 		fd.Name = GetMangledName(recvTypeIdent.Name, node.Name.Name)
-		fd.Struct = recvTypeIdent.Name
-		fd.StructType = true
+		fd.StructName = recvTypeIdent.Name
 	} else {
 		fd.Name = node.Name.Name
-		fd.Struct = ""
-		fd.StructType = false
+		fd.StructName = ""
 	}
 	//function symbol placeholder (this is not the real function, it's just a placeholder to be able to compile the body)
-	if _, err = c.scopes.SymbolDefine(fd.Name, UnknownScope, fd.StructType); err != nil {
+	if _, err = c.scopes.SymbolDefine(fd.Name, UnknownScope, len(fd.StructName) > 0); err != nil {
 		return err
 	}
 	return nil
@@ -132,15 +127,15 @@ func (c *Functions) funcBodyPrepare(fd *FunctionDescription) error {
 // funcBodyCompile compiles the body of a function declaration and generates the necessary bytecode instructions.
 func (c *Functions) funcBodyCompile(fd *FunctionDescription) error {
 	node := fd.FuncDecl
-	if err := c.scopes.Enter(fd.Struct, fd.Name); err != nil {
+	if err := c.scopes.Enter(fd.StructName, fd.Name); err != nil {
 		return err
 	}
 	for _, p := range fd.Recv {
-		z, err := c.scopes.SymbolDefine(p, UnknownScope, fd.StructType)
+		z, err := c.scopes.SymbolDefine(p, UnknownScope, len(fd.StructName) > 0)
 		if err != nil {
 			return err
 		}
-		if fd.StructType {
+		if len(fd.StructName) > 0 {
 			z.SetTypes(fd.Types)
 		}
 	}
@@ -241,16 +236,19 @@ func (c *Functions) CallExpr(node *ast.CallExpr) error {
 			}
 			if len(receiverSymbol.Types()) > 0 { // struct method
 				structTypeName := receiverSymbol.Types()[0]
-				typeSymbol, ok := c.scopes.SymbolResolve(structTypeName)
-				if !ok {
+				if fields := c.structs.Get(structTypeName); fields == nil {
 					return fmt.Errorf("undefined type: %s", structTypeName)
 				}
+				//typeSymbol, ok := c.scopes.SymbolResolve(structTypeName)
+				//if !ok {
+				//	return fmt.Errorf("undefined type: %s", structTypeName)
+				//}
 				//methodName := selName//selExpr.Sel.Name
-				fnName = GetMangledName(typeSymbol.Name(), selName)
+				fnName = GetMangledName(structTypeName, selName)
 				fnSymbol, ok := c.scopes.SymbolResolve(fnName)
 				//fnIndex, ok = c.constants.Get(fnName)
 				if !ok {
-					return fmt.Errorf("undefined method '%s' for type '%s' [%s]", selName, typeSymbol.Name(), fnName)
+					return fmt.Errorf("undefined method '%s' for type '%s' [%s]", selName, structTypeName, fnName)
 				}
 				fnIndex = fnSymbol.Index()
 				fnArgs = append(fnArgs, selExpr.X) // The receiver is the first argument
@@ -507,7 +505,6 @@ func (c *Functions) RangeStmt(node *ast.RangeStmt) error {
 
 	isStruct := false
 	var valueTypeName []string
-
 	var collectionSymbol *Symbol
 
 	switch expr := node.X.(type) {
@@ -545,10 +542,14 @@ func (c *Functions) RangeStmt(node *ast.RangeStmt) error {
 	if collectionSymbol != nil {
 		if len(collectionSymbol.Types()) > 0 {
 			typeName := collectionSymbol.Types()[0]
-			if typeSymbol, ok := c.scopes.SymbolResolve(typeName); ok && typeSymbol.IsStruct() {
+			if fields := c.structs.Get(typeName); fields != nil {
 				isStruct = true
 				valueTypeName = []string{typeName}
 			}
+			//if typeSymbol, ok := c.scopes.SymbolResolve(typeName); ok && typeSymbol.IsStruct() {
+			//	isStruct = true
+			//	valueTypeName = []string{typeName}
+			//}
 		}
 	}
 	// --- FINE CORREZIONE ---
@@ -779,7 +780,7 @@ func (c *Functions) FuncLit(node *ast.FuncLit) error {
 			}
 			isStruct := false
 			if typeName != "" {
-				if symbol, ok := c.scopes.SymbolResolve(typeName); ok && symbol.IsStruct() {
+				if fields := c.structs.Get(typeName); fields != nil {
 					isStruct = true
 				}
 			}

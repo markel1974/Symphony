@@ -1,46 +1,8 @@
 package compiler
 
 import (
-	"go/ast"
-
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
-
-// FieldDef represents the definition of a field, including its name, type, and associated AST node.
-type FieldDef struct {
-	name string
-	kind string
-	node ast.Node
-}
-
-// NewFieldDef creates a new FieldDef with the specified name, type, and associated AST node.
-func NewFieldDef(name string, kind string, node ast.Node) *FieldDef {
-	return &FieldDef{
-		name: name,
-		kind: kind,
-		node: node,
-	}
-}
-
-// Name returns the name of the field defined by the FieldDef.
-func (f *FieldDef) Name() string {
-	return f.name
-}
-
-// Type returns the kind of the field represented by the FieldDef.
-func (f *FieldDef) Type() string {
-	return f.kind
-}
-
-// Node returns the underlying ast.Node associated with the FieldDef instance.
-func (f *FieldDef) Node() ast.Node {
-	return f.node
-}
-
-// SetNode assigns the provided AST node to the FieldDef instance, representing the associated syntax tree element.
-func (f *FieldDef) SetNode(node ast.Node) {
-	f.node = node
-}
 
 // Symbol represents an identifier with associated metadata such as name, scope, index, fields, and type information.
 type Symbol struct {
@@ -51,7 +13,7 @@ type Symbol struct {
 	funcName   string
 	types      []string
 	isStruct   bool
-	Fields     []*FieldDef
+	Fields     []*StructField
 	object     objects.IObject
 }
 
@@ -72,7 +34,7 @@ func (s *Symbol) Reset(name string, index int, scope SymbolScope, structName str
 	s.types = []string{}
 	s.object = nil
 	s.isStruct = isStruct
-	s.Fields = []*FieldDef{}
+	s.Fields = []*StructField{}
 }
 
 // Name returns the name of the Symbol.
@@ -110,6 +72,13 @@ func (s *Symbol) IsStruct() bool {
 // SetTypes assigns a slice of type names to the Symbol's types field. Use this to define the types associated with a Symbol.
 func (s *Symbol) SetTypes(t []string) {
 	s.types = t
+}
+
+func (s *Symbol) StructPropertyAssign(fields []*StructField) {
+	s.Fields = make([]*StructField, len(fields))
+	for i, f := range fields {
+		s.Fields[i] = NewStructProperty(f.name, f.base, f.kind, nil)
+	}
 }
 
 // Types returns the list of type names associated with the Symbol.
