@@ -1,6 +1,10 @@
 package objects
 
-import "time"
+import (
+	"log"
+	"sync"
+	"time"
+)
 
 type GateAllocator struct {
 	gk *GateKeeper
@@ -12,10 +16,10 @@ type GateAllocator struct {
 	maxAllocations    int64
 	undefinedIterator IIterator
 
-	// Aggiungiamo i pool per gli oggetti
-	//intPool   sync.Pool
-	//floatPool sync.Pool
-	//charPool  sync.Pool
+	poolBool  sync.Pool
+	poolChar  sync.Pool
+	poolInt   sync.Pool
+	poolFloat sync.Pool
 }
 
 func NewGateAllocator(gk *GateKeeper, maxAllocations int64) *GateAllocator {
@@ -28,9 +32,19 @@ func NewGateAllocator(gk *GateKeeper, maxAllocations int64) *GateAllocator {
 	ga.undefinedValue = newUndefined(gk, FrameStatic)
 	ga.undefinedIterator = newUndefinedIterator(gk, FrameStatic)
 	ga.maxAllocations = maxAllocations
-	//ga.intPool.New = func() interface{} {
-	//	return &_newInt(gk, 0) // Crea un Int con valore di default
-	//}
+
+	ga.poolBool.New = func() any {
+		return newBool(gk, FrameStatic, false)
+	}
+	ga.poolChar.New = func() any {
+		return newChar(gk, FrameStatic, 0)
+	}
+	ga.poolInt.New = func() any {
+		return newInt(gk, FrameStatic, 0)
+	}
+	ga.poolFloat.New = func() any {
+		return newFloat(gk, FrameStatic, 0)
+	}
 	return ga
 }
 
@@ -61,6 +75,61 @@ func (f *GateAllocator) TrueValue() IObject {
 // UndefinedValue returns the undefined value of the GateKeeper as an IObject.
 func (f *GateAllocator) UndefinedValue() IObject {
 	return f.undefinedValue
+}
+
+// ReleaseObjects releases the given objects back to the pool.
+func (f *GateAllocator) ReleaseObjects(obj []IObject) {
+	for _, o := range obj {
+		f.ReleaseObject(o)
+	}
+}
+
+// ReleaseObject releases the given object back to the pool.
+func (f *GateAllocator) ReleaseObject(obj IObject) {
+	if obj.Frame() == FrameStatic {
+		return
+	}
+	switch o := obj.(type) {
+	case *Bool:
+		o.value = false
+		o.frame = FrameStatic
+		f.poolBool.Put(obj)
+	case *Char:
+		o.value = 0
+		o.frame = FrameStatic
+		f.poolChar.Put(obj)
+	case *Int:
+		o.value = 0
+		o.frame = FrameStatic
+		f.poolInt.Put(obj)
+	case *Float:
+		o.value = 0
+		o.frame = FrameStatic
+		f.poolFloat.Put(obj)
+	case *String:
+		//v.factory.ReleaseString(o)
+	case *Array:
+		//v.factory.ReleaseArray(o)
+		// Oggetti come Bool e Undefined sono singleton, non vanno rilasciati.
+		// Altri oggetti complessi potrebbero non avere un pool, quindi non fare nulla.
+	}
+}
+
+// NewInt creates and returns a new instance of Int initialized with the given int64 value.
+func (f *GateAllocator) NewInt(frame int, v int64) IObject {
+	if err := f.acquireObject(); err != nil {
+		return f.undefinedValue
+	}
+	//return newInt(f.gk, frame, v)
+	i := f.poolInt.Get()
+	obj, ok := i.(*Int)
+	if !ok {
+		log.Printf("Error: poolInt.Get() returned wrong type: %T\n", i)
+		return f.undefinedValue
+	}
+	obj.value = v
+	obj.frame = frame
+	return obj
 }
 
 // NewBytesIterator creates a new BytesIterator for iterating over the provided byte slice `v` using the specified GateKeeper.
@@ -156,7 +225,16 @@ func (f *GateAllocator) NewBool(frame int, value bool) IObject {
 	if err := f.acquireObject(); err != nil {
 		return f.undefinedValue
 	}
-	return newBool(f.gk, frame, value)
+	//return newBool(f.gk, frame, value)
+	i := f.poolBool.Get()
+	obj, ok := i.(*Bool)
+	if !ok {
+		log.Printf("Error: poolBool.Get() returned wrong type: %T\n", i)
+		return f.undefinedValue
+	}
+	obj.value = value
+	obj.frame = frame
+	return obj
 }
 
 // NewBytes creates and returns a new instance of Bytes initialized with the provided byte slice and gk context.
@@ -172,7 +250,16 @@ func (f *GateAllocator) NewChar(frame int, value rune) IObject {
 	if err := f.acquireObject(); err != nil {
 		return f.undefinedValue
 	}
-	return newChar(f.gk, frame, value)
+	//return newChar(f.gk, frame, value)
+	i := f.poolChar.Get()
+	obj, ok := i.(*Char)
+	if !ok {
+		log.Printf("Error: poolChar.Get() returned wrong type: %T\n", i)
+		return f.undefinedValue
+	}
+	obj.value = value
+	obj.frame = frame
+	return obj
 }
 
 // NewError creates and returns a new Error instance based on the provided IObject value and the associated GateKeeper.
@@ -188,25 +275,16 @@ func (f *GateAllocator) NewFloat(frame int, v float64) IObject {
 	if err := f.acquireObject(); err != nil {
 		return f.undefinedValue
 	}
-	return newFloat(f.gk, frame, v)
-}
-
-// NewInt creates and returns a new instance of Int initialized with the given int64 value.
-func (f *GateAllocator) NewInt(frame int, v int64) IObject {
-	if err := f.acquireObject(); err != nil {
+	i := f.poolFloat.Get()
+	obj, ok := i.(*Float)
+	if !ok {
+		log.Printf("Error: poolFloat.Get() returned wrong type: %T\n", i)
 		return f.undefinedValue
 	}
-	//obj := f.intPool.Get().(*Int)
-	//obj.value = v
-	//return obj
-	return newInt(f.gk, frame, v)
+	obj.value = v
+	obj.frame = frame
+	return newFloat(f.gk, frame, v)
 }
-
-//func (f *GateKeeper) ReleaseInt(obj *Int) {
-//	// It's good practice to reset the object's state before putting it back in the pool
-//	obj.value = 0
-//	f.intPool.Put(obj)
-//}
 
 // NewObjectPointer creates a new ObjectPointer instance wrapping the provided IObject pointer.
 func (f *GateAllocator) NewObjectPointer(frame int, value *IObject) IObject {

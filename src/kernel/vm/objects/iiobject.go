@@ -43,6 +43,8 @@ type IGateAllocator interface {
 	FalseValue() IObject
 	TrueValue() IObject
 	UndefinedValue() IObject
+	ReleaseObject(IObject)
+	ReleaseObjects([]IObject)
 	NewFuncCompiled(frame int, name string, instructions []byte, numLocals int, numParameters int, varArgs bool, sourceMap map[int]int, free []*ObjectPointer) IObject
 	NewFuncPackage(kind string, name string, fn FuncCallable) IObject
 	NewFuncPackageFrame(frame int, kind string, name string, fn FuncCallable) IObject

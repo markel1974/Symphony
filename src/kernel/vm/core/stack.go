@@ -179,27 +179,15 @@ func (v *Stack) PeekArrayObject(numArgs int) []objects.IObject {
 	return z
 }
 
-func (v *Stack) ReleaseObjects(start, end int) {
-	//TODO IMPLMENT!
-	/*
-		for i := start; i < end; i++ {
-			obj := v.stack[i]
-			switch o := obj.(type) {
-			case *objects.Int:
-				v.factory.ReleaseInt(o)
-			case *objects.Float:
-				v.factory.ReleaseFloat(o)
-			case *objects.String:
-				v.factory.ReleaseString(o)
-			case *objects.Array:
-				v.factory.ReleaseArray(o)
-				// Oggetti come Bool e Undefined sono singleton, non vanno rilasciati.
-				// Altri oggetti complessi potrebbero non avere un pool, quindi non fare nulla.
-			}
-			v.stack[i] = v.factory.UndefinedValue()
-		}
-
-	*/
+// ReleaseObjects releases all objects in the specified range of the stack.
+func (v *Stack) ReleaseObjects(start int, end int) {
+	if start == end {
+		return
+	}
+	if start < 0 || end > len(v.stack) || start > end {
+		return
+	}
+	v.factory.ReleaseObjects(v.stack[start:end])
 }
 
 // Print outputs each element in the stack from the bottom to the current stack pointer.

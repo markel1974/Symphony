@@ -198,7 +198,7 @@ func (v *VM) FunctionCompiledReturn(returnValues []objects.IObject) {
 	shutdown := false
 	prevIp := v.currFrame.SavedIP()
 	leavingFrameBasePointer := v.BasePointer()
-	//v.stack.ReleaseObjects(leavingFrameBasePointer, v.stack.StackPointer())
+	v.stack.ReleaseObjects(leavingFrameBasePointer, v.stack.StackPointer())
 	if v.frames.Index() > 1 {
 		v.frames.Previous()
 		v.currFrame = v.frames.GetPrev()
