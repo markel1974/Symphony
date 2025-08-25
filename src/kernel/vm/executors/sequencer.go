@@ -69,6 +69,7 @@ func (ds *Sequencer) Create() []core.IOpExecutor {
 	ds.setSequence(NewOpIteratorKey(ds.op))
 	ds.setSequence(NewOpIteratorValue(ds.op))
 	ds.setSequence(NewOpIntOp(ds.op))
+	ds.setSequence(NewOpDeref(ds.op))
 	ds.setSequence(NewOpSuspend(ds.op))
 	return ds.container
 }

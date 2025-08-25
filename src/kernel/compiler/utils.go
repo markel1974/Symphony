@@ -39,6 +39,18 @@ func GetReceivers(result *ast.FieldList) ([]string, error) {
 				// Questo caso gestirebbe tipi più complessi come '*[]Home'
 				return nil, fmt.Errorf("unsupported pointer return type: *%T", v.X)
 			}
+		case *ast.FuncType:
+			// Se il tipo di ritorno è una funzione, aggiungiamo un placeholder
+			// generico. Potrebbe essere raffinato per includere i tipi dei parametri
+			// se il tuo symbol system lo richiede.
+			ret = append(ret, "func")
+		case *ast.InterfaceType:
+			// Gestisce il caso di `interface{}` come tipo di ritorno.
+			if len(v.Methods.List) == 0 {
+				ret = append(ret, "interface{}")
+			} else {
+				return nil, fmt.Errorf("unsupported non-empty interface return type")
+			}
 		default:
 			return nil, fmt.Errorf("unsupported return type %T", v)
 		}
@@ -50,4 +62,35 @@ func GetReceivers(result *ast.FieldList) ([]string, error) {
 func GetMangledName(identId string, fnName string) string {
 	m := fmt.Sprintf("%s.%s", identId, fnName)
 	return m
+}
+
+func ExtractBaseName(expr ast.Expr) string {
+	switch t := expr.(type) {
+	case *ast.Ident:
+		// Caso base: abbiamo trovato l'identificatore del tipo (es. "MyStruct").
+		return t.Name
+	case *ast.StarExpr:
+		// Caso puntatore (*MyType): continuiamo la ricerca sul tipo puntato.
+		return ExtractBaseName(t.X)
+	case *ast.ArrayType:
+		// Caso array/slice ([]MyType): continuiamo la ricerca sul tipo dell'elemento.
+		return ExtractBaseName(t.Elt)
+	case *ast.MapType:
+		// Caso mappa (map[KeyType]ValueType): ci interessa il tipo del valore.
+		return ExtractBaseName(t.Value)
+	case *ast.SelectorExpr:
+		// Caso tipo qualificato (es. package.Type): restituiamo il nome del tipo.
+		// Una logica più avanzata potrebbe restituire "package.Type".
+		return t.Sel.Name
+	case *ast.InterfaceType:
+		// Caso interfaccia: se è un'interfaccia vuota, la trattiamo come un tipo a sé.
+		if len(t.Methods.List) == 0 {
+			return "interface{}"
+		}
+		// Le interfacce non vuote non sono attualmente supportate per l'estrazione.
+		return ""
+	default:
+		// Altri tipi complessi non sono gestiti.
+		return ""
+	}
 }

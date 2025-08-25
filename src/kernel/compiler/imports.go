@@ -66,7 +66,11 @@ func (i *Imports) HasBuiltin(name string) bool {
 // Emit attempts to attach a function reference or emit a builtin reference, returning true if successful.
 func (i *Imports) Emit(name string, selName string) bool {
 	if len(selName) > 0 {
-		_, nameIndex, err := i.PackageFunctionAttach(name, selName)
+		_, ok := i.imports[name]
+		if !ok {
+			return false
+		}
+		_, nameIndex, err := i.packageFunctionAttach(name, selName)
 		if err != nil {
 			return false
 		}
@@ -88,7 +92,11 @@ func (i *Imports) Emit(name string, selName string) bool {
 // Attach attempts to resolve a name and optional selector from imports or built-in references, returning details if found.
 func (i *Imports) Attach(name string, selName string) (string, int, bool) {
 	if len(selName) > 0 {
-		mangledName, nameIndex, err := i.PackageFunctionAttach(name, selName)
+		_, ok := i.imports[name]
+		if !ok {
+			return "", -1, false
+		}
+		mangledName, nameIndex, err := i.packageFunctionAttach(name, selName)
 		if err != nil {
 			return "", 0, false
 		}
@@ -102,7 +110,7 @@ func (i *Imports) Attach(name string, selName string) (string, int, bool) {
 }
 
 // PackageFunctionAttach registers and attaches a function from a given package, returning its mangled name, index, and any error.
-func (i *Imports) PackageFunctionAttach(pkgName string, fnName string) (string, int, error) {
+func (i *Imports) packageFunctionAttach(pkgName string, fnName string) (string, int, error) {
 	mangledName := GetMangledName(pkgName, fnName)
 	nameIndex, found := i.references.Get(mangledName)
 	if !found {

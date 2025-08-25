@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"go/ast"
 	"go/token"
+	"strings"
 
 	"github.com/markel1974/c64emu/src/kernel/vm/bytecode"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
@@ -496,6 +497,70 @@ func (c *Functions) RangeStmt(node *ast.RangeStmt) error {
 	if _, err = c.scopes.Emit(bytecode.OpIteratorInit, iteratorSymbol.Index()); err != nil {
 		return err
 	}
+
+	isStruct := false
+	var valueTypeName []string
+
+	var collectionSymbol *Symbol
+
+	switch expr := node.X.(type) {
+	case *ast.Ident:
+		collectionSymbol, _ = c.scopes.SymbolResolve(expr.Name)
+	case *ast.CallExpr:
+		if ident, ok := expr.Fun.(*ast.Ident); ok {
+			// Simbolo della funzione, per inferire il tipo di ritorno
+			collectionSymbol, _ = c.scopes.SymbolResolve(ident.Name)
+		}
+	case *ast.SelectorExpr:
+		// Caso: for _, v := range myVar.Items
+		if receiverIdent, ok := expr.X.(*ast.Ident); ok {
+			// 1. Risolviamo il simbolo del ricevitore (myVar)
+			if receiverSymbol, ok := c.scopes.SymbolResolve(receiverIdent.Name); ok {
+				// 2. Troviamo il nome del tipo dello struct del ricevitore
+				if len(receiverSymbol.Types()) > 0 {
+					receiverTypeName := receiverSymbol.Types()[0]
+
+					// 3. Risolviamo il simbolo del tipo per accedere alla sua definizione
+					if typeSymbol, ok := c.scopes.SymbolResolve(receiverTypeName); ok && typeSymbol.IsStruct() {
+						fieldName := expr.Sel.Name
+						// 4. Cerchiamo il campo 'Items' nella definizione dello struct
+						for _, field := range typeSymbol.Fields {
+							if field.Name() == fieldName {
+								// 5. Abbiamo trovato il campo. Il suo tipo (es. "[]MyItem")
+								// è quello che ci serve. Dobbiamo estrarre il tipo dell'elemento.
+								// Nota: questa è una semplificazione. Un vero compilatore
+								// dovrebbe parsare "[]MyItem" per estrarre "MyItem".
+								// Per il nostro sistema, assumiamo che il tipo di uno slice
+								// sia memorizzato come il nome del tipo dell'elemento.
+								collectionTypeName := field.Type() // es. "[]MyItem"
+								// Semplice estrazione per togliere "[]"
+								if strings.HasPrefix(collectionTypeName, "[]") {
+									elementTypeName := strings.TrimPrefix(collectionTypeName, "[]")
+									// Ora abbiamo il simbolo per il tipo dell'elemento
+									collectionSymbol = NewSymbol(elementTypeName, 0, UnknownScope, "", "", false)
+									collectionSymbol.SetTypes([]string{elementTypeName})
+								}
+								break
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// Logica di inferenza unificata
+	if collectionSymbol != nil {
+		if len(collectionSymbol.Types()) > 0 {
+			typeName := collectionSymbol.Types()[0]
+			if typeSymbol, ok := c.scopes.SymbolResolve(typeName); ok && typeSymbol.IsStruct() {
+				isStruct = true
+				valueTypeName = []string{typeName}
+			}
+		}
+	}
+	// --- FINE CORREZIONE ---
+
 	var keySymbol, valueSymbol *Symbol
 	if node.Key != nil {
 		if ident, ok := node.Key.(*ast.Ident); ok && ident.Name != "_" {
@@ -507,15 +572,18 @@ func (c *Functions) RangeStmt(node *ast.RangeStmt) error {
 	}
 	if node.Value != nil {
 		if ident, ok := node.Value.(*ast.Ident); ok && ident.Name != "_" {
-			valueSymbol, err = c.scopes.SymbolDefine(ident.Name, UnknownScope, false)
+			valueSymbol, err = c.scopes.SymbolDefine(ident.Name, UnknownScope, isStruct)
 			if err != nil {
 				return err
 			}
+			if len(valueTypeName) > 0 {
+				valueSymbol.SetTypes(valueTypeName)
+			}
 		}
 	}
-	// Loop start
+
+	// Il resto della funzione rimane invariato...
 	loopStartPos := scope.InstructionsLen()
-	// Check if there are more elements, passing the iterator index
 	if _, err := c.scopes.Emit(bytecode.OpIteratorNext, iteratorSymbol.Index()); err != nil {
 		return err
 	}
@@ -523,7 +591,6 @@ func (c *Functions) RangeStmt(node *ast.RangeStmt) error {
 	if err != nil {
 		return err
 	}
-	// Assign values and clean operand stack
 	if valueSymbol != nil {
 		if _, err = c.scopes.Emit(bytecode.OpIteratorValue, iteratorSymbol.Index()); err != nil {
 			return err
@@ -539,9 +606,6 @@ func (c *Functions) RangeStmt(node *ast.RangeStmt) error {
 		if _, err = c.scopes.Emit(bytecode.OpIteratorKey, iteratorSymbol.Index()); err != nil {
 			return err
 		}
-		if _, err = c.scopes.Emit(bytecode.OpIteratorValue, iteratorSymbol.Index()); err != nil {
-			return err
-		}
 		if err = c.scopes.EmitSymbolSet(keySymbol); err != nil {
 			return err
 		}
@@ -552,11 +616,9 @@ func (c *Functions) RangeStmt(node *ast.RangeStmt) error {
 	if err = c.compile(node.Body); err != nil {
 		return err
 	}
-	// Jump to start
 	if _, err = c.scopes.Emit(bytecode.OpJump, loopStartPos); err != nil {
 		return err
 	}
-	// Back-patching of exit jump
 	afterLoopPos := scope.InstructionsLen()
 	if err = c.scopes.ChangeOperand(jumpNotTruthyPos, afterLoopPos); err != nil {
 		return err
@@ -659,24 +721,22 @@ func (c *Functions) UnaryExpr(node *ast.UnaryExpr) error {
 	return nil
 }
 
-// doSelectorExpr processes a selector expression, resolving fields, methods, or package attributes.
+// SelectorExpr processes a selector expression, resolving fields, methods, or package attributes.
 // It distinguishes between struct field accesses and package-level selectors.
 // Emits appropriate bytecode instructions for each case or returns an error if unsupported.
-func (c *Functions) doSelectorExpr(node *ast.SelectorExpr) error {
+func (c *Functions) SelectorExpr(node *ast.SelectorExpr) error {
 	// analyze the left-hand side of the dot to determine if it's a variable or a package.
 	receiverIdent, ok := node.X.(*ast.Ident)
 	if !ok {
 		// currently not handling complex cases like a[0].field
-		return fmt.Errorf("unsupported receiver for selector expression: %T", node.X)
+		return fmt.Errorf("[SelectorExpr] unsupported receiver for selector expression: %T", node.X)
 	}
-
 	if c.imports.Emit(receiverIdent.Name, node.Sel.Name) {
 		return nil
 	}
-
 	receiverSymbol, ok := c.scopes.SymbolResolve(receiverIdent.Name)
 	if !ok {
-		return fmt.Errorf("undefined variable: %s", receiverIdent.Name)
+		return fmt.Errorf("[SelectorExpr] undefined variable: %s", receiverIdent.Name)
 	}
 	if receiverSymbol.IsStruct() { // struct
 		if err := c.compile(node.X); err != nil {
@@ -692,10 +752,85 @@ func (c *Functions) doSelectorExpr(node *ast.SelectorExpr) error {
 		}
 		return nil
 	}
-	return fmt.Errorf("unsupported selector expression: %T", node.X)
+	return fmt.Errorf("[SelectorExpr] unsupported selector expression for symbol %s", receiverSymbol.Name())
 }
 
 // FuncDecl processes the function declaration node and compiles its structure into the appropriate bytecode.
 func (c *Functions) FuncDecl(_ *ast.FuncDecl) error {
+	return nil
+}
+
+// FuncLit compiles an anonymous function literal.
+// It creates a new scope, compiles the function body, and emits an OpClosure
+// instruction to create the closure object at runtime.
+// FuncLit compiles an anonymous function literal.
+// It creates a new scope, compiles the function body, and emits an OpClosure
+// instruction to create the closure object at runtime.
+func (c *Functions) FuncLit(node *ast.FuncLit) error {
+	// 1. Enter a new scope for the anonymous function.
+	if err := c.scopes.Enter("", ""); err != nil { // No struct or func name
+		return err
+	}
+
+	// 2. Define symbols for the function parameters.
+	var paramNames []string
+	if node.Type.Params != nil {
+		for _, p := range node.Type.Params.List {
+			var typeName string
+			switch t := p.Type.(type) {
+			case *ast.Ident:
+				typeName = t.Name
+			case *ast.StarExpr:
+				if ident, ok := t.X.(*ast.Ident); ok {
+					typeName = ident.Name
+				}
+			}
+			isStruct := false
+			if typeName != "" {
+				if symbol, ok := c.scopes.SymbolResolve(typeName); ok && symbol.IsStruct() {
+					isStruct = true
+				}
+			}
+			for _, name := range p.Names {
+				paramNames = append(paramNames, name.Name)
+				// Ora usiamo il valore 'isStruct' determinato dinamicamente.
+				if _, err := c.scopes.SymbolDefine(name.Name, LocalScope, isStruct); err != nil {
+					return err
+				}
+			}
+		}
+	}
+
+	// 3. Compile the function body.
+	if err := c.compile(node.Body); err != nil {
+		return err
+	}
+
+	// ... il resto della funzione rimane invariato ...
+	scope, err := c.scopes.Current()
+	if err != nil {
+		return err
+	}
+	if scope.LastInstruction() == nil || scope.LastInstruction().opcode != bytecode.OpReturn {
+		if _, err = c.scopes.Emit(bytecode.OpReturn, 0); err != nil {
+			return err
+		}
+	}
+
+	freeSymbols := c.scopes.SymbolFreeConvert()
+	numFree := c.scopes.SymbolFreeCount()
+	nLocals := c.scopes.SymbolCount()
+	code, err := c.scopes.Leave()
+	if err != nil {
+		return err
+	}
+
+	compiledFn := c.gk.NewFuncCompiled(objects.FrameStatic, "", code, nLocals, len(paramNames), false, nil, freeSymbols)
+	constIndex := c.constants.Add("", compiledFn)
+
+	if _, err = c.scopes.Emit(bytecode.OpClosure, constIndex, numFree); err != nil {
+		return err
+	}
+
 	return nil
 }

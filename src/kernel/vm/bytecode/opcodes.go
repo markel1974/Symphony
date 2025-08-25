@@ -99,6 +99,7 @@ const (
 	OpBinary                      // Binary operation
 	OpReferences
 	OpIntOp
+	OpDeref   // Dereference a pointer
 	OpSuspend // Suspend VM
 	OpError   // Error object
 	OpUnknown
@@ -197,6 +198,7 @@ func NewOpcodes(factory objects.IGateKeeper) *Opcodes {
 	op.createOpcodeDetails(factory, OpBinary, []int{1}, "OpBinary")
 	op.createOpcodeDetails(factory, OpReferences, []int{2}, "OpReferences")
 	op.createOpcodeDetails(factory, OpIntOp, []int{2, 1}, "OpIntOp")
+	op.createOpcodeDetails(factory, OpDeref, []int{}, "OpDeref")
 	op.createOpcodeDetails(factory, OpSuspend, []int{}, "OpSuspend")
 	op.createOpcodeDetails(factory, OpError, []int{}, "OpError")
 	return op

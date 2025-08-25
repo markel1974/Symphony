@@ -131,12 +131,22 @@ func (c *Compiler) compile(in ast.Node) error {
 		err = c.imports.ImportSpec(node)
 	case *ast.GenDecl:
 		err = c.declarations.GenDecl(node)
+	case *ast.TypeSpec:
+		err = c.declarations.TypeSpec(node)
 	case *ast.Ident:
 		err = c.declarations.Ident(node)
 	case *ast.AssignStmt:
 		err = c.declarations.AssignStmt(node)
 	case *ast.BasicLit:
 		err = c.declarations.BasicLit(node)
+	case *ast.CompositeLit:
+		err = c.declarations.CompositeLit(node)
+	case *ast.KeyValueExpr:
+		err = c.declarations.KeyValueExpr(node)
+	case *ast.StarExpr:
+		err = c.declarations.StarExpr(node)
+	case *ast.IndexExpr:
+		err = c.declarations.IndexExpr(node)
 	case *ast.BlockStmt:
 		err = c.functions.BlockStmt(node)
 	case *ast.ExprStmt:
@@ -153,6 +163,8 @@ func (c *Compiler) compile(in ast.Node) error {
 		err = c.functions.BinaryExpr(node)
 	case *ast.UnaryExpr:
 		err = c.functions.UnaryExpr(node)
+	case *ast.FuncLit:
+		err = c.functions.FuncLit(node)
 	case *ast.FuncDecl:
 		err = c.functions.FuncDecl(node)
 	case *ast.CallExpr:
@@ -160,7 +172,7 @@ func (c *Compiler) compile(in ast.Node) error {
 	case *ast.ReturnStmt:
 		err = c.functions.ReturnStmt(node)
 	case *ast.SelectorExpr:
-		err = c.functions.doSelectorExpr(node)
+		err = c.functions.SelectorExpr(node)
 	default:
 		err = fmt.Errorf("unsupported expression type: %T", node)
 	}
