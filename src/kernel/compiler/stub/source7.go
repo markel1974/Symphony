@@ -58,6 +58,7 @@ func (p *Project) Display() {
 func ProcessItems(items []interface{}) {
 	fmt.Println("\n=> Processing all items...")
 	for _, item := range items {
+		fmt.Println("Item:", item)
 		// La VM risolverà dinamicamente la chiamata al metodo corretto.
 		//item.Display()
 		//TODO 
@@ -125,8 +126,8 @@ func main() {
 	// Creiamo un filtro specifico per i task non completati.
 	filterIncomplete := TaskFilterGenerator(false)
 
-	allTasks := []SimpleTask{ *task1, task2, project.Tasks[0], project.Tasks[1], project.Tasks[2] }
-
+	//allTasks := []SimpleTask{ *task1, task2, project.Tasks[0], project.Tasks[1], project.Tasks[2] }
+	//allTasks := []SimpleTask{ task1, task2, project.Tasks[0], project.Tasks[1], project.Tasks[2] }
 	//for _, t := range allTasks {
 		// Applichiamo il filtro.
 	//	if filterIncomplete(t) {
