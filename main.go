@@ -147,7 +147,7 @@ func vmTest() {
 	d := bytecode.NewDisassembler(bc)
 	d.Disassemble(log.Writer())
 	loader := sdk.NewLoader(factory)
-	machine := vm.New(factory, op, nil)
+	machine := vm.NewVM(factory, op)
 	//if err = machine.Run(loader, bc, "init", args...); err != nil {
 	//	machine.Print(log.Writer())
 	//	log.Fatalf("VM runtime error: %s", err)

@@ -11,6 +11,7 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/messages"
 	"github.com/markel1974/c64emu/src/kernel/vm"
 	"github.com/markel1974/c64emu/src/kernel/vm/bytecode"
+	"github.com/markel1974/c64emu/src/kernel/vm/core"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
@@ -35,7 +36,7 @@ type Process struct {
 	loader           *sdk.Loader
 	opcodes          *bytecode.Opcodes
 	compiler         *compiler.Compiler
-	vm               *vm.VM
+	vm               *core.VM
 	onError          interfaces.OnError
 	onTimer          interfaces.OnTimer
 	onKey            interfaces.OnKey
@@ -556,7 +557,7 @@ func (t *Process) handleMessageProcessStart(msg interfaces.IMessage) {
 			t.loader.AddPackage("kernel", NewLibrary(t.opcodes.Factory(), t).Package())
 		}
 		if t.vm == nil {
-			t.vm = vm.New(t.opcodes.Factory(), t.opcodes, nil)
+			t.vm = vm.NewVM(t.opcodes.Factory(), t.opcodes)
 		}
 		if err = t.vm.Setup(t.loader, bc); err != nil {
 			log.Printf("Process [%s]: error setting up VM: %s", t.cmd.Name(), err.Error())
