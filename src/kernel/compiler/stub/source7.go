@@ -130,9 +130,9 @@ func main() {
 	allTasks := []SimpleTask{ task1, task2, project.Tasks[0], project.Tasks[1], project.Tasks[2] }
 	for _, taskT := range allTasks {
 		// Applichiamo il filtro.
-		if filterIncomplete(taskT) {
+		//if filterIncomplete(taskT) {
 			taskT.Display()
-		}
+		//}
 	}
 }
 `

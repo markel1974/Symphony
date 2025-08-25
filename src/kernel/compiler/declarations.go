@@ -268,11 +268,10 @@ func (c *Declarations) AssignStmt(node *ast.AssignStmt) error {
 			case *ast.BasicLit:
 				//nothing to do
 			case *ast.CompositeLit: // es. MyStruct{...}
-				if ident, ok := rhs.Type.(*ast.Ident); ok {
-					if typeSymbol, ok := c.scopes.SymbolResolve(ident.Name); ok && typeSymbol.IsStruct() {
-						isStruct = true
-						assignedTypeName = []string{typeSymbol.Name()}
-					}
+				baseName := ExtractBaseName(rhs.Type)
+				if len(baseName) > 0 {
+					assignedTypeName = []string{baseName}
+					isStruct = true
 				}
 			case *ast.CallExpr: // es. NewStruct()
 				if ident, ok := rhs.Fun.(*ast.Ident); ok {

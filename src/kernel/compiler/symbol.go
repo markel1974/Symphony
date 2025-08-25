@@ -69,16 +69,16 @@ func (s *Symbol) IsStruct() bool {
 	//return s.isStruct
 }
 
-// SetTypes assigns a slice of type names to the Symbol's types field. Use this to define the types associated with a Symbol.
-func (s *Symbol) SetTypes(t []string) {
-	s.types = t
-}
-
 func (s *Symbol) StructPropertyAssign(fields []*StructField) {
 	s.Fields = make([]*StructField, len(fields))
 	for i, f := range fields {
 		s.Fields[i] = NewStructProperty(f.name, f.base, f.kind, nil)
 	}
+}
+
+// SetTypes assigns a slice of type names to the Symbol's types field. Use this to define the types associated with a Symbol.
+func (s *Symbol) SetTypes(t []string) {
+	s.types = t
 }
 
 // Types returns the list of type names associated with the Symbol.

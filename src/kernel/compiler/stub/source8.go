@@ -6,14 +6,14 @@ package main
 import "fmt"
 
 type Task struct {
-Name    string
+	Name    string
 }
 
 func main() {
-	t1 := Task{Name: "Task1"}
-	t2 := Task{Name: "Task2"}
-	t1.Name = "Task1_mod"
-	allTasks := []Task{t1, t2}
+	//t2 := Task{Name: "Task2"}
+	//t2.Name = "Task1_mod"
+	allTasks := []Task{Task{Name: "Task1"}, t2}
+	//allTasks := []Task{}
 	for _, taskT := range allTasks {
 		fmt.Println(taskT)
 	}

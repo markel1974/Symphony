@@ -136,6 +136,7 @@ func (c *Functions) funcBodyCompile(fd *FunctionDescription) error {
 			return err
 		}
 		if len(fd.StructName) > 0 {
+			//TODO return values
 			z.SetTypes(fd.Types)
 		}
 	}
@@ -178,6 +179,7 @@ func (c *Functions) funcBodyCompile(fd *FunctionDescription) error {
 	}
 	compiledFn := c.gk.NewFuncCompiled(objects.FrameStatic, fd.Name, code, nLocals, nParams, false, nil, freeSymbols)
 	fnSymbol.SetObject(compiledFn)
+	//TODO return values (already set defined....)
 	fnSymbol.SetTypes(fd.Types)
 
 	if node.Recv == nil && c.scopes.scopeIndex > 0 {
@@ -212,7 +214,6 @@ func (c *Functions) CallExpr(node *ast.CallExpr) error {
 		commonName = receiverIdent.Name
 		receiverIdentName = receiverIdent.Name
 		selName = selExpr.Sel.Name
-
 	} else {
 		ident, ok := node.Fun.(*ast.Ident)
 		if !ok {
@@ -239,14 +240,8 @@ func (c *Functions) CallExpr(node *ast.CallExpr) error {
 				if fields := c.structs.Get(structTypeName); fields == nil {
 					return fmt.Errorf("undefined type: %s", structTypeName)
 				}
-				//typeSymbol, ok := c.scopes.SymbolResolve(structTypeName)
-				//if !ok {
-				//	return fmt.Errorf("undefined type: %s", structTypeName)
-				//}
-				//methodName := selName//selExpr.Sel.Name
 				fnName = GetMangledName(structTypeName, selName)
 				fnSymbol, ok := c.scopes.SymbolResolve(fnName)
-				//fnIndex, ok = c.constants.Get(fnName)
 				if !ok {
 					return fmt.Errorf("undefined method '%s' for type '%s' [%s]", selName, structTypeName, fnName)
 				}
@@ -506,6 +501,7 @@ func (c *Functions) RangeStmt(node *ast.RangeStmt) error {
 	isStruct := false
 	var valueTypeName []string
 	var collectionSymbol *Symbol
+	var receiverIdent *ast.Ident
 
 	switch expr := node.X.(type) {
 	case *ast.Ident:
@@ -516,8 +512,9 @@ func (c *Functions) RangeStmt(node *ast.RangeStmt) error {
 			collectionSymbol, _ = c.scopes.SymbolResolve(ident.Name)
 		}
 	case *ast.SelectorExpr:
+		var ok bool
 		// Caso: for _, v := range myVar.Items
-		if receiverIdent, ok := expr.X.(*ast.Ident); ok {
+		if receiverIdent, ok = expr.X.(*ast.Ident); ok {
 			// 1. Risolviamo il simbolo del ricevitore (myVar)
 			if receiverSymbol, ok := c.scopes.SymbolResolve(receiverIdent.Name); ok {
 				structFields := c.structs.Get(receiverSymbol.StructName())
@@ -527,7 +524,8 @@ func (c *Functions) RangeStmt(node *ast.RangeStmt) error {
 				fieldName := expr.Sel.Name
 				for _, field := range structFields {
 					if fieldName == field.name {
-						collectionSymbol = NewSymbol(field.base, 0, UnknownScope, "", "", false)
+						collectionSymbol = NewSymbol(field.base, 0, UnknownScope, "", "", true)
+						//todo type
 						collectionSymbol.SetTypes([]string{field.base})
 						break
 					}
@@ -546,10 +544,6 @@ func (c *Functions) RangeStmt(node *ast.RangeStmt) error {
 				isStruct = true
 				valueTypeName = []string{typeName}
 			}
-			//if typeSymbol, ok := c.scopes.SymbolResolve(typeName); ok && typeSymbol.IsStruct() {
-			//	isStruct = true
-			//	valueTypeName = []string{typeName}
-			//}
 		}
 	}
 	// --- FINE CORREZIONE ---
@@ -570,6 +564,7 @@ func (c *Functions) RangeStmt(node *ast.RangeStmt) error {
 				return err
 			}
 			if len(valueTypeName) > 0 {
+				//TODO type
 				valueSymbol.SetTypes(valueTypeName)
 			}
 		}
@@ -753,9 +748,6 @@ func (c *Functions) FuncDecl(_ *ast.FuncDecl) error {
 	return nil
 }
 
-// FuncLit compiles an anonymous function literal.
-// It creates a new scope, compiles the function body, and emits an OpClosure
-// instruction to create the closure object at runtime.
 // FuncLit compiles an anonymous function literal.
 // It creates a new scope, compiles the function body, and emits an OpClosure
 // instruction to create the closure object at runtime.
