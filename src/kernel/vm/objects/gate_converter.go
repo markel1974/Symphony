@@ -242,7 +242,7 @@ func (gc *GateConverter) ToStringArrayArg(index int, arr []IObject) ([]string, e
 
 // ToByteSlice converts an IObject to a byte slice if the object is of type *Bytes or *String.
 // It returns the converted byte slice and a boolean indicating success.
-func (gc *GateConverter) ToByteSlice(o IObject) ([]byte, bool) {
+func (gc *GateConverter) ToBytes(o IObject) ([]byte, bool) {
 	switch o := o.(type) {
 	case *Bytes:
 		return o.values, true
@@ -254,8 +254,8 @@ func (gc *GateConverter) ToByteSlice(o IObject) ([]byte, bool) {
 }
 
 // ToByteSliceArg attempts to convert an IObject to a byte slice. Returns an error if the conversion fails or the type is incompatible.
-func (gc *GateConverter) ToByteSliceArg(index int, o IObject) ([]byte, error) {
-	b, ok := gc.ToByteSlice(o)
+func (gc *GateConverter) ToBytesArg(index int, o IObject) ([]byte, error) {
+	b, ok := gc.ToBytes(o)
 	if !ok {
 		return nil, NewInvalidArgumentError(index, "byte slice(compatible)", o.TypeName())
 	}

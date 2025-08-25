@@ -18,6 +18,11 @@ type GateKeeper struct {
 	IGateAdapter
 }
 
+func (f *GateKeeper) FromMap(frame int, v map[string]interface{}) map[string]IObject {
+	//TODO implement me
+	panic("implement me")
+}
+
 const (
 	FrameStatic = -1
 )

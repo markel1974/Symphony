@@ -8,14 +8,14 @@ import (
 
 // Math serves as a container for mathematical operations and modules, mapping module names to their respective objects.
 type Math struct {
-	factory objects.IGateKeeper
+	gk objects.IGateKeeper
 	*Package
 }
 
 // NewMath initializes and returns a new instance of Math with predefined mathematical constants and function modules.
 func NewMath(factory objects.IGateKeeper) *Math {
 	m := &Math{
-		factory: factory,
+		gk: factory,
 	}
 	constants := map[string]objects.IObject{
 		"E":       factory.NewFloat(objects.FrameStatic, math.E),
@@ -69,7 +69,7 @@ func NewMath(factory objects.IGateKeeper) *Math {
 		factory.NewFuncPackage(objects.FuncPackageDef, "Max", factory.FuncIf64f64Of64(math.Max)),
 		factory.NewFuncPackage(objects.FuncPackageDef, "Min", factory.FuncIf64f64Of64(math.Min)),
 		factory.NewFuncPackage(objects.FuncPackageDef, "Mod", factory.FuncIf64f64Of64(math.Mod)),
-		factory.NewFuncPackage(objects.FuncPackageDef, "NaN", factory.FuncInOf64(math.NaN)),
+		factory.NewFuncPackage(objects.FuncPackageDef, "NaN", m.funcInOf64(math.NaN)),
 		factory.NewFuncPackage(objects.FuncPackageDef, "Nextafter", factory.FuncIf64f64Of64(math.Nextafter)),
 		factory.NewFuncPackage(objects.FuncPackageDef, "Pow", factory.FuncIf64f64Of64(math.Pow)),
 		factory.NewFuncPackage(objects.FuncPackageDef, "Pow10", factory.FuncIiOf64(math.Pow10)),
@@ -87,4 +87,15 @@ func NewMath(factory objects.IGateKeeper) *Math {
 	}
 	m.Package = NewPackage("math", container, constants)
 	return m
+}
+
+// funcInOf64 wraps a no-argument function returning float64 into a FuncCallable to integrate with the GateAdapter system.
+// It enforces no arguments and converts the float64 result to an IObject, returning ErrWrongNumArguments for invalid input.
+func (z *Math) funcInOf64(fn func() float64) objects.FuncCallable {
+	return func(frame int, args ...objects.IObject) (ret objects.IObject, err error) {
+		if len(args) != 0 {
+			return nil, objects.ErrWrongNumArguments
+		}
+		return z.gk.NewFloat(frame, fn()), nil
+	}
 }

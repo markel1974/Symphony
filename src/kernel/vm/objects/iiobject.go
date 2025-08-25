@@ -70,25 +70,27 @@ type IGateAllocator interface {
 
 // IGateConverter provides methods to convert IObject types to and from various native Go types and data structures.
 type IGateConverter interface {
-	ToInterface(in IObject) (res interface{})
-	FromInterface(frame int, in interface{}) IObject
-	ToMap(o IObject) (res map[string]interface{})
-	FromMap(frame int, v map[string]interface{}) map[string]IObject
+	ToBool(o IObject) (v bool, ok bool)
 	ToInt64(o IObject) (int64, bool)
-	ToInt64Arg(index int, o IObject) (int64, error)
+	ToFloat64(o IObject) (float64, bool)
 	ToRune(o IObject) (v rune, ok bool)
 	ToString(o IObject) (string, bool)
+	ToTime(o IObject) (time.Time, bool)
+	ToBytes(o IObject) ([]byte, bool)
+	ToInterface(in IObject) (res interface{})
+	ToMap(o IObject) (res map[string]interface{})
+
+	ToBoolArg(index int, o IObject) (bool, error)
+	ToInt64Arg(index int, o IObject) (int64, error)
+	ToFloat64Arg(index int, o IObject) (float64, error)
+	ToTimeArg(index int, o IObject) (time.Time, error)
 	ToStringArg(index int, o IObject) (string, error)
 	ToStringArrayArg(index int, arr []IObject) ([]string, error)
-	ToByteSlice(o IObject) ([]byte, bool)
-	ToByteSliceArg(index int, o IObject) ([]byte, error)
-	ToFloat64(o IObject) (float64, bool)
-	ToFloat64Arg(index int, o IObject) (float64, error)
-	ToTime(o IObject) (time.Time, bool)
-	ToTimeArg(index int, o IObject) (time.Time, error)
-	ToBool(o IObject) (v bool, ok bool)
+	ToBytesArg(index int, o IObject) ([]byte, error)
+
+	FromInterface(frame int, in interface{}) IObject
+	FromMap(frame int, v map[string]interface{}) map[string]IObject
 	FromBool(v bool) IObject
-	ToBoolArg(index int, o IObject) (bool, error)
 	FromStringArray(frame int, in []string) (IObject, error)
 }
 
@@ -108,10 +110,7 @@ type IGateAdapter interface {
 	FuncIiOs(fn func(int) string) FuncCallable
 	FuncIiOiS(fn func(int) []int) FuncCallable
 
-	FuncInOi64(fn func() int64) FuncCallable
-	FuncInOf64(fn func() float64) FuncCallable
 	FuncIiOf64(fn func(int) float64) FuncCallable
-	FuncIi64Oi64(fn func(int64) int64) FuncCallable
 	FuncIi64On(fn func(int64)) FuncCallable
 	FuncIf64Of64(fn func(float64) float64) FuncCallable
 	FuncIf64Oi(fn func(float64) int) FuncCallable

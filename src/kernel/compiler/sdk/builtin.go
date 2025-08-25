@@ -306,7 +306,7 @@ func (h *BuiltinFunctions) rangeInit(frame int, args ...objects.IObject) (object
 		if step, ok = st.(*objects.Int); !ok {
 			return nil, objects.ErrExceedingLimit
 		}
-		//step = h.factory.NewInt(frame, int64(1))
+		//step = h.gk.NewInt(frame, int64(1))
 	}
 	startV := start.Value()
 	stopV := stop.Value()
@@ -460,7 +460,7 @@ func (h *BuiltinFunctions) bytes(frame int, args ...objects.IObject) (objects.IO
 	if n, ok := args[0].(*objects.Int); ok {
 		return h.factory.NewBytes(frame, make([]byte, int(n.Value()))), nil
 	}
-	v, ok := h.factory.ToByteSlice(args[0])
+	v, ok := h.factory.ToBytes(args[0])
 	if ok {
 		return h.factory.NewBytes(frame, v), nil
 	}

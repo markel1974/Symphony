@@ -26,30 +26,6 @@ func NewGateAdapter(gk *GateKeeper) *GateAdapter {
 	return &GateAdapter{gk: gk}
 }
 
-// FuncInOi64 wraps a function returning an int64 to provide a FuncCallable with specified frame and IObject arguments.
-func (ga *GateAdapter) FuncInOi64(fn func() int64) FuncCallable {
-	return func(frame int, args ...IObject) (ret IObject, err error) {
-		if len(args) != 0 {
-			return nil, ErrWrongNumArguments
-		}
-		return ga.gk.NewInt(frame, fn()), nil
-	}
-}
-
-// FuncIi64Oi64 wraps a function accepting an int64 and returning an int64 into a FuncCallable that operates on IObject types.
-func (ga *GateAdapter) FuncIi64Oi64(fn func(int64) int64) FuncCallable {
-	return func(frame int, args ...IObject) (ret IObject, err error) {
-		if len(args) != 1 {
-			return nil, ErrWrongNumArguments
-		}
-		i1, err := ga.gk.ToInt64Arg(0, args[0])
-		if err != nil {
-			return nil, err
-		}
-		return ga.gk.NewInt(frame, fn(i1)), nil
-	}
-}
-
 // FuncIi64On creates a FuncCallable that invokes a function accepting an int64 argument, handling argument conversion.
 func (ga *GateAdapter) FuncIi64On(fn func(int64)) FuncCallable {
 	return func(frame int, args ...IObject) (ret IObject, err error) {
@@ -62,17 +38,6 @@ func (ga *GateAdapter) FuncIi64On(fn func(int64)) FuncCallable {
 		}
 		fn(i1)
 		return ga.gk.UndefinedValue(), nil
-	}
-}
-
-// FuncInOf64 wraps a no-argument function returning float64 into a FuncCallable to integrate with the GateAdapter system.
-// It enforces no arguments and converts the float64 result to an IObject, returning ErrWrongNumArguments for invalid input.
-func (ga *GateAdapter) FuncInOf64(fn func() float64) FuncCallable {
-	return func(frame int, args ...IObject) (ret IObject, err error) {
-		if len(args) != 0 {
-			return nil, ErrWrongNumArguments
-		}
-		return ga.gk.NewFloat(frame, fn()), nil
 	}
 }
 
@@ -427,7 +392,7 @@ func (ga *GateAdapter) FuncIbSOs(fn func([]byte) string) FuncCallable {
 		if len(args) != 1 {
 			return nil, ErrWrongNumArguments
 		}
-		bs1, err := ga.gk.ToByteSliceArg(0, args[0])
+		bs1, err := ga.gk.ToBytesArg(0, args[0])
 		if err != nil {
 			return nil, err
 		}
