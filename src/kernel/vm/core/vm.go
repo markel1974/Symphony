@@ -1,4 +1,4 @@
-package vm
+package core
 
 import (
 	"fmt"
@@ -40,7 +40,7 @@ type VM struct {
 }
 
 // New initializes and returns a new virtual machine instance configured with the provided components and settings.
-func New(factory objects.IGateKeeper, op *bytecode.Opcodes, sequencer ISequencer) *VM {
+func New(factory objects.IGateKeeper, sequencer ISequencer) *VM {
 	v := &VM{
 		factory:     factory,
 		ip:          resetIp,
@@ -53,9 +53,6 @@ func New(factory objects.IGateKeeper, op *bytecode.Opcodes, sequencer ISequencer
 	v.globals = NewGlobals(factory, v.SetError)
 	v.stack = NewStack(factory, stackSize, v.SetError)
 	v.frames = NewFrames(factory, maxFrames, v.SetError)
-	if sequencer == nil {
-		sequencer = NewSequencer(op)
-	}
 	seq := sequencer.Create()
 	v.sequencer = make([]*Decoder, len(seq))
 	for i, s := range seq {
@@ -129,6 +126,32 @@ func (v *VM) Run(mainId string, args ...interface{}) error {
 	return nil
 }
 
+// Stack returns the current stack instance associated with the VM.
+func (v *VM) Stack() *Stack {
+	return v.stack
+}
+
+// Constants returns a pointer to the Constants associated with the VM instance.
+func (v *VM) Constants() *Constants {
+	return v.constants
+}
+
+// Globals returns the global variables associated with the VM instance.
+func (v *VM) Globals() *Globals {
+	return v.globals
+}
+
+// References retrieves an object from the references list based on the provided index.
+// Returns an undefined value if the index is out of range and sets an error on the VM.
+func (v *VM) References(nameIndex int) objects.IObject {
+	if nameIndex < 0 || nameIndex >= len(v.references) {
+		v.SetError(fmt.Errorf("invalid attribute index %d", nameIndex))
+		return v.factory.UndefinedValue()
+	}
+	symbol := v.references[nameIndex]
+	return symbol
+}
+
 // SetIp sets the virtual machine's instruction pointer to the specified value.
 func (v *VM) SetIp(ip int) {
 	v.ip = ip
@@ -137,23 +160,6 @@ func (v *VM) SetIp(ip int) {
 // GetIp retrieves the current instruction pointer value from the virtual machine.
 func (v *VM) GetIp() int {
 	return v.ip
-}
-
-// FunctionCompiledCall sets up a new execution frame for a compiled function and manages stack allocation for local variables.
-// callee specifies the compiled function to be executed, and numArgs determines the number of arguments passed.
-// It reserves stack space for all local variables and adjusts the instruction pointer accordingly.
-func (v *VM) FunctionCompiledCall(callee *objects.FuncCompiled, numArgs int) {
-	// Frame setup
-	v.currFrame = v.frames.Get()
-	v.frames.Next()
-	bp := v.stack.StackPointer() - numArgs
-	v.currFrame.Bind(v.GetIp(), callee, bp)
-	// Reserve space for *all* local variables of the new function
-	// by simply advancing the stack pointer.
-	// This ensures that space for temporary calculations starts *after*
-	// the space reserved for local variables, avoiding collisions.
-	v.stack.SetStackPointer(v.stack.StackPointer() + callee.NumLocals())
-	v.ReseIp()
 }
 
 // FunctionLibraryCall invokes a callable object with the given arguments and handles stack cleanup and error management.
@@ -176,8 +182,25 @@ func (v *VM) FunctionLibraryCall(value objects.IObject, args []objects.IObject, 
 	}
 }
 
-// Return handles the return operation by unwinding the current call frame, restoring the previous frame, and managing the stack.
-func (v *VM) Return(returnValues []objects.IObject) {
+// FunctionCompiledCall sets up a new execution frame for a compiled function and manages stack allocation for local variables.
+// callee specifies the compiled function to be executed, and numArgs determines the number of arguments passed.
+// It reserves stack space for all local variables and adjusts the instruction pointer accordingly.
+func (v *VM) FunctionCompiledCall(callee *objects.FuncCompiled, numArgs int) {
+	// Frame setup
+	v.currFrame = v.frames.Get()
+	v.frames.Next()
+	bp := v.stack.StackPointer() - numArgs
+	v.currFrame.Bind(v.GetIp(), callee, bp)
+	// Reserve space for *all* local variables of the new function
+	// by simply advancing the stack pointer.
+	// This ensures that space for temporary calculations starts *after*
+	// the space reserved for local variables, avoiding collisions.
+	v.stack.SetStackPointer(v.stack.StackPointer() + callee.NumLocals())
+	v.ReseIp()
+}
+
+// FunctionCompiledReturn handles the return operation by unwinding the current call frame, restoring the previous frame, and managing the stack.
+func (v *VM) FunctionCompiledReturn(returnValues []objects.IObject) {
 	shutdown := false
 	prevIp := v.currFrame.SavedIP()
 	leavingFrameBasePointer := v.BasePointer()

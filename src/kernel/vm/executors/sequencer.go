@@ -1,7 +1,8 @@
-package vm
+package executors
 
 import (
 	"github.com/markel1974/c64emu/src/kernel/vm/bytecode"
+	"github.com/markel1974/c64emu/src/kernel/vm/core"
 )
 
 // Sequencer is a type that manages a collection of IOpExecutor instances organized by their opcodes.
@@ -9,7 +10,7 @@ import (
 // The container field stores the IOpExecutor instances, indexed by their opcode with masking applied for efficiency.
 type Sequencer struct {
 	op        *bytecode.Opcodes
-	container []IOpExecutor
+	container []core.IOpExecutor
 }
 
 // NewSequencer initializes and returns a new instance of Sequencer.
@@ -20,8 +21,8 @@ func NewSequencer(op *bytecode.Opcodes) *Sequencer {
 }
 
 // Create initializes the internal container with default operation executors and returns it.
-func (ds *Sequencer) Create() []IOpExecutor {
-	ds.container = make([]IOpExecutor, bytecode.OpcodesLen)
+func (ds *Sequencer) Create() []core.IOpExecutor {
+	ds.container = make([]core.IOpExecutor, bytecode.OpcodesLen)
 	for idx := range ds.container {
 		ds.container[idx] = NewOpUnknown(ds.op)
 	}
@@ -73,6 +74,6 @@ func (ds *Sequencer) Create() []IOpExecutor {
 }
 
 // setSequence assigns a specific IOpExecutor implementation to its corresponding opcode index in the container.
-func (ds *Sequencer) setSequence(seq IOpExecutor) {
+func (ds *Sequencer) setSequence(seq core.IOpExecutor) {
 	ds.container[seq.Opcode()&bytecode.OpcodesMask] = seq
 }

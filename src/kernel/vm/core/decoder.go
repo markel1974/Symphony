@@ -1,4 +1,4 @@
-package vm
+package core
 
 // operandsMax defines the maximum number of operands, calculated as 2 raised to the power of 4.
 // operandsMask is a bitmask derived from operandsMax, used for extracting operand-related values.
