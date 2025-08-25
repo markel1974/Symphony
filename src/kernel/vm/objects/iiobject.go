@@ -105,12 +105,12 @@ type IGateAdapter interface {
 	FuncIssOi(fn func(string, string) int) FuncCallable
 	FuncIssOs(fn func(string, string) string) FuncCallable
 	FuncIssOb(fn func(string, string) bool) FuncCallable
+	FuncIiOs(fn func(int) string) FuncCallable
+	FuncIiOiS(fn func(int) []int) FuncCallable
 
 	FuncInOi64(fn func() int64) FuncCallable
 	FuncInOf64(fn func() float64) FuncCallable
 	FuncIiOf64(fn func(int) float64) FuncCallable
-	FuncIiOiS(fn func(int) []int) FuncCallable
-	FuncIiOs(fn func(int) string) FuncCallable
 	FuncIi64Oi64(fn func(int64) int64) FuncCallable
 	FuncIi64On(fn func(int64)) FuncCallable
 	FuncIf64Of64(fn func(float64) float64) FuncCallable
