@@ -22,9 +22,10 @@ func NewConstants(factory objects.IGateKeeper, errSignal func(err error)) *Const
 	}
 }
 
-// SetContainer updates the constants pool with the provided values.
-func (g *Constants) SetContainer(constants []objects.IObject) {
+// Setup updates the constants pool with the provided values.
+func (g *Constants) Setup(constants []objects.IObject) error {
 	g.container = constants
+	return nil
 }
 
 // Get retrieves the object from the constants pool at the specified index. Returns UndefinedValue if the index is invalid.

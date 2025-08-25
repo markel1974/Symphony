@@ -387,7 +387,7 @@ func (op *OpSetSelGlobal) Execute(v *core.VM, decoder *core.Decoder) {
 	val := v.Stack().PeekOffset(-numSelectors - 1)
 	v.Stack().DecrementCount(numSelectors + 1)
 	glObj := v.Globals().Get(uint(globalIndex))
-	if err := v.IndexAssign(v.FrameID(), glObj, val, selectors); err != nil {
+	if err := op.Factory().IndexAssign(v.FrameID(), glObj, val, selectors); err != nil {
 		v.SetError(err)
 		return
 	}
@@ -577,7 +577,7 @@ func (op *OpSliceIndex) Execute(v *core.VM, _ *core.Decoder) {
 	highStack := v.Stack().Pop()
 	lowStack := v.Stack().Pop()
 	leftStack := v.Stack().Pop()
-	lowIdx, highIdx, err := v.BoundsCheck(lowStack, highStack, int64(leftStack.Length()))
+	lowIdx, highIdx, err := op.Factory().BoundsCheck(lowStack, highStack, int64(leftStack.Length()))
 	if err != nil {
 		v.SetError(err)
 		return
@@ -804,7 +804,7 @@ func (op *OpSetSelLocal) Execute(v *core.VM, decoder *core.Decoder) {
 	if obj, ok := dst.(*objects.ObjectPointer); ok {
 		dst = *obj.Value()
 	}
-	if err := v.IndexAssign(v.FrameID(), dst, val, selectors); err != nil {
+	if err := op.Factory().IndexAssign(v.FrameID(), dst, val, selectors); err != nil {
 		v.SetError(err)
 		return
 	}
@@ -1003,7 +1003,7 @@ func (op *OpSetSelFree) Execute(v *core.VM, decoder *core.Decoder) {
 	val := v.Stack().PeekOffset(-numSelectors - 1)
 	v.Stack().DecrementCount(numSelectors + 1)
 	fvi := v.FreeVarsIndex(freeIndex)
-	if err := v.IndexAssign(v.FrameID(), *fvi.Value(), val, selectors); err != nil {
+	if err := op.Factory().IndexAssign(v.FrameID(), *fvi.Value(), val, selectors); err != nil {
 		v.SetError(err)
 		return
 	}
@@ -1139,7 +1139,7 @@ func (op *OpReferences) Execute(v *core.VM, decoder *core.Decoder) {
 	//if nameIndex != int(v.currFrame.Get16(v.ip)) {
 	//	log.Println("name index mismatch: %d != %d", nameIndex, int(v.currFrame.Get16(v.ip)))
 	//}
-	symbol := v.References(nameIndex)
+	symbol := v.References().Get(uint(nameIndex))
 	v.Stack().Push(symbol)
 }
 
@@ -1175,7 +1175,7 @@ func (op *OpIntOp) Execute(v *core.VM, decoder *core.Decoder) {
 		v.SetError(fmt.Errorf("lhs expected int, got %s", lhsObj.TypeName()))
 		return
 	}
-	result, err := v.BinaryOpInt64(binaryOp, lhs.Value(), rhs.Value())
+	result, err := op.Factory().BinaryOpInt64(binaryOp, lhs.Value(), rhs.Value())
 	if err != nil {
 		v.SetError(err)
 	}

@@ -22,9 +22,10 @@ func NewGlobals(factory objects.IGateKeeper, errSignal func(err error)) *Globals
 	}
 }
 
-// SetContainer replaces the current container with the provided list of constants.
-func (g *Globals) SetContainer(constants []objects.IObject) {
+// Setup replaces the current container with the provided list of constants.
+func (g *Globals) Setup(constants []objects.IObject) error {
 	g.container = constants
+	return nil
 }
 
 // Get retrieves the object at the specified index from the container.

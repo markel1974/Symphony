@@ -138,6 +138,10 @@ type IGateAdapter interface {
 	FuncIiiOe(fn func(int, int) error) FuncCallable
 	FuncIsiOs(fn func(string, int) string) FuncCallable
 	FuncIsiiOe(fn func(string, int, int) error) FuncCallable
+
+	BinaryOpInt64(op Operator, lhs int64, rhs int64) (int64, error)
+	BoundsCheck(lowStack IObject, highStack IObject, numElements int64) (int64, int64, error)
+	IndexAssign(frame int, dst IObject, src IObject, selectors []IObject) error
 }
 
 // IGateKeeper combines IGateAllocator, IGateConverter, and IGateAdapter to manage object creation, conversion, and adaptation.

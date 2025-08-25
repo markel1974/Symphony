@@ -32,8 +32,7 @@ type VM struct {
 	shutdown    bool
 	err         error
 	sequencer   []*Decoder
-	references  []objects.IObject
-	loader      bytecode.ILoader
+	references  *References
 	constants   *Constants
 	globals     *Globals
 	entryPoints map[string]*objects.FuncCompiled
@@ -44,12 +43,12 @@ func New(factory objects.IGateKeeper, sequencer ISequencer) *VM {
 	v := &VM{
 		factory:     factory,
 		ip:          resetIp,
-		loader:      nil,
 		sourceFiles: nil,
 		references:  nil,
 		entryPoints: make(map[string]*objects.FuncCompiled),
 	}
 	v.constants = NewConstants(factory, v.SetError)
+	v.references = NewReferences(factory, v.SetError)
 	v.globals = NewGlobals(factory, v.SetError)
 	v.stack = NewStack(factory, stackSize, v.SetError)
 	v.frames = NewFrames(factory, maxFrames, v.SetError)
@@ -63,21 +62,22 @@ func New(factory objects.IGateKeeper, sequencer ISequencer) *VM {
 
 // Setup initializes the virtual machine with the provided bytecode and loader components.
 func (v *VM) Setup(loader bytecode.ILoader, bc *bytecode.Bytecode) error {
-	references, err := loader.ResolveSymbols(bc.References())
-	if err != nil {
+	if err := v.references.Setup(loader, bc.References()); err != nil {
 		return err
 	}
+	if err := v.constants.Setup(bc.Constants()); err != nil {
+		return err
+	}
+	if err := v.globals.Setup(bc.Global()); err != nil {
+		return err
+	}
+	v.sourceFiles = bc.SourceFiles()
 	for _, global := range bc.Global() {
 		switch c := global.(type) {
 		case *objects.FuncCompiled:
 			v.entryPoints[c.Name()] = c
 		}
 	}
-	v.loader = loader
-	v.sourceFiles = bc.SourceFiles()
-	v.references = references
-	v.constants.SetContainer(bc.Constants())
-	v.globals.SetContainer(bc.Global())
 	return nil
 }
 
@@ -141,15 +141,9 @@ func (v *VM) Globals() *Globals {
 	return v.globals
 }
 
-// References retrieves an object from the references list based on the provided index.
-// Returns an undefined value if the index is out of range and sets an error on the VM.
-func (v *VM) References(nameIndex int) objects.IObject {
-	if nameIndex < 0 || nameIndex >= len(v.references) {
-		v.SetError(fmt.Errorf("invalid attribute index %d", nameIndex))
-		return v.factory.UndefinedValue()
-	}
-	symbol := v.references[nameIndex]
-	return symbol
+// References return a pointer to the References object associated with the VM instance.
+func (v *VM) References() *References {
+	return v.references
 }
 
 // SetIp sets the virtual machine's instruction pointer to the specified value.
@@ -252,62 +246,6 @@ func (v *VM) ReseIp() {
 	v.ip = resetIp
 }
 
-// BinaryOpInt64 performs a binary operation on two integer values and returns the result.
-func (v *VM) BinaryOpInt64(op objects.Operator, lhs int64, rhs int64) (int64, error) {
-	switch op {
-	case objects.OperatorAdd:
-		return lhs + rhs, nil
-	case objects.OperatorSub:
-		return lhs - rhs, nil
-	case objects.OperatorMul:
-		return lhs * rhs, nil
-	case objects.OperatorQuo:
-		if rhs == 0 {
-			return 0, objects.ErrDivisionByZero
-		}
-		return lhs / rhs, nil
-	case objects.OperatorRem:
-		if rhs == 0 {
-			return 0, objects.ErrDivisionByZero
-		}
-		return lhs % rhs, nil
-	case objects.OperatorAnd:
-		return lhs & rhs, nil
-	case objects.OperatorOr:
-		return lhs | rhs, nil
-	case objects.OperatorXor:
-		return lhs ^ rhs, nil
-	case objects.OperatorAndNot:
-		return lhs &^ rhs, nil
-	case objects.OperatorShl:
-		return lhs << uint64(rhs), nil
-	case objects.OperatorShr:
-		return lhs >> uint64(rhs), nil
-	case objects.OperatorLess:
-		if lhs < rhs {
-			return 1, nil
-		}
-		return 0, nil
-	case objects.OperatorGreater:
-		if lhs > rhs {
-			return 1, nil
-		}
-		return 0, nil
-	case objects.OperatorLessEq:
-		if lhs <= rhs {
-			return 1, nil
-		}
-		return 0, nil
-	case objects.OperatorGreaterEq:
-		if lhs >= rhs {
-			return 1, nil
-		}
-		return 0, nil
-	default:
-		return 0, objects.ErrInvalidOperator
-	}
-}
-
 // Shutdown gracefully shuts down the virtual machine by setting its internal state to signify termination.
 func (v *VM) Shutdown() {
 	v.shutdown = true
@@ -344,71 +282,6 @@ func (v *VM) GetReturnValues() []interface{} {
 func (v *VM) SetError(err error) {
 	v.err = err
 	v.shutdown = true
-}
-
-// BoundsCheck validates and adjusts slice bounds using provided low and high indices, ensuring they are within valid range.
-func (v *VM) BoundsCheck(lowStack objects.IObject, highStack objects.IObject, numElements int64) (int64, int64, error) {
-	var lowIdx int64
-	if lowStack != v.factory.UndefinedValue() {
-		if low, ok := lowStack.(*objects.Int); ok {
-			lowIdx = low.Value()
-		} else {
-			return 0, 0, fmt.Errorf("invalid slice index type: %s", low.TypeName())
-		}
-	}
-	var highIdx int64
-	if highStack == v.factory.UndefinedValue() {
-		highIdx = numElements
-	} else if high, ok := highStack.(*objects.Int); ok {
-		highIdx = high.Value()
-	} else {
-		return 0, 0, fmt.Errorf("invalid slice index type: %s", high.TypeName())
-	}
-	if lowIdx > highIdx {
-		return 0, 0, fmt.Errorf("invalid slice index: %d > %d", lowIdx, highIdx)
-	}
-	if lowIdx < 0 {
-		lowIdx = 0
-	} else if lowIdx > numElements {
-		lowIdx = numElements
-	}
-	if highIdx < 0 {
-		highIdx = 0
-	} else if highIdx > numElements {
-		highIdx = numElements
-	}
-	return lowIdx, highIdx, nil
-}
-
-// IndexAssign assigns a value to a nested structure, using selectors to determine the target location.
-// It navigates through the provided selectors and performs an assignment on the target object at the final index.
-// Returns an error if any selector is invalid, the object is not indexable, or the assignment fails.
-func (v *VM) IndexAssign(frame int, dst objects.IObject, src objects.IObject, selectors []objects.IObject) error {
-	numSel := len(selectors)
-	for sIdx := numSel - 1; sIdx > 0; sIdx-- {
-		next, err := dst.IndexGet(frame, selectors[sIdx])
-		if err != nil {
-			if objects.Is(err, objects.ErrNotIndexable) {
-				return fmt.Errorf("not indexable: %s", dst.TypeName())
-			}
-			if objects.Is(err, objects.ErrInvalidIndexType) {
-				return fmt.Errorf("invalid index type: %s",
-					selectors[sIdx].TypeName())
-			}
-			return err
-		}
-		dst = next
-	}
-	if err := dst.IndexSet(selectors[0], src); err != nil {
-		if objects.Is(err, objects.ErrNotIndexAssignable) {
-			return fmt.Errorf("not index-assignable: %s", dst.TypeName())
-		}
-		if objects.Is(err, objects.ErrInvalidIndexValueType) {
-			return fmt.Errorf("invaid index values type: %s", src.TypeName())
-		}
-		return err
-	}
-	return nil
 }
 
 // loop executes the main instruction loop for the virtual machine, updating the instruction pointer and processing opcodes.

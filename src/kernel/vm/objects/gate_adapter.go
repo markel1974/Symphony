@@ -856,3 +856,124 @@ func (ga *GateAdapter) FuncIiOs(fn func(int) string) FuncCallable {
 		return v, nil
 	}
 }
+
+// BinaryOpInt64 performs a binary operation on two integer values and returns the result.
+func (ga *GateAdapter) BinaryOpInt64(op Operator, lhs int64, rhs int64) (int64, error) {
+	switch op {
+	case OperatorAdd:
+		return lhs + rhs, nil
+	case OperatorSub:
+		return lhs - rhs, nil
+	case OperatorMul:
+		return lhs * rhs, nil
+	case OperatorQuo:
+		if rhs == 0 {
+			return 0, ErrDivisionByZero
+		}
+		return lhs / rhs, nil
+	case OperatorRem:
+		if rhs == 0 {
+			return 0, ErrDivisionByZero
+		}
+		return lhs % rhs, nil
+	case OperatorAnd:
+		return lhs & rhs, nil
+	case OperatorOr:
+		return lhs | rhs, nil
+	case OperatorXor:
+		return lhs ^ rhs, nil
+	case OperatorAndNot:
+		return lhs &^ rhs, nil
+	case OperatorShl:
+		return lhs << uint64(rhs), nil
+	case OperatorShr:
+		return lhs >> uint64(rhs), nil
+	case OperatorLess:
+		if lhs < rhs {
+			return 1, nil
+		}
+		return 0, nil
+	case OperatorGreater:
+		if lhs > rhs {
+			return 1, nil
+		}
+		return 0, nil
+	case OperatorLessEq:
+		if lhs <= rhs {
+			return 1, nil
+		}
+		return 0, nil
+	case OperatorGreaterEq:
+		if lhs >= rhs {
+			return 1, nil
+		}
+		return 0, nil
+	default:
+		return 0, ErrInvalidOperator
+	}
+}
+
+// BoundsCheck validates and adjusts slice bounds using provided low and high indices, ensuring they are within valid range.
+func (ga *GateAdapter) BoundsCheck(lowStack IObject, highStack IObject, numElements int64) (int64, int64, error) {
+	var lowIdx int64
+	if lowStack != ga.gk.UndefinedValue() {
+		if low, ok := lowStack.(*Int); ok {
+			lowIdx = low.Value()
+		} else {
+			return 0, 0, fmt.Errorf("invalid slice index type: %s", low.TypeName())
+		}
+	}
+	var highIdx int64
+	if highStack == ga.gk.UndefinedValue() {
+		highIdx = numElements
+	} else if high, ok := highStack.(*Int); ok {
+		highIdx = high.Value()
+	} else {
+		return 0, 0, fmt.Errorf("invalid slice index type: %s", high.TypeName())
+	}
+	if lowIdx > highIdx {
+		return 0, 0, fmt.Errorf("invalid slice index: %d > %d", lowIdx, highIdx)
+	}
+	if lowIdx < 0 {
+		lowIdx = 0
+	} else if lowIdx > numElements {
+		lowIdx = numElements
+	}
+	if highIdx < 0 {
+		highIdx = 0
+	} else if highIdx > numElements {
+		highIdx = numElements
+	}
+	return lowIdx, highIdx, nil
+}
+
+// IndexAssign assigns a value to a nested structure, using selectors to determine the target location.
+// It navigates through the provided selectors and performs an assignment on the target object at the final index.
+// Returns an error if any selector is invalid, the object is not indexable, or the assignment fails.
+func (ga *GateAdapter) IndexAssign(frame int, dst IObject, src IObject, selectors []IObject) error {
+	numSel := len(selectors)
+	for sIdx := numSel - 1; sIdx > 0; sIdx-- {
+		next, err := dst.IndexGet(frame, selectors[sIdx])
+		if err != nil {
+			if Is(err, ErrNotIndexable) {
+				return fmt.Errorf("not indexable: %s", dst.TypeName())
+			}
+			if Is(err, ErrInvalidIndexType) {
+				return fmt.Errorf("invalid index type: %s",
+					selectors[sIdx].TypeName())
+			}
+			return err
+		}
+		dst = next
+	}
+	if err := dst.IndexSet(selectors[0], src); err != nil {
+		if Is(err, ErrNotIndexAssignable) {
+			return fmt.Errorf("not index-assignable: %s", dst.TypeName())
+		}
+		if Is(err, ErrInvalidIndexValueType) {
+			return fmt.Errorf("invaid index values type: %s", src.TypeName())
+		}
+		return err
+	}
+	return nil
+}
