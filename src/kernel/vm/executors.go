@@ -82,7 +82,7 @@ func (op *OpBinary) Execute(v *VM, decoder *Decoder) {
 	right := v.stack.Pop()
 	left := v.stack.Pop()
 	operator := objects.Operator(opcode)
-	res, err := left.BinaryOp(v.currFrame.ID(), operator, right)
+	res, err := left.BinaryOp(v.FrameID(), operator, right)
 	if err != nil {
 		v.SetError(err)
 		return
@@ -223,7 +223,7 @@ func (op *OpBComplement) Execute(v *VM, _ *Decoder) {
 	operand := v.stack.Pop()
 	switch x := operand.(type) {
 	case *objects.Int:
-		res := op.Factory().NewInt(v.currFrame.ID(), ^x.Value())
+		res := op.Factory().NewInt(v.FrameID(), ^x.Value())
 		v.stack.Push(res)
 	default:
 		v.SetError(fmt.Errorf("invalid operation: ^%s", operand.TypeName()))
@@ -249,10 +249,10 @@ func (op *OpMinus) Execute(v *VM, _ *Decoder) {
 	operand := v.stack.Pop()
 	switch x := operand.(type) {
 	case *objects.Int:
-		res := op.Factory().NewInt(v.currFrame.ID(), -x.Value())
+		res := op.Factory().NewInt(v.FrameID(), -x.Value())
 		v.stack.Push(res)
 	case *objects.Float:
-		res := op.Factory().NewFloat(v.currFrame.ID(), -x.Value())
+		res := op.Factory().NewFloat(v.FrameID(), -x.Value())
 		v.stack.Push(res)
 	default:
 		v.SetError(fmt.Errorf("invalid operation: -%s", operand.TypeName()))
@@ -403,7 +403,7 @@ func (op *OpSetSelGlobal) Execute(v *VM, decoder *Decoder) {
 	val := v.stack.PeekOffset(-numSelectors - 1)
 	v.stack.DecrementCount(numSelectors + 1)
 	glObj := v.globals.Get(uint(globalIndex))
-	if err := v.IndexAssign(v.currFrame.ID(), glObj, val, selectors); err != nil {
+	if err := v.IndexAssign(v.FrameID(), glObj, val, selectors); err != nil {
 		v.SetError(err)
 		return
 	}
@@ -454,7 +454,7 @@ func (op *OpArray) Execute(v *VM, decoder *Decoder) {
 	//	log.Println("invalid OpArray position")
 	//}
 	elements := v.stack.PopArrayElements(numElements)
-	arr := op.Factory().NewArray(v.currFrame.ID(), elements)
+	arr := op.Factory().NewArray(v.FrameID(), elements)
 	v.stack.Push(arr)
 }
 
@@ -476,7 +476,7 @@ func (op *OpMap) Execute(v *VM, decoder *Decoder) {
 	//	log.Println("invalid OpMap position")
 	//}
 	mElem := v.stack.PopMapElements(numElements)
-	v.stack.Push(op.Factory().NewMap(v.currFrame.ID(), mElem))
+	v.stack.Push(op.Factory().NewMap(v.FrameID(), mElem))
 }
 
 // OpStruct is a wrapper around bytecode.OpcodeDetails, representing a struct creation operation in bytecode execution.
@@ -497,7 +497,7 @@ func (op *OpStruct) Execute(v *VM, decoder *Decoder) {
 	//	log.Println("invalid OpMap position")
 	//}
 	mElem := v.stack.PopMapElements(numElements)
-	v.stack.Push(op.Factory().NewStruct(v.currFrame.ID(), mElem))
+	v.stack.Push(op.Factory().NewStruct(v.FrameID(), mElem))
 }
 
 // OpError represents an operation that creates and assigns an error object in a virtual machine's runtime environment.
@@ -514,7 +514,7 @@ func NewOpError(op *bytecode.Opcodes) *OpError {
 func (op *OpError) Execute(v *VM, _ *Decoder) {
 	// Operands Offset  0
 	value := v.stack.Peek()
-	e := op.Factory().NewError(v.currFrame.ID(), value.String())
+	e := op.Factory().NewError(v.FrameID(), value.String())
 	v.stack.Set(e)
 }
 
@@ -534,10 +534,10 @@ func (op *OpImmutable) Execute(v *VM, _ *Decoder) {
 	val := v.stack.Peek()
 	switch value := val.(type) {
 	case *objects.Array:
-		obj := op.Factory().NewArrayImmutable(v.currFrame.ID(), value.Values())
+		obj := op.Factory().NewArrayImmutable(v.FrameID(), value.Values())
 		v.stack.Set(obj)
 	case *objects.Map:
-		obj := op.Factory().NewMapImmutable(v.currFrame.ID(), value.Values())
+		obj := op.Factory().NewMapImmutable(v.FrameID(), value.Values())
 		v.stack.Set(obj)
 	}
 }
@@ -557,7 +557,7 @@ func (op *OpIndex) Execute(v *VM, _ *Decoder) {
 	// Operands Offset  0
 	index := v.stack.Pop()
 	left := v.stack.Pop()
-	val, err := left.IndexGet(v.currFrame.ID(), index)
+	val, err := left.IndexGet(v.FrameID(), index)
 	if err != nil {
 		if objects.Is(err, objects.ErrNotIndexable) {
 			v.SetError(fmt.Errorf("not indexable: %s", index.TypeName()))
@@ -601,13 +601,13 @@ func (op *OpSliceIndex) Execute(v *VM, _ *Decoder) {
 	var val objects.IObject = nil
 	switch left := leftStack.(type) {
 	case *objects.Array:
-		val = op.Factory().NewArray(v.currFrame.ID(), left.Values()[lowIdx:highIdx])
+		val = op.Factory().NewArray(v.FrameID(), left.Values()[lowIdx:highIdx])
 	case *objects.ArrayImmutable:
-		val = op.Factory().NewArray(v.currFrame.ID(), left.Values()[lowIdx:highIdx])
+		val = op.Factory().NewArray(v.FrameID(), left.Values()[lowIdx:highIdx])
 	case *objects.String:
-		val = op.Factory().NewString(v.currFrame.ID(), left.Value()[lowIdx:highIdx])
+		val = op.Factory().NewString(v.FrameID(), left.Value()[lowIdx:highIdx])
 	case *objects.Bytes:
-		val = op.Factory().NewBytes(v.currFrame.ID(), left.Value()[lowIdx:highIdx])
+		val = op.Factory().NewBytes(v.FrameID(), left.Value()[lowIdx:highIdx])
 	}
 	if val != nil {
 		v.stack.Push(val)
@@ -628,6 +628,7 @@ func NewOpCall(op *bytecode.Opcodes) *OpCall {
 func (op *OpCall) Execute(v *VM, decoder *Decoder) {
 	// Operands Offset 2
 	//fmt.Println("call", operands)
+	spread := decoder.Read(0)
 	numArgs := decoder.Read(1)
 	//if numArgs != int(v.currFrame.Get8(v.ip-1)) {
 	//	log.Println("num args mismatch")
@@ -637,7 +638,7 @@ func (op *OpCall) Execute(v *VM, decoder *Decoder) {
 		v.SetError(fmt.Errorf("%s is not callable: %s", value.String(), value.TypeName()))
 		return
 	}
-	spread := v.currFrame.Get8(v.GetIp() + 2)
+	//spread := v.currFrame.Get8(v.GetIp()) // + 2)
 	if spread == 1 {
 		arrObj := v.stack.Pop()
 		switch z := arrObj.(type) {
@@ -659,7 +660,7 @@ func (op *OpCall) Execute(v *VM, decoder *Decoder) {
 
 	if callee, ok := value.(*objects.FuncCompiled); ok {
 		if callee.VarArgs() {
-			v.stack.PushVarArgs(v.currFrame.ID(), numArgs, callee.NumParameters()-1)
+			v.stack.PushVarArgs(v.FrameID(), numArgs, callee.NumParameters()-1)
 			numArgs = callee.NumParameters()
 		}
 		if numArgs != callee.NumParameters() {
@@ -670,36 +671,11 @@ func (op *OpCall) Execute(v *VM, decoder *Decoder) {
 			v.SetError(fmt.Errorf("%s wrong number of arguments: want>=%d, got=%d", callee.Name(), numParams, numArgs))
 			return
 		}
-		// Frame setup
-		v.currFrame = v.frames.Get()
-		v.frames.Next()
-		bp := v.stack.StackPointer() - numArgs
-		v.currFrame.Bind(v.GetIp(), callee, bp)
-		// Reserve space for *all* local variables of the new function
-		// by simply advancing the stack pointer.
-		// This ensures that space for temporary calculations starts *after*
-		// the space reserved for local variables, avoiding collisions.
-		v.stack.SetStackPointer(v.stack.StackPointer() + callee.NumLocals())
-		v.ReseIp()
+		v.FunctionCompiledCall(callee, numArgs)
 	} else {
 		var args []objects.IObject
 		args = append(args, v.stack.PeekArrayObject(numArgs)...)
-		ret, err := value.Call(v.currFrame.ID(), args...)
-		// Cleans the stack from the function and its arguments
-		v.stack.DecrementCount(numArgs + 1)
-		if err != nil {
-			if objects.Is(err, objects.ErrWrongNumArguments) {
-				v.SetError(fmt.Errorf("wrong number of arguments in call to '%s'", value.TypeName()))
-			} else {
-				v.SetError(err)
-			}
-			return
-		}
-		if ret == nil {
-			v.stack.Push(op.Factory().UndefinedValue())
-		} else {
-			v.stack.Push(ret)
-		}
+		v.FunctionLibraryCall(value, args, numArgs)
 	}
 }
 
@@ -730,31 +706,35 @@ func (op *OpReturn) Execute(v *VM, decoder *Decoder) {
 		}
 	}
 
-	shutdown := false
-	prevIp := v.currFrame.SavedIP()
-	leavingFrameBasePointer := v.currFrame.BasePointer()
-	//v.stack.ReleaseObjects(leavingFrameBasePointer, v.stack.StackPointer())
-	if v.frames.Index() > 1 {
-		v.frames.Previous()
-		v.currFrame = v.frames.GetPrev()
-		v.SetIp(prevIp)
-	} else {
-		shutdown = true
-	}
-	v.stack.SetStackPointer(leavingFrameBasePointer)
-	// push return values onto the new stack (caller's stack).
-	if lRet := len(returnValues); lRet > 0 {
-		// iterate over the slice in reverse to restore the original order.
-		for i := lRet - 1; i >= 0; i-- {
-			v.stack.Push(returnValues[i])
+	v.Return(returnValues)
+	/*
+		shutdown := false
+		prevIp := v.currFrame.SavedIP()
+		leavingFrameBasePointer := v.BasePointer()
+		//v.stack.ReleaseObjects(leavingFrameBasePointer, v.stack.StackPointer())
+		if v.frames.Index() > 1 {
+			v.frames.Previous()
+			v.currFrame = v.frames.GetPrev()
+			v.SetIp(prevIp)
+		} else {
+			shutdown = true
 		}
-	} else {
-		v.stack.Push(op.Factory().UndefinedValue())
-	}
+		v.stack.SetStackPointer(leavingFrameBasePointer)
+		// push return values onto the new stack (caller's stack).
+		if lRet := len(returnValues); lRet > 0 {
+			// iterate over the slice in reverse to restore the original order.
+			for i := lRet - 1; i >= 0; i-- {
+				v.stack.Push(returnValues[i])
+			}
+		} else {
+			v.stack.Push(op.Factory().UndefinedValue())
+		}
 
-	if shutdown {
-		v.Shutdown()
-	}
+		if shutdown {
+			v.Shutdown()
+		}
+
+	*/
 }
 
 // OpDefineLocal represents the opcode for defining a new local variable within the current frame's scope.
@@ -775,7 +755,7 @@ func (op *OpDefineLocal) Execute(v *VM, decoder *Decoder) {
 	//	log.Println("invalid OpDefineLocal position")
 	//}
 	val := v.stack.Peek()
-	destSlot := v.currFrame.BasePointer() + localIndex
+	destSlot := v.BasePointer() + localIndex
 	v.stack.SetAbsolute(destSlot, val)
 }
 
@@ -799,7 +779,7 @@ func (op *OpSetLocal) Execute(v *VM, decoder *Decoder) {
 	//}
 
 	val := v.stack.Peek()
-	destSlot := v.currFrame.BasePointer() + localIndex
+	destSlot := v.BasePointer() + localIndex
 	existingValue := v.stack.PeekAbsolute(destSlot)
 	if obj, ok := existingValue.(*objects.ObjectPointer); ok {
 		obj.SetValue(val)
@@ -836,11 +816,11 @@ func (op *OpSetSelLocal) Execute(v *VM, decoder *Decoder) {
 	}
 	val := v.stack.PeekOffset(-numSelectors - 1)
 	v.stack.DecrementCount(numSelectors + 1)
-	dst := v.stack.PeekAbsolute(v.currFrame.BasePointer() + localIndex)
+	dst := v.stack.PeekAbsolute(v.BasePointer() + localIndex)
 	if obj, ok := dst.(*objects.ObjectPointer); ok {
 		dst = *obj.Value()
 	}
-	if err := v.IndexAssign(v.currFrame.ID(), dst, val, selectors); err != nil {
+	if err := v.IndexAssign(v.FrameID(), dst, val, selectors); err != nil {
 		v.SetError(err)
 		return
 	}
@@ -863,7 +843,7 @@ func (op *OpGetLocal) Execute(v *VM, decoder *Decoder) {
 	//if localIndex != int(v.currFrame.Get8(v.ip)) {
 	//	log.Println("local OpGetLocal mismatch")
 	//}
-	val := v.stack.PeekAbsolute(v.currFrame.BasePointer() + localIndex)
+	val := v.stack.PeekAbsolute(v.BasePointer() + localIndex)
 	if obj, ok := val.(*objects.ObjectPointer); ok {
 		val = *obj.Value()
 	}
@@ -905,7 +885,7 @@ func (op *OpClosure) Execute(v *VM, decoder *Decoder) {
 			free[i] = freeVar
 		default:
 			t := v.stack.PeekOffset(-numFree + i)
-			obj := op.Factory().NewObjectPointer(v.currFrame.ID(), &t)
+			obj := op.Factory().NewObjectPointer(v.FrameID(), &t)
 			ptr, ok := obj.(*objects.ObjectPointer)
 			if !ok {
 				v.SetError(fmt.Errorf("not a pointer: %s", t.TypeName()))
@@ -915,7 +895,7 @@ func (op *OpClosure) Execute(v *VM, decoder *Decoder) {
 		}
 	}
 	v.stack.DecrementCount(numFree)
-	cl := op.Factory().NewFuncCompiled(v.currFrame.ID(), "closure", fn.Instructions().Data(), fn.NumLocals(), fn.NumParameters(), fn.VarArgs(), nil, free)
+	cl := op.Factory().NewFuncCompiled(v.FrameID(), "closure", fn.Instructions().Data(), fn.NumLocals(), fn.NumParameters(), fn.VarArgs(), nil, free)
 	v.stack.Push(cl)
 }
 
@@ -937,7 +917,7 @@ func (op *OpGetFreePtr) Execute(v *VM, decoder *Decoder) {
 	//if freeIndex != int(v.currFrame.Get8(v.ip)) {
 	//	log.Println("local OpGetFreePtr mismatch")
 	//}
-	val := v.currFrame.FreeVarsIndex(freeIndex)
+	val := v.FreeVarsIndex(freeIndex)
 	v.stack.Push(val)
 }
 
@@ -958,7 +938,7 @@ func (op *OpGetFree) Execute(v *VM, decoder *Decoder) {
 	//if freeIndex != int(v.currFrame.Get8(v.ip)) {
 	//	log.Println("local OpGetFree mismatch")
 	//}
-	val := *v.currFrame.FreeVarsIndex(freeIndex).Value()
+	val := *v.FreeVarsIndex(freeIndex).Value()
 	v.stack.Push(val)
 }
 
@@ -980,7 +960,7 @@ func (op *OpSetFree) Execute(v *VM, decoder *Decoder) {
 	//	log.Println("local OpSetFree mismatch")
 	//}
 	o := v.stack.Pop()
-	v.currFrame.FreeVarsIndex(freeIndex).SetValue(o)
+	v.FreeVarsIndex(freeIndex).SetValue(o)
 }
 
 // OpGetLocalPtr retrieves a local variable as a pointer using its index within the current frame.
@@ -1000,13 +980,13 @@ func (op *OpGetLocalPtr) Execute(v *VM, decoder *Decoder) {
 	//if localIndex != int(v.currFrame.Get8(v.ip)) {
 	//	log.Println("local OpGetLocalPtr mismatch")
 	//}
-	sp := v.currFrame.BasePointer() + localIndex
+	sp := v.BasePointer() + localIndex
 	val := v.stack.PeekAbsolute(sp)
 	if obj, ok := val.(*objects.ObjectPointer); ok {
 		v.stack.Push(obj)
 		return
 	}
-	freeVar := op.Factory().NewObjectPointer(v.currFrame.ID(), &val)
+	freeVar := op.Factory().NewObjectPointer(v.FrameID(), &val)
 	v.stack.SetAbsolute(sp, freeVar)
 	v.stack.Push(freeVar)
 }
@@ -1038,8 +1018,8 @@ func (op *OpSetSelFree) Execute(v *VM, decoder *Decoder) {
 	}
 	val := v.stack.PeekOffset(-numSelectors - 1)
 	v.stack.DecrementCount(numSelectors + 1)
-	fvi := v.currFrame.FreeVarsIndex(freeIndex)
-	if err := v.IndexAssign(v.currFrame.ID(), *fvi.Value(), val, selectors); err != nil {
+	fvi := v.FreeVarsIndex(freeIndex)
+	if err := v.IndexAssign(v.FrameID(), *fvi.Value(), val, selectors); err != nil {
 		v.SetError(err)
 		return
 	}
@@ -1068,8 +1048,8 @@ func (op *OpIteratorInit) Execute(v *VM, decoder *Decoder) {
 		v.SetError(fmt.Errorf("not iterable: %s", iterable.TypeName()))
 		return
 	}
-	iterator := iterable.Iterate(v.currFrame.ID())
-	destSlot := v.currFrame.BasePointer() + localIndex
+	iterator := iterable.Iterate(v.FrameID())
+	destSlot := v.BasePointer() + localIndex
 	v.stack.SetAbsolute(destSlot, iterator)
 }
 
@@ -1091,7 +1071,7 @@ func (op *OpIteratorNext) Execute(v *VM, decoder *Decoder) {
 	//	log.Println("local OpIteratorNext mismatch")
 	//}
 
-	iteratorObj := v.stack.PeekAbsolute(v.currFrame.BasePointer() + localIndex)
+	iteratorObj := v.stack.PeekAbsolute(v.BasePointer() + localIndex)
 	iterator, ok := iteratorObj.(objects.IIterator)
 	if !ok {
 		v.SetError(fmt.Errorf("not an iterator: %s", iteratorObj.TypeName()))
@@ -1122,13 +1102,13 @@ func (op *OpIteratorKey) Execute(v *VM, decoder *Decoder) {
 	//	log.Println("local OpIteratorKey mismatch")
 	//}
 
-	iteratorObj := v.stack.PeekAbsolute(v.currFrame.BasePointer() + localIndex)
+	iteratorObj := v.stack.PeekAbsolute(v.BasePointer() + localIndex)
 	iterator, ok := iteratorObj.(objects.IIterator)
 	if !ok {
 		v.SetError(fmt.Errorf("not an iterator: %s", iteratorObj.TypeName()))
 		return
 	}
-	v.stack.Push(iterator.Key(v.currFrame.ID()))
+	v.stack.Push(iterator.Key(v.FrameID()))
 }
 
 // OpIteratorValue retrieves the value from the current iterator position.
@@ -1149,13 +1129,13 @@ func (op *OpIteratorValue) Execute(v *VM, decoder *Decoder) {
 	//if localIndex != int(v.currFrame.Get8(v.ip)) {
 	//	log.Println("local OpIteratorValue mismatch")
 	//}
-	iteratorObj := v.stack.PeekAbsolute(v.currFrame.BasePointer() + localIndex)
+	iteratorObj := v.stack.PeekAbsolute(v.BasePointer() + localIndex)
 	iterator, ok := iteratorObj.(objects.IIterator)
 	if !ok {
 		v.SetError(fmt.Errorf("not an iterator: %s", iteratorObj.TypeName()))
 		return
 	}
-	v.stack.Push(iterator.Value(v.currFrame.ID()))
+	v.stack.Push(iterator.Value(v.FrameID()))
 }
 
 // OpReferences extends OpcodeDetails to represent operations specifically related to reference handling in the bytecode.

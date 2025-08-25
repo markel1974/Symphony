@@ -6,7 +6,7 @@ package main
 import "fmt"
 
 func test() {
-	return 10
+	return len("prova")
 }
 
 func main() {

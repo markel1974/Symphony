@@ -139,6 +139,91 @@ func (v *VM) GetIp() int {
 	return v.ip
 }
 
+// FunctionCompiledCall sets up a new execution frame for a compiled function and manages stack allocation for local variables.
+// callee specifies the compiled function to be executed, and numArgs determines the number of arguments passed.
+// It reserves stack space for all local variables and adjusts the instruction pointer accordingly.
+func (v *VM) FunctionCompiledCall(callee *objects.FuncCompiled, numArgs int) {
+	// Frame setup
+	v.currFrame = v.frames.Get()
+	v.frames.Next()
+	bp := v.stack.StackPointer() - numArgs
+	v.currFrame.Bind(v.GetIp(), callee, bp)
+	// Reserve space for *all* local variables of the new function
+	// by simply advancing the stack pointer.
+	// This ensures that space for temporary calculations starts *after*
+	// the space reserved for local variables, avoiding collisions.
+	v.stack.SetStackPointer(v.stack.StackPointer() + callee.NumLocals())
+	v.ReseIp()
+}
+
+// FunctionLibraryCall invokes a callable object with the given arguments and handles stack cleanup and error management.
+func (v *VM) FunctionLibraryCall(value objects.IObject, args []objects.IObject, numArgs int) {
+	ret, err := value.Call(v.FrameID(), args...)
+	// Cleans the stack from the function and its arguments
+	v.stack.DecrementCount(numArgs + 1)
+	if err != nil {
+		if objects.Is(err, objects.ErrWrongNumArguments) {
+			v.SetError(fmt.Errorf("wrong number of arguments in call to '%s'", value.TypeName()))
+		} else {
+			v.SetError(err)
+		}
+		return
+	}
+	if ret == nil {
+		v.stack.Push(v.factory.UndefinedValue())
+	} else {
+		v.stack.Push(ret)
+	}
+}
+
+// Return handles the return operation by unwinding the current call frame, restoring the previous frame, and managing the stack.
+func (v *VM) Return(returnValues []objects.IObject) {
+	shutdown := false
+	prevIp := v.currFrame.SavedIP()
+	leavingFrameBasePointer := v.BasePointer()
+	//v.stack.ReleaseObjects(leavingFrameBasePointer, v.stack.StackPointer())
+	if v.frames.Index() > 1 {
+		v.frames.Previous()
+		v.currFrame = v.frames.GetPrev()
+		v.SetIp(prevIp)
+	} else {
+		shutdown = true
+	}
+	v.stack.SetStackPointer(leavingFrameBasePointer)
+	// push return values onto the new stack (caller's stack).
+	if lRet := len(returnValues); lRet > 0 {
+		// iterate over the slice in reverse to restore the original order.
+		for i := lRet - 1; i >= 0; i-- {
+			v.stack.Push(returnValues[i])
+		}
+	} else {
+		v.stack.Push(v.factory.UndefinedValue())
+	}
+	if shutdown {
+		v.Shutdown()
+	}
+}
+
+// FreeVarsIndex retrieves the pointer to a free variable at the specified index from the current frame.
+func (v *VM) FreeVarsIndex(idx int) *objects.ObjectPointer {
+	return v.currFrame.FreeVarsIndex(idx)
+}
+
+// FrameID returns the ID of the current execution frame within the virtual machine.
+func (v *VM) FrameID() int {
+	return v.currFrame.ID()
+}
+
+// BasePointer returns the base pointer of the current frame in the virtual machine.
+func (v *VM) BasePointer() int {
+	return v.currFrame.BasePointer()
+}
+
+// StackPointer returns the current position of the stack pointer within the virtual machine's stack.
+func (v *VM) StackPointer() int {
+	return v.stack.StackPointer()
+}
+
 // ReseIp resets the instruction pointer of the virtual machine to its initial reset state defined by `resetIp`.
 func (v *VM) ReseIp() {
 	v.ip = resetIp
