@@ -28,8 +28,8 @@ func NewImports(gk objects.IGateKeeper, references *Constants, scopes *Scopes) *
 	}
 }
 
-// Contains checks if the specified import name exists in the Imports map and returns true if it is present, otherwise false.
-func (i *Imports) Contains(name string) bool {
+// HasPackage checks if the specified import name exists in the Imports map and returns true if it is present, otherwise false.
+func (i *Imports) HasPackage(name string) bool {
 	return i.imports[name]
 }
 

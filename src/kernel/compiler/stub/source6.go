@@ -10,7 +10,6 @@ type TestResult struct {
     Passed  bool
 }
 
-
 func (tr * TestResult) Print() {
 	fmt.Println(tr.Name, tr.Passed)
 }

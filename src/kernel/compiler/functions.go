@@ -228,7 +228,7 @@ func (c *Functions) compile(in ast.Node) error {
 // Returns an error if the call expression contains invalid or unresolved references.
 func (c *Functions) doCallExpr(node *ast.CallExpr) error {
 	// Step 1: Resolve the function and its arguments for analysis. This part doesn't emit bytecode yet.
-	fnOpType := bytecode.OpConstant
+	fnOpType := bytecode.OpGetGlobal
 	fnIndex := -1
 	fnName := ""
 	var fnArgs []ast.Expr
@@ -239,7 +239,7 @@ func (c *Functions) doCallExpr(node *ast.CallExpr) error {
 		if !ok {
 			return fmt.Errorf("unsupported receiver for selector expression: %T", selExpr.X)
 		}
-		if c.imports.Contains(receiverIdent.Name) {
+		if c.imports.HasPackage(receiverIdent.Name) {
 			var err error
 			fnOpType = bytecode.OpReferences
 			fnArgs = node.Args
@@ -276,11 +276,12 @@ func (c *Functions) doCallExpr(node *ast.CallExpr) error {
 		if !ok {
 			return fmt.Errorf("unsupported function call: %T", node.Fun)
 		}
-		fnName = ident.Name
-		fnIndex, ok = c.constants.Get(fnName)
+		symbol, ok := c.scopes.SymbolResolve(ident.Name)
 		if !ok {
 			return fmt.Errorf("undefined function: %s", ident.Name)
 		}
+		fnName = ident.Name
+		fnIndex = symbol.Index()
 		fnArgs = node.Args
 	}
 	if fnIndex < 0 {
@@ -692,7 +693,7 @@ func (c *Functions) doSelectorExpr(node *ast.SelectorExpr) error {
 		// currently not handling complex cases like a[0].field
 		return fmt.Errorf("unsupported receiver for selector expression: %T", node.X)
 	}
-	if c.imports.Contains(receiverIdent.Name) {
+	if c.imports.HasPackage(receiverIdent.Name) {
 		if _, _, err := c.imports.Create(receiverIdent.Name, node.Sel.Name); err != nil {
 			return err
 		}
