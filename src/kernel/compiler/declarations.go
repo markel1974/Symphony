@@ -330,11 +330,9 @@ func (c *Declarations) AssignStmt(node *ast.AssignStmt) error {
 				return fmt.Errorf("[AssignStmt] undefined variable: %s", name)
 			}
 		}
-
 		if err := c.scopes.EmitSymbolSet(symbol); err != nil {
 			return err
 		}
-
 		if _, err := c.scopes.Emit(bytecode.OpPop); err != nil {
 			return err
 		}
@@ -357,15 +355,28 @@ func (c *Declarations) AssignStmt(node *ast.AssignStmt) error {
 		if _, err := c.scopes.Emit(bytecode.OpConstant, keyConst); err != nil {
 			return err
 		}
+		const numSelectors = 1
 		if symbol.Scope() == GlobalScope {
-			if _, err := c.scopes.Emit(bytecode.OpSetSelGlobal, 1, symbol.Index()); err != nil {
+			if _, err := c.scopes.Emit(bytecode.OpSetSelGlobal, symbol.Index(), numSelectors); err != nil {
 				return err
 			}
 		} else {
-			if _, err := c.scopes.Emit(bytecode.OpSetSelLocal, 1, symbol.Index()); err != nil {
+			if _, err := c.scopes.Emit(bytecode.OpSetSelLocal, symbol.Index(), numSelectors); err != nil {
 				return err
 			}
 		}
+		/*
+			if symbol.Scope() == GlobalScope {
+				if _, err := c.scopes.Emit(bytecode.OpSetSelGlobal, 1, symbol.Index()); err != nil {
+					return err
+				}
+			} else {
+				if _, err := c.scopes.Emit(bytecode.OpSetSelLocal, 1, symbol.Index()); err != nil {
+					return err
+				}
+			}
+
+		*/
 		return nil
 
 	default:
