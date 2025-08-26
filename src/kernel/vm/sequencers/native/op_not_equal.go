@@ -3,6 +3,7 @@ package native
 import (
 	"github.com/markel1974/c64emu/src/kernel/vm/bytecode"
 	"github.com/markel1974/c64emu/src/kernel/vm/core"
+	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
 func init() {
@@ -25,9 +26,11 @@ func (op *OpNotEqual) Execute(v *core.VM, _ *core.Decoder) {
 	// Operands Offset  0
 	right := v.Stack().Pop()
 	left := v.Stack().Pop()
-	val := op.Factory().FalseValue()
+	var val objects.IObject
 	if left.Equals(right) {
 		val = op.Factory().TrueValue()
+	} else {
+		val = op.Factory().FalseValue()
 	}
 	v.Stack().Push(val)
 }

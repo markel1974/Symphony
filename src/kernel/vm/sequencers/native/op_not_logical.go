@@ -3,6 +3,7 @@ package native
 import (
 	"github.com/markel1974/c64emu/src/kernel/vm/bytecode"
 	"github.com/markel1974/c64emu/src/kernel/vm/core"
+	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
 func init() {
@@ -23,9 +24,11 @@ func NewOpNotLogical(op *bytecode.Opcodes) core.IOpExecutor {
 func (op *OpNotLogical) Execute(v *core.VM, _ *core.Decoder) {
 	// Operands Offset  0
 	operand := v.Stack().Pop()
-	val := op.Factory().FalseValue()
+	var val objects.IObject
 	if operand.Boolean() {
 		val = op.Factory().TrueValue()
+	} else {
+		val = op.Factory().FalseValue()
 	}
 	v.Stack().Push(val)
 }

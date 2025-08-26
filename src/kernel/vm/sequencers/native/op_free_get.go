@@ -21,11 +21,8 @@ func NewOpFreeGet(op *bytecode.Opcodes) core.IOpExecutor {
 
 // Execute increments the instruction pointer, retrieves a value using free variable index, and pushes it onto the stack.
 func (op *OpFreeGet) Execute(v *core.VM, decoder *core.Decoder) {
-	// Operands Offset 1
+	// Operands Offset 1 (8-bit)
 	freeIndex := decoder.Read(0)
-	//if freeIndex != int(v.currFrame.Get8(v.ip)) {
-	//	log.Println("local OpFreeGet mismatch")
-	//}
 	val := *v.FreeVarsIndex(freeIndex).Value()
 	v.Stack().Push(val)
 }

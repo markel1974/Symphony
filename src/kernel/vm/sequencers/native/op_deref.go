@@ -26,13 +26,11 @@ func NewOpDeref(op *bytecode.Opcodes) core.IOpExecutor {
 // stack and replaces it with the value it points to.
 func (op *OpDeref) Execute(v *core.VM, _ *core.Decoder) {
 	operand := v.Stack().Pop()
-
 	ptr, ok := operand.(*objects.ObjectPointer)
 	if !ok {
 		v.SetError(fmt.Errorf("invalid operation: cannot dereference non-pointer type %s", operand.TypeName()))
 		return
 	}
-
-	// Sostituisce il puntatore sullo stack con il valore puntato.
+	// Replace the stack pointer with the value it points to.
 	v.Stack().Push(*ptr.Value())
 }

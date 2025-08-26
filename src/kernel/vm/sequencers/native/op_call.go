@@ -1,8 +1,6 @@
 package native
 
 import (
-	"fmt"
-
 	"github.com/markel1974/c64emu/src/kernel/vm/bytecode"
 	"github.com/markel1974/c64emu/src/kernel/vm/core"
 )
@@ -27,9 +25,5 @@ func (op *OpCall) Execute(v *core.VM, decoder *core.Decoder) {
 	spread := decoder.Read(0)
 	numArgs := decoder.Read(1)
 	value := v.Stack().PeekOffset(-1 - numArgs)
-	if !value.CanCall() {
-		v.SetError(fmt.Errorf("%s is not callable: %s", value.String(), value.TypeName()))
-		return
-	}
 	v.Call(value, spread, numArgs)
 }

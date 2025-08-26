@@ -22,7 +22,7 @@ func NewConstants(gk objects.IGateKeeper, errSignal func(err error)) *Constants 
 	}
 }
 
-// Setup updates the constants pool with the provided values.
+// Setup updates the constant pool with the provided values.
 func (g *Constants) Setup(constants []objects.IObject) error {
 	g.container = constants
 	return nil

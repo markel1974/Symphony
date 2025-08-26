@@ -143,6 +143,10 @@ func (v *VM) GetIp() int {
 
 // Call executes a function or method with the specified number of arguments and handles variadic functions if applicable.
 func (v *VM) Call(value objects.IObject, spread int, numArgs int) {
+	if !value.CanCall() {
+		v.SetError(fmt.Errorf("%s is not callable: %s", value.String(), value.TypeName()))
+		return
+	}
 	if spread == 1 {
 		arrObj := v.Stack().Pop()
 		switch z := arrObj.(type) {
@@ -161,21 +165,23 @@ func (v *VM) Call(value objects.IObject, spread int, numArgs int) {
 			return
 		}
 	}
-	if callee, ok := value.(*objects.FuncCompiled); ok {
+	switch callee := value.(type) {
+	case *objects.FuncCompiled:
 		if callee.VarArgs() {
 			v.Stack().PushVarArgs(v.FrameID(), numArgs, callee.NumParameters()-1)
 			numArgs = callee.NumParameters()
-		}
-		if numArgs != callee.NumParameters() {
-			numParams := callee.NumParameters()
-			if callee.VarArgs() {
-				numParams--
+		} else {
+			if numArgs != callee.NumParameters() {
+				numParams := callee.NumParameters()
+				if callee.VarArgs() {
+					numParams--
+				}
+				v.SetError(fmt.Errorf("%s wrong number of arguments: want>=%d, got=%d", callee.Name(), numParams, numArgs))
+				return
 			}
-			v.SetError(fmt.Errorf("%s wrong number of arguments: want>=%d, got=%d", callee.Name(), numParams, numArgs))
-			return
 		}
 		v.compiledCall(callee, numArgs)
-	} else {
+	default:
 		var args []objects.IObject
 		args = append(args, v.Stack().PeekArrayObject(numArgs)...)
 		v.libraryCall(value, args, numArgs)
@@ -343,9 +349,9 @@ func (v *VM) libraryCall(value objects.IObject, args []objects.IObject, numArgs 
 	if err != nil {
 		if objects.Is(err, objects.ErrWrongNumArguments) {
 			v.SetError(fmt.Errorf("wrong number of arguments in call to '%s'", value.TypeName()))
-		} else {
-			v.SetError(err)
+			return
 		}
+		v.SetError(err)
 		return
 	}
 	if ret == nil {
