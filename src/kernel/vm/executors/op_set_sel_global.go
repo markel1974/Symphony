@@ -1,0 +1,35 @@
+package executors
+
+import (
+	"github.com/markel1974/c64emu/src/kernel/vm/bytecode"
+	"github.com/markel1974/c64emu/src/kernel/vm/core"
+	"github.com/markel1974/c64emu/src/kernel/vm/objects"
+)
+
+// OpSetSelGlobal represents an operation for setting a global variable's value using selectors for indexing or access.
+type OpSetSelGlobal struct {
+	*bytecode.OpcodeDetails
+}
+
+// NewOpSetSelGlobal creates a new instance of OpSetSelGlobal with its corresponding OpcodeDetails initialized.
+func NewOpSetSelGlobal(op *bytecode.Opcodes) *OpSetSelGlobal {
+	return &OpSetSelGlobal{OpcodeDetails: op.OpcodeToDetails(bytecode.OpSetSelGlobal)}
+}
+
+// Execute performs the operation defined by OpSetSelGlobal, updating the VM state and handling global index assignment.
+func (op *OpSetSelGlobal) Execute(v *core.VM, decoder *core.Decoder) {
+	// Operands Offset 3 (8-bit | 16bit)
+	numSelectors := decoder.Read(0)
+	globalIndex := decoder.Read(1)
+	selectors := make([]objects.IObject, numSelectors)
+	for i := 0; i < numSelectors; i++ {
+		selectors[i] = v.Stack().PeekOffset(-numSelectors + i)
+	}
+	val := v.Stack().PeekOffset(-numSelectors - 1)
+	v.Stack().DecrementCount(numSelectors + 1)
+	glObj := v.Globals().Get(uint(globalIndex))
+	if err := op.Factory().IndexAssign(v.FrameID(), glObj, val, selectors); err != nil {
+		v.SetError(err)
+		return
+	}
+}
