@@ -63,6 +63,7 @@ func New(gk objects.IGateKeeper, sequencer ISequencer) *VM {
 	return v
 }
 
+// Reset resets the virtual machine's state to its initial state.'
 func (v *VM) Reset() {
 	v.initStart = false
 	v.prepare()
@@ -89,14 +90,13 @@ func (v *VM) Setup(loader bytecode.ILoader, bc *bytecode.Bytecode) error {
 	return nil
 }
 
-// Reset reinitializes the virtual machine's state, clears the stack and frames, and resets execution-related variables.
-func (v *VM) prepare() {
-	v.ip = resetIp
-	v.gk.Reset()
-	v.stack.Reset()
-	v.frames.Reset()
-	v.err = nil
-	v.shutdown = false
+// EntryPoints returns a list of entry point function names registered with the VM instance.
+func (v *VM) EntryPoints() []string {
+	entryPoints := make([]string, 0, len(v.entryPoints))
+	for k := range v.entryPoints {
+		entryPoints = append(entryPoints, k)
+	}
+	return entryPoints
 }
 
 // Run executes the specified function by mainId with provided arguments after initializing the VM with "__init__".
@@ -109,41 +109,6 @@ func (v *VM) Run(mainId string, args ...interface{}) error {
 		v.initStart = true
 	}
 	return v.exec(mainId, args...)
-}
-
-// Run executes the virtual machine's bytecode, managing the stack, frames, and instruction pointer state.
-func (v *VM) exec(mainId string, args ...interface{}) error {
-	v.prepare()
-
-	mainFn, ok := v.entryPoints[mainId]
-	if !ok {
-		return fmt.Errorf("entry point not found: %s", mainId)
-	}
-
-	v.currFrame = v.frames.Head()
-	v.currFrame.Bind(v.ip, mainFn, 0)
-	v.stack.SetStackPointer(v.currFrame.NumLocals())
-	if v.currFrame.NumParameters() != len(args) {
-		return fmt.Errorf("[%s] wrong number of arguments provided: want=%d, got=%d", mainId, v.currFrame.NumParameters(), len(args))
-	}
-
-	for idx, arg := range args {
-		argObj := v.gk.FromInterface(objects.FrameStatic, arg)
-		v.stack.SetAbsolute(idx, argObj)
-	}
-
-	v.loop()
-
-	if v.err != nil {
-		filePos, _ := v.sourceFiles.Position(v.currFrame.SourcePos(v.ip - 1))
-		err := fmt.Errorf("runtime error %w at %s", v.err, filePos)
-		for _, frame := range v.frames.Unroll() {
-			filePos, _ = v.sourceFiles.Position(frame.SourcePos(frame.SavedIP() - 1))
-			err = fmt.Errorf("%w at %s", err, filePos)
-		}
-		return err
-	}
-	return nil
 }
 
 // Stack returns the current stack instance associated with the VM.
@@ -174,43 +139,6 @@ func (v *VM) SetIp(ip int) {
 // GetIp retrieves the current instruction pointer value from the virtual machine.
 func (v *VM) GetIp() int {
 	return v.ip
-}
-
-// libraryCall invokes a callable object with the given arguments and handles stack cleanup and error management.
-func (v *VM) libraryCall(value objects.IObject, args []objects.IObject, numArgs int) {
-	ret, err := value.Call(v.FrameID(), args...)
-	// Cleans the stack from the function and its arguments
-	v.stack.DecrementCount(numArgs + 1)
-	if err != nil {
-		if objects.Is(err, objects.ErrWrongNumArguments) {
-			v.SetError(fmt.Errorf("wrong number of arguments in call to '%s'", value.TypeName()))
-		} else {
-			v.SetError(err)
-		}
-		return
-	}
-	if ret == nil {
-		v.stack.Push(v.gk.UndefinedValue())
-	} else {
-		v.stack.Push(ret)
-	}
-}
-
-// compiledCall sets up a new execution frame for a compiled function and manages stack allocation for local variables.
-// callee specifies the compiled function to be executed, and numArgs determines the number of arguments passed.
-// It reserves stack space for all local variables and adjusts the instruction pointer accordingly.
-func (v *VM) compiledCall(callee *objects.FuncCompiled, numArgs int) {
-	// Frame setup
-	v.currFrame = v.frames.Get()
-	v.frames.Next()
-	bp := v.stack.StackPointer() - numArgs
-	v.currFrame.Bind(v.GetIp(), callee, bp)
-	// Reserve space for *all* local variables of the new function
-	// by simply advancing the stack pointer.
-	// This ensures that space for temporary calculations starts *after*
-	// the space reserved for local variables, avoiding collisions.
-	v.stack.SetStackPointer(v.stack.StackPointer() + callee.NumLocals())
-	v.ReseIp()
 }
 
 // Call executes a function or method with the specified number of arguments and handles variadic functions if applicable.
@@ -345,6 +273,51 @@ func (v *VM) SetError(err error) {
 	v.shutdown = true
 }
 
+// Reset reinitializes the virtual machine's state, clears the stack and frames, and resets execution-related variables.
+func (v *VM) prepare() {
+	v.ip = resetIp
+	v.gk.Reset()
+	v.stack.Reset()
+	v.frames.Reset()
+	v.err = nil
+	v.shutdown = false
+}
+
+// Run executes the virtual machine's bytecode, managing the stack, frames, and instruction pointer state.
+func (v *VM) exec(mainId string, args ...interface{}) error {
+	v.prepare()
+
+	mainFn, ok := v.entryPoints[mainId]
+	if !ok {
+		return fmt.Errorf("entry point not found: %s", mainId)
+	}
+
+	v.currFrame = v.frames.Head()
+	v.currFrame.Bind(v.ip, mainFn, 0)
+	v.stack.SetStackPointer(v.currFrame.NumLocals())
+	if v.currFrame.NumParameters() != len(args) {
+		return fmt.Errorf("[%s] wrong number of arguments provided: want=%d, got=%d", mainId, v.currFrame.NumParameters(), len(args))
+	}
+
+	for idx, arg := range args {
+		argObj := v.gk.FromInterface(objects.FrameStatic, arg)
+		v.stack.SetAbsolute(idx, argObj)
+	}
+
+	v.loop()
+
+	if v.err != nil {
+		filePos, _ := v.sourceFiles.Position(v.currFrame.SourcePos(v.ip - 1))
+		err := fmt.Errorf("runtime error %w at %s", v.err, filePos)
+		for _, frame := range v.frames.Unroll() {
+			filePos, _ = v.sourceFiles.Position(frame.SourcePos(frame.SavedIP() - 1))
+			err = fmt.Errorf("%w at %s", err, filePos)
+		}
+		return err
+	}
+	return nil
+}
+
 // loop executes the main instruction loop for the virtual machine, updating the instruction pointer and processing opcodes.
 func (v *VM) loop() {
 	var opcode byte
@@ -360,4 +333,41 @@ func (v *VM) loop() {
 			break
 		}
 	}
+}
+
+// libraryCall invokes a callable object with the given arguments and handles stack cleanup and error management.
+func (v *VM) libraryCall(value objects.IObject, args []objects.IObject, numArgs int) {
+	ret, err := value.Call(v.FrameID(), args...)
+	// Cleans the stack from the function and its arguments
+	v.stack.DecrementCount(numArgs + 1)
+	if err != nil {
+		if objects.Is(err, objects.ErrWrongNumArguments) {
+			v.SetError(fmt.Errorf("wrong number of arguments in call to '%s'", value.TypeName()))
+		} else {
+			v.SetError(err)
+		}
+		return
+	}
+	if ret == nil {
+		v.stack.Push(v.gk.UndefinedValue())
+	} else {
+		v.stack.Push(ret)
+	}
+}
+
+// compiledCall sets up a new execution frame for a compiled function and manages stack allocation for local variables.
+// callee specifies the compiled function to be executed, and numArgs determines the number of arguments passed.
+// It reserves stack space for all local variables and adjusts the instruction pointer accordingly.
+func (v *VM) compiledCall(callee *objects.FuncCompiled, numArgs int) {
+	// Frame setup
+	v.currFrame = v.frames.Get()
+	v.frames.Next()
+	bp := v.stack.StackPointer() - numArgs
+	v.currFrame.Bind(v.GetIp(), callee, bp)
+	// Reserve space for *all* local variables of the new function
+	// by simply advancing the stack pointer.
+	// This ensures that space for temporary calculations starts *after*
+	// the space reserved for local variables, avoiding collisions.
+	v.stack.SetStackPointer(v.stack.StackPointer() + callee.NumLocals())
+	v.ReseIp()
 }
