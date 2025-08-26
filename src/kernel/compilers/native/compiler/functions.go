@@ -11,12 +11,13 @@ import (
 
 // FunctionDescription represents the metadata of a function including its name, associated struct, parameters, and receiver info.
 type FunctionDescription struct {
-	Name         string
-	ReturnValues []string
-	Params       []string
-	Recv         []string
-	FuncDecl     *ast.FuncDecl
-	StructName   string
+	Name            string
+	ReturnValues    []string
+	InputParams     []string
+	IsStruct        bool
+	StructName      string
+	StructReceivers []string
+	FuncDecl        *ast.FuncDecl
 }
 
 // NewFunctionDescription creates a new instance of FunctionDescription with the provided function declaration.
@@ -93,13 +94,13 @@ func (c *Functions) funcBodyPrepare(fd *FunctionDescription) error {
 	}
 	for _, p := range node.Type.Params.List {
 		for _, name := range p.Names {
-			fd.Params = append(fd.Params, name.Name)
+			fd.InputParams = append(fd.InputParams, name.Name)
 		}
 	}
 	if node.Recv != nil && len(node.Recv.List) > 0 {
 		for _, p := range node.Recv.List {
 			for _, name := range p.Names {
-				fd.Recv = append(fd.Recv, name.Name)
+				fd.StructReceivers = append(fd.StructReceivers, name.Name)
 			}
 		}
 		recvTypeIdent := GetIdent(node.Recv.List[0])
@@ -110,15 +111,19 @@ func (c *Functions) funcBodyPrepare(fd *FunctionDescription) error {
 		if fields == nil {
 			return fmt.Errorf("undefined type '%s' for method receiver", recvTypeIdent.Name)
 		}
-		//TODO ADD FIELDS TO fd
 		fd.Name = GetMangledName(recvTypeIdent.Name, node.Name.Name)
 		fd.StructName = recvTypeIdent.Name
+		if len(fd.StructReceivers) == 0 {
+			fd.StructName = "<anonymous>"
+		}
+		fd.IsStruct = true
 	} else {
 		fd.Name = node.Name.Name
 		fd.StructName = ""
+		fd.IsStruct = false
 	}
 	//function symbol placeholder (this is not the real function, it's just a placeholder to be able to compile the body)
-	if _, err = c.scopes.SymbolDefine(fd.Name, UnknownScope, len(fd.StructName) > 0); err != nil {
+	if _, err = c.scopes.SymbolDefine(fd.Name, UnknownScope, fd.IsStruct); err != nil {
 		return err
 	}
 	return nil
@@ -130,17 +135,17 @@ func (c *Functions) funcBodyCompile(fd *FunctionDescription) error {
 	if err := c.scopes.Enter(fd.StructName, fd.Name); err != nil {
 		return err
 	}
-	for _, p := range fd.Recv {
-		receiverSymbol, err := c.scopes.SymbolDefine(p, UnknownScope, len(fd.StructName) > 0)
+	for _, recv := range fd.StructReceivers {
+		receiverSymbol, err := c.scopes.SymbolDefine(recv, UnknownScope, fd.IsStruct)
 		if err != nil {
 			return err
 		}
-		if len(fd.ReturnValues) > 0 && len(fd.StructName) > 0 {
+		if fd.IsStruct {
 			//TODO return values
 			receiverSymbol.SetTypes(fd.ReturnValues)
 		}
 	}
-	for _, p := range fd.Params {
+	for _, p := range fd.InputParams {
 		if _, err := c.scopes.SymbolDefine(p, UnknownScope, false); err != nil {
 			return err
 		}

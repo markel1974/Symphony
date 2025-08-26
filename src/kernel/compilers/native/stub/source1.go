@@ -5,9 +5,23 @@ package main
 
 import "fmt"
 
-func testFunc(int a) string {
+type MyStruct struct {
+	Name string
+}
+
+func (z * MyStruct) PrintA(a string) int {
+	fmt.Println(a)
+	return 10
+}
+
+func (z * MyStruct) PrintB(b string) int {
+	fmt.Println(b)
+	return 20
+}
+
+func testFunc(a int) (string, int) {
 	fmt.Println("Hello, world!")
-	return "prova"
+	return "prova", 2
 }
 
 func main() {
@@ -24,6 +38,10 @@ func main() {
 	//fmt.Println(b)
 	//fmt.Println(z)
 	//return z
-	test(5)
+    kk := MyStruct{}
+	retA := kk.PrintA("prova")
+	retB := kk.PrintB("prova")
+	myVar, mainRet := testFunc(5)
+	fmt.Println(retA, retB, myVar, mainRet)
 }
 `
