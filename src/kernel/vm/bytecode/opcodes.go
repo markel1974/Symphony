@@ -1,12 +1,21 @@
 package bytecode
 
-import "github.com/markel1974/c64emu/src/kernel/vm/objects"
+import (
+	"fmt"
+
+	"github.com/markel1974/c64emu/src/kernel/vm/objects"
+)
 
 // OpcodesLen defines the length of Opcodes as 256, calculated using a bitwise shift operation.
 // OpcodesMask provides a bitmask for Opcodes of length 256 by subtracting 1 from OpcodesLen.
 const (
-	OpcodesLen  = 1 << 8
-	OpcodesMask = OpcodesLen - 1
+	ByteSize   = 1
+	Uint16Size = 2
+	byteMask   = (ByteSize << 8) - 1
+	uint16Mask = (1 << 16) - 1
+
+	OpcodesLen  = ByteSize << 8
+	OpcodesMask = byteMask
 )
 
 // Opcode is a type alias for byte, used to represent operation codes in instruction sets.
@@ -111,6 +120,7 @@ type OpcodeDetails struct {
 	opcode   Opcode
 	operands []int
 	name     string
+	offset   int
 }
 
 // NewOpcodeDetails creates a new OpcodeDetails instance, initializing its opcode, operands, and name fields.
@@ -120,6 +130,10 @@ func NewOpcodeDetails(factory objects.IGateKeeper, opcode Opcode, operands []int
 		opcode:   opcode,
 		operands: operands,
 		name:     name,
+		offset:   0,
+	}
+	for _, w := range od.operands {
+		od.offset += w
 	}
 	return od
 }
@@ -141,6 +155,9 @@ func (od *OpcodeDetails) Name() string {
 // Operands retrieve the list of integer operands associated with the OpcodeDetails instance.
 func (od *OpcodeDetails) Operands() []int {
 	return od.operands
+}
+func (od *OpcodeDetails) Offset() int {
+	return od.offset
 }
 
 type Opcodes struct {
@@ -229,14 +246,7 @@ func (op *Opcodes) OpcodeToOperands(opcode Opcode) []int {
 // OpcodeToOperandsOffset calculates the total byte offset for the operands of a given opcode.
 func (op *Opcodes) OpcodeToOperandsOffset(opcode Opcode) int {
 	details := op.OpcodeToDetails(opcode)
-	if len(details.Operands()) == 0 {
-		return 0
-	}
-	offset := 0
-	for _, width := range details.Operands() {
-		offset += width
-	}
-	return offset
+	return details.Offset()
 }
 
 // OpcodeToOperandsDetails extracts operand details from a given opcode and instruction sequence, returning operand widths, values, and bytes read.
@@ -249,12 +259,12 @@ func (op *Opcodes) OpcodeToOperandsDetails(opcode Opcode, ins []byte) ([]int, []
 	var offset int
 	for _, width := range details.Operands() {
 		switch width {
-		case 1:
+		case ByteSize:
 			if offset >= len(ins) {
 				return nil, nil, 0
 			}
 			retOperands = append(retOperands, int(ins[offset]))
-		case 2:
+		case Uint16Size:
 			if offset+1 >= len(ins) {
 				return nil, nil, 0
 			}
@@ -265,33 +275,42 @@ func (op *Opcodes) OpcodeToOperandsDetails(opcode Opcode, ins []byte) ([]int, []
 	return details.Operands(), retOperands, offset
 }
 
-// OpcodeNames returns the name of the provided opcode as a string.
-func (op *Opcodes) OpcodeNames(opcode Opcode) string {
+// OpcodeName returns the name of the provided opcode as a string.
+func (op *Opcodes) OpcodeName(opcode Opcode) string {
 	details := op.OpcodeToDetails(opcode)
 	return details.Name()
 }
 
-// CompileInstruction returns a bytecode for an opcode and the operands.
-func (op *Opcodes) CompileInstruction(opcode Opcode, operands ...int) []byte {
-	numOperands := op.OpcodeToOperands(opcode)
-	totalLen := 1
-	for _, w := range numOperands {
-		totalLen += w
+// CompileInstruction generates a byte-encoded instruction using the given opcode and operands, verifying operand widths.
+func (op *Opcodes) CompileInstruction(opcode Opcode, operands ...int) ([]byte, error) {
+	details := op.OpcodeToDetails(opcode)
+	numOperands := details.Operands()
+	if len(operands) != len(numOperands) {
+		return nil, fmt.Errorf(
+			"wrong number of operands for %s: want %d, got %d", op.OpcodeName(opcode), len(numOperands), len(operands))
 	}
+	totalLen := 1
+	totalLen += details.Offset()
 	instruction := make([]byte, totalLen)
 	instruction[0] = opcode
 	offset := 1
 	for i, o := range operands {
 		width := numOperands[i]
 		switch width {
-		case 1:
+		case ByteSize:
+			if o < 0 || o > byteMask {
+				return nil, fmt.Errorf("operand %d value %d out of 1-byte range", i, o)
+			}
 			instruction[offset] = byte(o)
-		case 2:
+		case Uint16Size:
+			if o < 0 || o > uint16Mask {
+				return nil, fmt.Errorf("operand %d value %d out of 2-byte range", i, o)
+			}
 			n := uint16(o)
-			instruction[offset] = byte(n >> 8)
-			instruction[offset+1] = byte(n)
+			instruction[offset] = byte(n >> 8) // Most significant byte (Big Endian)
+			instruction[offset+1] = byte(n)    // Least significant byte
 		}
 		offset += width
 	}
-	return instruction
+	return instruction, nil
 }

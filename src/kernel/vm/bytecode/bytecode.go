@@ -304,7 +304,10 @@ func (b *Bytecode) updateConstIndexes(instances []byte, indexMap map[int]int) er
 			if !ok {
 				return fmt.Errorf("constant index not found: %d", curIdx)
 			}
-			copy(instances[i:], b.opcodes.CompileInstruction(op, newIdx))
+			code, err := b.opcodes.CompileInstruction(op, newIdx)
+			if err != nil {
+			}
+			copy(instances[i:], code)
 		case OpClosure:
 			curIdx := int(instances[i+2]) | int(instances[i+1])<<8
 			numFree := int(instances[i+3])
@@ -312,9 +315,13 @@ func (b *Bytecode) updateConstIndexes(instances []byte, indexMap map[int]int) er
 			if !ok {
 				return fmt.Errorf("constant index not found: %d", curIdx)
 			}
-			copy(instances[i:], b.opcodes.CompileInstruction(op, newIdx, numFree))
+			code, err := b.opcodes.CompileInstruction(op, newIdx, numFree)
+			if err != nil {
+				return err
+			}
+			copy(instances[i:], code)
 		default:
-			return fmt.Errorf("unsupported opcode: %s", b.opcodes.OpcodeNames(op))
+			return fmt.Errorf("unsupported opcode: %s", b.opcodes.OpcodeName(op))
 		}
 		i += 1 + offset
 	}

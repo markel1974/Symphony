@@ -193,7 +193,10 @@ func (c *Scopes) ChangeOperand(opPos int, operand int) error {
 	if err != nil {
 		return err
 	}
-	newInstruction := c.op.CompileInstruction(op, operand)
+	newInstruction, err := c.op.CompileInstruction(op, operand)
+	if err != nil {
+		return err
+	}
 	if err = c.InstructionReplace(opPos, newInstruction); err != nil {
 		return err
 	}
@@ -202,7 +205,10 @@ func (c *Scopes) ChangeOperand(opPos int, operand int) error {
 
 // Emit generates and adds a new instruction to the current scope and updates the last emitted instruction info.
 func (c *Scopes) Emit(op bytecode.Opcode, operands ...int) (int, error) {
-	ins := c.op.CompileInstruction(op, operands...)
+	ins, err := c.op.CompileInstruction(op, operands...)
+	if err != nil {
+		return 0, err
+	}
 	pos, err := c.InstructionsAdd(ins)
 	if err != nil {
 		return 0, err
