@@ -224,9 +224,9 @@ func (c *Scopes) EmitSymbolDefine(s *Symbol) error {
 	var op bytecode.Opcode
 	switch s.Scope() {
 	case GlobalScope:
-		op = bytecode.OpSetGlobal
+		op = bytecode.OpGlobalSet
 	case LocalScope:
-		op = bytecode.OpDefineLocal // Use new opcode for local variables
+		op = bytecode.OpLocalDefine // Use new opcode for local variables
 	default:
 		return fmt.Errorf("unsupported symbol scope: %v", s.Scope())
 	}
@@ -241,11 +241,11 @@ func (c *Scopes) EmitSymbolSet(s *Symbol) error {
 	var op bytecode.Opcode
 	switch s.Scope() {
 	case GlobalScope:
-		op = bytecode.OpSetGlobal
+		op = bytecode.OpGlobalSet
 	case LocalScope:
-		op = bytecode.OpSetLocal
+		op = bytecode.OpLocalSet
 	case FreeScope:
-		op = bytecode.OpSetFree
+		op = bytecode.OpFreeSet
 	default:
 		return fmt.Errorf("unsupported symbol scope: %v", s.Scope())
 	}
@@ -260,11 +260,11 @@ func (c *Scopes) EmitSymbolGet(s *Symbol) error {
 	var op bytecode.Opcode
 	switch s.Scope() {
 	case GlobalScope:
-		op = bytecode.OpGetGlobal
+		op = bytecode.OpGlobalGet
 	case LocalScope:
-		op = bytecode.OpGetLocal
+		op = bytecode.OpLocalGet
 	case FreeScope:
-		op = bytecode.OpGetFree
+		op = bytecode.OpFreeGet
 	default:
 		return fmt.Errorf("unsupported symbol scope: %v", s.Scope())
 	}
