@@ -7,48 +7,38 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
+// registerBuiltinFn defines a function type for registering built-in functionalities using an IGateKeeper instance.
 type registerBuiltinFn func(f objects.IGateKeeper) IBuiltin
 
+// _registerBuiltin holds the function to register built-in functions or objects with an IGateKeeper instance.
 var _registerBuiltin registerBuiltinFn
 
+// RegisterBuiltin sets a function used to register built-in functionalities into the system.
 func RegisterBuiltin(f registerBuiltinFn) {
 	_registerBuiltin = f
 }
 
+// registerPackageFn is a function type defining a method that registers a package using IGateKeeper and returns an IPackage.
 type registerPackageFn func(f objects.IGateKeeper) IPackage
 
+// _registerPackage holds a list of functions for registering packages, allowing dynamic addition of IPackage instances.
 var _registerPackage []registerPackageFn
 
+// RegisterPackage registers a package by appending the provided package registration function to the internal list.
 func RegisterPackage(f registerPackageFn) {
 	_registerPackage = append(_registerPackage, f)
-}
-
-type IPackage interface {
-	Name() string
-
-	Get(name string) (objects.IObject, bool)
-}
-
-type IBuiltin interface {
-	Container() []objects.IObject
-}
-
-// BuiltinWrapper is a struct designed to wrap a Builtin instance and its associated IObject for additional functionality.
-type BuiltinWrapper struct {
-	builtin *objects.Builtin
-	object  objects.IObject
 }
 
 // Loader represents a mechanism to manage and load packages and built-in objects in the system.
 type Loader struct {
 	gk       objects.IGateKeeper
 	packages map[string]IPackage
-	builtin  []*BuiltinWrapper
+	builtins []*BuiltinEntry
 }
 
 // NewLoader initializes and returns a new Loader instance with predefined standard packages and built-in functions.
 func NewLoader(gk objects.IGateKeeper) *Loader {
-	builtin := _registerBuiltin(gk).Container()
+	builtinContainer := _registerBuiltin(gk).Container()
 	packages := make([]IPackage, len(_registerPackage))
 	for i, fn := range _registerPackage {
 		packages[i] = fn(gk)
@@ -56,19 +46,19 @@ func NewLoader(gk objects.IGateKeeper) *Loader {
 	loader := &Loader{
 		gk:       gk,
 		packages: make(map[string]IPackage),
-		builtin:  make([]*BuiltinWrapper, len(builtin)),
+		builtins: make([]*BuiltinEntry, len(builtinContainer)),
 	}
-	for i, obj := range builtin {
+	for i, obj := range builtinContainer {
 		fn, ok := obj.(*objects.FuncPackage)
 		if !ok {
 			continue
 		}
 		b := gk.NewBuiltin(objects.FrameStatic, fn.Name(), i)
-		wrapper, ok := b.(*objects.Builtin)
+		builtin, ok := b.(*objects.Builtin)
 		if !ok {
 			continue
 		}
-		loader.builtin[i] = &BuiltinWrapper{builtin: wrapper, object: fn}
+		loader.builtins[i] = NewBuiltinAdapter(builtin, fn)
 	}
 	for _, p := range packages {
 		loader.packages[p.Name()] = p
@@ -88,15 +78,15 @@ func (l *Loader) AddPackage(id string, attr map[string]objects.IObject) {
 
 // BuiltinLen returns the number of built-in objects stored in the Loader instance.
 func (l *Loader) BuiltinLen() int {
-	return len(l.builtin)
+	return len(l.builtins)
 }
 
 // Builtin retrieves a built-in object by its index or returns nil if the index is out of range.
 func (l *Loader) Builtin(idx int) *objects.Builtin {
-	if idx < 0 || idx >= len(l.builtin) {
+	if idx < 0 || idx >= len(l.builtins) {
 		return nil
 	}
-	return l.builtin[idx].builtin
+	return l.builtins[idx].builtin
 }
 
 // Resolve resolves a list of symbol references into concrete objects within the loader's context.
@@ -127,10 +117,10 @@ func (l *Loader) Resolve(symbols []objects.IObject) ([]objects.IObject, error) {
 
 // resolveBuiltin returns the object associated with the given index from the built-in list or nil if the index is invalid.
 func (l *Loader) resolveBuiltin(idx int) objects.IObject {
-	if idx < 0 || idx >= len(l.builtin) {
+	if idx < 0 || idx >= len(l.builtins) {
 		return nil
 	}
-	return l.builtin[idx].object
+	return l.builtins[idx].object
 }
 
 // resolveReference retrieves a symbol from a package by decoding its reference array and returns the associated object if found.

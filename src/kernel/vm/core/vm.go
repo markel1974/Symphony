@@ -36,7 +36,6 @@ type VM struct {
 	references  *References
 	constants   *Constants
 	globals     *Globals
-	initStart   bool
 	entryPoints map[string]*objects.FuncCompiled
 }
 
@@ -48,7 +47,6 @@ func New(gk objects.IGateKeeper, sequencer ISequencer) *VM {
 		sourceFiles: nil,
 		references:  nil,
 		entryPoints: make(map[string]*objects.FuncCompiled),
-		initStart:   false,
 	}
 	v.constants = NewConstants(gk, v.SetError)
 	v.references = NewReferences(gk, v.SetError)
@@ -65,7 +63,6 @@ func New(gk objects.IGateKeeper, sequencer ISequencer) *VM {
 
 // Reset resets the virtual machine's state to its initial state.'
 func (v *VM) Reset() {
-	v.initStart = false
 	v.prepare()
 }
 
@@ -87,6 +84,9 @@ func (v *VM) Setup(loader bytecode.ILoader, bc *bytecode.Bytecode) error {
 			v.entryPoints[c.Name()] = c
 		}
 	}
+	if err := v.exec("__init__"); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -102,12 +102,6 @@ func (v *VM) EntryPoints() []string {
 // Run executes the specified function by mainId with provided arguments after initializing the VM with "__init__".
 // Returns an error if initialization or function execution fails.
 func (v *VM) Run(mainId string, args ...interface{}) error {
-	if !v.initStart {
-		if err := v.exec("__init__", args...); err != nil {
-			return err
-		}
-		v.initStart = true
-	}
 	return v.exec(mainId, args...)
 }
 
