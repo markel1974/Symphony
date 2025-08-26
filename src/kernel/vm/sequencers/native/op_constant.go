@@ -11,12 +11,12 @@ func init() {
 
 // OpConstant represents an operation used to load a constant onto the stack.
 type OpConstant struct {
-	*bytecode.OpcodeDetails
+	*bytecode.Opcode
 }
 
 // NewOpConstant creates a new OpConstant instance with opcode details initialized for the OpConstant operation.
 func NewOpConstant(op *bytecode.Opcodes) core.IOpExecutor {
-	return &OpConstant{OpcodeDetails: op.OpcodeToDetails(bytecode.OpConstant)}
+	return &OpConstant{Opcode: op.Opcode(bytecode.OpConstant)}
 }
 
 // Execute executes the OpConstant instruction in the virtual machine, pushing a global constant onto the stack.

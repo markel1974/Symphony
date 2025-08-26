@@ -11,12 +11,12 @@ func init() {
 
 // OpJump represents an unconditional jump operation in the virtual machine, utilizing associated opcode details.
 type OpJump struct {
-	*bytecode.OpcodeDetails
+	*bytecode.Opcode
 }
 
 // NewOpJump creates and returns a new instance of OpJump with details initialized for the OpJump opcode.
 func NewOpJump(op *bytecode.Opcodes) core.IOpExecutor {
-	return &OpJump{OpcodeDetails: op.OpcodeToDetails(bytecode.OpJump)}
+	return &OpJump{Opcode: op.Opcode(bytecode.OpJump)}
 }
 
 // Execute updates the instruction pointer (`ip`) in the virtual machine (`VM`) to a calculated position in the frame.

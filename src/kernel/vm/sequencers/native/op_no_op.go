@@ -11,12 +11,12 @@ func init() {
 
 // OpNoOp represents a no-operation opcode, typically used as a placeholder or for alignment purposes.
 type OpNoOp struct {
-	*bytecode.OpcodeDetails
+	*bytecode.Opcode
 }
 
 // NewOpNoOp initializes and returns a new OpNoOp instance using the given Opcodes configuration.
 func NewOpNoOp(op *bytecode.Opcodes) core.IOpExecutor {
-	return &OpNoOp{OpcodeDetails: op.OpcodeToDetails(bytecode.OpNoOp)}
+	return &OpNoOp{Opcode: op.Opcode(bytecode.OpNoOp)}
 }
 
 // Execute performs a no-operation (NOP) for the virtual machine, advancing the instruction pointer without side effects.

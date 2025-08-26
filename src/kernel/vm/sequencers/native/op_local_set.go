@@ -11,14 +11,14 @@ func init() {
 }
 
 // OpLocalSet represents an operation to set the value of a local variable within the current frame.
-// It embeds OpcodeDetails for opcode-specific information such as name, operands, and code.
+// It embeds Opcode for opcode-specific information such as name, operands, and code.
 type OpLocalSet struct {
-	*bytecode.OpcodeDetails
+	*bytecode.Opcode
 }
 
 // NewOpLocalSet initializes and returns a new instance of OpLocalSet with associated opcode details.
 func NewOpLocalSet(op *bytecode.Opcodes) core.IOpExecutor {
-	return &OpLocalSet{OpcodeDetails: op.OpcodeToDetails(bytecode.OpLocalSet)}
+	return &OpLocalSet{Opcode: op.Opcode(bytecode.OpLocalSet)}
 }
 
 // Execute updates a local variable in the current frame using the stack's top value and the local index from instructions.

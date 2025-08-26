@@ -11,12 +11,12 @@ func init() {
 
 // OpLocalDefine represents the opcode for defining a new local variable within the current frame's scope.
 type OpLocalDefine struct {
-	*bytecode.OpcodeDetails
+	*bytecode.Opcode
 }
 
 // NewOpLocalDefine creates a new instance of OpLocalDefine with its associated opcode details.
 func NewOpLocalDefine(op *bytecode.Opcodes) core.IOpExecutor {
-	return &OpLocalDefine{OpcodeDetails: op.OpcodeToDetails(bytecode.OpLocalDefine)}
+	return &OpLocalDefine{Opcode: op.Opcode(bytecode.OpLocalDefine)}
 }
 
 // Execute increments the instruction pointer, retrieves a local index, and assigns a stack value to a designated slot.

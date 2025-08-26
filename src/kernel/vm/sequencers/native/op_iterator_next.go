@@ -14,12 +14,12 @@ func init() {
 
 // OpIteratorNext represents an operation code for advancing an iterator to the next element in the virtual machine.
 type OpIteratorNext struct {
-	*bytecode.OpcodeDetails
+	*bytecode.Opcode
 }
 
 // NewOpIteratorNext creates a new instance of OpIteratorNext with associated opcode details.
 func NewOpIteratorNext(op *bytecode.Opcodes) core.IOpExecutor {
-	return &OpIteratorNext{OpcodeDetails: op.OpcodeToDetails(bytecode.OpIteratorNext)}
+	return &OpIteratorNext{Opcode: op.Opcode(bytecode.OpIteratorNext)}
 }
 
 // Execute processes the next iterator state in the current frame, pushing a boolean to the stack indicating iteration status.
@@ -33,8 +33,8 @@ func (op *OpIteratorNext) Execute(v *core.VM, decoder *core.Decoder) {
 		return
 	}
 	if iterator.Next() {
-		v.Stack().Push(op.Factory().TrueValue())
+		v.Stack().Push(v.Factory().TrueValue())
 	} else {
-		v.Stack().Push(op.Factory().FalseValue())
+		v.Stack().Push(v.Factory().FalseValue())
 	}
 }

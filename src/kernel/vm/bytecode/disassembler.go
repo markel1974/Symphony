@@ -87,15 +87,15 @@ func (d *Disassembler) disassembleObject(cIdx int, constant objects.IObject) []s
 func (d *Disassembler) disassembleInstructions(bc []byte, posOffset int) []string {
 	var out []string
 	for i := 0; i < len(bc); {
-		opcode := bc[i]
-		numOperands, operands, read := d.bc.opcodes.OpcodeToOperandsDetails(opcode, bc[i+1:])
+		details := d.bc.opcodes.Opcode(bc[i])
+		numOperands, operands, read := d.computeOperands(details, bc[i+1:])
 		switch len(numOperands) {
 		case 0:
-			out = append(out, fmt.Sprintf("%04d %-7s", posOffset+i, d.bc.opcodes.OpcodeName(opcode)))
+			out = append(out, fmt.Sprintf("%04d %-7s", posOffset+i, details.Name()))
 		case 1:
-			out = append(out, fmt.Sprintf("%04d %-7s %-5d", posOffset+i, d.bc.opcodes.OpcodeName(opcode), operands[0]))
+			out = append(out, fmt.Sprintf("%04d %-7s %-5d", posOffset+i, details.Name(), operands[0]))
 		case 2:
-			out = append(out, fmt.Sprintf("%04d %-7s %-5d %-5d", posOffset+i, d.bc.opcodes.OpcodeName(opcode), operands[0], operands[1]))
+			out = append(out, fmt.Sprintf("%04d %-7s %-5d %-5d", posOffset+i, details.Name(), operands[0], operands[1]))
 		}
 		i += 1 + read
 	}
@@ -138,4 +138,29 @@ func (d *Disassembler) countObjects(in objects.IObject) int {
 		c += d.countObjects(o.Value())
 	}
 	return c
+}
+
+// computeOperands extracts operand details from a given opcode and instruction sequence, returning operand widths, values, and bytes read.
+func (d *Disassembler) computeOperands(details *Opcode, ins []byte) ([]int, []int, int) {
+	if len(details.Operands()) == 0 {
+		return nil, nil, 0
+	}
+	var retOperands []int
+	var offset int
+	for _, width := range details.Operands() {
+		switch width {
+		case ByteSize:
+			if offset >= len(ins) {
+				return nil, nil, 0
+			}
+			retOperands = append(retOperands, int(ins[offset]))
+		case Uint16Size:
+			if offset+1 >= len(ins) {
+				return nil, nil, 0
+			}
+			retOperands = append(retOperands, int(ins[offset+1])|int(ins[offset])<<8)
+		}
+		offset += width
+	}
+	return details.Operands(), retOperands, offset
 }

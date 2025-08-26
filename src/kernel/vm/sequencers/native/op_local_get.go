@@ -12,12 +12,12 @@ func init() {
 
 // OpLocalGet represents an operation to retrieve a local variable from the stack using its index.
 type OpLocalGet struct {
-	*bytecode.OpcodeDetails
+	*bytecode.Opcode
 }
 
 // NewOpLocalGet creates a new OpLocalGet instance and initializes it with details for the OpLocalGet opcode.
 func NewOpLocalGet(op *bytecode.Opcodes) core.IOpExecutor {
-	return &OpLocalGet{OpcodeDetails: op.OpcodeToDetails(bytecode.OpLocalGet)}
+	return &OpLocalGet{Opcode: op.Opcode(bytecode.OpLocalGet)}
 }
 
 // Execute retrieves a local variable from the current frame's base pointer and pushes it onto the stack.

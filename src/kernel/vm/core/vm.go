@@ -131,6 +131,11 @@ func (v *VM) References() *References {
 	return v.references
 }
 
+// Factory returns the IGateKeeper instance associated with the VM.
+func (v *VM) Factory() objects.IGateKeeper {
+	return v.gk
+}
+
 // Frame returns the current frame instance associated with the VM.
 func (v *VM) Frame() *Frame {
 	return v.currFrame

@@ -12,14 +12,14 @@ func init() {
 }
 
 // OpIteratorInit represents an operation that initializes an iterator over an iterable object.
-// It embeds OpcodeDetails for additional opcode-specific metadata.
+// It embeds Opcode for additional opcode-specific metadata.
 type OpIteratorInit struct {
-	*bytecode.OpcodeDetails
+	*bytecode.Opcode
 }
 
 // NewOpIteratorInit creates and returns a new instance of OpIteratorInit with associated opcode details.
 func NewOpIteratorInit(op *bytecode.Opcodes) core.IOpExecutor {
-	return &OpIteratorInit{OpcodeDetails: op.OpcodeToDetails(bytecode.OpIteratorInit)}
+	return &OpIteratorInit{Opcode: op.Opcode(bytecode.OpIteratorInit)}
 }
 
 // Execute initializes an iterator for an iterable object and stores it in the specified local slot in the current frame.

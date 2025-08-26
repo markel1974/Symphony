@@ -20,7 +20,7 @@ This results in a system that is:
 The heart of the VM's consistency lies in `vm/bytecode/opcodes.go`. Instead of scattering magic numbers and instruction details across the codebase, this file implements a **metadata-driven system**.
 
 -   **Single Source of Truth (SSoT):** A central `_opcodesDetail` slice acts as a database for the entire instruction set. Each opcode is defined here with its name and the precise structure of its operands (e.g., one 2-byte operand, or one 2-byte followed by a 1-byte).
--   **Automated Behavior:** Components like the compiler, disassembler, and the VM's execution loop *query* this central source to understand how to build, format, or execute bytecode. For example, to advance the instruction pointer, the VM uses `OpcodeToOperandsOffset` to automatically determine how many bytes to skip.
+-   **Automated Behavior:** Components like the compiler, disassembler, and the VM's execution loop *query* this central source to understand how to build, format, or execute bytecode.
 -   **Effortless Maintenance:** To modify an instruction (e.g., add an operand), only the central definition in `opcodes.go` needs to be changed. The rest of the system adapts automatically, drastically reducing the risk of bugs.
 
 ### 2. The Execution Engine: A Strategic Choice for Modularity

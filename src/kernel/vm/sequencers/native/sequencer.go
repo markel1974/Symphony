@@ -44,11 +44,11 @@ func (ds *Sequencer) createRegistered() ([]core.IOpExecutor, error) {
 	}
 	for _, fn := range _registerContainer {
 		seq := fn(ds.op)
-		data := container[seq.Opcode()&bytecode.OpcodesMask]
-		if data.Opcode() != bytecode.OpUnknown {
-			return nil, fmt.Errorf("opcode %d already registered: %s", seq.Opcode(), data.Name())
+		data := container[seq.OpcodeId()&bytecode.OpcodesMask]
+		if data.OpcodeId() != bytecode.OpUnknown {
+			return nil, fmt.Errorf("opcode %d already registered: %s", seq.OpcodeId(), data.Name())
 		}
-		container[seq.Opcode()&bytecode.OpcodesMask] = seq
+		container[seq.OpcodeId()&bytecode.OpcodesMask] = seq
 	}
 	return container, nil
 }
@@ -110,5 +110,5 @@ func (ds *Sequencer) createStatic() []core.IOpExecutor {
 
 // setSequence assigns the given IOpExecutor to the Sequencer's container, using the bit-masked opcode as the index.
 func (ds *Sequencer) setSequence(container []core.IOpExecutor, seq core.IOpExecutor) {
-	container[seq.Opcode()&bytecode.OpcodesMask] = seq
+	container[seq.OpcodeId()&bytecode.OpcodesMask] = seq
 }

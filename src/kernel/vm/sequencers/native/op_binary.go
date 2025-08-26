@@ -10,14 +10,14 @@ func init() {
 	SequencerRegister(NewOpBinary)
 }
 
-// OpBinary represents a type that performs binary operations by extending bytecode.OpcodeDetails.
+// OpBinary represents a type that performs binary operations by extending bytecode.Opcode.
 type OpBinary struct {
-	*bytecode.OpcodeDetails
+	*bytecode.Opcode
 }
 
-// NewOpBinary creates a new instance of OpBinary with its corresponding OpcodeDetails initialized.
+// NewOpBinary creates a new instance of OpBinary with its corresponding Opcode initialized.
 func NewOpBinary(op *bytecode.Opcodes) core.IOpExecutor {
-	return &OpBinary{OpcodeDetails: op.OpcodeToDetails(bytecode.OpBinary)}
+	return &OpBinary{Opcode: op.Opcode(bytecode.OpBinary)}
 }
 
 // Execute performs a binary operation using operands from the stack, updates the instruction pointer, and handles errors.

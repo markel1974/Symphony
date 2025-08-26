@@ -11,12 +11,12 @@ func init() {
 
 // OpJumpOr represents an operation that performs a logical OR and jumps based on the result.
 type OpJumpOr struct {
-	*bytecode.OpcodeDetails
+	*bytecode.Opcode
 }
 
 // NewOpJumpOr creates and returns a new instance of OpJumpOr, associated with the OpJumpOr opcode and its details.
 func NewOpJumpOr(op *bytecode.Opcodes) core.IOpExecutor {
-	return &OpJumpOr{OpcodeDetails: op.OpcodeToDetails(bytecode.OpJumpOr)}
+	return &OpJumpOr{Opcode: op.Opcode(bytecode.OpJumpOr)}
 }
 
 // Execute advances the instruction pointer, evaluates the stack's top object, and updates the IP based on its boolean value.

@@ -135,7 +135,7 @@ func BuildDrives(d string) ([]*config.Drive, error) {
 func vmTest() {
 	const sequencerId = "native"
 	gk := objects.NewGateKeeper(0)
-	op := bytecode.NewOpcodes(gk)
+	op := bytecode.NewOpcodes()
 	comp, loader, err := compilers.NewCompiler(gk, op, sequencerId)
 	if err != nil {
 		log.Fatalf("compiler error: %s", err)
@@ -145,7 +145,7 @@ func vmTest() {
 	if err = comp.Compile("example.go", stub.Source7); err != nil {
 		log.Fatalf("compiler error: %s", err)
 	}
-	bc := bytecode.NewBytecode(gk, op, comp.Constants(), comp.References(), comp.Globals())
+	bc := bytecode.NewBytecode(op, comp.Constants(), comp.References(), comp.Globals())
 	d := bytecode.NewDisassembler(bc)
 	d.Disassemble(log.Writer())
 	machine, err := vm.NewVM(gk, op, sequencerId)

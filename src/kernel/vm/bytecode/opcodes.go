@@ -2,12 +2,14 @@ package bytecode
 
 import (
 	"fmt"
-
-	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
-// OpcodesLen defines the length of Opcodes as 256, calculated using a bitwise shift operation.
-// OpcodesMask provides a bitmask for Opcodes of length 256 by subtracting 1 from OpcodesLen.
+// ByteSize defines the size of a byte in memory.
+// Uint16Size defines the size of a uint16 in memory.
+// byteMask is a bitmask used to extract byte-level information.
+// uint16Mask is a bitmask used to extract uint16-level information.
+// OpcodesLen represents the total number of opcodes available.
+// OpcodesMask is a bitmask that is used to extract opcode-level data.
 const (
 	ByteSize   = 1
 	Uint16Size = 2
@@ -18,117 +20,164 @@ const (
 	OpcodesMask = byteMask
 )
 
-// Opcode is a type alias for byte, used to represent operation codes in instruction sets.
-type Opcode = byte
+// OpcodeId is a type alias for byte, used to represent operation codes in instruction sets.
+type OpcodeId = byte
 
-// OpConstant loads a constant onto the stack.
-// OpBitwiseComplement performs a bitwise complement operation.
-// OpPop pops a value from the stack.
-// OpTrue pushes the boolean value true onto the stack.
-// OpFalse pushes the boolean value false onto the stack.
-// OpEqual checks if two values are equal (==).
-// OpNotEqual checks if two values are not equal (!=).
-// OpMinus performs a subtraction or negation (-).
-// OpNotLogical performs a logical NOT operation (!).
-// OpJumpFalsy jumps if the top of the stack is falsy.
-// OpJumpAnd performs a logical AND and jumps.
-// OpJumpOr performs a logical OR and jumps.
-// OpJump performs an unconditional jump.
-// OpNull pushes a null value onto the stack.
-// OpArray creates an array object.
-// OpMap creates a map object.
-// OpImmutable creates an immutable object.
-// OpIndex performs an index operation.
-// OpIndexSlice performs a slice operation.
-// OpCall calls a function.
-// OpReturn returns from a function call.
-// OpGlobalGet retrieves a global variable.
-// OpGlobalSet sets the value of a global variable.
-// OpGlobalSelSet sets a global variable using selectors.
-// OpLocalGet retrieves a local variable.
-// OpLocalSet sets the value of a local variable.
-// OpLocalDefine defines a new local variable.
-// OpLocalSelSet sets a local variable using selectors.
-// OpFreePtrGet retrieves a free variable pointer object.
-// OpFreeGet retrieves a free variable.
-// OpFreeSet sets the value of a free variable.
-// OpLocalPtrGet retrieves a local variable as a pointer.
-// OpFreeSelSet sets a free variable using selectors.
-// OpGetBuiltin retrieves a builtin function.
-// OpClosure creates a closure and pushes it onto the stack.
-// OpIteratorInit initializes an iterator.
-// OpIteratorNext advances an iterator to the next element.
-// OpIteratorKey retrieves the key from the current iterator position.
-// OpIteratorValue retrieves the value from the current iterator position.
-// OpBinary performs a binary operation.
-// OpReferences refers to a specific operation related to references.
-// OpSuspend suspends the virtual machine.
-// OpError creates an error object.
-// OpUnknown represents an unknown operation.
 const (
-	OpConstant          Opcode = iota // Load constant
-	OpBitwiseComplement               // bitwise complement
-	OpPop                             // Pop
-	OpTrue                            // Push true
-	OpFalse                           // Push false
-	OpEqual                           // Equal ==
-	OpNotEqual                        // Not equal !=
-	OpMinus                           // Minus -
-	OpNotLogical                      // Logical not
-	OpJumpFalsy                       // Jump if falsy
-	OpJumpAnd                         // Logical AND jump
-	OpJumpOr                          // Logical OR jump
-	OpJump                            // Jump
-	OpNull                            // Push null
-	OpArray                           // Array object
-	OpMap                             // Map object
-	OpStruct                          // Struct object
-	OpImmutable                       // Immutable object
-	OpIndex                           // Index operation
-	OpIndexSlice                      // Slice operation
-	OpCall                            // Call function
-	OpReturn                          // Return
-	OpGlobalGet                       // Get global variable
-	OpGlobalSet                       // Set global variable
-	OpGlobalSelSet                    // Set global variable using selectors
-	OpLocalGet                        // Get local variable
-	OpLocalSet                        // Set local variable
-	OpLocalDefine                     // Define local variable
-	OpLocalSelSet                     // Set local variable using selectors
-	OpLocalPtrGet                     // Get local variable as a pointer
-	OpFreePtrGet                      // Get free variable pointer object
-	OpFreeGet                         // Get free variables
-	OpFreeSet                         // Set free variables
-	OpFreeSelSet                      // Set free variables using selectors
-	OpClosure                         // Push closure
-	OpIteratorInit                    // Iterator init
-	OpIteratorNext                    // Iterator next
-	OpIteratorKey                     // Iterator key
-	OpIteratorValue                   // Iterator value
-	OpBinary                          // Binary operation
+	// OpConstant represents an operation that loads a constant value onto the stack.
+	OpConstant OpcodeId = iota
+
+	// OpBitwiseComplement represents the opcode for performing a bitwise complement operation on a value.
+	OpBitwiseComplement
+
+	// OpPop is an OpcodeId used to remove and discard the top value from the stack.
+	OpPop
+
+	// OpTrue represents the opcode for pushing the boolean value true onto the stack.
+	OpTrue
+
+	// OpFalse represents an operation code for pushing the boolean value 'false' onto the stack in the virtual machine.
+	OpFalse
+
+	// OpEqual represents the opcode for checking equality between two values.
+	OpEqual
+
+	// OpNotEqual represents the opcode for the "not equal" comparison operation in the instruction set.
+	OpNotEqual
+
+	// OpMinus represents the opcode for performing unary negation operations.
+	OpMinus
+
+	// OpNotLogical represents the logical NOT (!) operation in the opcode set.
+	OpNotLogical
+
+	// OpJumpFalsy represents a conditional jump instruction that redirects execution if the top stack value is falsy.
+	OpJumpFalsy
+
+	// OpJumpAnd is an opcode used to perform a conditional jump based on the evaluation of a logical AND operation.
+	OpJumpAnd
+
+	// OpJumpOr represents an operation code used to perform a conditional jump if a logical OR condition evaluates to true.
+	OpJumpOr
+
+	// OpJump is a constant representing an unconditional jump operation in the bytecode instruction set.
+	OpJump
+
+	// OpNull represents a null operation or a placeholder indicating a null value in the opcode sequence.
+	OpNull
+
+	// OpArray represents the opcode for creating a new array with a specified number of elements from the operand.
+	OpArray
+
+	// OpMap defines an opcode representing the creation of a map structure with a specified number of key-value pairs.
+	OpMap
+
+	// OpStruct represents an opcode for initializing a struct with a specified number of key-value pairs.
+	OpStruct
+
+	// OpImmutable represents an opcode that creates an immutable object or marks an operation as associated with immutability.
+	OpImmutable
+
+	// OpIndex represents an operation code for indexing operations on arrays, maps, or slices within the virtual machine.
+	OpIndex
+
+	// OpIndexSlice is a constant representing the operation code for slice-based indexing in bytecode execution.
+	OpIndexSlice
+
+	// OpCall represents the opcode for function or method invocation with specified argument and receiver counts.
+	OpCall
+
+	// OpReturn represents the opcode for returning from a function or operation, potentially with a value.
+	OpReturn
+
+	// OpGlobalGet retrieves a value from the global scope by its index in the constants pool.
+	OpGlobalGet
+
+	// OpGlobalSet is an opcode used to assign a value to a global variable within a global scope.
+	OpGlobalSet
+
+	// OpGlobalSelSet represents an operation for setting a value in a globally selected field or property.
+	OpGlobalSelSet
+
+	// OpLocalGet is an opcode used to retrieve the value of a local variable from the current scope by its index.
+	OpLocalGet
+
+	// OpLocalSet is an opcode representing the operation of setting a value to a variable in the local scope.
+	OpLocalSet
+
+	// OpLocalDefine is an opcode used to define a new local variable within the local scope of the current function.
+	OpLocalDefine
+
+	// OpLocalSelSet represents the opcode for setting a value in a local variable with a selector (e.g., struct field or map key).
+	OpLocalSelSet
+
+	// OpLocalPtrGet represents an opcode used to retrieve a pointer to a local variable in the current execution scope.
+	OpLocalPtrGet
+
+	// OpFreePtrGet retrieves the pointer to a variable from the free variables scope for further operations.
+	OpFreePtrGet
+
+	// OpFreeGet represents the opcode for retrieving a value from a free variable in a closure context.
+	OpFreeGet
+
+	// OpFreeSet is an opcode used to set the value of a free variable in an enclosing scope.
+	OpFreeSet
+
+	// OpFreeSelSet is an operation code used to set a value on a closed-over variable with a selected attribute.
+	OpFreeSelSet
+
+	// OpClosure represents the opcode used to create a function closure with constants and free variables.
+	OpClosure
+
+	// OpIteratorInit initializes an iterator for iterating over a collection or data structure.
+	OpIteratorInit
+
+	// OpIteratorNext is a constant representing the operation to move the iterator to the next element in a collection.
+	OpIteratorNext
+
+	// OpIteratorKey represents the operation to retrieve the current key from an iterator.
+	OpIteratorKey
+
+	// OpIteratorValue represents the OpcodeId used to retrieve the current value during an iterator operation.
+	OpIteratorValue
+
+	// OpBinary represents a binary operation, such as addition, subtraction, or comparison, within the instruction set.
+	OpBinary
+
+	// OpReferences represents an opcode for handling references, typically operating with two associated operands.
 	OpReferences
+
+	// OpIntOp is an opcode representing integer-based operations, utilizing two operands and one result within the stack.
 	OpIntOp
-	OpDeref   // Dereference a pointer
-	OpSuspend // Suspend VM
-	OpError   // Error object
-	OpNoOp    // Push null
+
+	// OpDeref is an opcode that dereferences a pointer or reference to retrieve its value.
+	OpDeref
+
+	// OpSuspend represents an opcode used to pause the execution of a process or coroutine until it is resumed.
+	OpSuspend
+
+	// OpError is a constant OpcodeId representing an error operation in the instruction set.
+	OpError
+
+	// OpNoOp represents a no-operation opcode, often used as a placeholder or for instruction alignment.
+	OpNoOp
+
+	// OpUnknown represents an undefined or placeholder opcode in the instruction set, typically used as a default value.
 	OpUnknown
 )
 
-// OpcodeDetails represents the details of an opcode, including its identifier, its operands, and its name.
-type OpcodeDetails struct {
-	factory  objects.IGateKeeper
-	opcode   Opcode
+// Opcode represents the details of an opcode, including its identifier, its operands, and its name.
+type Opcode struct {
+	opcodeId OpcodeId
 	operands []int
 	name     string
 	offset   int
 }
 
-// NewOpcodeDetails creates a new OpcodeDetails instance, initializing its opcode, operands, and name fields.
-func NewOpcodeDetails(factory objects.IGateKeeper, opcode Opcode, operands []int, name string) *OpcodeDetails {
-	od := &OpcodeDetails{
-		factory:  factory,
-		opcode:   opcode,
+// NewOpcode creates a new Opcode instance, initializing its opcode, operands, and name fields.
+func NewOpcode(opcodeId OpcodeId, operands []int, name string) *Opcode {
+	od := &Opcode{
+		opcodeId: opcodeId,
 		operands: operands,
 		name:     name,
 		offset:   0,
@@ -139,156 +188,100 @@ func NewOpcodeDetails(factory objects.IGateKeeper, opcode Opcode, operands []int
 	return od
 }
 
-// Opcode returns the opcode associated with the OpcodeDetails instance.
-func (od *OpcodeDetails) Opcode() Opcode {
-	return od.opcode
-}
-
-func (od *OpcodeDetails) Factory() objects.IGateKeeper {
-	return od.factory
+// OpcodeId returns the opcode associated with the Opcode instance.
+func (od *Opcode) OpcodeId() OpcodeId {
+	return od.opcodeId
 }
 
 // Name returns the name of the opcode as a string.
-func (od *OpcodeDetails) Name() string {
+func (od *Opcode) Name() string {
 	return od.name
 }
 
-// Operands retrieve the list of integer operands associated with the OpcodeDetails instance.
-func (od *OpcodeDetails) Operands() []int {
+// Operands retrieve the list of integer operands associated with the Opcode instance.
+func (od *Opcode) Operands() []int {
 	return od.operands
 }
-func (od *OpcodeDetails) Offset() int {
+func (od *Opcode) Offset() int {
 	return od.offset
 }
 
 type Opcodes struct {
-	gk      objects.IGateKeeper
-	details []*OpcodeDetails
+	container []*Opcode
 }
 
-func NewOpcodes(gk objects.IGateKeeper) *Opcodes {
+func NewOpcodes() *Opcodes {
 	op := &Opcodes{
-		gk:      gk,
-		details: make([]*OpcodeDetails, OpcodesLen),
+		container: make([]*Opcode, OpcodesLen),
 	}
-	for i := range op.details {
-		op.details[i] = NewOpcodeDetails(gk, OpUnknown, []int{}, "OpUnknown")
+	for i := range op.container {
+		op.container[i] = NewOpcode(OpUnknown, []int{}, "OpUnknown")
 	}
-	op.createOpcodeDetails(gk, OpConstant, []int{2}, "OpConstant")
-	op.createOpcodeDetails(gk, OpPop, []int{}, "OpPop")
-	op.createOpcodeDetails(gk, OpTrue, []int{}, "OpTrue")
-	op.createOpcodeDetails(gk, OpFalse, []int{}, "OpFalse")
-	op.createOpcodeDetails(gk, OpBitwiseComplement, []int{}, "OpBitwiseComplement")
-	op.createOpcodeDetails(gk, OpEqual, []int{}, "OpEqual")
-	op.createOpcodeDetails(gk, OpNotEqual, []int{}, "OpNotEqual")
-	op.createOpcodeDetails(gk, OpMinus, []int{}, "OpMinus")
-	op.createOpcodeDetails(gk, OpNotLogical, []int{}, "OpNotLogical")
-	op.createOpcodeDetails(gk, OpJumpFalsy, []int{2}, "OpJumpFalsy")
-	op.createOpcodeDetails(gk, OpJumpAnd, []int{2}, "OpJumpAnd")
-	op.createOpcodeDetails(gk, OpJumpOr, []int{2}, "OpJumpOr")
-	op.createOpcodeDetails(gk, OpJump, []int{2}, "OpJump")
-	op.createOpcodeDetails(gk, OpNull, []int{}, "OpNull")
-	op.createOpcodeDetails(gk, OpGlobalGet, []int{2}, "OpGlobalGet")
-	op.createOpcodeDetails(gk, OpGlobalSet, []int{2}, "OpGlobalSet")
-	op.createOpcodeDetails(gk, OpGlobalSelSet, []int{2, 1}, "OpGlobalSelSet")
-	op.createOpcodeDetails(gk, OpArray, []int{2}, "OpArray")
-	op.createOpcodeDetails(gk, OpMap, []int{2}, "OpMap")
-	op.createOpcodeDetails(gk, OpStruct, []int{2}, "OpStruct")
-	op.createOpcodeDetails(gk, OpImmutable, []int{}, "OpImmutable")
-	op.createOpcodeDetails(gk, OpIndex, []int{}, "OpIndex")
-	op.createOpcodeDetails(gk, OpIndexSlice, []int{}, "OpIndexSlice")
-	op.createOpcodeDetails(gk, OpCall, []int{1, 1}, "OpCall")
-	op.createOpcodeDetails(gk, OpReturn, []int{1}, "OpReturn")
-	op.createOpcodeDetails(gk, OpLocalGet, []int{1}, "OpLocalGet")
-	op.createOpcodeDetails(gk, OpLocalSet, []int{1}, "OpLocalSet")
-	op.createOpcodeDetails(gk, OpLocalDefine, []int{1}, "OpLocalDefine")
-	op.createOpcodeDetails(gk, OpLocalSelSet, []int{1, 1}, "OpLocalSelSet")
-	op.createOpcodeDetails(gk, OpClosure, []int{2, 1}, "OpClosure")
-	op.createOpcodeDetails(gk, OpFreePtrGet, []int{1}, "OpFreePtrGet")
-	op.createOpcodeDetails(gk, OpFreeGet, []int{1}, "OpFreeGet")
-	op.createOpcodeDetails(gk, OpFreeSet, []int{1}, "OpFreeSet")
-	op.createOpcodeDetails(gk, OpLocalPtrGet, []int{1}, "OpLocalPtrGet")
-	op.createOpcodeDetails(gk, OpFreeSelSet, []int{1, 1}, "OpFreeSelSet")
-	op.createOpcodeDetails(gk, OpIteratorInit, []int{1}, "OpIteratorInit")
-	op.createOpcodeDetails(gk, OpIteratorNext, []int{1}, "OpIteratorNext")
-	op.createOpcodeDetails(gk, OpIteratorKey, []int{1}, "OpIteratorKey")
-	op.createOpcodeDetails(gk, OpIteratorValue, []int{1}, "OpIteratorValue")
-	op.createOpcodeDetails(gk, OpBinary, []int{1}, "OpBinary")
-	op.createOpcodeDetails(gk, OpReferences, []int{2}, "OpReferences")
-	op.createOpcodeDetails(gk, OpIntOp, []int{2, 1}, "OpIntOp")
-	op.createOpcodeDetails(gk, OpDeref, []int{}, "OpDeref")
-	op.createOpcodeDetails(gk, OpSuspend, []int{}, "OpSuspend")
-	op.createOpcodeDetails(gk, OpError, []int{}, "OpError")
+	op.createOpcode(OpConstant, []int{2}, "OpConstant")
+	op.createOpcode(OpPop, []int{}, "OpPop")
+	op.createOpcode(OpTrue, []int{}, "OpTrue")
+	op.createOpcode(OpFalse, []int{}, "OpFalse")
+	op.createOpcode(OpBitwiseComplement, []int{}, "OpBitwiseComplement")
+	op.createOpcode(OpEqual, []int{}, "OpEqual")
+	op.createOpcode(OpNotEqual, []int{}, "OpNotEqual")
+	op.createOpcode(OpMinus, []int{}, "OpMinus")
+	op.createOpcode(OpNotLogical, []int{}, "OpNotLogical")
+	op.createOpcode(OpJumpFalsy, []int{2}, "OpJumpFalsy")
+	op.createOpcode(OpJumpAnd, []int{2}, "OpJumpAnd")
+	op.createOpcode(OpJumpOr, []int{2}, "OpJumpOr")
+	op.createOpcode(OpJump, []int{2}, "OpJump")
+	op.createOpcode(OpNull, []int{}, "OpNull")
+	op.createOpcode(OpGlobalGet, []int{2}, "OpGlobalGet")
+	op.createOpcode(OpGlobalSet, []int{2}, "OpGlobalSet")
+	op.createOpcode(OpGlobalSelSet, []int{2, 1}, "OpGlobalSelSet")
+	op.createOpcode(OpArray, []int{2}, "OpArray")
+	op.createOpcode(OpMap, []int{2}, "OpMap")
+	op.createOpcode(OpStruct, []int{2}, "OpStruct")
+	op.createOpcode(OpImmutable, []int{}, "OpImmutable")
+	op.createOpcode(OpIndex, []int{}, "OpIndex")
+	op.createOpcode(OpIndexSlice, []int{}, "OpIndexSlice")
+	op.createOpcode(OpCall, []int{1, 1}, "OpCall")
+	op.createOpcode(OpReturn, []int{1}, "OpReturn")
+	op.createOpcode(OpLocalGet, []int{1}, "OpLocalGet")
+	op.createOpcode(OpLocalSet, []int{1}, "OpLocalSet")
+	op.createOpcode(OpLocalDefine, []int{1}, "OpLocalDefine")
+	op.createOpcode(OpLocalSelSet, []int{1, 1}, "OpLocalSelSet")
+	op.createOpcode(OpClosure, []int{2, 1}, "OpClosure")
+	op.createOpcode(OpFreePtrGet, []int{1}, "OpFreePtrGet")
+	op.createOpcode(OpFreeGet, []int{1}, "OpFreeGet")
+	op.createOpcode(OpFreeSet, []int{1}, "OpFreeSet")
+	op.createOpcode(OpLocalPtrGet, []int{1}, "OpLocalPtrGet")
+	op.createOpcode(OpFreeSelSet, []int{1, 1}, "OpFreeSelSet")
+	op.createOpcode(OpIteratorInit, []int{1}, "OpIteratorInit")
+	op.createOpcode(OpIteratorNext, []int{1}, "OpIteratorNext")
+	op.createOpcode(OpIteratorKey, []int{1}, "OpIteratorKey")
+	op.createOpcode(OpIteratorValue, []int{1}, "OpIteratorValue")
+	op.createOpcode(OpBinary, []int{1}, "OpBinary")
+	op.createOpcode(OpReferences, []int{2}, "OpReferences")
+	op.createOpcode(OpIntOp, []int{2, 1}, "OpIntOp")
+	op.createOpcode(OpDeref, []int{}, "OpDeref")
+	op.createOpcode(OpSuspend, []int{}, "OpSuspend")
+	op.createOpcode(OpError, []int{}, "OpError")
 	return op
 }
 
-// GateKeeper returns the IGateKeeper instance managed by the Opcodes object.
-func (op *Opcodes) GateKeeper() objects.IGateKeeper {
-	return op.gk
+// createOpcode associates opcode with a specific opcodeId, storing it in a global lookup by applying a mask.
+func (op *Opcodes) createOpcode(opcodeId OpcodeId, operands []int, name string) {
+	od := NewOpcode(opcodeId, operands, name)
+	op.container[od.opcodeId&OpcodesMask] = od
 }
 
-// createOpcodeDetails associates opcode details with a specific opcode, storing it in a global lookup by applying a mask.
-func (op *Opcodes) createOpcodeDetails(factory objects.IGateKeeper, opcode Opcode, operands []int, name string) {
-	od := NewOpcodeDetails(factory, opcode, operands, name)
-	op.details[od.opcode&OpcodesMask] = od
-}
-
-// OpcodeToDetails retrieves the OpcodeDetails corresponding to the given opcode by applying the OpcodesMask.
-func (op *Opcodes) OpcodeToDetails(opcode Opcode) *OpcodeDetails {
-	return op.details[opcode&OpcodesMask]
-}
-
-// OpcodeToOperands retrieves the operand widths for a given opcode from its details.
-func (op *Opcodes) OpcodeToOperands(opcode Opcode) []int {
-	details := op.OpcodeToDetails(opcode)
-	return details.Operands()
-}
-
-// OpcodeToOperandsOffset calculates the total byte offset for the operands of a given opcode.
-func (op *Opcodes) OpcodeToOperandsOffset(opcode Opcode) int {
-	details := op.OpcodeToDetails(opcode)
-	return details.Offset()
-}
-
-// OpcodeToOperandsDetails extracts operand details from a given opcode and instruction sequence, returning operand widths, values, and bytes read.
-func (op *Opcodes) OpcodeToOperandsDetails(opcode Opcode, ins []byte) ([]int, []int, int) {
-	details := op.OpcodeToDetails(opcode)
-	if len(details.Operands()) == 0 {
-		return nil, nil, 0
-	}
-	var retOperands []int
-	var offset int
-	for _, width := range details.Operands() {
-		switch width {
-		case ByteSize:
-			if offset >= len(ins) {
-				return nil, nil, 0
-			}
-			retOperands = append(retOperands, int(ins[offset]))
-		case Uint16Size:
-			if offset+1 >= len(ins) {
-				return nil, nil, 0
-			}
-			retOperands = append(retOperands, int(ins[offset+1])|int(ins[offset])<<8)
-		}
-		offset += width
-	}
-	return details.Operands(), retOperands, offset
-}
-
-// OpcodeName returns the name of the provided opcode as a string.
-func (op *Opcodes) OpcodeName(opcode Opcode) string {
-	details := op.OpcodeToDetails(opcode)
-	return details.Name()
+// Opcode retrieves the Opcode corresponding to the given opcodeId by applying the OpcodesMask.
+func (op *Opcodes) Opcode(opcodeId OpcodeId) *Opcode {
+	return op.container[opcodeId&OpcodesMask]
 }
 
 // CompileInstruction generates a byte-encoded instruction using the given opcode and operands, verifying operand widths.
-func (op *Opcodes) CompileInstruction(opcode Opcode, operands ...int) ([]byte, error) {
-	details := op.OpcodeToDetails(opcode)
+func (op *Opcodes) CompileInstruction(opcode OpcodeId, operands ...int) ([]byte, error) {
+	details := op.Opcode(opcode)
 	numOperands := details.Operands()
 	if len(operands) != len(numOperands) {
-		return nil, fmt.Errorf(
-			"wrong number of operands for %s: want %d, got %d", op.OpcodeName(opcode), len(numOperands), len(operands))
+		return nil, fmt.Errorf("wrong number of operands for %s: want %d, got %d", details.Name(), len(numOperands), len(operands))
 	}
 	totalLen := 1
 	totalLen += details.Offset()

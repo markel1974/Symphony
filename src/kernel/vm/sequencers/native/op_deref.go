@@ -14,12 +14,12 @@ func init() {
 
 // OpDeref represents an operation for dereferencing a pointer.
 type OpDeref struct {
-	*bytecode.OpcodeDetails
+	*bytecode.Opcode
 }
 
 // NewOpDeref creates a new OpDeref instance.
 func NewOpDeref(op *bytecode.Opcodes) core.IOpExecutor {
-	return &OpDeref{OpcodeDetails: op.OpcodeToDetails(bytecode.OpDeref)}
+	return &OpDeref{Opcode: op.Opcode(bytecode.OpDeref)}
 }
 
 // Execute performs the dereference operation. It takes a pointer from the

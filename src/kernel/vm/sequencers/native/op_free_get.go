@@ -11,12 +11,12 @@ func init() {
 
 // OpFreeGet represents an operation to retrieve a free variable in a closure during execution.
 type OpFreeGet struct {
-	*bytecode.OpcodeDetails
+	*bytecode.Opcode
 }
 
-// NewOpFreeGet creates and returns a new instance of OpFreeGet, initializing its OpcodeDetails using bytecode metadata.
+// NewOpFreeGet creates and returns a new instance of OpFreeGet, initializing its Opcode using bytecode metadata.
 func NewOpFreeGet(op *bytecode.Opcodes) core.IOpExecutor {
-	return &OpFreeGet{OpcodeDetails: op.OpcodeToDetails(bytecode.OpFreeGet)}
+	return &OpFreeGet{Opcode: op.Opcode(bytecode.OpFreeGet)}
 }
 
 // Execute increments the instruction pointer, retrieves a value using free variable index, and pushes it onto the stack.

@@ -13,14 +13,14 @@ func init() {
 }
 
 // OpMinus represents an operation for negating a numeric value.
-// It embeds OpcodeDetails, providing details such as the opcode, operands, and name.
+// It embeds Opcode, providing details such as the opcode, operands, and name.
 type OpMinus struct {
-	*bytecode.OpcodeDetails
+	*bytecode.Opcode
 }
 
 // NewOpMinus creates and returns a new OpMinus instance, initializing it with the details of the OpMinus bytecode.
 func NewOpMinus(op *bytecode.Opcodes) core.IOpExecutor {
-	return &OpMinus{OpcodeDetails: op.OpcodeToDetails(bytecode.OpMinus)}
+	return &OpMinus{Opcode: op.Opcode(bytecode.OpMinus)}
 }
 
 // Execute performs a subtraction operation by negating the top stack element, supporting integers and floats.
@@ -30,10 +30,10 @@ func (op *OpMinus) Execute(v *core.VM, _ *core.Decoder) {
 	operand := v.Stack().Pop()
 	switch x := operand.(type) {
 	case *objects.Int:
-		res := op.Factory().NewInt(v.Frame().Id(), -x.Value())
+		res := v.Factory().NewInt(v.Frame().Id(), -x.Value())
 		v.Stack().Push(res)
 	case *objects.Float:
-		res := op.Factory().NewFloat(v.Frame().Id(), -x.Value())
+		res := v.Factory().NewFloat(v.Frame().Id(), -x.Value())
 		v.Stack().Push(res)
 	default:
 		v.SetError(fmt.Errorf("invalid operation: -%s", operand.TypeName()))

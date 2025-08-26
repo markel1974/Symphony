@@ -11,12 +11,12 @@ func init() {
 
 // OpFreeSet represents an operation to set the value of a free variable within a closure's environment.
 type OpFreeSet struct {
-	*bytecode.OpcodeDetails
+	*bytecode.Opcode
 }
 
-// NewOpFreeSet creates and returns a new instance of OpFreeSet initialized with its corresponding OpcodeDetails.
+// NewOpFreeSet creates and returns a new instance of OpFreeSet initialized with its corresponding Opcode.
 func NewOpFreeSet(op *bytecode.Opcodes) core.IOpExecutor {
-	return &OpFreeSet{OpcodeDetails: op.OpcodeToDetails(bytecode.OpFreeSet)}
+	return &OpFreeSet{Opcode: op.Opcode(bytecode.OpFreeSet)}
 }
 
 // Execute increments the instruction pointer, retrieves a free variable index, and sets its value from the stack.

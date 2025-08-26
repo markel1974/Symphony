@@ -11,17 +11,17 @@ func init() {
 
 // OpNull represents a virtual machine operation to push a null value onto the stack.
 type OpNull struct {
-	*bytecode.OpcodeDetails
+	*bytecode.Opcode
 }
 
 // NewOpNull creates a new OpNull instance with details mapped from the OpNull opcode.
 func NewOpNull(op *bytecode.Opcodes) core.IOpExecutor {
-	return &OpNull{OpcodeDetails: op.OpcodeToDetails(bytecode.OpNull)}
+	return &OpNull{Opcode: op.Opcode(bytecode.OpNull)}
 }
 
 // Execute pushes an undefined value onto the virtual machine's stack.
 func (op *OpNull) Execute(v *core.VM, _ *core.Decoder) {
 	// Operands Offset 0
-	val := op.Factory().UndefinedValue()
+	val := v.Factory().UndefinedValue()
 	v.Stack().Push(val)
 }

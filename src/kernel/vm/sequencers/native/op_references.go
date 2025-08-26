@@ -9,14 +9,14 @@ func init() {
 	SequencerRegister(NewOpReferences)
 }
 
-// OpReferences extends OpcodeDetails to represent operations specifically related to reference handling in the bytecode.
+// OpReferences extends Opcode to represent operations specifically related to reference handling in the bytecode.
 type OpReferences struct {
-	*bytecode.OpcodeDetails
+	*bytecode.Opcode
 }
 
-// NewOpReferences initializes a new OpReferences instance with corresponding OpcodeDetails from the bytecode package.
+// NewOpReferences initializes a new OpReferences instance with corresponding Opcode from the bytecode package.
 func NewOpReferences(op *bytecode.Opcodes) core.IOpExecutor {
-	return &OpReferences{OpcodeDetails: op.OpcodeToDetails(bytecode.OpReferences)}
+	return &OpReferences{Opcode: op.Opcode(bytecode.OpReferences)}
 }
 
 // Execute processes the specified VM instruction, adjusts the instruction pointer, and pushes a reference onto the stack.

@@ -10,14 +10,14 @@ func init() {
 	SequencerRegister(NewOpReturn)
 }
 
-// OpReturn represents a specialized operation that extends the behavior of bytecode.OpcodeDetails.
+// OpReturn represents a specialized operation that extends the behavior of bytecode.Opcode.
 type OpReturn struct {
-	*bytecode.OpcodeDetails
+	*bytecode.Opcode
 }
 
-// NewOpReturn creates a new instance of OpReturn with its OpcodeDetails initialized for the OpReturn operation.
+// NewOpReturn creates a new instance of OpReturn with its Opcode initialized for the OpReturn operation.
 func NewOpReturn(op *bytecode.Opcodes) core.IOpExecutor {
-	return &OpReturn{OpcodeDetails: op.OpcodeToDetails(bytecode.OpReturn)}
+	return &OpReturn{Opcode: op.Opcode(bytecode.OpReturn)}
 }
 
 // Execute performs the return operation for the current frame, manages the stack, and transitions between frames in the VM.

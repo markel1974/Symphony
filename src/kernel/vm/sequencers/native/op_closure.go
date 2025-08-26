@@ -14,12 +14,12 @@ func init() {
 
 // OpClosure represents a closure operation that creates a new closure in the virtual machine.
 type OpClosure struct {
-	*bytecode.OpcodeDetails
+	*bytecode.Opcode
 }
 
 // NewOpClosure returns a new instance of OpClosure initialized with the details of the OpClosure opcode.
 func NewOpClosure(op *bytecode.Opcodes) core.IOpExecutor {
-	return &OpClosure{OpcodeDetails: op.OpcodeToDetails(bytecode.OpClosure)}
+	return &OpClosure{Opcode: op.Opcode(bytecode.OpClosure)}
 }
 
 // Execute performs the operation associated with the OpClosure opcode, creating a closure and pushing it onto the stack.
@@ -41,7 +41,7 @@ func (op *OpClosure) Execute(v *core.VM, decoder *core.Decoder) {
 			free[i] = freeVar
 		default:
 			t := v.Stack().PeekOffset(-numFree + i)
-			obj := op.Factory().NewObjectPointer(v.Frame().Id(), &t)
+			obj := v.Factory().NewObjectPointer(v.Frame().Id(), &t)
 			ptr, ok := obj.(*objects.ObjectPointer)
 			if !ok {
 				v.SetError(fmt.Errorf("not a pointer: %s", t.TypeName()))
@@ -51,6 +51,6 @@ func (op *OpClosure) Execute(v *core.VM, decoder *core.Decoder) {
 		}
 	}
 	v.Stack().DecrementCount(numFree)
-	cl := op.Factory().NewFuncCompiled(v.Frame().Id(), "closure", fn.Instructions().Data(), fn.NumLocals(), fn.NumParameters(), fn.VarArgs(), nil, free)
+	cl := v.Factory().NewFuncCompiled(v.Frame().Id(), "closure", fn.Instructions().Data(), fn.NumLocals(), fn.NumParameters(), fn.VarArgs(), nil, free)
 	v.Stack().Push(cl)
 }

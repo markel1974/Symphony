@@ -11,14 +11,14 @@ func init() {
 }
 
 // OpNotEqual is a structure representing the "not equal (!=)" opcode operation in the virtual machine.
-// It embeds OpcodeDetails to provide information about the opcode, including its identifier and operands.
+// It embeds Opcode to provide information about the opcode, including its identifier and operands.
 type OpNotEqual struct {
-	*bytecode.OpcodeDetails
+	*bytecode.Opcode
 }
 
-// NewOpNotEqual creates and returns a new instance of OpNotEqual with OpcodeDetails initialized from bytecode.
+// NewOpNotEqual creates and returns a new instance of OpNotEqual with Opcode initialized from bytecode.
 func NewOpNotEqual(op *bytecode.Opcodes) core.IOpExecutor {
-	return &OpNotEqual{OpcodeDetails: op.OpcodeToDetails(bytecode.OpNotEqual)}
+	return &OpNotEqual{Opcode: op.Opcode(bytecode.OpNotEqual)}
 }
 
 // Execute evaluates whether the top two stack elements are unequal and pushes the result as a boolean onto the stack.
@@ -28,9 +28,9 @@ func (op *OpNotEqual) Execute(v *core.VM, _ *core.Decoder) {
 	left := v.Stack().Pop()
 	var val objects.IObject
 	if left.Equals(right) {
-		val = op.Factory().TrueValue()
+		val = v.Factory().TrueValue()
 	} else {
-		val = op.Factory().FalseValue()
+		val = v.Factory().FalseValue()
 	}
 	v.Stack().Push(val)
 }

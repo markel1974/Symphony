@@ -11,12 +11,12 @@ func init() {
 
 // OpPop represents an operation that removes the top value from the virtual machine stack.
 type OpPop struct {
-	*bytecode.OpcodeDetails
+	*bytecode.Opcode
 }
 
 // NewOpPop creates and returns a new instance of OpPop, initializing it with details corresponding to the OpPop opcode.
 func NewOpPop(op *bytecode.Opcodes) core.IOpExecutor {
-	return &OpPop{OpcodeDetails: op.OpcodeToDetails(bytecode.OpPop)}
+	return &OpPop{Opcode: op.Opcode(bytecode.OpPop)}
 }
 
 // Execute performs the operation defined by OpPop, which decreases the stack pointer of the VM.

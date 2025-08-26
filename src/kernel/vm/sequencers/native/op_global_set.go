@@ -11,12 +11,12 @@ func init() {
 
 // OpGlobalSet represents a bytecode operation for setting a global variable's value in the virtual machine.
 type OpGlobalSet struct {
-	*bytecode.OpcodeDetails
+	*bytecode.Opcode
 }
 
-// NewOpGlobalSet creates and returns a new instance of OpGlobalSet with initialized OpcodeDetails.
+// NewOpGlobalSet creates and returns a new instance of OpGlobalSet with initialized Opcode.
 func NewOpGlobalSet(op *bytecode.Opcodes) core.IOpExecutor {
-	return &OpGlobalSet{OpcodeDetails: op.OpcodeToDetails(bytecode.OpGlobalSet)}
+	return &OpGlobalSet{Opcode: op.Opcode(bytecode.OpGlobalSet)}
 }
 
 // Execute updates the instruction pointer, calculates a global variable position, and sets its value from the stack.

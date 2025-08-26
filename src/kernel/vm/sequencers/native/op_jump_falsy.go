@@ -11,12 +11,12 @@ func init() {
 
 // OpJumpFalsy represents an instruction that performs a conditional jump if the stack's top value evaluates to falsy.
 type OpJumpFalsy struct {
-	*bytecode.OpcodeDetails
+	*bytecode.Opcode
 }
 
-// NewOpJumpFalsy creates and returns a new instance of OpJumpFalsy initialized with its corresponding OpcodeDetails.
+// NewOpJumpFalsy creates and returns a new instance of OpJumpFalsy initialized with its corresponding Opcode.
 func NewOpJumpFalsy(op *bytecode.Opcodes) core.IOpExecutor {
-	return &OpJumpFalsy{OpcodeDetails: op.OpcodeToDetails(bytecode.OpJumpFalsy)}
+	return &OpJumpFalsy{Opcode: op.Opcode(bytecode.OpJumpFalsy)}
 }
 
 // Execute advances the instruction pointer, evaluates the stack's top element, and updates the pointer if false.

@@ -12,12 +12,12 @@ func init() {
 
 // OpGlobalSelSet represents an operation for setting a global variable's value using selectors for indexing or access.
 type OpGlobalSelSet struct {
-	*bytecode.OpcodeDetails
+	*bytecode.Opcode
 }
 
-// NewOpGlobalSelSet creates a new instance of OpGlobalSelSet with its corresponding OpcodeDetails initialized.
+// NewOpGlobalSelSet creates a new instance of OpGlobalSelSet with its corresponding Opcode initialized.
 func NewOpGlobalSelSet(op *bytecode.Opcodes) core.IOpExecutor {
-	return &OpGlobalSelSet{OpcodeDetails: op.OpcodeToDetails(bytecode.OpGlobalSelSet)}
+	return &OpGlobalSelSet{Opcode: op.Opcode(bytecode.OpGlobalSelSet)}
 }
 
 // Execute performs the operation defined by OpGlobalSelSet, updating the VM state and handling global index assignment.
@@ -32,7 +32,7 @@ func (op *OpGlobalSelSet) Execute(v *core.VM, decoder *core.Decoder) {
 	val := v.Stack().PeekOffset(-numSelectors - 1)
 	v.Stack().DecrementCount(numSelectors + 1)
 	glObj := v.Globals().Get(uint(globalIndex))
-	if err := op.Factory().IndexAssign(v.Frame().Id(), glObj, val, selectors); err != nil {
+	if err := v.Factory().IndexAssign(v.Frame().Id(), glObj, val, selectors); err != nil {
 		v.SetError(err)
 		return
 	}

@@ -9,12 +9,12 @@ import (
 
 // TokenAdapter represents a mapping between a token and its corresponding bytecode operation with optional arguments.
 type TokenAdapter struct {
-	op        bytecode.Opcode
+	op        bytecode.OpcodeId
 	arguments []int
 }
 
 // NewTokenAdapter creates a new TokenAdapter instance with the specified opcode and argument list.
-func NewTokenAdapter(op bytecode.Opcode, arguments []int) *TokenAdapter {
+func NewTokenAdapter(op bytecode.OpcodeId, arguments []int) *TokenAdapter {
 	return &TokenAdapter{
 		op:        op,
 		arguments: arguments,

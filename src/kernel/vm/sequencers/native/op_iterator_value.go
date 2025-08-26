@@ -13,14 +13,14 @@ func init() {
 }
 
 // OpIteratorValue retrieves the value from the current iterator position.
-// It embeds OpcodeDetails, providing access to the opcode's metadata and operations.
+// It embeds Opcode, providing access to the opcode's metadata and operations.
 type OpIteratorValue struct {
-	*bytecode.OpcodeDetails
+	*bytecode.Opcode
 }
 
-// NewOpIteratorValue creates and returns a new instance of OpIteratorValue with its associated OpcodeDetails initialized.
+// NewOpIteratorValue creates and returns a new instance of OpIteratorValue with its associated Opcode initialized.
 func NewOpIteratorValue(op *bytecode.Opcodes) core.IOpExecutor {
-	return &OpIteratorValue{OpcodeDetails: op.OpcodeToDetails(bytecode.OpIteratorValue)}
+	return &OpIteratorValue{Opcode: op.Opcode(bytecode.OpIteratorValue)}
 }
 
 // Execute processes the next instruction to retrieve and push the current value of an iterator onto the stack.

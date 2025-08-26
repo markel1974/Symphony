@@ -11,14 +11,14 @@ func init() {
 }
 
 // OpLocalSelSet represents an operation for setting a local variable using selectors in the virtual machine.
-// It embeds OpcodeDetails to utilize its properties like opcode, name, and operands.
+// It embeds Opcode to utilize its properties like opcode, name, and operands.
 type OpLocalSelSet struct {
-	*bytecode.OpcodeDetails
+	*bytecode.Opcode
 }
 
 // NewOpLocalSelSet creates and returns a new instance of the OpLocalSelSet operation executor.
 func NewOpLocalSelSet(op *bytecode.Opcodes) core.IOpExecutor {
-	return &OpLocalSelSet{OpcodeDetails: op.OpcodeToDetails(bytecode.OpLocalSelSet)}
+	return &OpLocalSelSet{Opcode: op.Opcode(bytecode.OpLocalSelSet)}
 }
 
 // Execute performs the operation of retrieving, modifying, and reassigning a value using selectors in the local scope.
@@ -36,7 +36,7 @@ func (op *OpLocalSelSet) Execute(v *core.VM, decoder *core.Decoder) {
 	if obj, ok := dst.(*objects.ObjectPointer); ok {
 		dst = *obj.Value()
 	}
-	if err := op.Factory().IndexAssign(v.Frame().Id(), dst, val, selectors); err != nil {
+	if err := v.Factory().IndexAssign(v.Frame().Id(), dst, val, selectors); err != nil {
 		v.SetError(err)
 		return
 	}

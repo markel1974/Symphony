@@ -11,12 +11,12 @@ func init() {
 
 // OpCall represents an operation code for invoking a function call in the virtual machine.
 type OpCall struct {
-	*bytecode.OpcodeDetails
+	*bytecode.Opcode
 }
 
-// NewOpCall creates and returns a new instance of OpCall with initialized OpcodeDetails for the OpCall opcode.
+// NewOpCall creates and returns a new instance of OpCall with initialized Opcode for the OpCall opcode.
 func NewOpCall(op *bytecode.Opcodes) core.IOpExecutor {
-	return &OpCall{OpcodeDetails: op.OpcodeToDetails(bytecode.OpCall)}
+	return &OpCall{Opcode: op.Opcode(bytecode.OpCall)}
 }
 
 // Execute processes the OpCall instruction, invoking the callable or handling array spreads, and manages the stack state.

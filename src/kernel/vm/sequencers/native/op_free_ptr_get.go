@@ -10,14 +10,14 @@ func init() {
 }
 
 // OpFreePtrGet represents the opcode for retrieving a free variable pointer in the virtual machine.
-// This type embeds OpcodeDetails, which provides opcode metadata such as identifier, operands, and name.
+// This type embeds Opcode, which provides opcode metadata such as identifier, operands, and name.
 type OpFreePtrGet struct {
-	*bytecode.OpcodeDetails
+	*bytecode.Opcode
 }
 
-// NewOpFreeGetPtr creates a new instance of OpFreePtrGet initialized with the corresponding OpcodeDetails.
+// NewOpFreeGetPtr creates a new instance of OpFreePtrGet initialized with the corresponding Opcode.
 func NewOpFreeGetPtr(op *bytecode.Opcodes) core.IOpExecutor {
-	return &OpFreePtrGet{OpcodeDetails: op.OpcodeToDetails(bytecode.OpFreePtrGet)}
+	return &OpFreePtrGet{Opcode: op.Opcode(bytecode.OpFreePtrGet)}
 }
 
 // Execute executes the OpFreePtrGet operation, pushing a free variable onto the stack based on the current instruction pointer.

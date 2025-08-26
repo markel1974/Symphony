@@ -12,14 +12,14 @@ func init() {
 	SequencerRegister(NewOpIteratorKey)
 }
 
-// OpIteratorKey wraps bytecode.OpcodeDetails to represent the iterator key retrieval operation in a virtual machine.
+// OpIteratorKey wraps bytecode.Opcode to represent the iterator key retrieval operation in a virtual machine.
 type OpIteratorKey struct {
-	*bytecode.OpcodeDetails
+	*bytecode.Opcode
 }
 
 // NewOpIteratorKey creates a new instance of OpIteratorKey with associated opcode details.
 func NewOpIteratorKey(op *bytecode.Opcodes) core.IOpExecutor {
-	return &OpIteratorKey{OpcodeDetails: op.OpcodeToDetails(bytecode.OpIteratorKey)}
+	return &OpIteratorKey{Opcode: op.Opcode(bytecode.OpIteratorKey)}
 }
 
 // Execute processes the "iterator key" operation, retrieves the iterator key, and pushes it onto the VM stack.

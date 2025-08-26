@@ -12,12 +12,12 @@ func init() {
 
 // OpLocalPtrGet retrieves a local variable as a pointer using its index within the current frame.
 type OpLocalPtrGet struct {
-	*bytecode.OpcodeDetails
+	*bytecode.Opcode
 }
 
-// NewOpLocalPtrGet creates and returns a new instance of OpLocalPtrGet, initializing its OpcodeDetails.
+// NewOpLocalPtrGet creates and returns a new instance of OpLocalPtrGet, initializing its Opcode.
 func NewOpLocalPtrGet(op *bytecode.Opcodes) core.IOpExecutor {
-	return &OpLocalPtrGet{OpcodeDetails: op.OpcodeToDetails(bytecode.OpLocalPtrGet)}
+	return &OpLocalPtrGet{Opcode: op.Opcode(bytecode.OpLocalPtrGet)}
 }
 
 // Execute advances the instruction pointer, retrieves a local variable, and pushes an ObjectPointer to the stack.
@@ -30,7 +30,7 @@ func (op *OpLocalPtrGet) Execute(v *core.VM, decoder *core.Decoder) {
 		v.Stack().Push(obj)
 		return
 	}
-	freeVar := op.Factory().NewObjectPointer(v.Frame().Id(), &val)
+	freeVar := v.Factory().NewObjectPointer(v.Frame().Id(), &val)
 	v.Stack().SetAbsolute(sp, freeVar)
 	v.Stack().Push(freeVar)
 }

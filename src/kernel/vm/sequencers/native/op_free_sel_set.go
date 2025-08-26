@@ -12,12 +12,12 @@ func init() {
 
 // OpFreeSelSet represents an operation to set a free variable's value using selectors.
 type OpFreeSelSet struct {
-	*bytecode.OpcodeDetails
+	*bytecode.Opcode
 }
 
-// NewOpFreeSelSet creates a new instance of OpFreeSelSet with initialized OpcodeDetails referencing OpFreeSelSet.
+// NewOpFreeSelSet creates a new instance of OpFreeSelSet with initialized Opcode referencing OpFreeSelSet.
 func NewOpFreeSelSet(op *bytecode.Opcodes) core.IOpExecutor {
-	return &OpFreeSelSet{OpcodeDetails: op.OpcodeToDetails(bytecode.OpFreeSelSet)}
+	return &OpFreeSelSet{Opcode: op.Opcode(bytecode.OpFreeSelSet)}
 }
 
 // Execute updates the instruction pointer, retrieves operands, processes selectors, and performs indexed assignment in the VM.
@@ -32,7 +32,7 @@ func (op *OpFreeSelSet) Execute(v *core.VM, decoder *core.Decoder) {
 	val := v.Stack().PeekOffset(-numSelectors - 1)
 	v.Stack().DecrementCount(numSelectors + 1)
 	fvi := v.Frame().FreeVarsIndex(freeIndex)
-	if err := op.Factory().IndexAssign(v.Frame().Id(), *fvi.Value(), val, selectors); err != nil {
+	if err := v.Factory().IndexAssign(v.Frame().Id(), *fvi.Value(), val, selectors); err != nil {
 		v.SetError(err)
 		return
 	}

@@ -7,12 +7,14 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
+// Cleaner is responsible for processing, fixing, and reconstructing objects, ensuring compatibility with the runtime environment.
 type Cleaner struct {
 	gk      objects.IGateKeeper
 	opcodes *Opcodes
 	loader  ILoader
 }
 
+// NewCleaner creates and returns a new instance of Cleaner initialized with the provided IGateKeeper, ILoader, and Opcodes.
 func NewCleaner(gk objects.IGateKeeper, loader ILoader, opcodes *Opcodes) *Cleaner {
 	return &Cleaner{
 		gk:      gk,
@@ -167,7 +169,8 @@ func (c *Cleaner) updateIndexes(instances []byte, indexContainer map[int]int) er
 	i := 0
 	for i < len(instances) {
 		op := instances[i]
-		offset := c.opcodes.OpcodeToOperandsOffset(op)
+		details := c.opcodes.Opcode(op)
+		offset := details.Offset()
 		switch op {
 		case OpConstant:
 			curIdx := int(instances[i+2]) | int(instances[i+1])<<8
@@ -192,7 +195,7 @@ func (c *Cleaner) updateIndexes(instances []byte, indexContainer map[int]int) er
 			}
 			copy(instances[i:], code)
 		default:
-			return fmt.Errorf("unsupported opcode: %s", c.opcodes.OpcodeName(op))
+			return fmt.Errorf("unsupported opcode: %s", details.Name())
 		}
 		i += 1 + offset
 	}

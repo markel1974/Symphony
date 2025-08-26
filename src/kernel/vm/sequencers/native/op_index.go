@@ -14,12 +14,12 @@ func init() {
 
 // OpIndex represents the operation for performing an indexing operation on a value.
 type OpIndex struct {
-	*bytecode.OpcodeDetails
+	*bytecode.Opcode
 }
 
-// NewOpIndex creates and returns a new instance of OpIndex initialized with its associated OpcodeDetails.
+// NewOpIndex creates and returns a new instance of OpIndex initialized with its associated Opcode.
 func NewOpIndex(op *bytecode.Opcodes) core.IOpExecutor {
-	return &OpIndex{OpcodeDetails: op.OpcodeToDetails(bytecode.OpIndex)}
+	return &OpIndex{Opcode: op.Opcode(bytecode.OpIndex)}
 }
 
 // Execute processes the index operation on the stack, retrieving a value or setting an error if indexing is invalid.
@@ -41,7 +41,7 @@ func (op *OpIndex) Execute(v *core.VM, _ *core.Decoder) {
 		return
 	}
 	if val == nil {
-		val = op.Factory().UndefinedValue()
+		val = v.Factory().UndefinedValue()
 	}
 	v.Stack().Push(val)
 }
