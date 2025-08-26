@@ -122,9 +122,9 @@ func (l *Loader) BuiltinResolve(idx int) objects.IObject {
 	return l.builtin[idx].object
 }
 
-// ResolveSymbols resolves a list of symbol references into concrete objects within the loader's context.
+// Resolve resolves a list of symbol references into concrete objects within the loader's context.
 // It returns a slice of resolved objects or an error if any reference is invalid.
-func (l *Loader) ResolveSymbols(symbols []objects.IObject) ([]objects.IObject, error) {
+func (l *Loader) Resolve(symbols []objects.IObject) ([]objects.IObject, error) {
 	references := make([]objects.IObject, len(symbols))
 	for i, ref := range symbols {
 		if ref == nil {
@@ -138,7 +138,7 @@ func (l *Loader) ResolveSymbols(symbols []objects.IObject) ([]objects.IObject, e
 			}
 			references[i] = symbol
 		default:
-			symbol, ok := l.GetSymbol(ref)
+			symbol, ok := l.ReferenceResolve(ref)
 			if !ok {
 				return nil, fmt.Errorf("can't load symbols, invalid reference %d", i)
 			}
@@ -148,8 +148,8 @@ func (l *Loader) ResolveSymbols(symbols []objects.IObject) ([]objects.IObject, e
 	return references, nil
 }
 
-// GetSymbol retrieves a symbol from a package by decoding its reference array and returns the associated object if found.
-func (l *Loader) GetSymbol(in objects.IObject) (objects.IObject, bool) {
+// ReferenceResolve retrieves a symbol from a package by decoding its reference array and returns the associated object if found.
+func (l *Loader) ReferenceResolve(in objects.IObject) (objects.IObject, bool) {
 	definition, ok := in.(*objects.Array)
 	if !ok {
 		return nil, false

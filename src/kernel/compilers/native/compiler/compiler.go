@@ -7,7 +7,6 @@ import (
 	"go/token"
 	"io"
 
-	"github.com/markel1974/c64emu/src/kernel/compiler/sdk"
 	"github.com/markel1974/c64emu/src/kernel/vm/bytecode"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
@@ -20,7 +19,7 @@ const (
 // Compiler represents a structure to manage the compilation process, including scopes and associated token file sets.
 type Compiler struct {
 	gk           objects.IGateKeeper
-	loader       *sdk.Loader
+	loader       bytecode.ILoader
 	scopes       *Scopes
 	constants    *Constants
 	references   *Constants
@@ -34,10 +33,8 @@ type Compiler struct {
 }
 
 // New creates and returns a new instance of Compiler with initialized scopes using a standard library loader.
-func New(gk objects.IGateKeeper) *Compiler {
-	loader := sdk.NewLoader(gk)
-	op := bytecode.NewOpcodes(gk)
-	scopes := NewScopes(gk, op)
+func New(gk objects.IGateKeeper, loader bytecode.ILoader, opcodes *bytecode.Opcodes) *Compiler {
+	scopes := NewScopes(gk, opcodes)
 	constants := NewConstants()
 	references := NewConstants()
 	structs := NewStructs()
@@ -101,8 +98,8 @@ func (c *Compiler) References() []objects.IObject {
 	return c.references.Retrieve()
 }
 
-// Global retrieves and returns all global objects from the root scope and any objects tracked by references.
-func (c *Compiler) Global() []objects.IObject {
+// Globals retrieves and returns all global objects from the root scope and any objects tracked by references.
+func (c *Compiler) Globals() []objects.IObject {
 	ret := make([]objects.IObject, len(c.scopes.initSymbolTable.symbols))
 	for _, obj := range c.scopes.initSymbolTable.definitions {
 		target := obj.GetObject()

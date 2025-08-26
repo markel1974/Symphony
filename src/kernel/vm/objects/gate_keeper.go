@@ -27,8 +27,8 @@ const (
 	FrameStatic = -1
 )
 
-// NewFactory initializes a new GateKeeper instance and sets up default bool and undefined values.
-func NewFactory(maxAllocations int64) *GateKeeper {
+// NewGateKeeper initializes a new GateKeeper instance and sets up default bool and undefined values.
+func NewGateKeeper(maxAllocations int64) IGateKeeper {
 	f := &GateKeeper{}
 	f.IGateAllocator = NewGateAllocator(f, maxAllocations)
 	f.IGateConverter = NewGateConverter(f)

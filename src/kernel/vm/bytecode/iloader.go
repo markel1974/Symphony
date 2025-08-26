@@ -2,20 +2,16 @@ package bytecode
 
 import "github.com/markel1974/c64emu/src/kernel/vm/objects"
 
-// ILoader defines an interface for loading and resolving symbols and built-in functions required by the system.
-// BuiltinResolve retr.
-// GetSymbol resolves a symbol based on a definition and returns the resolved object along with a success status.
-// ResolveSymbols resolves a slice of objects into their interpreted or defined values.
-// GetBuiltinFunctions returns a slice of built-in functions.
-// CompileModule compiles a module and returns a map of its symbols.
+// ILoader defines an interface for loading and resolving objects, including built-in functions and references.
+// BuiltinLen returns the number of built-in objects available.
+// Builtin retrieves a built-in object by its index.
+// Resolve attempts to resolve a slice of objects into their corresponding loaded versions or returns an error.
 type ILoader interface {
+	AddPackage(id string, attr map[string]objects.IObject)
+
 	BuiltinLen() int
 
 	Builtin(idx int) *objects.Builtin
 
-	BuiltinResolve(idx int) objects.IObject
-
-	GetSymbol(definition objects.IObject) (objects.IObject, bool)
-
-	ResolveSymbols([]objects.IObject) ([]objects.IObject, error)
+	Resolve([]objects.IObject) ([]objects.IObject, error)
 }

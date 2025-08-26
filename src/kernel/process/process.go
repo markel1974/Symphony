@@ -5,8 +5,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/markel1974/c64emu/src/kernel/compiler"
-	"github.com/markel1974/c64emu/src/kernel/compiler/sdk"
+	"github.com/markel1974/c64emu/src/kernel/compilers"
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
 	"github.com/markel1974/c64emu/src/kernel/messages"
 	"github.com/markel1974/c64emu/src/kernel/vm"
@@ -33,9 +32,9 @@ type Process struct {
 	executorChan     chan interfaces.IMessage
 	executorWaitChan chan bool
 	timeout          time.Duration
-	loader           *sdk.Loader
+	loader           bytecode.ILoader
 	opcodes          *bytecode.Opcodes
-	compiler         *compiler.Compiler
+	compiler         bytecode.ICompiler
 	vm               *core.VM
 	onError          interfaces.OnError
 	onTimer          interfaces.OnTimer
@@ -540,24 +539,35 @@ func (t *Process) handleMessageProcessStart(msg interfaces.IMessage) {
 		return
 	}
 	if t.cmd.HasScript() {
+		const sequencerId = "native"
 		if t.opcodes == nil {
-			t.opcodes = bytecode.NewOpcodes(objects.NewFactory(0))
+			t.opcodes = bytecode.NewOpcodes(objects.NewGateKeeper(0))
 		}
 		if t.compiler == nil {
-			t.compiler = compiler.New(t.opcodes.Factory())
+			comp, loader, err := compilers.NewCompiler(t.opcodes.Factory(), t.opcodes, sequencerId)
+			if err != nil {
+				log.Printf("Process [%s]: error creating compiler: %s", t.cmd.Name(), err.Error())
+				return
+			}
+			t.compiler = comp
+			t.loader = loader
 		}
 		err := t.compiler.Compile(t.cmd.Name(), t.cmd.Script())
 		if err != nil {
 			log.Printf("Process [%s]: error compiling script: %s", t.cmd.Name(), err.Error())
 			return
 		}
-		bc := bytecode.NewBytecode(t.opcodes.Factory(), t.opcodes, t.compiler.Constants(), t.compiler.References(), t.compiler.Global())
+		bc := bytecode.NewBytecode(t.opcodes.Factory(), t.opcodes, t.compiler.Constants(), t.compiler.References(), t.compiler.Globals())
 		if t.loader == nil {
-			t.loader = sdk.NewLoader(t.opcodes.Factory())
+			t.loader, err = compilers.NewLoader(t.opcodes.Factory(), sequencerId)
+			if err != nil {
+				log.Printf("Process [%s]: error creating loader: %s", t.cmd.Name(), err.Error())
+				return
+			}
 			t.loader.AddPackage("kernel", NewLibrary(t.opcodes.Factory(), t).Package())
 		}
 		if t.vm == nil {
-			t.vm = vm.NewVM(t.opcodes.Factory(), t.opcodes)
+			t.vm = vm.NewVM(t.opcodes.Factory(), t.opcodes, sequencerId)
 		}
 		if err = t.vm.Setup(t.loader, bc); err != nil {
 			log.Printf("Process [%s]: error setting up VM: %s", t.cmd.Name(), err.Error())

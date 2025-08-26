@@ -10,9 +10,8 @@ import (
 
 	"github.com/markel1974/c64emu/src"
 	"github.com/markel1974/c64emu/src/config"
-	"github.com/markel1974/c64emu/src/kernel/compiler"
-	"github.com/markel1974/c64emu/src/kernel/compiler/sdk"
-	"github.com/markel1974/c64emu/src/kernel/compiler/stub"
+	"github.com/markel1974/c64emu/src/kernel/compilers"
+	"github.com/markel1974/c64emu/src/kernel/compilers/native/stub"
 	"github.com/markel1974/c64emu/src/kernel/component"
 	"github.com/markel1974/c64emu/src/kernel/frontend"
 	"github.com/markel1974/c64emu/src/kernel/frontend/authenticator"
@@ -134,20 +133,22 @@ func BuildDrives(d string) ([]*config.Drive, error) {
 }
 
 func vmTest() {
-	factory := objects.NewFactory(0)
-	op := bytecode.NewOpcodes(factory)
-	comp := compiler.New(factory)
-	var args []interface{} = nil
-	//args := []interface{}{1, 2}
-	err := comp.Compile("example.go", stub.Source7)
+	const sequencerId = "native"
+	gk := objects.NewGateKeeper(0)
+	op := bytecode.NewOpcodes(gk)
+	comp, loader, err := compilers.NewCompiler(gk, op, sequencerId)
 	if err != nil {
 		log.Fatalf("compiler error: %s", err)
 	}
-	bc := bytecode.NewBytecode(factory, op, comp.Constants(), comp.References(), comp.Global())
+	var args []interface{} = nil
+	//args := []interface{}{1, 2}
+	if err = comp.Compile("example.go", stub.Source7); err != nil {
+		log.Fatalf("compiler error: %s", err)
+	}
+	bc := bytecode.NewBytecode(gk, op, comp.Constants(), comp.References(), comp.Globals())
 	d := bytecode.NewDisassembler(bc)
 	d.Disassemble(log.Writer())
-	loader := sdk.NewLoader(factory)
-	machine := vm.NewVM(factory, op)
+	machine := vm.NewVM(gk, op, sequencerId)
 	//if err = machine.Run(loader, bc, "init", args...); err != nil {
 	//	machine.Print(log.Writer())
 	//	log.Fatalf("VM runtime error: %s", err)

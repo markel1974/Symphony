@@ -26,7 +26,7 @@ func NewReferences(factory objects.IGateKeeper, errSignal func(err error)) *Refe
 // Setup replaces the current container with the provided list of references.
 func (g *References) Setup(loader bytecode.ILoader, references []objects.IObject) error {
 	var err error
-	g.container, err = loader.ResolveSymbols(references)
+	g.container, err = loader.Resolve(references)
 	if err != nil {
 		return err
 	}

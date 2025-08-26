@@ -110,8 +110,6 @@ func (f *GateAllocator) ReleaseObject(obj IObject) {
 		//v.factory.ReleaseString(o)
 	case *Array:
 		//v.factory.ReleaseArray(o)
-		// Oggetti come Bool e Undefined sono singleton, non vanno rilasciati.
-		// Altri oggetti complessi potrebbero non avere un pool, quindi non fare nulla.
 	}
 }
 

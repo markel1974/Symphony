@@ -8,7 +8,7 @@ import (
 )
 
 // NewVM creates a new instance of core.VM with a sequencer determined by the provided sequencerId and given dependencies.
-func NewVM(sequencerId string, factory objects.IGateKeeper, op *bytecode.Opcodes) *core.VM {
+func NewVM(factory objects.IGateKeeper, op *bytecode.Opcodes, sequencerId string) *core.VM {
 	switch sequencerId {
 	case "native":
 		seq := native.NewSequencer(op)
