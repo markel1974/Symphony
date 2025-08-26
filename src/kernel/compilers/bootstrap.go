@@ -1,11 +1,11 @@
 package compilers
 
 import (
-	_nativeLoader "github.com/markel1974/c64emu/src/kernel/compilers/native/sdk"
 	"github.com/markel1974/c64emu/src/kernel/vm/bytecode"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 
 	_nativeCompiler "github.com/markel1974/c64emu/src/kernel/compilers/native/compiler"
+	_nativeLoader "github.com/markel1974/c64emu/src/kernel/compilers/native/sdk"
 )
 
 // NewCompiler creates a new compiler and loader based on the provided IGateKeeper, Opcodes, and identifier string.

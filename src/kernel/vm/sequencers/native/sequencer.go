@@ -24,7 +24,7 @@ type Sequencer struct {
 }
 
 // NewSequencer initializes and returns a new Sequencer instance with the provided Opcodes configuration.
-func NewSequencer(op *bytecode.Opcodes) *Sequencer {
+func NewSequencer(op *bytecode.Opcodes) core.ISequencer {
 	return &Sequencer{
 		op: op,
 	}

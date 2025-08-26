@@ -14,7 +14,6 @@ const (
 	resetIp = -1
 )
 
-// globalsSize defines the maximum size of the global variables space.
 // stackSize specifies the size limit of the stack for function execution.
 // maxFrames indicates the maximum number of call frames allowed.
 const (
@@ -59,11 +58,6 @@ func New(gk objects.IGateKeeper, sequencer ISequencer) *VM {
 		v.sequencer[i] = NewDecoder(s)
 	}
 	return v
-}
-
-// Reset resets the virtual machine's state to its initial state.'
-func (v *VM) Reset() {
-	v.prepare()
 }
 
 // Setup initializes the virtual machine with the provided bytecode and loader components.
@@ -275,20 +269,17 @@ func (v *VM) prepare() {
 
 // Run executes the virtual machine's bytecode, managing the stack, frames, and instruction pointer state.
 func (v *VM) exec(mainId string, args ...interface{}) error {
-	v.prepare()
-
 	mainFn, ok := v.entryPoints[mainId]
 	if !ok {
 		return fmt.Errorf("entry point not found: %s", mainId)
 	}
-
+	v.prepare()
 	v.currFrame = v.frames.Head()
 	v.currFrame.Bind(v.ip, mainFn, 0)
 	v.stack.SetStackPointer(v.currFrame.NumLocals())
 	if v.currFrame.NumParameters() != len(args) {
 		return fmt.Errorf("[%s] wrong number of arguments provided: want=%d, got=%d", mainId, v.currFrame.NumParameters(), len(args))
 	}
-
 	for idx, arg := range args {
 		argObj := v.gk.FromInterface(objects.FrameStatic, arg)
 		v.stack.SetAbsolute(idx, argObj)
@@ -346,7 +337,7 @@ func (v *VM) libraryCall(value objects.IObject, args []objects.IObject, numArgs 
 }
 
 // compiledCall sets up a new execution frame for a compiled function and manages stack allocation for local variables.
-// callee specifies the compiled function to be executed, and numArgs determines the number of arguments passed.
+// Callee specifies the compiled function to be executed, and numArgs determines the number of arguments passed.
 // It reserves stack space for all local variables and adjusts the instruction pointer accordingly.
 func (v *VM) compiledCall(callee *objects.FuncCompiled, numArgs int) {
 	// Frame setup

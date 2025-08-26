@@ -11,12 +11,12 @@ import (
 
 // FunctionDescription represents the metadata of a function including its name, associated struct, parameters, and receiver info.
 type FunctionDescription struct {
-	Name       string
-	Types      []string
-	Params     []string
-	Recv       []string
-	FuncDecl   *ast.FuncDecl
-	StructName string
+	Name         string
+	ReturnValues []string
+	Params       []string
+	Recv         []string
+	FuncDecl     *ast.FuncDecl
+	StructName   string
 }
 
 // NewFunctionDescription creates a new instance of FunctionDescription with the provided function declaration.
@@ -88,7 +88,7 @@ func (c *Functions) Compile() error {
 func (c *Functions) funcBodyPrepare(fd *FunctionDescription) error {
 	node := fd.FuncDecl
 	var err error
-	if fd.Types, err = GetReceivers(node.Type.Results); err != nil {
+	if fd.ReturnValues, err = GetReceivers(node.Type.Results); err != nil {
 		return err
 	}
 	for _, p := range node.Type.Params.List {
@@ -131,13 +131,13 @@ func (c *Functions) funcBodyCompile(fd *FunctionDescription) error {
 		return err
 	}
 	for _, p := range fd.Recv {
-		z, err := c.scopes.SymbolDefine(p, UnknownScope, len(fd.StructName) > 0)
+		receiverSymbol, err := c.scopes.SymbolDefine(p, UnknownScope, len(fd.StructName) > 0)
 		if err != nil {
 			return err
 		}
-		if len(fd.StructName) > 0 {
+		if len(fd.ReturnValues) > 0 && len(fd.StructName) > 0 {
 			//TODO return values
-			z.SetTypes(fd.Types)
+			receiverSymbol.SetTypes(fd.ReturnValues)
 		}
 	}
 	for _, p := range fd.Params {
@@ -180,7 +180,7 @@ func (c *Functions) funcBodyCompile(fd *FunctionDescription) error {
 	compiledFn := c.gk.NewFuncCompiled(objects.FrameStatic, fd.Name, code, nLocals, nParams, false, nil, freeSymbols)
 	fnSymbol.SetObject(compiledFn)
 	//TODO return values (already set defined....)
-	fnSymbol.SetTypes(fd.Types)
+	fnSymbol.SetTypes(fd.ReturnValues)
 
 	if node.Recv == nil && c.scopes.scopeIndex > 0 {
 		if _, err = c.scopes.Emit(bytecode.OpClosure, fnSymbol.Index(), numFree); err != nil {
