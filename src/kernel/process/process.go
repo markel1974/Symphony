@@ -42,6 +42,7 @@ type Process struct {
 	onKeyBroadcast   interfaces.OnKey
 	onPaint          interfaces.OnPaint
 	onActivate       interfaces.OnActivate
+	vmInitialized    bool
 }
 
 // NewProcess initializes and returns a new Process instance with the provided kRouter, command, and command line data.
@@ -57,6 +58,7 @@ func NewProcess(cmd interfaces.ICommand) *Process {
 		executorChan:     make(chan interfaces.IMessage, executorQueueLen),
 		executorWaitChan: make(chan bool, 1),
 		timeout:          10 * time.Second,
+		vmInitialized:    false,
 	}
 	return t
 }
@@ -539,40 +541,33 @@ func (t *Process) handleMessageProcessStart(msg interfaces.IMessage) {
 		return
 	}
 	if t.cmd.HasScript() {
-		const sequencerId = "native"
-		if t.opcodes == nil {
-			t.opcodes = bytecode.NewOpcodes(objects.NewGateKeeper(0))
-		}
-		if t.compiler == nil {
-			comp, loader, err := compilers.NewCompiler(t.opcodes.Factory(), t.opcodes, sequencerId)
+		if !t.vmInitialized {
+			var err error
+			const sequencerId = "native"
+			gk := objects.NewGateKeeper(0)
+			t.opcodes = bytecode.NewOpcodes(gk)
+			t.compiler, t.loader, err = compilers.NewCompiler(gk, t.opcodes, sequencerId)
 			if err != nil {
 				log.Printf("Process [%s]: error creating compiler: %s", t.cmd.Name(), err.Error())
 				return
 			}
-			t.compiler = comp
-			t.loader = loader
+			t.loader.AddPackage("kernel", NewLibrary(gk, t).Package())
+			t.vm, err = vm.NewVM(gk, t.opcodes, sequencerId)
+			if err != nil {
+				log.Printf("Process [%s]: error creating VM: %s", t.cmd.Name(), err.Error())
+				return
+			}
+			t.vmInitialized = true
 		}
-		err := t.compiler.Compile(t.cmd.Name(), t.cmd.Script())
-		if err != nil {
+		if err := t.compiler.Compile(t.cmd.Name(), t.cmd.Script()); err != nil {
 			log.Printf("Process [%s]: error compiling script: %s", t.cmd.Name(), err.Error())
 			return
 		}
-		bc := bytecode.NewBytecode(t.opcodes.Factory(), t.opcodes, t.compiler.Constants(), t.compiler.References(), t.compiler.Globals())
-		if t.loader == nil {
-			t.loader, err = compilers.NewLoader(t.opcodes.Factory(), sequencerId)
-			if err != nil {
-				log.Printf("Process [%s]: error creating loader: %s", t.cmd.Name(), err.Error())
-				return
-			}
-			t.loader.AddPackage("kernel", NewLibrary(t.opcodes.Factory(), t).Package())
-		}
-		if t.vm == nil {
-			t.vm = vm.NewVM(t.opcodes.Factory(), t.opcodes, sequencerId)
-		}
-		if err = t.vm.Setup(t.loader, bc); err != nil {
+		bc := bytecode.NewBytecode(t.opcodes.GateKeeper(), t.opcodes, t.compiler.Constants(), t.compiler.References(), t.compiler.Globals())
+		if err := t.vm.Setup(t.loader, bc); err != nil {
 			log.Printf("Process [%s]: error setting up VM: %s", t.cmd.Name(), err.Error())
 		}
-		if err = t.vm.Run("main", mt.Args()); err != nil {
+		if err := t.vm.Run("main", mt.Args()); err != nil {
 			log.Printf("Process [%s]: error running script: %s", t.cmd.Name(), err.Error())
 		}
 	} else {

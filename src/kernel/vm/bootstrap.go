@@ -4,17 +4,18 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/bytecode"
 	"github.com/markel1974/c64emu/src/kernel/vm/core"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
-	"github.com/markel1974/c64emu/src/kernel/vm/sequencers/native"
+
+	_nativeSequencer "github.com/markel1974/c64emu/src/kernel/vm/sequencers/native"
 )
 
 // NewVM creates a new instance of core.VM with a sequencer determined by the provided sequencerId and given dependencies.
-func NewVM(factory objects.IGateKeeper, op *bytecode.Opcodes, sequencerId string) *core.VM {
+func NewVM(factory objects.IGateKeeper, op *bytecode.Opcodes, sequencerId string) (*core.VM, error) {
+	var seq core.ISequencer
 	switch sequencerId {
 	case "native":
-		seq := native.NewSequencer(op)
-		return core.New(factory, seq)
+		seq = _nativeSequencer.NewSequencer(op)
 	default:
-		seq := native.NewSequencer(op)
-		return core.New(factory, seq)
+		seq = _nativeSequencer.NewSequencer(op)
 	}
+	return core.New(factory, seq), nil
 }

@@ -92,8 +92,17 @@ func (v *VM) Reset() {
 	v.shutdown = false
 }
 
-// Run executes the virtual machine's bytecode, managing the stack, frames, and instruction pointer state.
+// Run executes the specified function by mainId with provided arguments after initializing the VM with "__init__".
+// Returns an error if initialization or function execution fails.
 func (v *VM) Run(mainId string, args ...interface{}) error {
+	if err := v.exec("__init__", args...); err != nil {
+		return err
+	}
+	return v.exec(mainId, args...)
+}
+
+// Run executes the virtual machine's bytecode, managing the stack, frames, and instruction pointer state.
+func (v *VM) exec(mainId string, args ...interface{}) error {
 	v.Reset()
 
 	mainFn, ok := v.entryPoints[mainId]
@@ -157,8 +166,8 @@ func (v *VM) GetIp() int {
 	return v.ip
 }
 
-// FunctionLibraryCall invokes a callable object with the given arguments and handles stack cleanup and error management.
-func (v *VM) FunctionLibraryCall(value objects.IObject, args []objects.IObject, numArgs int) {
+// libraryCall invokes a callable object with the given arguments and handles stack cleanup and error management.
+func (v *VM) libraryCall(value objects.IObject, args []objects.IObject, numArgs int) {
 	ret, err := value.Call(v.FrameID(), args...)
 	// Cleans the stack from the function and its arguments
 	v.stack.DecrementCount(numArgs + 1)
@@ -177,10 +186,10 @@ func (v *VM) FunctionLibraryCall(value objects.IObject, args []objects.IObject, 
 	}
 }
 
-// FunctionCompiledCall sets up a new execution frame for a compiled function and manages stack allocation for local variables.
+// compiledCall sets up a new execution frame for a compiled function and manages stack allocation for local variables.
 // callee specifies the compiled function to be executed, and numArgs determines the number of arguments passed.
 // It reserves stack space for all local variables and adjusts the instruction pointer accordingly.
-func (v *VM) FunctionCompiledCall(callee *objects.FuncCompiled, numArgs int) {
+func (v *VM) compiledCall(callee *objects.FuncCompiled, numArgs int) {
 	// Frame setup
 	v.currFrame = v.frames.Get()
 	v.frames.Next()
@@ -194,8 +203,49 @@ func (v *VM) FunctionCompiledCall(callee *objects.FuncCompiled, numArgs int) {
 	v.ReseIp()
 }
 
-// FunctionCompiledReturn handles the return operation by unwinding the current call frame, restoring the previous frame, and managing the stack.
-func (v *VM) FunctionCompiledReturn(returnValues []objects.IObject) {
+// Call executes a function or method with the specified number of arguments and handles variadic functions if applicable.
+func (v *VM) Call(value objects.IObject, spread int, numArgs int) {
+	if spread == 1 {
+		arrObj := v.Stack().Pop()
+		switch z := arrObj.(type) {
+		case *objects.Array:
+			for _, item := range z.Values() {
+				v.Stack().Push(item)
+			}
+			numArgs += z.Length() - 1
+		case *objects.ArrayImmutable:
+			for _, item := range z.Values() {
+				v.Stack().Push(item)
+			}
+			numArgs += z.Length() - 1
+		default:
+			v.SetError(fmt.Errorf("not an array: %s", arrObj.TypeName()))
+			return
+		}
+	}
+	if callee, ok := value.(*objects.FuncCompiled); ok {
+		if callee.VarArgs() {
+			v.Stack().PushVarArgs(v.FrameID(), numArgs, callee.NumParameters()-1)
+			numArgs = callee.NumParameters()
+		}
+		if numArgs != callee.NumParameters() {
+			numParams := callee.NumParameters()
+			if callee.VarArgs() {
+				numParams--
+			}
+			v.SetError(fmt.Errorf("%s wrong number of arguments: want>=%d, got=%d", callee.Name(), numParams, numArgs))
+			return
+		}
+		v.compiledCall(callee, numArgs)
+	} else {
+		var args []objects.IObject
+		args = append(args, v.Stack().PeekArrayObject(numArgs)...)
+		v.libraryCall(value, args, numArgs)
+	}
+}
+
+// Return handles the return operation by unwinding the current call frame, restoring the previous frame, and managing the stack.
+func (v *VM) Return(returnValues []objects.IObject) {
 	shutdown := false
 	prevIp := v.currFrame.SavedIP()
 	leavingFrameBasePointer := v.BasePointer()

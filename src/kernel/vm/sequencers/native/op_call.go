@@ -5,7 +5,6 @@ import (
 
 	"github.com/markel1974/c64emu/src/kernel/vm/bytecode"
 	"github.com/markel1974/c64emu/src/kernel/vm/core"
-	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
 func init() {
@@ -32,42 +31,5 @@ func (op *OpCall) Execute(v *core.VM, decoder *core.Decoder) {
 		v.SetError(fmt.Errorf("%s is not callable: %s", value.String(), value.TypeName()))
 		return
 	}
-	if spread == 1 {
-		arrObj := v.Stack().Pop()
-		switch z := arrObj.(type) {
-		case *objects.Array:
-			for _, item := range z.Values() {
-				v.Stack().Push(item)
-			}
-			numArgs += z.Length() - 1
-		case *objects.ArrayImmutable:
-			for _, item := range z.Values() {
-				v.Stack().Push(item)
-			}
-			numArgs += z.Length() - 1
-		default:
-			v.SetError(fmt.Errorf("not an array: %s", arrObj.TypeName()))
-			return
-		}
-	}
-
-	if callee, ok := value.(*objects.FuncCompiled); ok {
-		if callee.VarArgs() {
-			v.Stack().PushVarArgs(v.FrameID(), numArgs, callee.NumParameters()-1)
-			numArgs = callee.NumParameters()
-		}
-		if numArgs != callee.NumParameters() {
-			numParams := callee.NumParameters()
-			if callee.VarArgs() {
-				numParams--
-			}
-			v.SetError(fmt.Errorf("%s wrong number of arguments: want>=%d, got=%d", callee.Name(), numParams, numArgs))
-			return
-		}
-		v.FunctionCompiledCall(callee, numArgs)
-	} else {
-		var args []objects.IObject
-		args = append(args, v.Stack().PeekArrayObject(numArgs)...)
-		v.FunctionLibraryCall(value, args, numArgs)
-	}
+	v.Call(value, spread, numArgs)
 }

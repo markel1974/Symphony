@@ -148,18 +148,13 @@ func vmTest() {
 	bc := bytecode.NewBytecode(gk, op, comp.Constants(), comp.References(), comp.Globals())
 	d := bytecode.NewDisassembler(bc)
 	d.Disassemble(log.Writer())
-	machine := vm.NewVM(gk, op, sequencerId)
-	//if err = machine.Run(loader, bc, "init", args...); err != nil {
-	//	machine.Print(log.Writer())
-	//	log.Fatalf("VM runtime error: %s", err)
-	//}
+	machine, err := vm.NewVM(gk, op, sequencerId)
+	if err != nil {
+		log.Fatalf("VM error: %s", err)
+	}
 	if err = machine.Setup(loader, bc); err != nil {
 		machine.Print(log.Writer())
 		log.Fatalf("VM setup error: %s", err)
-	}
-	if err = machine.Run("__init__", args...); err != nil {
-		machine.Print(log.Writer())
-		log.Fatalf("VM runtime error: %s", err)
 	}
 	if err = machine.Run("main", args...); err != nil {
 		machine.Print(log.Writer())

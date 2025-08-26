@@ -162,69 +162,69 @@ func (od *OpcodeDetails) Offset() int {
 }
 
 type Opcodes struct {
-	factory objects.IGateKeeper
+	gk      objects.IGateKeeper
 	details []*OpcodeDetails
 }
 
-func NewOpcodes(factory objects.IGateKeeper) *Opcodes {
+func NewOpcodes(gk objects.IGateKeeper) *Opcodes {
 	op := &Opcodes{
-		factory: factory,
+		gk:      gk,
 		details: make([]*OpcodeDetails, OpcodesLen),
 	}
 	for i := range op.details {
-		op.details[i] = NewOpcodeDetails(factory, OpUnknown, []int{}, "OpUnknown")
+		op.details[i] = NewOpcodeDetails(gk, OpUnknown, []int{}, "OpUnknown")
 	}
-	op.createOpcodeDetails(factory, OpConstant, []int{2}, "OpConstant")
-	op.createOpcodeDetails(factory, OpPop, []int{}, "OpPop")
-	op.createOpcodeDetails(factory, OpTrue, []int{}, "OpTrue")
-	op.createOpcodeDetails(factory, OpFalse, []int{}, "OpFalse")
-	op.createOpcodeDetails(factory, OpBitwiseComplement, []int{}, "OpBitwiseComplement")
-	op.createOpcodeDetails(factory, OpEqual, []int{}, "OpEqual")
-	op.createOpcodeDetails(factory, OpNotEqual, []int{}, "OpNotEqual")
-	op.createOpcodeDetails(factory, OpMinus, []int{}, "OpMinus")
-	op.createOpcodeDetails(factory, OpNotLogical, []int{}, "OpNotLogical")
-	op.createOpcodeDetails(factory, OpJumpFalsy, []int{2}, "OpJumpFalsy")
-	op.createOpcodeDetails(factory, OpJumpAnd, []int{2}, "OpJumpAnd")
-	op.createOpcodeDetails(factory, OpJumpOr, []int{2}, "OpJumpOr")
-	op.createOpcodeDetails(factory, OpJump, []int{2}, "OpJump")
-	op.createOpcodeDetails(factory, OpNull, []int{}, "OpNull")
-	op.createOpcodeDetails(factory, OpGlobalGet, []int{2}, "OpGlobalGet")
-	op.createOpcodeDetails(factory, OpGlobalSet, []int{2}, "OpGlobalSet")
-	op.createOpcodeDetails(factory, OpGlobalSelSet, []int{2, 1}, "OpGlobalSelSet")
-	op.createOpcodeDetails(factory, OpArray, []int{2}, "OpArray")
-	op.createOpcodeDetails(factory, OpMap, []int{2}, "OpMap")
-	op.createOpcodeDetails(factory, OpStruct, []int{2}, "OpStruct")
-	op.createOpcodeDetails(factory, OpImmutable, []int{}, "OpImmutable")
-	op.createOpcodeDetails(factory, OpIndex, []int{}, "OpIndex")
-	op.createOpcodeDetails(factory, OpIndexSlice, []int{}, "OpIndexSlice")
-	op.createOpcodeDetails(factory, OpCall, []int{1, 1}, "OpCall")
-	op.createOpcodeDetails(factory, OpReturn, []int{1}, "OpReturn")
-	op.createOpcodeDetails(factory, OpLocalGet, []int{1}, "OpLocalGet")
-	op.createOpcodeDetails(factory, OpLocalSet, []int{1}, "OpLocalSet")
-	op.createOpcodeDetails(factory, OpLocalDefine, []int{1}, "OpLocalDefine")
-	op.createOpcodeDetails(factory, OpLocalSelSet, []int{1, 1}, "OpLocalSelSet")
-	op.createOpcodeDetails(factory, OpClosure, []int{2, 1}, "OpClosure")
-	op.createOpcodeDetails(factory, OpFreePtrGet, []int{1}, "OpFreePtrGet")
-	op.createOpcodeDetails(factory, OpFreeGet, []int{1}, "OpFreeGet")
-	op.createOpcodeDetails(factory, OpFreeSet, []int{1}, "OpFreeSet")
-	op.createOpcodeDetails(factory, OpLocalPtrGet, []int{1}, "OpLocalPtrGet")
-	op.createOpcodeDetails(factory, OpFreeSelSet, []int{1, 1}, "OpFreeSelSet")
-	op.createOpcodeDetails(factory, OpIteratorInit, []int{1}, "OpIteratorInit")
-	op.createOpcodeDetails(factory, OpIteratorNext, []int{1}, "OpIteratorNext")
-	op.createOpcodeDetails(factory, OpIteratorKey, []int{1}, "OpIteratorKey")
-	op.createOpcodeDetails(factory, OpIteratorValue, []int{1}, "OpIteratorValue")
-	op.createOpcodeDetails(factory, OpBinary, []int{1}, "OpBinary")
-	op.createOpcodeDetails(factory, OpReferences, []int{2}, "OpReferences")
-	op.createOpcodeDetails(factory, OpIntOp, []int{2, 1}, "OpIntOp")
-	op.createOpcodeDetails(factory, OpDeref, []int{}, "OpDeref")
-	op.createOpcodeDetails(factory, OpSuspend, []int{}, "OpSuspend")
-	op.createOpcodeDetails(factory, OpError, []int{}, "OpError")
+	op.createOpcodeDetails(gk, OpConstant, []int{2}, "OpConstant")
+	op.createOpcodeDetails(gk, OpPop, []int{}, "OpPop")
+	op.createOpcodeDetails(gk, OpTrue, []int{}, "OpTrue")
+	op.createOpcodeDetails(gk, OpFalse, []int{}, "OpFalse")
+	op.createOpcodeDetails(gk, OpBitwiseComplement, []int{}, "OpBitwiseComplement")
+	op.createOpcodeDetails(gk, OpEqual, []int{}, "OpEqual")
+	op.createOpcodeDetails(gk, OpNotEqual, []int{}, "OpNotEqual")
+	op.createOpcodeDetails(gk, OpMinus, []int{}, "OpMinus")
+	op.createOpcodeDetails(gk, OpNotLogical, []int{}, "OpNotLogical")
+	op.createOpcodeDetails(gk, OpJumpFalsy, []int{2}, "OpJumpFalsy")
+	op.createOpcodeDetails(gk, OpJumpAnd, []int{2}, "OpJumpAnd")
+	op.createOpcodeDetails(gk, OpJumpOr, []int{2}, "OpJumpOr")
+	op.createOpcodeDetails(gk, OpJump, []int{2}, "OpJump")
+	op.createOpcodeDetails(gk, OpNull, []int{}, "OpNull")
+	op.createOpcodeDetails(gk, OpGlobalGet, []int{2}, "OpGlobalGet")
+	op.createOpcodeDetails(gk, OpGlobalSet, []int{2}, "OpGlobalSet")
+	op.createOpcodeDetails(gk, OpGlobalSelSet, []int{2, 1}, "OpGlobalSelSet")
+	op.createOpcodeDetails(gk, OpArray, []int{2}, "OpArray")
+	op.createOpcodeDetails(gk, OpMap, []int{2}, "OpMap")
+	op.createOpcodeDetails(gk, OpStruct, []int{2}, "OpStruct")
+	op.createOpcodeDetails(gk, OpImmutable, []int{}, "OpImmutable")
+	op.createOpcodeDetails(gk, OpIndex, []int{}, "OpIndex")
+	op.createOpcodeDetails(gk, OpIndexSlice, []int{}, "OpIndexSlice")
+	op.createOpcodeDetails(gk, OpCall, []int{1, 1}, "OpCall")
+	op.createOpcodeDetails(gk, OpReturn, []int{1}, "OpReturn")
+	op.createOpcodeDetails(gk, OpLocalGet, []int{1}, "OpLocalGet")
+	op.createOpcodeDetails(gk, OpLocalSet, []int{1}, "OpLocalSet")
+	op.createOpcodeDetails(gk, OpLocalDefine, []int{1}, "OpLocalDefine")
+	op.createOpcodeDetails(gk, OpLocalSelSet, []int{1, 1}, "OpLocalSelSet")
+	op.createOpcodeDetails(gk, OpClosure, []int{2, 1}, "OpClosure")
+	op.createOpcodeDetails(gk, OpFreePtrGet, []int{1}, "OpFreePtrGet")
+	op.createOpcodeDetails(gk, OpFreeGet, []int{1}, "OpFreeGet")
+	op.createOpcodeDetails(gk, OpFreeSet, []int{1}, "OpFreeSet")
+	op.createOpcodeDetails(gk, OpLocalPtrGet, []int{1}, "OpLocalPtrGet")
+	op.createOpcodeDetails(gk, OpFreeSelSet, []int{1, 1}, "OpFreeSelSet")
+	op.createOpcodeDetails(gk, OpIteratorInit, []int{1}, "OpIteratorInit")
+	op.createOpcodeDetails(gk, OpIteratorNext, []int{1}, "OpIteratorNext")
+	op.createOpcodeDetails(gk, OpIteratorKey, []int{1}, "OpIteratorKey")
+	op.createOpcodeDetails(gk, OpIteratorValue, []int{1}, "OpIteratorValue")
+	op.createOpcodeDetails(gk, OpBinary, []int{1}, "OpBinary")
+	op.createOpcodeDetails(gk, OpReferences, []int{2}, "OpReferences")
+	op.createOpcodeDetails(gk, OpIntOp, []int{2, 1}, "OpIntOp")
+	op.createOpcodeDetails(gk, OpDeref, []int{}, "OpDeref")
+	op.createOpcodeDetails(gk, OpSuspend, []int{}, "OpSuspend")
+	op.createOpcodeDetails(gk, OpError, []int{}, "OpError")
 	return op
 }
 
-// Factory returns the factory associated with the Opcodes instance.
-func (op *Opcodes) Factory() objects.IGateKeeper {
-	return op.factory
+// GateKeeper returns the IGateKeeper instance managed by the Opcodes object.
+func (op *Opcodes) GateKeeper() objects.IGateKeeper {
+	return op.gk
 }
 
 // createOpcodeDetails associates opcode details with a specific opcode, storing it in a global lookup by applying a mask.

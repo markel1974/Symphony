@@ -32,5 +32,5 @@ func (op *OpReturn) Execute(v *core.VM, decoder *core.Decoder) {
 			returnValues[i] = v.Stack().Pop()
 		}
 	}
-	v.FunctionCompiledReturn(returnValues)
+	v.Return(returnValues)
 }
