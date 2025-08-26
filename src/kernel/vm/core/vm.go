@@ -24,7 +24,7 @@ const (
 
 // VM represents a virtual machine that executes bytecode instructions, handles stack, and manages execution frames.
 type VM struct {
-	factory     objects.IGateKeeper
+	gk          objects.IGateKeeper
 	sourceFiles *bytecode.Files
 	stack       *Stack
 	frames      *Frames
@@ -36,29 +36,36 @@ type VM struct {
 	references  *References
 	constants   *Constants
 	globals     *Globals
+	initStart   bool
 	entryPoints map[string]*objects.FuncCompiled
 }
 
 // New initializes and returns a new virtual machine instance configured with the provided components and settings.
-func New(factory objects.IGateKeeper, sequencer ISequencer) *VM {
+func New(gk objects.IGateKeeper, sequencer ISequencer) *VM {
 	v := &VM{
-		factory:     factory,
+		gk:          gk,
 		ip:          resetIp,
 		sourceFiles: nil,
 		references:  nil,
 		entryPoints: make(map[string]*objects.FuncCompiled),
+		initStart:   false,
 	}
-	v.constants = NewConstants(factory, v.SetError)
-	v.references = NewReferences(factory, v.SetError)
-	v.globals = NewGlobals(factory, v.SetError)
-	v.stack = NewStack(factory, stackSize, v.SetError)
-	v.frames = NewFrames(factory, maxFrames, v.SetError)
+	v.constants = NewConstants(gk, v.SetError)
+	v.references = NewReferences(gk, v.SetError)
+	v.globals = NewGlobals(gk, v.SetError)
+	v.stack = NewStack(gk, stackSize, v.SetError)
+	v.frames = NewFrames(gk, maxFrames, v.SetError)
 	seq := sequencer.Create()
 	v.sequencer = make([]*Decoder, len(seq))
 	for i, s := range seq {
 		v.sequencer[i] = NewDecoder(s)
 	}
 	return v
+}
+
+func (v *VM) Reset() {
+	v.initStart = false
+	v.prepare()
 }
 
 // Setup initializes the virtual machine with the provided bytecode and loader components.
@@ -83,9 +90,9 @@ func (v *VM) Setup(loader bytecode.ILoader, bc *bytecode.Bytecode) error {
 }
 
 // Reset reinitializes the virtual machine's state, clears the stack and frames, and resets execution-related variables.
-func (v *VM) Reset() {
+func (v *VM) prepare() {
 	v.ip = resetIp
-	v.factory.Reset()
+	v.gk.Reset()
 	v.stack.Reset()
 	v.frames.Reset()
 	v.err = nil
@@ -95,15 +102,18 @@ func (v *VM) Reset() {
 // Run executes the specified function by mainId with provided arguments after initializing the VM with "__init__".
 // Returns an error if initialization or function execution fails.
 func (v *VM) Run(mainId string, args ...interface{}) error {
-	if err := v.exec("__init__", args...); err != nil {
-		return err
+	if !v.initStart {
+		if err := v.exec("__init__", args...); err != nil {
+			return err
+		}
+		v.initStart = true
 	}
 	return v.exec(mainId, args...)
 }
 
 // Run executes the virtual machine's bytecode, managing the stack, frames, and instruction pointer state.
 func (v *VM) exec(mainId string, args ...interface{}) error {
-	v.Reset()
+	v.prepare()
 
 	mainFn, ok := v.entryPoints[mainId]
 	if !ok {
@@ -118,7 +128,7 @@ func (v *VM) exec(mainId string, args ...interface{}) error {
 	}
 
 	for idx, arg := range args {
-		argObj := v.factory.FromInterface(objects.FrameStatic, arg)
+		argObj := v.gk.FromInterface(objects.FrameStatic, arg)
 		v.stack.SetAbsolute(idx, argObj)
 	}
 
@@ -180,7 +190,7 @@ func (v *VM) libraryCall(value objects.IObject, args []objects.IObject, numArgs 
 		return
 	}
 	if ret == nil {
-		v.stack.Push(v.factory.UndefinedValue())
+		v.stack.Push(v.gk.UndefinedValue())
 	} else {
 		v.stack.Push(ret)
 	}
@@ -265,7 +275,7 @@ func (v *VM) Return(returnValues []objects.IObject) {
 			v.stack.Push(returnValues[i])
 		}
 	} else {
-		v.stack.Push(v.factory.UndefinedValue())
+		v.stack.Push(v.gk.UndefinedValue())
 	}
 	if shutdown {
 		v.Shutdown()
@@ -313,7 +323,7 @@ func (v *VM) GetReturnValue(idx int) interface{} {
 	if obj == nil {
 		return nil
 	}
-	return v.factory.ToInterface(obj)
+	return v.gk.ToInterface(obj)
 }
 
 // GetReturnValues returns the values from the top of the stack as an array of interface values.

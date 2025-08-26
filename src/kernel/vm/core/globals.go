@@ -8,15 +8,15 @@ import (
 
 // Globals encapsulates shared system-wide data like objects, kind, and error signals for centralized management.
 type Globals struct {
-	factory   objects.IGateKeeper
+	gk        objects.IGateKeeper
 	container []objects.IObject
 	errSignal func(err error)
 }
 
 // NewGlobals initializes and returns a new Globals instance with the provided factory, kind, and error signal handler.
-func NewGlobals(factory objects.IGateKeeper, errSignal func(err error)) *Globals {
+func NewGlobals(gk objects.IGateKeeper, errSignal func(err error)) *Globals {
 	return &Globals{
-		factory:   factory,
+		gk:        gk,
 		container: nil,
 		errSignal: errSignal,
 	}
@@ -33,7 +33,7 @@ func (g *Globals) Setup(constants []objects.IObject) error {
 func (g *Globals) Get(index uint) objects.IObject {
 	if index >= uint(len(g.container)) {
 		g.errSignal(fmt.Errorf("invalid global index: %d", index))
-		return g.factory.UndefinedValue()
+		return g.gk.UndefinedValue()
 	}
 	return g.container[index]
 }

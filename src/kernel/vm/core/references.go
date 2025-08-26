@@ -9,15 +9,15 @@ import (
 
 // References represents a structure for managing object references in a container, utilizing a factory and error signaling.
 type References struct {
-	factory   objects.IGateKeeper
+	gk        objects.IGateKeeper
 	container []objects.IObject
 	errSignal func(err error)
 }
 
 // NewReferences creates and initializes a References instance with the provided IGateKeeper factory and error signaling function.
-func NewReferences(factory objects.IGateKeeper, errSignal func(err error)) *References {
+func NewReferences(gk objects.IGateKeeper, errSignal func(err error)) *References {
 	return &References{
-		factory:   factory,
+		gk:        gk,
 		container: nil,
 		errSignal: errSignal,
 	}
@@ -37,7 +37,7 @@ func (g *References) Setup(loader bytecode.ILoader, references []objects.IObject
 func (g *References) Get(index uint) objects.IObject {
 	if index >= uint(len(g.container)) {
 		g.errSignal(fmt.Errorf("invalid reference index: %d", index))
-		return g.factory.UndefinedValue()
+		return g.gk.UndefinedValue()
 	}
 	return g.container[index]
 }

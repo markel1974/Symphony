@@ -10,22 +10,22 @@ import (
 // Stack represents a data structure that operates on a LIFO (Last In, First Out) principle.
 // It manages a slice of objects implementing the IObject interface and tracks the stack pointer.
 type Stack struct {
-	factory   objects.IGateKeeper
+	gk        objects.IGateKeeper
 	stack     []objects.IObject
 	sp        int
 	errSignal func(err error)
 }
 
 // NewStack creates and initializes a new Stack with the specified size and returns a pointer to it.
-func NewStack(factory objects.IGateKeeper, size int, errSignal func(err error)) *Stack {
+func NewStack(gk objects.IGateKeeper, size int, errSignal func(err error)) *Stack {
 	s := &Stack{
-		factory:   factory,
+		gk:        gk,
 		sp:        0,
 		stack:     make([]objects.IObject, size),
 		errSignal: errSignal,
 	}
 	for i := range s.stack {
-		s.stack[i] = factory.UndefinedValue()
+		s.stack[i] = gk.UndefinedValue()
 	}
 	return s
 }
@@ -99,7 +99,7 @@ func (v *Stack) PushVarArgs(frame int, numArgs int, realArgs int) {
 		v.errSignal(objects.ErrIndexOutOfBounds)
 		return
 	}
-	v.stack[spStart] = v.factory.NewArray(frame, args)
+	v.stack[spStart] = v.gk.NewArray(frame, args)
 	v.sp = spStart + 1
 }
 
@@ -107,7 +107,7 @@ func (v *Stack) PushVarArgs(frame int, numArgs int, realArgs int) {
 // It returns UndefinedValue if the stack is empty (stack underflow).
 func (v *Stack) Pop() objects.IObject {
 	if v.sp == 0 {
-		return v.factory.UndefinedValue()
+		return v.gk.UndefinedValue()
 	}
 	v.sp--
 	return v.stack[v.sp]
@@ -149,7 +149,7 @@ func (v *Stack) PeekAbsolute(absolute int) objects.IObject {
 func (v *Stack) PeekOffset(offset int) objects.IObject {
 	sp := v.sp + offset
 	if sp < 0 || sp >= len(v.stack) {
-		return v.factory.UndefinedValue()
+		return v.gk.UndefinedValue()
 	}
 	ret := v.stack[sp]
 	return ret
@@ -159,7 +159,7 @@ func (v *Stack) PeekOffset(offset int) objects.IObject {
 func (v *Stack) Peek() objects.IObject {
 	sp := v.sp - 1
 	if sp < 0 || sp >= len(v.stack) {
-		return v.factory.UndefinedValue()
+		return v.gk.UndefinedValue()
 	}
 	ret := v.stack[v.sp-1]
 	return ret
@@ -187,7 +187,7 @@ func (v *Stack) ReleaseObjects(start int, end int) {
 	if start < 0 || end > len(v.stack) || start > end {
 		return
 	}
-	v.factory.ReleaseObjects(v.stack[start:end])
+	v.gk.ReleaseObjects(v.stack[start:end])
 }
 
 // Print outputs each element in the stack from the bottom to the current stack pointer.
