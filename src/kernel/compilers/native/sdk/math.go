@@ -6,14 +6,18 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
+func init() {
+	RegisterPackage(NewMath)
+}
+
 // Math serves as a container for mathematical operations and modules, mapping module names to their respective objects.
 type Math struct {
-	gk objects.IGateKeeper
-	*Package
+	gk        objects.IGateKeeper
+	container map[string]objects.IObject
 }
 
 // NewMath initializes and returns a new instance of Math with predefined mathematical constants and function modules.
-func NewMath(factory objects.IGateKeeper) *Math {
+func NewMath(factory objects.IGateKeeper) IPackage {
 	m := &Math{
 		gk: factory,
 	}
@@ -85,17 +89,28 @@ func NewMath(factory objects.IGateKeeper) *Math {
 		factory.NewFuncPackage(objects.FuncPackageDef, "Y1", factory.FuncIf64Of64(math.Y1)),
 		factory.NewFuncPackage(objects.FuncPackageDef, "Yn", factory.FuncIif64Of64(math.Yn)),
 	}
-	m.Package = NewPackage("math", container, constants)
+	m.container = BuildContainer(container, constants)
 	return m
+}
+
+// Name returns the name of the Math module as a string.
+func (m *Math) Name() string {
+	return "math"
+}
+
+// Get retrieves an object associated with the given name from the container. It returns the object and a boolean indicating success.
+func (m *Math) Get(name string) (objects.IObject, bool) {
+	v, ok := m.container[name]
+	return v, ok
 }
 
 // funcInOf64 wraps a no-argument function returning float64 into a FuncCallable to integrate with the GateAdapter system.
 // It enforces no arguments and converts the float64 result to an IObject, returning ErrWrongNumArguments for invalid input.
-func (z *Math) funcInOf64(fn func() float64) objects.FuncCallable {
+func (m *Math) funcInOf64(fn func() float64) objects.FuncCallable {
 	return func(frame int, args ...objects.IObject) (ret objects.IObject, err error) {
 		if len(args) != 0 {
 			return nil, objects.ErrWrongNumArguments
 		}
-		return z.gk.NewFloat(frame, fn()), nil
+		return m.gk.NewFloat(frame, fn()), nil
 	}
 }

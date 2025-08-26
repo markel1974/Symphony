@@ -6,14 +6,18 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
+func init() {
+	RegisterPackage(NewTime)
+}
+
 // Time represents a structure that manages a collection of modules implementing the IObject interface.
 type Time struct {
-	factory objects.IGateKeeper
-	*Package
+	factory   objects.IGateKeeper
+	container map[string]objects.IObject
 }
 
 // NewTime initializes and returns a new instance of Time with predefined constants and functions mapped to the module.
-func NewTime(factory objects.IGateKeeper) *Time {
+func NewTime(factory objects.IGateKeeper) IPackage {
 	t := &Time{factory: factory}
 	constants := map[string]objects.IObject{
 		"ANSIC":       factory.NewString(objects.FrameStatic, time.ANSIC),
@@ -87,8 +91,19 @@ func NewTime(factory objects.IGateKeeper) *Time {
 		factory.NewFuncPackage(objects.FuncPackageDef, "ToLocal", t.toLocal),
 		factory.NewFuncPackage(objects.FuncPackageDef, "ToUTC", t.toUTC),
 	}
-	t.Package = NewPackage("time", container, constants)
+	t.container = BuildContainer(container, constants)
 	return t
+}
+
+// Name returns the name of the Math module as a string.
+func (t *Time) Name() string {
+	return "time"
+}
+
+// Get retrieves an object associated with the given name from the container. It returns the object and a boolean indicating success.
+func (t *Time) Get(name string) (objects.IObject, bool) {
+	v, ok := t.container[name]
+	return v, ok
 }
 
 // sleep pauses the execution for a specified duration provided as an argument in nanoseconds.

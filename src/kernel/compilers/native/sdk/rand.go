@@ -6,14 +6,18 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
+func init() {
+	RegisterPackage(NewRand)
+}
+
 // Rand is a struct that encapsulates a module mapping of string keys to objects implementing the IObject interface.
 type Rand struct {
-	*Package
-	gk objects.IGateKeeper
+	gk        objects.IGateKeeper
+	container map[string]objects.IObject
 }
 
 // NewRand creates a new instance of Rand with a pre-defined set of random number generation functions.
-func NewRand(gk objects.IGateKeeper) *Rand {
+func NewRand(gk objects.IGateKeeper) IPackage {
 	z := &Rand{
 		gk: gk,
 	}
@@ -28,8 +32,19 @@ func NewRand(gk objects.IGateKeeper) *Rand {
 		gk.NewFuncPackage(objects.FuncPackageDef, "Read", z.read),
 		gk.NewFuncPackage(objects.FuncPackageDef, "Rand", z.rand),
 	}
-	z.Package = NewPackage("rand", container, nil)
+	z.container = BuildContainer(container, nil)
 	return z
+}
+
+// Name returns the name of the Rand module as a string.
+func (z *Rand) Name() string {
+	return "rand"
+}
+
+// Get retrieves an object associated with the given name from the container. It returns the object and a boolean indicating success.
+func (z *Rand) Get(name string) (objects.IObject, bool) {
+	v, ok := z.container[name]
+	return v, ok
 }
 
 // Read reads random data into a byte slice and returns the number of bytes written as an integer or an error if it occurs.

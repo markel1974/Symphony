@@ -7,15 +7,19 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
+func init() {
+	RegisterPackage(NewStrings)
+}
+
 // Strings provides a collection of string operations and functionality wrapped in a module.
 // It includes functions for manipulation, comparison, trimming, padding, splitting, and other string-related utilities.
 type Strings struct {
-	factory objects.IGateKeeper
-	*Package
+	factory   objects.IGateKeeper
+	container map[string]objects.IObject
 }
 
 // NewStrings creates and returns a new instance of Strings with a preconfigured map of string utility functions.
-func NewStrings(factory objects.IGateKeeper) *Strings {
+func NewStrings(factory objects.IGateKeeper) IPackage {
 	s := &Strings{factory: factory}
 	container := []objects.IObject{
 		factory.NewFuncPackage(objects.FuncPackageDef, "Compare", factory.FuncIssOi(strings.Compare)),
@@ -51,8 +55,19 @@ func NewStrings(factory objects.IGateKeeper) *Strings {
 		factory.NewFuncPackage(objects.FuncPackageDef, "TrimSpace", factory.FuncIsOs(strings.TrimSpace)),
 		factory.NewFuncPackage(objects.FuncPackageDef, "TrimSuffix", factory.FuncIssOs(strings.TrimSuffix)),
 	}
-	s.Package = NewPackage("strings", container, nil)
+	s.container = BuildContainer(container, nil)
 	return s
+}
+
+// Name returns the name of the Strings structure as a string.
+func (s *Strings) Name() string {
+	return "strings"
+}
+
+// Get retrieves an object associated with the given name from the container. It returns the object and a boolean indicating success.
+func (s *Strings) Get(name string) (objects.IObject, bool) {
+	v, ok := s.container[name]
+	return v, ok
 }
 
 // Replace replaces occurrences of a substring within a string with the specified replacement string up to a given limit.

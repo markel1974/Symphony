@@ -7,6 +7,7 @@ import (
 	"go/token"
 	"io"
 
+	"github.com/markel1974/c64emu/src/kernel/compilers/native/common"
 	"github.com/markel1974/c64emu/src/kernel/vm/bytecode"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
@@ -58,6 +59,11 @@ func New(gk objects.IGateKeeper, loader bytecode.ILoader, opcodes *bytecode.Opco
 		rootNode:     nil,
 	}
 	return c
+}
+
+// Id returns the unique identifier of the compiler as defined in the common package.
+func (c *Compiler) Id() string {
+	return common.Identifier
 }
 
 // Compile parses the provided source file and compiles it into bytecode. Returns compiled bytecode or an error.

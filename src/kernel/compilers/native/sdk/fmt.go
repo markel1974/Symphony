@@ -6,14 +6,18 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
+func init() {
+	RegisterPackage(NewFmt)
+}
+
 // Fmt represents a struct that provides formatted output methods using a map of predefined functions.
 type Fmt struct {
-	factory objects.IGateKeeper
-	*Package
+	factory   objects.IGateKeeper
+	container map[string]objects.IObject
 }
 
 // NewFmt initializes and returns a new Fmt instance with predefined formatting functions as module properties.
-func NewFmt(factory objects.IGateKeeper) *Fmt {
+func NewFmt(factory objects.IGateKeeper) IPackage {
 	f := &Fmt{
 		factory: factory,
 	}
@@ -25,8 +29,19 @@ func NewFmt(factory objects.IGateKeeper) *Fmt {
 		factory.NewFuncPackage(objects.FuncPackageDef, "Sprintf", f.sprintf),
 		factory.NewFuncPackage(objects.FuncPackageDef, "Errorf", f.errorf),
 	}
-	f.Package = NewPackage("fmt", container, nil)
+	f.container = BuildContainer(container, nil)
 	return f
+}
+
+// Name returns the name of the Fmt struct as a string.
+func (f *Fmt) Name() string {
+	return "fmt"
+}
+
+// Get retrieves an object associated with the given name from the container. It returns the object and a boolean indicating success.
+func (f *Fmt) Get(name string) (objects.IObject, bool) {
+	v, ok := f.container[name]
+	return v, ok
 }
 
 // Print writes the string representations of the provided arguments to the standard output without appending a newline.

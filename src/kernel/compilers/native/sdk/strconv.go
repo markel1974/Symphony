@@ -6,14 +6,18 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
+func init() {
+	RegisterPackage(NewStrconv)
+}
+
 // Strconv is a type that provides a module containing string conversion functions implemented using strconv.
 type Strconv struct {
-	factory objects.IGateKeeper
-	*Package
+	factory   objects.IGateKeeper
+	container map[string]objects.IObject
 }
 
 // NewStrconv initializes and returns a pointer to a new Strconv instance containing predefined module functions.
-func NewStrconv(factory objects.IGateKeeper) *Strconv {
+func NewStrconv(factory objects.IGateKeeper) IPackage {
 	s := &Strconv{
 		factory: factory,
 	}
@@ -30,8 +34,19 @@ func NewStrconv(factory objects.IGateKeeper) *Strconv {
 		factory.NewFuncPackage(objects.FuncPackageDef, "Quote", factory.FuncIsOs(strconv.Quote)),
 		factory.NewFuncPackage(objects.FuncPackageDef, "Unquote", factory.FuncIsOse(strconv.Unquote)),
 	}
-	s.Package = NewPackage("strconv", container, nil)
+	s.container = BuildContainer(container, nil)
 	return s
+}
+
+// Name returns the name of the Strconv module as a string.
+func (s *Strconv) Name() string {
+	return "strconv"
+}
+
+// Get retrieves an object associated with the given name from the container. It returns the object and a boolean indicating success.
+func (s *Strconv) Get(name string) (objects.IObject, bool) {
+	v, ok := s.container[name]
+	return v, ok
 }
 
 // FormatBool converts a boolean argument to its string representation ("true" or "false"). Returns an error if the argument is invalid.

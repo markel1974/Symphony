@@ -4,6 +4,8 @@ import "github.com/markel1974/c64emu/src/kernel/vm/objects"
 
 // ICompiler defines an interface for compiling source code and managing constants, references, and global objects.
 type ICompiler interface {
+	Id() string
+
 	Compile(filename string, source any) error
 
 	Constants() []objects.IObject

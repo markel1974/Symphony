@@ -4,21 +4,25 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
+func init() {
+	RegisterPackage(NewErrors)
+}
+
 // Errors is a type that encapsulates a map of module functions accessible as objects.
 type Errors struct {
-	factory objects.IGateKeeper
-	*Package
+	factory   objects.IGateKeeper
+	container map[string]objects.IObject
 }
 
 // NewErrors initializes and returns a new Errors instance with pre-defined function modules.
-func NewErrors(factory objects.IGateKeeper) *Errors {
+func NewErrors(factory objects.IGateKeeper) IPackage {
 	e := &Errors{
 		factory: factory,
 	}
 	container := []objects.IObject{
 		factory.NewFuncPackage(objects.FuncPackageDef, "New", e.New),
 	}
-	e.Package = NewPackage("errors", container, nil)
+	e.container = BuildContainer(container, nil)
 	return e
 }
 
@@ -32,4 +36,15 @@ func (e *Errors) New(frame int, args ...objects.IObject) (ret objects.IObject, e
 		return nil, err
 	}
 	return e.factory.NewError(frame, s), nil
+}
+
+// Name returns the name identifier of the Errors type.
+func (e *Errors) Name() string {
+	return "errors"
+}
+
+// Get retrieves an object associated with the given name from the container. It returns the object and a boolean indicating success.
+func (e *Errors) Get(name string) (objects.IObject, bool) {
+	v, ok := e.container[name]
+	return v, ok
 }

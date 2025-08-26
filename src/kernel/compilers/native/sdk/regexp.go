@@ -16,14 +16,18 @@ const (
 	RegexpEndDef   = "End"
 )
 
+func init() {
+	RegisterPackage(NewRegexp)
+}
+
 // Regexp represents a structure providing regular expression functionality through associated operations and methods.
 type Regexp struct {
-	factory objects.IGateKeeper
-	*Package
+	factory   objects.IGateKeeper
+	container map[string]objects.IObject
 }
 
 // NewRegexp creates and returns a new instance of the Regexp struct with initialized module functions.
-func NewRegexp(factory objects.IGateKeeper) *Regexp {
+func NewRegexp(factory objects.IGateKeeper) IPackage {
 	r := &Regexp{factory: factory}
 	container := []objects.IObject{
 		factory.NewFuncPackage(objects.FuncPackageDef, "Match", r.match),
@@ -32,8 +36,19 @@ func NewRegexp(factory objects.IGateKeeper) *Regexp {
 		factory.NewFuncPackage(objects.FuncPackageDef, "Split", r.split),
 		factory.NewFuncPackage(objects.FuncPackageDef, "Compile", r.compile),
 	}
-	r.Package = NewPackage("regexp", container, nil)
+	r.container = BuildContainer(container, nil)
 	return r
+}
+
+// Name returns the name of the Regexp module as a string.
+func (r *Regexp) Name() string {
+	return "regexp"
+}
+
+// Get retrieves an object associated with the given name from the container. It returns the object and a boolean indicating success.
+func (r *Regexp) Get(name string) (objects.IObject, bool) {
+	v, ok := r.container[name]
+	return v, ok
 }
 
 // Match checks whether the second string argument matches the pattern defined by the first string argument.

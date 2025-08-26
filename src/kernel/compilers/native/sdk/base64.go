@@ -6,14 +6,17 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
+func init() {
+	RegisterPackage(NewBase64)
+}
+
 // Base64 represents a type that provides a module map for Base64-related encoding and decoding operations.
 type Base64 struct {
-	*Package
+	container map[string]objects.IObject
 }
 
 // NewBase64 initializes a new Base64 instance with predefined encoding and decoding functions in the module map.
-func NewBase64(f objects.IGateKeeper) *Base64 {
-	b := &Base64{}
+func NewBase64(f objects.IGateKeeper) IPackage {
 	container := []objects.IObject{
 		f.NewFuncPackage(objects.FuncPackageDef, "EncodeToString", f.FuncIbSOs(base64.StdEncoding.EncodeToString)),
 		f.NewFuncPackage(objects.FuncPackageDef, "EncodeToString", f.FuncIsObSe(base64.StdEncoding.DecodeString)),
@@ -24,6 +27,19 @@ func NewBase64(f objects.IGateKeeper) *Base64 {
 		f.NewFuncPackage(objects.FuncPackageDef, "RawUrlEncode", f.FuncIbSOs(base64.RawURLEncoding.EncodeToString)),
 		f.NewFuncPackage(objects.FuncPackageDef, "rawUrlDecode", f.FuncIsObSe(base64.RawURLEncoding.DecodeString)),
 	}
-	b.Package = NewPackage("base64", container, nil)
+	b := &Base64{
+		container: BuildContainer(container, nil),
+	}
 	return b
+}
+
+// Name returns the name identifier of the Base64 type, which is "base64".
+func (b *Base64) Name() string {
+	return "base64"
+}
+
+// Get retrieves an object associated with the given name from the container. It returns the object and a boolean indicating success.
+func (b *Base64) Get(name string) (objects.IObject, bool) {
+	v, ok := b.container[name]
+	return v, ok
 }
