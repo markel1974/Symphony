@@ -12,7 +12,7 @@ import (
 const Id = "SCPU"
 
 // CartridgeExternalCPU represents an external CPU module with its associated components and connections for system integration.
-// It includes an ID, expansion board, CPU socket, programmable interrupt controller, CPU, and quartz clock source.
+// It includes an Id, expansion board, CPU socket, programmable interrupt controller, CPU, and quartz clock source.
 type CartridgeExternalCPU struct {
 	*component.BaseComponent
 	loaderId string

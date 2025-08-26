@@ -75,7 +75,7 @@ type jsonLogRow struct {
 
 //var defaultLocation, _ = time.LoadLocation("Europe/Rome")
 
-// eventToEventId maps an event to an ID by wrapping it into a map with the given id as the key and the event as the value.
+// eventToEventId maps an event to an Id by wrapping it into a map with the given id as the key and the event as the value.
 func eventToEventId(id string, event interface{}) interface{} {
 	c := make(map[string]interface{})
 	c[id] = event

@@ -37,7 +37,7 @@ type Loader struct {
 	kind         Type
 }
 
-// NewLoader initializes and returns a new CRTLoader instance with the specified ID and machine type.
+// NewLoader initializes and returns a new CRTLoader instance with the specified Id and machine type.
 func NewLoader(id string, mc MachineType) *Loader {
 	return &Loader{
 		id:           id,

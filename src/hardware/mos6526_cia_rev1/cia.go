@@ -64,7 +64,7 @@ type CIA struct {
 	socketIRQClearTrigger func()
 }
 
-// NewCIA creates and initializes a new instance of CIA, registering it with the provided factory, parent, and instance ID.
+// NewCIA creates and initializes a new instance of CIA, registering it with the provided factory, parent, and instance Id.
 func NewCIA(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *CIA {
 	m := &CIA{
 		BaseComponent: component.NewBaseComponent(),

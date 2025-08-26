@@ -27,7 +27,7 @@ func (op *OpIndex) Execute(v *core.VM, _ *core.Decoder) {
 	// Operands Offset  0
 	index := v.Stack().Pop()
 	left := v.Stack().Pop()
-	val, err := left.IndexGet(v.FrameID(), index)
+	val, err := left.IndexGet(v.Frame().Id(), index)
 	if err != nil {
 		if objects.Is(err, objects.ErrNotIndexable) {
 			v.SetError(fmt.Errorf("not indexable: %s", index.TypeName()))

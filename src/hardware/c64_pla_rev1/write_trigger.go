@@ -1,13 +1,13 @@
 package c64_pla_rev1
 
-// TriggerData is a data structure encapsulating an ID, a 16-bit address, and a write function of type WriteFn.
+// TriggerData is a data structure encapsulating an Id, a 16-bit address, and a write function of type WriteFn.
 type TriggerData struct {
 	id   int
 	addr uint16
 	w    WriteFn
 }
 
-// NewTriggerData creates a new TriggerData instance with the provided ID, address, and WriteFn.
+// NewTriggerData creates a new TriggerData instance with the provided Id, address, and WriteFn.
 func NewTriggerData(id int, addr uint16, fn WriteFn) *TriggerData {
 	return &TriggerData{
 		id:   id,
@@ -51,7 +51,7 @@ func (wt *Trigger) Add(fn WriteFn) (int, bool) {
 	return id, true
 }
 
-// Remove deletes a TriggerData object from the container by its unique ID, if it exists.
+// Remove deletes a TriggerData object from the container by its unique Id, if it exists.
 func (wt *Trigger) Remove(id int) bool {
 	for idx, f := range wt.container {
 		if id == f.GetId() {
@@ -88,7 +88,7 @@ func (wt *WriteTriggers) Len() int {
 	return wt.counter
 }
 
-// Add registers a WriteFn for the specified address and returns a unique ID for the added trigger.
+// Add registers a WriteFn for the specified address and returns a unique Id for the added trigger.
 func (wt *WriteTriggers) Add(addr uint16, fn WriteFn) int {
 	t := wt.triggers[addr]
 	if t == nil {

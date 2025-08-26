@@ -31,8 +31,8 @@ func (op *OpFreeSelSet) Execute(v *core.VM, decoder *core.Decoder) {
 	}
 	val := v.Stack().PeekOffset(-numSelectors - 1)
 	v.Stack().DecrementCount(numSelectors + 1)
-	fvi := v.FreeVarsIndex(freeIndex)
-	if err := op.Factory().IndexAssign(v.FrameID(), *fvi.Value(), val, selectors); err != nil {
+	fvi := v.Frame().FreeVarsIndex(freeIndex)
+	if err := op.Factory().IndexAssign(v.Frame().Id(), *fvi.Value(), val, selectors); err != nil {
 		v.SetError(err)
 		return
 	}

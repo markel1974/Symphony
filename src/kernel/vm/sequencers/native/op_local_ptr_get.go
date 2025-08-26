@@ -24,13 +24,13 @@ func NewOpLocalPtrGet(op *bytecode.Opcodes) core.IOpExecutor {
 func (op *OpLocalPtrGet) Execute(v *core.VM, decoder *core.Decoder) {
 	// Operands Offset 1 (8-bit)
 	localIndex := decoder.Read(0)
-	sp := v.BasePointer() + localIndex
+	sp := v.Frame().BasePointer() + localIndex
 	val := v.Stack().PeekAbsolute(sp)
 	if obj, ok := val.(*objects.ObjectPointer); ok {
 		v.Stack().Push(obj)
 		return
 	}
-	freeVar := op.Factory().NewObjectPointer(v.FrameID(), &val)
+	freeVar := op.Factory().NewObjectPointer(v.Frame().Id(), &val)
 	v.Stack().SetAbsolute(sp, freeVar)
 	v.Stack().Push(freeVar)
 }

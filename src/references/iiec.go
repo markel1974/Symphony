@@ -55,7 +55,7 @@ type IIec interface {
 	LedActivity(deviceNumber uint8, led bool)
 }
 
-// IdIIecDevice generates a unique identifier for an IIecDevice by combining its label, instance, and a fixed ID string.
+// IdIIecDevice generates a unique identifier for an IIecDevice by combining its label, instance, and a fixed Id string.
 func IdIIecDevice(_ IIecDevice, label string, instance int) string {
 	return IdInternalComponent(label, instance, "IIecDevices")
 }

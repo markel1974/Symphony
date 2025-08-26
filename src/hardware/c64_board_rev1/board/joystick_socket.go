@@ -4,7 +4,7 @@ import (
 	"github.com/markel1974/c64emu/src/references"
 )
 
-// JoystickSocket represents a joystick interface socket that integrates joystick functionality with a specific instance ID.
+// JoystickSocket represents a joystick interface socket that integrates joystick functionality with a specific instance Id.
 type JoystickSocket struct {
 	references.IC64Joystick
 	label     string

@@ -25,7 +25,7 @@ func NewRamSocket(parent references.IComponent, label string) *RamSocket {
 	return s
 }
 
-// HardwareId returns the unique hardware ID of the RamSocket as a string.
+// HardwareId returns the unique hardware Id of the RamSocket as a string.
 func (s *RamSocket) HardwareId() string {
 	return s.hwId
 }

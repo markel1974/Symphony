@@ -102,7 +102,7 @@ func (v *VIA2Socket) IRQClearTrigger() {
 	v.connections.IRQClearTrigger(v.intrId)
 }
 
-// IRQTrigger triggers an interrupt request (IRQ) for the associated connection using the stored interrupt ID.
+// IRQTrigger triggers an interrupt request (IRQ) for the associated connection using the stored interrupt Id.
 func (v *VIA2Socket) IRQTrigger() {
 	v.connections.IRQTrigger(v.intrId)
 }

@@ -27,7 +27,7 @@ func (op *OpBinary) Execute(v *core.VM, decoder *core.Decoder) {
 	right := v.Stack().Pop()
 	left := v.Stack().Pop()
 	operator := objects.Operator(opcode)
-	res, err := left.BinaryOp(v.FrameID(), operator, right)
+	res, err := left.BinaryOp(v.Frame().Id(), operator, right)
 	if err != nil {
 		v.SetError(err)
 		return

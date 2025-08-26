@@ -124,7 +124,7 @@ func (t *Process) CreateTimer(first int, interval int, count int) {
 	t.kRouter.PostKernelRequest(msg)
 }
 
-// StopTimer stops a timer identified by the given timer ID (tid) for the current process and returns true if successful.
+// StopTimer stops a timer identified by the given timer Id (tid) for the current process and returns true if successful.
 func (t *Process) StopTimer(tid int) {
 	msg := messages.NewMessageTimerStop(-1, -1, tid)
 	t.kRouter.PostKernelRequest(msg)
@@ -326,7 +326,7 @@ func (t *Process) ProcessExec(line string) {
 	t.kRouter.PostKernelRequest(messages.NewMessageProcessExec(-1, -1, line))
 }
 
-// WindowsSelectionBegin updates the task selection for the given process ID by invoking the kRouter's task selection method.
+// WindowsSelectionBegin updates the task selection for the given process Id by invoking the kRouter's task selection method.
 func (t *Process) WindowsSelectionBegin() {
 	t.kRouter.PostKernelRequest(messages.NewMessageWindowsSelectionBegin(-1, -1))
 }
@@ -593,7 +593,7 @@ func (t *Process) handleMessageProcessActivate(msg interfaces.IMessage) {
 	}
 }
 
-// handleMessageTimerCreated processes a MessageTimerCreated message and appends the timer ID to the Process's timer list.
+// handleMessageTimerCreated processes a MessageTimerCreated message and appends the timer Id to the Process's timer list.
 func (t *Process) handleMessageTimerCreated(msg interfaces.IMessage) {
 	mt, ok := msg.(*messages.MessageTimerCreated)
 	if !ok {

@@ -61,7 +61,7 @@ type Board struct {
 	label        string
 }
 
-// NewBoard creates and initializes a new Board with the specified IEC interface, device ID, device number, and options string.
+// NewBoard creates and initializes a new Board with the specified IEC interface, device Id, device number, and options string.
 func NewBoard(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *Board {
 	m := &Board{
 		BaseComponent: component.NewBaseComponent(),

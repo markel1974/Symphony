@@ -24,7 +24,7 @@ func NewOpLocalGet(op *bytecode.Opcodes) core.IOpExecutor {
 func (op *OpLocalGet) Execute(v *core.VM, decoder *core.Decoder) {
 	// Operands Offset 1 (8-bit)
 	localIndex := decoder.Read(0)
-	val := v.Stack().PeekAbsolute(v.BasePointer() + localIndex)
+	val := v.Stack().PeekAbsolute(v.Frame().BasePointer() + localIndex)
 	if obj, ok := val.(*objects.ObjectPointer); ok {
 		val = *obj.Value()
 	}

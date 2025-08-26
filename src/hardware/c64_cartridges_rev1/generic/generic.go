@@ -77,7 +77,7 @@ func (c *CartridgeGeneric) Internal() bool {
 	return false
 }
 
-// GetLoaderId returns the ID of the cartridge loader associated with the CartridgeGeneric instance.
+// GetLoaderId returns the Id of the cartridge loader associated with the CartridgeGeneric instance.
 func (c *CartridgeGeneric) GetLoaderId() string {
 	return c.loaderId
 }

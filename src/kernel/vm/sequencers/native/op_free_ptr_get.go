@@ -24,6 +24,6 @@ func NewOpFreeGetPtr(op *bytecode.Opcodes) core.IOpExecutor {
 func (op *OpFreePtrGet) Execute(v *core.VM, decoder *core.Decoder) {
 	// Operands Offset 1 (8-bit)
 	freeIndex := decoder.Read(0)
-	val := v.FreeVarsIndex(freeIndex)
+	val := v.Frame().FreeVarsIndex(freeIndex)
 	v.Stack().Push(val)
 }

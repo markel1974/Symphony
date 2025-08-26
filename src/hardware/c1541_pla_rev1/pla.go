@@ -27,7 +27,7 @@ type PLA struct {
 	via2       references.IMos6522
 }
 
-// NewPLA initializes and returns a new instance of the PLA structure with specified parent, factory, and instance ID.
+// NewPLA initializes and returns a new instance of the PLA structure with specified parent, factory, and instance Id.
 // It sets up the PLA's RAM with a predefined size and registers the component in a hierarchy via the factory.
 func NewPLA(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *PLA {
 	p := &PLA{

@@ -29,7 +29,7 @@ func (op *OpBitwiseComplement) Execute(v *core.VM, _ *core.Decoder) {
 	operand := v.Stack().Pop()
 	switch x := operand.(type) {
 	case *objects.Int:
-		res := op.Factory().NewInt(v.FrameID(), ^x.Value())
+		res := op.Factory().NewInt(v.Frame().Id(), ^x.Value())
 		v.Stack().Push(res)
 	default:
 		v.SetError(fmt.Errorf("invalid operation: ^%s", operand.TypeName()))

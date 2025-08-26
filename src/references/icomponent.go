@@ -54,7 +54,7 @@ type IHardware interface {
 
 // ICommand defines an interface for managing and executing commands in a system.
 // GetCommand retrieves the underlying cli.Command object.
-// CommandAdd registers a new command with a specified ID, description, and handler.
+// CommandAdd registers a new command with a specified Id, description, and handler.
 // CommandExec executes a registered command with the given arguments.
 // CommandExecPath executes a command at a specific path with the given arguments.
 // CommandDocumentation provides documentation for commands using a given map.

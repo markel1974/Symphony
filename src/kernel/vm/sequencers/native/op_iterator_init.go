@@ -31,7 +31,7 @@ func (op *OpIteratorInit) Execute(v *core.VM, decoder *core.Decoder) {
 		v.SetError(fmt.Errorf("not iterable: %s", iterable.TypeName()))
 		return
 	}
-	iterator := iterable.Iterate(v.FrameID())
-	destSlot := v.BasePointer() + localIndex
+	iterator := iterable.Iterate(v.Frame().Id())
+	destSlot := v.Frame().BasePointer() + localIndex
 	v.Stack().SetAbsolute(destSlot, iterator)
 }

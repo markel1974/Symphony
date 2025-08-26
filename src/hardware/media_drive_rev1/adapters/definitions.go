@@ -92,7 +92,7 @@ const (
 	ErrWriteProtect         // 26 WRITE PROTECT ON
 	ErrRead27               // 27 READ ERROR (checksum error in header)
 	ErrWrite28              // 28 WRITE ERROR (long data block)
-	ErrDiskId               // 29 DISK ID MISMATCH
+	ErrDiskId               // 29 DISK Id MISMATCH
 	ErrSyntax30             // 30 SYNTAX ERROR (general syntax)
 	ErrSyntax31             // 31 SYNTAX ERROR (invalid command)
 	ErrSyntax32             // 32 SYNTAX ERROR (command too long)
@@ -126,7 +126,7 @@ var _baseErrors = map[int]string{
 	ErrWriteProtect:  "WRITE PROTECT",
 	ErrRead27:        "READ ERROR",
 	ErrWrite28:       "WRITE ERROR",
-	ErrDiskId:        "DISK ID MISMATCH",
+	ErrDiskId:        "DISK Id MISMATCH",
 	ErrSyntax30:      "SYNTAX ERROR",
 	ErrSyntax31:      "SYNTAX ERROR",
 	ErrSyntax32:      "SYNTAX ERROR",

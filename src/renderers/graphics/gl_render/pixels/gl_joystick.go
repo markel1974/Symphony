@@ -8,7 +8,7 @@ import (
 type Joystick int
 
 // Joystick1 to Joystick16 represent GLFW joystick mappings for respective joystick IDs.
-// JoystickLast represents the last available joystick ID for GLFW.
+// JoystickLast represents the last available joystick Id for GLFW.
 const (
 	Joystick1  = Joystick(glfw.Joystick1)
 	Joystick2  = Joystick(glfw.Joystick2)

@@ -25,7 +25,8 @@ func NewFunctionCallFrame(id int, errSignal func(err error)) *Frame {
 	}
 }
 
-func (f *Frame) ID() int {
+// Id returns the unique identifier of the frame.
+func (f *Frame) Id() int {
 	return f.id
 }
 

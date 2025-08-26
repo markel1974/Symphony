@@ -44,7 +44,7 @@ type Manager struct {
 	irqClearFn          func(d uint32)
 }
 
-// NewManager creates and initializes a new Manager instance with the specified parent, factory, label, and instance ID.
+// NewManager creates and initializes a new Manager instance with the specified parent, factory, label, and instance Id.
 // It assigns default empty or no-op functions for various hardware-related operations and registers the component.
 func NewManager(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *Manager {
 	m := &Manager{
@@ -144,7 +144,7 @@ func (f *Manager) CreateCartridges() error {
 	return nil
 }
 
-// Add initializes and adds a new hardware component using the provided hardware type, name, and data, returning its ID or an error.
+// Add initializes and adds a new hardware component using the provided hardware type, name, and data, returning its Id or an error.
 func (f *Manager) Add(hardware string, name string, data []byte) (string, error) {
 	id := strconv.Itoa(f.idx)
 	ldr := catalog.NewLoader(id, catalog.MachineC64)

@@ -131,6 +131,11 @@ func (v *VM) References() *References {
 	return v.references
 }
 
+// Frame returns the current frame instance associated with the VM.
+func (v *VM) Frame() *Frame {
+	return v.currFrame
+}
+
 // SetIp sets the virtual machine's instruction pointer to the specified value.
 func (v *VM) SetIp(ip int) {
 	v.ip = ip
@@ -168,7 +173,7 @@ func (v *VM) Call(value objects.IObject, spread int, numArgs int) {
 	switch callee := value.(type) {
 	case *objects.FuncCompiled:
 		if callee.VarArgs() {
-			v.Stack().PushVarArgs(v.FrameID(), numArgs, callee.NumParameters()-1)
+			v.Stack().PushVarArgs(v.currFrame.Id(), numArgs, callee.NumParameters()-1)
 			numArgs = callee.NumParameters()
 		} else {
 			if numArgs != callee.NumParameters() {
@@ -192,7 +197,7 @@ func (v *VM) Call(value objects.IObject, spread int, numArgs int) {
 func (v *VM) Return(returnValues []objects.IObject) {
 	shutdown := false
 	prevIp := v.currFrame.SavedIP()
-	leavingFrameBasePointer := v.BasePointer()
+	leavingFrameBasePointer := v.currFrame.BasePointer()
 	v.stack.ReleaseObjects(leavingFrameBasePointer, v.stack.StackPointer())
 	if v.frames.Index() > 1 {
 		v.frames.Previous()
@@ -214,26 +219,6 @@ func (v *VM) Return(returnValues []objects.IObject) {
 	if shutdown {
 		v.Shutdown()
 	}
-}
-
-// FreeVarsIndex retrieves the pointer to a free variable at the specified index from the current frame.
-func (v *VM) FreeVarsIndex(idx int) *objects.ObjectPointer {
-	return v.currFrame.FreeVarsIndex(idx)
-}
-
-// FrameID returns the ID of the current execution frame within the virtual machine.
-func (v *VM) FrameID() int {
-	return v.currFrame.ID()
-}
-
-// BasePointer returns the base pointer of the current frame in the virtual machine.
-func (v *VM) BasePointer() int {
-	return v.currFrame.BasePointer()
-}
-
-// StackPointer returns the current position of the stack pointer within the virtual machine's stack.
-func (v *VM) StackPointer() int {
-	return v.stack.StackPointer()
 }
 
 // ReseIp resets the instruction pointer of the virtual machine to its initial reset state defined by `resetIp`.
@@ -343,7 +328,7 @@ func (v *VM) loop() {
 
 // libraryCall invokes a callable object with the given arguments and handles stack cleanup and error management.
 func (v *VM) libraryCall(value objects.IObject, args []objects.IObject, numArgs int) {
-	ret, err := value.Call(v.FrameID(), args...)
+	ret, err := value.Call(v.currFrame.Id(), args...)
 	// Cleans the stack from the function and its arguments
 	v.stack.DecrementCount(numArgs + 1)
 	if err != nil {

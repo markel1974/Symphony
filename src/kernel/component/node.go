@@ -21,7 +21,7 @@ func createPathFromKey(key string) ([]string, error) {
 type Node struct {
 	component references.IComponent // Il componente (CPU, VIC-II, ecc.), o nil per i nodi intermedi.
 	parent    *Node                 // Puntatore al nodo genitore (nil per la radice).
-	children  map[string]*Node      // Mappa dei figli (chiave: ID del figlio, valore: puntatore al nodo figlio).
+	children  map[string]*Node      // Mappa dei figli (chiave: Id del figlio, valore: puntatore al nodo figlio).
 }
 
 // NewNode creates a new Node with the given component and parent, initializing its path and children map.
@@ -103,12 +103,12 @@ func (n *Node) Traverse(path string) references.IComponent {
 	return currentNode.GetComponent()
 }
 
-// GetChild retrieves the child node with the specified ID from the current node's children. Returns nil if not found.
+// GetChild retrieves the child node with the specified Id from the current node's children. Returns nil if not found.
 func (n *Node) GetChild(id string) references.INode {
 	return n.children[id]
 }
 
-// HasChild checks if the node has a child with the specified ID and returns true if it exists, otherwise false.
+// HasChild checks if the node has a child with the specified Id and returns true if it exists, otherwise false.
 func (n *Node) HasChild(id string) bool {
 	return n.children[id] != nil
 }

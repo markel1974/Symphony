@@ -95,7 +95,7 @@ func NewLoader(factory objects.IGateKeeper) *Loader {
 	return loader
 }
 
-// AddPackage adds a package with the given ID and attributes to the Loader's packages map.
+// AddPackage adds a package with the given Id and attributes to the Loader's packages map.
 func (l *Loader) AddPackage(id string, attr map[string]objects.IObject) {
 	m := &Package{container: attr}
 	l.packages[id] = m

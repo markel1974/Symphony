@@ -23,7 +23,7 @@ type FuncPackage struct {
 	value FuncCallable
 }
 
-// NewFuncPackage creates a new FuncPackage instance with the specified ID and callable function.
+// NewFuncPackage creates a new FuncPackage instance with the specified Id and callable function.
 func newFuncPackage(factory IGateKeeper, frame int, kind string, name string, fn FuncCallable) IObject {
 	return &FuncPackage{
 		gk:    factory,

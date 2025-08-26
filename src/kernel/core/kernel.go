@@ -29,7 +29,7 @@ type Kernel struct {
 	ticker       *adaptiveticker.AdaptiveTicker                       // System timer manager
 	inputDriver  interfaces.IKeyboardDriver                           // Keyboard input handler
 	foreground   *KernelProcess                                       // Currently active foreground process
-	pidGenerator *adaptiveticker.Ids                                  // Process ID allocation manager
+	pidGenerator *adaptiveticker.Ids                                  // Process Id allocation manager
 	running      map[int]*KernelProcess                               // Registry of active kernel processes
 	shellPath    string                                               // Default shell executable path
 	messageChan  chan interfaces.IMessage                             // Main message processing queue

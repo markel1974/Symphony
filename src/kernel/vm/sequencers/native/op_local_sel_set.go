@@ -32,11 +32,11 @@ func (op *OpLocalSelSet) Execute(v *core.VM, decoder *core.Decoder) {
 	}
 	val := v.Stack().PeekOffset(-numSelectors - 1)
 	v.Stack().DecrementCount(numSelectors + 1)
-	dst := v.Stack().PeekAbsolute(v.BasePointer() + localIndex)
+	dst := v.Stack().PeekAbsolute(v.Frame().BasePointer() + localIndex)
 	if obj, ok := dst.(*objects.ObjectPointer); ok {
 		dst = *obj.Value()
 	}
-	if err := op.Factory().IndexAssign(v.FrameID(), dst, val, selectors); err != nil {
+	if err := op.Factory().IndexAssign(v.Frame().Id(), dst, val, selectors); err != nil {
 		v.SetError(err)
 		return
 	}

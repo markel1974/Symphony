@@ -25,6 +25,6 @@ func (op *OpArray) Execute(v *core.VM, decoder *core.Decoder) {
 	// Operands Offset 2 (16-bit)
 	numElements := decoder.Read(0)
 	elements := v.Stack().PopArrayElements(numElements)
-	arr := op.Factory().NewArray(v.FrameID(), elements)
+	arr := op.Factory().NewArray(v.Frame().Id(), elements)
 	v.Stack().Push(arr)
 }

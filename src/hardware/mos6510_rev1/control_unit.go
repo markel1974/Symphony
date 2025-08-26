@@ -375,7 +375,7 @@ func (er *ControlUnit) addOpId(v func(cpu *CPU), id string) {
 	er.opReverseContainer[id] = r
 }
 
-// GetOpId retrieves the operation ID and a boolean indicating its existence for a given CPU operation function.
+// GetOpId retrieves the operation Id and a boolean indicating its existence for a given CPU operation function.
 func (er *ControlUnit) GetOpId(v func(cpu *CPU)) (string, bool) {
 	if v == nil {
 		return "", false

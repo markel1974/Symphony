@@ -2,14 +2,14 @@ package messages
 
 import "github.com/markel1974/c64emu/src/kernel/interfaces"
 
-// MessageTimer represents a timer message in the system, encapsulating process ID, timer ID, and interval details.
+// MessageTimer represents a timer message in the system, encapsulating process Id, timer Id, and interval details.
 type MessageTimer struct {
 	interfaces.IMessage
 	tid      int
 	interval int
 }
 
-// NewMessageTimer creates and returns a new MessageTimer with the specified process ID and interval duration.
+// NewMessageTimer creates and returns a new MessageTimer with the specified process Id and interval duration.
 func NewMessageTimer(source int, destination int, interval int) *MessageTimer {
 	return &MessageTimer{
 		IMessage: interfaces.NewMessageNoAck(source, destination, interfaces.MessageTypeTimer),
@@ -17,12 +17,12 @@ func NewMessageTimer(source int, destination int, interval int) *MessageTimer {
 	}
 }
 
-// SetTID sets the timer ID (tid) for the MessageTimer instance.
+// SetTID sets the timer Id (tid) for the MessageTimer instance.
 func (m *MessageTimer) SetTID(tid int) {
 	m.tid = tid
 }
 
-// TID returns the timer ID associated with the MessageTimer instance.
+// TID returns the timer Id associated with the MessageTimer instance.
 func (m *MessageTimer) TID() int {
 	return m.tid
 }
@@ -74,13 +74,13 @@ func (m *MessageTimerCreate) Count() int {
 	return m.count
 }
 
-// MessageTimerStop represents a message to stop a previously created timer, identified by its timer ID (tid).
+// MessageTimerStop represents a message to stop a previously created timer, identified by its timer Id (tid).
 type MessageTimerStop struct {
 	interfaces.IMessage
 	tid int
 }
 
-// NewMessageTimerStop creates a new MessageTimerStop instance with the specified timer ID (tid).
+// NewMessageTimerStop creates a new MessageTimerStop instance with the specified timer Id (tid).
 // It initializes the IMessage field with a no-acknowledgment message of type MessageTypeTimerStop.
 // tid is the identifier of the timer to be stopped.
 func NewMessageTimerStop(source int, destination int, tid int) *MessageTimerStop {
@@ -90,18 +90,18 @@ func NewMessageTimerStop(source int, destination int, tid int) *MessageTimerStop
 	}
 }
 
-// TID returns the timer ID associated with the MessageTimerStop instance.
+// TID returns the timer Id associated with the MessageTimerStop instance.
 func (m *MessageTimerStop) TID() int {
 	return m.tid
 }
 
-// MessageTimerCreated is a message type signaling the successful creation of a timer, encapsulating the timer's ID (tid).
+// MessageTimerCreated is a message type signaling the successful creation of a timer, encapsulating the timer's Id (tid).
 type MessageTimerCreated struct {
 	interfaces.IMessage
 	tid int
 }
 
-// NewMessageTimerCreated creates a new instance of MessageTimerCreated with the specified timer ID (tid).
+// NewMessageTimerCreated creates a new instance of MessageTimerCreated with the specified timer Id (tid).
 func NewMessageTimerCreated(source int, destination int, tid int) *MessageTimerCreated {
 	return &MessageTimerCreated{
 		IMessage: interfaces.NewMessageNoAck(source, destination, interfaces.MessageTypeTimerCreated),
@@ -109,7 +109,7 @@ func NewMessageTimerCreated(source int, destination int, tid int) *MessageTimerC
 	}
 }
 
-// TID retrieves the timer ID associated with the MessageTimerCreated instance.
+// TID retrieves the timer Id associated with the MessageTimerCreated instance.
 func (m *MessageTimerCreated) TID() int {
 	return m.tid
 }

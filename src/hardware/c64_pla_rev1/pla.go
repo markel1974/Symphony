@@ -244,7 +244,7 @@ func (b *PLA) ReadExt(memConfig int, addr uint16) uint8 {
 	return data
 }
 
-// SetWriteTrigger registers a write-trigger at a specified address with a callback and returns the assigned trigger ID.
+// SetWriteTrigger registers a write-trigger at a specified address with a callback and returns the assigned trigger Id.
 func (b *PLA) SetWriteTrigger(addr uint16, fn func(uint16, uint8)) int {
 	rebuild := b.wTriggers.Len() == 0
 	w := b.wTriggers.Add(addr, fn)
@@ -254,7 +254,7 @@ func (b *PLA) SetWriteTrigger(addr uint16, fn func(uint16, uint8)) int {
 	return w
 }
 
-// RemoveRamTrigger removes a write-trigger by its unique ID for the specified memory address in the WriteTriggers collection.
+// RemoveRamTrigger removes a write-trigger by its unique Id for the specified memory address in the WriteTriggers collection.
 func (b *PLA) RemoveRamTrigger(addr uint16, id int) {
 	b.wTriggers.Remove(addr, id)
 	rebuild := b.wTriggers.Len() == 0

@@ -6,7 +6,7 @@ package gcr
 // blockBytesLen defines the length of a block in bytes.
 // dataBlockLen represents the total length of a data block including id, bytes, checksum, and padding.
 // syncLen specifies the length of the synchronization sequence.
-// headerLen specifies the length of the header for a single sector, including ID, checksum, and other metadata.
+// headerLen specifies the length of the header for a single sector, including Id, checksum, and other metadata.
 // gapHeaderLen defines the length of the gap following the header section.
 // gapInterSectorLen defines the length of the gap between two sectors.
 // gcrDataLen specifies the encoded data length for GCR based on the data block length.
@@ -15,7 +15,7 @@ const (
 	blockBytesLen     = 256
 	dataBlockLen      = blockBytesLen + 4 // data block id (0x07) + blockBytes + checksum + 0x00 + 0x00
 	syncLen           = 5
-	headerLen         = 10 // GCR([ID $08] [Checksum] [Sector Number] [Track Number]) GCR([ID Char #2] [ID Char #1] [$0F] [$0F])
+	headerLen         = 10 // GCR([Id $08] [Checksum] [Sector Number] [Track Number]) GCR([Id Char #2] [Id Char #1] [$0F] [$0F])
 	gapHeaderLen      = 9
 	gapInterSectorLen = 8
 	gcrDataLen        = (dataBlockLen / 4) * 5
@@ -162,7 +162,7 @@ func sector2gcr(sector [blockBytesLen]uint8, id1 uint8, id2 uint8, trackIdx uint
 
 /*
 // BuildTrackImage costruisce l'immagine binaria completa di una singola traccia.
-// Prende come input l'indice della traccia, una mappa dei dati dei settori e l'ID del disco.
+// Prende come input l'indice della traccia, una mappa dei dati dei settori e l'Id del disco.
 // Restituisce una slice di byte che rappresenta la traccia GCR completa, pronta per essere letta dal mechanic.
 func BuildTrackImage(trackIdx uint8, sectorsData map[uint8][blockBytesLen]uint8, id1, id2 uint8) []byte {
 	numSectors, usPerByte := getTrackInfo(trackIdx)

@@ -1,6 +1,6 @@
 package config
 
-// Drive represents a virtual drive with a specific kind, data, ID, and write protection status.
+// Drive represents a virtual drive with a specific kind, data, Id, and write protection status.
 type Drive struct {
 	kind           string
 	data           []byte

@@ -33,7 +33,7 @@ type BaseComponent struct {
 	commands   *Commands
 }
 
-// NewBaseComponent creates a new instance of BaseComponent with a unique ID, name, label, and initialized properties and commands.
+// NewBaseComponent creates a new instance of BaseComponent with a unique Id, name, label, and initialized properties and commands.
 func NewBaseComponent() *BaseComponent {
 	bc := &BaseComponent{
 		id:         "",
@@ -117,7 +117,7 @@ func (bc *BaseComponent) GetChildren() []references.IComponent {
 	return children
 }
 
-// GetChildByHardwareId retrieves a child component by its unique identifier. Returns nil if no child with the specified ID exists.
+// GetChildByHardwareId retrieves a child component by its unique identifier. Returns nil if no child with the specified Id exists.
 func (bc *BaseComponent) GetChildByHardwareId(id string) references.IComponent {
 	for _, child := range bc.node.GetChildren() {
 		hwId := child.GetComponent().HardwareId()
@@ -134,7 +134,7 @@ func (bc *BaseComponent) GetComponentPath(path string) references.IComponent {
 	return component
 }
 
-// PropertyAdd registers a new property to the BaseComponent with the specified ID, description, read-only flag, getter, and setter.
+// PropertyAdd registers a new property to the BaseComponent with the specified Id, description, read-only flag, getter, and setter.
 func (bc *BaseComponent) PropertyAdd(id string, desc string, ro bool, get interface{}, set interface{}) {
 	p := NewPropertyInfo(id, desc, ro, get, set)
 	for _, c := range p.CreateShellCommand() {

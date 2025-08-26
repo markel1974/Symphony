@@ -22,7 +22,7 @@ func NewConstants() *Constants {
 	return c
 }
 
-// Add appends the given object to the constants slice and returns its index; caches the index if an ID is provided.
+// Add appends the given object to the constants slice and returns its index; caches the index if an Id is provided.
 func (c *Constants) Add(id string, obj objects.IObject) int {
 	c.constants = append(c.constants, obj)
 	nameIndex := len(c.constants) - 1

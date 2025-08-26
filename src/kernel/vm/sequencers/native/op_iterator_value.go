@@ -27,11 +27,11 @@ func NewOpIteratorValue(op *bytecode.Opcodes) core.IOpExecutor {
 func (op *OpIteratorValue) Execute(v *core.VM, decoder *core.Decoder) {
 	// Operands Offset 1 (8-bit)
 	localIndex := decoder.Read(0)
-	iteratorObj := v.Stack().PeekAbsolute(v.BasePointer() + localIndex)
+	iteratorObj := v.Stack().PeekAbsolute(v.Frame().BasePointer() + localIndex)
 	iterator, ok := iteratorObj.(objects.IIterator)
 	if !ok {
 		v.SetError(fmt.Errorf("not an iterator: %s", iteratorObj.TypeName()))
 		return
 	}
-	v.Stack().Push(iterator.Value(v.FrameID()))
+	v.Stack().Push(iterator.Value(v.Frame().Id()))
 }

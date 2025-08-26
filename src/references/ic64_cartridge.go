@@ -143,7 +143,7 @@ type IC64Cartridge interface {
 }
 
 // IC64CartridgeLoader defines the interface for loading and managing Commodore 64 cartridge data and metadata.
-// Setup initializes the cartridge loader with a unique ID and binary data.
+// Setup initializes the cartridge loader with a unique Id and binary data.
 // GetId retrieves the loader's unique identifier.
 // GetType returns the type identifier of the cartridge being loaded.
 // GetData retrieves the raw binary data loaded into the cartridge.

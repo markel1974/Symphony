@@ -35,13 +35,13 @@ func (op *OpIndexSlice) Execute(v *core.VM, _ *core.Decoder) {
 	var val objects.IObject = nil
 	switch left := leftStack.(type) {
 	case *objects.Array:
-		val = op.Factory().NewArray(v.FrameID(), left.Values()[lowIdx:highIdx])
+		val = op.Factory().NewArray(v.Frame().Id(), left.Values()[lowIdx:highIdx])
 	case *objects.ArrayImmutable:
-		val = op.Factory().NewArray(v.FrameID(), left.Values()[lowIdx:highIdx])
+		val = op.Factory().NewArray(v.Frame().Id(), left.Values()[lowIdx:highIdx])
 	case *objects.String:
-		val = op.Factory().NewString(v.FrameID(), left.Value()[lowIdx:highIdx])
+		val = op.Factory().NewString(v.Frame().Id(), left.Value()[lowIdx:highIdx])
 	case *objects.Bytes:
-		val = op.Factory().NewBytes(v.FrameID(), left.Value()[lowIdx:highIdx])
+		val = op.Factory().NewBytes(v.Frame().Id(), left.Value()[lowIdx:highIdx])
 	}
 	if val != nil {
 		v.Stack().Push(val)

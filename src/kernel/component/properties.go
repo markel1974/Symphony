@@ -10,7 +10,7 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/process"
 )
 
-// PropertyInfo represents metadata and behavior for a property, including its ID, type details, description, and functionality.
+// PropertyInfo represents metadata and behavior for a property, including its Id, type details, description, and functionality.
 type PropertyInfo struct {
 	id          string
 	description string

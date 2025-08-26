@@ -23,6 +23,6 @@ func NewOpError(op *bytecode.Opcodes) core.IOpExecutor {
 func (op *OpError) Execute(v *core.VM, _ *core.Decoder) {
 	// Operands Offset  0
 	value := v.Stack().Peek()
-	e := op.Factory().NewError(v.FrameID(), value.String())
+	e := op.Factory().NewError(v.Frame().Id(), value.String())
 	v.Stack().Set(e)
 }

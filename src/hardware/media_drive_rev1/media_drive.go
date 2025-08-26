@@ -14,7 +14,7 @@ const errChannel = 15
 // It embeds BaseComponent and IIecDevice, providing IEC device capabilities.
 // MediaDrive includes protocol handling, command execution, and configuration settings.
 // It manages up to 16 communication channels and an adapter for device interactions.
-// Device ID and number are associated with the drive for identification purposes.
+// Device Id and number are associated with the drive for identification purposes.
 type MediaDrive struct {
 	*component.BaseComponent
 	references.IIecDevice
@@ -55,7 +55,7 @@ func (v *MediaDrive) Setup() error {
 	return nil
 }
 
-// Bind binds the MediaDrive to the specified device socket, updates its device ID and number, and initializes the adapter and channels.
+// Bind binds the MediaDrive to the specified device socket, updates its device Id and number, and initializes the adapter and channels.
 func (v *MediaDrive) Bind(_ references.IIecDeviceSocket, deviceId uint8, deviceNumber uint8) error {
 	path := ""
 	if d := v.cfg.Drive(v.deviceId); d != nil {
@@ -214,7 +214,7 @@ func (v *MediaDrive) Read(d uint8) (uint8, uint8) {
 	return data, adapters.StOk
 }
 
-// Write sends a byte of data to a specific channel ID, appending it to the channel or setting a command for the error channel.
+// Write sends a byte of data to a specific channel Id, appending it to the channel or setting a command for the error channel.
 // On success, it returns StOk. Returns StTimeout if the command buffer for the error channel is full.
 func (v *MediaDrive) Write(d uint8, data uint8) uint8 {
 	channel := v.channels.Get(d)

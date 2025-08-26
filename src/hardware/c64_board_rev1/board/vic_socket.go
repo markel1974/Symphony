@@ -142,7 +142,7 @@ func (v *VICSocket) ReadCharRom(addr uint16) uint8 {
 	return v.romCharRead(addr)
 }
 
-// IRQTrigger triggers an interrupt request by invoking the PIC's TriggerIRQ method with the stored interrupt ID.
+// IRQTrigger triggers an interrupt request by invoking the PIC's TriggerIRQ method with the stored interrupt Id.
 func (v *VICSocket) IRQTrigger() {
 	v.connectionsIRQTrigger(v.intrId)
 }

@@ -33,7 +33,7 @@ type IC64Ram interface {
 	Size() int
 }
 
-// IdIC64Ram generates a unique identifier string for an IC64Ram component using its label, instance ID, and a fixed identifier.
+// IdIC64Ram generates a unique identifier string for an IC64Ram component using its label, instance Id, and a fixed identifier.
 func IdIC64Ram(v IC64Ram, label string, instance int) string {
 	return IdInternalComponent(label, instance, InterfaceName(&v))
 }

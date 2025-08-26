@@ -8,7 +8,7 @@ import (
 // UnknownId is a constant representing an invalid or uninitialized identifier with a value of -1.
 const UnknownId = -1
 
-// IIds represents an interface requiring a method to set an integer ID for implementing types.
+// IIds represents an interface requiring a method to set an integer Id for implementing types.
 type IIds interface {
 	SetId(int)
 	ClearId(int)
@@ -40,7 +40,7 @@ func NewIds(max int) *Ids {
 	}
 }
 
-// Set assigns a free ID to the provided object and stores it in the internal structures, returning true on success.
+// Set assigns a free Id to the provided object and stores it in the internal structures, returning true on success.
 func (a *Ids) Set(obj IIds) (int, bool) {
 	if obj == nil {
 		return UnknownId, false
@@ -60,7 +60,7 @@ func (a *Ids) Set(obj IIds) (int, bool) {
 	return id, true
 }
 
-// Unset removes an ID and its associated object, marking the ID as free and resetting the object's ID. Returns true on success.
+// Unset removes an Id and its associated object, marking the Id as free and resetting the object's Id. Returns true on success.
 func (a *Ids) Unset(id int) bool {
 	a.lock.Lock()
 	defer a.lock.Unlock()
@@ -84,7 +84,7 @@ func (a *Ids) Unset(id int) bool {
 	return true
 }
 
-// Get retrieves an element by its ID from the map. Returns the element and true if found, otherwise nil and false.
+// Get retrieves an element by its Id from the map. Returns the element and true if found, otherwise nil and false.
 func (a *Ids) Get(id int) (IIds, bool) {
 	a.lock.RLock()
 	defer a.lock.RUnlock()

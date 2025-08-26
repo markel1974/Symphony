@@ -23,7 +23,7 @@ type TOD struct {
 	almHr          uint8 // symphony:export almHr represents the hour value for the alarm time.
 }
 
-// NewTOD creates and returns a new instance of the TOD struct with the specified ID initialized.
+// NewTOD creates and returns a new instance of the TOD struct with the specified Id initialized.
 func NewTOD(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *TOD {
 	t := &TOD{
 		BaseComponent: component.NewBaseComponent(),

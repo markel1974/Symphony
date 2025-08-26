@@ -2,7 +2,7 @@ package interfaces
 
 import "time"
 
-// ProcessDescription represents the details of a system process, including its name and process ID.
+// ProcessDescription represents the details of a system process, including its name and process Id.
 type ProcessDescription struct {
 	name     string
 	user     string
@@ -26,7 +26,7 @@ func (p *ProcessDescription) Name() string {
 	return p.name
 }
 
-// PID returns the process ID
+// PID returns the process Id
 func (p *ProcessDescription) PID() int {
 	return p.pid
 }

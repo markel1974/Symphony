@@ -41,7 +41,7 @@ func (op *OpClosure) Execute(v *core.VM, decoder *core.Decoder) {
 			free[i] = freeVar
 		default:
 			t := v.Stack().PeekOffset(-numFree + i)
-			obj := op.Factory().NewObjectPointer(v.FrameID(), &t)
+			obj := op.Factory().NewObjectPointer(v.Frame().Id(), &t)
 			ptr, ok := obj.(*objects.ObjectPointer)
 			if !ok {
 				v.SetError(fmt.Errorf("not a pointer: %s", t.TypeName()))
@@ -51,6 +51,6 @@ func (op *OpClosure) Execute(v *core.VM, decoder *core.Decoder) {
 		}
 	}
 	v.Stack().DecrementCount(numFree)
-	cl := op.Factory().NewFuncCompiled(v.FrameID(), "closure", fn.Instructions().Data(), fn.NumLocals(), fn.NumParameters(), fn.VarArgs(), nil, free)
+	cl := op.Factory().NewFuncCompiled(v.Frame().Id(), "closure", fn.Instructions().Data(), fn.NumLocals(), fn.NumParameters(), fn.VarArgs(), nil, free)
 	v.Stack().Push(cl)
 }

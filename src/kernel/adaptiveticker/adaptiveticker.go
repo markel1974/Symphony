@@ -50,7 +50,7 @@ func NewAdaptiveTicker() *AdaptiveTicker {
 	return a
 }
 
-// Create initializes a new TimerHandler, assigns it an ID, and posts a creation event to the message channel.
+// Create initializes a new TimerHandler, assigns it an Id, and posts a creation event to the message channel.
 func (a *AdaptiveTicker) Create(target chan *TimerHandler, event interface{}, first int64, interval int64, count int64) int {
 	var current = NewTimerHandler(target, event, first, interval, count, a.minInterval)
 

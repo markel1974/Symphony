@@ -33,7 +33,7 @@ type IC64PlaChipSelect interface {
 // ReadDirect reads an 8-bit value directly from a specified 16-bit memory address bypassing memory configuration.
 // ReadColor retrieves an 8-bit color value from a specified 16-bit memory address.
 // SetWriteTrigger assigns a trigger function that executes when writing to a specific 16-bit memory address.
-// RemoveRamTrigger removes a previously set write trigger function for a specified 16-bit memory address identified by a trigger ID.
+// RemoveRamTrigger removes a previously set write trigger function for a specified 16-bit memory address identified by a trigger Id.
 type IC64Pla interface {
 	Setup() error
 

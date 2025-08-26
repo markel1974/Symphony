@@ -111,7 +111,7 @@ func (c *Dispatcher) Reset() {
 	}
 }
 
-// AddPeripheral adds a new peripheral to the dispatcher with the given kind, options, and device ID.
+// AddPeripheral adds a new peripheral to the dispatcher with the given kind, options, and device Id.
 func (c *Dispatcher) AddPeripheral(kind string, deviceId uint8) error {
 	deviceNumber := deviceId + 8
 	label := kind //kind + "_" + fmt.Sprint(deviceNumber)
@@ -138,7 +138,7 @@ func (c *Dispatcher) AddPeripheral(kind string, deviceId uint8) error {
 	return nil
 }
 
-// RemovePeripheral removes a peripheral identified by the given device ID from the dispatcher.
+// RemovePeripheral removes a peripheral identified by the given device Id from the dispatcher.
 func (c *Dispatcher) RemovePeripheral(deviceId uint8) {
 	deviceNumber := deviceId + 8
 	for x, v := range c.virtualDrives {

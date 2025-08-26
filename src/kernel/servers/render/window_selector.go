@@ -20,7 +20,7 @@ func NewWindowSelector() *WindowSelector {
 	}
 }
 
-// Clear resets the WindowSelector's state by clearing the index, setting the process ID to UnknownId, and nullifying the available list.
+// Clear resets the WindowSelector's state by clearing the index, setting the process Id to UnknownId, and nullifying the available list.
 func (ts *WindowSelector) Clear() {
 	ts.idx = 0
 	ts.pid = adaptiveticker.UnknownId
@@ -32,18 +32,18 @@ func (ts *WindowSelector) Len() int {
 	return len(ts.available)
 }
 
-// AddAvailable adds the given process ID to the available pool for selection.
+// AddAvailable adds the given process Id to the available pool for selection.
 func (ts *WindowSelector) AddAvailable(pid int) {
 	ts.available = append(ts.available, pid)
 }
 
-// Set updates the current process ID and index in the WindowSelector.
+// Set updates the current process Id and index in the WindowSelector.
 func (ts *WindowSelector) Set(pid int, idx int) {
 	ts.pid = pid
 	ts.idx = idx
 }
 
-// Get retrieves the process ID at the specified index in the available list.
+// Get retrieves the process Id at the specified index in the available list.
 func (ts *WindowSelector) Get(idx int) (int, bool) {
 	if idx < 0 || idx >= len(ts.available) {
 		return adaptiveticker.UnknownId, false
@@ -51,7 +51,7 @@ func (ts *WindowSelector) Get(idx int) (int, bool) {
 	return ts.available[idx], true
 }
 
-// Next advances the selection index to the next available task in the list and updates the current task ID. Returns false if the list is empty.
+// Next advances the selection index to the next available task in the list and updates the current task Id. Returns false if the list is empty.
 func (ts *WindowSelector) Next() bool {
 	if len(ts.available) == 0 {
 		return false
@@ -84,7 +84,7 @@ func (ts *WindowSelector) Prev() bool {
 	return true
 }
 
-// PID returns the currently selected process ID (pid) stored in the WindowSelector instance.
+// PID returns the currently selected process Id (pid) stored in the WindowSelector instance.
 func (ts *WindowSelector) PID() int {
 	return ts.pid
 }

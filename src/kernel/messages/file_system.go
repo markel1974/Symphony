@@ -36,7 +36,7 @@ func (m *MessageFileSystemFindRequest) Protected() bool {
 	return m.protected
 }
 
-// RequestorPID retrieves the process ID of the entity that initiated the file system find request.
+// RequestorPID retrieves the process Id of the entity that initiated the file system find request.
 func (m *MessageFileSystemFindRequest) RequestorPID() int {
 	return m.requestorPID
 }

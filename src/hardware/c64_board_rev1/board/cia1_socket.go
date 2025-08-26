@@ -201,7 +201,7 @@ func (w *CIA1Socket) ReadSP() bool {
 func (w *CIA1Socket) SignalSP( /*level*/ _ bool) {
 }
 
-// IRQTrigger triggers an interrupt request (IRQ) using the associated interrupt ID managed by the connection interface.
+// IRQTrigger triggers an interrupt request (IRQ) using the associated interrupt Id managed by the connection interface.
 func (w *CIA1Socket) IRQTrigger() {
 	w.connectionIRQTrigger(w.intrId)
 }

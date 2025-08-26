@@ -15,7 +15,7 @@ type RomSocket struct {
 	hwId      string
 }
 
-// NewRomSocket creates a new instance of RomSocket, initializes it with a parent component and label, and assigns a hardware ID.
+// NewRomSocket creates a new instance of RomSocket, initializes it with a parent component and label, and assigns a hardware Id.
 func NewRomSocket(parent references.IComponent, label string) *RomSocket {
 	s := &RomSocket{
 		IC64Roms: nil,
@@ -31,7 +31,7 @@ func (s *RomSocket) HardwareId() string {
 	return s.hwId
 }
 
-// Wire initializes and binds the RomSocket to the appropriate IC64Roms component by its hardware ID and returns an error if binding fails.
+// Wire initializes and binds the RomSocket to the appropriate IC64Roms component by its hardware Id and returns an error if binding fails.
 func (s *RomSocket) Wire() error {
 	var err error
 	s.component = s.parent.GetChildByHardwareId(s.HardwareId())

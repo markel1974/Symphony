@@ -119,7 +119,7 @@ func (m *MessageProcessStart) Args() []string {
 	return m.args
 }
 
-// MessageProcessKill represents a message used to request termination of a process, identified by its process ID (pid).
+// MessageProcessKill represents a message used to request termination of a process, identified by its process Id (pid).
 type MessageProcessKill struct {
 	interfaces.IMessage
 	pid int
@@ -164,7 +164,7 @@ func NewMessageProcessKillForeground(source int, destination int) *MessageProces
 	}
 }
 
-// MessageProcessExit represents a message indicating a process exit event, containing its process ID and message metadata.
+// MessageProcessExit represents a message indicating a process exit event, containing its process Id and message metadata.
 type MessageProcessExit struct {
 	interfaces.IMessage
 	pid int
@@ -192,13 +192,13 @@ func NewMessageProcessSetSelfForeground(source int, destination int) *MessagePro
 }
 
 // MessageProcessSetForeground represents a message that sets a process as the foreground process.
-// It embeds the IMessage interface for messaging capabilities and contains the process ID.
+// It embeds the IMessage interface for messaging capabilities and contains the process Id.
 type MessageProcessSetForeground struct {
 	interfaces.IMessage
 	pid int
 }
 
-// NewMessageProcessSetForeground creates a new MessageProcessSetForeground with the specified process ID (PID).
+// NewMessageProcessSetForeground creates a new MessageProcessSetForeground with the specified process Id (PID).
 func NewMessageProcessSetForeground(source int, destination int, pid int) *MessageProcessSetForeground {
 	return &MessageProcessSetForeground{
 		IMessage: interfaces.NewMessageNoAck(source, destination, interfaces.MessageTypeProcessSetForeground),
@@ -243,7 +243,7 @@ func (m *MessageProcessListResponse) GetResponse() []*interfaces.ProcessDescript
 }
 
 // MessageProcessIsRunningRequest represents a request to verify if a specific process is currently running.
-// It embeds interfaces.IMessage and includes a process ID (verifyPid) to check.
+// It embeds interfaces.IMessage and includes a process Id (verifyPid) to check.
 type MessageProcessIsRunningRequest struct {
 	interfaces.IMessage
 	verifyPid int
@@ -263,7 +263,7 @@ func NewMessageProcessIsRunningRequest(source int, destination, verifyPid int, a
 	}
 }
 
-// VerifyPID retrieves the process ID associated with the MessageProcessIsRunningRequest instance.
+// VerifyPID retrieves the process Id associated with the MessageProcessIsRunningRequest instance.
 func (m *MessageProcessIsRunningRequest) VerifyPID() int {
 	return m.verifyPid
 }
@@ -281,7 +281,7 @@ func (m *MessageProcessIsRunningResponse) GetResponse() bool {
 }
 
 // MessageNotifyProcessCreate is a message type used to notify the creation of a new process.
-// It includes the process ID and name of the created process as fields.
+// It includes the process Id and name of the created process as fields.
 // Implements the IMessage interface for messaging system integration.
 type MessageNotifyProcessCreate struct {
 	interfaces.IMessage
@@ -289,7 +289,7 @@ type MessageNotifyProcessCreate struct {
 	name       string
 }
 
-// NewMessageNotifyProcessCreate creates a new MessageNotifyProcessCreate instance with the given process ID and name.
+// NewMessageNotifyProcessCreate creates a new MessageNotifyProcessCreate instance with the given process Id and name.
 func NewMessageNotifyProcessCreate(source int, destination int, createdPID int, name string) *MessageNotifyProcessCreate {
 	return &MessageNotifyProcessCreate{
 		IMessage:   interfaces.NewMessageNoAck(source, destination, interfaces.MessageTypeNotifyProcessCreate),
@@ -298,7 +298,7 @@ func NewMessageNotifyProcessCreate(source int, destination int, createdPID int, 
 	}
 }
 
-// CreatedPID returns the process ID of the created process stored in the MessageNotifyProcessCreate instance.
+// CreatedPID returns the process Id of the created process stored in the MessageNotifyProcessCreate instance.
 func (m *MessageNotifyProcessCreate) CreatedPID() int {
 	return m.createdPID
 }
@@ -310,7 +310,7 @@ func (m *MessageNotifyProcessCreate) Name() string {
 
 // MessageNotifyProcessTerminate notifies when a specific process has been terminated in the system.
 // It implements the IMessage interface for inter-process communication.
-// The terminatedPID field identifies the process ID of the terminated process.
+// The terminatedPID field identifies the process Id of the terminated process.
 type MessageNotifyProcessTerminate struct {
 	interfaces.IMessage
 	terminatedPID int
@@ -330,7 +330,7 @@ func (m *MessageNotifyProcessTerminate) TerminatedPID() int {
 }
 
 // MessageNotifyProcessForeground represents a message indicating that a process has entered the foreground.
-// It embeds the IMessage interface and includes the process ID of the foreground process.
+// It embeds the IMessage interface and includes the process Id of the foreground process.
 type MessageNotifyProcessForeground struct {
 	interfaces.IMessage
 	foregroundPID int
@@ -344,7 +344,7 @@ func NewMessageNotifyProcessForeground(source int, destination int, foregroundPI
 	}
 }
 
-// ForegroundPID returns the process ID of the foreground process associated with the message.
+// ForegroundPID returns the process Id of the foreground process associated with the message.
 func (m *MessageNotifyProcessForeground) ForegroundPID() int {
 	return m.foregroundPID
 }

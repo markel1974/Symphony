@@ -23,6 +23,6 @@ func NewOpFreeGet(op *bytecode.Opcodes) core.IOpExecutor {
 func (op *OpFreeGet) Execute(v *core.VM, decoder *core.Decoder) {
 	// Operands Offset 1 (8-bit)
 	freeIndex := decoder.Read(0)
-	val := *v.FreeVarsIndex(freeIndex).Value()
+	val := *v.Frame().FreeVarsIndex(freeIndex).Value()
 	v.Stack().Push(val)
 }

@@ -7,7 +7,7 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
 )
 
-// PID represents a unique process identifier encapsulating an ID value.
+// PID represents a unique process identifier encapsulating an Id value.
 type PID struct {
 	id int
 }
@@ -116,7 +116,7 @@ func (kp *KernelProcess) Description() *interfaces.ProcessDescription {
 	return interfaces.NewProcessDescription(kp.name, kp.user, kp.pid.GetId(), kp.line, kp.time)
 }
 
-// AddTimer adds a timer ID to the KernelProcess's list of timers.
+// AddTimer adds a timer Id to the KernelProcess's list of timers.
 func (kp *KernelProcess) AddTimer(tid int) {
 	kp.timers = append(kp.timers, tid)
 }
@@ -139,7 +139,7 @@ func (kp *KernelProcess) Timers() []int {
 	return kp.timers
 }
 
-// TimersIterator iterates over registered timer IDs in the process, calling the provided callback for each timer ID.
+// TimersIterator iterates over registered timer IDs in the process, calling the provided callback for each timer Id.
 // If the callback returns true, the iteration stops immediately.
 func (kp *KernelProcess) TimersIterator(callback func(tid int) bool) {
 	for _, tid := range kp.timers {

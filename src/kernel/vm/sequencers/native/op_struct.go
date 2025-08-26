@@ -24,5 +24,5 @@ func (op *OpStruct) Execute(v *core.VM, decoder *core.Decoder) {
 	// Operands Offset 2 (16-bit)
 	numElements := decoder.Read(0)
 	mElem := v.Stack().PopMapElements(numElements)
-	v.Stack().Push(op.Factory().NewStruct(v.FrameID(), mElem))
+	v.Stack().Push(op.Factory().NewStruct(v.Frame().Id(), mElem))
 }

@@ -4,7 +4,7 @@ import (
 	"github.com/markel1974/c64emu/src/references"
 )
 
-// RamSocket represents a memory socket for the C64 system, managing its connection, binding, and hardware ID functionality.
+// RamSocket represents a memory socket for the C64 system, managing its connection, binding, and hardware Id functionality.
 type RamSocket struct {
 	references.IC64Ram
 	label     string
@@ -13,7 +13,7 @@ type RamSocket struct {
 	hwId      string
 }
 
-// NewRamSocket initializes a new RamSocket instance with a parent component and label, generating its hardware ID.
+// NewRamSocket initializes a new RamSocket instance with a parent component and label, generating its hardware Id.
 func NewRamSocket(parent references.IComponent, label string) *RamSocket {
 	s := &RamSocket{
 		IC64Ram: nil,

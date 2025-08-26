@@ -32,7 +32,7 @@ func (op *OpGlobalSelSet) Execute(v *core.VM, decoder *core.Decoder) {
 	val := v.Stack().PeekOffset(-numSelectors - 1)
 	v.Stack().DecrementCount(numSelectors + 1)
 	glObj := v.Globals().Get(uint(globalIndex))
-	if err := op.Factory().IndexAssign(v.FrameID(), glObj, val, selectors); err != nil {
+	if err := op.Factory().IndexAssign(v.Frame().Id(), glObj, val, selectors); err != nil {
 		v.SetError(err)
 		return
 	}

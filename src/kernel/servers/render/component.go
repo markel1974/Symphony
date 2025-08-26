@@ -45,7 +45,7 @@ func (c *Component) SetAvailable() {
 	c.available = true
 }
 
-// PID returns the process ID associated with the Component.
+// PID returns the process Id associated with the Component.
 func (c *Component) PID() int {
 	return c.pid
 }

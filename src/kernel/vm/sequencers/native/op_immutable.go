@@ -26,10 +26,10 @@ func (op *OpImmutable) Execute(v *core.VM, _ *core.Decoder) {
 	val := v.Stack().Peek()
 	switch value := val.(type) {
 	case *objects.Array:
-		obj := op.Factory().NewArrayImmutable(v.FrameID(), value.Values())
+		obj := op.Factory().NewArrayImmutable(v.Frame().Id(), value.Values())
 		v.Stack().Set(obj)
 	case *objects.Map:
-		obj := op.Factory().NewMapImmutable(v.FrameID(), value.Values())
+		obj := op.Factory().NewMapImmutable(v.Frame().Id(), value.Values())
 		v.Stack().Set(obj)
 	}
 }

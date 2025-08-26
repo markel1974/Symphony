@@ -32,7 +32,7 @@ type IC1541Ram interface {
 	Size() int
 }
 
-// IdIC1541Ram generates a unique hardware ID for an IC1541Ram component using a label, instance number, and reference.
+// IdIC1541Ram generates a unique hardware Id for an IC1541Ram component using a label, instance number, and reference.
 func IdIC1541Ram(v IC1541Ram, label string, instance int) string {
 	return IdInternalComponent(label, instance, InterfaceName(&v))
 }

@@ -36,7 +36,7 @@ func NewPLAReflect(r *PLA, factory references.IComponentFactory, parent referenc
 	r.PropertyAdd(reflectLabelId, "Label", false, reflector.getLabel, reflector.setLabel)
 
 	_ = r.CommandAdd("ReadExt", "ReadExt(memConfig, addr) uint8 - ReadExt allows reading a specific memory address using a temporary memory configuration.", r.ReadExt)
-	_ = r.CommandAdd("RemoveRamTrigger", "RemoveRamTrigger(addr, id) - RemoveRamTrigger removes a write-trigger by its unique ID for the specified memory address in the WriteTriggers collection.", r.RemoveRamTrigger)
+	_ = r.CommandAdd("RemoveRamTrigger", "RemoveRamTrigger(addr, id) - RemoveRamTrigger removes a write-trigger by its unique Id for the specified memory address in the WriteTriggers collection.", r.RemoveRamTrigger)
 	_ = r.CommandAdd("Update", "Update() - Update updates the state of the PLA by rebuilding the memory configuration and updating the port settings.", r.Update)
 	_ = r.CommandAdd("ReadRam0x0000", "ReadRam0x0000(addr) uint8 - ReadRam0x0000 reads data from address 0x0000 and processes special cases for addresses 0 and 1.", r.ReadRam0x0000)
 	_ = r.CommandAdd("ReadPortColor", "ReadPortColor(addr) uint8 - ReadPortColor reads color data from the Color RAM and combines it with data from the VIC latch for a full byte response.", r.ReadPortColor)

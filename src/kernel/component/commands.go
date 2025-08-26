@@ -143,7 +143,7 @@ func (c *Commands) Add(command *Command) error {
 	return nil
 }
 
-// Exists checks if a command with the specified ID exists in the collection. Returns true if it exists, otherwise false.
+// Exists checks if a command with the specified Id exists in the collection. Returns true if it exists, otherwise false.
 func (c *Commands) Exists(id string) bool {
 	_, ok := c.commands[id]
 	return ok

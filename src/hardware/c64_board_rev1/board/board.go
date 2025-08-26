@@ -235,7 +235,7 @@ func (s *Board) AECLowTrigger(v bool) {
 	s.cpuSocket.SetAECLow(v || s.dmaLow)
 }
 
-// IRQTrigger triggers an interrupt request (IRQ) using the associated interrupt ID managed by the connection interface.
+// IRQTrigger triggers an interrupt request (IRQ) using the associated interrupt Id managed by the connection interface.
 func (s *Board) IRQTrigger(d uint32) {
 	s.cpuSocket.TriggerIRQ(d)
 	s.cartridgeSocket.IRQ(d)
