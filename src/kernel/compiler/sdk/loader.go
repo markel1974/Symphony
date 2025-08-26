@@ -3,7 +3,6 @@ package sdk
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/kernel/vm/bytecode"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
@@ -177,23 +176,4 @@ func (l *Loader) GetSymbol(in objects.IObject) (objects.IObject, bool) {
 	}
 	v, ok := module.container[symbolName.Value()]
 	return v, ok
-}
-
-// CompilePackage compiles a package by name, returning an immutable map of its attributes or an error if not found.
-func (l *Loader) CompilePackage(name string) (*objects.MapImmutable, error) {
-	module, ok := l.packages[name]
-	if !ok {
-		return nil, fmt.Errorf("module %s not found", name)
-	}
-	attrs := make(map[string]objects.IObject, len(module.container))
-	for k, v := range module.container {
-		attrs[k] = v.Copy(objects.FrameStatic, 0)
-	}
-	attrs[bytecode.ModuleKey] = l.factory.NewString(objects.FrameStatic, name)
-	obj := l.factory.NewMapImmutable(objects.FrameStatic, attrs)
-	mImm, ok := obj.(*objects.MapImmutable)
-	if !ok {
-		return nil, fmt.Errorf("can't compile module %s", name)
-	}
-	return mImm, nil
 }
