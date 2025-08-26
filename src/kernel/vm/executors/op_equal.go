@@ -5,13 +5,17 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/core"
 )
 
+func init() {
+	SequencerRegister(NewOpEqual)
+}
+
 // OpEqual represents an operation that checks if two values are equal and updates the stack accordingly.
 type OpEqual struct {
 	*bytecode.OpcodeDetails
 }
 
 // NewOpEqual creates and returns an instance of OpEqual, initialized with its corresponding opcode details.
-func NewOpEqual(op *bytecode.Opcodes) *OpEqual {
+func NewOpEqual(op *bytecode.Opcodes) core.IOpExecutor {
 	return &OpEqual{OpcodeDetails: op.OpcodeToDetails(bytecode.OpEqual)}
 }
 

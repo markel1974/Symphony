@@ -7,6 +7,10 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/core"
 )
 
+func init() {
+	SequencerRegister(NewOpGetGlobal)
+}
+
 // OpGlobalGet represents an operation to retrieve a global variable in the virtual machine.
 // It embeds OpcodeDetails for detailed opcode information.
 type OpGlobalGet struct {
@@ -14,7 +18,7 @@ type OpGlobalGet struct {
 }
 
 // NewOpGetGlobal creates a new instance of OpGlobalGet with its associated opcode details.
-func NewOpGetGlobal(op *bytecode.Opcodes) *OpGlobalGet {
+func NewOpGetGlobal(op *bytecode.Opcodes) core.IOpExecutor {
 	return &OpGlobalGet{OpcodeDetails: op.OpcodeToDetails(bytecode.OpGlobalGet)}
 }
 

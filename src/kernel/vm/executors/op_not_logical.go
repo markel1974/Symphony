@@ -5,13 +5,17 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/core"
 )
 
+func init() {
+	SequencerRegister(NewOpNotLogical)
+}
+
 // OpNotLogical represents the logical NOT (!) operation opcode in the virtual machine's instruction set.
 type OpNotLogical struct {
 	*bytecode.OpcodeDetails
 }
 
 // NewOpNotLogical creates a new instance of OpNotLogical, representing a logical NOT operation (!).
-func NewOpNotLogical(op *bytecode.Opcodes) *OpNotLogical {
+func NewOpNotLogical(op *bytecode.Opcodes) core.IOpExecutor {
 	return &OpNotLogical{OpcodeDetails: op.OpcodeToDetails(bytecode.OpNotLogical)}
 }
 

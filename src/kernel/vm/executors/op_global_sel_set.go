@@ -6,13 +6,17 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
+func init() {
+	SequencerRegister(NewOpGlobalSelSet)
+}
+
 // OpGlobalSelSet represents an operation for setting a global variable's value using selectors for indexing or access.
 type OpGlobalSelSet struct {
 	*bytecode.OpcodeDetails
 }
 
 // NewOpGlobalSelSet creates a new instance of OpGlobalSelSet with its corresponding OpcodeDetails initialized.
-func NewOpGlobalSelSet(op *bytecode.Opcodes) *OpGlobalSelSet {
+func NewOpGlobalSelSet(op *bytecode.Opcodes) core.IOpExecutor {
 	return &OpGlobalSelSet{OpcodeDetails: op.OpcodeToDetails(bytecode.OpGlobalSelSet)}
 }
 

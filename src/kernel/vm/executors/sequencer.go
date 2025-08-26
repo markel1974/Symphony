@@ -1,80 +1,114 @@
 package executors
 
 import (
+	"fmt"
+
 	"github.com/markel1974/c64emu/src/kernel/vm/bytecode"
 	"github.com/markel1974/c64emu/src/kernel/vm/core"
 )
 
-// Sequencer is a type that manages a collection of IOpExecutor instances organized by their opcodes.
-// It provides methods for creating and populating the sequencer with specific opcode implementations.
-// The container field stores the IOpExecutor instances, indexed by their opcode with masking applied for efficiency.
-type Sequencer struct {
-	op        *bytecode.Opcodes
-	container []core.IOpExecutor
+// registerFunc is a function type that registers an operation with the provided bytecode.Opcodes and returns a core.IOpExecutor.
+type registerFunc = func(op *bytecode.Opcodes) core.IOpExecutor
+
+// _registerContainer holds a list of functions that register operational executors for bytecode instructions.
+var _registerContainer []registerFunc
+
+// SequencerRegister appends a registerFunc to the internal _registerContainer for further use by the sequencer system.
+func SequencerRegister(fn registerFunc) {
+	_registerContainer = append(_registerContainer, fn)
 }
 
-// NewSequencer initializes and returns a new instance of Sequencer.
+// Sequencer defines a container for managing and initializing opcode executors for a virtual machine's instruction set.
+type Sequencer struct {
+	op *bytecode.Opcodes
+}
+
+// NewSequencer initializes and returns a new Sequencer instance with the provided Opcodes configuration.
 func NewSequencer(op *bytecode.Opcodes) *Sequencer {
 	return &Sequencer{
 		op: op,
 	}
 }
 
-// Create initializes the internal container with default operation executors and returns it.
+// Create initializes and returns a slice of IOpExecutor with default OpUnknown executors, supplemented by static mappings.
 func (ds *Sequencer) Create() []core.IOpExecutor {
-	ds.container = make([]core.IOpExecutor, bytecode.OpcodesLen)
-	for idx := range ds.container {
-		ds.container[idx] = NewOpUnknown(ds.op)
-	}
-	ds.setSequence(NewOpConstant(ds.op))
-	ds.setSequence(NewOpNull(ds.op))
-	ds.setSequence(NewOpBinary(ds.op))
-	ds.setSequence(NewOpReferences(ds.op))
-	ds.setSequence(NewOpEqual(ds.op))
-	ds.setSequence(NewOpNotEqual(ds.op))
-	ds.setSequence(NewOpPop(ds.op))
-	ds.setSequence(NewOpTrue(ds.op))
-	ds.setSequence(NewOpFalse(ds.op))
-	ds.setSequence(NewOpNotLogical(ds.op))
-	ds.setSequence(NewOpBitwiseComplement(ds.op))
-	ds.setSequence(NewOpMinus(ds.op))
-	ds.setSequence(NewOpJumpFalsy(ds.op))
-	ds.setSequence(NewOpJumpAnd(ds.op))
-	ds.setSequence(NewOpJumpOr(ds.op))
-	ds.setSequence(NewOpJump(ds.op))
-	ds.setSequence(NewOpGlobalSet(ds.op))
-	ds.setSequence(NewOpGlobalSelSet(ds.op))
-	ds.setSequence(NewOpGetGlobal(ds.op))
-	ds.setSequence(NewOpArray(ds.op))
-	ds.setSequence(NewOpMap(ds.op))
-	ds.setSequence(NewOpStruct(ds.op))
-	ds.setSequence(NewOpError(ds.op))
-	ds.setSequence(NewOpImmutable(ds.op))
-	ds.setSequence(NewOpIndex(ds.op))
-	ds.setSequence(NewOpIndexSlice(ds.op))
-	ds.setSequence(NewOpCall(ds.op))
-	ds.setSequence(NewOpReturn(ds.op))
-	ds.setSequence(NewOpLocalDefine(ds.op))
-	ds.setSequence(NewOpLocalSet(ds.op))
-	ds.setSequence(NewOpLocalSelSet(ds.op))
-	ds.setSequence(NewOpLocalGet(ds.op))
-	ds.setSequence(NewOpClosure(ds.op))
-	ds.setSequence(NewOpFreeGetPtr(ds.op))
-	ds.setSequence(NewOpFreeGet(ds.op))
-	ds.setSequence(NewOpFreeSet(ds.op))
-	ds.setSequence(NewOpLocalPtrGet(ds.op))
-	ds.setSequence(NewOpFreeSelSet(ds.op))
-	ds.setSequence(NewOpIteratorInit(ds.op))
-	ds.setSequence(NewOpIteratorNext(ds.op))
-	ds.setSequence(NewOpIteratorKey(ds.op))
-	ds.setSequence(NewOpIteratorValue(ds.op))
-	ds.setSequence(NewOpIntOp(ds.op))
-	ds.setSequence(NewOpDeref(ds.op))
-	ds.setSequence(NewOpSuspend(ds.op))
-	return ds.container
+	v, _ := ds.createRegistered()
+	return v
 }
 
-// setSequence assigns a specific IOpExecutor implementation to its corresponding opcode index in the container.
-func (ds *Sequencer) setSequence(seq core.IOpExecutor) {
-	ds.container[seq.Opcode()&bytecode.OpcodesMask] = seq
+// createRegistered constructs and registers custom IOpExecutors using functions from _registerContainer and updates the sequence.
+func (ds *Sequencer) createRegistered() ([]core.IOpExecutor, error) {
+	container := make([]core.IOpExecutor, bytecode.OpcodesLen)
+	for idx := range container {
+		container[idx] = NewOpUnknown(ds.op)
+	}
+	for _, fn := range _registerContainer {
+		seq := fn(ds.op)
+		data := container[seq.Opcode()&bytecode.OpcodesMask]
+		if data.Opcode() != bytecode.OpUnknown {
+			return nil, fmt.Errorf("opcode %d already registered: %s", seq.Opcode(), data.Name())
+		}
+		container[seq.Opcode()&bytecode.OpcodesMask] = seq
+	}
+	return container, nil
+}
+
+// createStatic initializes and assigns specific op executors to the sequencer's container in a pre-defined sequence.
+func (ds *Sequencer) createStatic() []core.IOpExecutor {
+	container := make([]core.IOpExecutor, bytecode.OpcodesLen)
+	for idx := range container {
+		container[idx] = NewOpUnknown(ds.op)
+	}
+	ds.setSequence(container[:], NewOpConstant(ds.op))
+	ds.setSequence(container[:], NewOpNull(ds.op))
+	ds.setSequence(container[:], NewOpBinary(ds.op))
+	ds.setSequence(container[:], NewOpReferences(ds.op))
+	ds.setSequence(container[:], NewOpEqual(ds.op))
+	ds.setSequence(container[:], NewOpNotEqual(ds.op))
+	ds.setSequence(container[:], NewOpPop(ds.op))
+	ds.setSequence(container[:], NewOpTrue(ds.op))
+	ds.setSequence(container[:], NewOpFalse(ds.op))
+	ds.setSequence(container[:], NewOpNotLogical(ds.op))
+	ds.setSequence(container[:], NewOpBitwiseComplement(ds.op))
+	ds.setSequence(container[:], NewOpMinus(ds.op))
+	ds.setSequence(container[:], NewOpJumpFalsy(ds.op))
+	ds.setSequence(container[:], NewOpJumpAnd(ds.op))
+	ds.setSequence(container[:], NewOpJumpOr(ds.op))
+	ds.setSequence(container[:], NewOpJump(ds.op))
+	ds.setSequence(container[:], NewOpGlobalSet(ds.op))
+	ds.setSequence(container[:], NewOpGlobalSelSet(ds.op))
+	ds.setSequence(container[:], NewOpGetGlobal(ds.op))
+	ds.setSequence(container[:], NewOpArray(ds.op))
+	ds.setSequence(container[:], NewOpMap(ds.op))
+	ds.setSequence(container[:], NewOpStruct(ds.op))
+	ds.setSequence(container[:], NewOpError(ds.op))
+	ds.setSequence(container[:], NewOpImmutable(ds.op))
+	ds.setSequence(container[:], NewOpIndex(ds.op))
+	ds.setSequence(container[:], NewOpIndexSlice(ds.op))
+	ds.setSequence(container[:], NewOpCall(ds.op))
+	ds.setSequence(container[:], NewOpReturn(ds.op))
+	ds.setSequence(container[:], NewOpLocalDefine(ds.op))
+	ds.setSequence(container[:], NewOpLocalSet(ds.op))
+	ds.setSequence(container[:], NewOpLocalSelSet(ds.op))
+	ds.setSequence(container[:], NewOpLocalGet(ds.op))
+	ds.setSequence(container[:], NewOpClosure(ds.op))
+	ds.setSequence(container[:], NewOpFreeGetPtr(ds.op))
+	ds.setSequence(container[:], NewOpFreeGet(ds.op))
+	ds.setSequence(container[:], NewOpFreeSet(ds.op))
+	ds.setSequence(container[:], NewOpLocalPtrGet(ds.op))
+	ds.setSequence(container[:], NewOpFreeSelSet(ds.op))
+	ds.setSequence(container[:], NewOpIteratorInit(ds.op))
+	ds.setSequence(container[:], NewOpIteratorNext(ds.op))
+	ds.setSequence(container[:], NewOpIteratorKey(ds.op))
+	ds.setSequence(container[:], NewOpIteratorValue(ds.op))
+	ds.setSequence(container[:], NewOpIntOp(ds.op))
+	ds.setSequence(container[:], NewOpDeref(ds.op))
+	ds.setSequence(container[:], NewOpNoOp(ds.op))
+	ds.setSequence(container[:], NewOpSuspend(ds.op))
+	return container
+}
+
+// setSequence assigns the given IOpExecutor to the Sequencer's container, using the bit-masked opcode as the index.
+func (ds *Sequencer) setSequence(container []core.IOpExecutor, seq core.IOpExecutor) {
+	container[seq.Opcode()&bytecode.OpcodesMask] = seq
 }

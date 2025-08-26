@@ -6,13 +6,17 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
+func init() {
+	SequencerRegister(NewOpLocalPtrGet)
+}
+
 // OpLocalPtrGet retrieves a local variable as a pointer using its index within the current frame.
 type OpLocalPtrGet struct {
 	*bytecode.OpcodeDetails
 }
 
 // NewOpLocalPtrGet creates and returns a new instance of OpLocalPtrGet, initializing its OpcodeDetails.
-func NewOpLocalPtrGet(op *bytecode.Opcodes) *OpLocalPtrGet {
+func NewOpLocalPtrGet(op *bytecode.Opcodes) core.IOpExecutor {
 	return &OpLocalPtrGet{OpcodeDetails: op.OpcodeToDetails(bytecode.OpLocalPtrGet)}
 }
 

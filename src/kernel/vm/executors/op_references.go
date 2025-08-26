@@ -5,13 +5,17 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/core"
 )
 
+func init() {
+	SequencerRegister(NewOpReferences)
+}
+
 // OpReferences extends OpcodeDetails to represent operations specifically related to reference handling in the bytecode.
 type OpReferences struct {
 	*bytecode.OpcodeDetails
 }
 
 // NewOpReferences initializes a new OpReferences instance with corresponding OpcodeDetails from the bytecode package.
-func NewOpReferences(op *bytecode.Opcodes) *OpReferences {
+func NewOpReferences(op *bytecode.Opcodes) core.IOpExecutor {
 	return &OpReferences{OpcodeDetails: op.OpcodeToDetails(bytecode.OpReferences)}
 }
 

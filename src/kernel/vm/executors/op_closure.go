@@ -8,13 +8,17 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
+func init() {
+	SequencerRegister(NewOpClosure)
+}
+
 // OpClosure represents a closure operation that creates a new closure in the virtual machine.
 type OpClosure struct {
 	*bytecode.OpcodeDetails
 }
 
 // NewOpClosure returns a new instance of OpClosure initialized with the details of the OpClosure opcode.
-func NewOpClosure(op *bytecode.Opcodes) *OpClosure {
+func NewOpClosure(op *bytecode.Opcodes) core.IOpExecutor {
 	return &OpClosure{OpcodeDetails: op.OpcodeToDetails(bytecode.OpClosure)}
 }
 

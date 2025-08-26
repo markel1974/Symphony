@@ -5,13 +5,17 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/core"
 )
 
+func init() {
+	SequencerRegister(NewOpConstant)
+}
+
 // OpConstant represents an operation used to load a constant onto the stack.
 type OpConstant struct {
 	*bytecode.OpcodeDetails
 }
 
 // NewOpConstant creates a new OpConstant instance with opcode details initialized for the OpConstant operation.
-func NewOpConstant(op *bytecode.Opcodes) *OpConstant {
+func NewOpConstant(op *bytecode.Opcodes) core.IOpExecutor {
 	return &OpConstant{OpcodeDetails: op.OpcodeToDetails(bytecode.OpConstant)}
 }
 

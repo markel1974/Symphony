@@ -5,6 +5,10 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/core"
 )
 
+func init() {
+	SequencerRegister(NewOpArray)
+}
+
 // OpArray represents a bytecode operation for creating an array object in the virtual machine.
 // Extends base OpcodeDetails for opcode, operands, and name information.
 type OpArray struct {
@@ -12,7 +16,7 @@ type OpArray struct {
 }
 
 // NewOpArray creates and returns a new instance of OpArray, initialized with details for the OpArray operation.
-func NewOpArray(op *bytecode.Opcodes) *OpArray {
+func NewOpArray(op *bytecode.Opcodes) core.IOpExecutor {
 	return &OpArray{OpcodeDetails: op.OpcodeToDetails(bytecode.OpArray)}
 }
 

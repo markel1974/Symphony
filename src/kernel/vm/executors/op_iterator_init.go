@@ -7,6 +7,10 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/core"
 )
 
+func init() {
+	SequencerRegister(NewOpIteratorInit)
+}
+
 // OpIteratorInit represents an operation that initializes an iterator over an iterable object.
 // It embeds OpcodeDetails for additional opcode-specific metadata.
 type OpIteratorInit struct {
@@ -14,7 +18,7 @@ type OpIteratorInit struct {
 }
 
 // NewOpIteratorInit creates and returns a new instance of OpIteratorInit with associated opcode details.
-func NewOpIteratorInit(op *bytecode.Opcodes) *OpIteratorInit {
+func NewOpIteratorInit(op *bytecode.Opcodes) core.IOpExecutor {
 	return &OpIteratorInit{OpcodeDetails: op.OpcodeToDetails(bytecode.OpIteratorInit)}
 }
 

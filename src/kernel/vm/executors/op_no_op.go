@@ -5,13 +5,17 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/core"
 )
 
+func init() {
+	SequencerRegister(NewOpNoOp)
+}
+
 // OpNoOp represents a no-operation opcode, typically used as a placeholder or for alignment purposes.
 type OpNoOp struct {
 	*bytecode.OpcodeDetails
 }
 
 // NewOpNoOp initializes and returns a new OpNoOp instance using the given Opcodes configuration.
-func NewOpNoOp(op *bytecode.Opcodes) *OpNoOp {
+func NewOpNoOp(op *bytecode.Opcodes) core.IOpExecutor {
 	return &OpNoOp{OpcodeDetails: op.OpcodeToDetails(bytecode.OpNoOp)}
 }
 

@@ -5,13 +5,17 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/core"
 )
 
+func init() {
+	SequencerRegister(NewOpStruct)
+}
+
 // OpStruct is a wrapper around bytecode.OpcodeDetails, representing a struct creation operation in bytecode execution.
 type OpStruct struct {
 	*bytecode.OpcodeDetails
 }
 
 // NewOpStruct initializes and returns a new instance of OpStruct with its OpcodeDetails set to OpMap details.
-func NewOpStruct(op *bytecode.Opcodes) *OpStruct {
+func NewOpStruct(op *bytecode.Opcodes) core.IOpExecutor {
 	return &OpStruct{OpcodeDetails: op.OpcodeToDetails(bytecode.OpStruct)}
 }
 

@@ -5,13 +5,17 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/core"
 )
 
+func init() {
+	SequencerRegister(NewOpMap)
+}
+
 // OpMap is a wrapper around bytecode.OpcodeDetails, representing a map creation operation in bytecode execution.
 type OpMap struct {
 	*bytecode.OpcodeDetails
 }
 
 // NewOpMap initializes and returns a new instance of OpMap with its OpcodeDetails set to OpMap details.
-func NewOpMap(op *bytecode.Opcodes) *OpMap {
+func NewOpMap(op *bytecode.Opcodes) core.IOpExecutor {
 	return &OpMap{OpcodeDetails: op.OpcodeToDetails(bytecode.OpMap)}
 }
 

@@ -8,6 +8,10 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
+func init() {
+	SequencerRegister(NewOpIteratorValue)
+}
+
 // OpIteratorValue retrieves the value from the current iterator position.
 // It embeds OpcodeDetails, providing access to the opcode's metadata and operations.
 type OpIteratorValue struct {
@@ -15,7 +19,7 @@ type OpIteratorValue struct {
 }
 
 // NewOpIteratorValue creates and returns a new instance of OpIteratorValue with its associated OpcodeDetails initialized.
-func NewOpIteratorValue(op *bytecode.Opcodes) *OpIteratorValue {
+func NewOpIteratorValue(op *bytecode.Opcodes) core.IOpExecutor {
 	return &OpIteratorValue{OpcodeDetails: op.OpcodeToDetails(bytecode.OpIteratorValue)}
 }
 

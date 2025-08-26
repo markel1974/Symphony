@@ -5,13 +5,17 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/core"
 )
 
+func init() {
+	SequencerRegister(NewOpJumpFalsy)
+}
+
 // OpJumpFalsy represents an instruction that performs a conditional jump if the stack's top value evaluates to falsy.
 type OpJumpFalsy struct {
 	*bytecode.OpcodeDetails
 }
 
 // NewOpJumpFalsy creates and returns a new instance of OpJumpFalsy initialized with its corresponding OpcodeDetails.
-func NewOpJumpFalsy(op *bytecode.Opcodes) *OpJumpFalsy {
+func NewOpJumpFalsy(op *bytecode.Opcodes) core.IOpExecutor {
 	return &OpJumpFalsy{OpcodeDetails: op.OpcodeToDetails(bytecode.OpJumpFalsy)}
 }
 

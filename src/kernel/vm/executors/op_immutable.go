@@ -6,13 +6,17 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
+func init() {
+	SequencerRegister(NewOpImmutable)
+}
+
 // OpImmutable represents an operation that creates immutable objects, inheriting details from OpcodeDetails.
 type OpImmutable struct {
 	*bytecode.OpcodeDetails
 }
 
 // NewOpImmutable creates a new instance of OpImmutable with details loaded from bytecode.OpcodeToDetails.
-func NewOpImmutable(op *bytecode.Opcodes) *OpImmutable {
+func NewOpImmutable(op *bytecode.Opcodes) core.IOpExecutor {
 	return &OpImmutable{OpcodeDetails: op.OpcodeToDetails(bytecode.OpImmutable)}
 }
 

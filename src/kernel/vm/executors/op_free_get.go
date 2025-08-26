@@ -5,13 +5,17 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/core"
 )
 
+func init() {
+	SequencerRegister(NewOpFreeGet)
+}
+
 // OpFreeGet represents an operation to retrieve a free variable in a closure during execution.
 type OpFreeGet struct {
 	*bytecode.OpcodeDetails
 }
 
 // NewOpFreeGet creates and returns a new instance of OpFreeGet, initializing its OpcodeDetails using bytecode metadata.
-func NewOpFreeGet(op *bytecode.Opcodes) *OpFreeGet {
+func NewOpFreeGet(op *bytecode.Opcodes) core.IOpExecutor {
 	return &OpFreeGet{OpcodeDetails: op.OpcodeToDetails(bytecode.OpFreeGet)}
 }
 

@@ -8,6 +8,10 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
+func init() {
+	SequencerRegister(NewOpMinus)
+}
+
 // OpMinus represents an operation for negating a numeric value.
 // It embeds OpcodeDetails, providing details such as the opcode, operands, and name.
 type OpMinus struct {
@@ -15,7 +19,7 @@ type OpMinus struct {
 }
 
 // NewOpMinus creates and returns a new OpMinus instance, initializing it with the details of the OpMinus bytecode.
-func NewOpMinus(op *bytecode.Opcodes) *OpMinus {
+func NewOpMinus(op *bytecode.Opcodes) core.IOpExecutor {
 	return &OpMinus{OpcodeDetails: op.OpcodeToDetails(bytecode.OpMinus)}
 }
 

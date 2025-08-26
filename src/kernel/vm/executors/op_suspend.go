@@ -5,13 +5,17 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/core"
 )
 
+func init() {
+	SequencerRegister(NewOpSuspend)
+}
+
 // OpSuspend represents an operation that suspends the execution of the virtual machine.
 type OpSuspend struct {
 	*bytecode.OpcodeDetails
 }
 
 // NewOpSuspend creates and returns a new OpSuspend instance with opcode details initialized for the suspend operation.
-func NewOpSuspend(op *bytecode.Opcodes) *OpSuspend {
+func NewOpSuspend(op *bytecode.Opcodes) core.IOpExecutor {
 	return &OpSuspend{OpcodeDetails: op.OpcodeToDetails(bytecode.OpSuspend)}
 }
 

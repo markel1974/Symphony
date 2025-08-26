@@ -8,13 +8,17 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
+func init() {
+	SequencerRegister(NewOpIntOp)
+}
+
 // OpIntOp extends OpcodeDetails and represents integer operations performed on a virtual machine.
 type OpIntOp struct {
 	*bytecode.OpcodeDetails
 }
 
 // NewOpIntOp initializes and returns a new instance of OpIntOp with relevant opcode details provided by bytecode.Opcodes.
-func NewOpIntOp(op *bytecode.Opcodes) *OpIntOp {
+func NewOpIntOp(op *bytecode.Opcodes) core.IOpExecutor {
 	return &OpIntOp{OpcodeDetails: op.OpcodeToDetails(bytecode.OpIntOp)}
 }
 

@@ -7,13 +7,17 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/core"
 )
 
+func init() {
+	SequencerRegister(NewOpUnknown)
+}
+
 // OpUnknown represents an unknown or unsupported operation in the bytecode execution context.
 type OpUnknown struct {
 	*bytecode.OpcodeDetails
 }
 
 // NewOpUnknown creates a new instance of OpUnknown with its corresponding OpcodeDetails configuration set.
-func NewOpUnknown(op *bytecode.Opcodes) *OpUnknown {
+func NewOpUnknown(op *bytecode.Opcodes) core.IOpExecutor {
 	return &OpUnknown{OpcodeDetails: op.OpcodeToDetails(bytecode.OpUnknown)}
 }
 

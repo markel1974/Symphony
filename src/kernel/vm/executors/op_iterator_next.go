@@ -8,13 +8,17 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
+func init() {
+	SequencerRegister(NewOpIteratorNext)
+}
+
 // OpIteratorNext represents an operation code for advancing an iterator to the next element in the virtual machine.
 type OpIteratorNext struct {
 	*bytecode.OpcodeDetails
 }
 
 // NewOpIteratorNext creates a new instance of OpIteratorNext with associated opcode details.
-func NewOpIteratorNext(op *bytecode.Opcodes) *OpIteratorNext {
+func NewOpIteratorNext(op *bytecode.Opcodes) core.IOpExecutor {
 	return &OpIteratorNext{OpcodeDetails: op.OpcodeToDetails(bytecode.OpIteratorNext)}
 }
 

@@ -8,13 +8,17 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
+func init() {
+	SequencerRegister(NewOpIteratorKey)
+}
+
 // OpIteratorKey wraps bytecode.OpcodeDetails to represent the iterator key retrieval operation in a virtual machine.
 type OpIteratorKey struct {
 	*bytecode.OpcodeDetails
 }
 
 // NewOpIteratorKey creates a new instance of OpIteratorKey with associated opcode details.
-func NewOpIteratorKey(op *bytecode.Opcodes) *OpIteratorKey {
+func NewOpIteratorKey(op *bytecode.Opcodes) core.IOpExecutor {
 	return &OpIteratorKey{OpcodeDetails: op.OpcodeToDetails(bytecode.OpIteratorKey)}
 }
 

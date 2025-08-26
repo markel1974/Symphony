@@ -5,13 +5,17 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/core"
 )
 
+func init() {
+	SequencerRegister(NewOpFreeSet)
+}
+
 // OpFreeSet represents an operation to set the value of a free variable within a closure's environment.
 type OpFreeSet struct {
 	*bytecode.OpcodeDetails
 }
 
 // NewOpFreeSet creates and returns a new instance of OpFreeSet initialized with its corresponding OpcodeDetails.
-func NewOpFreeSet(op *bytecode.Opcodes) *OpFreeSet {
+func NewOpFreeSet(op *bytecode.Opcodes) core.IOpExecutor {
 	return &OpFreeSet{OpcodeDetails: op.OpcodeToDetails(bytecode.OpFreeSet)}
 }
 

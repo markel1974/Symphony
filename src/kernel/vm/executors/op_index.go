@@ -8,13 +8,17 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
+func init() {
+	SequencerRegister(NewOpIndex)
+}
+
 // OpIndex represents the operation for performing an indexing operation on a value.
 type OpIndex struct {
 	*bytecode.OpcodeDetails
 }
 
 // NewOpIndex creates and returns a new instance of OpIndex initialized with its associated OpcodeDetails.
-func NewOpIndex(op *bytecode.Opcodes) *OpIndex {
+func NewOpIndex(op *bytecode.Opcodes) core.IOpExecutor {
 	return &OpIndex{OpcodeDetails: op.OpcodeToDetails(bytecode.OpIndex)}
 }
 

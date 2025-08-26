@@ -5,13 +5,17 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/core"
 )
 
+func init() {
+	SequencerRegister(NewOpNull)
+}
+
 // OpNull represents a virtual machine operation to push a null value onto the stack.
 type OpNull struct {
 	*bytecode.OpcodeDetails
 }
 
 // NewOpNull creates a new OpNull instance with details mapped from the OpNull opcode.
-func NewOpNull(op *bytecode.Opcodes) *OpNull {
+func NewOpNull(op *bytecode.Opcodes) core.IOpExecutor {
 	return &OpNull{OpcodeDetails: op.OpcodeToDetails(bytecode.OpNull)}
 }
 

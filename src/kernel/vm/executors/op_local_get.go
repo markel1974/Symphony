@@ -6,13 +6,17 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
+func init() {
+	SequencerRegister(NewOpLocalGet)
+}
+
 // OpLocalGet represents an operation to retrieve a local variable from the stack using its index.
 type OpLocalGet struct {
 	*bytecode.OpcodeDetails
 }
 
 // NewOpLocalGet creates a new OpLocalGet instance and initializes it with details for the OpLocalGet opcode.
-func NewOpLocalGet(op *bytecode.Opcodes) *OpLocalGet {
+func NewOpLocalGet(op *bytecode.Opcodes) core.IOpExecutor {
 	return &OpLocalGet{OpcodeDetails: op.OpcodeToDetails(bytecode.OpLocalGet)}
 }
 

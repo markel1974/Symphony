@@ -6,6 +6,10 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
+func init() {
+	SequencerRegister(NewOpLocalSet)
+}
+
 // OpLocalSet represents an operation to set the value of a local variable within the current frame.
 // It embeds OpcodeDetails for opcode-specific information such as name, operands, and code.
 type OpLocalSet struct {
@@ -13,7 +17,7 @@ type OpLocalSet struct {
 }
 
 // NewOpLocalSet initializes and returns a new instance of OpLocalSet with associated opcode details.
-func NewOpLocalSet(op *bytecode.Opcodes) *OpLocalSet {
+func NewOpLocalSet(op *bytecode.Opcodes) core.IOpExecutor {
 	return &OpLocalSet{OpcodeDetails: op.OpcodeToDetails(bytecode.OpLocalSet)}
 }
 

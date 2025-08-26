@@ -6,13 +6,17 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
+func init() {
+	SequencerRegister(NewOpReturn)
+}
+
 // OpReturn represents a specialized operation that extends the behavior of bytecode.OpcodeDetails.
 type OpReturn struct {
 	*bytecode.OpcodeDetails
 }
 
 // NewOpReturn creates a new instance of OpReturn with its OpcodeDetails initialized for the OpReturn operation.
-func NewOpReturn(op *bytecode.Opcodes) *OpReturn {
+func NewOpReturn(op *bytecode.Opcodes) core.IOpExecutor {
 	return &OpReturn{OpcodeDetails: op.OpcodeToDetails(bytecode.OpReturn)}
 }
 

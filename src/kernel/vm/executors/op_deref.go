@@ -8,13 +8,17 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
+func init() {
+	SequencerRegister(NewOpDeref)
+}
+
 // OpDeref represents an operation for dereferencing a pointer.
 type OpDeref struct {
 	*bytecode.OpcodeDetails
 }
 
 // NewOpDeref creates a new OpDeref instance.
-func NewOpDeref(op *bytecode.Opcodes) *OpDeref {
+func NewOpDeref(op *bytecode.Opcodes) core.IOpExecutor {
 	return &OpDeref{OpcodeDetails: op.OpcodeToDetails(bytecode.OpDeref)}
 }
 

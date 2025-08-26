@@ -6,13 +6,17 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
+func init() {
+	SequencerRegister(NewOpFreeSelSet)
+}
+
 // OpFreeSelSet represents an operation to set a free variable's value using selectors.
 type OpFreeSelSet struct {
 	*bytecode.OpcodeDetails
 }
 
 // NewOpFreeSelSet creates a new instance of OpFreeSelSet with initialized OpcodeDetails referencing OpFreeSelSet.
-func NewOpFreeSelSet(op *bytecode.Opcodes) *OpFreeSelSet {
+func NewOpFreeSelSet(op *bytecode.Opcodes) core.IOpExecutor {
 	return &OpFreeSelSet{OpcodeDetails: op.OpcodeToDetails(bytecode.OpFreeSelSet)}
 }
 

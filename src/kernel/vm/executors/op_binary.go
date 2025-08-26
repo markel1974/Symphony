@@ -6,13 +6,17 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
+func init() {
+	SequencerRegister(NewOpBinary)
+}
+
 // OpBinary represents a type that performs binary operations by extending bytecode.OpcodeDetails.
 type OpBinary struct {
 	*bytecode.OpcodeDetails
 }
 
 // NewOpBinary creates a new instance of OpBinary with its corresponding OpcodeDetails initialized.
-func NewOpBinary(op *bytecode.Opcodes) *OpBinary {
+func NewOpBinary(op *bytecode.Opcodes) core.IOpExecutor {
 	return &OpBinary{OpcodeDetails: op.OpcodeToDetails(bytecode.OpBinary)}
 }
 

@@ -5,6 +5,10 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/core"
 )
 
+func init() {
+	SequencerRegister(NewOpNotEqual)
+}
+
 // OpNotEqual is a structure representing the "not equal (!=)" opcode operation in the virtual machine.
 // It embeds OpcodeDetails to provide information about the opcode, including its identifier and operands.
 type OpNotEqual struct {
@@ -12,7 +16,7 @@ type OpNotEqual struct {
 }
 
 // NewOpNotEqual creates and returns a new instance of OpNotEqual with OpcodeDetails initialized from bytecode.
-func NewOpNotEqual(op *bytecode.Opcodes) *OpNotEqual {
+func NewOpNotEqual(op *bytecode.Opcodes) core.IOpExecutor {
 	return &OpNotEqual{OpcodeDetails: op.OpcodeToDetails(bytecode.OpNotEqual)}
 }
 

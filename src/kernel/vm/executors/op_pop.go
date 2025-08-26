@@ -5,13 +5,17 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/core"
 )
 
+func init() {
+	SequencerRegister(NewOpPop)
+}
+
 // OpPop represents an operation that removes the top value from the virtual machine stack.
 type OpPop struct {
 	*bytecode.OpcodeDetails
 }
 
 // NewOpPop creates and returns a new instance of OpPop, initializing it with details corresponding to the OpPop opcode.
-func NewOpPop(op *bytecode.Opcodes) *OpPop {
+func NewOpPop(op *bytecode.Opcodes) core.IOpExecutor {
 	return &OpPop{OpcodeDetails: op.OpcodeToDetails(bytecode.OpPop)}
 }
 

@@ -6,6 +6,10 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
+func init() {
+	SequencerRegister(NewOpIndexSlice)
+}
+
 // OpIndexSlice represents an operation that performs a slicing action on an array, string, or bytes within a virtual machine.
 // It embeds OpcodeDetails to inherit opcode, operand, and name information for execution and identification.
 type OpIndexSlice struct {
@@ -13,7 +17,7 @@ type OpIndexSlice struct {
 }
 
 // NewOpIndexSlice creates a new instance of OpIndexSlice containing details for the slice indexing bytecode operation.
-func NewOpIndexSlice(op *bytecode.Opcodes) *OpIndexSlice {
+func NewOpIndexSlice(op *bytecode.Opcodes) core.IOpExecutor {
 	return &OpIndexSlice{OpcodeDetails: op.OpcodeToDetails(bytecode.OpIndexSlice)}
 }
 

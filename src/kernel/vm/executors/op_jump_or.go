@@ -5,13 +5,17 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/core"
 )
 
+func init() {
+	SequencerRegister(NewOpJumpOr)
+}
+
 // OpJumpOr represents an operation that performs a logical OR and jumps based on the result.
 type OpJumpOr struct {
 	*bytecode.OpcodeDetails
 }
 
 // NewOpJumpOr creates and returns a new instance of OpJumpOr, associated with the OpJumpOr opcode and its details.
-func NewOpJumpOr(op *bytecode.Opcodes) *OpJumpOr {
+func NewOpJumpOr(op *bytecode.Opcodes) core.IOpExecutor {
 	return &OpJumpOr{OpcodeDetails: op.OpcodeToDetails(bytecode.OpJumpOr)}
 }
 

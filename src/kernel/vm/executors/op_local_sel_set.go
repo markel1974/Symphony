@@ -6,6 +6,10 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
+func init() {
+	SequencerRegister(NewOpLocalSelSet)
+}
+
 // OpLocalSelSet represents an operation for setting a local variable using selectors in the virtual machine.
 // It embeds OpcodeDetails to utilize its properties like opcode, name, and operands.
 type OpLocalSelSet struct {
@@ -13,7 +17,7 @@ type OpLocalSelSet struct {
 }
 
 // NewOpLocalSelSet creates and returns a new instance of the OpLocalSelSet operation executor.
-func NewOpLocalSelSet(op *bytecode.Opcodes) *OpLocalSelSet {
+func NewOpLocalSelSet(op *bytecode.Opcodes) core.IOpExecutor {
 	return &OpLocalSelSet{OpcodeDetails: op.OpcodeToDetails(bytecode.OpLocalSelSet)}
 }
 

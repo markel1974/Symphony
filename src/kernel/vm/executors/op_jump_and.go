@@ -5,13 +5,17 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/core"
 )
 
+func init() {
+	SequencerRegister(NewOpJumpAnd)
+}
+
 // OpJumpAnd represents a logical AND operation followed by a conditional jump in the bytecode execution process.
 type OpJumpAnd struct {
 	*bytecode.OpcodeDetails
 }
 
 // NewOpJumpAnd creates and returns a new instance of OpJumpAnd, initializing it with details for the OpJumpAnd opcode.
-func NewOpJumpAnd(op *bytecode.Opcodes) *OpJumpAnd {
+func NewOpJumpAnd(op *bytecode.Opcodes) core.IOpExecutor {
 	return &OpJumpAnd{OpcodeDetails: op.OpcodeToDetails(bytecode.OpJumpAnd)}
 }
 

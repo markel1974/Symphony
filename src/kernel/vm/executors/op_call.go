@@ -8,13 +8,17 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
+func init() {
+	SequencerRegister(NewOpCall)
+}
+
 // OpCall represents an operation code for invoking a function call in the virtual machine.
 type OpCall struct {
 	*bytecode.OpcodeDetails
 }
 
 // NewOpCall creates and returns a new instance of OpCall with initialized OpcodeDetails for the OpCall opcode.
-func NewOpCall(op *bytecode.Opcodes) *OpCall {
+func NewOpCall(op *bytecode.Opcodes) core.IOpExecutor {
 	return &OpCall{OpcodeDetails: op.OpcodeToDetails(bytecode.OpCall)}
 }
 

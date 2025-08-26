@@ -5,13 +5,17 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/core"
 )
 
+func init() {
+	SequencerRegister(NewOpTrue)
+}
+
 // OpTrue represents the opcode for pushing the boolean value true onto the stack.
 type OpTrue struct {
 	*bytecode.OpcodeDetails
 }
 
 // NewOpTrue initializes a new instance of OpTrue, representing the opcode that pushes the boolean value true onto the stack.
-func NewOpTrue(op *bytecode.Opcodes) *OpTrue {
+func NewOpTrue(op *bytecode.Opcodes) core.IOpExecutor {
 	return &OpTrue{OpcodeDetails: op.OpcodeToDetails(bytecode.OpTrue)}
 }
 

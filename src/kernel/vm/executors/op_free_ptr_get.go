@@ -5,6 +5,10 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/core"
 )
 
+func init() {
+	SequencerRegister(NewOpFreeGetPtr)
+}
+
 // OpFreePtrGet represents the opcode for retrieving a free variable pointer in the virtual machine.
 // This type embeds OpcodeDetails, which provides opcode metadata such as identifier, operands, and name.
 type OpFreePtrGet struct {
@@ -12,7 +16,7 @@ type OpFreePtrGet struct {
 }
 
 // NewOpFreeGetPtr creates a new instance of OpFreePtrGet initialized with the corresponding OpcodeDetails.
-func NewOpFreeGetPtr(op *bytecode.Opcodes) *OpFreePtrGet {
+func NewOpFreeGetPtr(op *bytecode.Opcodes) core.IOpExecutor {
 	return &OpFreePtrGet{OpcodeDetails: op.OpcodeToDetails(bytecode.OpFreePtrGet)}
 }
 
