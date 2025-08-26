@@ -1,6 +1,7 @@
 package objects
 
 import (
+	"encoding/gob"
 	"fmt"
 	"strings"
 )
@@ -8,6 +9,10 @@ import (
 const (
 	ImmutableArrayType = "immutable_array"
 )
+
+func init() {
+	gob.Register(&ArrayImmutable{})
+}
 
 // ArrayImmutable represents an array that cannot be modified after creation.
 // Implements IObject and supports iteration, comparison, and copying.

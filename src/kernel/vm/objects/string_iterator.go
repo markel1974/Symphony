@@ -1,9 +1,15 @@
 package objects
 
+import "encoding/gob"
+
 const (
 	StringIteratorType  = "string_iterator"
 	StringIteratorLabel = "<" + StringIteratorType + ">"
 )
+
+func init() {
+	gob.Register(&StringIterator{})
+}
 
 // StringIterator represents an iterator for traversing over the characters of a string, implemented as runes.
 type StringIterator struct {

@@ -1,12 +1,17 @@
 package objects
 
 import (
+	"encoding/gob"
 	"strconv"
 )
 
 const (
 	StringType = "string"
 )
+
+func init() {
+	gob.Register(&String{})
+}
 
 // String represents a wrapper around a standard string with additional behavior and methods for runtime operations.
 // This type embeds Object and supports operations like indexing, iteration, comparison, and copying.

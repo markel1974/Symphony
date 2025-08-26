@@ -1,6 +1,7 @@
 package objects
 
 import (
+	"encoding/gob"
 	"fmt"
 )
 
@@ -11,6 +12,10 @@ const (
 const (
 	maxErrorLen = 1024
 )
+
+func init() {
+	gob.Register(&Error{})
+}
 
 // Error represents an object that encapsulates an error and implements the IObject interface.
 type Error struct {

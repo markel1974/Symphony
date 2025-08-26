@@ -1,6 +1,7 @@
 package objects
 
 import (
+	"encoding/gob"
 	"math"
 	"strconv"
 )
@@ -8,6 +9,10 @@ import (
 const (
 	FloatType = "float"
 )
+
+func init() {
+	gob.Register(&Float{})
+}
 
 // Float represents a floating-point number and provides operations and behaviors specific to numeric types.
 // It embeds Object to implement common interface methods and extends behavior where necessary.

@@ -1,9 +1,15 @@
 package objects
 
+import "encoding/gob"
+
 const (
 	ArrayIteratorType  = "array_iterator"
 	ArrayIteratorLabel = "<" + ArrayIteratorType + ">"
 )
+
+func init() {
+	gob.Register(&ArrayIterator{})
+}
 
 // ArrayIterator is an iterator type for traversing elements of an array.
 // It implements the IIterator interface to provide sequential access to array elements.

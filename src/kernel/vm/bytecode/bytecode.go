@@ -2,35 +2,14 @@ package bytecode
 
 import (
 	"encoding/gob"
-	"fmt"
 	"io"
-	"reflect"
 
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
-)
-
-const (
-	ModuleKey = "__module_name__"
 )
 
 // init registers various types with the gob package to enable serialization and deserialization.
 func init() {
 	gob.Register(&Files{})
-	gob.Register(&objects.Array{})
-	gob.Register(&objects.Bool{})
-	gob.Register(&objects.Bytes{})
-	gob.Register(&objects.Char{})
-	gob.Register(&objects.FuncCompiled{})
-	gob.Register(&objects.Error{})
-	gob.Register(&objects.Float{})
-	gob.Register(&objects.ArrayImmutable{})
-	gob.Register(&objects.MapImmutable{})
-	gob.Register(&objects.Int{})
-	gob.Register(&objects.Map{})
-	gob.Register(&objects.String{})
-	gob.Register(&objects.Time{})
-	gob.Register(&objects.Undefined{})
-	gob.Register(&objects.FuncPackage{})
 }
 
 // Bytecode represents a construct that encapsulates compiled code, associated constants, and object references.
@@ -100,11 +79,14 @@ func (b *Bytecode) Encode(w io.Writer) error {
 	if err := enc.Encode(b.references); err != nil {
 		return err
 	}
+	if err := enc.Encode(b.global); err != nil {
+		return err
+	}
 	return nil
 }
 
 // Decode deserializes the bytecode from the given io.Reader and resolves its components using the provided modules.
-func (b *Bytecode) Decode(r io.Reader, loader ILoader) error {
+func (b *Bytecode) Decode(r io.Reader) error {
 	dec := gob.NewDecoder(r)
 	if err := dec.Decode(&b.files); err != nil {
 		return err
@@ -112,232 +94,11 @@ func (b *Bytecode) Decode(r io.Reader, loader ILoader) error {
 	if err := dec.Decode(&b.constants); err != nil {
 		return err
 	}
-	for i, v := range b.constants {
-		fv, err := b.fixDecodedObject(v, loader)
-		if err != nil {
-			return err
-		}
-		b.constants[i] = fv
-	}
 	if err := dec.Decode(&b.references); err != nil {
 		return err
 	}
-	for i, v := range b.references {
-		fv, err := b.fixDecodedObject(v, loader)
-		if err != nil {
-			return err
-		}
-		b.references[i] = fv
-	}
-	return nil
-}
-
-// RemoveDuplicates removes duplicate entries from the constants slice of the Bytecode instance.
-// It updates references within the constants to match the deduplicated list.
-// Returns an error if the deduplication process encounters issues.
-func (b *Bytecode) RemoveDuplicates() error {
-	constantsDeduped, constantsIndexMap, err := b.removeDuplicates(b.constants)
-	if err != nil {
+	if err := dec.Decode(&b.global); err != nil {
 		return err
 	}
-	b.constants = constantsDeduped
-	for _, in := range b.constants {
-		switch c := in.(type) {
-		case *objects.FuncCompiled:
-			if err = b.updateConstIndexes(c.Data(), constantsIndexMap); err != nil {
-				return err
-			}
-		}
-	}
 	return nil
-}
-
-// removeDuplicates processes a container of objects, removing duplicates and mapping old indices to new indices.
-// It returns a deduplicated list of objects, a mapping of old to new indices, and an error if encountered.
-func (b *Bytecode) removeDuplicates(container []objects.IObject) ([]objects.IObject, map[int]int, error) {
-	var deDuped []objects.IObject
-	indexMap := make(map[int]int) // mapping from old constant index to new index
-	fns := make(map[*objects.FuncCompiled]int)
-	ints := make(map[int64]int)
-	strings := make(map[string]int)
-	floats := make(map[float64]int)
-	chars := make(map[rune]int)
-	immutableMaps := make(map[string]int) // for modules
-
-	for curIdx, in := range container {
-		switch c := in.(type) {
-		case *objects.FuncCompiled:
-			if newIdx, ok := fns[c]; ok {
-				indexMap[curIdx] = newIdx
-			} else {
-				newIdx = len(deDuped)
-				fns[c] = newIdx
-				indexMap[curIdx] = newIdx
-				deDuped = append(deDuped, c)
-			}
-		case *objects.MapImmutable:
-			modName, err := b.inferPackageName(c)
-			if err != nil {
-				return nil, nil, err
-			}
-			newIdx, ok := immutableMaps[modName]
-			if modName != "" && ok {
-				indexMap[curIdx] = newIdx
-			} else {
-				newIdx = len(deDuped)
-				immutableMaps[modName] = newIdx
-				indexMap[curIdx] = newIdx
-				deDuped = append(deDuped, c)
-			}
-		case *objects.Int:
-			if newIdx, ok := ints[c.Value()]; ok {
-				indexMap[curIdx] = newIdx
-			} else {
-				newIdx = len(deDuped)
-				ints[c.Value()] = newIdx
-				indexMap[curIdx] = newIdx
-				deDuped = append(deDuped, c)
-			}
-		case *objects.String:
-			if newIdx, ok := strings[c.Value()]; ok {
-				indexMap[curIdx] = newIdx
-			} else {
-				newIdx = len(deDuped)
-				strings[c.Value()] = newIdx
-				indexMap[curIdx] = newIdx
-				deDuped = append(deDuped, c)
-			}
-		case *objects.Float:
-			if newIdx, ok := floats[c.Value()]; ok {
-				indexMap[curIdx] = newIdx
-			} else {
-				newIdx = len(deDuped)
-				floats[c.Value()] = newIdx
-				indexMap[curIdx] = newIdx
-				deDuped = append(deDuped, c)
-			}
-		case *objects.Char:
-			if newIdx, ok := chars[c.Value()]; ok {
-				indexMap[curIdx] = newIdx
-			} else {
-				newIdx = len(deDuped)
-				chars[c.Value()] = newIdx
-				indexMap[curIdx] = newIdx
-				deDuped = append(deDuped, c)
-			}
-		default:
-			return nil, nil, fmt.Errorf("unsupported top-level constant type: %s", reflect.TypeOf(c).Elem().Name())
-		}
-	}
-	return deDuped, indexMap, nil
-}
-
-// fixDecodedObject ensures that a decoded object is properly reconstructed and compatible with the runtime environment.
-// It recursively processes composite objects like arrays and maps, fixing or transforming their elements if necessary.
-// Returns the modified object or an error if reconstruction fails.
-func (b *Bytecode) fixDecodedObject(o objects.IObject, loader ILoader) (objects.IObject, error) {
-	switch o := o.(type) {
-	case *objects.Bool:
-		if o.Boolean() {
-			return b.factory.FalseValue(), nil
-		}
-		return b.factory.TrueValue(), nil
-	case *objects.Undefined:
-		return b.factory.UndefinedValue(), nil
-	case *objects.Array:
-		for i, v := range o.Values() {
-			fv, err := b.fixDecodedObject(v, loader)
-			if err != nil {
-				return nil, err
-			}
-			o.SetValue(i, fv)
-		}
-	case *objects.ArrayImmutable:
-		for i, v := range o.Values() {
-			fv, err := b.fixDecodedObject(v, loader)
-			if err != nil {
-				return nil, err
-			}
-			o.SetValue(i, fv)
-		}
-	case *objects.Map:
-		for k, v := range o.Values() {
-			fv, err := b.fixDecodedObject(v, loader)
-			if err != nil {
-				return nil, err
-			}
-			o.Set(k, fv)
-		}
-	case *objects.MapImmutable:
-		packageName, err := b.inferPackageName(o)
-		if err != nil {
-			return nil, err
-		}
-		if mod, _ := loader.CompilePackage(packageName); mod != nil {
-			return mod, nil
-		}
-		for k, v := range o.Values() {
-			if _, isUserFunction := v.(*objects.FuncPackage); isUserFunction {
-				return nil, fmt.Errorf("user function not decodable")
-			}
-			fv, err := b.fixDecodedObject(v, loader)
-			if err != nil {
-				return nil, err
-			}
-			o.SetValue(k, fv)
-		}
-	}
-	return o, nil
-}
-
-// updateConstIndexes modifies bytecode instructions to remap constant indexes based on the provided index map.
-// It updates OpConstant and OpClosure instructions with new constant indexes or returns an error if mapping fails.
-func (b *Bytecode) updateConstIndexes(instances []byte, indexMap map[int]int) error {
-	i := 0
-	for i < len(instances) {
-		op := instances[i]
-		offset := b.opcodes.OpcodeToOperandsOffset(op)
-		switch op {
-		case OpConstant:
-			curIdx := int(instances[i+2]) | int(instances[i+1])<<8
-			newIdx, ok := indexMap[curIdx]
-			if !ok {
-				return fmt.Errorf("constant index not found: %d", curIdx)
-			}
-			code, err := b.opcodes.CompileInstruction(op, newIdx)
-			if err != nil {
-			}
-			copy(instances[i:], code)
-		case OpClosure:
-			curIdx := int(instances[i+2]) | int(instances[i+1])<<8
-			numFree := int(instances[i+3])
-			newIdx, ok := indexMap[curIdx]
-			if !ok {
-				return fmt.Errorf("constant index not found: %d", curIdx)
-			}
-			code, err := b.opcodes.CompileInstruction(op, newIdx, numFree)
-			if err != nil {
-				return err
-			}
-			copy(instances[i:], code)
-		default:
-			return fmt.Errorf("unsupported opcode: %s", b.opcodes.OpcodeName(op))
-		}
-		i += 1 + offset
-	}
-	return nil
-}
-
-// inferPackageName retrieves the module name from a given MapImmutable object by using a predefined key.
-// Returns the module name as a string or an error if the key is missing or its value is of an unexpected type.
-func (b *Bytecode) inferPackageName(pk *objects.MapImmutable) (string, error) {
-	m, ok := pk.GetValue(ModuleKey)
-	if !ok {
-		return "", fmt.Errorf("missing %s key", ModuleKey)
-	}
-	modName, ok := m.(*objects.String)
-	if !ok {
-		return "", fmt.Errorf("invalid %s value: %s", ModuleKey, m.TypeName())
-	}
-	return modName.Value(), nil
 }

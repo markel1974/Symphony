@@ -1,11 +1,14 @@
 package objects
 
+import "encoding/gob"
+
 const (
 	BoolType = "bool"
 )
 
-// TrueValue is a predefined constant representing the boolean true value as an IObject.
-// FalseValue is a predefined constant representing the boolean false value as an IObject.
+func init() {
+	gob.Register(&Bool{})
+}
 
 // Bool is a custom type representing a boolean values, implementing IObject interface and encapsulating a boolean value.
 type Bool struct {

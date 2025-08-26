@@ -1,6 +1,7 @@
 package objects
 
 import (
+	"encoding/gob"
 	"fmt"
 	"strings"
 )
@@ -8,6 +9,10 @@ import (
 const (
 	MapImmutableType = "map_immutable"
 )
+
+func init() {
+	gob.Register(&MapImmutable{})
+}
 
 // MapImmutable represents a read-only map structure where keys are strings and values are of type IObject.
 type MapImmutable struct {

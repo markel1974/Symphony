@@ -1,8 +1,13 @@
 package objects
 
 import (
+	"encoding/gob"
 	"fmt"
 )
+
+func init() {
+	gob.Register(&Builtin{})
+}
 
 // BuiltinType is a constant string identifying the type name of builtin objects.
 const (

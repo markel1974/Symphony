@@ -1,9 +1,15 @@
 package objects
 
+import "encoding/gob"
+
 const (
 	ObjectPointerType  = "object_pointer"
 	ObjectPointerLabel = "<" + ObjectPointerType + ">"
 )
+
+func init() {
+	gob.Register(&ObjectPointer{})
+}
 
 // ObjectPointer is a wrapper around a pointer to an IObject, allowing additional behaviors and encapsulation of the values.
 // It embeds Object, inheriting default behaviors for the IObject interface methods.

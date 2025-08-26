@@ -18,6 +18,4 @@ type ILoader interface {
 	GetSymbol(definition objects.IObject) (objects.IObject, bool)
 
 	ResolveSymbols([]objects.IObject) ([]objects.IObject, error)
-
-	CompilePackage(name string) (*objects.MapImmutable, error)
 }

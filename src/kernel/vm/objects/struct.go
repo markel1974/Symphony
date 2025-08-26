@@ -1,6 +1,7 @@
 package objects
 
 import (
+	"encoding/gob"
 	"fmt"
 	"strings"
 )
@@ -9,6 +10,10 @@ import (
 const (
 	StructType = "struct"
 )
+
+func init() {
+	gob.Register(&Struct{})
+}
 
 // Struct is a composite object that implements the IObject interface and stores a collection of key-value pairs.
 type Struct struct {

@@ -1,8 +1,14 @@
 package objects
 
+import "encoding/gob"
+
 const (
 	CharType = "char"
 )
+
+func init() {
+	gob.Register(&Char{})
+}
 
 // Char represents a character type, encapsulating a single rune values and inheriting behavior from Object.
 type Char struct {

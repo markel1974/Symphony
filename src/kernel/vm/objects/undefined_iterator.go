@@ -1,11 +1,17 @@
 package objects
 
+import "encoding/gob"
+
 // UndefinedIteratorType represents a type label for an undefined iterator.
 // UndefinedIteratorLabel represents a label used when the iterator type is undefined.
 const (
 	UndefinedIteratorType  = "undefined_iterator"
 	UndefinedIteratorLabel = "<" + UndefinedIteratorType + ">"
 )
+
+func init() {
+	gob.Register(&UndefinedIterator{})
+}
 
 // UndefinedIterator represents an iterator that is implicitly undefined and cannot traverse any elements.
 type UndefinedIterator struct {

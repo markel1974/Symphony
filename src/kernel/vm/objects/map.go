@@ -1,6 +1,7 @@
 package objects
 
 import (
+	"encoding/gob"
 	"fmt"
 	"strings"
 )
@@ -8,6 +9,10 @@ import (
 const (
 	MapType = "map"
 )
+
+func init() {
+	gob.Register(&Map{})
+}
 
 // Map represents a collection of key-values pairs where keys are strings and values implement the IObject interface.
 type Map struct {

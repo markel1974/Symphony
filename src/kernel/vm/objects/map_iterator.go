@@ -1,9 +1,15 @@
 package objects
 
+import "encoding/gob"
+
 const (
 	MapIteratorType  = "map_iterator"
 	MapIteratorLabel = "<" + MapIteratorType + ">"
 )
+
+func init() {
+	gob.Register(&MapIterator{})
+}
 
 // MapIterator is a type used for iterating over key-values pairs in a map-like structure.
 // It implements the IIterator interface and provides methods for traversal and element access.

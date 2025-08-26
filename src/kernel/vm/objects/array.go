@@ -1,6 +1,7 @@
 package objects
 
 import (
+	"encoding/gob"
 	"fmt"
 	"strings"
 )
@@ -8,6 +9,10 @@ import (
 const (
 	ArrayType = "array"
 )
+
+func init() {
+	gob.Register(&Array{})
+}
 
 // Array represents a collection of IObject elements, providing methods for manipulation, indexing, and iteration.
 type Array struct {

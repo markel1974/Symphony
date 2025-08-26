@@ -1,9 +1,15 @@
 package objects
 
+import "encoding/gob"
+
 const (
 	FuncBuiltinDef = "func_builtin"
 	FuncPackageDef = "func_package"
 )
+
+func init() {
+	gob.Register(&FuncPackage{})
+}
 
 // FuncCallable is a type alias for a function that takes a variadic list of IObject arguments and returns an IObject and an error.
 type FuncCallable = func(frame int, args ...IObject) (ret IObject, err error)

@@ -2,7 +2,12 @@ package objects
 
 import (
 	"bytes"
+	"encoding/gob"
 )
+
+func init() {
+	gob.Register(&Bytes{})
+}
 
 const (
 	BytesType = "bytes"

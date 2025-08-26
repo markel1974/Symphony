@@ -1,9 +1,15 @@
 package objects
 
+import "encoding/gob"
+
 const (
 	FuncCompiledDef   = "func_compiled"
 	FuncCompiledLabel = "<" + FuncCompiledDef + ">"
 )
+
+func init() {
+	gob.Register(&FuncCompiled{})
+}
 
 // FuncCompiled represents a compiled function with bytecode instructions, metadata, and associated free variables.
 type FuncCompiled struct {

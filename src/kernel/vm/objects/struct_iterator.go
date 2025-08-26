@@ -1,11 +1,17 @@
 package objects
 
+import "encoding/gob"
+
 // StructIteratorType represents the type for a struct iterator, used as a constant string identifier.
 // StructIteratorLabel is a formatted label that includes the StructIteratorType constant within angle brackets.
 const (
 	StructIteratorType  = "struct_iterator"
 	StructIteratorLabel = "<" + StructIteratorType + ">"
 )
+
+func init() {
+	gob.Register(&StructIterator{})
+}
 
 // StructIterator is an iterator for traversing over the keys and values of a struct-like map of IObjects.
 // It embeds Object and implements the IIterator interface.

@@ -1,12 +1,17 @@
 package objects
 
 import (
+	"encoding/gob"
 	"strconv"
 )
 
 const (
 	IntType = "int"
 )
+
+func init() {
+	gob.Register(&Int{})
+}
 
 // Int represents an integer type with a 64-bit value and methods for operations, equality, and object behavior.
 type Int struct {

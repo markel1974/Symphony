@@ -1,12 +1,17 @@
 package objects
 
 import (
+	"encoding/gob"
 	"time"
 )
 
 const (
 	TimeType = "time"
 )
+
+func init() {
+	gob.Register(&Time{})
+}
 
 // Time represents a custom object encapsulating a Go time.Time values with extended behaviors and operations.
 type Time struct {

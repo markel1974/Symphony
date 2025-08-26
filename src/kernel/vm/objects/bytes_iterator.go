@@ -1,9 +1,15 @@
 package objects
 
+import "encoding/gob"
+
 const (
 	BytesIteratorType  = "bytes_iterator"
 	BytesIteratorLabel = "<" + BytesIteratorType + ">"
 )
+
+func init() {
+	gob.Register(&BytesIterator{})
+}
 
 // BytesIterator is an iterator for traversing elements of a byte slice, implementing the IIterator interface.
 type BytesIterator struct {

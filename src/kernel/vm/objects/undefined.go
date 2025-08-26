@@ -1,9 +1,15 @@
 package objects
 
+import "encoding/gob"
+
 const (
 	UndefinedType  = "undefined"
 	UndefinedLabel = "<" + UndefinedType + ">"
 )
+
+func init() {
+	gob.Register(&Undefined{})
+}
 
 // Undefined represents an undefined values.
 type Undefined struct {
