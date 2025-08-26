@@ -22,38 +22,38 @@ const (
 type Opcode = byte
 
 // OpConstant loads a constant onto the stack.
-// OpBComplement performs a bitwise complement operation.
+// OpBitwiseComplement performs a bitwise complement operation.
 // OpPop pops a value from the stack.
 // OpTrue pushes the boolean value true onto the stack.
 // OpFalse pushes the boolean value false onto the stack.
 // OpEqual checks if two values are equal (==).
 // OpNotEqual checks if two values are not equal (!=).
 // OpMinus performs a subtraction or negation (-).
-// OpLNot performs a logical NOT operation (!).
+// OpNotLogical performs a logical NOT operation (!).
 // OpJumpFalsy jumps if the top of the stack is falsy.
-// OpAndJump performs a logical AND and jumps.
-// OpOrJump performs a logical OR and jumps.
+// OpJumpAnd performs a logical AND and jumps.
+// OpJumpOr performs a logical OR and jumps.
 // OpJump performs an unconditional jump.
 // OpNull pushes a null value onto the stack.
 // OpArray creates an array object.
 // OpMap creates a map object.
 // OpImmutable creates an immutable object.
 // OpIndex performs an index operation.
-// OpSliceIndex performs a slice operation.
+// OpIndexSlice performs a slice operation.
 // OpCall calls a function.
 // OpReturn returns from a function call.
-// OpGetGlobal retrieves a global variable.
-// OpSetGlobal sets the value of a global variable.
-// OpSetSelGlobal sets a global variable using selectors.
-// OpGetLocal retrieves a local variable.
-// OpSetLocal sets the value of a local variable.
-// OpDefineLocal defines a new local variable.
-// OpSetSelLocal sets a local variable using selectors.
-// OpGetFreePtr retrieves a free variable pointer object.
-// OpGetFree retrieves a free variable.
-// OpSetFree sets the value of a free variable.
-// OpGetLocalPtr retrieves a local variable as a pointer.
-// OpSetSelFree sets a free variable using selectors.
+// OpGlobalGet retrieves a global variable.
+// OpGlobalSet sets the value of a global variable.
+// OpGlobalSelSet sets a global variable using selectors.
+// OpLocalGet retrieves a local variable.
+// OpLocalSet sets the value of a local variable.
+// OpLocalDefine defines a new local variable.
+// OpLocalSelSet sets a local variable using selectors.
+// OpFreePtrGet retrieves a free variable pointer object.
+// OpFreeGet retrieves a free variable.
+// OpFreeSet sets the value of a free variable.
+// OpLocalPtrGet retrieves a local variable as a pointer.
+// OpFreeSelSet sets a free variable using selectors.
 // OpGetBuiltin retrieves a builtin function.
 // OpClosure creates a closure and pushes it onto the stack.
 // OpIteratorInit initializes an iterator.
@@ -66,51 +66,52 @@ type Opcode = byte
 // OpError creates an error object.
 // OpUnknown represents an unknown operation.
 const (
-	OpConstant      Opcode = iota // Load constant
-	OpBComplement                 // bitwise complement
-	OpPop                         // Pop
-	OpTrue                        // Push true
-	OpFalse                       // Push false
-	OpEqual                       // Equal ==
-	OpNotEqual                    // Not equal !=
-	OpMinus                       // Minus -
-	OpLNot                        // Logical not
-	OpJumpFalsy                   // Jump if falsy
-	OpAndJump                     // Logical AND jump
-	OpOrJump                      // Logical OR jump
-	OpJump                        // Jump
-	OpNull                        // Push null
-	OpArray                       // Array object
-	OpMap                         // Map object
-	OpStruct                      // Struct object
-	OpImmutable                   // Immutable object
-	OpIndex                       // Index operation
-	OpSliceIndex                  // Slice operation
-	OpCall                        // Call function
-	OpReturn                      // Return
-	OpGetGlobal                   // Get global variable
-	OpSetGlobal                   // Set global variable
-	OpSetSelGlobal                // Set global variable using selectors
-	OpGetLocal                    // Get local variable
-	OpSetLocal                    // Set local variable
-	OpDefineLocal                 // Define local variable
-	OpSetSelLocal                 // Set local variable using selectors
-	OpGetFreePtr                  // Get free variable pointer object
-	OpGetFree                     // Get free variables
-	OpSetFree                     // Set free variables
-	OpGetLocalPtr                 // Get local variable as a pointer
-	OpSetSelFree                  // Set free variables using selectors
-	OpClosure                     // Push closure
-	OpIteratorInit                // Iterator init
-	OpIteratorNext                // Iterator next
-	OpIteratorKey                 // Iterator key
-	OpIteratorValue               // Iterator value
-	OpBinary                      // Binary operation
+	OpConstant          Opcode = iota // Load constant
+	OpBitwiseComplement               // bitwise complement
+	OpPop                             // Pop
+	OpTrue                            // Push true
+	OpFalse                           // Push false
+	OpEqual                           // Equal ==
+	OpNotEqual                        // Not equal !=
+	OpMinus                           // Minus -
+	OpNotLogical                      // Logical not
+	OpJumpFalsy                       // Jump if falsy
+	OpJumpAnd                         // Logical AND jump
+	OpJumpOr                          // Logical OR jump
+	OpJump                            // Jump
+	OpNull                            // Push null
+	OpArray                           // Array object
+	OpMap                             // Map object
+	OpStruct                          // Struct object
+	OpImmutable                       // Immutable object
+	OpIndex                           // Index operation
+	OpIndexSlice                      // Slice operation
+	OpCall                            // Call function
+	OpReturn                          // Return
+	OpGlobalGet                       // Get global variable
+	OpGlobalSet                       // Set global variable
+	OpGlobalSelSet                    // Set global variable using selectors
+	OpLocalGet                        // Get local variable
+	OpLocalSet                        // Set local variable
+	OpLocalDefine                     // Define local variable
+	OpLocalSelSet                     // Set local variable using selectors
+	OpLocalPtrGet                     // Get local variable as a pointer
+	OpFreePtrGet                      // Get free variable pointer object
+	OpFreeGet                         // Get free variables
+	OpFreeSet                         // Set free variables
+	OpFreeSelSet                      // Set free variables using selectors
+	OpClosure                         // Push closure
+	OpIteratorInit                    // Iterator init
+	OpIteratorNext                    // Iterator next
+	OpIteratorKey                     // Iterator key
+	OpIteratorValue                   // Iterator value
+	OpBinary                          // Binary operation
 	OpReferences
 	OpIntOp
 	OpDeref   // Dereference a pointer
 	OpSuspend // Suspend VM
 	OpError   // Error object
+	OpNoOp    // Push null
 	OpUnknown
 )
 
@@ -177,37 +178,37 @@ func NewOpcodes(factory objects.IGateKeeper) *Opcodes {
 	op.createOpcodeDetails(factory, OpPop, []int{}, "OpPop")
 	op.createOpcodeDetails(factory, OpTrue, []int{}, "OpTrue")
 	op.createOpcodeDetails(factory, OpFalse, []int{}, "OpFalse")
-	op.createOpcodeDetails(factory, OpBComplement, []int{}, "OpBComplement")
+	op.createOpcodeDetails(factory, OpBitwiseComplement, []int{}, "OpBitwiseComplement")
 	op.createOpcodeDetails(factory, OpEqual, []int{}, "OpEqual")
 	op.createOpcodeDetails(factory, OpNotEqual, []int{}, "OpNotEqual")
 	op.createOpcodeDetails(factory, OpMinus, []int{}, "OpMinus")
-	op.createOpcodeDetails(factory, OpLNot, []int{}, "OpLNot")
+	op.createOpcodeDetails(factory, OpNotLogical, []int{}, "OpNotLogical")
 	op.createOpcodeDetails(factory, OpJumpFalsy, []int{2}, "OpJumpFalsy")
-	op.createOpcodeDetails(factory, OpAndJump, []int{2}, "OpAndJump")
-	op.createOpcodeDetails(factory, OpOrJump, []int{2}, "OpOrJump")
+	op.createOpcodeDetails(factory, OpJumpAnd, []int{2}, "OpJumpAnd")
+	op.createOpcodeDetails(factory, OpJumpOr, []int{2}, "OpJumpOr")
 	op.createOpcodeDetails(factory, OpJump, []int{2}, "OpJump")
 	op.createOpcodeDetails(factory, OpNull, []int{}, "OpNull")
-	op.createOpcodeDetails(factory, OpGetGlobal, []int{2}, "OpGetGlobal")
-	op.createOpcodeDetails(factory, OpSetGlobal, []int{2}, "OpSetGlobal")
-	op.createOpcodeDetails(factory, OpSetSelGlobal, []int{2, 1}, "OpSetSelGlobal")
+	op.createOpcodeDetails(factory, OpGlobalGet, []int{2}, "OpGlobalGet")
+	op.createOpcodeDetails(factory, OpGlobalSet, []int{2}, "OpGlobalSet")
+	op.createOpcodeDetails(factory, OpGlobalSelSet, []int{2, 1}, "OpGlobalSelSet")
 	op.createOpcodeDetails(factory, OpArray, []int{2}, "OpArray")
 	op.createOpcodeDetails(factory, OpMap, []int{2}, "OpMap")
 	op.createOpcodeDetails(factory, OpStruct, []int{2}, "OpStruct")
 	op.createOpcodeDetails(factory, OpImmutable, []int{}, "OpImmutable")
 	op.createOpcodeDetails(factory, OpIndex, []int{}, "OpIndex")
-	op.createOpcodeDetails(factory, OpSliceIndex, []int{}, "OpSliceIndex")
+	op.createOpcodeDetails(factory, OpIndexSlice, []int{}, "OpIndexSlice")
 	op.createOpcodeDetails(factory, OpCall, []int{1, 1}, "OpCall")
 	op.createOpcodeDetails(factory, OpReturn, []int{1}, "OpReturn")
-	op.createOpcodeDetails(factory, OpGetLocal, []int{1}, "OpGetLocal")
-	op.createOpcodeDetails(factory, OpSetLocal, []int{1}, "OpSetLocal")
-	op.createOpcodeDetails(factory, OpDefineLocal, []int{1}, "OpDefineLocal")
-	op.createOpcodeDetails(factory, OpSetSelLocal, []int{1, 1}, "OpSetSelLocal")
+	op.createOpcodeDetails(factory, OpLocalGet, []int{1}, "OpLocalGet")
+	op.createOpcodeDetails(factory, OpLocalSet, []int{1}, "OpLocalSet")
+	op.createOpcodeDetails(factory, OpLocalDefine, []int{1}, "OpLocalDefine")
+	op.createOpcodeDetails(factory, OpLocalSelSet, []int{1, 1}, "OpLocalSelSet")
 	op.createOpcodeDetails(factory, OpClosure, []int{2, 1}, "OpClosure")
-	op.createOpcodeDetails(factory, OpGetFreePtr, []int{1}, "OpGetFreePtr")
-	op.createOpcodeDetails(factory, OpGetFree, []int{1}, "OpGetFree")
-	op.createOpcodeDetails(factory, OpSetFree, []int{1}, "OpSetFree")
-	op.createOpcodeDetails(factory, OpGetLocalPtr, []int{1}, "OpGetLocalPtr")
-	op.createOpcodeDetails(factory, OpSetSelFree, []int{1, 1}, "OpSetSelFree")
+	op.createOpcodeDetails(factory, OpFreePtrGet, []int{1}, "OpFreePtrGet")
+	op.createOpcodeDetails(factory, OpFreeGet, []int{1}, "OpFreeGet")
+	op.createOpcodeDetails(factory, OpFreeSet, []int{1}, "OpFreeSet")
+	op.createOpcodeDetails(factory, OpLocalPtrGet, []int{1}, "OpLocalPtrGet")
+	op.createOpcodeDetails(factory, OpFreeSelSet, []int{1, 1}, "OpFreeSelSet")
 	op.createOpcodeDetails(factory, OpIteratorInit, []int{1}, "OpIteratorInit")
 	op.createOpcodeDetails(factory, OpIteratorNext, []int{1}, "OpIteratorNext")
 	op.createOpcodeDetails(factory, OpIteratorKey, []int{1}, "OpIteratorKey")

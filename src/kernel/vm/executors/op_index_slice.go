@@ -6,19 +6,19 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
-// OpSliceIndex represents an operation that performs a slicing action on an array, string, or bytes within a virtual machine.
+// OpIndexSlice represents an operation that performs a slicing action on an array, string, or bytes within a virtual machine.
 // It embeds OpcodeDetails to inherit opcode, operand, and name information for execution and identification.
-type OpSliceIndex struct {
+type OpIndexSlice struct {
 	*bytecode.OpcodeDetails
 }
 
-// NewOpSliceIndex creates a new instance of OpSliceIndex containing details for the slice indexing bytecode operation.
-func NewOpSliceIndex(op *bytecode.Opcodes) *OpSliceIndex {
-	return &OpSliceIndex{OpcodeDetails: op.OpcodeToDetails(bytecode.OpSliceIndex)}
+// NewOpIndexSlice creates a new instance of OpIndexSlice containing details for the slice indexing bytecode operation.
+func NewOpIndexSlice(op *bytecode.Opcodes) *OpIndexSlice {
+	return &OpIndexSlice{OpcodeDetails: op.OpcodeToDetails(bytecode.OpIndexSlice)}
 }
 
 // Execute processes the slice operation on the stack, adjusting bounds and supporting various object types like arrays and strings.
-func (op *OpSliceIndex) Execute(v *core.VM, _ *core.Decoder) {
+func (op *OpIndexSlice) Execute(v *core.VM, _ *core.Decoder) {
 	// Operands Offset  0
 	highStack := v.Stack().Pop()
 	lowStack := v.Stack().Pop()

@@ -223,7 +223,7 @@ func (c *Functions) CallExpr(node *ast.CallExpr) error {
 		identName = ident.Name
 	}
 
-	fnOpType := bytecode.OpGetGlobal
+	fnOpType := bytecode.OpGlobalGet
 	var fnArgs []ast.Expr
 	fnName, fnIndex, ok := c.imports.Attach(commonName, selName)
 	if ok {
@@ -283,12 +283,12 @@ func (c *Functions) CallExpr(node *ast.CallExpr) error {
 			}
 			tempSymbolMap[arg] = tempSymbol // Store the symbol for the second pass
 			// 1.3. Emit code to store the result into the temp variable.
-			// This generates OpSetLocal, correctly storing the result.
+			// This generates OpLocalSet, correctly storing the result.
 			if err = c.scopes.EmitSymbolSet(tempSymbol); err != nil {
 				return err
 			}
 			// 1.4. Pop the result from the stack to keep it clean for the next operations.
-			// This is crucial as OpSetLocal only peeks at the stack value.
+			// This is crucial as OpLocalSet only peeks at the stack value.
 			if _, err = c.scopes.Emit(bytecode.OpPop); err != nil {
 				return err
 			}
@@ -665,11 +665,11 @@ func (c *Functions) UnaryExpr(node *ast.UnaryExpr) error {
 			}
 			switch symbol.Scope() {
 			case LocalScope:
-				if _, err := c.scopes.Emit(bytecode.OpGetLocalPtr, symbol.Index()); err != nil {
+				if _, err := c.scopes.Emit(bytecode.OpLocalPtrGet, symbol.Index()); err != nil {
 					return err
 				}
 			case FreeScope:
-				if _, err := c.scopes.Emit(bytecode.OpGetFreePtr, symbol.Index()); err != nil {
+				if _, err := c.scopes.Emit(bytecode.OpFreePtrGet, symbol.Index()); err != nil {
 					return err
 				}
 			default:
@@ -687,7 +687,7 @@ func (c *Functions) UnaryExpr(node *ast.UnaryExpr) error {
 			if err = c.scopes.EmitSymbolDefine(tempSymbol); err != nil {
 				return err
 			}
-			if _, err = c.scopes.Emit(bytecode.OpGetLocalPtr, tempSymbol.Index()); err != nil {
+			if _, err = c.scopes.Emit(bytecode.OpLocalPtrGet, tempSymbol.Index()); err != nil {
 				return err
 			}
 		default:

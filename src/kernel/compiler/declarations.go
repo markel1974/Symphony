@@ -342,21 +342,21 @@ func (c *Declarations) AssignStmt(node *ast.AssignStmt) error {
 		}
 		const numSelectors = 1
 		if symbol.Scope() == GlobalScope {
-			if _, err := c.scopes.Emit(bytecode.OpSetSelGlobal, symbol.Index(), numSelectors); err != nil {
+			if _, err := c.scopes.Emit(bytecode.OpGlobalSelSet, symbol.Index(), numSelectors); err != nil {
 				return err
 			}
 		} else {
-			if _, err := c.scopes.Emit(bytecode.OpSetSelLocal, symbol.Index(), numSelectors); err != nil {
+			if _, err := c.scopes.Emit(bytecode.OpLocalSelSet, symbol.Index(), numSelectors); err != nil {
 				return err
 			}
 		}
 		/*
 			if symbol.Scope() == GlobalScope {
-				if _, err := c.scopes.Emit(bytecode.OpSetSelGlobal, 1, symbol.Index()); err != nil {
+				if _, err := c.scopes.Emit(bytecode.OpGlobalSelSet, 1, symbol.Index()); err != nil {
 					return err
 				}
 			} else {
-				if _, err := c.scopes.Emit(bytecode.OpSetSelLocal, 1, symbol.Index()); err != nil {
+				if _, err := c.scopes.Emit(bytecode.OpLocalSelSet, 1, symbol.Index()); err != nil {
 					return err
 				}
 			}

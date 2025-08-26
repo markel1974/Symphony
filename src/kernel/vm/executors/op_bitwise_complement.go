@@ -8,19 +8,19 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
-// OpBComplement represents an operation for performing a bitwise complement on an operand.
+// OpBitwiseComplement represents an operation for performing a bitwise complement on an operand.
 // It extends OpcodeDetails, inheriting its metadata and behaviors.
-type OpBComplement struct {
+type OpBitwiseComplement struct {
 	*bytecode.OpcodeDetails
 }
 
-// NewOpBComplement initializes and returns an OpBComplement instance with the corresponding OpcodeDetails configuration.
-func NewOpBComplement(op *bytecode.Opcodes) *OpBComplement {
-	return &OpBComplement{OpcodeDetails: op.OpcodeToDetails(bytecode.OpBComplement)}
+// NewOpBitwiseComplement initializes and returns an OpBitwiseComplement instance with the corresponding OpcodeDetails configuration.
+func NewOpBitwiseComplement(op *bytecode.Opcodes) *OpBitwiseComplement {
+	return &OpBitwiseComplement{OpcodeDetails: op.OpcodeToDetails(bytecode.OpBitwiseComplement)}
 }
 
 // Execute performs the bitwise complement operation on the top stack value. Sets an error if the value is not an integer.
-func (op *OpBComplement) Execute(v *core.VM, _ *core.Decoder) {
+func (op *OpBitwiseComplement) Execute(v *core.VM, _ *core.Decoder) {
 	// Operands Offset 0
 	operand := v.Stack().Pop()
 	switch x := operand.(type) {

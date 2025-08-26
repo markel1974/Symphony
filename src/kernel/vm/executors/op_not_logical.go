@@ -5,18 +5,18 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/core"
 )
 
-// OpLNot represents the logical NOT (!) operation opcode in the virtual machine's instruction set.
-type OpLNot struct {
+// OpNotLogical represents the logical NOT (!) operation opcode in the virtual machine's instruction set.
+type OpNotLogical struct {
 	*bytecode.OpcodeDetails
 }
 
-// NewOpLNot creates a new instance of OpLNot, representing a logical NOT operation (!).
-func NewOpLNot(op *bytecode.Opcodes) *OpLNot {
-	return &OpLNot{OpcodeDetails: op.OpcodeToDetails(bytecode.OpLNot)}
+// NewOpNotLogical creates a new instance of OpNotLogical, representing a logical NOT operation (!).
+func NewOpNotLogical(op *bytecode.Opcodes) *OpNotLogical {
+	return &OpNotLogical{OpcodeDetails: op.OpcodeToDetails(bytecode.OpNotLogical)}
 }
 
 // Execute performs a logical NOT operation on the operand at the top of the stack, pushing the result back onto the stack.
-func (op *OpLNot) Execute(v *core.VM, _ *core.Decoder) {
+func (op *OpNotLogical) Execute(v *core.VM, _ *core.Decoder) {
 	// Operands Offset  0
 	operand := v.Stack().Pop()
 	val := op.Factory().FalseValue()

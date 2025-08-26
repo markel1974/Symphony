@@ -6,18 +6,18 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
-// OpGetLocal represents an operation to retrieve a local variable from the stack using its index.
-type OpGetLocal struct {
+// OpLocalGet represents an operation to retrieve a local variable from the stack using its index.
+type OpLocalGet struct {
 	*bytecode.OpcodeDetails
 }
 
-// NewOpGetLocal creates a new OpGetLocal instance and initializes it with details for the OpGetLocal opcode.
-func NewOpGetLocal(op *bytecode.Opcodes) *OpGetLocal {
-	return &OpGetLocal{OpcodeDetails: op.OpcodeToDetails(bytecode.OpGetLocal)}
+// NewOpLocalGet creates a new OpLocalGet instance and initializes it with details for the OpLocalGet opcode.
+func NewOpLocalGet(op *bytecode.Opcodes) *OpLocalGet {
+	return &OpLocalGet{OpcodeDetails: op.OpcodeToDetails(bytecode.OpLocalGet)}
 }
 
 // Execute retrieves a local variable from the current frame's base pointer and pushes it onto the stack.
-func (op *OpGetLocal) Execute(v *core.VM, decoder *core.Decoder) {
+func (op *OpLocalGet) Execute(v *core.VM, decoder *core.Decoder) {
 	// Operands Offset 1 (8-bit)
 	localIndex := decoder.Read(0)
 	val := v.Stack().PeekAbsolute(v.BasePointer() + localIndex)

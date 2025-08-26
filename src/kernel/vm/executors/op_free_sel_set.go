@@ -6,18 +6,18 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
-// OpSetSelFree represents an operation to set a free variable's value using selectors.
-type OpSetSelFree struct {
+// OpFreeSelSet represents an operation to set a free variable's value using selectors.
+type OpFreeSelSet struct {
 	*bytecode.OpcodeDetails
 }
 
-// NewOpSetSelFree creates a new instance of OpSetSelFree with initialized OpcodeDetails referencing OpSetSelFree.
-func NewOpSetSelFree(op *bytecode.Opcodes) *OpSetSelFree {
-	return &OpSetSelFree{OpcodeDetails: op.OpcodeToDetails(bytecode.OpSetSelFree)}
+// NewOpFreeSelSet creates a new instance of OpFreeSelSet with initialized OpcodeDetails referencing OpFreeSelSet.
+func NewOpFreeSelSet(op *bytecode.Opcodes) *OpFreeSelSet {
+	return &OpFreeSelSet{OpcodeDetails: op.OpcodeToDetails(bytecode.OpFreeSelSet)}
 }
 
 // Execute updates the instruction pointer, retrieves operands, processes selectors, and performs indexed assignment in the VM.
-func (op *OpSetSelFree) Execute(v *core.VM, decoder *core.Decoder) {
+func (op *OpFreeSelSet) Execute(v *core.VM, decoder *core.Decoder) {
 	// Operands Offset 2 (8-bit|8-bit)
 	numSelectors := decoder.Read(0)
 	freeIndex := decoder.Read(1)

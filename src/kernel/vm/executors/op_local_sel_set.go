@@ -6,19 +6,19 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
-// OpSetSelLocal represents an operation for setting a local variable using selectors in the virtual machine.
+// OpLocalSelSet represents an operation for setting a local variable using selectors in the virtual machine.
 // It embeds OpcodeDetails to utilize its properties like opcode, name, and operands.
-type OpSetSelLocal struct {
+type OpLocalSelSet struct {
 	*bytecode.OpcodeDetails
 }
 
-// NewOpSetSelLocal creates and returns a new instance of the OpSetSelLocal operation executor.
-func NewOpSetSelLocal(op *bytecode.Opcodes) *OpSetSelLocal {
-	return &OpSetSelLocal{OpcodeDetails: op.OpcodeToDetails(bytecode.OpSetSelLocal)}
+// NewOpLocalSelSet creates and returns a new instance of the OpLocalSelSet operation executor.
+func NewOpLocalSelSet(op *bytecode.Opcodes) *OpLocalSelSet {
+	return &OpLocalSelSet{OpcodeDetails: op.OpcodeToDetails(bytecode.OpLocalSelSet)}
 }
 
 // Execute performs the operation of retrieving, modifying, and reassigning a value using selectors in the local scope.
-func (op *OpSetSelLocal) Execute(v *core.VM, decoder *core.Decoder) {
+func (op *OpLocalSelSet) Execute(v *core.VM, decoder *core.Decoder) {
 	// Operands Offset 2 (8-bit|8-bit)
 	numSelectors := decoder.Read(0)
 	localIndex := decoder.Read(1)

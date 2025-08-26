@@ -6,18 +6,18 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
-// OpGetLocalPtr retrieves a local variable as a pointer using its index within the current frame.
-type OpGetLocalPtr struct {
+// OpLocalPtrGet retrieves a local variable as a pointer using its index within the current frame.
+type OpLocalPtrGet struct {
 	*bytecode.OpcodeDetails
 }
 
-// NewOpGetLocalPtr creates and returns a new instance of OpGetLocalPtr, initializing its OpcodeDetails.
-func NewOpGetLocalPtr(op *bytecode.Opcodes) *OpGetLocalPtr {
-	return &OpGetLocalPtr{OpcodeDetails: op.OpcodeToDetails(bytecode.OpGetLocalPtr)}
+// NewOpLocalPtrGet creates and returns a new instance of OpLocalPtrGet, initializing its OpcodeDetails.
+func NewOpLocalPtrGet(op *bytecode.Opcodes) *OpLocalPtrGet {
+	return &OpLocalPtrGet{OpcodeDetails: op.OpcodeToDetails(bytecode.OpLocalPtrGet)}
 }
 
 // Execute advances the instruction pointer, retrieves a local variable, and pushes an ObjectPointer to the stack.
-func (op *OpGetLocalPtr) Execute(v *core.VM, decoder *core.Decoder) {
+func (op *OpLocalPtrGet) Execute(v *core.VM, decoder *core.Decoder) {
 	// Operands Offset 1 (8-bit)
 	localIndex := decoder.Read(0)
 	sp := v.BasePointer() + localIndex
