@@ -545,7 +545,7 @@ func (t *Process) handleMessageProcessStart(msg interfaces.IMessage) {
 			var err error
 			const sequencerId = "native"
 			gk := objects.NewGateKeeper(0)
-			t.opcodes = bytecode.NewOpcodes(gk)
+			t.opcodes = bytecode.NewOpcodes()
 			t.compiler, t.loader, err = compilers.NewCompiler(gk, t.opcodes, sequencerId)
 			if err != nil {
 				log.Printf("Process [%s]: error creating compiler: %s", t.cmd.Name(), err.Error())
@@ -563,7 +563,7 @@ func (t *Process) handleMessageProcessStart(msg interfaces.IMessage) {
 			log.Printf("Process [%s]: error compiling script: %s", t.cmd.Name(), err.Error())
 			return
 		}
-		bc := bytecode.NewBytecode(t.opcodes.GateKeeper(), t.opcodes, t.compiler.Constants(), t.compiler.References(), t.compiler.Globals())
+		bc := bytecode.NewBytecode(t.opcodes, t.compiler.Constants(), t.compiler.References(), t.compiler.Globals())
 		if err := t.vm.Setup(t.loader, bc); err != nil {
 			log.Printf("Process [%s]: error setting up VM: %s", t.cmd.Name(), err.Error())
 		}

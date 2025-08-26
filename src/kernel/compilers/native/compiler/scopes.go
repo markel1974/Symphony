@@ -110,7 +110,7 @@ func (c *Scopes) InstructionsAdd(ins []byte) (int, error) {
 
 // InstructionSetLast updates the last emitted instruction for the current scope and tracks the previous one.
 // It returns an error if the current scope cannot be retrieved.
-func (c *Scopes) InstructionSetLast(op bytecode.Opcode, pos int) error {
+func (c *Scopes) InstructionSetLast(op bytecode.OpcodeId, pos int) error {
 	scope, err := c.Current()
 	if err != nil {
 		return err
@@ -204,7 +204,7 @@ func (c *Scopes) ChangeOperand(opPos int, operand int) error {
 }
 
 // Emit generates and adds a new instruction to the current scope and updates the last emitted instruction info.
-func (c *Scopes) Emit(op bytecode.Opcode, operands ...int) (int, error) {
+func (c *Scopes) Emit(op bytecode.OpcodeId, operands ...int) (int, error) {
 	ins, err := c.op.CompileInstruction(op, operands...)
 	if err != nil {
 		return 0, err
@@ -221,7 +221,7 @@ func (c *Scopes) Emit(op bytecode.Opcode, operands ...int) (int, error) {
 
 // EmitSymbolDefine emits the opcode for *defining* a variable.
 func (c *Scopes) EmitSymbolDefine(s *Symbol) error {
-	var op bytecode.Opcode
+	var op bytecode.OpcodeId
 	switch s.Scope() {
 	case GlobalScope:
 		op = bytecode.OpGlobalSet
@@ -238,7 +238,7 @@ func (c *Scopes) EmitSymbolDefine(s *Symbol) error {
 
 // EmitSymbolSet generates bytecode instructions to set the value of a symbol in its appropriate scope (global, local, or free).
 func (c *Scopes) EmitSymbolSet(s *Symbol) error {
-	var op bytecode.Opcode
+	var op bytecode.OpcodeId
 	switch s.Scope() {
 	case GlobalScope:
 		op = bytecode.OpGlobalSet
@@ -257,7 +257,7 @@ func (c *Scopes) EmitSymbolSet(s *Symbol) error {
 
 // EmitSymbolGet generates bytecode instructions to retrieve a symbol's value based on its scope and index.
 func (c *Scopes) EmitSymbolGet(s *Symbol) error {
-	var op bytecode.Opcode
+	var op bytecode.OpcodeId
 	switch s.Scope() {
 	case GlobalScope:
 		op = bytecode.OpGlobalGet
