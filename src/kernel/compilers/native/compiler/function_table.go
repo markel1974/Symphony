@@ -10,7 +10,6 @@ type FunctionDescription struct {
 	Name            string
 	ReturnValues    []string
 	InputParams     []string
-	IsStruct        bool
 	StructName      string
 	StructReceivers []string
 	FuncDecl        *ast.FuncDecl

@@ -14,7 +14,6 @@ type Symbol struct {
 	structName string
 	funcName   string
 	types      []string
-	isStruct   bool
 	Fields     []*FieldDescription
 	object     objects.IObject
 }
@@ -32,10 +31,9 @@ func NewSymbol(name string, index int, scope SymbolScope) *Symbol {
 	return symbol
 }
 
-func (s *Symbol) SetIsStruct(structName string, isStruct bool) {
-	fmt.Println("SetIsStruct", s.Name(), structName, isStruct)
+func (s *Symbol) SetStruct(structName string) {
+	fmt.Printf("SetIsStruct %s => %s\n", s.Name(), structName)
 	s.structName = structName
-	s.isStruct = isStruct
 }
 
 // Name returns the name of the Symbol.
@@ -60,14 +58,7 @@ func (s *Symbol) GetObject() objects.IObject {
 
 // IsStruct returns a boolean indicating whether the Symbol represents an struct.
 func (s *Symbol) IsStruct() bool {
-	//if len(s.structName) > 0 {
-	//	return true
-	//}
-	if s.isStruct {
-		return true
-	}
-	return false
-	//return s.isStruct
+	return len(s.structName) > 0
 }
 
 func (s *Symbol) StructPropertyAssign(fields []*FieldDescription) {

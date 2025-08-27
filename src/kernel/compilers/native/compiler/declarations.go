@@ -98,7 +98,6 @@ func (c *Declarations) ValueSpec(node *ast.ValueSpec) error {
 			return err
 		}
 
-		isStruct2 := false
 		structName := ""
 
 		// 3. Inferenza del tipo, ora coerente con la nuova logica
@@ -106,9 +105,8 @@ func (c *Declarations) ValueSpec(node *ast.ValueSpec) error {
 		if compLit, ok := node.Values[i].(*ast.CompositeLit); ok {
 			if ident, ok := compLit.Type.(*ast.Ident); ok {
 				if typeSymbol, ok := c.scopes.SymbolResolve(ident.Name); ok && typeSymbol.IsStruct() {
-					structName = ident.Name
+					structName = c.structsTable.CreateStructName(ident.Name)
 					assignedTypeNames = []string{typeSymbol.Name()}
-					isStruct2 = true
 				}
 			}
 		} else if callExpr, ok := node.Values[i].(*ast.CallExpr); ok {
@@ -126,12 +124,11 @@ func (c *Declarations) ValueSpec(node *ast.ValueSpec) error {
 				}
 			}
 		}
-
 		symbol, err := c.scopes.SymbolDefine(name.Name)
 		if err != nil {
 			return err
 		}
-		symbol.SetIsStruct(structName, isStruct2)
+		symbol.SetStruct(structName)
 		if len(assignedTypeNames) > 0 {
 			symbol.SetTypes(assignedTypeNames)
 			symbol.SetObject(c.gk.NewString(objects.FrameStatic, symbol.Name()+":"+strings.Join(assignedTypeNames, " ")))
@@ -265,7 +262,6 @@ func (c *Declarations) AssignStmt(node *ast.AssignStmt) error {
 		if node.Tok == token.DEFINE { // Caso specifico per ':='
 			var err error
 			// Ispezioniamo il lato destro (RHS) per inferire il tipo
-			isStruct2 := false
 			structName := ""
 			var assignedTypeName []string
 
@@ -276,8 +272,7 @@ func (c *Declarations) AssignStmt(node *ast.AssignStmt) error {
 				baseName := ExtractBaseName(rhs.Type)
 				if len(baseName) > 0 {
 					assignedTypeName = []string{baseName}
-					structName = baseName
-					isStruct2 = true
+					structName = c.structsTable.CreateStructName(baseName)
 				}
 			case *ast.CallExpr: // es. NewStruct()
 				if ident, ok := rhs.Fun.(*ast.Ident); ok {
@@ -287,8 +282,7 @@ func (c *Declarations) AssignStmt(node *ast.AssignStmt) error {
 						assignedTypeName = []string{typeName}
 						// Verifichiamo se il tipo restituito è uno struct
 						if typeSymbol, ok := c.scopes.SymbolResolve(typeName); ok && typeSymbol.IsStruct() {
-							isStruct2 = true
-							structName = typeName
+							structName = c.structsTable.CreateStructName(typeName)
 						}
 					}
 				}
@@ -297,8 +291,7 @@ func (c *Declarations) AssignStmt(node *ast.AssignStmt) error {
 					if compLit, ok := rhs.X.(*ast.CompositeLit); ok {
 						if ident, ok := compLit.Type.(*ast.Ident); ok {
 							if typeSymbol, ok := c.scopes.SymbolResolve(ident.Name); ok && typeSymbol.IsStruct() {
-								isStruct2 = true
-								structName = typeSymbol.Name()
+								structName = c.structsTable.CreateStructName(typeSymbol.Name())
 								assignedTypeName = []string{typeSymbol.Name()}
 							}
 						}
@@ -312,8 +305,7 @@ func (c *Declarations) AssignStmt(node *ast.AssignStmt) error {
 			if err != nil {
 				return err
 			}
-			symbol.SetIsStruct(structName, isStruct2)
-			// Se abbiamo un tipo, lo associamo al simbolo
+			symbol.SetStruct(structName)
 			if len(assignedTypeName) > 0 {
 				symbol.SetTypes(assignedTypeName)
 			}
@@ -413,8 +405,9 @@ func (c *Declarations) CompositeLit(node *ast.CompositeLit) error {
 			if symbol, err = c.scopes.SymbolDefine(t.Name); err != nil {
 				return err
 			}
-			symbol.SetIsStruct(t.Name, true)
 		}
+		structName := c.structsTable.CreateStructName(t.Name)
+		symbol.SetStruct(structName)
 		symbol.StructPropertyAssign(structFields)
 		symbol.SetTypes([]string{t.Name})
 		isKeyed := false

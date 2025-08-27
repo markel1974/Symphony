@@ -105,23 +105,17 @@ func (c *Functions) funcBodyPrepare(fd *FunctionDescription) error {
 			return fmt.Errorf("undefined type '%s' for method receiver", recvTypeIdent.Name)
 		}
 		fd.Name = GetMangledName(recvTypeIdent.Name, node.Name.Name)
-		fd.StructName = recvTypeIdent.Name
-		if len(fd.StructReceivers) == 0 {
-			fd.StructName = "<anonymous>"
-		}
-		fd.IsStruct = true
+		fd.StructName = c.structTable.CreateStructName(recvTypeIdent.Name)
 	} else {
 		fd.Name = node.Name.Name
 		fd.StructName = ""
-		fd.IsStruct = false
 	}
 	//function symbol placeholder (this is not the real function, it's just a placeholder to be able to compile the body)
 	placeHolder, err := c.scopes.SymbolDefine(fd.Name)
 	if err != nil {
 		return err
 	}
-	//by default, the function is not a struct
-	placeHolder.SetIsStruct(fd.StructName, false) //fd.IsStruct)
+	placeHolder.SetStruct(fd.StructName)
 	return nil
 }
 
@@ -136,8 +130,8 @@ func (c *Functions) funcBodyCompile(fd *FunctionDescription) error {
 		if err != nil {
 			return err
 		}
-		receiverSymbol.SetIsStruct(fd.StructName, fd.IsStruct)
-		if fd.IsStruct {
+		receiverSymbol.SetStruct(fd.StructName)
+		if len(fd.StructName) > 0 {
 			//TODO return values
 			receiverSymbol.SetTypes(fd.ReturnValues)
 		}
@@ -502,7 +496,6 @@ func (c *Functions) RangeStmt(node *ast.RangeStmt) error {
 		return err
 	}
 
-	isStruct2 := false
 	structName := ""
 	var valueTypeName []string
 	var collectionSymbol *Symbol
@@ -530,7 +523,7 @@ func (c *Functions) RangeStmt(node *ast.RangeStmt) error {
 				for _, receiverField := range receiverStructFields {
 					if fieldName == receiverField.name {
 						collectionSymbol = NewSymbol(receiverField.base, 0, UnknownScope)
-						collectionSymbol.SetIsStruct(receiverSymbol.StructName(), true)
+						collectionSymbol.SetStruct(receiverSymbol.StructName())
 						//todo type
 						collectionSymbol.SetTypes([]string{receiverField.base})
 						break
@@ -547,8 +540,7 @@ func (c *Functions) RangeStmt(node *ast.RangeStmt) error {
 		if len(collectionSymbol.Types()) > 0 {
 			typeName := collectionSymbol.Types()[0]
 			if c.structTable.Has(typeName) {
-				structName = typeName
-				isStruct2 = true
+				structName = c.structTable.CreateStructName(typeName)
 				valueTypeName = []string{typeName}
 			}
 		}
@@ -570,7 +562,7 @@ func (c *Functions) RangeStmt(node *ast.RangeStmt) error {
 			if err != nil {
 				return err
 			}
-			valueSymbol.SetIsStruct(structName, isStruct2)
+			valueSymbol.SetStruct(structName)
 			if len(valueTypeName) > 0 {
 				//TODO type
 				valueSymbol.SetTypes(valueTypeName)
@@ -790,7 +782,7 @@ func (c *Functions) FuncLit(node *ast.FuncLit) error {
 					return err
 				}
 				zSymbol.SetScope(LocalScope)
-				zSymbol.SetIsStruct(structName, isStruct)
+				zSymbol.SetStruct(structName)
 			}
 		}
 	}

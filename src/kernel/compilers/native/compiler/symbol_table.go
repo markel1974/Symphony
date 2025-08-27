@@ -123,7 +123,7 @@ func (s *SymbolTable) Resolve(name string) (*Symbol, bool) {
 	}
 	s.freeSymbols = append(s.freeSymbols, obj)
 	symbol := NewSymbol(obj.Name(), len(s.freeSymbols)-1, FreeScope)
-	symbol.SetIsStruct(obj.StructName(), obj.IsStruct())
+	symbol.SetStruct(obj.StructName())
 	s.symbols[obj.Name()] = symbol
 	return symbol, true
 }

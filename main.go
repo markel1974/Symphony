@@ -142,7 +142,7 @@ func vmTest() {
 	}
 	var args []interface{} = nil
 	//args := []interface{}{1, 2}
-	if err = comp.Compile("example.go", stub.Source1); err != nil {
+	if err = comp.Compile("example.go", stub.Source7); err != nil {
 		log.Fatalf("compiler error: %s", err)
 	}
 	bc := bytecode.NewBytecode(op, comp.Constants(), comp.References(), comp.Globals())
