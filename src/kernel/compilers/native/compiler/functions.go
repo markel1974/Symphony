@@ -495,21 +495,21 @@ func (c *Functions) RangeStmt(node *ast.RangeStmt) error {
 		return err
 	}
 
-	var typeName string
+	var returnTypeName string
 
 	switch expr := node.X.(type) {
 	case *ast.Ident:
-		if collectionSymbol2, ok := c.scopes.SymbolResolve(expr.Name); ok {
-			if len(collectionSymbol2.Types()) > 0 {
-				typeName = collectionSymbol2.Types()[0]
+		if symbol, ok := c.scopes.SymbolResolve(expr.Name); ok {
+			if len(symbol.Types()) > 0 {
+				returnTypeName = symbol.Types()[0]
 			}
 		}
 	case *ast.CallExpr:
 		if ident, ok := expr.Fun.(*ast.Ident); ok {
 			// Simbolo della funzione, per inferire il tipo di ritorno
-			if collectionSymbol2, ok := c.scopes.SymbolResolve(ident.Name); ok {
-				if len(collectionSymbol2.Types()) > 0 {
-					typeName = collectionSymbol2.Types()[0]
+			if symbol, ok := c.scopes.SymbolResolve(ident.Name); ok {
+				if len(symbol.Types()) > 0 {
+					returnTypeName = symbol.Types()[0]
 				}
 			}
 		}
@@ -518,21 +518,13 @@ func (c *Functions) RangeStmt(node *ast.RangeStmt) error {
 		if receiverIdent, ok := expr.X.(*ast.Ident); ok {
 			// 1. Risolviamo il simbolo del ricevitore (myVar)
 			if receiverSymbol, ok := c.scopes.SymbolResolve(receiverIdent.Name); ok {
-				if typeName, ok = c.structTable.GetTypeNameFromFields(receiverSymbol.StructName(), expr.Sel.Name); !ok {
+				if returnTypeName, ok = c.structTable.GetTypeNameFromFields(receiverSymbol.StructName(), expr.Sel.Name); !ok {
 					return fmt.Errorf("undefined field: %s.%s", receiverSymbol.StructName(), expr.Sel.Name)
 				}
 			}
 		}
 	default:
 		return fmt.Errorf("unsupported range expression: %T", node.X)
-	}
-
-	// Logica di inferenza unificata
-	structName := ""
-	var valueTypeName []string
-	if c.structTable.Has(typeName) {
-		structName = c.structTable.CreateStructName(typeName)
-		valueTypeName = []string{typeName}
 	}
 
 	var keySymbol, valueSymbol *Symbol
@@ -551,16 +543,15 @@ func (c *Functions) RangeStmt(node *ast.RangeStmt) error {
 			if err != nil {
 				return err
 			}
-			valueSymbol.SetStruct(structName)
-			if len(valueTypeName) > 0 {
-				//TODO type
-				valueSymbol.SetTypes(valueTypeName)
+			if c.structTable.Has(returnTypeName) {
+				valueSymbol.SetStruct(c.structTable.CreateStructName(returnTypeName))
+				valueSymbol.SetTypes([]string{returnTypeName})
 			}
 		}
 	}
 
 	loopStartPos := scope.InstructionsLen()
-	if _, err := c.scopes.Emit(bytecode.OpIteratorNext, iteratorSymbol.Index()); err != nil {
+	if _, err = c.scopes.Emit(bytecode.OpIteratorNext, iteratorSymbol.Index()); err != nil {
 		return err
 	}
 	jumpNotTruthyPos, err := c.scopes.Emit(bytecode.OpJumpFalsy, 9999)
