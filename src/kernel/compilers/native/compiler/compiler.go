@@ -186,6 +186,8 @@ func (c *Compiler) compile(in ast.Node) error {
 		err = c.functions.SelectorExpr(node)
 	case *ast.BranchStmt:
 		err = c.functions.BranchStmt(node)
+	case *ast.SwitchStmt:
+		err = c.functions.SwitchStmt(node)
 	default:
 		err = NewCompilerError(c.fileSet, node, "unsupported expression type: %T", node)
 	}

@@ -505,7 +505,7 @@ func (c *Functions) RangeStmt(node *ast.RangeStmt) error {
 	if err != nil {
 		return err
 	}
-	scope.EnterLoop() // <-- 1. Entriamo nel contesto del ciclo
+	scope.EnterLoop()
 
 	iteratorSymbol, err := c.scopes.SymbolDefineUnique("__iterator")
 	if err != nil {
@@ -595,30 +595,39 @@ func (c *Functions) RangeStmt(node *ast.RangeStmt) error {
 			return err
 		}
 	}
-	scope.LeaveLoop() // <-- 3. Usciamo dal contesto del ciclo
+	scope.LeaveLoop()
 	return nil
 }
 
-// BranchStmt compiles a branch statement (break or continue) and emits the corresponding jump instructions.
-// Returns an error for unsupported tokens or scope issues.
+// BranchStmt compiles a branch statement, handling 'break' and 'continue' operations within loops or switch statements.
 func (c *Functions) BranchStmt(node *ast.BranchStmt) error {
-	scope, err := c.scopes.Current()
-	if err != nil {
-		return err
+	scope, scopeErr := c.scopes.Current()
+	if scopeErr != nil {
+		return scopeErr
 	}
 	if node.Tok == token.BREAK {
-		// Emettiamo un salto incondizionato con un indirizzo temporaneo.
-		// Sarà aggiornato (back-patched) quando la compilazione del ciclo finirà.
-		breakJumpPos, err := c.scopes.Emit(bytecode.OpJump, 9999)
-		if err != nil {
-			return err
-		}
-		// Aggiungiamo la posizione di questo 'break' al contesto del ciclo corrente.
-		if err = scope.AddBreak(breakJumpPos); err != nil {
-			return NewCompilerError(c.fileSet, node, err.Error())
+		if scope.CurrentSwitch() != nil {
+			breakJumpPos, err := c.scopes.Emit(bytecode.OpJump, 9999)
+			if err != nil {
+				return err
+			}
+			if err = scope.AddEndJump(breakJumpPos); err != nil {
+				return NewCompilerError(c.fileSet, node, err.Error())
+			}
+		} else if scope.CurrentLoop() != nil { // Altrimenti, controlliamo se siamo in un loop
+			breakJumpPos, err := c.scopes.Emit(bytecode.OpJump, 9999)
+			if err != nil {
+				return err
+			}
+			if err = scope.AddBreak(breakJumpPos); err != nil {
+				return NewCompilerError(c.fileSet, node, err.Error())
+			}
+		} else {
+			return NewCompilerError(c.fileSet, node, "break statement not within a loop or switch")
 		}
 		return nil
 	}
+
 	if node.Tok == token.CONTINUE {
 		// Emettiamo un salto incondizionato con un indirizzo temporaneo.
 		continueJumpPos, err := c.scopes.Emit(bytecode.OpJump, 9999)
@@ -631,6 +640,7 @@ func (c *Functions) BranchStmt(node *ast.BranchStmt) error {
 		}
 		return nil
 	}
+
 	return NewCompilerError(c.fileSet, node, "unsupported branch statement: %s", node.Tok.String())
 }
 
@@ -807,5 +817,119 @@ func (c *Functions) FuncLit(node *ast.FuncLit) error {
 	if _, err = c.scopes.Emit(bytecode.OpClosure, constIndex, numFree); err != nil {
 		return err
 	}
+	return nil
+}
+
+// SwitchStmt processes a given *ast.SwitchStmt node, handles scopes, and generates bytecode for a switch statement.
+// It manages compilation of the switch tag, case clauses, default clause, and handles necessary jump instructions.
+func (c *Functions) SwitchStmt(node *ast.SwitchStmt) error {
+	scope, err := c.scopes.Current()
+	if err != nil {
+		return err
+	}
+	scope.EnterSwitch()
+
+	// 1. Compila l'espressione (tag) e salvala in una variabile temporanea
+	//    per evitare di ricalcolarla. Questo è cruciale.
+	var tagSymbol *Symbol
+	if node.Tag != nil {
+		if err := c.compile(node.Tag); err != nil {
+			return err
+		}
+		tagSymbol, err = c.scopes.SymbolDefineUnique("__switch_tag")
+		if err != nil {
+			return err
+		}
+		if err := c.scopes.EmitSymbolDefine(tagSymbol); err != nil {
+			return err
+		}
+		if _, err := c.scopes.Emit(bytecode.OpPop); err != nil {
+			return err
+		}
+	}
+
+	var defaultClause *ast.CaseClause
+	jumpsToNextCase := []int{}
+
+	// 2. Itera su tutti i 'case' (tranne il 'default', che gestiamo alla fine)
+	for _, clauseStmt := range node.Body.List {
+		clause := clauseStmt.(*ast.CaseClause)
+
+		// Mettiamo da parte il 'default' per dopo
+		if clause.List == nil {
+			defaultClause = clause
+			continue
+		}
+
+		// Back-patch: collega i salti del case precedente a questo
+		afterPreviousCasePos := scope.InstructionsLen()
+		for _, pos := range jumpsToNextCase {
+			if err := c.scopes.ChangeOperand(pos, afterPreviousCasePos); err != nil {
+				return err
+			}
+		}
+		jumpsToNextCase = []int{} // Resetta la lista per il case corrente
+
+		// 3. Compila la condizione del case (es. tag == val1)
+		if tagSymbol != nil {
+			if err := c.scopes.EmitSymbolGet(tagSymbol); err != nil {
+				return err
+			}
+		}
+		if err := c.compile(clause.List[0]); err != nil { // Semplificato: assume un valore per case
+			return err
+		}
+		if _, err := c.scopes.Emit(bytecode.OpEqual); err != nil {
+			return err
+		}
+
+		// 4. Salta al prossimo case se la condizione è falsa
+		jumpPos, err := c.scopes.Emit(bytecode.OpJumpFalsy, 9999)
+		if err != nil {
+			return err
+		}
+		jumpsToNextCase = append(jumpsToNextCase, jumpPos)
+
+		// 5. Compila il corpo del case
+		for _, stmt := range clause.Body {
+			if err := c.compile(stmt); err != nil {
+				return err
+			}
+		}
+
+		// 6. Aggiungi un salto alla fine dello switch (Go non ha fall-through)
+		endJumpPos, err := c.scopes.Emit(bytecode.OpJump, 9999)
+		if err != nil {
+			return err
+		}
+		if err := scope.AddEndJump(endJumpPos); err != nil {
+			return err
+		}
+	}
+
+	// 7. Compila il 'default' se esiste
+	afterLastCasePos := scope.InstructionsLen()
+	for _, pos := range jumpsToNextCase {
+		if err := c.scopes.ChangeOperand(pos, afterLastCasePos); err != nil {
+			return err
+		}
+	}
+	if defaultClause != nil {
+		for _, stmt := range defaultClause.Body {
+			if err := c.compile(stmt); err != nil {
+				return err
+			}
+		}
+	}
+
+	// 8. Back-patch finale: aggiorna tutti i salti alla fine
+	afterSwitchPos := scope.InstructionsLen()
+	for _, pos := range scope.CurrentSwitch().EndJumps {
+		if err := c.scopes.ChangeOperand(pos, afterSwitchPos); err != nil {
+			return err
+		}
+	}
+
+	scope.LeaveSwitch()
 	return nil
 }
