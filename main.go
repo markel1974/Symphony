@@ -141,7 +141,7 @@ func vmTest() {
 	}
 	var args []interface{} = nil
 	//args := []interface{}{1, 2}
-	data, _ := os.ReadFile("../src/kernel/compilers/native/stub/source9.go")
+	data, _ := os.ReadFile("../src/kernel/compilers/native/stub/source7.go")
 	//fmt.Println(string(data))
 	//os.Exit(1)
 	if err = comp.Compile("example.go", string(data)); err != nil {

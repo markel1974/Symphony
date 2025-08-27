@@ -198,8 +198,6 @@ func (c *Declarations) Ident(node *ast.Ident) error {
 	return nil
 }
 
-// AssignStmt processes assignment statements, including multiple and single assignments, and emits corresponding opcodes.
-// It supports variable declarations, type inference, field assignments, and checks for type or scope mismatches.
 func (c *Declarations) AssignStmt(node *ast.AssignStmt) error {
 	// Gestisce l'assegnazione multipla da una chiamata di funzione (es. x, y := f())
 	if callExpr, ok := node.Rhs[0].(*ast.CallExpr); ok && len(node.Lhs) > 1 {
@@ -226,8 +224,12 @@ func (c *Declarations) AssignStmt(node *ast.AssignStmt) error {
 			var symbol *Symbol
 			if node.Tok == token.DEFINE {
 				var err error
-				symbol, err = c.scopes.SymbolDefine(ident.Name) // Anche qui, l'inferenza del tipo potrebbe essere migliorata
+				symbol, err = c.scopes.SymbolDefine(ident.Name)
 				if err != nil {
+					return err
+				}
+				symbol.SetTypes([]string{funcReturnTypes[i]})
+				if err := c.scopes.EmitSymbolDefine(symbol); err != nil {
 					return err
 				}
 			} else {
@@ -236,11 +238,9 @@ func (c *Declarations) AssignStmt(node *ast.AssignStmt) error {
 				if !found {
 					return fmt.Errorf("undefined variable: %s", ident.Name)
 				}
-			}
-			symbol.SetTypes([]string{funcReturnTypes[i]})
-
-			if err := c.scopes.EmitSymbolSet(symbol); err != nil {
-				return err
+				if err := c.scopes.EmitSymbolSet(symbol); err != nil {
+					return err
+				}
 			}
 			if _, err := c.scopes.Emit(bytecode.OpPop); err != nil {
 				return err
@@ -258,8 +258,8 @@ func (c *Declarations) AssignStmt(node *ast.AssignStmt) error {
 	case *ast.Ident:
 		name := lhs.Name
 		var symbol *Symbol
+		var err error
 		if node.Tok == token.DEFINE { // Caso specifico per ':='
-			var err error
 			symbol, err = c.scopes.SymbolDefine(name)
 			if err != nil {
 				return err
@@ -269,21 +269,23 @@ func (c *Declarations) AssignStmt(node *ast.AssignStmt) error {
 					return err
 				}
 			}
+			if err = c.scopes.EmitSymbolDefine(symbol); err != nil {
+				return err
+			}
 		} else { // Caso per l'assegnazione normale '='
 			var ok bool
 			symbol, ok = c.scopes.SymbolResolve(name)
 			if !ok {
 				return fmt.Errorf("[AssignStmt] undefined variable: %s", name)
 			}
+			if err = c.scopes.EmitSymbolSet(symbol); err != nil {
+				return err
+			}
 		}
-		if err := c.scopes.EmitSymbolSet(symbol); err != nil {
-			return err
-		}
-		if _, err := c.scopes.Emit(bytecode.OpPop); err != nil {
+		if _, err = c.scopes.Emit(bytecode.OpPop); err != nil {
 			return err
 		}
 		return nil
-
 	case *ast.SelectorExpr: // es. myStruct.Field = ...
 		if node.Tok == token.DEFINE {
 			return fmt.Errorf("cannot define a field with :=")
@@ -312,7 +314,20 @@ func (c *Declarations) AssignStmt(node *ast.AssignStmt) error {
 			}
 		}
 		return nil
-
+	case *ast.StarExpr: // Gestisce casi come '*myVar = ...'
+		if node.Tok == token.DEFINE {
+			return fmt.Errorf("cannot define a variable with dereference")
+		}
+		if err := c.compile(lhs.X); err != nil {
+			return err
+		}
+		if _, err := c.scopes.Emit(bytecode.OpDerefSet); err != nil {
+			return err
+		}
+		if _, err := c.scopes.Emit(bytecode.OpPop); err != nil {
+			return err
+		}
+		return nil
 	default:
 		return fmt.Errorf("unsupported left-hand side in assignment: %T", node.Lhs[0])
 	}

@@ -153,6 +153,9 @@ const (
 	// OpDeref is an opcode that dereferences a pointer or reference to retrieve its value.
 	OpDeref
 
+	// OpDerefSet represents an operation that assigns a value to the memory location pointed to by a dereferenced pointer.
+	OpDerefSet
+
 	// OpSuspend represents an opcode used to pause the execution of a process or coroutine until it is resumed.
 	OpSuspend
 
@@ -260,6 +263,7 @@ func NewOpcodes() *Opcodes {
 	op.createOpcode(OpReferences, []int{2}, "OpReferences")
 	op.createOpcode(OpIntOp, []int{2, 1}, "OpIntOp")
 	op.createOpcode(OpDeref, []int{}, "OpDeref")
+	op.createOpcode(OpDerefSet, []int{}, "OpDerefSet")
 	op.createOpcode(OpSuspend, []int{}, "OpSuspend")
 	op.createOpcode(OpError, []int{}, "OpError")
 	return op
