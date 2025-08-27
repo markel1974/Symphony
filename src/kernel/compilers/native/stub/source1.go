@@ -24,25 +24,32 @@ func testFunc(a int) (string, int) {
 	return "prova", 2
 }
 
+func test() int {
+	return 10
+}
+
 func main() {
+	b := 4
+	var y = 15
+	z := b+y
+	fmt.Println(z)
+	//var kk = 5
 	//a := test()
 	//fmt.Println(a)
 	//for x:=10; x==0; x-- {
 	//	fmt.Println(x)
 	//}
 	//fmt.Println("PROVA")
-	//var x = 4
-	//var y = 15
-	//z := x+y
+
 	//b := len("Hello, world!,Hello, world!, Hello,world!,Hello, world!,Hello, world!")
 	//fmt.Println(b)
 	//fmt.Println(z)
 	//return z
-	a := 10
-    kk := MyStruct{}
-	retA := kk.PrintA("prova")
-	retB := kk.PrintB("prova")
-	myVar, mainRet := testFunc(5)
-	fmt.Println(retA, retB, myVar, mainRet)
+	//a := 10
+    //kk := MyStruct{}
+	//retA := kk.PrintA("prova")
+	//retB := kk.PrintB("prova")
+	//myVar, mainRet := testFunc(5)
+	//fmt.Println(retA, retB, myVar, mainRet)
 }
 `

@@ -176,7 +176,6 @@ func (c *Functions) funcBodyCompile(fd *FunctionDescription) error {
 	}
 	compiledFn := c.gk.NewFuncCompiled(objects.FrameStatic, fd.Name, code, nLocals, nParams, false, nil, freeSymbols)
 	fnSymbol.SetObject(compiledFn)
-	//TODO return values (already set defined....)
 	fnSymbol.SetTypes(fd.ReturnValues)
 
 	if node.Recv == nil && c.scopes.scopeIndex > 0 {
@@ -496,38 +495,31 @@ func (c *Functions) RangeStmt(node *ast.RangeStmt) error {
 		return err
 	}
 
-	structName := ""
-	var valueTypeName []string
-	var collectionSymbol *Symbol
-	var receiverIdent *ast.Ident
+	var typeName string
 
 	switch expr := node.X.(type) {
 	case *ast.Ident:
-		collectionSymbol, _ = c.scopes.SymbolResolve(expr.Name)
+		if collectionSymbol2, ok := c.scopes.SymbolResolve(expr.Name); ok {
+			if len(collectionSymbol2.Types()) > 0 {
+				typeName = collectionSymbol2.Types()[0]
+			}
+		}
 	case *ast.CallExpr:
 		if ident, ok := expr.Fun.(*ast.Ident); ok {
 			// Simbolo della funzione, per inferire il tipo di ritorno
-			collectionSymbol, _ = c.scopes.SymbolResolve(ident.Name)
+			if collectionSymbol2, ok := c.scopes.SymbolResolve(ident.Name); ok {
+				if len(collectionSymbol2.Types()) > 0 {
+					typeName = collectionSymbol2.Types()[0]
+				}
+			}
 		}
 	case *ast.SelectorExpr:
-		var ok bool
 		// Caso: for _, v := range myVar.Items
-		if receiverIdent, ok = expr.X.(*ast.Ident); ok {
+		if receiverIdent, ok := expr.X.(*ast.Ident); ok {
 			// 1. Risolviamo il simbolo del ricevitore (myVar)
 			if receiverSymbol, ok := c.scopes.SymbolResolve(receiverIdent.Name); ok {
-				receiverStructFields, ok := c.structTable.GetFields(receiverSymbol.StructName())
-				if !ok {
-					return fmt.Errorf("undefined struct: %s", receiverSymbol.StructName())
-				}
-				fieldName := expr.Sel.Name
-				for _, receiverField := range receiverStructFields {
-					if fieldName == receiverField.name {
-						collectionSymbol = NewSymbol(receiverField.base, 0, UnknownScope)
-						collectionSymbol.SetStruct(receiverSymbol.StructName())
-						//todo type
-						collectionSymbol.SetTypes([]string{receiverField.base})
-						break
-					}
+				if typeName, ok = c.structTable.GetTypeNameFromFields(receiverSymbol.StructName(), expr.Sel.Name); !ok {
+					return fmt.Errorf("undefined field: %s.%s", receiverSymbol.StructName(), expr.Sel.Name)
 				}
 			}
 		}
@@ -536,14 +528,11 @@ func (c *Functions) RangeStmt(node *ast.RangeStmt) error {
 	}
 
 	// Logica di inferenza unificata
-	if collectionSymbol != nil {
-		if len(collectionSymbol.Types()) > 0 {
-			typeName := collectionSymbol.Types()[0]
-			if c.structTable.Has(typeName) {
-				structName = c.structTable.CreateStructName(typeName)
-				valueTypeName = []string{typeName}
-			}
-		}
+	structName := ""
+	var valueTypeName []string
+	if c.structTable.Has(typeName) {
+		structName = c.structTable.CreateStructName(typeName)
+		valueTypeName = []string{typeName}
 	}
 
 	var keySymbol, valueSymbol *Symbol

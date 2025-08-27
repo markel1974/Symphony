@@ -17,21 +17,21 @@ import (
 // It holds references to constants, scopes, structs, and a gatekeeper for managing object lifecycle and interactions.
 // The fileSet tracks source file information, and the compile function is used for compiling AST nodes.
 type Declarations struct {
-	gk           objects.IGateKeeper
-	references   *Constants
-	constants    *Constants
-	scopes       *Scopes
-	fileSet      *token.FileSet
-	structsTable *StructTable
-	compile      func(node ast.Node) error
+	gk          objects.IGateKeeper
+	references  *Constants
+	constants   *Constants
+	scopes      *Scopes
+	fileSet     *token.FileSet
+	structTable *StructTable
+	compile     func(node ast.Node) error
 }
 
 // NewDeclarations creates and initializes a new Declarations instance with gatekeeper, constants, scopes, and structs table.
 func NewDeclarations(gk objects.IGateKeeper, references *Constants, constants *Constants, scopes *Scopes, structsTable *StructTable) *Declarations {
 	return &Declarations{
 		gk: gk, references: references, constants: constants, scopes: scopes,
-		compile:      nil,
-		structsTable: structsTable,
+		compile:     nil,
+		structTable: structsTable,
 	}
 }
 
@@ -80,7 +80,7 @@ func (c *Declarations) TypeSpec(node *ast.TypeSpec) error {
 			}
 			fieldType := typeNameBuf.String()
 			for _, name := range field.Names {
-				c.structsTable.Add(structName, name.Name, base, fieldType, field)
+				c.structTable.Add(structName, name.Name, base, fieldType, field)
 			}
 		}
 	}
@@ -105,7 +105,7 @@ func (c *Declarations) ValueSpec(node *ast.ValueSpec) error {
 		if compLit, ok := node.Values[i].(*ast.CompositeLit); ok {
 			if ident, ok := compLit.Type.(*ast.Ident); ok {
 				if typeSymbol, ok := c.scopes.SymbolResolve(ident.Name); ok && typeSymbol.IsStruct() {
-					structName = c.structsTable.CreateStructName(ident.Name)
+					structName = c.structTable.CreateStructName(ident.Name)
 					assignedTypeNames = []string{typeSymbol.Name()}
 				}
 			}
@@ -261,52 +261,12 @@ func (c *Declarations) AssignStmt(node *ast.AssignStmt) error {
 		var symbol *Symbol
 		if node.Tok == token.DEFINE { // Caso specifico per ':='
 			var err error
-			// Ispezioniamo il lato destro (RHS) per inferire il tipo
-			structName := ""
-			var assignedTypeName []string
-
-			switch rhs := node.Rhs[0].(type) {
-			case *ast.BasicLit:
-				//nothing to do
-			case *ast.CompositeLit: // es. MyStruct{...}
-				baseName := ExtractBaseName(rhs.Type)
-				if len(baseName) > 0 {
-					assignedTypeName = []string{baseName}
-					structName = c.structsTable.CreateStructName(baseName)
-				}
-			case *ast.CallExpr: // es. NewStruct()
-				if ident, ok := rhs.Fun.(*ast.Ident); ok {
-					if funcSymbol, ok := c.scopes.SymbolResolve(ident.Name); ok && len(funcSymbol.Types()) > 0 {
-						// Assumiamo il primo tipo di ritorno
-						typeName := funcSymbol.Types()[0]
-						assignedTypeName = []string{typeName}
-						// Verifichiamo se il tipo restituito è uno struct
-						if typeSymbol, ok := c.scopes.SymbolResolve(typeName); ok && typeSymbol.IsStruct() {
-							structName = c.structsTable.CreateStructName(typeName)
-						}
-					}
-				}
-			case *ast.UnaryExpr: // es. &MyStruct{}
-				if rhs.Op == token.AND {
-					if compLit, ok := rhs.X.(*ast.CompositeLit); ok {
-						if ident, ok := compLit.Type.(*ast.Ident); ok {
-							if typeSymbol, ok := c.scopes.SymbolResolve(ident.Name); ok && typeSymbol.IsStruct() {
-								structName = c.structsTable.CreateStructName(typeSymbol.Name())
-								assignedTypeName = []string{typeSymbol.Name()}
-							}
-						}
-					}
-				}
-			default:
-				return fmt.Errorf("unsupported right-hand side for assignment: %T", rhs)
-			}
-			// Definiamo il simbolo usando il valore 'isStruct' appena calcolato
 			symbol, err = c.scopes.SymbolDefine(name)
 			if err != nil {
 				return err
 			}
-			symbol.SetStruct(structName)
-			if len(assignedTypeName) > 0 {
+			if structName, assignedTypeName, _ := c.structTable.Inference(node.Rhs[0], c.scopes); len(structName) > 0 {
+				symbol.SetStruct(structName)
 				symbol.SetTypes(assignedTypeName)
 			}
 		} else { // Caso per l'assegnazione normale '='
@@ -377,74 +337,30 @@ func (c *Declarations) CompositeLit(node *ast.CompositeLit) error {
 		return nil
 	}
 
-	switch t := node.Type.(type) {
+	switch node.Type.(type) {
 	case *ast.Ident:
 		// struct literal (es. MyStruct{...})
-		structFields, ok := c.structsTable.GetFields(t.Name)
-		if !ok {
-			return fmt.Errorf("unknown composite literal type: %s", t.Name)
-		}
-		if len(node.Elts) > len(structFields) {
-			return fmt.Errorf("too many values in positional struct literal for type '%s'", t.Name)
-		}
-		symbol, ok := c.scopes.SymbolResolve(t.Name)
-		if !ok {
-			var err error
-			if symbol, err = c.scopes.SymbolDefine(t.Name); err != nil {
-				return err
-			}
-		}
-		structName := c.structsTable.CreateStructName(t.Name)
-		symbol.SetStruct(structName)
-		symbol.SetTypes([]string{t.Name})
-		isKeyed := false
-		if len(node.Elts) > 0 {
-			if _, ok := node.Elts[0].(*ast.KeyValueExpr); ok {
-				isKeyed = true
-			}
-		}
-		if isKeyed {
-			// key literal (es. Home{Name: "Alfa", Address: "Shanghai"})
-			providedFields := make(map[string]ast.Expr)
-			for _, elt := range node.Elts {
-				kvExpr, ok := elt.(*ast.KeyValueExpr)
-				if !ok {
-					return fmt.Errorf("cannot mix keyed and unkeyed values in struct literal")
-				}
-				keyIdent, ok := kvExpr.Key.(*ast.Ident)
-				if !ok {
-					return fmt.Errorf("invalid field name in struct literal")
-				}
-				providedFields[keyIdent.Name] = kvExpr.Value
-			}
-			for idx := range structFields {
-				if valueExpr, ok := providedFields[structFields[idx].name]; ok {
-					structFields[idx].node = valueExpr
-				}
-			}
-		} else {
-			// positional literal (es. Home{"Alfa", 20, "Shanghai"}) ---
-			for i, elt := range node.Elts {
-				structFields[i].node = elt
-			}
+		_, structFields, err := c.structTable.CreateSymbolFromLiteral(node, c.scopes)
+		if err != nil {
+			return err
 		}
 		for _, field := range structFields {
 			keyConst := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, field.name))
-			if _, err := c.scopes.Emit(bytecode.OpConstant, keyConst); err != nil {
+			if _, err = c.scopes.Emit(bytecode.OpConstant, keyConst); err != nil {
 				return err
 			}
 			if field.node != nil {
-				if err := c.compile(field.node); err != nil {
+				if err = c.compile(field.node); err != nil {
 					return err
 				}
 			} else {
-				if _, err := c.scopes.Emit(bytecode.OpNull); err != nil {
+				if _, err = c.scopes.Emit(bytecode.OpNull); err != nil {
 					return err
 				}
 			}
 		}
 		structLen := len(structFields) * 2
-		if _, err := c.scopes.Emit(bytecode.OpStruct, structLen); err != nil {
+		if _, err = c.scopes.Emit(bytecode.OpStruct, structLen); err != nil {
 			return err
 		}
 		return nil

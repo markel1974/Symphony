@@ -135,6 +135,10 @@ func (c *Compiler) compile(in ast.Node) error {
 		err = c.File(node)
 	case *ast.ImportSpec:
 		err = c.imports.ImportSpec(node)
+	case *ast.DeclStmt:
+		err = c.declarations.DeclStmt(node)
+	case *ast.ValueSpec:
+		err = c.declarations.ValueSpec(node)
 	case *ast.GenDecl:
 		err = c.declarations.GenDecl(node)
 	case *ast.TypeSpec:
