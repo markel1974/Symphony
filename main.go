@@ -11,7 +11,6 @@ import (
 	"github.com/markel1974/c64emu/src"
 	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/kernel/compilers"
-	"github.com/markel1974/c64emu/src/kernel/compilers/native/stub"
 	"github.com/markel1974/c64emu/src/kernel/component"
 	"github.com/markel1974/c64emu/src/kernel/frontend"
 	"github.com/markel1974/c64emu/src/kernel/frontend/authenticator"
@@ -142,7 +141,10 @@ func vmTest() {
 	}
 	var args []interface{} = nil
 	//args := []interface{}{1, 2}
-	if err = comp.Compile("example.go", stub.Source7); err != nil {
+	data, _ := os.ReadFile("../src/kernel/compilers/native/stub/source9.go")
+	//fmt.Println(string(data))
+	//os.Exit(1)
+	if err = comp.Compile("example.go", string(data)); err != nil {
 		log.Fatalf("compiler error: %s", err)
 	}
 	bc := bytecode.NewBytecode(op, comp.Constants(), comp.References(), comp.Globals())
