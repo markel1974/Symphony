@@ -11,7 +11,6 @@ func TaskFilterGenerator9(z int) func(a int) int {
 }
 
 func main() {
-
 	fmt.Println(TEST)
 	filterIncomplete := TaskFilterGenerator9
 	allTasks := []int{1, 2, 3}
