@@ -1,8 +1,5 @@
 package stub
 
-const Source7 = `
-package main
-
 import "fmt"
 
 // --- Definizione dei Tipi (Structs) ---
@@ -61,10 +58,9 @@ func ProcessItems(items []interface{}) {
 		fmt.Println("Item:", item)
 		// La VM risolverà dinamicamente la chiamata al metodo corretto.
 		//item.Display()
-		//TODO 
+		//TODO
 	}
 }
-
 
 // --- Closure e Funzioni di Ordine Superiore ---
 // Questa funzione restituisce un'altra funzione (una closure).
@@ -72,7 +68,7 @@ func ProcessItems(items []interface{}) {
 // Il compilatore e la VM gestiscono correttamente le "free variables".
 //
 
-func TaskFilterGenerator(status bool) func(SimpleTask) bool {
+func TaskFilterGenerator7(status bool) func(SimpleTask) bool {
 	return func(taskClosure SimpleTask) bool {
 		return taskClosure.Completed == status
 	}
@@ -80,18 +76,17 @@ func TaskFilterGenerator(status bool) func(SimpleTask) bool {
 
 // --- Funzione con Multi-Valore di Ritorno ---
 // Il compilatore supporta funzioni che restituiscono valori multipli.
-//
 func GetSystemStatus() (string, int) {
 	return "Operational", 200
 }
-
 
 func main() {
 	// --- Creazione e Assegnazione ---
 	// Il compilatore gestisce l'inizializzazione di struct (CompositeLit)
 	// e l'assegnazione con ':='.
 	//
-	task1 := &SimpleTask{Title: "Buy milk", Completed: false}
+	//task1 := &SimpleTask{Title: "Buy milk", Completed: false}
+	task1 := SimpleTask{Title: "Buy milk", Completed: false}
 	task2 := SimpleTask{Title: "Write compiler example", Completed: true}
 
 	// --- Modifica tramite Puntatore ---
@@ -107,33 +102,30 @@ func main() {
 		},
 		IsArchived: false,
 	}
-    
-    // Il compilatore gestisce l'assegnazione a più variabili.
-    //
+
+	// Il compilatore gestisce l'assegnazione a più variabili.
+	//
 	status, code := GetSystemStatus()
 	fmt.Println("System Status:", status, "- Code:", code)
-
 
 	// --- Esecuzione Polimorfica ---
 	// Creiamo un array contenente tipi diversi.
 	allItems := []interface{}{task1, &task2, project}
 	ProcessItems(allItems)
 
-
 	// --- Utilizzo della Closure ---
 	fmt.Println("\n=> Filtering for incomplete tasks...")
-	
+
 	// Creiamo un filtro specifico per i task non completati.
-	filterIncomplete := TaskFilterGenerator(false)
+	filterIncomplete := TaskFilterGenerator7(false)
 
 	//allTasks := []SimpleTask{ *task1, task2, project.Tasks[0], project.Tasks[1], project.Tasks[2] }
 	//allTasks := []SimpleTask{ task1, task2, project.Tasks[0], project.Tasks[1], project.Tasks[2] }
-	allTasks := []SimpleTask{ task1, task2, task1 }
+	allTasks := []SimpleTask{task1, task2, task1}
 	for _, taskT := range allTasks {
 		// Applichiamo il filtro.
-		//if filterIncomplete(taskT) {
+		if filterIncomplete(taskT) {
 			taskT.Display()
-		//}
+		}
 	}
 }
-`

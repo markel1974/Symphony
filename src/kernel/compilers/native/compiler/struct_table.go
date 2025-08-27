@@ -191,11 +191,11 @@ func (st *StructTable) AssignSymbol(symbol *Symbol, structName string, types []s
 	if len(structName) == 0 {
 		return fmt.Errorf("empty struct type")
 	}
-	if structName != "interface{}" {
-		if !st.Has(structName) {
-			return fmt.Errorf("unknown struct type: %st", structName)
-		}
-	}
+	//if structName != "interface{}" {
+	//	if !st.Has(structName) {
+	//		return fmt.Errorf("unknown struct type: %s", structName)
+	//	}
+	//}
 	description := structName + "=>" + symbol.Name() + ":" + strings.Join(types, " ")
 	symbol.SetStruct(structName)
 	symbol.SetTypes(types)
