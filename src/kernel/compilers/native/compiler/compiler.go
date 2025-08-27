@@ -185,7 +185,7 @@ func (c *Compiler) compile(in ast.Node) error {
 	case *ast.SelectorExpr:
 		err = c.functions.SelectorExpr(node)
 	default:
-		err = fmt.Errorf("unsupported expression type: %T", node)
+		err = NewCompilerError(c.fileSet, node, "unsupported expression type: %T", node)
 	}
 	return err
 }

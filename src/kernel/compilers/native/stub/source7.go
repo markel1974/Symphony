@@ -2,6 +2,8 @@ package stub
 
 import "fmt"
 
+const static = 10
+
 // --- Definizione dei Tipi (Structs) ---
 // Il compilatore supporta la definizione di tipi struct.
 //
