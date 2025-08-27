@@ -351,18 +351,6 @@ func (c *Declarations) AssignStmt(node *ast.AssignStmt) error {
 				return err
 			}
 		}
-		/*
-			if symbol.Scope() == GlobalScope {
-				if _, err := c.scopes.Emit(bytecode.OpGlobalSelSet, 1, symbol.Index()); err != nil {
-					return err
-				}
-			} else {
-				if _, err := c.scopes.Emit(bytecode.OpLocalSelSet, 1, symbol.Index()); err != nil {
-					return err
-				}
-			}
-
-		*/
 		return nil
 
 	default:
@@ -408,7 +396,6 @@ func (c *Declarations) CompositeLit(node *ast.CompositeLit) error {
 		}
 		structName := c.structsTable.CreateStructName(t.Name)
 		symbol.SetStruct(structName)
-		symbol.StructPropertyAssign(structFields)
 		symbol.SetTypes([]string{t.Name})
 		isKeyed := false
 		if len(node.Elts) > 0 {
@@ -430,26 +417,24 @@ func (c *Declarations) CompositeLit(node *ast.CompositeLit) error {
 				}
 				providedFields[keyIdent.Name] = kvExpr.Value
 			}
-			for idx := range symbol.Fields {
-				if valueExpr, ok := providedFields[symbol.Fields[idx].name]; ok {
-					symbol.Fields[idx].node = valueExpr
+			for idx := range structFields {
+				if valueExpr, ok := providedFields[structFields[idx].name]; ok {
+					structFields[idx].node = valueExpr
 				}
 			}
 		} else {
 			// positional literal (es. Home{"Alfa", 20, "Shanghai"}) ---
 			for i, elt := range node.Elts {
-				symbol.Fields[i].node = elt
+				structFields[i].node = elt
 			}
 		}
-		for idx := range symbol.Fields {
-			fieldName := symbol.Fields[idx].name
-			fieldNode := symbol.Fields[idx].node
-			keyConst := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, fieldName))
+		for _, field := range structFields {
+			keyConst := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, field.name))
 			if _, err := c.scopes.Emit(bytecode.OpConstant, keyConst); err != nil {
 				return err
 			}
-			if fieldNode != nil {
-				if err := c.compile(fieldNode); err != nil {
+			if field.node != nil {
+				if err := c.compile(field.node); err != nil {
 					return err
 				}
 			} else {
@@ -458,7 +443,7 @@ func (c *Declarations) CompositeLit(node *ast.CompositeLit) error {
 				}
 			}
 		}
-		structLen := len(symbol.Fields) * 2
+		structLen := len(structFields) * 2
 		if _, err := c.scopes.Emit(bytecode.OpStruct, structLen); err != nil {
 			return err
 		}

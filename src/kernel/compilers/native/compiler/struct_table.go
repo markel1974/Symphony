@@ -47,6 +47,7 @@ func (s *StructTable) CreateStructName(name string) string {
 	return name
 }
 
+// Add adds a new field description to a struct in the StructTable. If the struct does not exist, it creates it.
 func (s *StructTable) Add(name string, fieldName string, baseStruct string, kind string, node ast.Node) {
 	// here we could add a check for duplicate fields.
 	v := NewFieldDescription(fieldName, baseStruct, kind, node)
@@ -60,8 +61,15 @@ func (s *StructTable) Add(name string, fieldName string, baseStruct string, kind
 
 // GetFields retrieves a slice of StructProperty pointers associated with the given name from the container map.
 func (s *StructTable) GetFields(name string) ([]*FieldDescription, bool) {
-	v, ok := s.container[name]
-	return v, ok
+	fields, ok := s.container[name]
+	if !ok {
+		return nil, false
+	}
+	out := make([]*FieldDescription, len(fields))
+	for idx, v := range fields {
+		out[idx] = NewFieldDescription(v.name, v.base, v.kind, nil)
+	}
+	return out, true
 }
 
 // Has checks if a struct definition with the given name exists in the container map.

@@ -61,10 +61,10 @@ func (s *SymbolTable) Print(writer io.Writer) {
 		s.outer.Print(writer)
 	}
 	for k, v := range s.symbols {
-		_, _ = fmt.Fprintf(writer, "%s %s %v %d %v", k, v.Name(), v.Scope(), v.Index(), v.Fields)
+		_, _ = fmt.Fprintf(writer, "%s %s %v %d %v", k, v.Name(), v.Scope(), v.Index())
 	}
 	for idx, v := range s.freeSymbols {
-		_, _ = fmt.Fprintf(writer, "%d %s %v %d %v", idx, v.Name(), v.Scope(), v.Index(), v.Fields)
+		_, _ = fmt.Fprintf(writer, "%d %s %v %d %v", idx, v.Name(), v.Scope(), v.Index())
 	}
 }
 

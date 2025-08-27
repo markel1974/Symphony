@@ -14,7 +14,6 @@ type Symbol struct {
 	structName string
 	funcName   string
 	types      []string
-	Fields     []*FieldDescription
 	object     objects.IObject
 }
 
@@ -26,13 +25,13 @@ func NewSymbol(name string, index int, scope SymbolScope) *Symbol {
 		scope:  scope,
 		object: nil,
 		types:  []string{},
-		Fields: []*FieldDescription{},
+		//Fields2: []*FieldDescription{},
 	}
 	return symbol
 }
 
 func (s *Symbol) SetStruct(structName string) {
-	fmt.Printf("SetIsStruct %s => %s\n", s.Name(), structName)
+	fmt.Printf("SetStruct %s => %s\n", s.Name(), structName)
 	s.structName = structName
 }
 
@@ -59,13 +58,6 @@ func (s *Symbol) GetObject() objects.IObject {
 // IsStruct returns a boolean indicating whether the Symbol represents an struct.
 func (s *Symbol) IsStruct() bool {
 	return len(s.structName) > 0
-}
-
-func (s *Symbol) StructPropertyAssign(fields []*FieldDescription) {
-	s.Fields = make([]*FieldDescription, len(fields))
-	for i, f := range fields {
-		s.Fields[i] = NewFieldDescription(f.name, f.base, f.kind, nil)
-	}
 }
 
 // SetTypes assigns a slice of type names to the Symbol's types field. Use this to define the types associated with a Symbol.
