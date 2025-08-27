@@ -31,13 +31,15 @@ func NewFieldDescription(name string, base string, kind string, node ast.Node) *
 type StructTable struct {
 	container map[string][]*FieldDescription
 	gk        objects.IGateKeeper
+	scopes    *Scopes
 }
 
 // NewStructTable initializes and returns a pointer to a StructTable instance with an empty container map.
-func NewStructTable(gk objects.IGateKeeper) *StructTable {
+func NewStructTable(gk objects.IGateKeeper, scopes *Scopes) *StructTable {
 	st := &StructTable{
 		container: make(map[string][]*FieldDescription),
 		gk:        gk,
+		scopes:    scopes,
 	}
 	return st
 }
@@ -77,7 +79,7 @@ func (st *StructTable) Has(name string) bool {
 
 // Inference infers struct type information from the given AST expression and scope context.
 // It returns a generated struct name, a list of associated base type names, and a boolean indicating success.
-func (st *StructTable) Inference(expr ast.Expr, scopes *Scopes) (string, []string, bool) {
+func (st *StructTable) Inference(expr ast.Expr) (string, []string, bool) {
 	switch rhs := expr.(type) {
 	case *ast.BinaryExpr:
 		//nothing to do
@@ -91,11 +93,11 @@ func (st *StructTable) Inference(expr ast.Expr, scopes *Scopes) (string, []strin
 		}
 	case *ast.CallExpr: // es. NewStruct()
 		if ident, ok := rhs.Fun.(*ast.Ident); ok {
-			if funcSymbol, ok := scopes.SymbolResolve(ident.Name); ok && len(funcSymbol.Types()) > 0 {
+			if funcSymbol, ok := st.scopes.SymbolResolve(ident.Name); ok && len(funcSymbol.Types()) > 0 {
 				// Assumiamo il primo tipo di ritorno
 				typeName := funcSymbol.Types()[0]
 				// Verifichiamo se il tipo restituito è uno struct
-				if typeSymbol, ok := scopes.SymbolResolve(typeName); ok && typeSymbol.IsStruct() {
+				if typeSymbol, ok := st.scopes.SymbolResolve(typeName); ok && typeSymbol.IsStruct() {
 					return typeName, []string{typeName}, true
 				}
 			}
@@ -104,7 +106,7 @@ func (st *StructTable) Inference(expr ast.Expr, scopes *Scopes) (string, []strin
 		if rhs.Op == token.AND {
 			if compLit, ok := rhs.X.(*ast.CompositeLit); ok {
 				if ident, ok := compLit.Type.(*ast.Ident); ok {
-					if typeSymbol, ok := scopes.SymbolResolve(ident.Name); ok && typeSymbol.IsStruct() {
+					if typeSymbol, ok := st.scopes.SymbolResolve(ident.Name); ok && typeSymbol.IsStruct() {
 						return typeSymbol.Name(), []string{typeSymbol.Name()}, true
 					}
 				}
@@ -114,29 +116,29 @@ func (st *StructTable) Inference(expr ast.Expr, scopes *Scopes) (string, []strin
 	return "", nil, false
 }
 
-// SymbolFromLiteral creates a symbol and field descriptions from a given composite literal and scope context.
-func (st *StructTable) SymbolFromLiteral(node *ast.CompositeLit, scopes *Scopes) (*Symbol, []*FieldDescription, error) {
+// FieldsFromLiteral extracts and assigns struct fields from a given composite literal node, handling both keyed and positional formats.
+func (st *StructTable) FieldsFromLiteral(node *ast.CompositeLit) ([]*FieldDescription, error) {
 	// struct literal (es. MyStruct{...})
 	t, ok := node.Type.(*ast.Ident)
 	if !ok {
-		return nil, nil, fmt.Errorf("unsupported composite literal type: %T", node)
+		return nil, fmt.Errorf("unsupported composite literal type: %T", node)
 	}
 	structFields, ok := st.getFields(t.Name)
 	if !ok {
-		return nil, nil, fmt.Errorf("unknown composite literal type: %st", t.Name)
+		return nil, fmt.Errorf("unknown composite literal type: %st", t.Name)
 	}
 	if len(node.Elts) > len(structFields) {
-		return nil, nil, fmt.Errorf("too many values in positional struct literal for type '%st'", t.Name)
+		return nil, fmt.Errorf("too many values in positional struct literal for type '%st'", t.Name)
 	}
-	symbol, ok := scopes.SymbolResolve(t.Name)
+	symbol, ok := st.scopes.SymbolResolve(t.Name)
 	if !ok {
 		var err error
-		if symbol, err = scopes.SymbolDefine(t.Name); err != nil {
-			return nil, nil, err
+		if symbol, err = st.scopes.SymbolDefine(t.Name); err != nil {
+			return nil, err
 		}
 	}
 	if err := st.AssignSymbol(symbol, t.Name, []string{t.Name}); err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	isKeyed := false
 	if len(node.Elts) > 0 {
@@ -150,11 +152,11 @@ func (st *StructTable) SymbolFromLiteral(node *ast.CompositeLit, scopes *Scopes)
 		for _, elt := range node.Elts {
 			kvExpr, ok := elt.(*ast.KeyValueExpr)
 			if !ok {
-				return nil, nil, fmt.Errorf("cannot mix keyed and unkeyed values in struct literal")
+				return nil, fmt.Errorf("cannot mix keyed and unkeyed values in struct literal")
 			}
 			keyIdent, ok := kvExpr.Key.(*ast.Ident)
 			if !ok {
-				return nil, nil, fmt.Errorf("invalid field name in struct literal")
+				return nil, fmt.Errorf("invalid field name in struct literal")
 			}
 			providedFields[keyIdent.Name] = kvExpr.Value
 		}
@@ -169,12 +171,24 @@ func (st *StructTable) SymbolFromLiteral(node *ast.CompositeLit, scopes *Scopes)
 			structFields[i].node = elt
 		}
 	}
-	return symbol, structFields, nil
+	return structFields, nil
 }
 
-// GetTypeNameFromFields retrieves the base type of a field within a struct using its name and returns it with a success flag.
-func (st *StructTable) GetTypeNameFromFields(structName string, fieldName string) (string, bool) {
-	receiverStructFields, ok := st.getFields(structName)
+func (st *StructTable) TypeNameFromSymbol(name string) (string, bool) {
+	symbol, ok := st.scopes.SymbolResolve(name)
+	if ok && len(symbol.Types()) > 0 {
+		return symbol.Types()[0], true
+	}
+	return "", false
+}
+
+// TypeNameFromSymbolField retrieves the base type of a field within a struct using its name and returns it with a success flag.
+func (st *StructTable) TypeNameFromSymbolField(name string, fieldName string) (string, bool) {
+	receiverSymbol, ok := st.scopes.SymbolResolve(name)
+	if !ok {
+		return "", false
+	}
+	receiverStructFields, ok := st.getFields(receiverSymbol.StructName())
 	if !ok {
 		return "", false
 	}

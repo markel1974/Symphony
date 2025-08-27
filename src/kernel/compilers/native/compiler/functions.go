@@ -34,7 +34,7 @@ func NewFunctions(gk objects.IGateKeeper, constants *Constants, scopes *Scopes, 
 		imports:       imports,
 		declarations:  declarations,
 		structTable:   structTable,
-		functionTable: NewFunctionTable(),
+		functionTable: NewFunctionTable(gk, scopes, structTable),
 		compile:       nil,
 	}
 }
@@ -165,12 +165,9 @@ func (c *Functions) funcBodyCompile(fd *FunctionDescription) error {
 	if err != nil {
 		return err
 	}
-	nParams := 0
-	if paramL := node.Type.Params; paramL != nil && paramL.List != nil {
-		for _, field := range paramL.List {
-			nParams += len(field.Names)
-		}
-	}
+
+	nParams := c.functionTable.CountParams(node.Type.Params)
+
 	if node.Recv != nil && len(node.Recv.List) > 0 {
 		nParams++
 	}
@@ -200,126 +197,110 @@ func (c *Functions) funcBodyCompile(fd *FunctionDescription) error {
 // It also manages nested function calls by pre-evaluating them and storing results in temporary variables.
 // Returns an error if the call expression contains invalid or unresolved references.
 func (c *Functions) CallExpr(node *ast.CallExpr) error {
-	// Step 1: Resolve the function and its arguments for analysis. This part doesn't emit bytecode yet.
-	identName := ""
-	receiverIdentName := ""
-	selName := ""
-	commonName := ""
-
-	selExpr, isSelector := node.Fun.(*ast.SelectorExpr)
-	if isSelector {
-		receiverIdent, ok := selExpr.X.(*ast.Ident)
-		if !ok {
-			return fmt.Errorf("unsupported receiver for selector expression: %T", selExpr.X)
-		}
-		commonName = receiverIdent.Name
-		receiverIdentName = receiverIdent.Name
-		selName = selExpr.Sel.Name
-	} else {
-		ident, ok := node.Fun.(*ast.Ident)
-		if !ok {
-			return fmt.Errorf("unsupported function call: %T", node.Fun)
-		}
-		commonName = ident.Name
-		identName = ident.Name
-	}
-
-	fnOpType := bytecode.OpGlobalGet
-	var fnArgs []ast.Expr
-	fnName, fnIndex, ok := c.imports.Attach(commonName, selName)
-	if ok {
-		fnOpType = bytecode.OpReferences
-		fnArgs = node.Args
-	} else {
-		if selExpr != nil {
-			receiverSymbol, ok := c.scopes.SymbolResolve(receiverIdentName)
-			if !ok {
-				return fmt.Errorf("undefined variable: %s", receiverIdentName)
-			}
-			if len(receiverSymbol.Types()) > 0 { // struct method
-				structTypeName := receiverSymbol.Types()[0]
-				if !c.structTable.Has(structTypeName) {
-					return fmt.Errorf("undefined type: %s", structTypeName)
-				}
-				fnName = GetMangledName(structTypeName, selName)
-				fnSymbol, ok := c.scopes.SymbolResolve(fnName)
-				if !ok {
-					return fmt.Errorf("undefined method '%s' for type '%s' [%s]", selName, structTypeName, fnName)
-				}
-				fnIndex = fnSymbol.Index()
-				fnArgs = append(fnArgs, selExpr.X) // The receiver is the first argument
-				fnArgs = append(fnArgs, node.Args...)
-			} else {
-				return fmt.Errorf("cannot call method on untyped variable or undefined package '%s'", receiverSymbol.Name())
-			}
-		} else {
-			symbol, ok := c.scopes.SymbolResolve(identName)
-			if !ok {
-				return fmt.Errorf("undefined function: %s", identName)
-			}
-			fnName = identName
-			fnIndex = symbol.Index()
-			fnArgs = node.Args
-		}
-	}
-	if fnIndex < 0 {
-		return fmt.Errorf("could not resolve function index for '%s'", fnName)
-	}
-
-	// 2 pass logic
-	// Pass 1: Pre-evaluate nested function calls and store their results in temporary variables.
-	// We use a map to link an argument expression to the temporary symbol that holds its result.
+	// Step 1: Pre-evaluate nested function calls and store their results in temporary variables.
+	// This ensures that arguments are evaluated before the main function is pushed onto the stack.
 	tempSymbolMap := make(map[ast.Expr]*Symbol)
-	for _, arg := range fnArgs {
+	for _, arg := range node.Args {
 		if call, isCall := arg.(*ast.CallExpr); isCall {
-			// This argument is a nested function call.
-			// 1.1. Compile the nested call. Its result will be on the stack.
 			if err := c.compile(call); err != nil {
 				return err
 			}
-			// 1.2. Create a unique temporary local variable.
 			tempSymbol, err := c.scopes.SymbolDefineUnique("__temp_call")
 			if err != nil {
 				return err
 			}
 			tempSymbol.SetScope(LocalScope)
-			tempSymbolMap[arg] = tempSymbol // Store the symbol for the second pass
-			// 1.3. Emit code to store the result into the temp variable.
-			// This generates OpLocalSet, correctly storing the result.
+			tempSymbolMap[arg] = tempSymbol
 			if err = c.scopes.EmitSymbolSet(tempSymbol); err != nil {
 				return err
 			}
-			// 1.4. Pop the result from the stack to keep it clean for the next operations.
-			// This is crucial as OpLocalSet only peeks at the stack value.
 			if _, err = c.scopes.Emit(bytecode.OpPop); err != nil {
 				return err
 			}
 		}
 	}
 
-	// Step 2: Push the main function object itself onto the stack.
-	// This ensures the stack layout is [function, ...args]
-	if _, err := c.scopes.Emit(fnOpType, fnIndex); err != nil {
-		return err
+	// Step 2: Resolve and push the function/method object onto the stack.
+	var finalArgs []ast.Expr
+
+	switch fun := node.Fun.(type) {
+	case *ast.Ident: // Chiamata a funzione semplice (es. myFunction())
+		symbol, ok := c.scopes.SymbolResolve(fun.Name)
+		if !ok {
+			// Potrebbe essere una funzione da un pacchetto importato
+			if c.imports.Emit(fun.Name, "") {
+				finalArgs = node.Args
+				break // Fatto, l'import ha già emesso il suo bytecode
+			}
+			return fmt.Errorf("undefined function: %s", fun.Name)
+		}
+		// Emette l'opcode corretto (Global, Local, o Free) per caricare la funzione
+		if err := c.scopes.EmitSymbolGet(symbol); err != nil {
+			return err
+		}
+		finalArgs = node.Args
+
+	case *ast.SelectorExpr: // Chiamata a metodo (myVar.Method()) o funzione di pacchetto (fmt.Println())
+		receiverIdent, ok := fun.X.(*ast.Ident)
+		if !ok {
+			return fmt.Errorf("unsupported receiver for selector expression: %T", fun.X)
+		}
+
+		// Prova a risolverlo come funzione di pacchetto (es. fmt.Println)
+		if c.imports.Emit(receiverIdent.Name, fun.Sel.Name) {
+			finalArgs = node.Args
+			break // Fatto
+		}
+
+		// Altrimenti, trattalo come una chiamata a metodo di uno struct
+		receiverSymbol, ok := c.scopes.SymbolResolve(receiverIdent.Name)
+		if !ok {
+			return fmt.Errorf("undefined variable: %s", receiverIdent.Name)
+		}
+
+		if !receiverSymbol.IsStruct() {
+			return fmt.Errorf("cannot call method on non-struct type '%s'", receiverSymbol.Name())
+		}
+
+		// Il nome "mangled" del metodo è 'StructName.MethodName'
+		mangledName := GetMangledName(receiverSymbol.StructName(), fun.Sel.Name)
+		methodSymbol, ok := c.scopes.SymbolResolve(mangledName)
+		if !ok {
+			return fmt.Errorf("undefined method '%s' for type '%s'", fun.Sel.Name, receiverSymbol.StructName())
+		}
+
+		// Emette il codice per caricare il metodo
+		if err := c.scopes.EmitSymbolGet(methodSymbol); err != nil {
+			return err
+		}
+
+		// Il primo argomento di un metodo è sempre il suo ricevitore (l'istanza dello struct)
+		finalArgs = append([]ast.Expr{fun.X}, node.Args...)
+
+	default:
+		return fmt.Errorf("unsupported function call type: %T", node.Fun)
 	}
-	// Pass 3: Push all final arguments for the main call onto the stack.
-	for _, arg := range fnArgs {
+
+	// Step 3: Push all final arguments for the main call onto the stack.
+	for _, arg := range finalArgs {
 		if tempSymbol, ok := tempSymbolMap[arg]; ok {
-			// This was a nested call; load its pre-computed result from the temporary variable.
+			// Argomento pre-calcolato: carica il risultato dalla variabile temporanea
 			if err := c.scopes.EmitSymbolGet(tempSymbol); err != nil {
 				return err
 			}
 		} else {
-			// This is a regular argument; compile it directly to push its value.
+			// Argomento normale: compilalo per mettere il suo valore sullo stack
 			if err := c.compile(arg); err != nil {
 				return err
 			}
 		}
 	}
+
 	// Step 4: Emit the final OpCall instruction.
-	if _, err := c.scopes.Emit(bytecode.OpCall, len(fnArgs), 0); err != nil {
+	if _, err := c.scopes.Emit(bytecode.OpCall, len(finalArgs), 0); err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -488,10 +469,6 @@ func (c *Functions) RangeStmt(node *ast.RangeStmt) error {
 	if err := c.compile(node.X); err != nil {
 		return err
 	}
-	scope, err := c.scopes.Current()
-	if err != nil {
-		return err
-	}
 	iteratorSymbol, err := c.scopes.SymbolDefineUnique("__iterator")
 	if err != nil {
 		return err
@@ -499,63 +476,35 @@ func (c *Functions) RangeStmt(node *ast.RangeStmt) error {
 	if _, err = c.scopes.Emit(bytecode.OpIteratorInit, iteratorSymbol.Index()); err != nil {
 		return err
 	}
-
 	var returnTypeName string
-
 	switch expr := node.X.(type) {
 	case *ast.Ident:
-		if symbol, ok := c.scopes.SymbolResolve(expr.Name); ok {
-			if len(symbol.Types()) > 0 {
-				returnTypeName = symbol.Types()[0]
-			}
-		}
+		returnTypeName, _ = c.structTable.TypeNameFromSymbol(expr.Name)
 	case *ast.CallExpr:
 		if ident, ok := expr.Fun.(*ast.Ident); ok {
-			// Simbolo della funzione, per inferire il tipo di ritorno
-			if symbol, ok := c.scopes.SymbolResolve(ident.Name); ok {
-				if len(symbol.Types()) > 0 {
-					returnTypeName = symbol.Types()[0]
-				}
-			}
+			returnTypeName, _ = c.structTable.TypeNameFromSymbol(ident.Name)
 		}
 	case *ast.SelectorExpr:
 		// Caso: for _, v := range myVar.Items
 		if receiverIdent, ok := expr.X.(*ast.Ident); ok {
-			// 1. Risolviamo il simbolo del ricevitore (myVar)
-			if receiverSymbol, ok := c.scopes.SymbolResolve(receiverIdent.Name); ok {
-				if returnTypeName, ok = c.structTable.GetTypeNameFromFields(receiverSymbol.StructName(), expr.Sel.Name); !ok {
-					return fmt.Errorf("undefined field: %s.%s", receiverSymbol.StructName(), expr.Sel.Name)
-				}
-			}
+			//1. Risolviamo il simbolo del ricevitore (myVar)
+			returnTypeName, _ = c.structTable.TypeNameFromSymbolField(receiverIdent.Name, expr.Sel.Name)
 		}
 	default:
 		return fmt.Errorf("unsupported range expression: %T", node.X)
 	}
-
-	var keySymbol, valueSymbol *Symbol
-	if node.Key != nil {
-		if ident, ok := node.Key.(*ast.Ident); ok && ident.Name != UndefinedSymbol {
-			keySymbol, err = c.scopes.SymbolDefine(ident.Name)
-			if err != nil {
-				return err
-			}
-		}
+	keySymbol, err := c.functionTable.RangeKey(node)
+	if err != nil {
+		return err
 	}
-
-	if node.Value != nil {
-		if ident, ok := node.Value.(*ast.Ident); ok && ident.Name != UndefinedSymbol {
-			valueSymbol, err = c.scopes.SymbolDefine(ident.Name)
-			if err != nil {
-				return err
-			}
-			if len(returnTypeName) > 0 {
-				if err = c.structTable.AssignSymbol(valueSymbol, returnTypeName, []string{returnTypeName}); err != nil {
-					return err
-				}
-			}
-		}
+	valueSymbol, err := c.functionTable.RangeValue(node, returnTypeName)
+	if err != nil {
+		return err
 	}
-
+	scope, err := c.scopes.Current()
+	if err != nil {
+		return err
+	}
 	loopStartPos := scope.InstructionsLen()
 	if _, err = c.scopes.Emit(bytecode.OpIteratorNext, iteratorSymbol.Index()); err != nil {
 		return err
@@ -742,46 +691,14 @@ func (c *Functions) FuncLit(node *ast.FuncLit) error {
 	if err := c.scopes.Enter(""); err != nil { // No struct or func name
 		return err
 	}
-
 	// 2. Define symbols for the function parameters.
-	var paramNames []string
-	if node.Type.Params != nil {
-		for _, p := range node.Type.Params.List {
-			var typeName string
-			switch t := p.Type.(type) {
-			case *ast.Ident:
-				typeName = t.Name
-			case *ast.StarExpr:
-				if ident, ok := t.X.(*ast.Ident); ok {
-					typeName = ident.Name
-				}
-			}
-			structName := ""
-			isStruct := c.structTable.Has(typeName)
-			if isStruct {
-				structName = typeName
-			}
-			for _, name := range p.Names {
-				paramNames = append(paramNames, name.Name)
-				zSymbol, err := c.scopes.SymbolDefine(name.Name)
-				if err != nil {
-					return err
-				}
-				zSymbol.SetScope(LocalScope)
-				if len(structName) > 0 {
-					if err = c.structTable.AssignSymbol(zSymbol, structName, nil); err != nil {
-						return err
-					}
-				}
-			}
-		}
+	if _, err := c.functionTable.SymbolsFromParameters(node.Type.Params); err != nil {
+		return err
 	}
-
 	// 3. Compile the function body.
 	if err := c.compile(node.Body); err != nil {
 		return err
 	}
-
 	scope, err := c.scopes.Current()
 	if err != nil {
 		return err
@@ -793,12 +710,13 @@ func (c *Functions) FuncLit(node *ast.FuncLit) error {
 	}
 	freeSymbols := c.scopes.SymbolFreeConvert()
 	numFree := c.scopes.SymbolFreeCount()
+	nParams := c.functionTable.CountParams(node.Type.Params)
 	nLocals := c.scopes.SymbolCount()
 	code, err := c.scopes.Leave()
 	if err != nil {
 		return err
 	}
-	compiledFn := c.gk.NewFuncCompiled(objects.FrameStatic, "", code, nLocals, len(paramNames), false, nil, freeSymbols)
+	compiledFn := c.gk.NewFuncCompiled(objects.FrameStatic, "", code, nLocals, nParams, false, nil, freeSymbols)
 	constIndex := c.constants.Add("", compiledFn)
 	if _, err = c.scopes.Emit(bytecode.OpClosure, constIndex, numFree); err != nil {
 		return err

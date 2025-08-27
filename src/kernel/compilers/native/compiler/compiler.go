@@ -38,7 +38,7 @@ func New(gk objects.IGateKeeper, loader bytecode.ILoader, opcodes *bytecode.Opco
 	scopes := NewScopes(gk, opcodes)
 	constants := NewConstants()
 	references := NewConstants()
-	structs := NewStructTable(gk)
+	structs := NewStructTable(gk, scopes)
 	declarations := NewDeclarations(gk, references, constants, scopes, structs)
 	imports := NewImports(gk, references, scopes)
 	functions := NewFunctions(gk, constants, scopes, imports, declarations, structs)

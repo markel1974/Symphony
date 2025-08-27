@@ -134,14 +134,6 @@ func (c *Declarations) ValueSpec(node *ast.ValueSpec) error {
 		} else {
 			symbol.SetObject(c.gk.NewString(objects.FrameStatic, symbol.Name()))
 		}
-
-		//if len(assignedTypeNames) > 0 {
-		//	symbol.SetTypes(assignedTypeNames)
-		//	symbol.SetObject(c.gk.NewString(objects.FrameStatic, symbol.Name()+":"+strings.Join(assignedTypeNames, " ")))
-		//} else {
-		//	symbol.SetObject(c.gk.NewString(objects.FrameStatic, symbol.Name()))
-		//}
-
 		// 4. Emette bytecode per assegnare il valore dalla cima dello stack alla variabile.
 		if err = c.scopes.EmitSymbolDefine(symbol); err != nil {
 			return err
@@ -272,7 +264,7 @@ func (c *Declarations) AssignStmt(node *ast.AssignStmt) error {
 			if err != nil {
 				return err
 			}
-			if structName, assignedTypeName, _ := c.structTable.Inference(node.Rhs[0], c.scopes); len(structName) > 0 {
+			if structName, assignedTypeName, _ := c.structTable.Inference(node.Rhs[0]); len(structName) > 0 {
 				if err = c.structTable.AssignSymbol(symbol, structName, assignedTypeName); err != nil {
 					return err
 				}
@@ -348,7 +340,7 @@ func (c *Declarations) CompositeLit(node *ast.CompositeLit) error {
 	switch node.Type.(type) {
 	case *ast.Ident:
 		// struct literal (es. MyStruct{...})
-		_, structFields, err := c.structTable.SymbolFromLiteral(node, c.scopes)
+		structFields, err := c.structTable.FieldsFromLiteral(node)
 		if err != nil {
 			return err
 		}
@@ -434,5 +426,4 @@ func (c *Declarations) IndexExpr(node *ast.IndexExpr) error {
 	// Emit OpIndex instruction. The VM will take the index and container from the stack and perform the access.
 	_, err := c.scopes.Emit(bytecode.OpIndex)
 	return err
-
 }
