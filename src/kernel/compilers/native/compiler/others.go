@@ -2,12 +2,14 @@ package compiler
 
 import (
 	"go/ast"
+	"go/token"
 )
 
 // Others represents a structure to manage import declarations and track imported modules in the build process.
 type Others struct {
 	declarations *Declarations
 	container    []ast.Decl
+	fileSet      *token.FileSet
 	compile      func(node ast.Node) error
 }
 
@@ -19,7 +21,8 @@ func NewOthers(declarations *Declarations) *Others {
 }
 
 // Setup initializes the `Others` instance with a compile function used for processing AST nodes.
-func (o *Others) Setup(compile func(node ast.Node) error) error {
+func (o *Others) Setup(fileSet *token.FileSet, compile func(node ast.Node) error) error {
+	o.fileSet = fileSet
 	o.compile = compile
 	return nil
 }

@@ -3,6 +3,7 @@ package compiler
 import (
 	"fmt"
 	"go/ast"
+	"go/token"
 )
 
 // GetIdent retrieves the *ast.Ident type from an *ast.Field's Type if it exists, including handling pointer types.
@@ -93,4 +94,13 @@ func ExtractBaseName(expr ast.Expr) string {
 		// Altri tipi complessi non sono gestiti.
 		return ""
 	}
+}
+
+func NewCompilerError(fileSet *token.FileSet, node ast.Node, format string, args ...interface{}) error {
+	// fileSet.Position() ci dà la posizione esatta del nodo nel file sorgente
+	position := fileSet.Position(node.Pos())
+	// Creiamo il messaggio di errore principale
+	msg := fmt.Sprintf(format, args...)
+	// Ritorniamo un errore formattato che include la posizione
+	return fmt.Errorf("compile error at %s: %s", position.String(), msg)
 }

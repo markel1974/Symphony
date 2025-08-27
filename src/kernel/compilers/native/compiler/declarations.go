@@ -2,7 +2,6 @@ package compiler
 
 import (
 	"bytes"
-	"fmt"
 	"go/ast"
 	"go/printer"
 	"go/token"
@@ -68,14 +67,14 @@ func (c *Declarations) TypeSpec(node *ast.TypeSpec) error {
 	}
 	structName := node.Name.Name
 	if _, ok := c.scopes.SymbolResolve(structName); ok {
-		return fmt.Errorf("type '%s' already defined", structName)
+		return NewCompilerError(c.fileSet, node, "type '%s' already defined", structName)
 	}
 	if structType.Fields != nil {
 		for _, field := range structType.Fields.List {
 			var typeNameBuf bytes.Buffer
 			var base = ExtractBaseName(field.Type)
 			if err := printer.Fprint(&typeNameBuf, c.fileSet, field.Type); err != nil {
-				return fmt.Errorf("failed to resolve type for field in struct '%s'", structName)
+				return NewCompilerError(c.fileSet, node, "failed to resolve type for field in struct '%s'", structName)
 			}
 			fieldType := typeNameBuf.String()
 			for _, name := range field.Names {
@@ -91,7 +90,7 @@ func (c *Declarations) ValueSpec(node *ast.ValueSpec) error {
 	// handles 'var x = 10'
 	for i, name := range node.Names {
 		if i > len(node.Values)-1 {
-			return fmt.Errorf("too few values for %s", name.Name)
+			return NewCompilerError(c.fileSet, node, "too few values for %s", name.Name)
 		}
 		if err := c.compile(node.Values[i]); err != nil {
 			return err
@@ -117,7 +116,7 @@ func (c *Declarations) ValueSpec(node *ast.ValueSpec) error {
 				if funcSymbol, ok := c.scopes.SymbolResolve(funcName); ok {
 					returnTypes := funcSymbol.Types()
 					if len(returnTypes) != 1 {
-						return fmt.Errorf("assignment mismatch: 'var' declaration expects 1 value, but function %s returns %d", funcName, len(returnTypes))
+						return NewCompilerError(c.fileSet, node, "assignment mismatch: 'var' declaration expects 1 value, but function %s returns %d", funcName, len(returnTypes))
 					}
 					assignedTypeNames = []string{returnTypes[0]}
 				}
@@ -160,7 +159,7 @@ func (c *Declarations) BasicLit(node *ast.BasicLit) error {
 		val, _ := strconv.Unquote(node.Value)
 		obj = c.gk.NewString(objects.FrameStatic, val)
 	default:
-		return fmt.Errorf("unhandled literal: %s", node.Kind)
+		return NewCompilerError(c.fileSet, node, "unhandled literal: %s", node.Kind)
 	}
 	id := c.constants.Add("", obj)
 	if _, err := c.scopes.Emit(bytecode.OpConstant, id); err != nil {
@@ -190,7 +189,7 @@ func (c *Declarations) Ident(node *ast.Ident) error {
 		// e che il suo nodo genitore (*ast.SelectorExpr) se ne sia già occupato.
 		// Semplicemente, non emettiamo alcun bytecode per questo nodo.
 		return nil
-		//return fmt.Errorf("[Ident] undefined variable: %s", node.Name)
+		//return NewCompilerError(c.FileSet, node,"[Ident] undefined variable: %s", node.Name)
 	}
 	if err := c.scopes.EmitSymbolGet(symbol); err != nil {
 		return err
@@ -213,13 +212,13 @@ func (c *Declarations) AssignStmt(node *ast.AssignStmt) error {
 			}
 		}
 		if len(node.Lhs) != len(funcReturnTypes) {
-			return fmt.Errorf("assignment mismatch: %d variables but %d return values", len(node.Lhs), len(funcReturnTypes))
+			return NewCompilerError(c.fileSet, node, "assignment mismatch: %d variables but %d return values", len(node.Lhs), len(funcReturnTypes))
 		}
 		for i := len(node.Lhs) - 1; i >= 0; i-- {
 			lhs := node.Lhs[i]
 			ident, ok := lhs.(*ast.Ident)
 			if !ok {
-				return fmt.Errorf("unsupported multiple assignment to type %T", lhs)
+				return NewCompilerError(c.fileSet, node, "unsupported multiple assignment to type %T", lhs)
 			}
 			var symbol *Symbol
 			if node.Tok == token.DEFINE {
@@ -230,7 +229,7 @@ func (c *Declarations) AssignStmt(node *ast.AssignStmt) error {
 			} else {
 				var found bool
 				if symbol, found = c.scopes.SymbolResolve(ident.Name); !found {
-					return fmt.Errorf("undefined variable: %s", ident.Name)
+					return NewCompilerError(c.fileSet, node, "undefined variable: %s", ident.Name)
 				}
 			}
 			// Inferenza completa del tipo per ogni variabile.
@@ -282,7 +281,7 @@ func (c *Declarations) AssignStmt(node *ast.AssignStmt) error {
 			var ok bool
 			symbol, ok = c.scopes.SymbolResolve(name)
 			if !ok {
-				return fmt.Errorf("[AssignStmt] undefined variable: %s", name)
+				return NewCompilerError(c.fileSet, node, "[AssignStmt] undefined variable: %s", name)
 			}
 			if err = c.scopes.EmitSymbolSet(symbol); err != nil {
 				return err
@@ -294,15 +293,15 @@ func (c *Declarations) AssignStmt(node *ast.AssignStmt) error {
 		return nil
 	case *ast.SelectorExpr: // es. myStruct.Field = ...
 		if node.Tok == token.DEFINE {
-			return fmt.Errorf("cannot define a field with :=")
+			return NewCompilerError(c.fileSet, node, "cannot define a field with :=")
 		}
 		receiverIdent, ok := lhs.X.(*ast.Ident)
 		if !ok {
-			return fmt.Errorf("unsupported receiver for field assignment")
+			return NewCompilerError(c.fileSet, node, "unsupported receiver for field assignment")
 		}
 		symbol, ok := c.scopes.SymbolResolve(receiverIdent.Name)
 		if !ok {
-			return fmt.Errorf("undefined variable: %s", receiverIdent.Name)
+			return NewCompilerError(c.fileSet, node, "undefined variable: %s", receiverIdent.Name)
 		}
 		fieldName := lhs.Sel.Name
 		keyConst := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, fieldName))
@@ -322,7 +321,7 @@ func (c *Declarations) AssignStmt(node *ast.AssignStmt) error {
 		return nil
 	case *ast.StarExpr: // Gestisce casi come '*myVar = ...'
 		if node.Tok == token.DEFINE {
-			return fmt.Errorf("cannot define a variable with dereference")
+			return NewCompilerError(c.fileSet, node, "cannot define a variable with dereference")
 		}
 		if err := c.compile(lhs.X); err != nil {
 			return err
@@ -335,7 +334,7 @@ func (c *Declarations) AssignStmt(node *ast.AssignStmt) error {
 		}
 		return nil
 	default:
-		return fmt.Errorf("unsupported left-hand side in assignment: %T", node.Lhs[0])
+		return NewCompilerError(c.fileSet, node, "unsupported left-hand side in assignment: %T", node.Lhs[0])
 	}
 }
 
@@ -410,7 +409,7 @@ func (c *Declarations) CompositeLit(node *ast.CompositeLit) error {
 		}
 		return nil
 	default:
-		return fmt.Errorf("unsupported composite literal type: %T", node.Type)
+		return NewCompilerError(c.fileSet, node, "unsupported composite literal type: %T", node.Type)
 	}
 }
 

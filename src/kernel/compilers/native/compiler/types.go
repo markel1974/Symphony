@@ -2,12 +2,14 @@ package compiler
 
 import (
 	"go/ast"
+	"go/token"
 )
 
 // Types represents a structure to manage import declarations and track imported modules in the build process.
 type Types struct {
 	declarations *Declarations
 	container    []ast.Decl
+	fileSet      *token.FileSet
 	compile      func(node ast.Node) error
 }
 
@@ -20,7 +22,8 @@ func NewTypes(declarations *Declarations) *Types {
 }
 
 // Setup initializes the Types instance with the provided compile function for processing AST nodes.
-func (o *Types) Setup(compile func(node ast.Node) error) error {
+func (o *Types) Setup(fileSet *token.FileSet, compile func(node ast.Node) error) error {
+	o.fileSet = fileSet
 	o.compile = compile
 	return nil
 }

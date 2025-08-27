@@ -1,7 +1,6 @@
 package compiler
 
 import (
-	"fmt"
 	"go/ast"
 	"go/token"
 
@@ -22,6 +21,7 @@ type Functions struct {
 	declarations  *Declarations
 	functionTable *FunctionTable
 	structTable   *StructTable
+	fileSet       *token.FileSet
 	compile       func(node ast.Node) error
 }
 
@@ -40,7 +40,8 @@ func NewFunctions(gk objects.IGateKeeper, constants *Constants, scopes *Scopes, 
 }
 
 // Setup initializes the `Functions` instance with a compile function used for processing AST nodes.
-func (c *Functions) Setup(compile func(node ast.Node) error) error {
+func (c *Functions) Setup(fileSet *token.FileSet, compile func(node ast.Node) error) error {
+	c.fileSet = fileSet
 	c.compile = compile
 	return nil
 }
@@ -99,10 +100,10 @@ func (c *Functions) funcBodyPrepare(fd *FunctionDescription) error {
 		}
 		recvTypeIdent := GetIdent(node.Recv.List[0])
 		if recvTypeIdent == nil {
-			return fmt.Errorf("unsupported method receiver type")
+			return NewCompilerError(c.fileSet, node, "unsupported method receiver type")
 		}
 		if !c.structTable.Has(recvTypeIdent.Name) {
-			return fmt.Errorf("undefined type '%s' for method receiver", recvTypeIdent.Name)
+			return NewCompilerError(c.fileSet, node, "undefined type '%s' for method receiver", recvTypeIdent.Name)
 		}
 		fd.Name = GetMangledName(recvTypeIdent.Name, node.Name.Name)
 		fd.StructName = recvTypeIdent.Name
@@ -174,7 +175,7 @@ func (c *Functions) funcBodyCompile(fd *FunctionDescription) error {
 
 	fnSymbol, ok := c.scopes.SymbolRebuildScope(fd.Name, UnknownScope)
 	if !ok {
-		return fmt.Errorf("undefined function: %s", fd.Name)
+		return NewCompilerError(c.fileSet, node, "undefined function: %s", fd.Name)
 	}
 	compiledFn := c.gk.NewFuncCompiled(objects.FrameStatic, fd.Name, code, nLocals, nParams, false, nil, freeSymbols)
 	fnSymbol.SetObject(compiledFn)
@@ -232,7 +233,7 @@ func (c *Functions) CallExpr(node *ast.CallExpr) error {
 				finalArgs = node.Args
 				break // Fatto, l'import ha già emesso il suo bytecode
 			}
-			return fmt.Errorf("undefined function: %s", fun.Name)
+			return NewCompilerError(c.fileSet, node, "undefined function: %s", fun.Name)
 		}
 		// Emette l'opcode corretto (Global, Local, o Free) per caricare la funzione
 		if err := c.scopes.EmitSymbolGet(symbol); err != nil {
@@ -243,7 +244,7 @@ func (c *Functions) CallExpr(node *ast.CallExpr) error {
 	case *ast.SelectorExpr: // Chiamata a metodo (myVar.Method()) o funzione di pacchetto (fmt.Println())
 		receiverIdent, ok := fun.X.(*ast.Ident)
 		if !ok {
-			return fmt.Errorf("unsupported receiver for selector expression: %T", fun.X)
+			return NewCompilerError(c.fileSet, node, "unsupported receiver for selector expression: %T", fun.X)
 		}
 
 		// Prova a risolverlo come funzione di pacchetto (es. fmt.Println)
@@ -255,18 +256,18 @@ func (c *Functions) CallExpr(node *ast.CallExpr) error {
 		// Altrimenti, trattalo come una chiamata a metodo di uno struct
 		receiverSymbol, ok := c.scopes.SymbolResolve(receiverIdent.Name)
 		if !ok {
-			return fmt.Errorf("undefined variable: %s", receiverIdent.Name)
+			return NewCompilerError(c.fileSet, node, "undefined variable: %s", receiverIdent.Name)
 		}
 
 		if !receiverSymbol.IsStruct() {
-			return fmt.Errorf("cannot call method on non-struct type '%s'", receiverSymbol.Name())
+			return NewCompilerError(c.fileSet, node, "cannot call method on non-struct type '%s'", receiverSymbol.Name())
 		}
 
 		// Il nome "mangled" del metodo è 'StructName.MethodName'
 		mangledName := GetMangledName(receiverSymbol.StructName(), fun.Sel.Name)
 		methodSymbol, ok := c.scopes.SymbolResolve(mangledName)
 		if !ok {
-			return fmt.Errorf("undefined method '%s' for type '%s'", fun.Sel.Name, receiverSymbol.StructName())
+			return NewCompilerError(c.fileSet, node, "undefined method '%s' for type '%s'", fun.Sel.Name, receiverSymbol.StructName())
 		}
 
 		// Emette il codice per caricare il metodo
@@ -278,7 +279,7 @@ func (c *Functions) CallExpr(node *ast.CallExpr) error {
 		finalArgs = append([]ast.Expr{fun.X}, node.Args...)
 
 	default:
-		return fmt.Errorf("unsupported function call type: %T", node.Fun)
+		return NewCompilerError(c.fileSet, node, "unsupported function call type: %T", node.Fun)
 	}
 
 	// Step 3: Push all final arguments for the main call onto the stack.
@@ -376,11 +377,11 @@ func (c *Functions) IfStmt(node *ast.IfStmt) error {
 func (c *Functions) IncDecStmt(node *ast.IncDecStmt) error {
 	ident, ok := node.X.(*ast.Ident)
 	if !ok {
-		return fmt.Errorf("unsupported IncDec statement for type %T", node.X)
+		return NewCompilerError(c.fileSet, node, "unsupported IncDec statement for type %T", node.X)
 	}
 	symbol, ok := c.scopes.SymbolResolve(ident.Name)
 	if !ok {
-		return fmt.Errorf("undefined variable: %s", ident.Name)
+		return NewCompilerError(c.fileSet, node, "undefined variable: %s", ident.Name)
 	}
 	if err := c.scopes.EmitSymbolGet(symbol); err != nil {
 		return err
@@ -399,7 +400,7 @@ func (c *Functions) IncDecStmt(node *ast.IncDecStmt) error {
 			return err
 		}
 	} else {
-		return fmt.Errorf("unsupported IncDec token: %s", node.Tok)
+		return NewCompilerError(c.fileSet, node, "unsupported IncDec token: %s", node.Tok)
 	}
 	if err := c.scopes.EmitSymbolSet(symbol); err != nil {
 		return err
@@ -491,7 +492,7 @@ func (c *Functions) RangeStmt(node *ast.RangeStmt) error {
 			returnTypeName, _ = c.structTable.TypeNameFromSymbolField(receiverIdent.Name, expr.Sel.Name)
 		}
 	default:
-		return fmt.Errorf("unsupported range expression: %T", node.X)
+		return NewCompilerError(c.fileSet, node, "unsupported range expression: %T", node.X)
 	}
 	keySymbol, err := c.functionTable.RangeKey(node)
 	if err != nil {
@@ -577,7 +578,7 @@ func (c *Functions) BinaryExpr(node *ast.BinaryExpr) error {
 	}
 	z, ok := BinaryAdapterFor(node.Op)
 	if !ok {
-		return fmt.Errorf("unhandled binary op: %s", node.Op)
+		return NewCompilerError(c.fileSet, node, "unhandled binary op: %s", node.Op)
 	}
 	if _, err := c.scopes.Emit(z.op, z.arguments...); err != nil {
 		return err
@@ -595,7 +596,7 @@ func (c *Functions) UnaryExpr(node *ast.UnaryExpr) error {
 			// literal (es. '&h').
 			symbol, ok := c.scopes.SymbolResolve(operand.Name)
 			if !ok {
-				return fmt.Errorf("undefined variable: %s", operand.Name)
+				return NewCompilerError(c.fileSet, node, "undefined variable: %s", operand.Name)
 			}
 			switch symbol.Scope() {
 			case LocalScope:
@@ -607,7 +608,7 @@ func (c *Functions) UnaryExpr(node *ast.UnaryExpr) error {
 					return err
 				}
 			default:
-				return fmt.Errorf("cannot take the address of a global variable")
+				return NewCompilerError(c.fileSet, node, "cannot take the address of a global variable")
 			}
 		case *ast.CompositeLit:
 			// literal (es. '&Home{...}').
@@ -626,7 +627,7 @@ func (c *Functions) UnaryExpr(node *ast.UnaryExpr) error {
 				return err
 			}
 		default:
-			return fmt.Errorf("cannot take the address of %T", node.X)
+			return NewCompilerError(c.fileSet, node, "cannot take the address of %T", node.X)
 		}
 		return nil
 	}
@@ -636,7 +637,7 @@ func (c *Functions) UnaryExpr(node *ast.UnaryExpr) error {
 	}
 	z, ok := UnaryAdapterFor(node.Op)
 	if !ok {
-		return fmt.Errorf("unhandled unary op: %s", node.Op)
+		return NewCompilerError(c.fileSet, node, "unhandled unary op: %s", node.Op)
 	}
 	if _, err := c.scopes.Emit(z.op, z.arguments...); err != nil {
 		return err
@@ -652,14 +653,14 @@ func (c *Functions) SelectorExpr(node *ast.SelectorExpr) error {
 	receiverIdent, ok := node.X.(*ast.Ident)
 	if !ok {
 		// currently not handling complex cases like a[0].field
-		return fmt.Errorf("[SelectorExpr] unsupported receiver for selector expression: %T", node.X)
+		return NewCompilerError(c.fileSet, node, "[SelectorExpr] unsupported receiver for selector expression: %T", node.X)
 	}
 	if c.imports.Emit(receiverIdent.Name, node.Sel.Name) {
 		return nil
 	}
 	receiverSymbol, ok := c.scopes.SymbolResolve(receiverIdent.Name)
 	if !ok {
-		return fmt.Errorf("[SelectorExpr] undefined variable: %s", receiverIdent.Name)
+		return NewCompilerError(c.fileSet, node, "[SelectorExpr] undefined variable: %s", receiverIdent.Name)
 	}
 	if receiverSymbol.IsStruct() { // struct
 		if err := c.compile(node.X); err != nil {
@@ -675,7 +676,7 @@ func (c *Functions) SelectorExpr(node *ast.SelectorExpr) error {
 		}
 		return nil
 	}
-	return fmt.Errorf("[SelectorExpr] unsupported selector expression for symbol %s", receiverSymbol.Name())
+	return NewCompilerError(c.fileSet, node, "[SelectorExpr] unsupported selector expression for symbol %s", receiverSymbol.Name())
 }
 
 // FuncDecl processes the function declaration node and compiles its structure into the appropriate bytecode.
