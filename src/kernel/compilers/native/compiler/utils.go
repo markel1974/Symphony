@@ -65,37 +65,6 @@ func GetMangledName(identId string, fnName string) string {
 	return m
 }
 
-func ExtractBaseName(expr ast.Expr) string {
-	switch t := expr.(type) {
-	case *ast.Ident:
-		// Caso base: abbiamo trovato l'identificatore del tipo (es. "MyStruct").
-		return t.Name
-	case *ast.StarExpr:
-		// Caso puntatore (*MyType): continuiamo la ricerca sul tipo puntato.
-		return ExtractBaseName(t.X)
-	case *ast.ArrayType:
-		// Caso array/slice ([]MyType): continuiamo la ricerca sul tipo dell'elemento.
-		return ExtractBaseName(t.Elt)
-	case *ast.MapType:
-		// Caso mappa (map[KeyType]ValueType): ci interessa il tipo del valore.
-		return ExtractBaseName(t.Value)
-	case *ast.SelectorExpr:
-		// Caso tipo qualificato (es. package.Type): restituiamo il nome del tipo.
-		// Una logica più avanzata potrebbe restituire "package.Type".
-		return t.Sel.Name
-	case *ast.InterfaceType:
-		// Caso interfaccia: se è un'interfaccia vuota, la trattiamo come un tipo a sé.
-		if len(t.Methods.List) == 0 {
-			return "interface{}"
-		}
-		// Le interfacce non vuote non sono attualmente supportate per l'estrazione.
-		return ""
-	default:
-		// Altri tipi complessi non sono gestiti.
-		return ""
-	}
-}
-
 func NewCompilerError(fileSet *token.FileSet, node ast.Node, format string, args ...interface{}) error {
 	// fileSet.Position() ci dà la posizione esatta del nodo nel file sorgente
 	position := fileSet.Position(node.Pos())

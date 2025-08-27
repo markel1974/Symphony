@@ -72,7 +72,7 @@ func (c *Declarations) TypeSpec(node *ast.TypeSpec) error {
 	if structType.Fields != nil {
 		for _, field := range structType.Fields.List {
 			var typeNameBuf bytes.Buffer
-			var base = ExtractBaseName(field.Type)
+			var base = c.structTable.ExtractBaseName(field.Type)
 			if err := printer.Fprint(&typeNameBuf, c.fileSet, field.Type); err != nil {
 				return NewCompilerError(c.fileSet, node, "failed to resolve type for field in struct '%s'", structName)
 			}

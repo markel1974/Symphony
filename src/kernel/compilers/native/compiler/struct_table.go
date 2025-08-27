@@ -88,7 +88,7 @@ func (st *StructTable) Inference(expr ast.Expr) (string, []string, bool) {
 		//nothing to do
 		return "", nil, false
 	case *ast.CompositeLit: // es. MyStruct{...}
-		if baseName := ExtractBaseName(rhs.Type); len(baseName) > 0 {
+		if baseName := st.ExtractBaseName(rhs.Type); len(baseName) > 0 {
 			return baseName, []string{baseName}, true
 		}
 	case *ast.CallExpr: // es. NewStruct()
@@ -213,4 +213,36 @@ func (st *StructTable) AssignSymbol(symbol *Symbol, structName string, types []s
 	symbol.SetTypes(types)
 	symbol.SetObject(st.gk.NewString(objects.FrameStatic, description))
 	return nil
+}
+
+// ExtractBaseName extracts the base type name from an AST expression, handling pointers, arrays, maps, and selectors.
+func (st *StructTable) ExtractBaseName(expr ast.Expr) string {
+	switch t := expr.(type) {
+	case *ast.Ident:
+		// Caso base: abbiamo trovato l'identificatore del tipo (es. "MyStruct").
+		return t.Name
+	case *ast.StarExpr:
+		// Caso puntatore (*MyType): continuiamo la ricerca sul tipo puntato.
+		return st.ExtractBaseName(t.X)
+	case *ast.ArrayType:
+		// Caso array/slice ([]MyType): continuiamo la ricerca sul tipo dell'elemento.
+		return st.ExtractBaseName(t.Elt)
+	case *ast.MapType:
+		// Caso mappa (map[KeyType]ValueType): ci interessa il tipo del valore.
+		return st.ExtractBaseName(t.Value)
+	case *ast.SelectorExpr:
+		// Caso tipo qualificato (es. package.Type): restituiamo il nome del tipo.
+		// Una logica più avanzata potrebbe restituire "package.Type".
+		return t.Sel.Name
+	case *ast.InterfaceType:
+		// Caso interfaccia: se è un'interfaccia vuota, la trattiamo come un tipo a sé.
+		if len(t.Methods.List) == 0 {
+			return "interface{}"
+		}
+		// Le interfacce non vuote non sono attualmente supportate per l'estrazione.
+		return ""
+	default:
+		// Altri tipi complessi non sono gestiti.
+		return ""
+	}
 }
