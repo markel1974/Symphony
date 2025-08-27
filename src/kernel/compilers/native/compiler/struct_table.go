@@ -203,13 +203,11 @@ func (st *StructTable) TypeNameFromSymbolField(name string, fieldName string) (s
 // AssignSymbol assigns a struct name and types to a Symbol, validates the struct, and creates a description object.
 func (st *StructTable) AssignSymbol(symbol *Symbol, structName string, types []string) error {
 	if len(structName) == 0 {
-		return fmt.Errorf("empty struct type")
+		return nil
 	}
-	//if structName != "interface{}" {
-	//	if !st.Has(structName) {
-	//		return fmt.Errorf("unknown struct type: %s", structName)
-	//	}
-	//}
+	if !st.Has(structName) {
+		return nil
+	}
 	description := structName + "=>" + symbol.Name() + ":" + strings.Join(types, " ")
 	symbol.SetStruct(structName)
 	symbol.SetTypes(types)

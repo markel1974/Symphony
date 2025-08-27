@@ -20,6 +20,7 @@ const (
 // Compiler represents a structure to manage the compilation process, including scopes and associated token file sets.
 type Compiler struct {
 	gk           objects.IGateKeeper
+	fileSet      *token.FileSet
 	loader       bytecode.ILoader
 	scopes       *Scopes
 	constants    *Constants
@@ -68,11 +69,11 @@ func (c *Compiler) Id() string {
 
 // Compile parses the provided source file and compiles it into bytecode. Returns compiled bytecode or an error.
 func (c *Compiler) Compile(filename string, source any) error {
-	fileSet := token.NewFileSet()
+	c.fileSet = token.NewFileSet()
 	if err := c.imports.Setup(c.loader, c.compile); err != nil {
 		return err
 	}
-	if err := c.declarations.Setup(fileSet, c.compile); err != nil {
+	if err := c.declarations.Setup(c.fileSet, c.compile); err != nil {
 		return err
 	}
 	if err := c.functions.Setup(c.compile); err != nil {
@@ -84,12 +85,13 @@ func (c *Compiler) Compile(filename string, source any) error {
 	if err := c.types.Setup(c.compile); err != nil {
 		return err
 	}
-	astFile, err := parser.ParseFile(fileSet, filename, source, 0)
+	astFile, err := parser.ParseFile(c.fileSet, filename, source, 0)
 	if err != nil {
 		return err
 	}
 	if err = c.compile(astFile); err != nil {
-		return err
+		return c.newCompilerError(astFile, err.Error())
+		//return err
 	}
 	return nil
 }
@@ -258,4 +260,13 @@ func (c *Compiler) createInit() error {
 	compiledInitFn := c.gk.NewFuncCompiled(objects.FrameStatic, initSymbols.Name(), initFuncCode, numLocals, 0, false, nil, nil)
 	initSymbols.SetObject(compiledInitFn)
 	return nil
+}
+
+func (c *Compiler) newCompilerError(node ast.Node, format string, args ...interface{}) error {
+	// fileSet.Position() ci dà la posizione esatta del nodo nel file sorgente
+	position := c.fileSet.Position(node.Pos())
+	// Creiamo il messaggio di errore principale
+	msg := fmt.Sprintf(format, args...)
+	// Ritorniamo un errore formattato che include la posizione
+	return fmt.Errorf("compile error at %s: %s", position.String(), msg)
 }

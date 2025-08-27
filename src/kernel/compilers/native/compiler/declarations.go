@@ -224,20 +224,26 @@ func (c *Declarations) AssignStmt(node *ast.AssignStmt) error {
 			var symbol *Symbol
 			if node.Tok == token.DEFINE {
 				var err error
-				symbol, err = c.scopes.SymbolDefine(ident.Name)
-				if err != nil {
-					return err
-				}
-				symbol.SetTypes([]string{funcReturnTypes[i]})
-				if err := c.scopes.EmitSymbolDefine(symbol); err != nil {
+				if symbol, err = c.scopes.SymbolDefine(ident.Name); err != nil {
 					return err
 				}
 			} else {
 				var found bool
-				symbol, found = c.scopes.SymbolResolve(ident.Name)
-				if !found {
+				if symbol, found = c.scopes.SymbolResolve(ident.Name); !found {
 					return fmt.Errorf("undefined variable: %s", ident.Name)
 				}
+			}
+			// Inferenza completa del tipo per ogni variabile.
+			inferredTypeName := funcReturnTypes[i]
+			if err := c.structTable.AssignSymbol(symbol, inferredTypeName, []string{inferredTypeName}); err != nil {
+				return err
+			}
+			// Emettiamo l'opcode corretto in base a ':=' o '='.
+			if node.Tok == token.DEFINE {
+				if err := c.scopes.EmitSymbolDefine(symbol); err != nil {
+					return err
+				}
+			} else {
 				if err := c.scopes.EmitSymbolSet(symbol); err != nil {
 					return err
 				}
