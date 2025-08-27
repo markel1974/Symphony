@@ -6,9 +6,9 @@ import (
 
 // LoopScope represents the context of a loop, storing positions of break instructions to update their jump targets later.
 type LoopScope struct {
-	// Posizioni di tutte le istruzioni 'break' incontrate.
-	// Queste dovranno essere aggiornate per saltare alla fine del ciclo.
-	BreakPositions []int
+	BreakPositions         []int
+	ContinuePositions      []int
+	ContinueTargetPosition int
 }
 
 // CompilationScope manages the state of a code compilation process, including instructions and loop contexts.
@@ -121,5 +121,15 @@ func (c *CompilationScope) AddBreak(pos int) error {
 		return fmt.Errorf("break statement not within a loop")
 	}
 	loop.BreakPositions = append(loop.BreakPositions, pos)
+	return nil
+}
+
+// AddContinue appends a given position to the ContinuePositions of the current loop scope or returns an error if not in a loop.
+func (c *CompilationScope) AddContinue(pos int) error {
+	loop := c.CurrentLoop()
+	if loop == nil {
+		return fmt.Errorf("continue statement not within a loop")
+	}
+	loop.ContinuePositions = append(loop.ContinuePositions, pos)
 	return nil
 }

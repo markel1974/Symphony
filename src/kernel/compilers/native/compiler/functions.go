@@ -446,6 +446,15 @@ func (c *Functions) ForStmt(node *ast.ForStmt) error {
 	if err = c.compile(node.Body); err != nil {
 		return err
 	}
+
+	continueTargetPos := scope.InstructionsLen()
+	if node.Post != nil {
+		if err = c.compile(node.Post); err != nil {
+			return err
+		}
+	}
+	scope.CurrentLoop().ContinueTargetPosition = continueTargetPos
+
 	// compiles post-iteration statement (e.g. x++)
 	if node.Post != nil {
 		if err = c.compile(node.Post); err != nil {
@@ -475,22 +484,29 @@ func (c *Functions) ForStmt(node *ast.ForStmt) error {
 		}
 	}
 
-	scope.LeaveLoop() // <-- 3. Usciamo dal contesto del ciclo
+	// Aggiorniamo tutte le istruzioni 'break' per saltare a `afterLoopPos`
+	for _, pos := range scope.CurrentLoop().ContinuePositions {
+		if err = c.scopes.ChangeOperand(pos, scope.CurrentLoop().ContinueTargetPosition); err != nil {
+			return err
+		}
+	}
+
+	scope.LeaveLoop()
 
 	return nil
 }
 
 // RangeStmt compiles a RangeStmt node into bytecode, handling iterator initialization, key/value assignment, and looping logic.
 func (c *Functions) RangeStmt(node *ast.RangeStmt) error {
+	if err := c.compile(node.X); err != nil {
+		return err
+	}
 	scope, err := c.scopes.Current()
 	if err != nil {
 		return err
 	}
 	scope.EnterLoop() // <-- 1. Entriamo nel contesto del ciclo
 
-	if err := c.compile(node.X); err != nil {
-		return err
-	}
 	iteratorSymbol, err := c.scopes.SymbolDefineUnique("__iterator")
 	if err != nil {
 		return err
@@ -525,6 +541,9 @@ func (c *Functions) RangeStmt(node *ast.RangeStmt) error {
 	}
 
 	loopStartPos := scope.InstructionsLen()
+
+	scope.CurrentLoop().ContinueTargetPosition = loopStartPos // <-- MODIFICA
+
 	if _, err = c.scopes.Emit(bytecode.OpIteratorNext, iteratorSymbol.Index()); err != nil {
 		return err
 	}
@@ -571,16 +590,23 @@ func (c *Functions) RangeStmt(node *ast.RangeStmt) error {
 			return err
 		}
 	}
+	for _, pos := range scope.CurrentLoop().ContinuePositions {
+		if err = c.scopes.ChangeOperand(pos, scope.CurrentLoop().ContinueTargetPosition); err != nil {
+			return err
+		}
+	}
 	scope.LeaveLoop() // <-- 3. Usciamo dal contesto del ciclo
 	return nil
 }
 
+// BranchStmt compiles a branch statement (break or continue) and emits the corresponding jump instructions.
+// Returns an error for unsupported tokens or scope issues.
 func (c *Functions) BranchStmt(node *ast.BranchStmt) error {
+	scope, err := c.scopes.Current()
+	if err != nil {
+		return err
+	}
 	if node.Tok == token.BREAK {
-		scope, err := c.scopes.Current()
-		if err != nil {
-			return err
-		}
 		// Emettiamo un salto incondizionato con un indirizzo temporaneo.
 		// Sarà aggiornato (back-patched) quando la compilazione del ciclo finirà.
 		breakJumpPos, err := c.scopes.Emit(bytecode.OpJump, 9999)
@@ -594,7 +620,16 @@ func (c *Functions) BranchStmt(node *ast.BranchStmt) error {
 		return nil
 	}
 	if node.Tok == token.CONTINUE {
-		return NewCompilerError(c.fileSet, node, "continue statement is not yet supported")
+		// Emettiamo un salto incondizionato con un indirizzo temporaneo.
+		continueJumpPos, err := c.scopes.Emit(bytecode.OpJump, 9999)
+		if err != nil {
+			return err
+		}
+		// Aggiungiamo la posizione di questo 'continue' al contesto del ciclo.
+		if err := scope.AddContinue(continueJumpPos); err != nil {
+			return NewCompilerError(c.fileSet, node, err.Error())
+		}
+		return nil
 	}
 	return NewCompilerError(c.fileSet, node, "unsupported branch statement: %s", node.Tok.String())
 }
