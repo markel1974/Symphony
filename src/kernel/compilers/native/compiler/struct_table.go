@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"go/ast"
 	"go/token"
-	"strconv"
+	"strings"
+
+	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
 // FieldDescription represents metadata about a struct field, including its name, base type, full type, and AST node.
@@ -27,43 +29,34 @@ func NewFieldDescription(name string, base string, kind string, node ast.Node) *
 
 // StructTable is a collection that manages mappings of struct names to their associated properties.
 type StructTable struct {
-	container        map[string][]*FieldDescription
-	anonymousCounter int
+	container map[string][]*FieldDescription
+	gk        objects.IGateKeeper
 }
 
 // NewStructTable initializes and returns a pointer to a StructTable instance with an empty container map.
-func NewStructTable() *StructTable {
-	return &StructTable{
-		container:        make(map[string][]*FieldDescription),
-		anonymousCounter: 0,
+func NewStructTable(gk objects.IGateKeeper) *StructTable {
+	st := &StructTable{
+		container: make(map[string][]*FieldDescription),
+		gk:        gk,
 	}
-}
-
-// CreateStructName creates a unique name for a struct based on the provided name.
-func (s *StructTable) CreateStructName(name string) string {
-	if len(name) == 0 {
-		r := "<anonymous_" + strconv.Itoa(s.anonymousCounter) + ">"
-		s.anonymousCounter++
-		return r
-	}
-	return name
+	return st
 }
 
 // Add adds a new field description to a struct in the StructTable. If the struct does not exist, it creates it.
-func (s *StructTable) Add(name string, fieldName string, baseStruct string, kind string, node ast.Node) {
+func (st *StructTable) Add(name string, fieldName string, baseStruct string, kind string, node ast.Node) {
 	// here we could add a check for duplicate fields.
 	v := NewFieldDescription(fieldName, baseStruct, kind, node)
-	fields, ok := s.container[name]
+	fields, ok := st.container[name]
 	if !ok {
-		s.container[name] = []*FieldDescription{v}
+		st.container[name] = []*FieldDescription{v}
 		return
 	}
-	s.container[name] = append(fields, v)
+	st.container[name] = append(fields, v)
 }
 
 // getFields retrieves a slice of StructProperty pointers associated with the given name from the container map.
-func (s *StructTable) getFields(name string) ([]*FieldDescription, bool) {
-	fields, ok := s.container[name]
+func (st *StructTable) getFields(name string) ([]*FieldDescription, bool) {
+	fields, ok := st.container[name]
 	if !ok {
 		return nil, false
 	}
@@ -75,8 +68,8 @@ func (s *StructTable) getFields(name string) ([]*FieldDescription, bool) {
 }
 
 // Has checks if a struct definition with the given name exists in the container map.
-func (s *StructTable) Has(name string) bool {
-	if _, ok := s.container[name]; ok {
+func (st *StructTable) Has(name string) bool {
+	if _, ok := st.container[name]; ok {
 		return true
 	}
 	return false
@@ -84,7 +77,7 @@ func (s *StructTable) Has(name string) bool {
 
 // Inference infers struct type information from the given AST expression and scope context.
 // It returns a generated struct name, a list of associated base type names, and a boolean indicating success.
-func (s *StructTable) Inference(expr ast.Expr, scopes *Scopes) (string, []string, bool) {
+func (st *StructTable) Inference(expr ast.Expr, scopes *Scopes) (string, []string, bool) {
 	switch rhs := expr.(type) {
 	case *ast.BinaryExpr:
 		//nothing to do
@@ -94,7 +87,7 @@ func (s *StructTable) Inference(expr ast.Expr, scopes *Scopes) (string, []string
 		return "", nil, false
 	case *ast.CompositeLit: // es. MyStruct{...}
 		if baseName := ExtractBaseName(rhs.Type); len(baseName) > 0 {
-			return s.CreateStructName(baseName), []string{baseName}, true
+			return baseName, []string{baseName}, true
 		}
 	case *ast.CallExpr: // es. NewStruct()
 		if ident, ok := rhs.Fun.(*ast.Ident); ok {
@@ -103,7 +96,7 @@ func (s *StructTable) Inference(expr ast.Expr, scopes *Scopes) (string, []string
 				typeName := funcSymbol.Types()[0]
 				// Verifichiamo se il tipo restituito è uno struct
 				if typeSymbol, ok := scopes.SymbolResolve(typeName); ok && typeSymbol.IsStruct() {
-					return s.CreateStructName(typeName), []string{typeName}, true
+					return typeName, []string{typeName}, true
 				}
 			}
 		}
@@ -112,7 +105,7 @@ func (s *StructTable) Inference(expr ast.Expr, scopes *Scopes) (string, []string
 			if compLit, ok := rhs.X.(*ast.CompositeLit); ok {
 				if ident, ok := compLit.Type.(*ast.Ident); ok {
 					if typeSymbol, ok := scopes.SymbolResolve(ident.Name); ok && typeSymbol.IsStruct() {
-						return s.CreateStructName(typeSymbol.Name()), []string{typeSymbol.Name()}, true
+						return typeSymbol.Name(), []string{typeSymbol.Name()}, true
 					}
 				}
 			}
@@ -121,19 +114,19 @@ func (s *StructTable) Inference(expr ast.Expr, scopes *Scopes) (string, []string
 	return "", nil, false
 }
 
-// CreateSymbolFromLiteral creates a symbol and field descriptions from a given composite literal and scope context.
-func (s *StructTable) CreateSymbolFromLiteral(node *ast.CompositeLit, scopes *Scopes) (*Symbol, []*FieldDescription, error) {
+// SymbolFromLiteral creates a symbol and field descriptions from a given composite literal and scope context.
+func (st *StructTable) SymbolFromLiteral(node *ast.CompositeLit, scopes *Scopes) (*Symbol, []*FieldDescription, error) {
 	// struct literal (es. MyStruct{...})
 	t, ok := node.Type.(*ast.Ident)
 	if !ok {
 		return nil, nil, fmt.Errorf("unsupported composite literal type: %T", node)
 	}
-	structFields, ok := s.getFields(t.Name)
+	structFields, ok := st.getFields(t.Name)
 	if !ok {
-		return nil, nil, fmt.Errorf("unknown composite literal type: %s", t.Name)
+		return nil, nil, fmt.Errorf("unknown composite literal type: %st", t.Name)
 	}
 	if len(node.Elts) > len(structFields) {
-		return nil, nil, fmt.Errorf("too many values in positional struct literal for type '%s'", t.Name)
+		return nil, nil, fmt.Errorf("too many values in positional struct literal for type '%st'", t.Name)
 	}
 	symbol, ok := scopes.SymbolResolve(t.Name)
 	if !ok {
@@ -142,11 +135,9 @@ func (s *StructTable) CreateSymbolFromLiteral(node *ast.CompositeLit, scopes *Sc
 			return nil, nil, err
 		}
 	}
-	structName := s.CreateStructName(t.Name)
-	symbol.SetStruct(structName)
-	symbol.SetTypes([]string{t.Name})
-	//TODO
-	//symbol.SetObject()
+	if err := st.AssignSymbol(symbol, t.Name, []string{t.Name}); err != nil {
+		return nil, nil, err
+	}
 	isKeyed := false
 	if len(node.Elts) > 0 {
 		if _, ok := node.Elts[0].(*ast.KeyValueExpr); ok {
@@ -182,8 +173,8 @@ func (s *StructTable) CreateSymbolFromLiteral(node *ast.CompositeLit, scopes *Sc
 }
 
 // GetTypeNameFromFields retrieves the base type of a field within a struct using its name and returns it with a success flag.
-func (s *StructTable) GetTypeNameFromFields(structName string, fieldName string) (string, bool) {
-	receiverStructFields, ok := s.getFields(structName)
+func (st *StructTable) GetTypeNameFromFields(structName string, fieldName string) (string, bool) {
+	receiverStructFields, ok := st.getFields(structName)
 	if !ok {
 		return "", false
 	}
@@ -193,4 +184,21 @@ func (s *StructTable) GetTypeNameFromFields(structName string, fieldName string)
 		}
 	}
 	return "", false
+}
+
+// AssignSymbol assigns a struct name and types to a Symbol, validates the struct, and creates a description object.
+func (st *StructTable) AssignSymbol(symbol *Symbol, structName string, types []string) error {
+	if len(structName) == 0 {
+		return fmt.Errorf("empty struct type")
+	}
+	if structName != "interface{}" {
+		if !st.Has(structName) {
+			return fmt.Errorf("unknown struct type: %st", structName)
+		}
+	}
+	description := structName + "=>" + symbol.Name() + ":" + strings.Join(types, " ")
+	symbol.SetStruct(structName)
+	symbol.SetTypes(types)
+	symbol.SetObject(st.gk.NewString(objects.FrameStatic, description))
+	return nil
 }

@@ -105,7 +105,7 @@ func (c *Functions) funcBodyPrepare(fd *FunctionDescription) error {
 			return fmt.Errorf("undefined type '%s' for method receiver", recvTypeIdent.Name)
 		}
 		fd.Name = GetMangledName(recvTypeIdent.Name, node.Name.Name)
-		fd.StructName = c.structTable.CreateStructName(recvTypeIdent.Name)
+		fd.StructName = recvTypeIdent.Name
 	} else {
 		fd.Name = node.Name.Name
 		fd.StructName = ""
@@ -115,7 +115,12 @@ func (c *Functions) funcBodyPrepare(fd *FunctionDescription) error {
 	if err != nil {
 		return err
 	}
-	placeHolder.SetStruct(fd.StructName)
+	if len(fd.StructName) > 0 {
+		if err = c.structTable.AssignSymbol(placeHolder, fd.StructName, nil); err != nil {
+			return err
+		}
+	}
+	//placeHolder.SetStruct(fd.StructName)
 	return nil
 }
 
@@ -130,10 +135,10 @@ func (c *Functions) funcBodyCompile(fd *FunctionDescription) error {
 		if err != nil {
 			return err
 		}
-		receiverSymbol.SetStruct(fd.StructName)
 		if len(fd.StructName) > 0 {
-			//TODO return values
-			receiverSymbol.SetTypes(fd.ReturnValues)
+			if err = c.structTable.AssignSymbol(receiverSymbol, fd.StructName, fd.ReturnValues); err != nil {
+				return err
+			}
 		}
 	}
 	for _, p := range fd.InputParams {
@@ -543,9 +548,10 @@ func (c *Functions) RangeStmt(node *ast.RangeStmt) error {
 			if err != nil {
 				return err
 			}
-			if c.structTable.Has(returnTypeName) {
-				valueSymbol.SetStruct(c.structTable.CreateStructName(returnTypeName))
-				valueSymbol.SetTypes([]string{returnTypeName})
+			if len(returnTypeName) > 0 {
+				if err = c.structTable.AssignSymbol(valueSymbol, returnTypeName, []string{returnTypeName}); err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -762,7 +768,11 @@ func (c *Functions) FuncLit(node *ast.FuncLit) error {
 					return err
 				}
 				zSymbol.SetScope(LocalScope)
-				zSymbol.SetStruct(structName)
+				if len(structName) > 0 {
+					if err = c.structTable.AssignSymbol(zSymbol, structName, nil); err != nil {
+						return err
+					}
+				}
 			}
 		}
 	}

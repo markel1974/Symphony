@@ -30,6 +30,17 @@ func NewSymbol(name string, index int, scope SymbolScope) *Symbol {
 	return symbol
 }
 
+func (s *Symbol) Clone() *Symbol {
+	return &Symbol{
+		name:       s.name,
+		scope:      s.scope,
+		index:      s.index,
+		structName: s.structName,
+		funcName:   s.funcName,
+		types:      s.types,
+		object:     s.object,
+	}
+}
 func (s *Symbol) SetStruct(structName string) {
 	fmt.Printf("SetStruct %s => %s\n", s.Name(), structName)
 	s.structName = structName

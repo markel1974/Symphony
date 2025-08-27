@@ -7,7 +7,6 @@ import (
 	"go/printer"
 	"go/token"
 	"strconv"
-	"strings"
 
 	"github.com/markel1974/c64emu/src/kernel/vm/bytecode"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
@@ -105,7 +104,7 @@ func (c *Declarations) ValueSpec(node *ast.ValueSpec) error {
 		if compLit, ok := node.Values[i].(*ast.CompositeLit); ok {
 			if ident, ok := compLit.Type.(*ast.Ident); ok {
 				if typeSymbol, ok := c.scopes.SymbolResolve(ident.Name); ok && typeSymbol.IsStruct() {
-					structName = c.structTable.CreateStructName(ident.Name)
+					structName = ident.Name
 					assignedTypeNames = []string{typeSymbol.Name()}
 				}
 			}
@@ -128,13 +127,20 @@ func (c *Declarations) ValueSpec(node *ast.ValueSpec) error {
 		if err != nil {
 			return err
 		}
-		symbol.SetStruct(structName)
-		if len(assignedTypeNames) > 0 {
-			symbol.SetTypes(assignedTypeNames)
-			symbol.SetObject(c.gk.NewString(objects.FrameStatic, symbol.Name()+":"+strings.Join(assignedTypeNames, " ")))
+		if len(structName) > 0 {
+			if err = c.structTable.AssignSymbol(symbol, structName, assignedTypeNames); err != nil {
+				return err
+			}
 		} else {
 			symbol.SetObject(c.gk.NewString(objects.FrameStatic, symbol.Name()))
 		}
+
+		//if len(assignedTypeNames) > 0 {
+		//	symbol.SetTypes(assignedTypeNames)
+		//	symbol.SetObject(c.gk.NewString(objects.FrameStatic, symbol.Name()+":"+strings.Join(assignedTypeNames, " ")))
+		//} else {
+		//	symbol.SetObject(c.gk.NewString(objects.FrameStatic, symbol.Name()))
+		//}
 
 		// 4. Emette bytecode per assegnare il valore dalla cima dello stack alla variabile.
 		if err = c.scopes.EmitSymbolDefine(symbol); err != nil {
@@ -240,6 +246,7 @@ func (c *Declarations) AssignStmt(node *ast.AssignStmt) error {
 				}
 			}
 			symbol.SetTypes([]string{funcReturnTypes[i]})
+
 			if err := c.scopes.EmitSymbolSet(symbol); err != nil {
 				return err
 			}
@@ -266,8 +273,9 @@ func (c *Declarations) AssignStmt(node *ast.AssignStmt) error {
 				return err
 			}
 			if structName, assignedTypeName, _ := c.structTable.Inference(node.Rhs[0], c.scopes); len(structName) > 0 {
-				symbol.SetStruct(structName)
-				symbol.SetTypes(assignedTypeName)
+				if err = c.structTable.AssignSymbol(symbol, structName, assignedTypeName); err != nil {
+					return err
+				}
 			}
 		} else { // Caso per l'assegnazione normale '='
 			var ok bool
@@ -340,7 +348,7 @@ func (c *Declarations) CompositeLit(node *ast.CompositeLit) error {
 	switch node.Type.(type) {
 	case *ast.Ident:
 		// struct literal (es. MyStruct{...})
-		_, structFields, err := c.structTable.CreateSymbolFromLiteral(node, c.scopes)
+		_, structFields, err := c.structTable.SymbolFromLiteral(node, c.scopes)
 		if err != nil {
 			return err
 		}

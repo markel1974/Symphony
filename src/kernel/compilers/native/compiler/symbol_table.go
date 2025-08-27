@@ -122,8 +122,9 @@ func (s *SymbolTable) Resolve(name string) (*Symbol, bool) {
 		return obj, true
 	}
 	s.freeSymbols = append(s.freeSymbols, obj)
-	symbol := NewSymbol(obj.Name(), len(s.freeSymbols)-1, FreeScope)
-	symbol.SetStruct(obj.StructName())
+	symbol := obj.Clone()
+	obj.index = len(s.freeSymbols) - 1
+	obj.scope = FreeScope
 	s.symbols[obj.Name()] = symbol
 	return symbol, true
 }
