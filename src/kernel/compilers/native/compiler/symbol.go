@@ -1,6 +1,8 @@
 package compiler
 
 import (
+	"fmt"
+
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
@@ -13,28 +15,27 @@ type Symbol struct {
 	funcName   string
 	types      []string
 	isStruct   bool
-	Fields     []*StructField
+	Fields     []*FieldDescription
 	object     objects.IObject
 }
 
 // NewSymbol creates a new Symbol instance with the provided name, index, scope, and associated object.
-func NewSymbol(name string, index int, scope SymbolScope, structName string, funcName string, isStruct bool) *Symbol {
-	symbol := &Symbol{}
-	symbol.Reset(name, index, scope, structName, funcName, isStruct)
+func NewSymbol(name string, index int, scope SymbolScope) *Symbol {
+	symbol := &Symbol{
+		name:   name,
+		index:  index,
+		scope:  scope,
+		object: nil,
+		types:  []string{},
+		Fields: []*FieldDescription{},
+	}
 	return symbol
 }
 
-// Reset resets the Symbol to its initial state with the provided name, index, scope, and associated object.
-func (s *Symbol) Reset(name string, index int, scope SymbolScope, structName string, funcName string, isStruct bool) {
-	s.name = name
-	s.index = index
-	s.scope = scope
+func (s *Symbol) SetIsStruct(structName string, isStruct bool) {
+	fmt.Println("SetIsStruct", s.Name(), structName, isStruct)
 	s.structName = structName
-	s.funcName = funcName
-	s.types = []string{}
-	s.object = nil
 	s.isStruct = isStruct
-	s.Fields = []*StructField{}
 }
 
 // Name returns the name of the Symbol.
@@ -69,10 +70,10 @@ func (s *Symbol) IsStruct() bool {
 	//return s.isStruct
 }
 
-func (s *Symbol) StructPropertyAssign(fields []*StructField) {
-	s.Fields = make([]*StructField, len(fields))
+func (s *Symbol) StructPropertyAssign(fields []*FieldDescription) {
+	s.Fields = make([]*FieldDescription, len(fields))
 	for i, f := range fields {
-		s.Fields[i] = NewStructProperty(f.name, f.base, f.kind, nil)
+		s.Fields[i] = NewFieldDescription(f.name, f.base, f.kind, nil)
 	}
 }
 

@@ -13,32 +13,36 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
+// Declarations is a structure responsible for managing compiler declarations and scope-related components.
+// It holds references to constants, scopes, structs, and a gatekeeper for managing object lifecycle and interactions.
+// The fileSet tracks source file information, and the compile function is used for compiling AST nodes.
 type Declarations struct {
-	gk         objects.IGateKeeper
-	references *Constants
-	constants  *Constants
-	scopes     *Scopes
-	fileSet    *token.FileSet
-	structs    *Structs
-	compile    func(node ast.Node) error
+	gk           objects.IGateKeeper
+	references   *Constants
+	constants    *Constants
+	scopes       *Scopes
+	fileSet      *token.FileSet
+	structsTable *StructTable
+	compile      func(node ast.Node) error
 }
 
-func NewDeclarations(gk objects.IGateKeeper, references *Constants, constants *Constants, scopes *Scopes, structs *Structs) *Declarations {
+// NewDeclarations creates and initializes a new Declarations instance with gatekeeper, constants, scopes, and structs table.
+func NewDeclarations(gk objects.IGateKeeper, references *Constants, constants *Constants, scopes *Scopes, structsTable *StructTable) *Declarations {
 	return &Declarations{
 		gk: gk, references: references, constants: constants, scopes: scopes,
-		compile: nil,
-		structs: structs,
+		compile:      nil,
+		structsTable: structsTable,
 	}
 }
 
-// Setup initializes the `Others` instance with a compile function used for processing AST nodes.
+// Setup initializes the Declarations object with a file set and a compile function, returning an error if any occur.
 func (c *Declarations) Setup(fileSet *token.FileSet, compile func(node ast.Node) error) error {
 	c.fileSet = fileSet
 	c.compile = compile
 	return nil
 }
 
-// DeclStmt processes a declaration statement node by compiling its declaration content. Returns an error if compilation fails.
+// DeclStmt processes an AST declaration statement node and compiles its declaration, returning any encountered error.
 func (c *Declarations) DeclStmt(node *ast.DeclStmt) error {
 	if err := c.compile(node.Decl); err != nil {
 		return err
@@ -46,7 +50,7 @@ func (c *Declarations) DeclStmt(node *ast.DeclStmt) error {
 	return nil
 }
 
-// GenDecl processes a general declaration node by compiling each specification within the node. It returns an error if any occur.
+// GenDecl processes a general declaration node, compiling each specification within the declaration. Returns an error on failure.
 func (c *Declarations) GenDecl(node *ast.GenDecl) error {
 	for _, spec := range node.Specs {
 		if err := c.compile(spec); err != nil {
@@ -56,7 +60,8 @@ func (c *Declarations) GenDecl(node *ast.GenDecl) error {
 	return nil
 }
 
-// TypeSpec processes a type specification node, validating and defining struct types in the current scope.
+// TypeSpec processes an AST TypeSpec node, registering structs and their fields in the scope and structs table.
+// It validates type uniqueness and collects field details like names, base types, and full types.
 func (c *Declarations) TypeSpec(node *ast.TypeSpec) error {
 	structType, isStruct := node.Type.(*ast.StructType)
 	if !isStruct {
@@ -66,7 +71,6 @@ func (c *Declarations) TypeSpec(node *ast.TypeSpec) error {
 	if _, ok := c.scopes.SymbolResolve(structName); ok {
 		return fmt.Errorf("type '%s' already defined", structName)
 	}
-	var def []*StructField
 	if structType.Fields != nil {
 		for _, field := range structType.Fields.List {
 			var typeNameBuf bytes.Buffer
@@ -76,16 +80,14 @@ func (c *Declarations) TypeSpec(node *ast.TypeSpec) error {
 			}
 			fieldType := typeNameBuf.String()
 			for _, name := range field.Names {
-				// here we could add a check for duplicate fields.
-				def = append(def, NewStructProperty(name.Name, base, fieldType, field))
+				c.structsTable.Add(structName, name.Name, base, fieldType, field)
 			}
 		}
 	}
-	c.structs.Add(structName, def)
 	return nil
 }
 
-// ValueSpec processes a ValueSpec node to handle variable declarations and assignments within a given scope.
+// ValueSpec processes variable declarations and ensures type inference, symbol definition, and bytecode emission.
 func (c *Declarations) ValueSpec(node *ast.ValueSpec) error {
 	// handles 'var x = 10'
 	for i, name := range node.Names {
@@ -96,15 +98,17 @@ func (c *Declarations) ValueSpec(node *ast.ValueSpec) error {
 			return err
 		}
 
-		isStruct := false
+		isStruct2 := false
+		structName := ""
 
 		// 3. Inferenza del tipo, ora coerente con la nuova logica
 		var assignedTypeNames []string
 		if compLit, ok := node.Values[i].(*ast.CompositeLit); ok {
 			if ident, ok := compLit.Type.(*ast.Ident); ok {
 				if typeSymbol, ok := c.scopes.SymbolResolve(ident.Name); ok && typeSymbol.IsStruct() {
+					structName = ident.Name
 					assignedTypeNames = []string{typeSymbol.Name()}
-					isStruct = true
+					isStruct2 = true
 				}
 			}
 		} else if callExpr, ok := node.Values[i].(*ast.CallExpr); ok {
@@ -123,11 +127,11 @@ func (c *Declarations) ValueSpec(node *ast.ValueSpec) error {
 			}
 		}
 
-		symbol, err := c.scopes.SymbolDefine(name.Name, UnknownScope, isStruct)
+		symbol, err := c.scopes.SymbolDefine(name.Name)
 		if err != nil {
 			return err
 		}
-
+		symbol.SetIsStruct(structName, isStruct2)
 		if len(assignedTypeNames) > 0 {
 			symbol.SetTypes(assignedTypeNames)
 			symbol.SetObject(c.gk.NewString(objects.FrameStatic, symbol.Name()+":"+strings.Join(assignedTypeNames, " ")))
@@ -147,7 +151,7 @@ func (c *Declarations) ValueSpec(node *ast.ValueSpec) error {
 	return nil
 }
 
-// BasicLit processes an AST BasicLit node and emits the corresponding literal into the current scope.
+// BasicLit compiles a basic literal node (e.g., int, float, string) into a bytecode representation or returns an error.
 func (c *Declarations) BasicLit(node *ast.BasicLit) error {
 	var obj objects.IObject
 	switch node.Kind {
@@ -170,7 +174,7 @@ func (c *Declarations) BasicLit(node *ast.BasicLit) error {
 	return nil
 }
 
-// Ident processes an identifier node, resolving its symbol in the current scope and emitting a symbol get operation.
+// Ident processes an identifier node and emits bytecode if the identifier corresponds to a symbol or keyword in the scope.
 func (c *Declarations) Ident(node *ast.Ident) error {
 	switch node.Name {
 	case "true":
@@ -199,8 +203,8 @@ func (c *Declarations) Ident(node *ast.Ident) error {
 	return nil
 }
 
-// AssignStmt processes an assignment statement by compiling the right-hand side and resolving variable symbols.
-// It also updates the type information for symbols or emits appropriate bytecode for assignments.
+// AssignStmt processes assignment statements, including multiple and single assignments, and emits corresponding opcodes.
+// It supports variable declarations, type inference, field assignments, and checks for type or scope mismatches.
 func (c *Declarations) AssignStmt(node *ast.AssignStmt) error {
 	// Gestisce l'assegnazione multipla da una chiamata di funzione (es. x, y := f())
 	if callExpr, ok := node.Rhs[0].(*ast.CallExpr); ok && len(node.Lhs) > 1 {
@@ -227,7 +231,7 @@ func (c *Declarations) AssignStmt(node *ast.AssignStmt) error {
 			var symbol *Symbol
 			if node.Tok == token.DEFINE {
 				var err error
-				symbol, err = c.scopes.SymbolDefine(ident.Name, UnknownScope, false) // Anche qui, l'inferenza del tipo potrebbe essere migliorata
+				symbol, err = c.scopes.SymbolDefine(ident.Name) // Anche qui, l'inferenza del tipo potrebbe essere migliorata
 				if err != nil {
 					return err
 				}
@@ -261,7 +265,8 @@ func (c *Declarations) AssignStmt(node *ast.AssignStmt) error {
 		if node.Tok == token.DEFINE { // Caso specifico per ':='
 			var err error
 			// Ispezioniamo il lato destro (RHS) per inferire il tipo
-			isStruct := false
+			isStruct2 := false
+			structName := ""
 			var assignedTypeName []string
 
 			switch rhs := node.Rhs[0].(type) {
@@ -271,7 +276,8 @@ func (c *Declarations) AssignStmt(node *ast.AssignStmt) error {
 				baseName := ExtractBaseName(rhs.Type)
 				if len(baseName) > 0 {
 					assignedTypeName = []string{baseName}
-					isStruct = true
+					structName = baseName
+					isStruct2 = true
 				}
 			case *ast.CallExpr: // es. NewStruct()
 				if ident, ok := rhs.Fun.(*ast.Ident); ok {
@@ -281,7 +287,8 @@ func (c *Declarations) AssignStmt(node *ast.AssignStmt) error {
 						assignedTypeName = []string{typeName}
 						// Verifichiamo se il tipo restituito è uno struct
 						if typeSymbol, ok := c.scopes.SymbolResolve(typeName); ok && typeSymbol.IsStruct() {
-							isStruct = true
+							isStruct2 = true
+							structName = typeName
 						}
 					}
 				}
@@ -290,7 +297,8 @@ func (c *Declarations) AssignStmt(node *ast.AssignStmt) error {
 					if compLit, ok := rhs.X.(*ast.CompositeLit); ok {
 						if ident, ok := compLit.Type.(*ast.Ident); ok {
 							if typeSymbol, ok := c.scopes.SymbolResolve(ident.Name); ok && typeSymbol.IsStruct() {
-								isStruct = true
+								isStruct2 = true
+								structName = typeSymbol.Name()
 								assignedTypeName = []string{typeSymbol.Name()}
 							}
 						}
@@ -300,10 +308,11 @@ func (c *Declarations) AssignStmt(node *ast.AssignStmt) error {
 				return fmt.Errorf("unsupported right-hand side for assignment: %T", rhs)
 			}
 			// Definiamo il simbolo usando il valore 'isStruct' appena calcolato
-			symbol, err = c.scopes.SymbolDefine(name, UnknownScope, isStruct)
+			symbol, err = c.scopes.SymbolDefine(name)
 			if err != nil {
 				return err
 			}
+			symbol.SetIsStruct(structName, isStruct2)
 			// Se abbiamo un tipo, lo associamo al simbolo
 			if len(assignedTypeName) > 0 {
 				symbol.SetTypes(assignedTypeName)
@@ -369,12 +378,10 @@ func (c *Declarations) AssignStmt(node *ast.AssignStmt) error {
 	}
 }
 
-// CompositeLit processes the given composite literal node and compiles it into bytecode representation.
-// Handles struct, array, and map literals by resolving types, validating fields, and emitting appropriate instructions.
-// Returns an error if the composite literal type is unsupported or if any validation or compilation step fails.
-// CompositeLit processes the given composite literal node and compiles it into bytecode representation.
-// Handles struct, array, and map literals by resolving types, validating fields, and emitting appropriate instructions.
-// Returns an error if the composite literal type is unsupported or if any validation or compilation step fails.
+// CompositeLit processes and compiles an abstract syntax tree (AST) CompositeLit node into bytecode instructions.
+// It handles various composite literal types such as slices, structs, arrays, and maps, emitting corresponding bytecode.
+// It also validates keyed and positional struct literals, generates constant keys, and handles null values when needed.
+// Returns an error if compilation fails or the composite literal type is unsupported.
 func (c *Declarations) CompositeLit(node *ast.CompositeLit) error {
 	// Handle slice literals like []int{1, 2, 3} where the parser sets Type to nil.
 	if node.Type == nil {
@@ -393,8 +400,8 @@ func (c *Declarations) CompositeLit(node *ast.CompositeLit) error {
 	switch t := node.Type.(type) {
 	case *ast.Ident:
 		// struct literal (es. MyStruct{...})
-		structFields := c.structs.Get(t.Name)
-		if structFields == nil {
+		structFields, ok := c.structsTable.GetFields(t.Name)
+		if !ok {
 			return fmt.Errorf("unknown composite literal type: %s", t.Name)
 		}
 		if len(node.Elts) > len(structFields) {
@@ -403,9 +410,10 @@ func (c *Declarations) CompositeLit(node *ast.CompositeLit) error {
 		symbol, ok := c.scopes.SymbolResolve(t.Name)
 		if !ok {
 			var err error
-			if symbol, err = c.scopes.SymbolDefine(t.Name, UnknownScope, true); err != nil {
+			if symbol, err = c.scopes.SymbolDefine(t.Name); err != nil {
 				return err
 			}
+			symbol.SetIsStruct(t.Name, true)
 		}
 		symbol.StructPropertyAssign(structFields)
 		symbol.SetTypes([]string{t.Name})
@@ -491,7 +499,7 @@ func (c *Declarations) CompositeLit(node *ast.CompositeLit) error {
 	}
 }
 
-// KeyValueExpr processes a KeyValueExpr node and emits the corresponding literal into the current scope.
+// KeyValueExpr processes an ast.KeyValueExpr node by compiling its Key and Value components in sequence. Returns an error if any occurs.
 func (c *Declarations) KeyValueExpr(node *ast.KeyValueExpr) error {
 	if err := c.compile(node.Key); err != nil {
 		return err
@@ -500,6 +508,7 @@ func (c *Declarations) KeyValueExpr(node *ast.KeyValueExpr) error {
 	return err
 }
 
+// StarExpr compiles the expression to the right of the asterisk, pushing the ObjectPointer onto the stack.
 func (c *Declarations) StarExpr(node *ast.StarExpr) error {
 	// Compiles the expression to the right of the asterisk (e.g. pointer 'p').
 	// This will push the ObjectPointer onto the stack.
@@ -510,6 +519,7 @@ func (c *Declarations) StarExpr(node *ast.StarExpr) error {
 	return err
 }
 
+// IndexExpr compiles an indexed object and its index expression, emitting VM instructions to perform the index operation.
 func (c *Declarations) IndexExpr(node *ast.IndexExpr) error {
 	// Compile the indexed object (e.g. myArray). This puts the array, map or slice on the stack.
 	if err := c.compile(node.X); err != nil {

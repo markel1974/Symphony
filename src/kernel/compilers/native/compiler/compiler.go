@@ -29,7 +29,7 @@ type Compiler struct {
 	types        *Types
 	others       *Others
 	declarations *Declarations
-	structs      *Structs
+	structs      *StructTable
 	rootNode     *ast.File
 }
 
@@ -38,7 +38,7 @@ func New(gk objects.IGateKeeper, loader bytecode.ILoader, opcodes *bytecode.Opco
 	scopes := NewScopes(gk, opcodes)
 	constants := NewConstants()
 	references := NewConstants()
-	structs := NewStructs()
+	structs := NewStructTable()
 	declarations := NewDeclarations(gk, references, constants, scopes, structs)
 	imports := NewImports(gk, references, scopes)
 	functions := NewFunctions(gk, constants, scopes, imports, declarations, structs)
@@ -247,7 +247,7 @@ func (c *Compiler) createInit() error {
 	}
 	initFuncCode := c.scopes.compilations[0].Instructions()
 	numLocals := c.scopes.SymbolCount()
-	initSymbols, err := c.scopes.SymbolDefine("__init__", UnknownScope, false)
+	initSymbols, err := c.scopes.SymbolDefine("__init__")
 	if err != nil {
 		return err
 	}

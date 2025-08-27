@@ -9,46 +9,33 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
-// FunctionDescription represents the metadata of a function including its name, associated struct, parameters, and receiver info.
-type FunctionDescription struct {
-	Name            string
-	ReturnValues    []string
-	InputParams     []string
-	IsStruct        bool
-	StructName      string
-	StructReceivers []string
-	FuncDecl        *ast.FuncDecl
-}
-
-// NewFunctionDescription creates a new instance of FunctionDescription with the provided function declaration.
-func NewFunctionDescription(funcDecl *ast.FuncDecl) *FunctionDescription {
-	return &FunctionDescription{
-		FuncDecl: funcDecl,
-	}
-}
+const (
+	UndefinedSymbol = "_"
+)
 
 // Functions is a collection that manages a list of function descriptions.
 type Functions struct {
-	gk           objects.IGateKeeper
-	constants    *Constants
-	scopes       *Scopes
-	imports      *Imports
-	declarations *Declarations
-	container    []*FunctionDescription
-	compile      func(node ast.Node) error
-	structs      *Structs
+	gk            objects.IGateKeeper
+	constants     *Constants
+	scopes        *Scopes
+	imports       *Imports
+	declarations  *Declarations
+	functionTable *FunctionTable
+	structTable   *StructTable
+	compile       func(node ast.Node) error
 }
 
 // NewFunctions initializes and returns a new Functions instance.
-func NewFunctions(gk objects.IGateKeeper, constants *Constants, scopes *Scopes, imports *Imports, declarations *Declarations, structs *Structs) *Functions {
+func NewFunctions(gk objects.IGateKeeper, constants *Constants, scopes *Scopes, imports *Imports, declarations *Declarations, structTable *StructTable) *Functions {
 	return &Functions{
-		gk:           gk,
-		constants:    constants,
-		scopes:       scopes,
-		imports:      imports,
-		declarations: declarations,
-		structs:      structs,
-		compile:      nil,
+		gk:            gk,
+		constants:     constants,
+		scopes:        scopes,
+		imports:       imports,
+		declarations:  declarations,
+		structTable:   structTable,
+		functionTable: NewFunctionTable(),
+		compile:       nil,
 	}
 }
 
@@ -60,14 +47,17 @@ func (c *Functions) Setup(compile func(node ast.Node) error) error {
 
 // Declare adds a function description derived from the provided function declaration to the Functions container.
 func (c *Functions) Declare(funcDecl *ast.FuncDecl) {
-	fd := NewFunctionDescription(funcDecl)
-	c.container = append(c.container, fd)
+	c.functionTable.Add(funcDecl)
 }
 
 // Prepare iterates through all function descriptions in the container and prepares their bodies for compilation.
 func (c *Functions) Prepare() error {
-	for _, fd := range c.container {
-		if err := c.funcBodyPrepare(fd); err != nil {
+	for idx := 0; idx < c.functionTable.Len(); idx++ {
+		fd, err := c.functionTable.Get(idx)
+		if err != nil {
+			return err
+		}
+		if err = c.funcBodyPrepare(fd); err != nil {
 			return err
 		}
 	}
@@ -76,8 +66,12 @@ func (c *Functions) Prepare() error {
 
 // Compile iterates over all function descriptions in the container and compiles their bodies. Returns an error if any fails.
 func (c *Functions) Compile() error {
-	for _, fd := range c.container {
-		if err := c.funcBodyCompile(fd); err != nil {
+	for idx := 0; idx < c.functionTable.Len(); idx++ {
+		fd, err := c.functionTable.Get(idx)
+		if err != nil {
+			return err
+		}
+		if err = c.funcBodyCompile(fd); err != nil {
 			return err
 		}
 	}
@@ -107,8 +101,7 @@ func (c *Functions) funcBodyPrepare(fd *FunctionDescription) error {
 		if recvTypeIdent == nil {
 			return fmt.Errorf("unsupported method receiver type")
 		}
-		fields := c.structs.Get(recvTypeIdent.Name)
-		if fields == nil {
+		if !c.structTable.Has(recvTypeIdent.Name) {
 			return fmt.Errorf("undefined type '%s' for method receiver", recvTypeIdent.Name)
 		}
 		fd.Name = GetMangledName(recvTypeIdent.Name, node.Name.Name)
@@ -123,30 +116,34 @@ func (c *Functions) funcBodyPrepare(fd *FunctionDescription) error {
 		fd.IsStruct = false
 	}
 	//function symbol placeholder (this is not the real function, it's just a placeholder to be able to compile the body)
-	if _, err = c.scopes.SymbolDefine(fd.Name, UnknownScope, fd.IsStruct); err != nil {
+	placeHolder, err := c.scopes.SymbolDefine(fd.Name)
+	if err != nil {
 		return err
 	}
+	//by default, the function is not a struct
+	placeHolder.SetIsStruct(fd.StructName, false) //fd.IsStruct)
 	return nil
 }
 
 // funcBodyCompile compiles the body of a function declaration and generates the necessary bytecode instructions.
 func (c *Functions) funcBodyCompile(fd *FunctionDescription) error {
 	node := fd.FuncDecl
-	if err := c.scopes.Enter(fd.StructName, fd.Name); err != nil {
+	if err := c.scopes.Enter(fd.Name); err != nil {
 		return err
 	}
 	for _, recv := range fd.StructReceivers {
-		receiverSymbol, err := c.scopes.SymbolDefine(recv, UnknownScope, fd.IsStruct)
+		receiverSymbol, err := c.scopes.SymbolDefine(recv)
 		if err != nil {
 			return err
 		}
+		receiverSymbol.SetIsStruct(fd.StructName, fd.IsStruct)
 		if fd.IsStruct {
 			//TODO return values
 			receiverSymbol.SetTypes(fd.ReturnValues)
 		}
 	}
 	for _, p := range fd.InputParams {
-		if _, err := c.scopes.SymbolDefine(p, UnknownScope, false); err != nil {
+		if _, err := c.scopes.SymbolDefine(p); err != nil {
 			return err
 		}
 	}
@@ -178,9 +175,10 @@ func (c *Functions) funcBodyCompile(fd *FunctionDescription) error {
 	if node.Recv != nil && len(node.Recv.List) > 0 {
 		nParams++
 	}
-	fnSymbol, err := c.scopes.SymbolReset(fd.Name, UnknownScope, false)
-	if err != nil {
-		return err
+
+	fnSymbol, ok := c.scopes.SymbolRebuildScope(fd.Name, UnknownScope)
+	if !ok {
+		return fmt.Errorf("undefined function: %s", fd.Name)
 	}
 	compiledFn := c.gk.NewFuncCompiled(objects.FrameStatic, fd.Name, code, nLocals, nParams, false, nil, freeSymbols)
 	fnSymbol.SetObject(compiledFn)
@@ -242,7 +240,7 @@ func (c *Functions) CallExpr(node *ast.CallExpr) error {
 			}
 			if len(receiverSymbol.Types()) > 0 { // struct method
 				structTypeName := receiverSymbol.Types()[0]
-				if fields := c.structs.Get(structTypeName); fields == nil {
+				if !c.structTable.Has(structTypeName) {
 					return fmt.Errorf("undefined type: %s", structTypeName)
 				}
 				fnName = GetMangledName(structTypeName, selName)
@@ -282,10 +280,11 @@ func (c *Functions) CallExpr(node *ast.CallExpr) error {
 				return err
 			}
 			// 1.2. Create a unique temporary local variable.
-			tempSymbol, err := c.scopes.SymbolDefineUnique("__temp_call", LocalScope, false)
+			tempSymbol, err := c.scopes.SymbolDefineUnique("__temp_call")
 			if err != nil {
 				return err
 			}
+			tempSymbol.SetScope(LocalScope)
 			tempSymbolMap[arg] = tempSymbol // Store the symbol for the second pass
 			// 1.3. Emit code to store the result into the temp variable.
 			// This generates OpLocalSet, correctly storing the result.
@@ -495,7 +494,7 @@ func (c *Functions) RangeStmt(node *ast.RangeStmt) error {
 	if err != nil {
 		return err
 	}
-	iteratorSymbol, err := c.scopes.SymbolDefineUnique("__iterator", UnknownScope, false)
+	iteratorSymbol, err := c.scopes.SymbolDefineUnique("__iterator")
 	if err != nil {
 		return err
 	}
@@ -503,7 +502,8 @@ func (c *Functions) RangeStmt(node *ast.RangeStmt) error {
 		return err
 	}
 
-	isStruct := false
+	isStruct2 := false
+	structName := ""
 	var valueTypeName []string
 	var collectionSymbol *Symbol
 	var receiverIdent *ast.Ident
@@ -522,16 +522,17 @@ func (c *Functions) RangeStmt(node *ast.RangeStmt) error {
 		if receiverIdent, ok = expr.X.(*ast.Ident); ok {
 			// 1. Risolviamo il simbolo del ricevitore (myVar)
 			if receiverSymbol, ok := c.scopes.SymbolResolve(receiverIdent.Name); ok {
-				structFields := c.structs.Get(receiverSymbol.StructName())
-				if structFields == nil {
+				receiverStructFields, ok := c.structTable.GetFields(receiverSymbol.StructName())
+				if !ok {
 					return fmt.Errorf("undefined struct: %s", receiverSymbol.StructName())
 				}
 				fieldName := expr.Sel.Name
-				for _, field := range structFields {
-					if fieldName == field.name {
-						collectionSymbol = NewSymbol(field.base, 0, UnknownScope, "", "", true)
+				for _, receiverField := range receiverStructFields {
+					if fieldName == receiverField.name {
+						collectionSymbol = NewSymbol(receiverField.base, 0, UnknownScope)
+						collectionSymbol.SetIsStruct(receiverSymbol.StructName(), true)
 						//todo type
-						collectionSymbol.SetTypes([]string{field.base})
+						collectionSymbol.SetTypes([]string{receiverField.base})
 						break
 					}
 				}
@@ -545,29 +546,31 @@ func (c *Functions) RangeStmt(node *ast.RangeStmt) error {
 	if collectionSymbol != nil {
 		if len(collectionSymbol.Types()) > 0 {
 			typeName := collectionSymbol.Types()[0]
-			if fields := c.structs.Get(typeName); fields != nil {
-				isStruct = true
+			if c.structTable.Has(typeName) {
+				structName = typeName
+				isStruct2 = true
 				valueTypeName = []string{typeName}
 			}
 		}
 	}
-	// --- FINE CORREZIONE ---
 
 	var keySymbol, valueSymbol *Symbol
 	if node.Key != nil {
-		if ident, ok := node.Key.(*ast.Ident); ok && ident.Name != "_" {
-			keySymbol, err = c.scopes.SymbolDefine(ident.Name, UnknownScope, false)
+		if ident, ok := node.Key.(*ast.Ident); ok && ident.Name != UndefinedSymbol {
+			keySymbol, err = c.scopes.SymbolDefine(ident.Name)
 			if err != nil {
 				return err
 			}
 		}
 	}
+
 	if node.Value != nil {
-		if ident, ok := node.Value.(*ast.Ident); ok && ident.Name != "_" {
-			valueSymbol, err = c.scopes.SymbolDefine(ident.Name, UnknownScope, isStruct)
+		if ident, ok := node.Value.(*ast.Ident); ok && ident.Name != UndefinedSymbol {
+			valueSymbol, err = c.scopes.SymbolDefine(ident.Name)
 			if err != nil {
 				return err
 			}
+			valueSymbol.SetIsStruct(structName, isStruct2)
 			if len(valueTypeName) > 0 {
 				//TODO type
 				valueSymbol.SetTypes(valueTypeName)
@@ -575,7 +578,6 @@ func (c *Functions) RangeStmt(node *ast.RangeStmt) error {
 		}
 	}
 
-	// Il resto della funzione rimane invariato...
 	loopStartPos := scope.InstructionsLen()
 	if _, err := c.scopes.Emit(bytecode.OpIteratorNext, iteratorSymbol.Index()); err != nil {
 		return err
@@ -685,10 +687,11 @@ func (c *Functions) UnaryExpr(node *ast.UnaryExpr) error {
 			if err := c.compile(operand); err != nil {
 				return err
 			}
-			tempSymbol, err := c.scopes.SymbolDefineUnique("__temp_struct", LocalScope, false)
+			tempSymbol, err := c.scopes.SymbolDefineUnique("__temp_struct")
 			if err != nil {
 				return err
 			}
+			tempSymbol.SetScope(LocalScope)
 			if err = c.scopes.EmitSymbolDefine(tempSymbol); err != nil {
 				return err
 			}
@@ -758,7 +761,7 @@ func (c *Functions) FuncDecl(_ *ast.FuncDecl) error {
 // instruction to create the closure object at runtime.
 func (c *Functions) FuncLit(node *ast.FuncLit) error {
 	// 1. Enter a new scope for the anonymous function.
-	if err := c.scopes.Enter("", ""); err != nil { // No struct or func name
+	if err := c.scopes.Enter(""); err != nil { // No struct or func name
 		return err
 	}
 
@@ -775,18 +778,19 @@ func (c *Functions) FuncLit(node *ast.FuncLit) error {
 					typeName = ident.Name
 				}
 			}
-			isStruct := false
-			if typeName != "" {
-				if fields := c.structs.Get(typeName); fields != nil {
-					isStruct = true
-				}
+			structName := ""
+			isStruct := c.structTable.Has(typeName)
+			if isStruct {
+				structName = typeName
 			}
 			for _, name := range p.Names {
 				paramNames = append(paramNames, name.Name)
-				// Ora usiamo il valore 'isStruct' determinato dinamicamente.
-				if _, err := c.scopes.SymbolDefine(name.Name, LocalScope, isStruct); err != nil {
+				zSymbol, err := c.scopes.SymbolDefine(name.Name)
+				if err != nil {
 					return err
 				}
+				zSymbol.SetScope(LocalScope)
+				zSymbol.SetIsStruct(structName, isStruct)
 			}
 		}
 	}
@@ -796,7 +800,6 @@ func (c *Functions) FuncLit(node *ast.FuncLit) error {
 		return err
 	}
 
-	// ... il resto della funzione rimane invariato ...
 	scope, err := c.scopes.Current()
 	if err != nil {
 		return err
@@ -806,7 +809,6 @@ func (c *Functions) FuncLit(node *ast.FuncLit) error {
 			return err
 		}
 	}
-
 	freeSymbols := c.scopes.SymbolFreeConvert()
 	numFree := c.scopes.SymbolFreeCount()
 	nLocals := c.scopes.SymbolCount()
@@ -814,13 +816,10 @@ func (c *Functions) FuncLit(node *ast.FuncLit) error {
 	if err != nil {
 		return err
 	}
-
 	compiledFn := c.gk.NewFuncCompiled(objects.FrameStatic, "", code, nLocals, len(paramNames), false, nil, freeSymbols)
 	constIndex := c.constants.Add("", compiledFn)
-
 	if _, err = c.scopes.Emit(bytecode.OpClosure, constIndex, numFree); err != nil {
 		return err
 	}
-
 	return nil
 }

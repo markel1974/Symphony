@@ -31,15 +31,12 @@ type SymbolTable struct {
 	definitions   []*Symbol
 	freeSymbols   []*Symbol
 	uniqueCounter int
-	structName    string
 	funcName      string
 }
 
 // NewSymbolTable initializes and returns a new instance of SymbolTable with an empty container and counter set to zero.
 func NewSymbolTable() *SymbolTable {
 	s := &SymbolTable{
-		structName:    "",
-		funcName:      "",
 		symbols:       make(map[string]*Symbol),
 		uniqueCounter: 0,
 	}
@@ -47,11 +44,10 @@ func NewSymbolTable() *SymbolTable {
 }
 
 // NewEnclosedSymbolTable creates a new symbol table enclosed by the provided outer symbol table.
-func NewEnclosedSymbolTable(outer *SymbolTable, structName string, funcName string) *SymbolTable {
+func NewEnclosedSymbolTable(outer *SymbolTable, funcName string) *SymbolTable {
 	s := NewSymbolTable()
-	s.structName = structName
-	s.funcName = funcName
 	s.outer = outer
+	s.funcName = funcName
 	return s
 }
 
@@ -89,48 +85,19 @@ func (s *SymbolTable) FreeSymbolsLen() int {
 }
 
 // DefineUnique generates a unique symbol name using a provided base name and counter, then defines and returns the symbol.
-func (s *SymbolTable) DefineUnique(name string, scope SymbolScope, isObj bool) (*Symbol, error) {
+func (s *SymbolTable) DefineUnique(name string) (*Symbol, error) {
 	uniqueName := name + strconv.Itoa(s.uniqueCounter)
 	s.uniqueCounter++
-	return s.Define(uniqueName, scope, isObj)
-}
-func (s *SymbolTable) Scope() SymbolScope {
-	if s.outer == nil {
-		return GlobalScope
-	}
-	return LocalScope
-}
-
-// Reset resets the scope and index of a symbol in the symbol table.
-func (s *SymbolTable) Reset(name string, scope SymbolScope, isStruct bool) (*Symbol, error) {
-	symbol, ok := s.symbols[name]
-	if !ok {
-		return nil, fmt.Errorf("symbol '%s' not found", name)
-	}
-	if scope == UnknownScope {
-		if s.outer == nil {
-			scope = GlobalScope
-		} else {
-			scope = LocalScope
-		}
-	}
-	symbol.Reset(symbol.Name(), symbol.Index(), scope, s.structName, s.funcName, isStruct)
-	return symbol, nil
+	return s.Define(uniqueName)
 }
 
 // Define creates a new Symbol with the given name, assigns it a scope and index, and stores it in the symbol table.
-func (s *SymbolTable) Define(name string, scope SymbolScope, isStruct bool) (*Symbol, error) {
+func (s *SymbolTable) Define(name string) (*Symbol, error) {
 	if _, ok := s.symbols[name]; ok {
 		return nil, fmt.Errorf("symbol '%s' already defined", name)
 	}
-	if scope == UnknownScope {
-		if s.outer == nil {
-			scope = GlobalScope
-		} else {
-			scope = LocalScope
-		}
-	}
-	symbol := NewSymbol(name, len(s.definitions), scope, s.structName, s.funcName, isStruct)
+	scope := s.computeScope(UnknownScope)
+	symbol := NewSymbol(name, len(s.definitions), scope)
 	s.definitions = append(s.definitions, symbol)
 	s.symbols[name] = symbol
 	return symbol, nil
@@ -155,7 +122,30 @@ func (s *SymbolTable) Resolve(name string) (*Symbol, bool) {
 		return obj, true
 	}
 	s.freeSymbols = append(s.freeSymbols, obj)
-	symbol := NewSymbol(obj.Name(), len(s.freeSymbols)-1, FreeScope, s.structName, s.funcName, obj.IsStruct())
+	symbol := NewSymbol(obj.Name(), len(s.freeSymbols)-1, FreeScope)
+	symbol.SetIsStruct(obj.StructName(), obj.IsStruct())
 	s.symbols[obj.Name()] = symbol
 	return symbol, true
+}
+
+// RebuildScope updates the scope of a Symbol if it exists and returns the updated Symbol alongside a boolean for success.
+func (s *SymbolTable) RebuildScope(name string, scope SymbolScope) (*Symbol, bool) {
+	symbol, ok := s.Resolve(name)
+	if !ok {
+		return nil, false
+	}
+	scope = s.computeScope(scope)
+	symbol.SetScope(scope)
+	return symbol, true
+}
+
+func (s *SymbolTable) computeScope(scope SymbolScope) SymbolScope {
+	if scope == UnknownScope {
+		if s.outer == nil {
+			scope = GlobalScope
+		} else {
+			scope = LocalScope
+		}
+	}
+	return scope
 }

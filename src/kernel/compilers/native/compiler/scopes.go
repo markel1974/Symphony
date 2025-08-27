@@ -37,22 +37,22 @@ func NewScopes(factory objects.IGateKeeper, op *bytecode.Opcodes) *Scopes {
 }
 
 // SymbolDefineUnique defines a unique symbol in the current symbol table with the specified scope and object type.
-func (c *Scopes) SymbolDefineUnique(symbol string, scope SymbolScope, isObj bool) (*Symbol, error) {
-	return c.symbolTable.DefineUnique(symbol, scope, isObj)
+func (c *Scopes) SymbolDefineUnique(symbol string) (*Symbol, error) {
+	return c.symbolTable.DefineUnique(symbol)
 }
 
 // SymbolDefine defines a new symbol in the current symbol table with the specified name, scope, and struct flag.
 // It returns the created symbol or an error if the operation fails.
-func (c *Scopes) SymbolDefine(symbol string, scope SymbolScope, isStruct bool) (*Symbol, error) {
+func (c *Scopes) SymbolDefine(symbol string) (*Symbol, error) {
 	//if symbol == "allTasks" || symbol == "taskT" {
 	//	fmt.Println("symbol taskT found!!!!")
 	//}
-	return c.symbolTable.Define(symbol, scope, isStruct)
+	return c.symbolTable.Define(symbol)
 }
 
-// SymbolReset resets the symbol in the current scope with the specified name, scope, and struct flag.
-func (c *Scopes) SymbolReset(symbol string, scope SymbolScope, isStruct bool) (*Symbol, error) {
-	return c.symbolTable.Reset(symbol, scope, isStruct)
+// SymbolRebuildScope rebuilds and updates the specified symbol with a new scope in the symbol table, returning the updated symbol.
+func (c *Scopes) SymbolRebuildScope(symbol string, scope SymbolScope) (*Symbol, bool) {
+	return c.symbolTable.RebuildScope(symbol, scope)
 }
 
 // SymbolResolve attempts to find a symbol in the current scope and returns it along with a boolean indicating success.
@@ -61,11 +61,6 @@ func (c *Scopes) SymbolResolve(symbol string) (*Symbol, bool) {
 		return obj, true
 	}
 	return c.symbolTable.Resolve(symbol)
-}
-
-// SymbolScope returns the current scope's symbol table's scope.
-func (c *Scopes) SymbolScope() SymbolScope {
-	return c.symbolTable.Scope()
 }
 
 // SymbolCount returns the number of symbol definitions in the symbol table.
@@ -160,12 +155,12 @@ func (c *Scopes) InstructionGet(pos int) (byte, error) {
 }
 
 // Enter creates a new compilation scope, updates the symbol table to be enclosed, and increments the scope index.
-func (c *Scopes) Enter(structName string, funcName string) error {
+func (c *Scopes) Enter(funcName string) error {
 	if c.scopeIndex > maxScope {
 		return fmt.Errorf("maximum scope depth exceeded: %d", maxScope)
 	}
 	scope := NewCompilationScope()
-	c.symbolTable = NewEnclosedSymbolTable(c.symbolTable, structName, funcName)
+	c.symbolTable = NewEnclosedSymbolTable(c.symbolTable, funcName)
 	c.compilations = append(c.compilations, scope)
 	c.scopeIndex++
 	return nil

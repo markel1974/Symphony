@@ -38,6 +38,7 @@ func main() {
 	//fmt.Println(b)
 	//fmt.Println(z)
 	//return z
+	a := 10
     kk := MyStruct{}
 	retA := kk.PrintA("prova")
 	retB := kk.PrintB("prova")
