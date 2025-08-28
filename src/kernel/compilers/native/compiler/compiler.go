@@ -255,7 +255,7 @@ func (c *Compiler) createInit() error {
 	if err != nil {
 		return err
 	}
-	if len(scope.Instructions()) == 0 {
+	if scope.InstructionsLen() == 0 {
 		return nil
 	}
 	if _, err = c.scopes.Emit(bytecode.OpReturn, 0); err != nil {
