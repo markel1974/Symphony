@@ -10,7 +10,7 @@ type FilePos struct {
 	column   int    // column number, starting at 1 (byte count)
 }
 
-func NewSourceFilePos(filename string, offset int, line int, column int) *FilePos {
+func NewFilePos(filename string, offset int, line int, column int) *FilePos {
 	return &FilePos{filename, offset, line, column}
 }
 

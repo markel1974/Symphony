@@ -26,7 +26,7 @@ func (f *FileSet) Base() int {
 // Position converts an integer position to a *bytecode.FilePos, including filename, offset, line, and column information.
 func (f *FileSet) Position(p int) (*bytecode.FilePos, error) {
 	pos := f.fSet.Position(token.Pos(p))
-	z := bytecode.NewSourceFilePos(pos.Filename, pos.Offset, pos.Line, pos.Column)
+	z := bytecode.NewFilePos(pos.Filename, pos.Offset, pos.Line, pos.Column)
 	return z, nil
 }
 
