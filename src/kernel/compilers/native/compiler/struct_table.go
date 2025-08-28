@@ -201,16 +201,22 @@ func (st *StructTable) TypeNameFromSymbolField(name string, fieldName string) (s
 }
 
 // AssignSymbol assigns a struct name and types to a Symbol, validates the struct, and creates a description object.
-func (st *StructTable) AssignSymbol(symbol *Symbol, structName string, types []string) error {
+func (st *StructTable) AssignSymbol(symbol *Symbol, structName string, returnTypes []string) error {
 	if len(structName) == 0 {
 		return nil
 	}
-	if !st.Has(structName) {
+	structFields, ok := st.getFields(structName)
+	if !ok {
 		return nil
 	}
-	description := structName + "=>" + symbol.Name() + ":" + strings.Join(types, " ")
-	symbol.SetStruct(structName)
-	symbol.SetTypes(types)
+	fields := make([]string, len(structFields))
+	for x, field := range structFields {
+		fields[x] = field.name
+	}
+
+	description := structName + "=>" + symbol.Name() + ":" + strings.Join(returnTypes, " ")
+	symbol.SetStruct(structName, fields)
+	symbol.SetTypes(returnTypes)
 	symbol.SetObject(st.gk.NewString(objects.FrameStatic, description))
 	return nil
 }

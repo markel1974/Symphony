@@ -179,6 +179,7 @@ func (c *Functions) funcBodyCompile(fd *FunctionDescription) error {
 	}
 	compiledFn := c.gk.NewFuncCompiled(objects.FrameStatic, fd.Name, code, nLocals, nParams, false, nil, freeSymbols)
 	fnSymbol.SetObject(compiledFn)
+	fnSymbol.SetReturnValues(fd.ReturnValues)
 	fnSymbol.SetTypes(fd.ReturnValues)
 
 	if node.Recv == nil && c.scopes.scopeIndex > 0 {
