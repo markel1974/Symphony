@@ -143,8 +143,7 @@ func (c *ControlFlow) SwitchStmt(node *ast.SwitchStmt) error {
 	}
 	scope.EnterSwitch()
 
-	// 1. Compila l'espressione (tag) e salvala in una variabile temporanea
-	//    per evitare di ricalcolarla. Questo è cruciale.
+	// 1. Compile the expression (tag) and store it in a temporary variable to avoid recalculation.
 	var tagSymbol *Symbol
 	if node.Tag != nil {
 		if err := c.compile(node.Tag); err != nil {
@@ -162,60 +161,51 @@ func (c *ControlFlow) SwitchStmt(node *ast.SwitchStmt) error {
 		}
 	}
 
-	//if err := c.scopes.Enter("switch_body"); err != nil {
-	//	return err
-	//}
-
 	var defaultClause *ast.CaseClause
 	jumpsToNextCase := []int{}
 
-	// 2. Itera su tutti i 'case' (tranne il 'default', che gestiamo alla fine)
+	// 2. Iterate over all 'case' statements (except 'default', which we handle at the end)
 	for _, clauseStmt := range node.Body.List {
 		clause := clauseStmt.(*ast.CaseClause)
-
-		// Mettiamo da parte il 'default' per dopo
+		// Save the default clause for later
 		if clause.List == nil {
 			defaultClause = clause
 			continue
 		}
-
-		// Back-patch: collega i salti del case precedente a questo
+		// Back-patch: connect previous case jumps to this one
 		afterPreviousCasePos := scope.InstructionsLen()
 		for _, pos := range jumpsToNextCase {
 			if err := c.scopes.ChangeOperand(pos, afterPreviousCasePos); err != nil {
 				return err
 			}
 		}
-		jumpsToNextCase = []int{} // Resetta la lista per il case corrente
+		jumpsToNextCase = []int{} // Reset list for current-case
 
-		// 3. Compila la condizione del case (es. tag == val1)
+		// 3. Compile case condition (e.g. tag == val1)
 		if tagSymbol != nil {
 			if err := c.scopes.EmitSymbolGet(tagSymbol); err != nil {
 				return err
 			}
 		}
-		if err := c.compile(clause.List[0]); err != nil { // Semplificato: assume un valore per case
+		if err := c.compile(clause.List[0]); err != nil { // Simplified: assumes one value per case
 			return err
 		}
 		if _, err := c.scopes.Emit(bytecode.OpEqual); err != nil {
 			return err
 		}
-
-		// 4. Salta al prossimo case se la condizione è falsa
+		// 4. Jump to the next-case if the condition is false
 		jumpPos, err := c.scopes.Emit(bytecode.OpJumpFalsy, 9999)
 		if err != nil {
 			return err
 		}
 		jumpsToNextCase = append(jumpsToNextCase, jumpPos)
-
-		// 5. Compila il corpo del case
+		// 5. Compile case body
 		for _, stmt := range clause.Body {
 			if err := c.compile(stmt); err != nil {
 				return err
 			}
 		}
-
-		// 6. Aggiungi un salto alla fine dello switch (Go non ha fall-through)
+		// 6. Add jump to end of switch (Go has no fall-through)
 		endJumpPos, err := c.scopes.Emit(bytecode.OpJump, 9999)
 		if err != nil {
 			return err
@@ -225,7 +215,7 @@ func (c *ControlFlow) SwitchStmt(node *ast.SwitchStmt) error {
 		}
 	}
 
-	// 7. Compila il 'default' se esiste
+	// 7. Compile 'default' if it exists
 	afterLastCasePos := scope.InstructionsLen()
 	for _, pos := range jumpsToNextCase {
 		if err := c.scopes.ChangeOperand(pos, afterLastCasePos); err != nil {
@@ -240,11 +230,7 @@ func (c *ControlFlow) SwitchStmt(node *ast.SwitchStmt) error {
 		}
 	}
 
-	//if _, err := c.scopes.Leave(); err != nil {
-	//	return err
-	//}
-
-	// 8. Back-patch finale: aggiorna tutti i salti alla fine
+	// 8. Final back-patch: update all jumps to end
 	afterSwitchPos := scope.InstructionsLen()
 	for _, pos := range scope.CurrentSwitch().EndJumps {
 		if err := c.scopes.ChangeOperand(pos, afterSwitchPos); err != nil {

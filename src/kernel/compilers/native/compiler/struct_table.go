@@ -94,11 +94,11 @@ func (st *StructTable) Inference(expr ast.Expr) (string, []string, bool) {
 	case *ast.CallExpr: // es. NewStruct()
 		if ident, ok := rhs.Fun.(*ast.Ident); ok {
 			if funcSymbol, ok := st.scopes.SymbolResolve(ident.Name); ok && len(funcSymbol.ReturnTypes()) > 0 {
-				// Assumiamo il primo tipo di ritorno
-				typeName := funcSymbol.ReturnTypes()[0]
-				// Verifichiamo se il tipo restituito è uno struct
-				if typeSymbol, ok := st.scopes.SymbolResolve(typeName); ok && typeSymbol.IsStruct() {
-					return typeName, []string{typeName}, true
+				// We assume the first return type
+				returnType := funcSymbol.ReturnTypes()[0]
+				// Verify if the returned type is a struct
+				if typeSymbol, ok := st.scopes.SymbolResolve(returnType); ok && typeSymbol.IsStruct() {
+					return returnType, []string{returnType}, true
 				}
 			}
 		}
@@ -106,8 +106,8 @@ func (st *StructTable) Inference(expr ast.Expr) (string, []string, bool) {
 		if rhs.Op == token.AND {
 			if compLit, ok := rhs.X.(*ast.CompositeLit); ok {
 				if ident, ok := compLit.Type.(*ast.Ident); ok {
-					if typeSymbol, ok := st.scopes.SymbolResolve(ident.Name); ok && typeSymbol.IsStruct() {
-						return typeSymbol.Name(), []string{typeSymbol.Name()}, true
+					if returnSymbol, ok := st.scopes.SymbolResolve(ident.Name); ok && returnSymbol.IsStruct() {
+						return returnSymbol.Name(), []string{returnSymbol.Name()}, true
 					}
 				}
 			}

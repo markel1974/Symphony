@@ -119,15 +119,15 @@ func main() {
 	fmt.Println("\n=> Filtering for incomplete tasks...")
 
 	// Creiamo un filtro specifico per i task non completati.
-	filterIncomplete := TaskFilterGenerator7(false)
+	//filterIncomplete := TaskFilterGenerator7(false)
 
 	//allTasks := []SimpleTask{ *task1, task2, project.Tasks[0], project.Tasks[1], project.Tasks[2] }
 	//allTasks := []SimpleTask{ task1, task2, project.Tasks[0], project.Tasks[1], project.Tasks[2] }
 	allTasks := []SimpleTask{task1, task2, task1}
 	for _, taskT := range allTasks {
 		// Applichiamo il filtro.
-		if filterIncomplete(taskT) {
-			taskT.Display()
-		}
+		//if filterIncomplete(taskT) {
+		taskT.Display()
+		//}
 	}
 }

@@ -281,8 +281,8 @@ func (c *Declarations) AssignStmt(node *ast.AssignStmt) error {
 			if err != nil {
 				return err
 			}
-			if structName, assignedTypeName, _ := c.structTable.Inference(node.Rhs[0]); len(structName) > 0 {
-				if err = c.structTable.AssignSymbol(symbol, structName, assignedTypeName); err != nil {
+			if structName, returnTypes, _ := c.structTable.Inference(node.Rhs[0]); len(structName) > 0 {
+				if err = c.structTable.AssignSymbol(symbol, structName, returnTypes); err != nil {
 					return err
 				}
 			}
