@@ -6,18 +6,17 @@ import (
 	"reflect"
 )
 
-// TypeCompatibility gestisce la verifica della compatibilità tra tipi,
-// come la verifica dell'implementazione di interfacce da parte degli struct.
+// TypeCompatibility is a structure used to manage type-checking, compatibility, and implementation relationships.
+// It includes tables for structs, interfaces, and functions, and tracks implementations of interfaces by structs.
 type TypeCompatibility struct {
-	fileSet        *token.FileSet
-	structTable    *StructTable
-	interfaceTable *InterfaceTable
-	functionTable  *FunctionTable
-	// Mappa per memorizzare le implementazioni: structName -> []interfaceName
+	fileSet         *token.FileSet
+	structTable     *StructTable
+	interfaceTable  *InterfaceTable
+	functionTable   *FunctionTable
 	implementations map[string][]string
 }
 
-// NewTypeCompatibility crea una nuova istanza di TypeCompatibility.
+// NewTypeCompatibility initializes a TypeCompatibility instance with provided struct, interface, and function tables.
 func NewTypeCompatibility(structTable *StructTable, interfaceTable *InterfaceTable, functionTable *FunctionTable) *TypeCompatibility {
 	return &TypeCompatibility{
 		structTable:     structTable,
@@ -27,49 +26,47 @@ func NewTypeCompatibility(structTable *StructTable, interfaceTable *InterfaceTab
 	}
 }
 
-// Setup non fa nulla in questo componente, ma è richiesto dall'interfaccia IComponent.
+// Setup initializes the TypeCompatibility instance by setting the provided FileSet as its fileSet property.
 func (tc *TypeCompatibility) Setup(fileSet *token.FileSet, _ func(node ast.Node) error) error {
 	tc.fileSet = fileSet
 	return nil
 }
 
-// Prepare è dove eseguiamo l'analisi. Deve essere chiamato dopo che
-// tutte le definizioni di struct, interfacce e metodi sono state caricate.
+// Prepare analyzes and verifies struct implementation of interfaces, storing valid relationships for central access.
 func (tc *TypeCompatibility) Prepare() error {
 	//fmt.Println("Running interface implementation check...")
-	// Itera su ogni struct definito
+	// Iterate over each defined struct
 	for structName, _ := range tc.structTable.container {
-		// Itera su ogni interfaccia definita
+		// Iterate over each defined interface
 		for interfaceName, interfaceDesc := range tc.interfaceTable.container {
 			implements, err := tc.checkStructImplementsInterface(structName, interfaceDesc)
 			if err != nil {
-				// In una versione reale, potremmo voler raccogliere tutti gli errori
+				// TODO collect all errors
 				return err
 			}
 			if implements {
-				// Memorizza la relazione
+				// Store the relationship
 				tc.implementations[structName] = append(tc.implementations[structName], interfaceName)
 				//fmt.Printf("=> SUCCESS: Struct '%s' implements interface '%s'\n", structName, interfaceName)
 			}
 		}
 	}
-	// Aggiungiamo le implementazioni trovate alla StructTable per un accesso centralizzato
+	// Add found implementations to StructTable for centralized access
 	tc.structTable.SetImplementations(tc.implementations)
 	return nil
 }
 
-// Compile non fa nulla in questo componente.
+// Compile executes the final step to confirm type compatibility checks and prepares the system for further operations.
 func (tc *TypeCompatibility) Compile() error {
 	return nil
 }
 
-// checkStructImplementsInterface verifica se un dato struct implementa un'interfaccia.
+// checkStructImplementsInterface determines if a struct implements all methods defined by a given interface description.
 func (tc *TypeCompatibility) checkStructImplementsInterface(structName string, interfaceDesc *InterfaceDescription) (bool, error) {
 	for _, requiredMethod := range interfaceDesc.Methods {
-		// Il nome "mangled" del metodo dello struct è "StructName.MethodName"
+		// The "mangled" method name for the struct is "StructName.MethodName"
 		mangledMethodName := GetMangledName(structName, requiredMethod.Name)
-
-		// Cerca la descrizione della funzione (metodo) nella functionTable
+		// Look up the function (method) description in the functionTable
 		var structMethod *FunctionDescription
 		for i := 0; i < tc.functionTable.Len(); i++ {
 			fd, _ := tc.functionTable.Get(i)
@@ -78,14 +75,12 @@ func (tc *TypeCompatibility) checkStructImplementsInterface(structName string, i
 				break
 			}
 		}
-
 		if structMethod == nil {
-			// Metodo richiesto non trovato sullo struct
+			// Required method not found on struct
 			return false, nil
 		}
-
-		// Confronta le firme dei metodi
-		// NOTA: il ricevitore conta come primo parametro per il metodo dello struct
+		// Compare method signatures
+		// NOTE: receiver counts as first parameter for struct method
 		numStructParams := len(structMethod.InputParams)
 		if len(requiredMethod.InputParams) != numStructParams {
 			return false, nil
@@ -97,6 +92,6 @@ func (tc *TypeCompatibility) checkStructImplementsInterface(structName string, i
 			return false, nil
 		}
 	}
-	// Se siamo arrivati qui, tutti i metodi richiesti sono stati trovati e le firme corrispondono
+	// If we get here, all required methods were found and signatures match
 	return true, nil
 }

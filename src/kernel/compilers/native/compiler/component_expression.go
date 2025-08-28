@@ -88,7 +88,7 @@ func (c *Expression) UnaryExpr(node *ast.UnaryExpr) error {
 		}
 		return nil
 	}
-	// existing logic for other unary operators (e.g. '!', '-', '^')
+	// logic for other unary operators (e.g. '!', '-', '^')
 	if err := c.compile(node.X); err != nil {
 		return err
 	}

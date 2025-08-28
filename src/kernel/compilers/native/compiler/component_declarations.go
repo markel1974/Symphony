@@ -763,8 +763,7 @@ func (c *Declarations) IndexExpr(node *ast.IndexExpr) error {
 func (c *Declarations) handleInterfaceAssignment(variableSymbol, assignedStructSymbol *Symbol) error {
 	interfaceName := variableSymbol.InterfaceName()
 	structName := assignedStructSymbol.StructName()
-
-	// Verifica di compatibilità
+	// Compatibility check
 	if !c.structTable.Implements(structName, interfaceName) {
 		return fmt.Errorf("cannot use value of type %s as type %s: %s does not implement %s",
 			structName, interfaceName, structName, interfaceName)
@@ -774,15 +773,15 @@ func (c *Declarations) handleInterfaceAssignment(variableSymbol, assignedStructS
 	if !ok {
 		return fmt.Errorf("internal compiler error: unknown interface %s", interfaceName)
 	}
-	// A questo punto, il valore concreto (lo struct) è già sullo stack.
-	// Ora dobbiamo pushare le coppie (nome_metodo, funzione_metodo) per la iTable.
+	// At this point, the concrete value (struct) is already on the stack.
+	// Now we need to push the (method_name, method_function) pairs for the iTable.
 	for _, requiredMethod := range interfaceDesc.Methods {
-		// Push del nome del metodo come costante stringa
+		// Push method name as string constant
 		methodNameConst := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, requiredMethod.Name))
 		if _, err := c.scopes.Emit(bytecode.OpConstant, methodNameConst); err != nil {
 			return err
 		}
-		// Push della funzione del metodo
+		// Push method function
 		mangledMethodName := GetMangledName(structName, requiredMethod.Name)
 		methodSymbol, ok := c.scopes.SymbolResolve(mangledMethodName)
 		if !ok {
@@ -792,7 +791,7 @@ func (c *Declarations) handleInterfaceAssignment(variableSymbol, assignedStructS
 			return err
 		}
 	}
-	// Emetti l'opcode OpInterface per creare l'oggetto
+	// Emit OpInterface opcode to create the object
 	if _, err := c.scopes.Emit(bytecode.OpInterface, len(interfaceDesc.Methods)); err != nil {
 		return err
 	}

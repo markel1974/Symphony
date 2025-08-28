@@ -162,8 +162,7 @@ func (c *ControlFlow) SwitchStmt(node *ast.SwitchStmt) error {
 	}
 
 	var defaultClause *ast.CaseClause
-	jumpsToNextCase := []int{}
-
+	var jumpsToNextCase []int
 	// 2. Iterate over all 'case' statements (except 'default', which we handle at the end)
 	for _, clauseStmt := range node.Body.List {
 		clause := clauseStmt.(*ast.CaseClause)
@@ -180,7 +179,6 @@ func (c *ControlFlow) SwitchStmt(node *ast.SwitchStmt) error {
 			}
 		}
 		jumpsToNextCase = []int{} // Reset list for current-case
-
 		// 3. Compile case condition (e.g. tag == val1)
 		if tagSymbol != nil {
 			if err := c.scopes.EmitSymbolGet(tagSymbol); err != nil {
@@ -214,7 +212,6 @@ func (c *ControlFlow) SwitchStmt(node *ast.SwitchStmt) error {
 			return err
 		}
 	}
-
 	// 7. Compile 'default' if it exists
 	afterLastCasePos := scope.InstructionsLen()
 	for _, pos := range jumpsToNextCase {
@@ -229,7 +226,6 @@ func (c *ControlFlow) SwitchStmt(node *ast.SwitchStmt) error {
 			}
 		}
 	}
-
 	// 8. Final back-patch: update all jumps to end
 	afterSwitchPos := scope.InstructionsLen()
 	for _, pos := range scope.CurrentSwitch().EndJumps {
@@ -237,7 +233,6 @@ func (c *ControlFlow) SwitchStmt(node *ast.SwitchStmt) error {
 			return err
 		}
 	}
-
 	scope.LeaveSwitch()
 	return nil
 }

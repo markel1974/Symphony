@@ -58,40 +58,40 @@ func (c *Loops) ForStmt(node *ast.ForStmt) error {
 	scope.EnterLoop()
 
 	loopStartPos := scope.InstructionsLen()
-	// Compila la condizione (es. x < 10)
+	// Compile the condition (e.g. x < 10)
 	if node.Cond != nil {
 		if err = c.compile(node.Cond); err != nil {
 			return err
 		}
 	} else {
-		// Se non c'è condizione, è un loop infinito -> emetti 'true'
+		// If there's no condition, it's an infinite loop -> emit 'true'
 		if _, err = c.scopes.Emit(bytecode.OpTrue); err != nil {
 			return err
 		}
 	}
-	// Emette un salto condizionale per uscire dal loop se la condizione è falsa
+	// Emit a conditional jump to exit the loop if the condition is false
 	jumpNotTruthyPos, err := c.scopes.Emit(bytecode.OpJumpFalsy, 9999)
 	if err != nil {
 		return err
 	}
 
-	// Compila il corpo del loop
+	// Compile the loop body
 	if err = c.compile(node.Body); err != nil {
 		return err
 	}
 
-	// Imposta il target per le istruzioni 'continue'
+	// Set the target for 'continue' instructions
 	continueTargetPos := scope.InstructionsLen()
 	scope.CurrentLoop().ContinueTargetPosition = continueTargetPos
 
-	// Compila l'istruzione post-iterazione (es. x++) - UNA SOLA VOLTA
+	// Compile the post-iteration instruction (e.g. x++) - ONLY ONCE
 	if node.Post != nil {
 		if err = c.compile(node.Post); err != nil {
 			return err
 		}
 	}
 
-	// Emette un salto incondizionato per tornare all'inizio della condizione
+	// Emit an unconditional jump back to the start of the condition
 	if _, err = c.scopes.Emit(bytecode.OpJump, loopStartPos); err != nil {
 		return err
 	}
@@ -101,20 +101,20 @@ func (c *Loops) ForStmt(node *ast.ForStmt) error {
 		return err
 	}
 
-	// Back-patching: aggiorna il salto condizionale (OpJumpFalsy)
+	// Back-patching: update the conditional jump (OpJumpFalsy)
 	afterLoopPos := scope.InstructionsLen()
 	if err = c.scopes.ChangeOperand(jumpNotTruthyPos, afterLoopPos); err != nil {
 		return err
 	}
 
-	// Aggiorna tutte le istruzioni 'break'
+	// Update all 'break' instructions
 	for _, pos := range scope.CurrentLoop().BreakPositions {
 		if err = c.scopes.ChangeOperand(pos, afterLoopPos); err != nil {
 			return err
 		}
 	}
 
-	// Aggiorna tutte le istruzioni 'continue'
+	// Update all 'continue' instructions
 	for _, pos := range scope.CurrentLoop().ContinuePositions {
 		if err = c.scopes.ChangeOperand(pos, scope.CurrentLoop().ContinueTargetPosition); err != nil {
 			return err
@@ -153,9 +153,9 @@ func (c *Loops) RangeStmt(node *ast.RangeStmt) error {
 			returnTypeName, _ = c.structTable.ReturnTypeFromSymbol(ident.Name)
 		}
 	case *ast.SelectorExpr:
-		// Caso: for _, v := range myVar.Items
+		// Case: for _, v := range myVar.Items
 		if receiverIdent, ok := expr.X.(*ast.Ident); ok {
-			//1. Risolviamo il simbolo del ricevitore (myVar)
+			//1. Resolve the receiver symbol (myVar)
 			returnTypeName, _ = c.structTable.TypeNameFromSymbolField(receiverIdent.Name, expr.Sel.Name)
 		}
 	default:
@@ -172,7 +172,7 @@ func (c *Loops) RangeStmt(node *ast.RangeStmt) error {
 
 	loopStartPos := scope.InstructionsLen()
 
-	scope.CurrentLoop().ContinueTargetPosition = loopStartPos // <-- MODIFICA
+	scope.CurrentLoop().ContinueTargetPosition = loopStartPos // <-- MODIFICATION
 
 	if _, err = c.scopes.Emit(bytecode.OpIteratorNext, iteratorSymbol.Index()); err != nil {
 		return err
@@ -211,7 +211,8 @@ func (c *Loops) RangeStmt(node *ast.RangeStmt) error {
 	}
 
 	afterLoopPos := scope.InstructionsLen()
-	// <-- 2. BACK-PATCHING
+
+	// Back-Patching
 	if err = c.scopes.ChangeOperand(jumpNotTruthyPos, afterLoopPos); err != nil {
 		return err
 	}

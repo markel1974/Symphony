@@ -207,7 +207,7 @@ func (c *Functions) funcBodyCompile(fd *FunctionDescription) error {
 // It also manages nested function calls by pre-evaluating them and storing results in temporary variables.
 // Returns an error if the call expression contains invalid or unresolved references.
 func (c *Functions) CallExpr(node *ast.CallExpr) error {
-	// Step 1: Pre-evaluate nested function calls (logica esistente, invariata)
+	// Step 1: Pre-evaluate nested function calls
 	tempSymbolMap := make(map[ast.Expr]*Symbol)
 	for _, arg := range node.Args {
 		if call, isCall := arg.(*ast.CallExpr); isCall {
@@ -233,7 +233,7 @@ func (c *Functions) CallExpr(node *ast.CallExpr) error {
 
 	switch fun := node.Fun.(type) {
 	case *ast.Ident:
-		// Gestione chiamata a funzione semplice (invariata)
+		// Handle a simple function call (unchanged)
 		symbol, ok := c.scopes.SymbolResolve(fun.Name)
 		if !ok {
 			if c.imports.Emit(fun.Name, "") {
@@ -253,7 +253,7 @@ func (c *Functions) CallExpr(node *ast.CallExpr) error {
 			return NewCompilerError(c.fileSet, node, "unsupported receiver for selector expression: %T", fun.X)
 		}
 
-		// Percorso 1: Funzione di pacchetto (es. fmt.Println)
+		// Path 1: Package function (e.g., fmt.Println)
 		if c.imports.Emit(receiverIdent.Name, fun.Sel.Name) {
 			finalArgs = node.Args
 			break
@@ -264,16 +264,14 @@ func (c *Functions) CallExpr(node *ast.CallExpr) error {
 			return NewCompilerError(c.fileSet, node, "undefined variable: %s", receiverIdent.Name)
 		}
 
-		// --- INIZIO NUOVA LOGICA PER INTERFACCE ---
-		// Percorso 2: Chiamata a metodo su un'interfaccia
+		// Path 2: Method call on an interface
 		if receiverSymbol.IsInterface() {
-			// 2a. Carica la variabile interfaccia (il receiver) sullo stack.
-			// La VM userà questo oggetto per trovare la iTable.
+			// 2a. Load the interface variable (the receiver) onto the stack.
+			// The VM will use this object to find the iTable.
 			if err := c.compile(fun.X); err != nil {
 				return err
 			}
-
-			// 2b. Carica tutti gli argomenti della chiamata sullo stack.
+			// 2b. Load all call arguments onto the stack.
 			for _, arg := range node.Args {
 				if tempSymbol, ok := tempSymbolMap[arg]; ok {
 					if err := c.scopes.EmitSymbolGet(tempSymbol); err != nil {
@@ -285,23 +283,19 @@ func (c *Functions) CallExpr(node *ast.CallExpr) error {
 					}
 				}
 			}
-
-			// 2c. Emetti OpCallMethod.
-			// L'opcode ha bisogno dell'indice del nome del metodo e del numero di argomenti.
+			// 2c. Emit OpCallMethod.
+			// The opcode needs the method name index and number of arguments.
 			methodName := fun.Sel.Name
 			methodNameConstIndex := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, methodName))
 			numArgs := len(node.Args)
-
 			if _, err := c.scopes.Emit(bytecode.OpCallMethod, methodNameConstIndex, numArgs); err != nil {
 				return err
 			}
-
-			// Abbiamo finito per questo caso, non dobbiamo fare altro.
+			// We're done for this case, no need to do anything else.
 			return nil
 		}
-		// --- FINE NUOVA LOGICA PER INTERFACCE ---
 
-		// Percorso 3: Chiamata a metodo su uno struct (logica esistente)
+		// Path 3: Method call on a struct
 		if receiverSymbol.IsStruct() {
 			mangledName := GetMangledName(receiverSymbol.StructName(), fun.Sel.Name)
 			methodSymbol, ok := c.scopes.SymbolResolve(mangledName)
@@ -320,7 +314,7 @@ func (c *Functions) CallExpr(node *ast.CallExpr) error {
 		return NewCompilerError(c.fileSet, node, "unsupported function call type: %T", node.Fun)
 	}
 
-	// Step 3 & 4 per funzioni semplici e metodi di struct (invariato)
+	// Step 3 & 4 for simple functions and struct methods
 	for _, arg := range finalArgs {
 		if tempSymbol, ok := tempSymbolMap[arg]; ok {
 			if err := c.scopes.EmitSymbolGet(tempSymbol); err != nil {
@@ -332,11 +326,9 @@ func (c *Functions) CallExpr(node *ast.CallExpr) error {
 			}
 		}
 	}
-
 	if _, err := c.scopes.Emit(bytecode.OpCall, len(finalArgs), 0); err != nil {
 		return err
 	}
-
 	return nil
 }
 
