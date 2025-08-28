@@ -30,6 +30,8 @@ func NewBuiltinFunctions(gk objects.IGateKeeper) IBuiltin {
 		gk.NewFuncPackage(objects.FuncBuiltinDef, "delete", b.delete),
 		gk.NewFuncPackage(objects.FuncBuiltinDef, "splice", b.splice),
 		gk.NewFuncPackage(objects.FuncBuiltinDef, "format", b.format),
+		gk.NewFuncPackage(objects.FuncBuiltinDef, "panic", b.panic),
+		gk.NewFuncPackage(objects.FuncBuiltinDef, "recover", b.recover),
 		//cast
 		gk.NewFuncPackage(objects.FuncBuiltinDef, "int", b.int),
 		gk.NewFuncPackage(objects.FuncBuiltinDef, "bool", b.bool),
@@ -588,4 +590,28 @@ func (h *BuiltinFunctions) splice(frame int, args ...objects.IObject) (objects.I
 	items = append(items, array.Values()[endIdx:]...)
 	array.Assign(append(head, items...))
 	return h.gk.NewArray(frame, deleted), nil
+}
+
+// panic raises an error with the provided message, halting execution if the argument count is exactly one.
+func (h *BuiltinFunctions) panic(_ int, args ...objects.IObject) (objects.IObject, error) {
+	if len(args) != 1 {
+		return nil, objects.ErrWrongNumArguments
+	}
+	// Create an error with the panic message
+	err := fmt.Errorf("%s", args[0].String())
+	// Signal the error to the VM. This is the key point!
+	// The VM already has a mechanism to stop execution in case of error.
+	// Calling SetError will stop the main execution loop.
+	// v.SetError(err) // This call should be made through an interface exposed to builtin
+
+	// In practice, the VM panic becomes an error that stops the script
+	return nil, err
+}
+
+// panic raises an error with the provided message, halting execution if the argument count is exactly one.
+func (h *BuiltinFunctions) recover(_ int, args ...objects.IObject) (objects.IObject, error) {
+	if len(args) != 0 {
+		return nil, objects.ErrWrongNumArguments
+	}
+	return h.gk.UndefinedValue(), nil
 }
