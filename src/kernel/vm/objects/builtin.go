@@ -109,8 +109,8 @@ func (o *Builtin) Copy(frame int, _ int) IObject {
 	return o.GateKeeper().NewBuiltin(frame, o.name, o.index)
 }
 
-// Boolean returns false, indicating the boolean representation of the Builtin object is always false.
-func (o *Builtin) Boolean() bool {
+// Falsy returns false, indicating the boolean representation of the Builtin object is always false.
+func (o *Builtin) Falsy() bool {
 	return false
 }
 

@@ -103,8 +103,8 @@ func (o *Bytes) Copy(frame int, _ int) IObject {
 	return o.GateKeeper().NewBytes(frame, append([]byte{}, o.values...))
 }
 
-// Boolean determines if the Bytes object is considered falsy by checking if it contains no values. Returns true if empty.
-func (o *Bytes) Boolean() bool {
+// Falsy determines if the Bytes object is considered falsy by checking if it contains no values. Returns true if empty.
+func (o *Bytes) Falsy() bool {
 	return len(o.values) == 0
 }
 

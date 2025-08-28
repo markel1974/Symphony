@@ -110,8 +110,8 @@ func (i *StructIterator) String() string {
 	return StructIteratorLabel
 }
 
-// Boolean returns true, indicating the current StructIterator is truthy.
-func (i *StructIterator) Boolean() bool {
+// Falsy returns true, indicating the current StructIterator is truthy.
+func (i *StructIterator) Falsy() bool {
 	return true
 }
 

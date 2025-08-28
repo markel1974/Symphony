@@ -251,7 +251,7 @@ func (h *BuiltinFunctions) isCallable(_ int, args ...objects.IObject) (objects.I
 	return h.gk.FalseValue(), nil
 }
 
-// IsIterable checks if the provided argument is iterable and returns a Boolean object indicating the result.
+// IsIterable checks if the provided argument is iterable and returns a Falsy object indicating the result.
 // Returns objects.ErrWrongNumArguments if the number of arguments is not exactly one.
 func (h *BuiltinFunctions) isIterable(_ int, args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {

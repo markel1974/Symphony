@@ -46,8 +46,8 @@ func (o *BytesIterator) BinaryOp(_ int, _ Operator, _ IObject) (IObject, error) 
 	return nil, ErrInvalidOperator
 }
 
-// Boolean returns false for all objects.
-func (o *BytesIterator) Boolean() bool {
+// Falsy returns false for all objects.
+func (o *BytesIterator) Falsy() bool {
 	return false
 }
 

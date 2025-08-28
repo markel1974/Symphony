@@ -173,8 +173,8 @@ func (o *Char) Copy(frame int, _ int) IObject {
 	return o.GateKeeper().NewChar(frame, o.value)
 }
 
-// Boolean checks whether the Char object represents a falsy state, returning true if the underlying values is 0.
-func (o *Char) Boolean() bool {
+// Falsy checks whether the Char object represents a falsy state, returning true if the underlying values is 0.
+func (o *Char) Falsy() bool {
 	return o.value == 0
 }
 

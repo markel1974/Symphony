@@ -138,8 +138,8 @@ func (o *String) BinaryOp(frame int, op Operator, rhs IObject) (IObject, error) 
 	return nil, ErrInvalidOperator
 }
 
-// Boolean returns true if the String's values is an empty string, indicating it is considered falsy in a boolean context.
-func (o *String) Boolean() bool {
+// Falsy returns true if the String's values is an empty string, indicating it is considered falsy in a boolean context.
+func (o *String) Falsy() bool {
 	return len(o.value) == 0
 }
 

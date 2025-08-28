@@ -75,8 +75,8 @@ func (o *Undefined) Copy(_ int, _ int) IObject {
 	return o
 }
 
-// Boolean returns true.
-func (o *Undefined) Boolean() bool {
+// Falsy returns true.
+func (o *Undefined) Falsy() bool {
 	return true
 }
 

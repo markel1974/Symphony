@@ -93,8 +93,8 @@ func (i *ArrayIterator) String() string {
 	return ArrayIteratorLabel
 }
 
-// Boolean determines whether the ArrayIterator should be considered a falsy values. Always returns true.
-func (i *ArrayIterator) Boolean() bool {
+// Falsy determines whether the ArrayIterator should be considered a falsy values. Always returns true.
+func (i *ArrayIterator) Falsy() bool {
 	return true
 }
 

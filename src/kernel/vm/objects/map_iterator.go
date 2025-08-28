@@ -108,8 +108,8 @@ func (i *MapIterator) String() string {
 	return MapIteratorLabel
 }
 
-// Boolean returns true, indicating the MapIterator is considered falsy in a boolean context.
-func (i *MapIterator) Boolean() bool {
+// Falsy returns true, indicating the MapIterator is considered falsy in a boolean context.
+func (i *MapIterator) Falsy() bool {
 	return true
 }
 

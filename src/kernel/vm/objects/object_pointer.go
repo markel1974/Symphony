@@ -106,8 +106,8 @@ func (o *ObjectPointer) Copy(_ int, _ int) IObject {
 	return o
 }
 
-// Boolean returns true if the value of the ObjectPointer is nil.
-func (o *ObjectPointer) Boolean() bool {
+// Falsy returns true if the value of the ObjectPointer is nil.
+func (o *ObjectPointer) Falsy() bool {
 	return o.value == nil
 }
 

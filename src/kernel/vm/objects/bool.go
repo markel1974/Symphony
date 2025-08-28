@@ -96,8 +96,8 @@ func (o *Bool) Copy(frame int, _ int) IObject {
 	return o.gk.NewBool(frame, o.value)
 }
 
-// Boolean returns true if the Bool value is false, otherwise returns false.
-func (o *Bool) Boolean() bool {
+// Falsy returns true if the Bool value is false, otherwise returns false.
+func (o *Bool) Falsy() bool {
 	return !o.value
 }
 

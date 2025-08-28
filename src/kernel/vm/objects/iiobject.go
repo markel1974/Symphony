@@ -25,7 +25,7 @@ type IObject interface {
 	String() string
 	Frame() int
 	BinaryOp(frame int, op Operator, rightHandSide IObject) (IObject, error)
-	Boolean() bool
+	Falsy() bool
 	Equals(other IObject) bool
 	Copy(frame int, depth int) IObject
 	IndexGet(frame int, index IObject) (value IObject, err error)

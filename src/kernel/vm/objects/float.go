@@ -203,8 +203,8 @@ func (o *Float) Copy(frame int, _ int) IObject {
 	return o.GateKeeper().NewFloat(frame, o.value)
 }
 
-// Boolean determines if the float object is considered falsy, returning true if the values is NaN; otherwise, false.
-func (o *Float) Boolean() bool {
+// Falsy determines if the float object is considered falsy, returning true if the values is NaN; otherwise, false.
+func (o *Float) Falsy() bool {
 	return math.IsNaN(o.value)
 }
 

@@ -110,8 +110,8 @@ func (o *FuncCompiled) BinaryOp(_ int, _ Operator, _ IObject) (IObject, error) {
 	return nil, ErrInvalidOperator
 }
 
-// Boolean returns false for all objects.
-func (o *FuncCompiled) Boolean() bool {
+// Falsy returns false for all objects.
+func (o *FuncCompiled) Falsy() bool {
 	return false
 }
 

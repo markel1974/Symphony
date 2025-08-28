@@ -99,8 +99,8 @@ func (i *StringIterator) String() string {
 	return StringIteratorLabel
 }
 
-// Boolean returns true, indicating the iterator is considered falsy in a boolean context.
-func (i *StringIterator) Boolean() bool {
+// Falsy returns true, indicating the iterator is considered falsy in a boolean context.
+func (i *StringIterator) Falsy() bool {
 	return true
 }
 

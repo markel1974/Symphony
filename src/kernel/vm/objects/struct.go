@@ -117,8 +117,8 @@ func (o *Struct) Copy(frame int, depth int) IObject {
 	return o.GateKeeper().NewStruct(frame, c)
 }
 
-// Boolean returns true if the Struct contains no values, otherwise false.
-func (o *Struct) Boolean() bool {
+// Falsy returns true if the Struct contains no values, otherwise false.
+func (o *Struct) Falsy() bool {
 	return len(o.values) == 0
 }
 

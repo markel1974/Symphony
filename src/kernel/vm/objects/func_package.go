@@ -50,8 +50,8 @@ func (o *FuncPackage) BinaryOp(_ int, _ Operator, _ IObject) (IObject, error) {
 	return nil, ErrInvalidOperator
 }
 
-// Boolean returns false for all objects.
-func (o *FuncPackage) Boolean() bool {
+// Falsy returns false for all objects.
+func (o *FuncPackage) Falsy() bool {
 	return false
 }
 

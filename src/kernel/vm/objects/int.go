@@ -266,8 +266,8 @@ func (o *Int) Copy(frame int, _ int) IObject {
 	return o.GateKeeper().NewInt(frame, o.value)
 }
 
-// Boolean checks whether the integer value is considered falsy. Returns true if the value is 0, otherwise false.
-func (o *Int) Boolean() bool {
+// Falsy checks whether the integer value is considered falsy. Returns true if the value is 0, otherwise false.
+func (o *Int) Falsy() bool {
 	return o.value == 0
 }
 

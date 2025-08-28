@@ -316,10 +316,10 @@ func (gc *GateConverter) ToTimeArg(index int, o IObject) (time.Time, error) {
 	return v, nil
 }
 
-// ToBool converts the given IObject to a bool based on its Boolean() method and returns the result along with a success flag.
+// ToBool converts the given IObject to a bool based on its Falsy() method and returns the result along with a success flag.
 func (gc *GateConverter) ToBool(o IObject) (v bool, ok bool) {
 	ok = true
-	v = !o.Boolean()
+	v = !o.Falsy()
 	return
 }
 

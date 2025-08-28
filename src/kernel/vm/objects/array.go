@@ -141,8 +141,8 @@ func (o *Array) Copy(frame int, depth int) IObject {
 	return o.gk.NewArray(frame, c)
 }
 
-// Boolean returns true if the array is empty, otherwise false.
-func (o *Array) Boolean() bool {
+// Falsy returns true if the array is empty, otherwise false.
+func (o *Array) Falsy() bool {
 	return len(o.values) == 0
 }
 

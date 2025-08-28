@@ -145,8 +145,8 @@ func (o *Time) Copy(frame int, _ int) IObject {
 	return o.GateKeeper().NewTime(frame, o.value)
 }
 
-// Boolean returns true if the Time object's values is zero (indicating it is uninitialized or empty), otherwise false.
-func (o *Time) Boolean() bool {
+// Falsy returns true if the Time object's values is zero (indicating it is uninitialized or empty), otherwise false.
+func (o *Time) Falsy() bool {
 	return o.value.IsZero()
 }
 

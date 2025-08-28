@@ -23,7 +23,7 @@ func NewOpJumpFalsy(op *bytecode.Opcodes) core.IOpExecutor {
 func (op *OpJumpFalsy) Execute(v *core.VM, decoder *core.Decoder) {
 	// Operands Offset 2 (16-bit)
 	obj := v.Stack().Pop()
-	if obj.Boolean() {
+	if obj.Falsy() {
 		pos := decoder.Read(0)
 		v.SetIp(pos - 1)
 	}

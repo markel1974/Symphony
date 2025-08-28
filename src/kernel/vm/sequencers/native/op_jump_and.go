@@ -23,7 +23,7 @@ func NewOpJumpAnd(op *bytecode.Opcodes) core.IOpExecutor {
 func (op *OpJumpAnd) Execute(v *core.VM, decoder *core.Decoder) {
 	// Operands Offset  2 (16-bit)
 	obj := v.Stack().Peek()
-	if obj.Boolean() {
+	if obj.Falsy() {
 		pos := decoder.Read(0)
 		v.SetIp(pos - 1)
 	} else {

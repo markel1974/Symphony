@@ -25,7 +25,7 @@ func (op *OpNotLogical) Execute(v *core.VM, _ *core.Decoder) {
 	// Operands Offset  0
 	operand := v.Stack().Pop()
 	var val objects.IObject
-	if operand.Boolean() {
+	if operand.Falsy() {
 		val = v.Factory().TrueValue()
 	} else {
 		val = v.Factory().FalseValue()

@@ -94,8 +94,8 @@ func (i *UndefinedIterator) String() string {
 	return UndefinedIteratorLabel
 }
 
-// Boolean returns the boolean representation of the UndefinedIterator, which is always true.
-func (i *UndefinedIterator) Boolean() bool {
+// Falsy returns the boolean representation of the UndefinedIterator, which is always true.
+func (i *UndefinedIterator) Falsy() bool {
 	return true
 }
 

@@ -108,8 +108,8 @@ func (o *ArrayImmutable) Copy(frame int, depth int) IObject {
 	return o.GateKeeper().NewArray(frame, c)
 }
 
-// Boolean checks if the ArrayImmutable is considered falsy, returning true if its Value slice has no elements.
-func (o *ArrayImmutable) Boolean() bool {
+// Falsy checks if the ArrayImmutable is considered falsy, returning true if its Value slice has no elements.
+func (o *ArrayImmutable) Falsy() bool {
 	return len(o.values) == 0
 }
 

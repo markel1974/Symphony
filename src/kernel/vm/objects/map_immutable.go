@@ -110,8 +110,8 @@ func (o *MapImmutable) Copy(frame int, depth int) IObject {
 	return o.GateKeeper().NewMap(frame, c)
 }
 
-// Boolean returns true if the map is empty, indicating it is considered "falsy", otherwise false.
-func (o *MapImmutable) Boolean() bool {
+// Falsy returns true if the map is empty, indicating it is considered "falsy", otherwise false.
+func (o *MapImmutable) Falsy() bool {
 	return len(o.values) == 0
 }
 

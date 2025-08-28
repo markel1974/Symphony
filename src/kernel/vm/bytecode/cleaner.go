@@ -43,7 +43,7 @@ func (c *Cleaner) FixObjects(o []objects.IObject) ([]objects.IObject, error) {
 func (c *Cleaner) FixObject(o objects.IObject) (objects.IObject, error) {
 	switch o := o.(type) {
 	case *objects.Bool:
-		if o.Boolean() {
+		if o.Falsy() {
 			return c.gk.FalseValue(), nil
 		}
 		return c.gk.TrueValue(), nil

@@ -126,8 +126,8 @@ func (o *Map) Copy(frame int, depth int) IObject {
 	return o.GateKeeper().NewMap(frame, c)
 }
 
-// Boolean returns true if the map contains no key-values pairs, indicating it is empty.
-func (o *Map) Boolean() bool {
+// Falsy returns true if the map contains no key-values pairs, indicating it is empty.
+func (o *Map) Falsy() bool {
 	return len(o.values) == 0
 }
 
