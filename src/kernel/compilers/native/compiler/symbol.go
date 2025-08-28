@@ -11,10 +11,9 @@ type Symbol struct {
 	name         string
 	scope        SymbolScope
 	index        int
-	returnValues []string
 	structName   string
 	structFields []string
-	types        []string
+	returnTypes  []string
 	object       objects.IObject
 }
 
@@ -25,9 +24,8 @@ func NewSymbol(name string, index int, scope SymbolScope) *Symbol {
 		index:        index,
 		scope:        scope,
 		object:       nil,
-		returnValues: []string{},
 		structFields: []string{},
-		types:        []string{},
+		returnTypes:  []string{},
 	}
 	return symbol
 }
@@ -37,10 +35,9 @@ func (s *Symbol) Clone() *Symbol {
 		name:         s.name,
 		scope:        s.scope,
 		index:        s.index,
-		returnValues: s.returnValues,
 		structName:   s.structName,
 		structFields: s.structFields,
-		types:        s.types,
+		returnTypes:  s.returnTypes,
 		object:       s.object,
 	}
 }
@@ -53,16 +50,6 @@ func (s *Symbol) Name() string {
 // Index returns the index of the Symbol within the program.
 func (s *Symbol) Index() int {
 	return s.index
-}
-
-// SetReturnValues assigns a slice of return values to the Symbol, updating its associated metadata.
-func (s *Symbol) SetReturnValues(values []string) {
-	s.returnValues = values
-}
-
-// ReturnValues returns the list of return values associated with the Symbol.
-func (s *Symbol) ReturnValues() []string {
-	return s.returnValues
 }
 
 // SetObject assigns the provided IObject implementation to the Symbol, allowing it to associate with specific metadata.
@@ -97,14 +84,14 @@ func (s *Symbol) IsStruct() bool {
 	return len(s.structName) > 0
 }
 
-// SetTypes assigns a slice of type names to the Symbol's types field. Use this to define the types associated with a Symbol.
-func (s *Symbol) SetTypes(t []string) {
-	s.types = t
+// SetReturnTypes assigns a slice of type names to the Symbol's types field. Use this to define the types associated with a Symbol.
+func (s *Symbol) SetReturnTypes(t []string) {
+	s.returnTypes = t
 }
 
-// Types returns the list of type names associated with the Symbol.
-func (s *Symbol) Types() []string {
-	return s.types
+// ReturnTypes returns the list of type names associated with the Symbol.
+func (s *Symbol) ReturnTypes() []string {
+	return s.returnTypes
 }
 
 // Scope returns the scope of the Symbol, indicating its visibility and context within the program.

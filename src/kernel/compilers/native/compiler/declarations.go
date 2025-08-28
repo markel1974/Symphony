@@ -116,7 +116,7 @@ func (c *Declarations) ValueSpec(node *ast.ValueSpec) error {
 			}
 			if funcName != "" {
 				if funcSymbol, ok := c.scopes.SymbolResolve(funcName); ok {
-					returnTypes := funcSymbol.Types()
+					returnTypes := funcSymbol.ReturnTypes()
 					if len(returnTypes) != 1 {
 						return NewCompilerError(c.fileSet, node, "assignment mismatch: 'var' declaration expects 1 value, but function %s returns %d", funcName, len(returnTypes))
 					}
@@ -209,7 +209,7 @@ func (c *Declarations) AssignStmt(node *ast.AssignStmt) error {
 		if ident, isIdent := callExpr.Fun.(*ast.Ident); isIdent {
 			if ident.Name != "" {
 				if funcSymbol, ok := c.scopes.SymbolResolve(ident.Name); ok {
-					funcReturnTypes = funcSymbol.Types()
+					funcReturnTypes = funcSymbol.ReturnTypes()
 				}
 			}
 		}

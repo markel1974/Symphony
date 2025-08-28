@@ -93,9 +93,9 @@ func (st *StructTable) Inference(expr ast.Expr) (string, []string, bool) {
 		}
 	case *ast.CallExpr: // es. NewStruct()
 		if ident, ok := rhs.Fun.(*ast.Ident); ok {
-			if funcSymbol, ok := st.scopes.SymbolResolve(ident.Name); ok && len(funcSymbol.Types()) > 0 {
+			if funcSymbol, ok := st.scopes.SymbolResolve(ident.Name); ok && len(funcSymbol.ReturnTypes()) > 0 {
 				// Assumiamo il primo tipo di ritorno
-				typeName := funcSymbol.Types()[0]
+				typeName := funcSymbol.ReturnTypes()[0]
 				// Verifichiamo se il tipo restituito è uno struct
 				if typeSymbol, ok := st.scopes.SymbolResolve(typeName); ok && typeSymbol.IsStruct() {
 					return typeName, []string{typeName}, true
@@ -174,10 +174,11 @@ func (st *StructTable) FieldsFromLiteral(node *ast.CompositeLit) ([]*FieldDescri
 	return structFields, nil
 }
 
-func (st *StructTable) TypeNameFromSymbol(name string) (string, bool) {
+// ReturnTypeFromSymbol resolves the return type of a symbol by its name and returns it along with a success flag.
+func (st *StructTable) ReturnTypeFromSymbol(name string) (string, bool) {
 	symbol, ok := st.scopes.SymbolResolve(name)
-	if ok && len(symbol.Types()) > 0 {
-		return symbol.Types()[0], true
+	if ok && len(symbol.ReturnTypes()) > 0 {
+		return symbol.ReturnTypes()[0], true
 	}
 	return "", false
 }
@@ -205,7 +206,7 @@ func (st *StructTable) AssignSymbol(symbol *Symbol, structName string, returnTyp
 	if len(structName) == 0 {
 		return nil
 	}
-	structFields, ok := st.getFields(structName)
+	structFields, ok := st.container[structName]
 	if !ok {
 		return nil
 	}
@@ -213,10 +214,9 @@ func (st *StructTable) AssignSymbol(symbol *Symbol, structName string, returnTyp
 	for x, field := range structFields {
 		fields[x] = field.name
 	}
-
 	description := structName + "=>" + symbol.Name() + ":" + strings.Join(returnTypes, " ")
 	symbol.SetStruct(structName, fields)
-	symbol.SetTypes(returnTypes)
+	symbol.SetReturnTypes(returnTypes)
 	symbol.SetObject(st.gk.NewString(objects.FrameStatic, description))
 	return nil
 }
@@ -225,30 +225,30 @@ func (st *StructTable) AssignSymbol(symbol *Symbol, structName string, returnTyp
 func (st *StructTable) ExtractBaseName(expr ast.Expr) string {
 	switch t := expr.(type) {
 	case *ast.Ident:
-		// Caso base: abbiamo trovato l'identificatore del tipo (es. "MyStruct").
+		// Base case: we found the type identifier (e.g. "MyStruct")
 		return t.Name
 	case *ast.StarExpr:
-		// Caso puntatore (*MyType): continuiamo la ricerca sul tipo puntato.
+		// Pointer case (*MyType): continue search on pointed type
 		return st.ExtractBaseName(t.X)
 	case *ast.ArrayType:
-		// Caso array/slice ([]MyType): continuiamo la ricerca sul tipo dell'elemento.
+		// Array/slice case ([]MyType): continue search on element type
 		return st.ExtractBaseName(t.Elt)
 	case *ast.MapType:
-		// Caso mappa (map[KeyType]ValueType): ci interessa il tipo del valore.
+		// Map case (map[KeyType]ValueType): we care about the value type
 		return st.ExtractBaseName(t.Value)
 	case *ast.SelectorExpr:
-		// Caso tipo qualificato (es. package.Type): restituiamo il nome del tipo.
-		// Una logica più avanzata potrebbe restituire "package.Type".
+		// Qualified type case (e.g. package.Type): return the type name
+		// More advanced logic could return "package.Type"
 		return t.Sel.Name
 	case *ast.InterfaceType:
-		// Caso interfaccia: se è un'interfaccia vuota, la trattiamo come un tipo a sé.
+		// Interface case: treat empty interface as its own type
 		if len(t.Methods.List) == 0 {
 			return "interface{}"
 		}
-		// Le interfacce non vuote non sono attualmente supportate per l'estrazione.
+		// Non-empty interfaces are not currently supported for extraction
 		return ""
 	default:
-		// Altri tipi complessi non sono gestiti.
+		// Other complex types are not handled
 		return ""
 	}
 }

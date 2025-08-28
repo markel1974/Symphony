@@ -137,10 +137,10 @@ func (c *Loops) RangeStmt(node *ast.RangeStmt) error {
 	var returnTypeName string
 	switch expr := node.X.(type) {
 	case *ast.Ident:
-		returnTypeName, _ = c.structTable.TypeNameFromSymbol(expr.Name)
+		returnTypeName, _ = c.structTable.ReturnTypeFromSymbol(expr.Name)
 	case *ast.CallExpr:
 		if ident, ok := expr.Fun.(*ast.Ident); ok {
-			returnTypeName, _ = c.structTable.TypeNameFromSymbol(ident.Name)
+			returnTypeName, _ = c.structTable.ReturnTypeFromSymbol(ident.Name)
 		}
 	case *ast.SelectorExpr:
 		// Caso: for _, v := range myVar.Items

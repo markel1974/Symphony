@@ -84,7 +84,7 @@ func (c *Functions) Compile() error {
 func (c *Functions) funcBodyPrepare(fd *FunctionDescription) error {
 	node := fd.FuncDecl
 	var err error
-	if fd.ReturnValues, err = GetReceivers(node.Type.Results); err != nil {
+	if fd.ReturnTypes, err = GetReceivers(node.Type.Results); err != nil {
 		return err
 	}
 	for _, p := range node.Type.Params.List {
@@ -137,7 +137,7 @@ func (c *Functions) funcBodyCompile(fd *FunctionDescription) error {
 			return err
 		}
 		if len(fd.StructName) > 0 {
-			if err = c.structTable.AssignSymbol(receiverSymbol, fd.StructName, fd.ReturnValues); err != nil {
+			if err = c.structTable.AssignSymbol(receiverSymbol, fd.StructName, fd.ReturnTypes); err != nil {
 				return err
 			}
 		}
@@ -179,8 +179,7 @@ func (c *Functions) funcBodyCompile(fd *FunctionDescription) error {
 	}
 	compiledFn := c.gk.NewFuncCompiled(objects.FrameStatic, fd.Name, code, nLocals, nParams, false, nil, freeSymbols)
 	fnSymbol.SetObject(compiledFn)
-	fnSymbol.SetReturnValues(fd.ReturnValues)
-	fnSymbol.SetTypes(fd.ReturnValues)
+	fnSymbol.SetReturnTypes(fd.ReturnTypes)
 
 	if node.Recv == nil && c.scopes.scopeIndex > 0 {
 		if _, err = c.scopes.Emit(bytecode.OpClosure, fnSymbol.Index(), numFree); err != nil {

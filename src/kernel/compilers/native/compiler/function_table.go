@@ -10,7 +10,7 @@ import (
 // FunctionDescription represents the structure to describe a Go function, its metadata, and related declarations.
 type FunctionDescription struct {
 	Name            string
-	ReturnValues    []string
+	ReturnTypes     []string
 	InputParams     []string
 	StructName      string
 	StructReceivers []string
