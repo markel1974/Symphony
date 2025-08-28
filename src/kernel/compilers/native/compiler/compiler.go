@@ -91,6 +91,11 @@ func (c *Compiler) Id() string {
 	return common.Identifier
 }
 
+// FileSet returns the token file set associated with the compiler.
+func (c *Compiler) FileSet() bytecode.IFile {
+	return NewFileSet(c.fileSet)
+}
+
 // Compile parses the provided source file and compiles it into bytecode. Returns compiled bytecode or an error.
 func (c *Compiler) Compile(filename string, source any) error {
 	c.fileSet = token.NewFileSet()

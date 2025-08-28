@@ -8,6 +8,8 @@ type ICompiler interface {
 
 	Compile(filename string, source any) error
 
+	FileSet() IFile
+
 	Constants() []objects.IObject
 
 	References() []objects.IObject

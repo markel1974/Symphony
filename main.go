@@ -141,13 +141,14 @@ func vmTest() {
 	}
 	var args []interface{} = nil
 	//args := []interface{}{1, 2}
-	data, _ := os.ReadFile("../src/kernel/compilers/native/stub/source7.go")
-	//fmt.Println(string(data))
-	//os.Exit(1)
-	if err = comp.Compile("example.go", string(data)); err != nil {
+	fileName := "source7.go"
+	dataFile, _ := os.Open("../src/kernel/compilers/native/stub/" + fileName)
+	defer dataFile.Close()
+	if err = comp.Compile(fileName, dataFile); err != nil {
 		log.Fatalf("compiler error: %s", err)
 	}
 	bc := bytecode.NewBytecode(op, comp.Constants(), comp.References(), comp.Globals())
+	_ = bc.AddFile(comp.FileSet())
 	d := bytecode.NewDisassembler(bc)
 	d.Disassemble(log.Writer())
 	machine, err := vm.NewVM(gk, op, sequencerId)
