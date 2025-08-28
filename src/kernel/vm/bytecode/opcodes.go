@@ -87,6 +87,8 @@ const (
 	// OpCall represents the opcode for function or method invocation with specified argument and receiver counts.
 	OpCall
 
+	OpCallMethod
+
 	// OpReturn represents the opcode for returning from a function or operation, potentially with a value.
 	OpReturn
 
@@ -244,6 +246,7 @@ func NewOpcodes() *Opcodes {
 	op.createOpcode(OpIndex, []int{}, "OpIndex")
 	op.createOpcode(OpIndexSlice, []int{}, "OpIndexSlice")
 	op.createOpcode(OpCall, []int{1, 1}, "OpCall")
+	op.createOpcode(OpCallMethod, []int{2, 1}, "OpCallMethod")
 	op.createOpcode(OpReturn, []int{1}, "OpReturn")
 	op.createOpcode(OpLocalGet, []int{1}, "OpLocalGet")
 	op.createOpcode(OpLocalSet, []int{1}, "OpLocalSet")

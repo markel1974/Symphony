@@ -68,6 +68,7 @@ type IGateAllocator interface {
 	NewStringIterator(frame int, v []rune, index int) IIterator
 	NewArrayIterator(frame int, values []IObject, index int) IIterator
 	NewBytesIterator(frame int, v []byte, index int) IIterator
+	NewInterface(frame int, value IObject, iTable map[string]IObject) IObject
 }
 
 // IGateConverter provides methods to convert IObject types to and from various native Go types and data structures.

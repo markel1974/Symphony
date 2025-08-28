@@ -331,3 +331,11 @@ func (f *GateAllocator) NewTime(frame int, value time.Time) IObject {
 	}
 	return newTime(f.gk, frame, value)
 }
+
+// NewInterface creates a new instance of Interface using the provided IObject value and itable map.
+func (f *GateAllocator) NewInterface(frame int, value IObject, itable map[string]IObject) IObject {
+	if err := f.acquireObject(); err != nil {
+		return f.undefinedValue
+	}
+	return newInterface(f.gk, frame, value, itable)
+}
