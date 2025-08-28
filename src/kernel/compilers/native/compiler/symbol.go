@@ -1,8 +1,6 @@
 package compiler
 
 import (
-	"fmt"
-
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
@@ -11,10 +9,12 @@ type Symbol struct {
 	name         string
 	scope        SymbolScope
 	index        int
+	typeName     string
 	structName   string
 	structFields []string
 	returnTypes  []string
 	object       objects.IObject
+	isInterface  bool
 }
 
 // NewSymbol creates a new Symbol instance with the provided name, index, scope, and associated object.
@@ -23,7 +23,9 @@ func NewSymbol(name string, index int, scope SymbolScope) *Symbol {
 		name:         name,
 		index:        index,
 		scope:        scope,
+		typeName:     "",
 		object:       nil,
+		isInterface:  false,
 		structFields: []string{},
 		returnTypes:  []string{},
 	}
@@ -35,10 +37,12 @@ func (s *Symbol) Clone() *Symbol {
 		name:         s.name,
 		scope:        s.scope,
 		index:        s.index,
+		typeName:     s.typeName,
 		structName:   s.structName,
 		structFields: s.structFields,
 		returnTypes:  s.returnTypes,
 		object:       s.object,
+		isInterface:  s.isInterface,
 	}
 }
 
@@ -62,11 +66,22 @@ func (s *Symbol) GetObject() objects.IObject {
 	return s.object
 }
 
+// TypeName returns the type name associated with the Symbol.
+func (s *Symbol) TypeName() string {
+	return s.typeName
+}
+
+// SetTypeName updates the typeName field of the Symbol with the provided name.
+func (s *Symbol) SetTypeName(name string) {
+	s.typeName = name
+}
+
 // SetStruct assigns a struct name and a slice of field names to the Symbol, updating its associated metadata.
 func (s *Symbol) SetStruct(structName string, fields []string) {
-	fmt.Printf("SetStruct %s => %s\n", s.Name(), structName)
+	//fmt.Printf("SetStruct %s => %s\n", s.Name(), structName)
 	s.structName = structName
 	s.structFields = fields
+	s.isInterface = false
 }
 
 // StructName returns the name of the container associated with the Symbol.
@@ -82,6 +97,16 @@ func (s *Symbol) StructFields() []string {
 // IsStruct returns a boolean indicating whether the Symbol represents an struct.
 func (s *Symbol) IsStruct() bool {
 	return len(s.structName) > 0
+}
+
+func (s *Symbol) SetInterface(name string) {
+	s.isInterface = true
+	s.typeName = name
+	s.structName = "" // Non può essere uno struct
+}
+
+func (s *Symbol) IsInterface() bool {
+	return s.isInterface
 }
 
 // SetReturnTypes assigns a slice of type names to the Symbol's types field. Use this to define the types associated with a Symbol.

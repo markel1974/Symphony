@@ -26,18 +26,20 @@ func NewFunctionDescription(funcDecl *ast.FuncDecl) *FunctionDescription {
 
 // FunctionTable is a type designed to manage a collection of function descriptions.
 type FunctionTable struct {
-	gk          objects.IGateKeeper
-	scopes      *Scopes
-	structTable *StructTable
-	container   []*FunctionDescription
+	gk             objects.IGateKeeper
+	scopes         *Scopes
+	structTable    *StructTable
+	interfaceTable *InterfaceTable
+	container      []*FunctionDescription
 }
 
 // NewFunctionTable initializes and returns a new instance of FunctionTable.
-func NewFunctionTable(gk objects.IGateKeeper, scopes *Scopes, structTable *StructTable) *FunctionTable {
+func NewFunctionTable(gk objects.IGateKeeper, scopes *Scopes, structTable *StructTable, interfaceTable *InterfaceTable) *FunctionTable {
 	return &FunctionTable{
-		gk:          gk,
-		scopes:      scopes,
-		structTable: structTable,
+		gk:             gk,
+		scopes:         scopes,
+		structTable:    structTable,
+		interfaceTable: interfaceTable,
 	}
 }
 
@@ -80,6 +82,7 @@ func (f *FunctionTable) CountParams(fieldList *ast.FieldList) int {
 }
 
 // SymbolsFromParameters creates and returns a slice of Symbols for the function parameters.
+// SymbolsFromParameters creates and returns a slice of Symbols for the function parameters.
 func (f *FunctionTable) SymbolsFromParameters(fieldList *ast.FieldList) ([]*Symbol, error) {
 	var symbols []*Symbol
 	if fieldList != nil {
@@ -93,22 +96,32 @@ func (f *FunctionTable) SymbolsFromParameters(fieldList *ast.FieldList) ([]*Symb
 					typeName = ident.Name
 				}
 			}
-			structName := ""
+
+			// --- INIZIO MODIFICA ---
+			// Determina se il tipo è uno struct o un'interfaccia conosciuta
 			isStruct := f.structTable.Has(typeName)
-			if isStruct {
-				structName = typeName
-			}
+			isInterface := f.interfaceTable.Has(typeName)
+			// --- FINE MODIFICA ---
+
 			for _, name := range p.Names {
 				symbol, err := f.scopes.SymbolDefine(name.Name)
 				if err != nil {
 					return nil, err
 				}
 				symbol.SetScope(LocalScope)
-				if len(structName) > 0 {
-					if err = f.structTable.AssignSymbol(symbol, structName, nil); err != nil {
+
+				// --- INIZIO MODIFICA ---
+				if isStruct {
+					// Se è uno struct, assegna le informazioni dello struct
+					if err = f.structTable.AssignSymbol(symbol, typeName, []string{typeName}); err != nil {
 						return nil, err
 					}
+				} else if isInterface {
+					// Se è un'interfaccia, contrassegnalo come tale!
+					symbol.SetInterface(typeName)
 				}
+				// --- FINE MODIFICA ---
+
 				symbols = append(symbols, symbol)
 			}
 		}

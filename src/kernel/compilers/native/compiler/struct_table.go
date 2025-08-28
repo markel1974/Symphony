@@ -29,19 +29,37 @@ func NewFieldDescription(name string, base string, kind string, node ast.Node) *
 
 // StructTable is a collection that manages mappings of struct names to their associated properties.
 type StructTable struct {
-	container map[string][]*FieldDescription
-	gk        objects.IGateKeeper
-	scopes    *Scopes
+	container       map[string][]*FieldDescription
+	gk              objects.IGateKeeper
+	scopes          *Scopes
+	implementations map[string][]string
 }
 
 // NewStructTable initializes and returns a pointer to a StructTable instance with an empty container map.
 func NewStructTable(gk objects.IGateKeeper, scopes *Scopes) *StructTable {
 	st := &StructTable{
-		container: make(map[string][]*FieldDescription),
-		gk:        gk,
-		scopes:    scopes,
+		container:       make(map[string][]*FieldDescription),
+		implementations: make(map[string][]string),
+		gk:              gk,
+		scopes:          scopes,
 	}
 	return st
+}
+
+func (st *StructTable) SetImplementations(impls map[string][]string) {
+	st.implementations = impls
+}
+
+// Implements verifica se uno struct implementa una data interfaccia.
+func (st *StructTable) Implements(structName, interfaceName string) bool {
+	if impls, ok := st.implementations[structName]; ok {
+		for _, iName := range impls {
+			if iName == interfaceName {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // Add adds a new field description to a struct in the StructTable. If the struct does not exist, it creates it.

@@ -19,24 +19,26 @@ const (
 
 // Compiler represents a structure to manage the compilation process, including scopes and associated token file sets.
 type Compiler struct {
-	gk            objects.IGateKeeper
-	components    []IComponent
-	fileSet       *token.FileSet
-	loader        bytecode.ILoader
-	scopes        *Scopes
-	constants     *Constants
-	references    *Constants
-	imports       *Imports
-	functions     *Functions
-	types         *Types
-	others        *Others
-	expressions   *Expression
-	declarations  *Declarations
-	controlFlow   *ControlFlow
-	loops         *Loops
-	structs       *StructTable
-	functionTable *FunctionTable
-	rootNode      *ast.File
+	gk                objects.IGateKeeper
+	components        []IComponent
+	fileSet           *token.FileSet
+	loader            bytecode.ILoader
+	scopes            *Scopes
+	constants         *Constants
+	references        *Constants
+	imports           *Imports
+	functions         *Functions
+	types             *Types
+	others            *Others
+	expressions       *Expression
+	declarations      *Declarations
+	controlFlow       *ControlFlow
+	loops             *Loops
+	structsTable      *StructTable
+	functionTable     *FunctionTable
+	interfaceTable    *InterfaceTable
+	typeCompatibility *TypeCompatibility
+	rootNode          *ast.File
 }
 
 // New creates and returns a new instance of Compiler with initialized scopes using a standard library loader.
@@ -44,16 +46,17 @@ func New(gk objects.IGateKeeper, loader bytecode.ILoader, opcodes *bytecode.Opco
 	var components []IComponent
 	scopes := NewScopes(gk, opcodes)
 	structTable := NewStructTable(gk, scopes)
-	functionTable := NewFunctionTable(gk, scopes, structTable)
+	interfaceTable := NewInterfaceTable(gk, scopes)
+	functionTable := NewFunctionTable(gk, scopes, structTable, interfaceTable)
 	constants := NewConstants()
 	references := NewConstants()
 	imports := NewImports(gk, loader, references, scopes)
 	components = append(components, imports)
-	declarations := NewDeclarations(gk, references, constants, scopes, imports, structTable)
+	declarations := NewDeclarations(gk, references, constants, scopes, imports, structTable, interfaceTable)
 	components = append(components, declarations)
 	expressions := NewExpression(gk, constants, scopes, imports)
 	components = append(components, expressions)
-	functions := NewFunctions(gk, constants, scopes, imports, declarations, structTable, functionTable)
+	functions := NewFunctions(gk, constants, scopes, imports, declarations, structTable, functionTable, interfaceTable)
 	components = append(components, functions)
 	controlFlow := NewControlFlow(gk, scopes)
 	components = append(components, controlFlow)
@@ -63,25 +66,29 @@ func New(gk objects.IGateKeeper, loader bytecode.ILoader, opcodes *bytecode.Opco
 	components = append(components, types)
 	others := NewOthers(declarations)
 	components = append(components, others)
+	typeCompatibility := NewTypeCompatibility(structTable, interfaceTable, functionTable)
+	components = append(components, typeCompatibility)
 
 	c := &Compiler{
-		gk:            gk,
-		components:    components,
-		loader:        loader,
-		scopes:        scopes,
-		constants:     constants,
-		references:    references,
-		structs:       structTable,
-		functionTable: functionTable,
-		imports:       imports,
-		functions:     functions,
-		declarations:  declarations,
-		controlFlow:   controlFlow,
-		expressions:   expressions,
-		loops:         loops,
-		types:         types,
-		others:        others,
-		rootNode:      nil,
+		gk:                gk,
+		components:        components,
+		loader:            loader,
+		scopes:            scopes,
+		constants:         constants,
+		references:        references,
+		structsTable:      structTable,
+		functionTable:     functionTable,
+		interfaceTable:    interfaceTable,
+		imports:           imports,
+		functions:         functions,
+		declarations:      declarations,
+		controlFlow:       controlFlow,
+		expressions:       expressions,
+		loops:             loops,
+		types:             types,
+		others:            others,
+		typeCompatibility: typeCompatibility,
+		rootNode:          nil,
 	}
 	return c
 }
@@ -222,6 +229,7 @@ func (c *Compiler) defaultPipeline() []func() error {
 		c.types.Prepare,
 		c.types.Compile,
 		c.functions.Prepare,
+		c.typeCompatibility.Prepare,
 		c.others.Prepare,
 		c.others.Compile,
 		c.functions.Compile,

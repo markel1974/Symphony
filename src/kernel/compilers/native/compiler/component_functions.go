@@ -14,28 +14,30 @@ const (
 
 // Functions is a collection that manages a list of function descriptions.
 type Functions struct {
-	gk            objects.IGateKeeper
-	constants     *Constants
-	scopes        *Scopes
-	imports       *Imports
-	declarations  *Declarations
-	functionTable *FunctionTable
-	structTable   *StructTable
-	fileSet       *token.FileSet
-	compile       func(node ast.Node) error
+	gk             objects.IGateKeeper
+	constants      *Constants
+	scopes         *Scopes
+	imports        *Imports
+	declarations   *Declarations
+	functionTable  *FunctionTable
+	structTable    *StructTable
+	interfaceTable *InterfaceTable
+	fileSet        *token.FileSet
+	compile        func(node ast.Node) error
 }
 
 // NewFunctions initializes and returns a new Functions instance.
-func NewFunctions(gk objects.IGateKeeper, constants *Constants, scopes *Scopes, imports *Imports, declarations *Declarations, structTable *StructTable, functionTable *FunctionTable) *Functions {
+func NewFunctions(gk objects.IGateKeeper, constants *Constants, scopes *Scopes, imports *Imports, declarations *Declarations, structTable *StructTable, functionTable *FunctionTable, interfaceTable *InterfaceTable) *Functions {
 	return &Functions{
-		gk:            gk,
-		constants:     constants,
-		scopes:        scopes,
-		imports:       imports,
-		declarations:  declarations,
-		structTable:   structTable,
-		functionTable: functionTable,
-		compile:       nil,
+		gk:             gk,
+		constants:      constants,
+		scopes:         scopes,
+		imports:        imports,
+		declarations:   declarations,
+		structTable:    structTable,
+		functionTable:  functionTable,
+		interfaceTable: interfaceTable,
+		compile:        nil,
 	}
 }
 
@@ -131,25 +133,31 @@ func (c *Functions) funcBodyCompile(fd *FunctionDescription) error {
 	if err := c.scopes.Enter(fd.Name); err != nil {
 		return err
 	}
-	for _, recv := range fd.StructReceivers {
-		receiverSymbol, err := c.scopes.SymbolDefine(recv)
-		if err != nil {
-			return err
-		}
-		if len(fd.StructName) > 0 {
-			if err = c.structTable.AssignSymbol(receiverSymbol, fd.StructName, fd.ReturnTypes); err != nil {
-				return err
-			}
-		}
-	}
-	for _, p := range fd.InputParams {
-		if _, err := c.scopes.SymbolDefine(p); err != nil {
+
+	// --- INIZIO MODIFICA ---
+	// Sostituiamo la vecchia logica con chiamate dirette a SymbolsFromParameters,
+	// che processa correttamente i tipi di struct e interfacce.
+
+	// Definisci i simboli per i ricevitori del metodo (se presenti)
+	if node.Recv != nil && len(node.Recv.List) > 0 {
+		if _, err := c.functionTable.SymbolsFromParameters(node.Recv); err != nil {
 			return err
 		}
 	}
+
+	// Definisci i simboli per i parametri di input
+	if _, err := c.functionTable.SymbolsFromParameters(node.Type.Params); err != nil {
+		return err
+	}
+	// --- FINE MODIFICA ---
+
+	// Il vecchio codice che iterava su fd.StructReceivers e fd.InputParams viene rimosso
+	// perché ora è gestito in modo più completo dalla logica qui sopra.
+
 	if err := c.compile(node.Body); err != nil {
 		return err
 	}
+
 	scope, err := c.scopes.Current()
 	if err != nil {
 		return err
@@ -159,6 +167,7 @@ func (c *Functions) funcBodyCompile(fd *FunctionDescription) error {
 			return err
 		}
 	}
+
 	freeSymbols := c.scopes.SymbolFreeConvert()
 	numFree := c.scopes.SymbolFreeCount()
 	nLocals := c.scopes.SymbolCount()
@@ -198,8 +207,7 @@ func (c *Functions) funcBodyCompile(fd *FunctionDescription) error {
 // It also manages nested function calls by pre-evaluating them and storing results in temporary variables.
 // Returns an error if the call expression contains invalid or unresolved references.
 func (c *Functions) CallExpr(node *ast.CallExpr) error {
-	// Step 1: Pre-evaluate nested function calls and store their results in temporary variables.
-	// This ensures that arguments are evaluated before the main function is pushed onto the stack.
+	// Step 1: Pre-evaluate nested function calls (logica esistente, invariata)
 	tempSymbolMap := make(map[ast.Expr]*Symbol)
 	for _, arg := range node.Args {
 		if call, isCall := arg.(*ast.CallExpr); isCall {
@@ -221,83 +229,110 @@ func (c *Functions) CallExpr(node *ast.CallExpr) error {
 		}
 	}
 
-	// Step 2: Resolve and push the function/method object onto the stack.
 	var finalArgs []ast.Expr
 
 	switch fun := node.Fun.(type) {
-	case *ast.Ident: // Chiamata a funzione semplice (es. myFunction())
+	case *ast.Ident:
+		// Gestione chiamata a funzione semplice (invariata)
 		symbol, ok := c.scopes.SymbolResolve(fun.Name)
 		if !ok {
-			// Potrebbe essere una funzione da un pacchetto importato
 			if c.imports.Emit(fun.Name, "") {
 				finalArgs = node.Args
-				break // Fatto, l'import ha già emesso il suo bytecode
+				break
 			}
 			return NewCompilerError(c.fileSet, node, "undefined function: %s", fun.Name)
 		}
-		// Emette l'opcode corretto (Global, Local, o Free) per caricare la funzione
 		if err := c.scopes.EmitSymbolGet(symbol); err != nil {
 			return err
 		}
 		finalArgs = node.Args
 
-	case *ast.SelectorExpr: // Chiamata a metodo (myVar.Method()) o funzione di pacchetto (fmt.Println())
+	case *ast.SelectorExpr:
 		receiverIdent, ok := fun.X.(*ast.Ident)
 		if !ok {
 			return NewCompilerError(c.fileSet, node, "unsupported receiver for selector expression: %T", fun.X)
 		}
 
-		// Prova a risolverlo come funzione di pacchetto (es. fmt.Println)
+		// Percorso 1: Funzione di pacchetto (es. fmt.Println)
 		if c.imports.Emit(receiverIdent.Name, fun.Sel.Name) {
 			finalArgs = node.Args
-			break // Fatto
+			break
 		}
 
-		// Altrimenti, trattalo come una chiamata a metodo di uno struct
 		receiverSymbol, ok := c.scopes.SymbolResolve(receiverIdent.Name)
 		if !ok {
 			return NewCompilerError(c.fileSet, node, "undefined variable: %s", receiverIdent.Name)
 		}
 
-		if !receiverSymbol.IsStruct() {
-			return NewCompilerError(c.fileSet, node, "cannot call method on non-struct type '%s'", receiverSymbol.Name())
-		}
+		// --- INIZIO NUOVA LOGICA PER INTERFACCE ---
+		// Percorso 2: Chiamata a metodo su un'interfaccia
+		if receiverSymbol.IsInterface() {
+			// 2a. Carica la variabile interfaccia (il receiver) sullo stack.
+			// La VM userà questo oggetto per trovare la iTable.
+			if err := c.compile(fun.X); err != nil {
+				return err
+			}
 
-		// Il nome "mangled" del metodo è 'StructName.MethodName'
-		mangledName := GetMangledName(receiverSymbol.StructName(), fun.Sel.Name)
-		methodSymbol, ok := c.scopes.SymbolResolve(mangledName)
-		if !ok {
-			return NewCompilerError(c.fileSet, node, "undefined method '%s' for type '%s'", fun.Sel.Name, receiverSymbol.StructName())
-		}
+			// 2b. Carica tutti gli argomenti della chiamata sullo stack.
+			for _, arg := range node.Args {
+				if tempSymbol, ok := tempSymbolMap[arg]; ok {
+					if err := c.scopes.EmitSymbolGet(tempSymbol); err != nil {
+						return err
+					}
+				} else {
+					if err := c.compile(arg); err != nil {
+						return err
+					}
+				}
+			}
 
-		// Emette il codice per caricare il metodo
-		if err := c.scopes.EmitSymbolGet(methodSymbol); err != nil {
-			return err
-		}
+			// 2c. Emetti OpCallMethod.
+			// L'opcode ha bisogno dell'indice del nome del metodo e del numero di argomenti.
+			methodName := fun.Sel.Name
+			methodNameConstIndex := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, methodName))
+			numArgs := len(node.Args)
 
-		// Il primo argomento di un metodo è sempre il suo ricevitore (l'istanza dello struct)
-		finalArgs = append([]ast.Expr{fun.X}, node.Args...)
+			if _, err := c.scopes.Emit(bytecode.OpCallMethod, methodNameConstIndex, numArgs); err != nil {
+				return err
+			}
+
+			// Abbiamo finito per questo caso, non dobbiamo fare altro.
+			return nil
+		}
+		// --- FINE NUOVA LOGICA PER INTERFACCE ---
+
+		// Percorso 3: Chiamata a metodo su uno struct (logica esistente)
+		if receiverSymbol.IsStruct() {
+			mangledName := GetMangledName(receiverSymbol.StructName(), fun.Sel.Name)
+			methodSymbol, ok := c.scopes.SymbolResolve(mangledName)
+			if !ok {
+				return NewCompilerError(c.fileSet, node, "undefined method '%s' for type '%s'", fun.Sel.Name, receiverSymbol.StructName())
+			}
+			if err := c.scopes.EmitSymbolGet(methodSymbol); err != nil {
+				return err
+			}
+			finalArgs = append([]ast.Expr{fun.X}, node.Args...)
+		} else {
+			return NewCompilerError(c.fileSet, node, "cannot call method on non-struct/non-interface type for '%s'", receiverSymbol.Name())
+		}
 
 	default:
 		return NewCompilerError(c.fileSet, node, "unsupported function call type: %T", node.Fun)
 	}
 
-	// Step 3: Push all final arguments for the main call onto the stack.
+	// Step 3 & 4 per funzioni semplici e metodi di struct (invariato)
 	for _, arg := range finalArgs {
 		if tempSymbol, ok := tempSymbolMap[arg]; ok {
-			// Argomento pre-calcolato: carica il risultato dalla variabile temporanea
 			if err := c.scopes.EmitSymbolGet(tempSymbol); err != nil {
 				return err
 			}
 		} else {
-			// Argomento normale: compilalo per mettere il suo valore sullo stack
 			if err := c.compile(arg); err != nil {
 				return err
 			}
 		}
 	}
 
-	// Step 4: Emit the final OpCall instruction.
 	if _, err := c.scopes.Emit(bytecode.OpCall, len(finalArgs), 0); err != nil {
 		return err
 	}

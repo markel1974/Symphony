@@ -24,9 +24,13 @@ func NewOpCallMethod(op *bytecode.Opcodes) core.IOpExecutor {
 
 // Execute performs the dynamic dispatch logic.
 func (op *OpCallMethod) Execute(v *core.VM, decoder *core.Decoder) {
-	// Operands: Method name index (16-bit), Number of arguments (8-bit)
-	methodNameIndex := decoder.Read(0)
-	numArgs := decoder.Read(1)
+	// Operands Definition: Method name index (16-bit), Number of arguments (8-bit) -> [2, 1]
+	// Decoder Logic (Reversed):
+	// - decoder.Read(0) reads the LAST operand (numArgs, 1 byte)
+	// - decoder.Read(1) reads the FIRST operand (methodNameIndex, 2 bytes)
+
+	numArgs := decoder.Read(0)
+	methodNameIndex := decoder.Read(1)
 
 	// 1. Get method name from constants table.
 	methodNameObj := v.Constants().Get(uint(methodNameIndex))

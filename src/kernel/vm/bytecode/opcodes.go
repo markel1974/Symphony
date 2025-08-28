@@ -75,6 +75,8 @@ const (
 	// OpStruct represents an opcode for initializing a struct with a specified number of key-value pairs.
 	OpStruct
 
+	OpInterface
+
 	// OpImmutable represents an opcode that creates an immutable object or marks an operation as associated with immutability.
 	OpImmutable
 
@@ -242,6 +244,7 @@ func NewOpcodes() *Opcodes {
 	op.createOpcode(OpArray, []int{2}, "OpArray")
 	op.createOpcode(OpMap, []int{2}, "OpMap")
 	op.createOpcode(OpStruct, []int{2}, "OpStruct")
+	op.createOpcode(OpInterface, []int{1}, "OpInterface")
 	op.createOpcode(OpImmutable, []int{}, "OpImmutable")
 	op.createOpcode(OpIndex, []int{}, "OpIndex")
 	op.createOpcode(OpIndexSlice, []int{}, "OpIndexSlice")
