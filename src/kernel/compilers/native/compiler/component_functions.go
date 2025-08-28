@@ -4,30 +4,27 @@ import (
 	"go/ast"
 	"go/token"
 
+	"github.com/markel1974/c64emu/src/kernel/compilers/native/compiler/tables"
 	"github.com/markel1974/c64emu/src/kernel/vm/bytecode"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
-)
-
-const (
-	UndefinedSymbol = "_"
 )
 
 // Functions is a collection that manages a list of function descriptions.
 type Functions struct {
 	gk             objects.IGateKeeper
 	constants      *Constants
-	scopes         *Scopes
+	scopes         *tables.Scopes
 	imports        *Imports
 	declarations   *Declarations
-	functionTable  *FunctionTable
-	structTable    *StructTable
-	interfaceTable *InterfaceTable
+	functionTable  *tables.FunctionTable
+	structTable    *tables.StructTable
+	interfaceTable *tables.InterfaceTable
 	fileSet        *token.FileSet
 	compile        func(node ast.Node) error
 }
 
 // NewFunctions initializes and returns a new Functions instance.
-func NewFunctions(gk objects.IGateKeeper, constants *Constants, scopes *Scopes, imports *Imports, declarations *Declarations, structTable *StructTable, functionTable *FunctionTable, interfaceTable *InterfaceTable) *Functions {
+func NewFunctions(gk objects.IGateKeeper, constants *Constants, scopes *tables.Scopes, imports *Imports, declarations *Declarations, structTable *tables.StructTable, functionTable *tables.FunctionTable, interfaceTable *tables.InterfaceTable) *Functions {
 	return &Functions{
 		gk:             gk,
 		constants:      constants,
@@ -83,10 +80,10 @@ func (c *Functions) Compile() error {
 
 // funcBodyPrepare prepares the function body by processing its declaration and receiver, and defining its symbol in the scope.
 // It returns an error if the receiver type is unsupported or if symbol definition fails.
-func (c *Functions) funcBodyPrepare(fd *FunctionDescription) error {
+func (c *Functions) funcBodyPrepare(fd *tables.FunctionDescription) error {
 	node := fd.FuncDecl
 	var err error
-	if fd.ReturnTypes, err = GetReceivers(node.Type.Results); err != nil {
+	if fd.ReturnTypes, err = tables.GetReceivers(node.Type.Results); err != nil {
 		return err
 	}
 	for _, p := range node.Type.Params.List {
@@ -100,14 +97,14 @@ func (c *Functions) funcBodyPrepare(fd *FunctionDescription) error {
 				fd.StructReceivers = append(fd.StructReceivers, name.Name)
 			}
 		}
-		recvTypeIdent := GetIdent(node.Recv.List[0])
+		recvTypeIdent := tables.GetIdent(node.Recv.List[0])
 		if recvTypeIdent == nil {
-			return NewCompilerError(c.fileSet, node, "unsupported method receiver type")
+			return tables.NewCompilerError(c.fileSet, node, "unsupported method receiver type")
 		}
 		if !c.structTable.Has(recvTypeIdent.Name) {
-			return NewCompilerError(c.fileSet, node, "undefined type '%s' for method receiver", recvTypeIdent.Name)
+			return tables.NewCompilerError(c.fileSet, node, "undefined type '%s' for method receiver", recvTypeIdent.Name)
 		}
-		fd.Name = GetMangledName(recvTypeIdent.Name, node.Name.Name)
+		fd.Name = tables.GetMangledName(recvTypeIdent.Name, node.Name.Name)
 		fd.StructName = recvTypeIdent.Name
 	} else {
 		fd.Name = node.Name.Name
@@ -128,7 +125,7 @@ func (c *Functions) funcBodyPrepare(fd *FunctionDescription) error {
 }
 
 // funcBodyCompile compiles the body of a function declaration and generates the necessary bytecode instructions.
-func (c *Functions) funcBodyCompile(fd *FunctionDescription) error {
+func (c *Functions) funcBodyCompile(fd *tables.FunctionDescription) error {
 	node := fd.FuncDecl
 	if err := c.scopes.Enter(fd.Name); err != nil {
 		return err
@@ -162,7 +159,7 @@ func (c *Functions) funcBodyCompile(fd *FunctionDescription) error {
 	if err != nil {
 		return err
 	}
-	if scope.LastInstruction() == nil || scope.LastInstruction().opcode != bytecode.OpReturn {
+	if scope.LastInstruction() == nil || scope.LastInstruction().Opcode() != bytecode.OpReturn {
 		if _, err = c.scopes.Emit(bytecode.OpReturn, 0); err != nil {
 			return err
 		}
@@ -182,15 +179,15 @@ func (c *Functions) funcBodyCompile(fd *FunctionDescription) error {
 		nParams++
 	}
 
-	fnSymbol, ok := c.scopes.SymbolRebuildScope(fd.Name, UnknownScope)
+	fnSymbol, ok := c.scopes.SymbolRebuildScope(fd.Name, tables.UnknownScope)
 	if !ok {
-		return NewCompilerError(c.fileSet, node, "undefined function: %s", fd.Name)
+		return tables.NewCompilerError(c.fileSet, node, "undefined function: %s", fd.Name)
 	}
 	compiledFn := c.gk.NewFuncCompiled(objects.FrameStatic, fd.Name, code, nLocals, nParams, false, nil, freeSymbols)
 	fnSymbol.SetObject(compiledFn)
 	fnSymbol.SetReturnTypes(fd.ReturnTypes)
 
-	if node.Recv == nil && c.scopes.scopeIndex > 0 {
+	if node.Recv == nil && !c.scopes.IsRootScope() {
 		if _, err = c.scopes.Emit(bytecode.OpClosure, fnSymbol.Index(), numFree); err != nil {
 			return err
 		}
@@ -208,7 +205,7 @@ func (c *Functions) funcBodyCompile(fd *FunctionDescription) error {
 // Returns an error if the call expression contains invalid or unresolved references.
 func (c *Functions) CallExpr(node *ast.CallExpr) error {
 	// Step 1: Pre-evaluate nested function calls
-	tempSymbolMap := make(map[ast.Expr]*Symbol)
+	tempSymbolMap := make(map[ast.Expr]*tables.Symbol)
 	for _, arg := range node.Args {
 		if call, isCall := arg.(*ast.CallExpr); isCall {
 			if err := c.compile(call); err != nil {
@@ -218,7 +215,7 @@ func (c *Functions) CallExpr(node *ast.CallExpr) error {
 			if err != nil {
 				return err
 			}
-			tempSymbol.SetScope(LocalScope)
+			tempSymbol.SetScope(tables.LocalScope)
 			tempSymbolMap[arg] = tempSymbol
 			if err = c.scopes.EmitSymbolSet(tempSymbol); err != nil {
 				return err
@@ -240,7 +237,7 @@ func (c *Functions) CallExpr(node *ast.CallExpr) error {
 				finalArgs = node.Args
 				break
 			}
-			return NewCompilerError(c.fileSet, node, "undefined function: %s", fun.Name)
+			return tables.NewCompilerError(c.fileSet, node, "undefined function: %s", fun.Name)
 		}
 		if err := c.scopes.EmitSymbolGet(symbol); err != nil {
 			return err
@@ -250,7 +247,7 @@ func (c *Functions) CallExpr(node *ast.CallExpr) error {
 	case *ast.SelectorExpr:
 		receiverIdent, ok := fun.X.(*ast.Ident)
 		if !ok {
-			return NewCompilerError(c.fileSet, node, "unsupported receiver for selector expression: %T", fun.X)
+			return tables.NewCompilerError(c.fileSet, node, "unsupported receiver for selector expression: %T", fun.X)
 		}
 
 		// Path 1: Package function (e.g., fmt.Println)
@@ -261,7 +258,7 @@ func (c *Functions) CallExpr(node *ast.CallExpr) error {
 
 		receiverSymbol, ok := c.scopes.SymbolResolve(receiverIdent.Name)
 		if !ok {
-			return NewCompilerError(c.fileSet, node, "undefined variable: %s", receiverIdent.Name)
+			return tables.NewCompilerError(c.fileSet, node, "undefined variable: %s", receiverIdent.Name)
 		}
 
 		// Path 2: Method call on an interface
@@ -297,21 +294,21 @@ func (c *Functions) CallExpr(node *ast.CallExpr) error {
 
 		// Path 3: Method call on a struct
 		if receiverSymbol.IsStruct() {
-			mangledName := GetMangledName(receiverSymbol.StructName(), fun.Sel.Name)
+			mangledName := tables.GetMangledName(receiverSymbol.StructName(), fun.Sel.Name)
 			methodSymbol, ok := c.scopes.SymbolResolve(mangledName)
 			if !ok {
-				return NewCompilerError(c.fileSet, node, "undefined method '%s' for type '%s'", fun.Sel.Name, receiverSymbol.StructName())
+				return tables.NewCompilerError(c.fileSet, node, "undefined method '%s' for type '%s'", fun.Sel.Name, receiverSymbol.StructName())
 			}
 			if err := c.scopes.EmitSymbolGet(methodSymbol); err != nil {
 				return err
 			}
 			finalArgs = append([]ast.Expr{fun.X}, node.Args...)
 		} else {
-			return NewCompilerError(c.fileSet, node, "cannot call method on non-struct/non-interface type for '%s'", receiverSymbol.Name())
+			return tables.NewCompilerError(c.fileSet, node, "cannot call method on non-struct/non-interface type for '%s'", receiverSymbol.Name())
 		}
 
 	default:
-		return NewCompilerError(c.fileSet, node, "unsupported function call type: %T", node.Fun)
+		return tables.NewCompilerError(c.fileSet, node, "unsupported function call type: %T", node.Fun)
 	}
 
 	// Step 3 & 4 for simple functions and struct methods
@@ -397,7 +394,7 @@ func (c *Functions) FuncLit(node *ast.FuncLit) error {
 	if err != nil {
 		return err
 	}
-	if scope.LastInstruction() == nil || scope.LastInstruction().opcode != bytecode.OpReturn {
+	if scope.LastInstruction() == nil || scope.LastInstruction().Opcode() != bytecode.OpReturn {
 		if _, err = c.scopes.Emit(bytecode.OpReturn, 0); err != nil {
 			return err
 		}

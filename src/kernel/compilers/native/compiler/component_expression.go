@@ -4,6 +4,7 @@ import (
 	"go/ast"
 	"go/token"
 
+	"github.com/markel1974/c64emu/src/kernel/compilers/native/compiler/tables"
 	"github.com/markel1974/c64emu/src/kernel/vm/bytecode"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
@@ -12,12 +13,12 @@ type Expression struct {
 	gk        objects.IGateKeeper
 	fileSet   *token.FileSet
 	constants *Constants
-	scopes    *Scopes
+	scopes    *tables.Scopes
 	imports   *Imports
 	compile   func(node ast.Node) error
 }
 
-func NewExpression(gk objects.IGateKeeper, constants *Constants, scopes *Scopes, imports *Imports) *Expression {
+func NewExpression(gk objects.IGateKeeper, constants *Constants, scopes *tables.Scopes, imports *Imports) *Expression {
 	return &Expression{
 		gk:        gk,
 		constants: constants,
@@ -53,19 +54,19 @@ func (c *Expression) UnaryExpr(node *ast.UnaryExpr) error {
 			// literal (es. '&h').
 			symbol, ok := c.scopes.SymbolResolve(operand.Name)
 			if !ok {
-				return NewCompilerError(c.fileSet, node, "undefined variable: %s", operand.Name)
+				return tables.NewCompilerError(c.fileSet, node, "undefined variable: %s", operand.Name)
 			}
 			switch symbol.Scope() {
-			case LocalScope:
+			case tables.LocalScope:
 				if _, err := c.scopes.Emit(bytecode.OpLocalPtrGet, symbol.Index()); err != nil {
 					return err
 				}
-			case FreeScope:
+			case tables.FreeScope:
 				if _, err := c.scopes.Emit(bytecode.OpFreePtrGet, symbol.Index()); err != nil {
 					return err
 				}
 			default:
-				return NewCompilerError(c.fileSet, node, "cannot take the address of a global variable")
+				return tables.NewCompilerError(c.fileSet, node, "cannot take the address of a global variable")
 			}
 		case *ast.CompositeLit:
 			// literal (es. '&Home{...}').
@@ -76,7 +77,7 @@ func (c *Expression) UnaryExpr(node *ast.UnaryExpr) error {
 			if err != nil {
 				return err
 			}
-			tempSymbol.SetScope(LocalScope)
+			tempSymbol.SetScope(tables.LocalScope)
 			if err = c.scopes.EmitSymbolDefine(tempSymbol); err != nil {
 				return err
 			}
@@ -84,7 +85,7 @@ func (c *Expression) UnaryExpr(node *ast.UnaryExpr) error {
 				return err
 			}
 		default:
-			return NewCompilerError(c.fileSet, node, "cannot take the address of %T", node.X)
+			return tables.NewCompilerError(c.fileSet, node, "cannot take the address of %T", node.X)
 		}
 		return nil
 	}
@@ -94,7 +95,7 @@ func (c *Expression) UnaryExpr(node *ast.UnaryExpr) error {
 	}
 	z, ok := UnaryAdapterFor(node.Op)
 	if !ok {
-		return NewCompilerError(c.fileSet, node, "unhandled unary op: %s", node.Op)
+		return tables.NewCompilerError(c.fileSet, node, "unhandled unary op: %s", node.Op)
 	}
 	if _, err := c.scopes.Emit(z.op, z.arguments...); err != nil {
 		return err
@@ -112,7 +113,7 @@ func (c *Expression) BinaryExpr(node *ast.BinaryExpr) error {
 	}
 	z, ok := BinaryAdapterFor(node.Op)
 	if !ok {
-		return NewCompilerError(c.fileSet, node, "unhandled binary op: %s", node.Op)
+		return tables.NewCompilerError(c.fileSet, node, "unhandled binary op: %s", node.Op)
 	}
 	if _, err := c.scopes.Emit(z.op, z.arguments...); err != nil {
 		return err
@@ -128,14 +129,14 @@ func (c *Expression) SelectorExpr(node *ast.SelectorExpr) error {
 	receiverIdent, ok := node.X.(*ast.Ident)
 	if !ok {
 		// currently not handling complex cases like a[0].field
-		return NewCompilerError(c.fileSet, node, "[SelectorExpr] unsupported receiver for selector expression: %T", node.X)
+		return tables.NewCompilerError(c.fileSet, node, "[SelectorExpr] unsupported receiver for selector expression: %T", node.X)
 	}
 	if c.imports.Emit(receiverIdent.Name, node.Sel.Name) {
 		return nil
 	}
 	receiverSymbol, ok := c.scopes.SymbolResolve(receiverIdent.Name)
 	if !ok {
-		return NewCompilerError(c.fileSet, node, "[SelectorExpr] undefined variable: %s", receiverIdent.Name)
+		return tables.NewCompilerError(c.fileSet, node, "[SelectorExpr] undefined variable: %s", receiverIdent.Name)
 	}
 	if receiverSymbol.IsStruct() { // struct
 		if err := c.compile(node.X); err != nil {
@@ -151,18 +152,18 @@ func (c *Expression) SelectorExpr(node *ast.SelectorExpr) error {
 		}
 		return nil
 	}
-	return NewCompilerError(c.fileSet, node, "[SelectorExpr] unsupported selector expression for symbol %s", receiverSymbol.Name())
+	return tables.NewCompilerError(c.fileSet, node, "[SelectorExpr] unsupported selector expression for symbol %s", receiverSymbol.Name())
 }
 
 // IncDecStmt handles increment and decrement statements for identifiers, updating the corresponding variables and cleaning the stack.
 func (c *Expression) IncDecStmt(node *ast.IncDecStmt) error {
 	ident, ok := node.X.(*ast.Ident)
 	if !ok {
-		return NewCompilerError(c.fileSet, node, "unsupported IncDec statement for type %T", node.X)
+		return tables.NewCompilerError(c.fileSet, node, "unsupported IncDec statement for type %T", node.X)
 	}
 	symbol, ok := c.scopes.SymbolResolve(ident.Name)
 	if !ok {
-		return NewCompilerError(c.fileSet, node, "undefined variable: %s", ident.Name)
+		return tables.NewCompilerError(c.fileSet, node, "undefined variable: %s", ident.Name)
 	}
 	if err := c.scopes.EmitSymbolGet(symbol); err != nil {
 		return err
@@ -181,7 +182,7 @@ func (c *Expression) IncDecStmt(node *ast.IncDecStmt) error {
 			return err
 		}
 	} else {
-		return NewCompilerError(c.fileSet, node, "unsupported IncDec token: %s", node.Tok)
+		return tables.NewCompilerError(c.fileSet, node, "unsupported IncDec token: %s", node.Tok)
 	}
 	if err := c.scopes.EmitSymbolSet(symbol); err != nil {
 		return err

@@ -1,4 +1,4 @@
-package compiler
+package tables
 
 import (
 	"fmt"
@@ -27,6 +27,22 @@ func NewFieldDescription(name string, base string, kind string, node ast.Node) *
 	}
 }
 
+func (fd *FieldDescription) Name() string {
+	return fd.name
+}
+
+func (fd *FieldDescription) Base() string {
+	return fd.base
+}
+
+func (fd *FieldDescription) Kind() string {
+	return fd.kind
+}
+
+func (fd *FieldDescription) Node() ast.Node {
+	return fd.node
+}
+
 // StructTable is a collection that manages mappings of struct names to their associated properties.
 type StructTable struct {
 	container       map[string][]*FieldDescription
@@ -44,6 +60,20 @@ func NewStructTable(gk objects.IGateKeeper, scopes *Scopes) *StructTable {
 		scopes:          scopes,
 	}
 	return st
+}
+
+// Keys returns a slice of struct names in the container map.
+func (st *StructTable) Keys() []string {
+	keys := make([]string, 0, len(st.container))
+	for k := range st.container {
+		keys = append(keys, k)
+	}
+	return keys
+}
+
+// Container returns the internal map associating struct names with slices of their field descriptions.
+func (st *StructTable) Container() map[string][]*FieldDescription {
+	return st.container
 }
 
 func (st *StructTable) SetImplementations(impls map[string][]string) {

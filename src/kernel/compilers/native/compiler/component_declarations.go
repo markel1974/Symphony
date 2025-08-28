@@ -8,6 +8,7 @@ import (
 	"go/token"
 	"strconv"
 
+	"github.com/markel1974/c64emu/src/kernel/compilers/native/compiler/tables"
 	"github.com/markel1974/c64emu/src/kernel/vm/bytecode"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
@@ -19,16 +20,16 @@ type Declarations struct {
 	gk             objects.IGateKeeper
 	references     *Constants
 	constants      *Constants
-	scopes         *Scopes
+	scopes         *tables.Scopes
 	fileSet        *token.FileSet
 	imports        *Imports
-	structTable    *StructTable
-	interfaceTable *InterfaceTable
+	structTable    *tables.StructTable
+	interfaceTable *tables.InterfaceTable
 	compile        func(node ast.Node) error
 }
 
 // NewDeclarations creates and initializes a new Declarations instance with gatekeeper, constants, scopes, and structs table.
-func NewDeclarations(gk objects.IGateKeeper, references *Constants, constants *Constants, scopes *Scopes, imports *Imports, structsTable *StructTable, interfaceTable *InterfaceTable) *Declarations {
+func NewDeclarations(gk objects.IGateKeeper, references *Constants, constants *Constants, scopes *tables.Scopes, imports *Imports, structsTable *tables.StructTable, interfaceTable *tables.InterfaceTable) *Declarations {
 	return &Declarations{
 		gk: gk, references: references, constants: constants, scopes: scopes,
 		compile:        nil,
@@ -78,7 +79,7 @@ func (c *Declarations) GenDecl(node *ast.GenDecl) error {
 func (c *Declarations) TypeSpec(node *ast.TypeSpec) error {
 	typeName := node.Name.Name
 	if _, ok := c.scopes.SymbolResolve(typeName); ok {
-		return NewCompilerError(c.fileSet, node, "type '%s' already defined", typeName)
+		return tables.NewCompilerError(c.fileSet, node, "type '%s' already defined", typeName)
 	}
 
 	switch t := node.Type.(type) {
@@ -88,7 +89,7 @@ func (c *Declarations) TypeSpec(node *ast.TypeSpec) error {
 				var typeNameBuf bytes.Buffer
 				var base = c.structTable.ExtractBaseName(field.Type)
 				if err := printer.Fprint(&typeNameBuf, c.fileSet, field.Type); err != nil {
-					return NewCompilerError(c.fileSet, node, "failed to resolve type for field in struct '%s'", typeName)
+					return tables.NewCompilerError(c.fileSet, node, "failed to resolve type for field in struct '%s'", typeName)
 				}
 				fieldType := typeNameBuf.String()
 				for _, name := range field.Names {
@@ -105,7 +106,7 @@ func (c *Declarations) TypeSpec(node *ast.TypeSpec) error {
 	case *ast.InterfaceType:
 		// Aggiungi la definizione dell'interfaccia alla nostra nuova tabella
 		if err := c.interfaceTable.Add(typeName, t); err != nil {
-			return NewCompilerError(c.fileSet, node, err.Error())
+			return tables.NewCompilerError(c.fileSet, node, err.Error())
 		}
 		// Aggiungi un simbolo per il tipo interfaccia
 		symbol, err := c.scopes.SymbolDefine(typeName)
@@ -123,7 +124,7 @@ func (c *Declarations) ValueSpec(node *ast.ValueSpec) error {
 	if len(node.Values) > 0 {
 		for i, name := range node.Names {
 			if i > len(node.Values)-1 {
-				return NewCompilerError(c.fileSet, node, "too few values for %s", name.Name)
+				return tables.NewCompilerError(c.fileSet, node, "too few values for %s", name.Name)
 			}
 
 			if err := c.compile(node.Values[i]); err != nil {
@@ -135,7 +136,7 @@ func (c *Declarations) ValueSpec(node *ast.ValueSpec) error {
 				return err
 			}
 
-			var assignedStructSymbol *Symbol
+			var assignedStructSymbol *tables.Symbol
 			isInterfaceAssignment := false
 
 			if node.Type != nil {
@@ -158,7 +159,7 @@ func (c *Declarations) ValueSpec(node *ast.ValueSpec) error {
 
 			if isInterfaceAssignment && assignedStructSymbol != nil && assignedStructSymbol.IsStruct() {
 				if err := c.handleInterfaceAssignment(symbol, assignedStructSymbol); err != nil {
-					return NewCompilerError(c.fileSet, node, err.Error())
+					return tables.NewCompilerError(c.fileSet, node, err.Error())
 				}
 			} else {
 				structName, returnTypes, _ := c.structTable.Inference(node.Values[i])
@@ -295,7 +296,7 @@ func (c *Declarations) BasicLit(node *ast.BasicLit) error {
 		val, _ := strconv.Unquote(node.Value)
 		obj = c.gk.NewString(objects.FrameStatic, val)
 	default:
-		return NewCompilerError(c.fileSet, node, "unhandled literal: %s", node.Kind)
+		return tables.NewCompilerError(c.fileSet, node, "unhandled literal: %s", node.Kind)
 	}
 	id := c.constants.Add("", obj)
 	if _, err := c.scopes.Emit(bytecode.OpConstant, id); err != nil {
@@ -493,15 +494,15 @@ func (c *Declarations) AssignStmt(node *ast.AssignStmt) error {
 			}
 		}
 		if len(node.Lhs) != len(funcReturnTypes) {
-			return NewCompilerError(c.fileSet, node, "assignment mismatch: %d variables but %d return values", len(node.Lhs), len(funcReturnTypes))
+			return tables.NewCompilerError(c.fileSet, node, "assignment mismatch: %d variables but %d return values", len(node.Lhs), len(funcReturnTypes))
 		}
 		for i := len(node.Lhs) - 1; i >= 0; i-- {
 			lhs := node.Lhs[i]
 			ident, ok := lhs.(*ast.Ident)
 			if !ok {
-				return NewCompilerError(c.fileSet, node, "unsupported multiple assignment to type %T", lhs)
+				return tables.NewCompilerError(c.fileSet, node, "unsupported multiple assignment to type %T", lhs)
 			}
-			var symbol *Symbol
+			var symbol *tables.Symbol
 			if node.Tok == token.DEFINE {
 				var err error
 				if symbol, err = c.scopes.SymbolDefine(ident.Name); err != nil {
@@ -510,7 +511,7 @@ func (c *Declarations) AssignStmt(node *ast.AssignStmt) error {
 			} else {
 				var found bool
 				if symbol, found = c.scopes.SymbolResolve(ident.Name); !found {
-					return NewCompilerError(c.fileSet, node, "undefined variable: %s", ident.Name)
+					return tables.NewCompilerError(c.fileSet, node, "undefined variable: %s", ident.Name)
 				}
 			}
 			// Inferenza completa del tipo per ogni variabile.
@@ -543,7 +544,7 @@ func (c *Declarations) AssignStmt(node *ast.AssignStmt) error {
 	switch lhs := node.Lhs[0].(type) {
 	case *ast.Ident:
 		name := lhs.Name
-		var symbol *Symbol
+		var symbol *tables.Symbol
 		var err error
 
 		if node.Tok == token.DEFINE { // Caso specifico per ':='
@@ -571,12 +572,12 @@ func (c *Declarations) AssignStmt(node *ast.AssignStmt) error {
 			var ok bool
 			symbol, ok = c.scopes.SymbolResolve(name)
 			if !ok {
-				return NewCompilerError(c.fileSet, node, "[AssignStmt] undefined variable: %s", name)
+				return tables.NewCompilerError(c.fileSet, node, "[AssignStmt] undefined variable: %s", name)
 			}
 
 			// --- INIZIO NUOVA LOGICA PER INTERFACCE ---
 			if symbol.IsInterface() {
-				var assignedStructSymbol *Symbol
+				var assignedStructSymbol *tables.Symbol
 				if rhsIdent, ok := node.Rhs[0].(*ast.Ident); ok {
 					assignedStructSymbol, _ = c.scopes.SymbolResolve(rhsIdent.Name)
 				} else if compLit, ok := node.Rhs[0].(*ast.CompositeLit); ok {
@@ -587,7 +588,7 @@ func (c *Declarations) AssignStmt(node *ast.AssignStmt) error {
 
 				if assignedStructSymbol != nil && assignedStructSymbol.IsStruct() {
 					if err := c.handleInterfaceAssignment(symbol, assignedStructSymbol); err != nil {
-						return NewCompilerError(c.fileSet, node, err.Error())
+						return tables.NewCompilerError(c.fileSet, node, err.Error())
 					}
 				}
 			}
@@ -605,15 +606,15 @@ func (c *Declarations) AssignStmt(node *ast.AssignStmt) error {
 		// ... (le altre clausole 'case' per SelectorExpr, StarExpr rimangono invariate) ...
 	case *ast.SelectorExpr: // es. myStruct.Field = ...
 		if node.Tok == token.DEFINE {
-			return NewCompilerError(c.fileSet, node, "cannot define a field with :=")
+			return tables.NewCompilerError(c.fileSet, node, "cannot define a field with :=")
 		}
 		receiverIdent, ok := lhs.X.(*ast.Ident)
 		if !ok {
-			return NewCompilerError(c.fileSet, node, "unsupported receiver for field assignment")
+			return tables.NewCompilerError(c.fileSet, node, "unsupported receiver for field assignment")
 		}
 		symbol, ok := c.scopes.SymbolResolve(receiverIdent.Name)
 		if !ok {
-			return NewCompilerError(c.fileSet, node, "undefined variable: %s", receiverIdent.Name)
+			return tables.NewCompilerError(c.fileSet, node, "undefined variable: %s", receiverIdent.Name)
 		}
 		fieldName := lhs.Sel.Name
 		keyConst := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, fieldName))
@@ -621,7 +622,7 @@ func (c *Declarations) AssignStmt(node *ast.AssignStmt) error {
 			return err
 		}
 		const numSelectors = 1
-		if symbol.Scope() == GlobalScope {
+		if symbol.Scope() == tables.GlobalScope {
 			if _, err := c.scopes.Emit(bytecode.OpGlobalSelSet, symbol.Index(), numSelectors); err != nil {
 				return err
 			}
@@ -633,7 +634,7 @@ func (c *Declarations) AssignStmt(node *ast.AssignStmt) error {
 		return nil
 	case *ast.StarExpr: // Gestisce casi come '*myVar = ...'
 		if node.Tok == token.DEFINE {
-			return NewCompilerError(c.fileSet, node, "cannot define a variable with dereference")
+			return tables.NewCompilerError(c.fileSet, node, "cannot define a variable with dereference")
 		}
 		if err := c.compile(lhs.X); err != nil {
 			return err
@@ -646,7 +647,7 @@ func (c *Declarations) AssignStmt(node *ast.AssignStmt) error {
 		}
 		return nil
 	default:
-		return NewCompilerError(c.fileSet, node, "unsupported left-hand side in assignment: %T", node.Lhs[0])
+		return tables.NewCompilerError(c.fileSet, node, "unsupported left-hand side in assignment: %T", node.Lhs[0])
 	}
 }
 
@@ -677,12 +678,12 @@ func (c *Declarations) CompositeLit(node *ast.CompositeLit) error {
 			return err
 		}
 		for _, field := range structFields {
-			keyConst := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, field.name))
+			keyConst := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, field.Name()))
 			if _, err = c.scopes.Emit(bytecode.OpConstant, keyConst); err != nil {
 				return err
 			}
-			if field.node != nil {
-				if err = c.compile(field.node); err != nil {
+			if field.Node() != nil {
+				if err = c.compile(field.Node()); err != nil {
 					return err
 				}
 			} else {
@@ -721,7 +722,7 @@ func (c *Declarations) CompositeLit(node *ast.CompositeLit) error {
 		}
 		return nil
 	default:
-		return NewCompilerError(c.fileSet, node, "unsupported composite literal type: %T", node.Type)
+		return tables.NewCompilerError(c.fileSet, node, "unsupported composite literal type: %T", node.Type)
 	}
 }
 
@@ -760,7 +761,7 @@ func (c *Declarations) IndexExpr(node *ast.IndexExpr) error {
 	return err
 }
 
-func (c *Declarations) handleInterfaceAssignment(variableSymbol, assignedStructSymbol *Symbol) error {
+func (c *Declarations) handleInterfaceAssignment(variableSymbol, assignedStructSymbol *tables.Symbol) error {
 	interfaceName := variableSymbol.InterfaceName()
 	structName := assignedStructSymbol.StructName()
 	// Compatibility check
@@ -782,7 +783,7 @@ func (c *Declarations) handleInterfaceAssignment(variableSymbol, assignedStructS
 			return err
 		}
 		// Push method function
-		mangledMethodName := GetMangledName(structName, requiredMethod.Name)
+		mangledMethodName := tables.GetMangledName(structName, requiredMethod.Name)
 		methodSymbol, ok := c.scopes.SymbolResolve(mangledMethodName)
 		if !ok {
 			return fmt.Errorf("internal compiler error: could not resolve method %s for struct %s", requiredMethod.Name, structName)

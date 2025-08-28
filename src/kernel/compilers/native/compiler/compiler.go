@@ -8,13 +8,9 @@ import (
 	"io"
 
 	"github.com/markel1974/c64emu/src/kernel/compilers/native/common"
+	"github.com/markel1974/c64emu/src/kernel/compilers/native/compiler/tables"
 	"github.com/markel1974/c64emu/src/kernel/vm/bytecode"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
-)
-
-// maxScope defines the maximum allowable depth for compilation scopes to prevent excessive recursion or memory use.
-const (
-	maxScope = 1024
 )
 
 // Compiler represents a structure to manage the compilation process, including scopes and associated token file sets.
@@ -23,7 +19,7 @@ type Compiler struct {
 	components        []IComponent
 	fileSet           *token.FileSet
 	loader            bytecode.ILoader
-	scopes            *Scopes
+	scopes            *tables.Scopes
 	constants         *Constants
 	references        *Constants
 	imports           *Imports
@@ -34,9 +30,9 @@ type Compiler struct {
 	declarations      *Declarations
 	controlFlow       *ControlFlow
 	loops             *Loops
-	structsTable      *StructTable
-	functionTable     *FunctionTable
-	interfaceTable    *InterfaceTable
+	structsTable      *tables.StructTable
+	functionTable     *tables.FunctionTable
+	interfaceTable    *tables.InterfaceTable
 	typeCompatibility *TypeCompatibility
 	rootNode          *ast.File
 }
@@ -44,10 +40,10 @@ type Compiler struct {
 // New creates and returns a new instance of Compiler with initialized scopes using a standard library loader.
 func New(gk objects.IGateKeeper, loader bytecode.ILoader, opcodes *bytecode.Opcodes) *Compiler {
 	var components []IComponent
-	scopes := NewScopes(gk, opcodes)
-	structTable := NewStructTable(gk, scopes)
-	interfaceTable := NewInterfaceTable(gk, scopes)
-	functionTable := NewFunctionTable(gk, scopes, structTable, interfaceTable)
+	scopes := tables.NewScopes(gk, opcodes)
+	structTable := tables.NewStructTable(gk, scopes)
+	interfaceTable := tables.NewInterfaceTable(gk, scopes)
+	functionTable := tables.NewFunctionTable(gk, scopes, structTable, interfaceTable)
 	constants := NewConstants()
 	references := NewConstants()
 	imports := NewImports(gk, loader, references, scopes)
@@ -133,16 +129,7 @@ func (c *Compiler) References() []objects.IObject {
 
 // Globals retrieves and returns all global objects from the root scope and any objects tracked by references.
 func (c *Compiler) Globals() []objects.IObject {
-	ret := make([]objects.IObject, len(c.scopes.initSymbolTable.symbols))
-	for _, obj := range c.scopes.initSymbolTable.definitions {
-		target := obj.GetObject()
-		if target != nil {
-			ret[obj.index] = target
-		} else {
-			ret[obj.index] = c.gk.NewString(objects.FrameStatic, obj.Name()+"_placeHolder")
-			//ret[obj.index] = c.factory.UndefinedValue()
-		}
-	}
+	ret := c.scopes.CreateGlobals()
 	return ret
 }
 
@@ -215,7 +202,7 @@ func (c *Compiler) compile(in ast.Node) error {
 	case *ast.SwitchStmt:
 		err = c.controlFlow.SwitchStmt(node)
 	default:
-		err = NewCompilerError(c.fileSet, node, "unsupported expression type: %T", node)
+		err = tables.NewCompilerError(c.fileSet, node, "unsupported expression type: %T", node)
 	}
 	return err
 }

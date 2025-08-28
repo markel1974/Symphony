@@ -4,6 +4,7 @@ import (
 	"go/ast"
 	"go/token"
 
+	"github.com/markel1974/c64emu/src/kernel/compilers/native/compiler/tables"
 	"github.com/markel1974/c64emu/src/kernel/vm/bytecode"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
@@ -13,12 +14,12 @@ import (
 type ControlFlow struct {
 	gk      objects.IGateKeeper
 	fileSet *token.FileSet
-	scopes  *Scopes
+	scopes  *tables.Scopes
 	compile func(node ast.Node) error
 }
 
 // NewControlFlow creates and returns a new instance of ControlFlow with the specified gatekeeper and scope parameters.
-func NewControlFlow(gk objects.IGateKeeper, scopes *Scopes) *ControlFlow {
+func NewControlFlow(gk objects.IGateKeeper, scopes *tables.Scopes) *ControlFlow {
 	return &ControlFlow{
 		gk:     gk,
 		scopes: scopes,
@@ -102,7 +103,7 @@ func (c *ControlFlow) BranchStmt(node *ast.BranchStmt) error {
 				return err
 			}
 			if err = scope.AddEndJump(breakJumpPos); err != nil {
-				return NewCompilerError(c.fileSet, node, err.Error())
+				return tables.NewCompilerError(c.fileSet, node, err.Error())
 			}
 		} else if scope.CurrentLoop() != nil { // Otherwise, check if we're in a loop
 			breakJumpPos, err := c.scopes.Emit(bytecode.OpJump, 9999)
@@ -110,10 +111,10 @@ func (c *ControlFlow) BranchStmt(node *ast.BranchStmt) error {
 				return err
 			}
 			if err = scope.AddBreak(breakJumpPos); err != nil {
-				return NewCompilerError(c.fileSet, node, err.Error())
+				return tables.NewCompilerError(c.fileSet, node, err.Error())
 			}
 		} else {
-			return NewCompilerError(c.fileSet, node, "break statement not within a loop or switch")
+			return tables.NewCompilerError(c.fileSet, node, "break statement not within a loop or switch")
 		}
 		return nil
 	}
@@ -126,12 +127,12 @@ func (c *ControlFlow) BranchStmt(node *ast.BranchStmt) error {
 		}
 		// Add the position of this 'continue' to the loop context
 		if err := scope.AddContinue(continueJumpPos); err != nil {
-			return NewCompilerError(c.fileSet, node, err.Error())
+			return tables.NewCompilerError(c.fileSet, node, err.Error())
 		}
 		return nil
 	}
 
-	return NewCompilerError(c.fileSet, node, "unsupported branch statement: %s", node.Tok.String())
+	return tables.NewCompilerError(c.fileSet, node, "unsupported branch statement: %s", node.Tok.String())
 }
 
 // SwitchStmt processes a given *ast.SwitchStmt node, handles scopes, and generates bytecode for a switch statement.
@@ -144,7 +145,7 @@ func (c *ControlFlow) SwitchStmt(node *ast.SwitchStmt) error {
 	scope.EnterSwitch()
 
 	// 1. Compile the expression (tag) and store it in a temporary variable to avoid recalculation.
-	var tagSymbol *Symbol
+	var tagSymbol *tables.Symbol
 	if node.Tag != nil {
 		if err := c.compile(node.Tag); err != nil {
 			return err

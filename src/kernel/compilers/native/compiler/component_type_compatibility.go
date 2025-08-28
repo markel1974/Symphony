@@ -4,20 +4,22 @@ import (
 	"go/ast"
 	"go/token"
 	"reflect"
+
+	"github.com/markel1974/c64emu/src/kernel/compilers/native/compiler/tables"
 )
 
 // TypeCompatibility is a structure used to manage type-checking, compatibility, and implementation relationships.
 // It includes tables for structs, interfaces, and functions, and tracks implementations of interfaces by structs.
 type TypeCompatibility struct {
 	fileSet         *token.FileSet
-	structTable     *StructTable
-	interfaceTable  *InterfaceTable
-	functionTable   *FunctionTable
+	structTable     *tables.StructTable
+	interfaceTable  *tables.InterfaceTable
+	functionTable   *tables.FunctionTable
 	implementations map[string][]string
 }
 
 // NewTypeCompatibility initializes a TypeCompatibility instance with provided struct, interface, and function tables.
-func NewTypeCompatibility(structTable *StructTable, interfaceTable *InterfaceTable, functionTable *FunctionTable) *TypeCompatibility {
+func NewTypeCompatibility(structTable *tables.StructTable, interfaceTable *tables.InterfaceTable, functionTable *tables.FunctionTable) *TypeCompatibility {
 	return &TypeCompatibility{
 		structTable:     structTable,
 		interfaceTable:  interfaceTable,
@@ -36,9 +38,9 @@ func (tc *TypeCompatibility) Setup(fileSet *token.FileSet, _ func(node ast.Node)
 func (tc *TypeCompatibility) Prepare() error {
 	//fmt.Println("Running interface implementation check...")
 	// Iterate over each defined struct
-	for structName, _ := range tc.structTable.container {
+	for structName, _ := range tc.structTable.Container() {
 		// Iterate over each defined interface
-		for interfaceName, interfaceDesc := range tc.interfaceTable.container {
+		for interfaceName, interfaceDesc := range tc.interfaceTable.Container() {
 			implements, err := tc.checkStructImplementsInterface(structName, interfaceDesc)
 			if err != nil {
 				// TODO collect all errors
@@ -62,12 +64,12 @@ func (tc *TypeCompatibility) Compile() error {
 }
 
 // checkStructImplementsInterface determines if a struct implements all methods defined by a given interface description.
-func (tc *TypeCompatibility) checkStructImplementsInterface(structName string, interfaceDesc *InterfaceDescription) (bool, error) {
+func (tc *TypeCompatibility) checkStructImplementsInterface(structName string, interfaceDesc *tables.InterfaceDescription) (bool, error) {
 	for _, requiredMethod := range interfaceDesc.Methods {
 		// The "mangled" method name for the struct is "StructName.MethodName"
-		mangledMethodName := GetMangledName(structName, requiredMethod.Name)
+		mangledMethodName := tables.GetMangledName(structName, requiredMethod.Name)
 		// Look up the function (method) description in the functionTable
-		var structMethod *FunctionDescription
+		var structMethod *tables.FunctionDescription
 		for i := 0; i < tc.functionTable.Len(); i++ {
 			fd, _ := tc.functionTable.Get(i)
 			if fd.Name == mangledMethodName {

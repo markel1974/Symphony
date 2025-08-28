@@ -1,4 +1,4 @@
-package compiler
+package tables
 
 import "github.com/markel1974/c64emu/src/kernel/vm/bytecode"
 
@@ -14,4 +14,12 @@ func NewEmittedInstruction(opcode bytecode.OpcodeId, position int) *EmittedInstr
 		opcode:   opcode,
 		position: position,
 	}
+}
+
+func (ei *EmittedInstruction) Opcode() bytecode.OpcodeId {
+	return ei.opcode
+}
+
+func (ei *EmittedInstruction) Position() int {
+	return ei.position
 }

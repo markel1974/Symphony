@@ -4,6 +4,7 @@ import (
 	"go/ast"
 	"go/token"
 
+	"github.com/markel1974/c64emu/src/kernel/compilers/native/compiler/tables"
 	"github.com/markel1974/c64emu/src/kernel/vm/bytecode"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
@@ -11,13 +12,13 @@ import (
 type Loops struct {
 	gk            objects.IGateKeeper
 	fileSet       *token.FileSet
-	scopes        *Scopes
-	structTable   *StructTable
-	functionTable *FunctionTable
+	scopes        *tables.Scopes
+	structTable   *tables.StructTable
+	functionTable *tables.FunctionTable
 	compile       func(node ast.Node) error
 }
 
-func NewLoops(gk objects.IGateKeeper, scopes *Scopes, structTable *StructTable, functionTable *FunctionTable) *Loops {
+func NewLoops(gk objects.IGateKeeper, scopes *tables.Scopes, structTable *tables.StructTable, functionTable *tables.FunctionTable) *Loops {
 	return &Loops{
 		gk:            gk,
 		scopes:        scopes,
@@ -159,7 +160,7 @@ func (c *Loops) RangeStmt(node *ast.RangeStmt) error {
 			returnTypeName, _ = c.structTable.TypeNameFromSymbolField(receiverIdent.Name, expr.Sel.Name)
 		}
 	default:
-		return NewCompilerError(c.fileSet, node, "unsupported range expression: %T", node.X)
+		return tables.NewCompilerError(c.fileSet, node, "unsupported range expression: %T", node.X)
 	}
 	keySymbol, err := c.functionTable.RangeKey(node)
 	if err != nil {

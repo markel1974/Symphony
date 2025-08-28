@@ -1,10 +1,14 @@
-package compiler
+package tables
 
 import (
 	"fmt"
 	"go/ast"
 
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
+)
+
+const (
+	UndefinedSymbol = "_"
 )
 
 // FunctionDescription represents the structure to describe a Go function, its metadata, and related declarations.

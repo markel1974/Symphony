@@ -1,4 +1,4 @@
-package compiler
+package tables
 
 import (
 	"errors"
@@ -9,9 +9,14 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
+// maxScope defines the maximum allowable depth for compilation scopes to prevent excessive recursion or memory use.
+const (
+	maxScope = 1024
+)
+
 // Scopes manages a collection of compilation scopes and the associated symbol table for nested compilation contexts.
 type Scopes struct {
-	factory              objects.IGateKeeper
+	gk                   objects.IGateKeeper
 	op                   *bytecode.Opcodes
 	symbolTable          *SymbolTable
 	initSymbolTable      *SymbolTable
@@ -21,9 +26,9 @@ type Scopes struct {
 }
 
 // NewScopes initializes and returns a Scopes structure with a new symbol table, main compilation scope, and scope index set to 0.
-func NewScopes(factory objects.IGateKeeper, op *bytecode.Opcodes) *Scopes {
+func NewScopes(gk objects.IGateKeeper, op *bytecode.Opcodes) *Scopes {
 	c := &Scopes{
-		factory:              factory,
+		gk:                   gk,
 		op:                   op,
 		initSymbolTable:      NewSymbolTable(),
 		symbolTable:          nil,
@@ -36,8 +41,28 @@ func NewScopes(factory objects.IGateKeeper, op *bytecode.Opcodes) *Scopes {
 	return c
 }
 
+func (c *Scopes) CreateGlobals() []objects.IObject {
+	ret := make([]objects.IObject, len(c.initSymbolTable.symbols))
+	for _, obj := range c.initSymbolTable.definitions {
+		target := obj.GetObject()
+		if target != nil {
+			ret[obj.index] = target
+		} else {
+			ret[obj.index] = c.gk.NewString(objects.FrameStatic, obj.Name()+"_placeHolder")
+			//ret[obj.index] = c.factory.UndefinedValue()
+		}
+	}
+	return ret
+}
+
+// SetRootIndex resets the scope index to 0, designating it as the root index for the current Scopes instance.
 func (c *Scopes) SetRootIndex() {
 	c.scopeIndex = 0
+}
+
+// IsRootScope checks if the current scope is the root scope by verifying if the scope index is zero.
+func (c *Scopes) IsRootScope() bool {
+	return c.scopeIndex == 0
 }
 
 // SymbolDefineUnique defines a unique symbol in the current symbol table with the specified scope and object type.

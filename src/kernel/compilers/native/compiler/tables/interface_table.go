@@ -1,4 +1,4 @@
-package compiler
+package tables
 
 import (
 	"fmt"
@@ -36,6 +36,20 @@ func NewInterfaceTable(gk objects.IGateKeeper, scopes *Scopes) *InterfaceTable {
 		scopes:    scopes,
 		container: make(map[string]*InterfaceDescription),
 	}
+}
+
+// Keys returns a slice of all the keys present in the container map of the InterfaceTable.
+func (it *InterfaceTable) Keys() []string {
+	keys := make([]string, 0, len(it.container))
+	for k := range it.container {
+		keys = append(keys, k)
+	}
+	return keys
+}
+
+// Container returns the map of interface descriptions indexed by their names from the InterfaceTable.
+func (it *InterfaceTable) Container() map[string]*InterfaceDescription {
+	return it.container
 }
 
 // Add registers a new interface in the InterfaceTable with its methods and attributes defined in the given AST node.
