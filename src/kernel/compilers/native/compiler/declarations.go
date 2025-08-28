@@ -20,16 +20,18 @@ type Declarations struct {
 	constants   *Constants
 	scopes      *Scopes
 	fileSet     *token.FileSet
+	imports     *Imports
 	structTable *StructTable
 	compile     func(node ast.Node) error
 }
 
 // NewDeclarations creates and initializes a new Declarations instance with gatekeeper, constants, scopes, and structs table.
-func NewDeclarations(gk objects.IGateKeeper, references *Constants, constants *Constants, scopes *Scopes, structsTable *StructTable) *Declarations {
+func NewDeclarations(gk objects.IGateKeeper, references *Constants, constants *Constants, scopes *Scopes, imports *Imports, structsTable *StructTable) *Declarations {
 	return &Declarations{
 		gk: gk, references: references, constants: constants, scopes: scopes,
 		compile:     nil,
 		structTable: structsTable,
+		imports:     imports,
 	}
 }
 

@@ -19,30 +19,38 @@ const (
 
 // Compiler represents a structure to manage the compilation process, including scopes and associated token file sets.
 type Compiler struct {
-	gk           objects.IGateKeeper
-	fileSet      *token.FileSet
-	loader       bytecode.ILoader
-	scopes       *Scopes
-	constants    *Constants
-	references   *Constants
-	imports      *Imports
-	functions    *Functions
-	types        *Types
-	others       *Others
-	declarations *Declarations
-	structs      *StructTable
-	rootNode     *ast.File
+	gk            objects.IGateKeeper
+	fileSet       *token.FileSet
+	loader        bytecode.ILoader
+	scopes        *Scopes
+	constants     *Constants
+	references    *Constants
+	imports       *Imports
+	functions     *Functions
+	types         *Types
+	others        *Others
+	expressions   *Expression
+	declarations  *Declarations
+	controlFlow   *ControlFlow
+	loops         *Loops
+	structs       *StructTable
+	functionTable *FunctionTable
+	rootNode      *ast.File
 }
 
 // New creates and returns a new instance of Compiler with initialized scopes using a standard library loader.
 func New(gk objects.IGateKeeper, loader bytecode.ILoader, opcodes *bytecode.Opcodes) *Compiler {
 	scopes := NewScopes(gk, opcodes)
+	structs := NewStructTable(gk, scopes)
+	functionTable := NewFunctionTable(gk, scopes, structs)
 	constants := NewConstants()
 	references := NewConstants()
-	structs := NewStructTable(gk, scopes)
-	declarations := NewDeclarations(gk, references, constants, scopes, structs)
 	imports := NewImports(gk, references, scopes)
-	functions := NewFunctions(gk, constants, scopes, imports, declarations, structs)
+	declarations := NewDeclarations(gk, references, constants, scopes, imports, structs)
+	expressions := NewExpression(gk, constants, scopes, imports)
+	functions := NewFunctions(gk, constants, scopes, imports, declarations, structs, functionTable)
+	controlFlow := NewControlFlow(gk, scopes)
+	loops := NewLoops(gk, scopes, structs, functionTable)
 	types := NewTypes(declarations)
 	others := NewOthers(declarations)
 	c := &Compiler{
@@ -54,6 +62,9 @@ func New(gk objects.IGateKeeper, loader bytecode.ILoader, opcodes *bytecode.Opco
 		imports:      imports,
 		functions:    functions,
 		declarations: declarations,
+		controlFlow:  controlFlow,
+		expressions:  expressions,
+		loops:        loops,
 		types:        types,
 		others:       others,
 		structs:      structs,
@@ -77,6 +88,15 @@ func (c *Compiler) Compile(filename string, source any) error {
 		return err
 	}
 	if err := c.functions.Setup(c.fileSet, c.compile); err != nil {
+		return err
+	}
+	if err := c.controlFlow.Setup(c.fileSet, c.compile); err != nil {
+		return err
+	}
+	if err := c.loops.Setup(c.fileSet, c.compile); err != nil {
+		return err
+	}
+	if err := c.expressions.Setup(c.fileSet, c.compile); err != nil {
 		return err
 	}
 	if err := c.others.Setup(c.fileSet, c.compile); err != nil {
@@ -162,18 +182,18 @@ func (c *Compiler) compile(in ast.Node) error {
 		err = c.functions.BlockStmt(node)
 	case *ast.ExprStmt:
 		err = c.functions.ExprStmt(node)
-	case *ast.IfStmt:
-		err = c.functions.IfStmt(node)
 	case *ast.RangeStmt:
-		err = c.functions.RangeStmt(node)
+		err = c.loops.RangeStmt(node)
 	case *ast.ForStmt:
-		err = c.functions.ForStmt(node)
+		err = c.loops.ForStmt(node)
 	case *ast.IncDecStmt:
-		err = c.functions.IncDecStmt(node)
+		err = c.expressions.IncDecStmt(node)
 	case *ast.BinaryExpr:
-		err = c.functions.BinaryExpr(node)
+		err = c.expressions.BinaryExpr(node)
 	case *ast.UnaryExpr:
-		err = c.functions.UnaryExpr(node)
+		err = c.expressions.UnaryExpr(node)
+	case *ast.SelectorExpr:
+		err = c.expressions.SelectorExpr(node)
 	case *ast.FuncLit:
 		err = c.functions.FuncLit(node)
 	case *ast.FuncDecl:
@@ -182,12 +202,12 @@ func (c *Compiler) compile(in ast.Node) error {
 		err = c.functions.CallExpr(node)
 	case *ast.ReturnStmt:
 		err = c.functions.ReturnStmt(node)
-	case *ast.SelectorExpr:
-		err = c.functions.SelectorExpr(node)
+	case *ast.IfStmt:
+		err = c.controlFlow.IfStmt(node)
 	case *ast.BranchStmt:
-		err = c.functions.BranchStmt(node)
+		err = c.controlFlow.BranchStmt(node)
 	case *ast.SwitchStmt:
-		err = c.functions.SwitchStmt(node)
+		err = c.controlFlow.SwitchStmt(node)
 	default:
 		err = NewCompilerError(c.fileSet, node, "unsupported expression type: %T", node)
 	}
