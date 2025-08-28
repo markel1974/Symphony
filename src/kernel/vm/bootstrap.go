@@ -17,5 +17,5 @@ func NewVM(factory objects.IGateKeeper, op *bytecode.Opcodes, sequencerId string
 	default:
 		seq = _nativeSequencer.NewSequencer(op)
 	}
-	return core.New(factory, seq), nil
+	return core.New(factory, seq, op), nil
 }

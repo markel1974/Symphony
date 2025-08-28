@@ -21,11 +21,10 @@ const (
 	maxFrames = 1024
 )
 
-var _startUpSequence = []string{bytecode.PreInitFunction, bytecode.InitFunction}
-
 // VM represents a virtual machine that executes bytecode instructions, handles stack, and manages execution frames.
 type VM struct {
 	gk          objects.IGateKeeper
+	op          *bytecode.Opcodes
 	sourceFiles *bytecode.Files
 	stack       *Stack
 	frames      *Frames
@@ -41,9 +40,10 @@ type VM struct {
 }
 
 // New initializes and returns a new virtual machine instance configured with the provided components and settings.
-func New(gk objects.IGateKeeper, sequencer ISequencer) *VM {
+func New(gk objects.IGateKeeper, sequencer ISequencer, op *bytecode.Opcodes) *VM {
 	v := &VM{
 		gk:          gk,
+		op:          op,
 		ip:          resetIp,
 		sourceFiles: nil,
 		references:  nil,
@@ -63,29 +63,67 @@ func New(gk objects.IGateKeeper, sequencer ISequencer) *VM {
 }
 
 // Setup initializes the virtual machine with the provided bytecode and loader components.
-func (v *VM) Setup(loader bytecode.ILoader, bc *bytecode.Bytecode) error {
-	if err := v.references.Setup(loader, bc.References()); err != nil {
+func (v *VM) Setup(loader bytecode.ILoader, codes ...*bytecode.Bytecode) error {
+	if len(codes) == 0 {
+		return fmt.Errorf("no bytecode provided")
+	}
+	var constants []objects.IObject
+	var references []objects.IObject
+	var globals []objects.IObject
+
+	if len(codes) == 1 {
+		bc := codes[0]
+		constants = bc.Constants()
+		references = bc.References()
+		globals = bc.Global()
+		v.sourceFiles = bc.SourceFiles()
+	} else {
+		for _, bc := range codes {
+			references = append(references, bc.References()...)
+			constants = append(constants, bc.Constants()...)
+			globals = append(globals, bc.Global()...)
+			//TODO add source files
+			//v.sourceFiles.AddFile()
+		}
+		var err error
+		relocator := bytecode.NewRelocator(v.gk, loader, v.op, []string{bytecode.PreInitFunction, bytecode.InitFunction})
+		if constants, err = relocator.Relocate(constants); err != nil {
+			return err
+		}
+		if references, err = relocator.Relocate(references); err != nil {
+			return err
+		}
+		if globals, err = relocator.Relocate(globals); err != nil {
+			return err
+		}
+	}
+	if err := v.references.Setup(loader, references); err != nil {
 		return err
 	}
-	if err := v.constants.Setup(bc.Constants()); err != nil {
+	if err := v.constants.Setup(constants); err != nil {
 		return err
 	}
-	if err := v.globals.Setup(bc.Global()); err != nil {
+	if err := v.globals.Setup(globals); err != nil {
 		return err
 	}
-	v.sourceFiles = bc.SourceFiles()
-	for _, global := range bc.Global() {
+
+	var init []*objects.FuncCompiled
+	for _, global := range globals {
 		switch c := global.(type) {
 		case *objects.FuncCompiled:
-			v.entryPoints[c.Name()] = c
+			if c.Name() == bytecode.PreInitFunction {
+				if err := v.exec(c); err != nil {
+					return err
+				}
+			} else if c.Name() == bytecode.InitFunction {
+				init = append(init, c)
+			} else {
+				v.entryPoints[c.Name()] = c
+			}
 		}
 	}
-	for _, entryPoint := range _startUpSequence {
-		_, ok := v.entryPoints[entryPoint]
-		if !ok {
-			continue
-		}
-		if err := v.exec(entryPoint); err != nil {
+	for _, fn := range init {
+		if err := v.exec(fn); err != nil {
 			return err
 		}
 	}
@@ -104,7 +142,11 @@ func (v *VM) EntryPoints() []string {
 // Run executes the specified function by mainId with provided arguments after initializing the VM with "__init__".
 // Returns an error if initialization or function execution fails.
 func (v *VM) Run(mainId string, args ...interface{}) error {
-	return v.exec(mainId, args...)
+	mainFn, ok := v.entryPoints[mainId]
+	if !ok {
+		return fmt.Errorf("entry point not found: %s", mainId)
+	}
+	return v.exec(mainFn, args...)
 }
 
 // Stack returns the current stack instance associated with the VM.
@@ -276,17 +318,14 @@ func (v *VM) prepare() {
 }
 
 // Run executes the virtual machine's bytecode, managing the stack, frames, and instruction pointer state.
-func (v *VM) exec(mainId string, args ...interface{}) error {
-	mainFn, ok := v.entryPoints[mainId]
-	if !ok {
-		return fmt.Errorf("entry point not found: %s", mainId)
-	}
+// mainId string
+func (v *VM) exec(mainFn *objects.FuncCompiled, args ...interface{}) error {
 	v.prepare()
 	v.currFrame = v.frames.Head()
 	v.currFrame.Bind(v.ip, mainFn, 0)
 	v.stack.SetStackPointer(v.currFrame.NumLocals())
 	if v.currFrame.NumParameters() != len(args) {
-		return fmt.Errorf("[%s] wrong number of arguments provided: want=%d, got=%d", mainId, v.currFrame.NumParameters(), len(args))
+		return fmt.Errorf("[%s] wrong number of arguments provided: want=%d, got=%d", mainFn.Name(), v.currFrame.NumParameters(), len(args))
 	}
 	for idx, arg := range args {
 		argObj := v.gk.FromInterface(objects.FrameStatic, arg)
@@ -296,13 +335,16 @@ func (v *VM) exec(mainId string, args ...interface{}) error {
 	v.loop()
 
 	if v.err != nil {
-		filePos, _ := v.sourceFiles.Position(v.currFrame.SourcePos(v.ip - 1))
-		err := fmt.Errorf("runtime error %w at %s", v.err, filePos)
-		for _, frame := range v.frames.Unroll() {
-			filePos, _ = v.sourceFiles.Position(frame.SourcePos(frame.SavedIP() - 1))
-			err = fmt.Errorf("%w at %s", err, filePos)
+		if v.sourceFiles != nil {
+			filePos, _ := v.sourceFiles.Position(v.currFrame.SourcePos(v.ip - 1))
+			err := fmt.Errorf("runtime error %w at %s", v.err, filePos)
+			for _, frame := range v.frames.Unroll() {
+				filePos, _ = v.sourceFiles.Position(frame.SourcePos(frame.SavedIP() - 1))
+				err = fmt.Errorf("%w at %s", err, filePos)
+			}
+			return err
 		}
-		return err
+		return v.err
 	}
 	return nil
 }

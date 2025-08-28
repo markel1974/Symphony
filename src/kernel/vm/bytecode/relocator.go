@@ -7,28 +7,34 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
-// Cleaner is responsible for processing, fixing, and reconstructing objects, ensuring compatibility with the runtime environment.
-type Cleaner struct {
-	gk      objects.IGateKeeper
-	opcodes *Opcodes
-	loader  ILoader
+// Relocator is responsible for processing, fixing, and reconstructing objects, ensuring compatibility with the runtime environment.
+type Relocator struct {
+	gk        objects.IGateKeeper
+	opcodes   *Opcodes
+	loader    ILoader
+	preserved map[string]bool
 }
 
-// NewCleaner creates and returns a new instance of Cleaner initialized with the provided IGateKeeper, ILoader, and Opcodes.
-func NewCleaner(gk objects.IGateKeeper, loader ILoader, opcodes *Opcodes) *Cleaner {
-	return &Cleaner{
-		gk:      gk,
-		loader:  loader,
-		opcodes: opcodes,
+// NewRelocator creates and returns a new instance of Relocator initialized with the provided IGateKeeper, ILoader, and Opcodes.
+func NewRelocator(gk objects.IGateKeeper, loader ILoader, opcodes *Opcodes, preserve []string) *Relocator {
+	p := make(map[string]bool)
+	for _, v := range preserve {
+		p[v] = true
+	}
+	return &Relocator{
+		gk:        gk,
+		loader:    loader,
+		opcodes:   opcodes,
+		preserved: p,
 	}
 }
 
-// FixObjects processes a slice of IObject instances, ensuring each object is fixed and reconstructed correctly.
+// Fix processes a slice of IObject instances, ensuring each object is fixed and reconstructed correctly.
 // Returns a slice of fixed IObject instances or an error if the fixing process fails.
-func (c *Cleaner) FixObjects(o []objects.IObject) ([]objects.IObject, error) {
+func (c *Relocator) Fix(o []objects.IObject) ([]objects.IObject, error) {
 	out := make([]objects.IObject, len(o))
 	for i, v := range o {
-		fv, err := c.FixObject(v)
+		fv, err := c.fixObject(v)
 		if err != nil {
 			return nil, err
 		}
@@ -40,7 +46,7 @@ func (c *Cleaner) FixObjects(o []objects.IObject) ([]objects.IObject, error) {
 // FixObject ensures that a decoded object is properly reconstructed and compatible with the runtime environment.
 // It recursively processes composite objects like arrays and maps, fixing or transforming their elements if necessary.
 // Returns the modified object or an error if reconstruction fails.
-func (c *Cleaner) FixObject(o objects.IObject) (objects.IObject, error) {
+func (c *Relocator) fixObject(o objects.IObject) (objects.IObject, error) {
 	switch o := o.(type) {
 	case *objects.Bool:
 		if o.Falsy() {
@@ -51,7 +57,7 @@ func (c *Cleaner) FixObject(o objects.IObject) (objects.IObject, error) {
 		return c.gk.UndefinedValue(), nil
 	case *objects.Array:
 		for i, v := range o.Values() {
-			fv, err := c.FixObject(v)
+			fv, err := c.fixObject(v)
 			if err != nil {
 				return nil, err
 			}
@@ -59,7 +65,7 @@ func (c *Cleaner) FixObject(o objects.IObject) (objects.IObject, error) {
 		}
 	case *objects.ArrayImmutable:
 		for i, v := range o.Values() {
-			fv, err := c.FixObject(v)
+			fv, err := c.fixObject(v)
 			if err != nil {
 				return nil, err
 			}
@@ -67,7 +73,7 @@ func (c *Cleaner) FixObject(o objects.IObject) (objects.IObject, error) {
 		}
 	case *objects.Map:
 		for k, v := range o.Values() {
-			fv, err := c.FixObject(v)
+			fv, err := c.fixObject(v)
 			if err != nil {
 				return nil, err
 			}
@@ -79,18 +85,16 @@ func (c *Cleaner) FixObject(o objects.IObject) (objects.IObject, error) {
 	return o, nil
 }
 
-// RemoveDuplicates removes duplicate entries from the constants slice of the Bytecode instance.
-// It updates references within the constants to match the deduplicated list.
-// Returns an error if the deduplication process encounters issues.
-func (c *Cleaner) RemoveDuplicates(in []objects.IObject) ([]objects.IObject, error) {
+// Relocate modifies a slice of IObject instances by deduplicating input and updating bytecode constant indexes accordingly.
+func (c *Relocator) Relocate(in []objects.IObject) ([]objects.IObject, error) {
 	outDeduped, outIndexContainer, err := c.processDuplicates(in)
 	if err != nil {
 		return nil, err
 	}
 	for _, in := range outDeduped {
-		switch z := in.(type) {
+		switch obj := in.(type) {
 		case *objects.FuncCompiled:
-			if err = c.updateIndexes(z.Data(), outIndexContainer); err != nil {
+			if err = c.updateIndexes(obj.Data(), outIndexContainer); err != nil {
 				return nil, err
 			}
 		}
@@ -100,72 +104,78 @@ func (c *Cleaner) RemoveDuplicates(in []objects.IObject) ([]objects.IObject, err
 
 // processDuplicates processes a container of objects, removing duplicates and mapping old indices to new indices.
 // It returns a deduplicated list of objects, a mapping of old to new indices, and an error if encountered.
-func (c *Cleaner) processDuplicates(container []objects.IObject) ([]objects.IObject, map[int]int, error) {
+func (c *Relocator) processDuplicates(container []objects.IObject) ([]objects.IObject, map[int]int, error) {
 	var deDuped []objects.IObject
-	indexMap := make(map[int]int) // mapping from old constant index to new index
-	fns := make(map[*objects.FuncCompiled]int)
+	indexContainer := make(map[int]int)
 	ints := make(map[int64]int)
 	strings := make(map[string]int)
 	floats := make(map[float64]int)
 	chars := make(map[rune]int)
+	fns := make(map[*objects.FuncCompiled]int)
 
 	for curIdx, in := range container {
-		switch z := in.(type) {
+		switch obj := in.(type) {
 		case *objects.FuncCompiled:
-			if newIdx, ok := fns[z]; ok {
-				indexMap[curIdx] = newIdx
+			newIdx := -1
+			if _, preserve := c.preserved[obj.Name()]; !preserve { //obj.Name() != PreInitFunction && obj.Name() != InitFunction {
+				if v, ok := fns[obj]; ok {
+					newIdx = v
+				}
+			}
+			if newIdx >= 0 {
+				indexContainer[curIdx] = newIdx
 			} else {
 				newIdx = len(deDuped)
-				fns[z] = newIdx
-				indexMap[curIdx] = newIdx
-				deDuped = append(deDuped, z)
+				fns[obj] = newIdx
+				indexContainer[curIdx] = newIdx
+				deDuped = append(deDuped, obj)
 			}
 		case *objects.Int:
-			if newIdx, ok := ints[z.Value()]; ok {
-				indexMap[curIdx] = newIdx
+			if newIdx, ok := ints[obj.Value()]; ok {
+				indexContainer[curIdx] = newIdx
 			} else {
 				newIdx = len(deDuped)
-				ints[z.Value()] = newIdx
-				indexMap[curIdx] = newIdx
-				deDuped = append(deDuped, z)
+				ints[obj.Value()] = newIdx
+				indexContainer[curIdx] = newIdx
+				deDuped = append(deDuped, obj)
 			}
 		case *objects.String:
-			if newIdx, ok := strings[z.Value()]; ok {
-				indexMap[curIdx] = newIdx
+			if newIdx, ok := strings[obj.Value()]; ok {
+				indexContainer[curIdx] = newIdx
 			} else {
 				newIdx = len(deDuped)
-				strings[z.Value()] = newIdx
-				indexMap[curIdx] = newIdx
-				deDuped = append(deDuped, z)
+				strings[obj.Value()] = newIdx
+				indexContainer[curIdx] = newIdx
+				deDuped = append(deDuped, obj)
 			}
 		case *objects.Float:
-			if newIdx, ok := floats[z.Value()]; ok {
-				indexMap[curIdx] = newIdx
+			if newIdx, ok := floats[obj.Value()]; ok {
+				indexContainer[curIdx] = newIdx
 			} else {
 				newIdx = len(deDuped)
-				floats[z.Value()] = newIdx
-				indexMap[curIdx] = newIdx
-				deDuped = append(deDuped, z)
+				floats[obj.Value()] = newIdx
+				indexContainer[curIdx] = newIdx
+				deDuped = append(deDuped, obj)
 			}
 		case *objects.Char:
-			if newIdx, ok := chars[z.Value()]; ok {
-				indexMap[curIdx] = newIdx
+			if newIdx, ok := chars[obj.Value()]; ok {
+				indexContainer[curIdx] = newIdx
 			} else {
 				newIdx = len(deDuped)
-				chars[z.Value()] = newIdx
-				indexMap[curIdx] = newIdx
-				deDuped = append(deDuped, z)
+				chars[obj.Value()] = newIdx
+				indexContainer[curIdx] = newIdx
+				deDuped = append(deDuped, obj)
 			}
 		default:
 			return nil, nil, fmt.Errorf("unsupported top-level object type: %s", reflect.TypeOf(c).Elem().Name())
 		}
 	}
-	return deDuped, indexMap, nil
+	return deDuped, indexContainer, nil
 }
 
 // updateConstIndexes modifies bytecode instructions to remap constant indexes based on the provided index map.
 // It updates OpConstant and OpClosure instructions with new constant indexes or returns an error if mapping fails.
-func (c *Cleaner) updateIndexes(instances []byte, indexContainer map[int]int) error {
+func (c *Relocator) updateIndexes(instances []byte, indexContainer map[int]int) error {
 	i := 0
 	for i < len(instances) {
 		op := instances[i]
