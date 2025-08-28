@@ -9,6 +9,13 @@ const (
 
 // Decoder represents an instruction decoder used to process bytecode in a virtual machine.
 // It handles decoding operands and executing the associated instruction logic.
+//
+// --- ARCHITECTURAL NOTE ---
+// The decoder uses a "reverse operand" logic. The list of operand widths is stored
+// in reverse order. This allows the Decode function to read operands backwards from the
+// instruction stream, which simplifies handling variable-sized instructions.
+// Consequently, when an IOpExecutor calls decoder.Read(N), it's accessing the N-th operand
+// from the *end* of the list. For example, decoder.Read(0) retrieves the LAST operand.
 type Decoder struct {
 	executor        IOpExecutor
 	name            string
@@ -76,6 +83,9 @@ func (d *Decoder) Execute(v *VM) {
 }
 
 // Read retrieves a decoded operand from the `decodedOperands` slice using a masked index derived from the input parameter.
+//
+// IMPORTANT: Due to the decoder's reverse logic, Read(0) accesses the LAST operand
+// of the instruction, Read(1) the second to last, and so on
 func (d *Decoder) Read(x int) int {
 	return d.decodedOperands[x&operandsMask]
 }

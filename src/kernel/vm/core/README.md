@@ -30,6 +30,7 @@ The VM's core execution loop deliberately avoids a monolithic `switch` statement
 -   **Architecture Over Micro-Performance:** Even if a giant `switch` statement were to be faster by a small margin, it would be a complicated choice. The value of this architecture is not measured in clock cycles, but in **flexibility and maintainability**.
 -   **Encapsulated Logic:** The logic for each opcode is encapsulated in its own dedicated `struct` (e.g., `OpConstant`, `OpBinary`), which implements the `IOpExecutor` interface. Each executor is a small, focused "specialist."
 -   **Pragmatic Performance:** While prioritizing design, the system remains performant. During initialization, the `Sequencer` creates a slice of **direct function pointers** to each executor's `Execute` method. This means the main loop performs a direct function call, which is extremely fast, avoiding any dynamic dispatch overhead at runtime.
+-   **Reverse Operand Decoding:** A key implementation detail of the VM's decoder is its "reverse operand" strategy. Operands for an instruction are read backwards from the bytecode stream. This convention simplifies the decoding logic but requires that all `IOpExecutor` implementations read their operands in reverse order (e.g., `decoder.Read(0)` accesses the last operand). This is a crucial convention to follow when adding new instructions.
 
 ### 3. Modular Architecture: The Sequencer as an Interchangeable Engine
 

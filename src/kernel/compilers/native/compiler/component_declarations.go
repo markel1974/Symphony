@@ -761,11 +761,7 @@ func (c *Declarations) IndexExpr(node *ast.IndexExpr) error {
 }
 
 func (c *Declarations) handleInterfaceAssignment(variableSymbol, assignedStructSymbol *Symbol) error {
-
-	// --- QUESTA È LA CORREZIONE ---
-	interfaceName := variableSymbol.TypeName() // Usa il nome del tipo, non il nome della variabile!
-	// --- FINE CORREZIONE ---
-
+	interfaceName := variableSymbol.InterfaceName()
 	structName := assignedStructSymbol.StructName()
 
 	// Verifica di compatibilità
@@ -778,31 +774,14 @@ func (c *Declarations) handleInterfaceAssignment(variableSymbol, assignedStructS
 	if !ok {
 		return fmt.Errorf("internal compiler error: unknown interface %s", interfaceName)
 	}
-
-	//interfaceName := variableSymbol.Name()
-	//structName := assignedStructSymbol.StructName()
-
-	// Verifica di compatibilità
-	//if !c.structTable.Implements(structName, interfaceName) {
-	//	return fmt.Errorf("cannot use value of type %s as type %s: %s does not implement %s",
-	//		structName, interfaceName, structName, interfaceName)
-	//}
-
-	//interfaceDesc, ok := c.interfaceTable.Get(interfaceName)
-	//if !ok {
-	//	return fmt.Errorf("internal compiler error: unknown interface %s", interfaceName)
-	//}
-
 	// A questo punto, il valore concreto (lo struct) è già sullo stack.
 	// Ora dobbiamo pushare le coppie (nome_metodo, funzione_metodo) per la iTable.
-
 	for _, requiredMethod := range interfaceDesc.Methods {
 		// Push del nome del metodo come costante stringa
 		methodNameConst := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, requiredMethod.Name))
 		if _, err := c.scopes.Emit(bytecode.OpConstant, methodNameConst); err != nil {
 			return err
 		}
-
 		// Push della funzione del metodo
 		mangledMethodName := GetMangledName(structName, requiredMethod.Name)
 		methodSymbol, ok := c.scopes.SymbolResolve(mangledMethodName)
@@ -813,11 +792,9 @@ func (c *Declarations) handleInterfaceAssignment(variableSymbol, assignedStructS
 			return err
 		}
 	}
-
 	// Emetti l'opcode OpInterface per creare l'oggetto
 	if _, err := c.scopes.Emit(bytecode.OpInterface, len(interfaceDesc.Methods)); err != nil {
 		return err
 	}
-
 	return nil
 }

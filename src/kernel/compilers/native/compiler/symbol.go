@@ -6,43 +6,40 @@ import (
 
 // Symbol represents an identifier with associated metadata such as name, scope, index, fields, and type information.
 type Symbol struct {
-	name         string
-	scope        SymbolScope
-	index        int
-	typeName     string
-	structName   string
-	structFields []string
-	returnTypes  []string
-	object       objects.IObject
-	isInterface  bool
+	name          string
+	scope         SymbolScope
+	index         int
+	interfaceName string
+	structName    string
+	structFields  []string
+	returnTypes   []string
+	object        objects.IObject
 }
 
 // NewSymbol creates a new Symbol instance with the provided name, index, scope, and associated object.
 func NewSymbol(name string, index int, scope SymbolScope) *Symbol {
 	symbol := &Symbol{
-		name:         name,
-		index:        index,
-		scope:        scope,
-		typeName:     "",
-		object:       nil,
-		isInterface:  false,
-		structFields: []string{},
-		returnTypes:  []string{},
+		name:          name,
+		index:         index,
+		scope:         scope,
+		interfaceName: "",
+		object:        nil,
+		structFields:  []string{},
+		returnTypes:   []string{},
 	}
 	return symbol
 }
 
 func (s *Symbol) Clone() *Symbol {
 	return &Symbol{
-		name:         s.name,
-		scope:        s.scope,
-		index:        s.index,
-		typeName:     s.typeName,
-		structName:   s.structName,
-		structFields: s.structFields,
-		returnTypes:  s.returnTypes,
-		object:       s.object,
-		isInterface:  s.isInterface,
+		name:          s.name,
+		scope:         s.scope,
+		index:         s.index,
+		interfaceName: s.interfaceName,
+		structName:    s.structName,
+		structFields:  s.structFields,
+		returnTypes:   s.returnTypes,
+		object:        s.object,
 	}
 }
 
@@ -66,14 +63,9 @@ func (s *Symbol) GetObject() objects.IObject {
 	return s.object
 }
 
-// TypeName returns the type name associated with the Symbol.
-func (s *Symbol) TypeName() string {
-	return s.typeName
-}
-
-// SetTypeName updates the typeName field of the Symbol with the provided name.
-func (s *Symbol) SetTypeName(name string) {
-	s.typeName = name
+// InterfaceName returns the type name associated with the Symbol.
+func (s *Symbol) InterfaceName() string {
+	return s.interfaceName
 }
 
 // SetStruct assigns a struct name and a slice of field names to the Symbol, updating its associated metadata.
@@ -81,7 +73,7 @@ func (s *Symbol) SetStruct(structName string, fields []string) {
 	//fmt.Printf("SetStruct %s => %s\n", s.Name(), structName)
 	s.structName = structName
 	s.structFields = fields
-	s.isInterface = false
+	s.interfaceName = ""
 }
 
 // StructName returns the name of the container associated with the Symbol.
@@ -100,13 +92,12 @@ func (s *Symbol) IsStruct() bool {
 }
 
 func (s *Symbol) SetInterface(name string) {
-	s.isInterface = true
-	s.typeName = name
+	s.interfaceName = name
 	s.structName = "" // Non può essere uno struct
 }
 
 func (s *Symbol) IsInterface() bool {
-	return s.isInterface
+	return len(s.interfaceName) > 0
 }
 
 // SetReturnTypes assigns a slice of type names to the Symbol's types field. Use this to define the types associated with a Symbol.

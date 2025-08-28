@@ -35,13 +35,9 @@ func DoPrint(p Printer) {
 func main() {
 	u := User{Name: "Mario"}
 	a := Article{Title: "Interfaces in Go"}
-
-	// 5. Assegnazione a variabile di tipo interfaccia
 	var p1 Printer
 	p1 = u
-
 	var p2 Printer = a
-
 	DoPrint(p1) // Dovrebbe stampare "User: Mario"
 	DoPrint(p2) // Dovrebbe stampare "Article: Interfaces in Go"
 }
