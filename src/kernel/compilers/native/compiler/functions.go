@@ -427,64 +427,63 @@ func (c *Functions) ForStmt(node *ast.ForStmt) error {
 	scope.EnterLoop()
 
 	loopStartPos := scope.InstructionsLen()
-	// compiles condition (e.g. x < 10)
+	// Compila la condizione (es. x < 10)
 	if node.Cond != nil {
 		if err = c.compile(node.Cond); err != nil {
 			return err
 		}
 	} else {
-		// if no condition is provided, it's an infinite loop - for simplicity emit 'true'
+		// Se non c'è condizione, è un loop infinito -> emetti 'true'
 		if _, err = c.scopes.Emit(bytecode.OpTrue); err != nil {
 			return err
 		}
 	}
-	// emits a conditional jump to exit the loop if condition is false
+	// Emette un salto condizionale per uscire dal loop se la condizione è falsa
 	jumpNotTruthyPos, err := c.scopes.Emit(bytecode.OpJumpFalsy, 9999)
 	if err != nil {
 		return err
 	}
+
+	// Compila il corpo del loop
 	if err = c.compile(node.Body); err != nil {
 		return err
 	}
 
+	// Imposta il target per le istruzioni 'continue'
 	continueTargetPos := scope.InstructionsLen()
-	if node.Post != nil {
-		if err = c.compile(node.Post); err != nil {
-			return err
-		}
-	}
 	scope.CurrentLoop().ContinueTargetPosition = continueTargetPos
 
-	// compiles post-iteration statement (e.g. x++)
+	// Compila l'istruzione post-iterazione (es. x++) - UNA SOLA VOLTA
 	if node.Post != nil {
 		if err = c.compile(node.Post); err != nil {
 			return err
 		}
 	}
-	// emits an unconditional jump to return to condition start
+
+	// Emette un salto incondizionato per tornare all'inizio della condizione
 	if _, err = c.scopes.Emit(bytecode.OpJump, loopStartPos); err != nil {
 		return err
 	}
+
 	scope, err = c.scopes.Current()
 	if err != nil {
 		return err
 	}
-	// updates (back-patching) conditional jump address (OpJumpFalsy) to point to loop end
-	afterLoopPos := scope.InstructionsLen()
 
-	// <-- 2. BACK-PATCHING: Aggiorniamo tutti i salti
+	// Back-patching: aggiorna il salto condizionale (OpJumpFalsy)
+	afterLoopPos := scope.InstructionsLen()
 	if err = c.scopes.ChangeOperand(jumpNotTruthyPos, afterLoopPos); err != nil {
 		return err
 	}
 
-	// Aggiorniamo tutte le istruzioni 'break' per saltare a `afterLoopPos`
+	// Aggiorna tutte le istruzioni 'break'
 	for _, pos := range scope.CurrentLoop().BreakPositions {
 		if err = c.scopes.ChangeOperand(pos, afterLoopPos); err != nil {
 			return err
 		}
 	}
 
-	// Aggiorniamo tutte le istruzioni 'break' per saltare a `afterLoopPos`
+	// Aggiorna tutte le istruzioni 'continue'
 	for _, pos := range scope.CurrentLoop().ContinuePositions {
 		if err = c.scopes.ChangeOperand(pos, scope.CurrentLoop().ContinueTargetPosition); err != nil {
 			return err
@@ -848,6 +847,10 @@ func (c *Functions) SwitchStmt(node *ast.SwitchStmt) error {
 		}
 	}
 
+	//if err := c.scopes.Enter("switch_body"); err != nil {
+	//	return err
+	//}
+
 	var defaultClause *ast.CaseClause
 	jumpsToNextCase := []int{}
 
@@ -921,6 +924,10 @@ func (c *Functions) SwitchStmt(node *ast.SwitchStmt) error {
 			}
 		}
 	}
+
+	//if _, err := c.scopes.Leave(); err != nil {
+	//	return err
+	//}
 
 	// 8. Back-patch finale: aggiorna tutti i salti alla fine
 	afterSwitchPos := scope.InstructionsLen()

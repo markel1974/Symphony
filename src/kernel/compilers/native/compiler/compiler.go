@@ -250,13 +250,20 @@ func (c *Compiler) collectDeclarations() error {
 
 // createInit creates a default __init__ function for the root scope.
 func (c *Compiler) createInit() error {
-	c.scopes.scopeIndex = 0
-	if _, err := c.scopes.Emit(bytecode.OpReturn, 0); err != nil {
+	c.scopes.SetRootIndex()
+	scope, err := c.scopes.Current()
+	if err != nil {
 		return err
 	}
-	initFuncCode := c.scopes.compilations[0].Instructions()
+	if len(scope.Instructions()) == 0 {
+		return nil
+	}
+	if _, err = c.scopes.Emit(bytecode.OpReturn, 0); err != nil {
+		return err
+	}
+	initFuncCode := scope.Instructions()
 	numLocals := c.scopes.SymbolCount()
-	initSymbols, err := c.scopes.SymbolDefine("__init__")
+	initSymbols, err := c.scopes.SymbolDefine(bytecode.PreInitFunction)
 	if err != nil {
 		return err
 	}

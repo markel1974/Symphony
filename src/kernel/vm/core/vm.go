@@ -20,6 +20,8 @@ const (
 	maxFrames = 1024
 )
 
+var _startUpSequence = []string{bytecode.PreInitFunction, bytecode.InitFunction}
+
 // VM represents a virtual machine that executes bytecode instructions, handles stack, and manages execution frames.
 type VM struct {
 	gk          objects.IGateKeeper
@@ -77,8 +79,14 @@ func (v *VM) Setup(loader bytecode.ILoader, bc *bytecode.Bytecode) error {
 			v.entryPoints[c.Name()] = c
 		}
 	}
-	if err := v.exec("__init__"); err != nil {
-		return err
+	for _, entryPoint := range _startUpSequence {
+		_, ok := v.entryPoints[entryPoint]
+		if !ok {
+			continue
+		}
+		if err := v.exec(entryPoint); err != nil {
+			return err
+		}
 	}
 	return nil
 }

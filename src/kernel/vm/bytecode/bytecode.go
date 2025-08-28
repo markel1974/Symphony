@@ -7,6 +7,11 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
+const (
+	PreInitFunction = "__init__"
+	InitFunction    = "init"
+)
+
 // init registers various types with the gob package to enable serialization and deserialization.
 func init() {
 	gob.Register(&Files{})

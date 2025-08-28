@@ -36,6 +36,10 @@ func NewScopes(factory objects.IGateKeeper, op *bytecode.Opcodes) *Scopes {
 	return c
 }
 
+func (c *Scopes) SetRootIndex() {
+	c.scopeIndex = 0
+}
+
 // SymbolDefineUnique defines a unique symbol in the current symbol table with the specified scope and object type.
 func (c *Scopes) SymbolDefineUnique(symbol string) (*Symbol, error) {
 	return c.symbolTable.DefineUnique(symbol)

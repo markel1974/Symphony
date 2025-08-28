@@ -11,12 +11,20 @@ func TaskFilterGenerator9(z int) func(a int) int {
 }
 
 func main() {
-	fmt.Println(TEST)
-	filterIncomplete := TaskFilterGenerator9
-	allTasks := []int{1, 2, 3}
-	for _, taskT := range allTasks {
-		z := filterIncomplete(taskT)
-		result := z(5)
-		fmt.Println(result)
+	for y := 0; y < 10; y++ {
+		fmt.Print(y)
+		fmt.Print(" -> ")
+		switch y {
+		case 1:
+			fmt.Println("i'm 1")
+		case 2:
+			fmt.Println("i'm two")
+		case 3:
+			fmt.Println("i'm 3")
+		case 4:
+			fmt.Println("i'm 3")
+		default:
+			fmt.Println("i'm default")
+		}
 	}
 }
