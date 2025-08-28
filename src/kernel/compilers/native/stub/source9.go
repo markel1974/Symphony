@@ -22,7 +22,7 @@ func main() {
 		case 3:
 			fmt.Println("i'm 3")
 		case 4:
-			fmt.Println("i'm 3")
+			fmt.Println("i'm four")
 		default:
 			fmt.Println("i'm default")
 		}

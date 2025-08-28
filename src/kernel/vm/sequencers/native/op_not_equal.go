@@ -28,9 +28,11 @@ func (op *OpNotEqual) Execute(v *core.VM, _ *core.Decoder) {
 	left := v.Stack().Pop()
 	var val objects.IObject
 	if left.Equals(right) {
-		val = v.Factory().TrueValue()
-	} else {
 		val = v.Factory().FalseValue()
+		//val = v.Factory().TrueValue()
+	} else {
+		val = v.Factory().TrueValue()
+		//val = v.Factory().FalseValue()
 	}
 	v.Stack().Push(val)
 }
