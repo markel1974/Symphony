@@ -33,6 +33,16 @@ func (c *Expression) Setup(fileSet *token.FileSet, compile func(node ast.Node) e
 	return nil
 }
 
+// Prepare initializes the ControlFlow structure, ensuring it is ready for subsequent compilation tasks and operations.
+func (c *Expression) Prepare() error {
+	return nil
+}
+
+// Compile compiles the AST nodes using the configured compile function and returns an error if the process fails.
+func (c *Expression) Compile() error {
+	return nil
+}
+
 // UnaryExpr compiles a unary expression by evaluating the operand and applying the specified unary operator.
 // It handles special cases for the address-of operator '&', ensuring correct pointer behavior based on operand type.
 // Emits appropriate bytecode instructions for each unary operation or returns an error on unsupported cases.

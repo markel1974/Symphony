@@ -32,6 +32,16 @@ func (c *ControlFlow) Setup(fileSet *token.FileSet, compile func(node ast.Node) 
 	return nil
 }
 
+// Prepare initializes the ControlFlow structure, ensuring it is ready for subsequent compilation tasks and operations.
+func (c *ControlFlow) Prepare() error {
+	return nil
+}
+
+// Compile compiles the AST nodes using the configured compile function and returns an error if the process fails.
+func (c *ControlFlow) Compile() error {
+	return nil
+}
+
 // IfStmt compiles an if statement, handling both 'then' and optional 'else' blocks with associated bytecode instructions.
 func (c *ControlFlow) IfStmt(node *ast.IfStmt) error {
 	if err := c.compile(node.Cond); err != nil {

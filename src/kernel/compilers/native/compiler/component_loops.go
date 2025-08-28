@@ -33,6 +33,16 @@ func (c *Loops) Setup(fileSet *token.FileSet, compile func(node ast.Node) error)
 	return nil
 }
 
+// Prepare initializes the ControlFlow structure, ensuring it is ready for subsequent compilation tasks and operations.
+func (c *Loops) Prepare() error {
+	return nil
+}
+
+// Compile compiles the AST nodes using the configured compile function and returns an error if the process fails.
+func (c *Loops) Compile() error {
+	return nil
+}
+
 // ForStmt compiles a for loop statement, including initialization, condition, post-iteration, and body execution.
 func (c *Loops) ForStmt(node *ast.ForStmt) error {
 	if node.Init != nil {

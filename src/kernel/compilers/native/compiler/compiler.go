@@ -20,6 +20,7 @@ const (
 // Compiler represents a structure to manage the compilation process, including scopes and associated token file sets.
 type Compiler struct {
 	gk            objects.IGateKeeper
+	components    []IComponent
 	fileSet       *token.FileSet
 	loader        bytecode.ILoader
 	scopes        *Scopes
@@ -40,35 +41,47 @@ type Compiler struct {
 
 // New creates and returns a new instance of Compiler with initialized scopes using a standard library loader.
 func New(gk objects.IGateKeeper, loader bytecode.ILoader, opcodes *bytecode.Opcodes) *Compiler {
+	var components []IComponent
 	scopes := NewScopes(gk, opcodes)
-	structs := NewStructTable(gk, scopes)
-	functionTable := NewFunctionTable(gk, scopes, structs)
+	structTable := NewStructTable(gk, scopes)
+	functionTable := NewFunctionTable(gk, scopes, structTable)
 	constants := NewConstants()
 	references := NewConstants()
-	imports := NewImports(gk, references, scopes)
-	declarations := NewDeclarations(gk, references, constants, scopes, imports, structs)
+	imports := NewImports(gk, loader, references, scopes)
+	components = append(components, imports)
+	declarations := NewDeclarations(gk, references, constants, scopes, imports, structTable)
+	components = append(components, declarations)
 	expressions := NewExpression(gk, constants, scopes, imports)
-	functions := NewFunctions(gk, constants, scopes, imports, declarations, structs, functionTable)
+	components = append(components, expressions)
+	functions := NewFunctions(gk, constants, scopes, imports, declarations, structTable, functionTable)
+	components = append(components, functions)
 	controlFlow := NewControlFlow(gk, scopes)
-	loops := NewLoops(gk, scopes, structs, functionTable)
+	components = append(components, controlFlow)
+	loops := NewLoops(gk, scopes, structTable, functionTable)
+	components = append(components, loops)
 	types := NewTypes(declarations)
+	components = append(components, types)
 	others := NewOthers(declarations)
+	components = append(components, others)
+
 	c := &Compiler{
-		gk:           gk,
-		loader:       loader,
-		scopes:       scopes,
-		constants:    constants,
-		references:   references,
-		imports:      imports,
-		functions:    functions,
-		declarations: declarations,
-		controlFlow:  controlFlow,
-		expressions:  expressions,
-		loops:        loops,
-		types:        types,
-		others:       others,
-		structs:      structs,
-		rootNode:     nil,
+		gk:            gk,
+		components:    components,
+		loader:        loader,
+		scopes:        scopes,
+		constants:     constants,
+		references:    references,
+		structs:       structTable,
+		functionTable: functionTable,
+		imports:       imports,
+		functions:     functions,
+		declarations:  declarations,
+		controlFlow:   controlFlow,
+		expressions:   expressions,
+		loops:         loops,
+		types:         types,
+		others:        others,
+		rootNode:      nil,
 	}
 	return c
 }
@@ -81,29 +94,10 @@ func (c *Compiler) Id() string {
 // Compile parses the provided source file and compiles it into bytecode. Returns compiled bytecode or an error.
 func (c *Compiler) Compile(filename string, source any) error {
 	c.fileSet = token.NewFileSet()
-	if err := c.imports.Setup(c.loader, c.compile); err != nil {
-		return err
-	}
-	if err := c.declarations.Setup(c.fileSet, c.compile); err != nil {
-		return err
-	}
-	if err := c.functions.Setup(c.fileSet, c.compile); err != nil {
-		return err
-	}
-	if err := c.controlFlow.Setup(c.fileSet, c.compile); err != nil {
-		return err
-	}
-	if err := c.loops.Setup(c.fileSet, c.compile); err != nil {
-		return err
-	}
-	if err := c.expressions.Setup(c.fileSet, c.compile); err != nil {
-		return err
-	}
-	if err := c.others.Setup(c.fileSet, c.compile); err != nil {
-		return err
-	}
-	if err := c.types.Setup(c.fileSet, c.compile); err != nil {
-		return err
+	for _, component := range c.components {
+		if err := component.Setup(c.fileSet, c.compile); err != nil {
+			return err
+		}
 	}
 	astFile, err := parser.ParseFile(c.fileSet, filename, source, 0)
 	if err != nil {

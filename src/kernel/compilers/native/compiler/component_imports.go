@@ -3,6 +3,7 @@ package compiler
 import (
 	"fmt"
 	"go/ast"
+	"go/token"
 	"strings"
 
 	"github.com/markel1974/c64emu/src/kernel/vm/bytecode"
@@ -12,18 +13,21 @@ import (
 // Imports is a structure that manages a set of imported items, built-in functions, and related compilation resources.
 type Imports struct {
 	gk         objects.IGateKeeper
+	loader     bytecode.ILoader
 	references *Constants
 	scopes     *Scopes
 	imports    map[string]bool
 	builtin    map[string]int
 	container  []ast.Decl
+	fileSet    *token.FileSet
 	compile    func(node ast.Node) error
 }
 
 // NewImports creates and initializes a new Imports instance with provided GateKeeper, Constants, and Scopes references.
-func NewImports(gk objects.IGateKeeper, references *Constants, scopes *Scopes) *Imports {
+func NewImports(gk objects.IGateKeeper, loader bytecode.ILoader, references *Constants, scopes *Scopes) *Imports {
 	i := &Imports{
 		gk:         gk,
+		loader:     loader,
 		references: references,
 		scopes:     scopes,
 		imports:    make(map[string]bool),
@@ -34,15 +38,31 @@ func NewImports(gk objects.IGateKeeper, references *Constants, scopes *Scopes) *
 }
 
 // Setup initializes the Imports instance by configuring compilation and loading built-in functions from the provided loader.
-func (i *Imports) Setup(loader bytecode.ILoader, compile func(node ast.Node) error) error {
+func (i *Imports) Setup(fileSet *token.FileSet, compile func(node ast.Node) error) error {
+	i.fileSet = fileSet
 	i.compile = compile
-	for idx := 0; idx < loader.BuiltinLen(); idx++ {
-		bi := loader.Builtin(idx)
+	for idx := 0; idx < i.loader.BuiltinLen(); idx++ {
+		bi := i.loader.Builtin(idx)
 		if bi == nil {
 			return fmt.Errorf("builtin %d not found", idx)
 		}
 		builtinId := i.references.Add(bi.Name(), bi)
 		i.builtin[bi.Name()] = builtinId
+	}
+	return nil
+}
+
+// Prepare initializes the Imports instance, ensuring it is ready for further use in the compilation process.
+func (i *Imports) Prepare() error {
+	return nil
+}
+
+// Compile processes and compiles all stored declarations. Returns an error if any declaration fails to compile.
+func (i *Imports) Compile() error {
+	for _, decl := range i.container {
+		if err := i.compile(decl); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -121,21 +141,6 @@ func (i *Imports) packageFunctionAttach(pkgName string, fnName string) (string, 
 		nameIndex = i.references.Add(mangledName, attrArray)
 	}
 	return mangledName, nameIndex, nil
-}
-
-// Prepare initializes the Imports instance, ensuring it is ready for further use in the compilation process.
-func (i *Imports) Prepare() error {
-	return nil
-}
-
-// Compile processes and compiles all stored declarations. Returns an error if any declaration fails to compile.
-func (i *Imports) Compile() error {
-	for _, decl := range i.container {
-		if err := i.compile(decl); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 // doGenDecl processes a generic declaration node, compiling each specification it contains. Returns an error if compilation fails.

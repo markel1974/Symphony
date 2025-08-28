@@ -42,6 +42,16 @@ func (c *Declarations) Setup(fileSet *token.FileSet, compile func(node ast.Node)
 	return nil
 }
 
+// Prepare initializes the ControlFlow structure, ensuring it is ready for subsequent compilation tasks and operations.
+func (c *Declarations) Prepare() error {
+	return nil
+}
+
+// Compile compiles the AST nodes using the configured compile function and returns an error if the process fails.
+func (c *Declarations) Compile() error {
+	return nil
+}
+
 // DeclStmt processes an AST declaration statement node and compiles its declaration, returning any encountered error.
 func (c *Declarations) DeclStmt(node *ast.DeclStmt) error {
 	if err := c.compile(node.Decl); err != nil {
