@@ -79,27 +79,17 @@ func (v *VM) Setup(loader bytecode.ILoader, codes ...*bytecode.Bytecode) (map[st
 	if err := v.constants.Setup(v.bc.Constants()); err != nil {
 		return nil, err
 	}
-	if err := v.globals.Setup(v.bc.Globals()); err != nil {
+	entryPoints, err := v.globals.Setup(v.bc.Globals(), bytecode.PreInitFunction, bytecode.InitFunction)
+	if err != nil {
 		return nil, err
 	}
-	var init []*objects.FuncCompiled
-	entryPoints := make(map[string]uint)
-	for idx, global := range v.bc.Globals() {
-		switch c := global.(type) {
-		case *objects.FuncCompiled:
-			if c.Name() == bytecode.PreInitFunction {
-				if err := v.exec(c); err != nil {
-					return nil, err
-				}
-			} else if c.Name() == bytecode.InitFunction {
-				init = append(init, c)
-			} else {
-				entryPoints[c.Name()] = uint(idx)
-			}
+	for _, fn := range v.globals.PreInitFuncs() {
+		if err = v.exec(fn); err != nil {
+			return nil, err
 		}
 	}
-	for _, fn := range init {
-		if err := v.exec(fn); err != nil {
+	for _, fn := range v.globals.InitFuncs() {
+		if err = v.exec(fn); err != nil {
 			return nil, err
 		}
 	}
