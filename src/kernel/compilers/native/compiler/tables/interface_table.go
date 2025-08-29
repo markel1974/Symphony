@@ -64,7 +64,6 @@ func (it *InterfaceTable) Add(name string, node *ast.InterfaceType) error {
 		for _, field := range node.Methods.List {
 			if len(field.Names) > 0 {
 				if funcType, ok := field.Type.(*ast.FuncType); ok {
-					// Estrai i tipi dei parametri e dei valori di ritorno
 					inputParams, err := GetReceivers(funcType.Params)
 					if err != nil {
 						return fmt.Errorf("error parsing params for method %s in interface %s: %w", field.Names[0].Name, name, err)

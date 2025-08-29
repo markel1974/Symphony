@@ -87,6 +87,9 @@ func (f *FunctionTable) CountParams(fieldList *ast.FieldList) int {
 	return count
 }
 
+// DefineFunctionVariables handles the definition and type inference of variables from function call assignments.
+// It ensures correct assignment based on token type (:= or =) and aligns the number of variables to return types.
+// Emits appropriate bytecode for defining or setting variables and supports scoped symbol management.
 func (f *FunctionTable) DefineFunctionVariables(tok token.Token, callExpr *ast.CallExpr, lhs []ast.Expr) error {
 	var funcReturnTypes []string
 	if ident, isIdent := callExpr.Fun.(*ast.Ident); isIdent {
@@ -102,7 +105,7 @@ func (f *FunctionTable) DefineFunctionVariables(tok token.Token, callExpr *ast.C
 	if len(lhs) == 0 {
 		return nil
 	}
-	//controlla il tipo di ogni variabile es: a, b := Test()
+	// Check type of each variable e.g.: a, b := Test()
 	for i := len(lhs) - 1; i >= 0; i-- {
 		ident, ok := lhs[i].(*ast.Ident)
 		if !ok {
@@ -195,6 +198,7 @@ func (f *FunctionTable) RangeKey(node *ast.RangeStmt) (*Symbol, error) {
 	return nil, nil
 }
 
+// RangeValue resolves and defines a symbol for the `Value` in a range statement, assigning it a type if specified.
 func (f *FunctionTable) RangeValue(node *ast.RangeStmt, returnTypeName string) (*Symbol, error) {
 	if node.Value != nil {
 		if ident, ok := node.Value.(*ast.Ident); ok && ident.Name != UndefinedSymbol {

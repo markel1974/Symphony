@@ -280,11 +280,9 @@ func (c *Declarations) AssignStmt(node *ast.AssignStmt) error {
 		}
 		return nil
 	}
-
 	if len(node.Lhs) != len(node.Rhs) {
 		return tables.NewCompilerError(c.fileSet, node, "invalid number of values to assign")
 	}
-
 	// Handle multiple assignments (e.g. x, y := 1, 2)
 	for i := len(node.Lhs) - 1; i >= 0; i-- {
 		// Handle assignment (e.g. x = 1 or x := 1)
@@ -300,7 +298,6 @@ func (c *Declarations) AssignStmt(node *ast.AssignStmt) error {
 				rhsName = ident.Name
 			}
 		}
-
 		switch lhs := node.Lhs[i].(type) {
 		case *ast.Ident:
 			name := lhs.Name
@@ -497,6 +494,9 @@ func (c *Declarations) IndexExpr(node *ast.IndexExpr) error {
 	return err
 }
 
+// handleInterfaceAssignment validates and assigns a struct to a variable with an interface type, ensuring compatibility.
+// It emits appropriate bytecode for the interface table setup and method bindings required for the variable's interface type.
+// Returns an error if the struct does not implement the interface or if bytecode generation fails.
 func (c *Declarations) handleInterfaceAssignment(variableSymbol *tables.Symbol, assignedStructSymbol *tables.Symbol) error {
 	interfaceName := variableSymbol.InterfaceName()
 	structName := assignedStructSymbol.StructName()
