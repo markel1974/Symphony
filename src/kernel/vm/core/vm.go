@@ -50,7 +50,7 @@ func New(gk objects.IGateKeeper, sequencer ISequencer, op *bytecode.Opcodes) *VM
 	v.globals = NewGlobals(gk, v.SetError)
 	v.stack = NewStack(gk, stackSize, v.SetError)
 	v.frames = NewFrames(gk, maxFrames, v.SetError)
-	seq := sequencer.Create()
+	seq := sequencer.Create(v)
 	v.sequencer = make([]*Decoder, len(seq))
 	for i, s := range seq {
 		v.sequencer[i] = NewDecoder(s)
@@ -318,7 +318,7 @@ func (v *VM) loop() {
 		decoder = v.sequencer[opcode]
 		v.ip = decoder.Decode(v.currFrame, v.ip)
 		//log.Printf("Executing instruction opcode: %d name: %s ip: %d decoded: %v", opcode, decoder.Name(), v.ip, decoder.decodedOperands[:decoder.fullWidth])
-		decoder.Execute(v)
+		decoder.Execute()
 		if v.shutdown {
 			break
 		}

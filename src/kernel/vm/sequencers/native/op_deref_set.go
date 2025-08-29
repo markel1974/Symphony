@@ -16,22 +16,26 @@ func init() {
 // OpDerefSet represents an operation for dereferencing a pointer and setting its value in the virtual machine.
 type OpDerefSet struct {
 	*bytecode.Opcode
+	vm *core.VM
 }
 
 // NewOpDerefSet creates a new OpDerefSet instance with the specified opcode for the dereference and set operation.
-func NewOpDerefSet(op *bytecode.Opcodes) core.IOpExecutor {
-	return &OpDerefSet{Opcode: op.Opcode(bytecode.OpDerefSet)}
+func NewOpDerefSet(vm *core.VM, op *bytecode.Opcodes) core.IOpExecutor {
+	return &OpDerefSet{
+		Opcode: op.Opcode(bytecode.OpDerefSet),
+		vm:     vm,
+	}
 }
 
 // Execute performs a dereference-and-set operation on the stack, assigning a value to the object pointed by a pointer.
-func (op *OpDerefSet) Execute(v *core.VM, _ *core.Decoder) {
+func (op *OpDerefSet) Execute(_ *core.Decoder) {
 	// Stack (dall'alto verso il basso): [valore, puntatore, ...]
-	valueToSet := v.Stack().Pop()
-	pointerObj := v.Stack().Pop()
+	valueToSet := op.vm.Stack().Pop()
+	pointerObj := op.vm.Stack().Pop()
 
 	ptr, ok := pointerObj.(*objects.ObjectPointer)
 	if !ok {
-		v.SetError(fmt.Errorf("invalid operation: cannot assign to a non-pointer type %s", pointerObj.TypeName()))
+		op.vm.SetError(fmt.Errorf("invalid operation: cannot assign to a non-pointer type %s", pointerObj.TypeName()))
 		return
 	}
 
@@ -40,5 +44,5 @@ func (op *OpDerefSet) Execute(v *core.VM, _ *core.Decoder) {
 
 	// Lascia il valore assegnato sullo stack per possibili assegnazioni a catena,
 	// o può essere rimosso con un OpPop successivo se necessario.
-	v.Stack().Push(valueToSet)
+	op.vm.Stack().Push(valueToSet)
 }

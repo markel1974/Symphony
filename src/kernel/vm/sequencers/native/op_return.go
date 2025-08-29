@@ -13,15 +13,19 @@ func init() {
 // OpReturn represents a specialized operation that extends the behavior of bytecode.Opcode.
 type OpReturn struct {
 	*bytecode.Opcode
+	vm *core.VM
 }
 
 // NewOpReturn creates a new instance of OpReturn with its Opcode initialized for the OpReturn operation.
-func NewOpReturn(op *bytecode.Opcodes) core.IOpExecutor {
-	return &OpReturn{Opcode: op.Opcode(bytecode.OpReturn)}
+func NewOpReturn(vm *core.VM, op *bytecode.Opcodes) core.IOpExecutor {
+	return &OpReturn{
+		Opcode: op.Opcode(bytecode.OpReturn),
+		vm:     vm,
+	}
 }
 
 // Execute performs the return operation for the current frame, manages the stack, and transitions between frames in the VM.
-func (op *OpReturn) Execute(v *core.VM, decoder *core.Decoder) {
+func (op *OpReturn) Execute(decoder *core.Decoder) {
 	// Operands Offset 1 (8-bit)
 	// collect return values from the stack using Pop(),
 	// this is necessary to uncover the underlying values.
@@ -29,8 +33,8 @@ func (op *OpReturn) Execute(v *core.VM, decoder *core.Decoder) {
 	if numReturnVals := decoder.Read(0); numReturnVals > 0 {
 		returnValues = make([]objects.IObject, decoder.Read(0))
 		for i := 0; i < numReturnVals; i++ {
-			returnValues[i] = v.Stack().Pop()
+			returnValues[i] = op.vm.Stack().Pop()
 		}
 	}
-	v.Return(returnValues)
+	op.vm.Return(returnValues)
 }

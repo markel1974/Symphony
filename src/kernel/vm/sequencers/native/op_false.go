@@ -12,16 +12,20 @@ func init() {
 // OpFalse represents an opcode structure for pushing the boolean value false onto the stack.
 type OpFalse struct {
 	*bytecode.Opcode
+	vm *core.VM
 }
 
 // NewOpFalse creates a new instance of OpFalse, representing the operation to push the boolean value false onto the stack.
-func NewOpFalse(op *bytecode.Opcodes) core.IOpExecutor {
-	return &OpFalse{Opcode: op.Opcode(bytecode.OpFalse)}
+func NewOpFalse(vm *core.VM, op *bytecode.Opcodes) core.IOpExecutor {
+	return &OpFalse{
+		Opcode: op.Opcode(bytecode.OpFalse),
+		vm:     vm,
+	}
 }
 
 // Execute pushes a predefined `FalseValue` onto the virtual machine's stack.
-func (op *OpFalse) Execute(v *core.VM, _ *core.Decoder) {
+func (op *OpFalse) Execute(_ *core.Decoder) {
 	// Operands Offset  0
-	val := v.Factory().FalseValue()
-	v.Stack().Push(val)
+	val := op.vm.Factory().FalseValue()
+	op.vm.Stack().Push(val)
 }

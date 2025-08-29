@@ -14,25 +14,29 @@ func init() {
 // It embeds Opcode to provide information about the opcode, including its identifier and operands.
 type OpNotEqual struct {
 	*bytecode.Opcode
+	vm *core.VM
 }
 
 // NewOpNotEqual creates and returns a new instance of OpNotEqual with Opcode initialized from bytecode.
-func NewOpNotEqual(op *bytecode.Opcodes) core.IOpExecutor {
-	return &OpNotEqual{Opcode: op.Opcode(bytecode.OpNotEqual)}
+func NewOpNotEqual(vm *core.VM, op *bytecode.Opcodes) core.IOpExecutor {
+	return &OpNotEqual{
+		Opcode: op.Opcode(bytecode.OpNotEqual),
+		vm:     vm,
+	}
 }
 
 // Execute evaluates whether the top two stack elements are unequal and pushes the result as a boolean onto the stack.
-func (op *OpNotEqual) Execute(v *core.VM, _ *core.Decoder) {
+func (op *OpNotEqual) Execute(_ *core.Decoder) {
 	// Operands Offset  0
-	right := v.Stack().Pop()
-	left := v.Stack().Pop()
+	right := op.vm.Stack().Pop()
+	left := op.vm.Stack().Pop()
 	var val objects.IObject
 	if left.Equals(right) {
-		val = v.Factory().FalseValue()
+		val = op.vm.Factory().FalseValue()
 		//val = v.Factory().TrueValue()
 	} else {
-		val = v.Factory().TrueValue()
+		val = op.vm.Factory().TrueValue()
 		//val = v.Factory().FalseValue()
 	}
-	v.Stack().Push(val)
+	op.vm.Stack().Push(val)
 }

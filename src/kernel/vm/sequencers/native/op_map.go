@@ -12,17 +12,21 @@ func init() {
 // OpMap is a wrapper around bytecode.Opcode, representing a map creation operation in bytecode execution.
 type OpMap struct {
 	*bytecode.Opcode
+	vm *core.VM
 }
 
 // NewOpMap initializes and returns a new instance of OpMap with its Opcode set to OpMap details.
-func NewOpMap(op *bytecode.Opcodes) core.IOpExecutor {
-	return &OpMap{Opcode: op.Opcode(bytecode.OpMap)}
+func NewOpMap(vm *core.VM, op *bytecode.Opcodes) core.IOpExecutor {
+	return &OpMap{
+		Opcode: op.Opcode(bytecode.OpMap),
+		vm:     vm,
+	}
 }
 
 // Execute processes the OpMap instruction, adjusts the instruction pointer, and pushes a new map object onto the stack.
-func (op *OpMap) Execute(v *core.VM, decoder *core.Decoder) {
+func (op *OpMap) Execute(decoder *core.Decoder) {
 	// Operands Offset 2 (16-bit)
 	numElements := decoder.Read(0)
-	mElem := v.Stack().PopMapElements(numElements)
-	v.Stack().Push(v.Factory().NewMap(v.Frame().Id(), mElem))
+	mElem := op.vm.Stack().PopMapElements(numElements)
+	op.vm.Stack().Push(op.vm.Factory().NewMap(op.vm.Frame().Id(), mElem))
 }

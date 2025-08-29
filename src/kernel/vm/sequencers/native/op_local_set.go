@@ -14,23 +14,27 @@ func init() {
 // It embeds Opcode for opcode-specific information such as name, operands, and code.
 type OpLocalSet struct {
 	*bytecode.Opcode
+	vm *core.VM
 }
 
 // NewOpLocalSet initializes and returns a new instance of OpLocalSet with associated opcode details.
-func NewOpLocalSet(op *bytecode.Opcodes) core.IOpExecutor {
-	return &OpLocalSet{Opcode: op.Opcode(bytecode.OpLocalSet)}
+func NewOpLocalSet(vm *core.VM, op *bytecode.Opcodes) core.IOpExecutor {
+	return &OpLocalSet{
+		Opcode: op.Opcode(bytecode.OpLocalSet),
+		vm:     vm,
+	}
 }
 
 // Execute updates a local variable in the current frame using the stack's top value and the local index from instructions.
-func (op *OpLocalSet) Execute(v *core.VM, decoder *core.Decoder) {
+func (op *OpLocalSet) Execute(decoder *core.Decoder) {
 	// Operands Offset 1 (8-bit)
 	localIndex := decoder.Read(0)
-	val := v.Stack().Peek()
-	destSlot := v.Frame().BasePointer() + localIndex
-	existingValue := v.Stack().PeekAbsolute(destSlot)
+	val := op.vm.Stack().Peek()
+	destSlot := op.vm.Frame().BasePointer() + localIndex
+	existingValue := op.vm.Stack().PeekAbsolute(destSlot)
 	if obj, ok := existingValue.(*objects.ObjectPointer); ok {
 		obj.SetValue(val)
 	} else {
-		v.Stack().SetAbsolute(destSlot, val)
+		op.vm.Stack().SetAbsolute(destSlot, val)
 	}
 }

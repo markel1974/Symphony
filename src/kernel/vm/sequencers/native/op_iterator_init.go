@@ -15,23 +15,27 @@ func init() {
 // It embeds Opcode for additional opcode-specific metadata.
 type OpIteratorInit struct {
 	*bytecode.Opcode
+	vm *core.VM
 }
 
 // NewOpIteratorInit creates and returns a new instance of OpIteratorInit with associated opcode details.
-func NewOpIteratorInit(op *bytecode.Opcodes) core.IOpExecutor {
-	return &OpIteratorInit{Opcode: op.Opcode(bytecode.OpIteratorInit)}
+func NewOpIteratorInit(vm *core.VM, op *bytecode.Opcodes) core.IOpExecutor {
+	return &OpIteratorInit{
+		Opcode: op.Opcode(bytecode.OpIteratorInit),
+		vm:     vm,
+	}
 }
 
 // Execute initializes an iterator for an iterable object and stores it in the specified local slot in the current frame.
-func (op *OpIteratorInit) Execute(v *core.VM, decoder *core.Decoder) {
+func (op *OpIteratorInit) Execute(decoder *core.Decoder) {
 	// Operands Offset 1 (8-bit)
 	localIndex := decoder.Read(0)
-	iterable := v.Stack().Pop()
+	iterable := op.vm.Stack().Pop()
 	if !iterable.CanIterate() {
-		v.SetError(fmt.Errorf("not iterable: %s", iterable.TypeName()))
+		op.vm.SetError(fmt.Errorf("not iterable: %s", iterable.TypeName()))
 		return
 	}
-	iterator := iterable.Iterate(v.Frame().Id())
-	destSlot := v.Frame().BasePointer() + localIndex
-	v.Stack().SetAbsolute(destSlot, iterator)
+	iterator := iterable.Iterate(op.vm.Frame().Id())
+	destSlot := op.vm.Frame().BasePointer() + localIndex
+	op.vm.Stack().SetAbsolute(destSlot, iterator)
 }

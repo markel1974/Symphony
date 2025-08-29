@@ -16,26 +16,30 @@ func init() {
 // It embeds Opcode, providing details such as the opcode, operands, and name.
 type OpMinus struct {
 	*bytecode.Opcode
+	vm *core.VM
 }
 
 // NewOpMinus creates and returns a new OpMinus instance, initializing it with the details of the OpMinus bytecode.
-func NewOpMinus(op *bytecode.Opcodes) core.IOpExecutor {
-	return &OpMinus{Opcode: op.Opcode(bytecode.OpMinus)}
+func NewOpMinus(vm *core.VM, op *bytecode.Opcodes) core.IOpExecutor {
+	return &OpMinus{
+		Opcode: op.Opcode(bytecode.OpMinus),
+		vm:     vm,
+	}
 }
 
 // Execute performs a subtraction operation by negating the top stack element, supporting integers and floats.
 // Pushes the result back to the stack or sets an error for unsupported types.
-func (op *OpMinus) Execute(v *core.VM, _ *core.Decoder) {
+func (op *OpMinus) Execute(_ *core.Decoder) {
 	// Operands Offset 0
-	operand := v.Stack().Pop()
+	operand := op.vm.Stack().Pop()
 	switch x := operand.(type) {
 	case *objects.Int:
-		res := v.Factory().NewInt(v.Frame().Id(), -x.Value())
-		v.Stack().Push(res)
+		res := op.vm.Factory().NewInt(op.vm.Frame().Id(), -x.Value())
+		op.vm.Stack().Push(res)
 	case *objects.Float:
-		res := v.Factory().NewFloat(v.Frame().Id(), -x.Value())
-		v.Stack().Push(res)
+		res := op.vm.Factory().NewFloat(op.vm.Frame().Id(), -x.Value())
+		op.vm.Stack().Push(res)
 	default:
-		v.SetError(fmt.Errorf("invalid operation: -%s", operand.TypeName()))
+		op.vm.SetError(fmt.Errorf("invalid operation: -%s", operand.TypeName()))
 	}
 }

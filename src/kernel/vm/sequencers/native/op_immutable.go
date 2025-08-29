@@ -13,23 +13,27 @@ func init() {
 // OpImmutable represents an operation that creates immutable objects, inheriting details from Opcode.
 type OpImmutable struct {
 	*bytecode.Opcode
+	vm *core.VM
 }
 
 // NewOpImmutable creates a new instance of OpImmutable with details loaded from bytecode.OpcodeToDetails.
-func NewOpImmutable(op *bytecode.Opcodes) core.IOpExecutor {
-	return &OpImmutable{Opcode: op.Opcode(bytecode.OpImmutable)}
+func NewOpImmutable(vm *core.VM, op *bytecode.Opcodes) core.IOpExecutor {
+	return &OpImmutable{
+		Opcode: op.Opcode(bytecode.OpImmutable),
+		vm:     vm,
+	}
 }
 
 // Execute processes the top element on the stack and converts it into an immutable version if it's an array or map.
-func (op *OpImmutable) Execute(v *core.VM, _ *core.Decoder) {
+func (op *OpImmutable) Execute(_ *core.Decoder) {
 	// Operands Offset  0
-	val := v.Stack().Peek()
+	val := op.vm.Stack().Peek()
 	switch value := val.(type) {
 	case *objects.Array:
-		obj := v.Factory().NewArrayImmutable(v.Frame().Id(), value.Values())
-		v.Stack().Set(obj)
+		obj := op.vm.Factory().NewArrayImmutable(op.vm.Frame().Id(), value.Values())
+		op.vm.Stack().Set(obj)
 	case *objects.Map:
-		obj := v.Factory().NewMapImmutable(v.Frame().Id(), value.Values())
-		v.Stack().Set(obj)
+		obj := op.vm.Factory().NewMapImmutable(op.vm.Frame().Id(), value.Values())
+		op.vm.Stack().Set(obj)
 	}
 }

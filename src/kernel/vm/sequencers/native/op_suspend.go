@@ -12,15 +12,19 @@ func init() {
 // OpSuspend represents an operation that suspends the execution of the virtual machine.
 type OpSuspend struct {
 	*bytecode.Opcode
+	vm *core.VM
 }
 
 // NewOpSuspend creates and returns a new OpSuspend instance with opcode details initialized for the suspend operation.
-func NewOpSuspend(op *bytecode.Opcodes) core.IOpExecutor {
-	return &OpSuspend{Opcode: op.Opcode(bytecode.OpSuspend)}
+func NewOpSuspend(vm *core.VM, op *bytecode.Opcodes) core.IOpExecutor {
+	return &OpSuspend{
+		Opcode: op.Opcode(bytecode.OpSuspend),
+		vm:     vm,
+	}
 }
 
 // Execute performs the suspend operation on the given virtual machine by setting its shutdown state to true.
-func (op *OpSuspend) Execute(v *core.VM, _ *core.Decoder) {
+func (op *OpSuspend) Execute(_ *core.Decoder) {
 	// Operands Offset 0
-	v.Shutdown()
+	op.vm.Shutdown()
 }

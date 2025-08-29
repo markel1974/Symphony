@@ -17,16 +17,20 @@ func init() {
 // It extends the bytecode.Opcode structure to access opcode details like id, operands, and name.
 type OpInterface struct {
 	*bytecode.Opcode
+	vm *core.VM
 }
 
 // NewOpInterface creates a new instance of OpInterface using the provided Opcodes instance.
 // It returns an implementation of the core.IOpExecutor interface for bytecode execution.
-func NewOpInterface(op *bytecode.Opcodes) core.IOpExecutor {
-	return &OpInterface{Opcode: op.Opcode(bytecode.OpInterface)}
+func NewOpInterface(vm *core.VM, op *bytecode.Opcodes) core.IOpExecutor {
+	return &OpInterface{
+		Opcode: op.Opcode(bytecode.OpInterface),
+		vm:     vm,
+	}
 }
 
 // Execute processes an `OpInterface` operation, constructing an interface by combining methods and a concrete value.
-func (op *OpInterface) Execute(v *core.VM, decoder *core.Decoder) {
+func (op *OpInterface) Execute(decoder *core.Decoder) {
 	// Operands: Number of methods (8-bit)
 	numMethods := decoder.Read(0)
 
@@ -34,23 +38,23 @@ func (op *OpInterface) Execute(v *core.VM, decoder *core.Decoder) {
 	iTable := make(map[string]objects.IObject, numMethods)
 	for i := 0; i < numMethods; i++ {
 		// Pop in reverse order: function first, then name.
-		methodFunc := v.Stack().Pop()
-		methodNameObj := v.Stack().Pop()
+		methodFunc := op.vm.Stack().Pop()
+		methodNameObj := op.vm.Stack().Pop()
 
 		methodName, ok := methodNameObj.(*objects.String)
 		if !ok {
-			v.SetError(fmt.Errorf("interface method name must be a string, got %s", methodNameObj.TypeName()))
+			op.vm.SetError(fmt.Errorf("interface method name must be a string, got %s", methodNameObj.TypeName()))
 			return
 		}
 		iTable[methodName.Value()] = methodFunc
 	}
 
 	// 2. Pop the concrete value (the struct instance) that will be wrapped by the interface.
-	concreteValue := v.Stack().Pop()
+	concreteValue := op.vm.Stack().Pop()
 
 	// 3. Create the new interface object.
-	interfaceObj := v.Factory().NewInterface(v.Frame().Id(), concreteValue, iTable)
+	interfaceObj := op.vm.Factory().NewInterface(op.vm.Frame().Id(), concreteValue, iTable)
 
 	// 4. Push the final interface object back onto the stack.
-	v.Stack().Push(interfaceObj)
+	op.vm.Stack().Push(interfaceObj)
 }

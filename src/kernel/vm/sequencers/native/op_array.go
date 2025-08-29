@@ -13,18 +13,22 @@ func init() {
 // Extends base Opcode for opcode, operands, and name information.
 type OpArray struct {
 	*bytecode.Opcode
+	vm *core.VM
 }
 
 // NewOpArray creates and returns a new instance of OpArray, initialized with details for the OpArray operation.
-func NewOpArray(op *bytecode.Opcodes) core.IOpExecutor {
-	return &OpArray{Opcode: op.Opcode(bytecode.OpArray)}
+func NewOpArray(vm *core.VM, op *bytecode.Opcodes) core.IOpExecutor {
+	return &OpArray{
+		Opcode: op.Opcode(bytecode.OpArray),
+		vm:     vm,
+	}
 }
 
 // Execute processes the OpArray instruction, constructing an array from stack elements and pushing it onto the stack.
-func (op *OpArray) Execute(v *core.VM, decoder *core.Decoder) {
+func (op *OpArray) Execute(decoder *core.Decoder) {
 	// Operands Offset 2 (16-bit)
 	numElements := decoder.Read(0)
-	elements := v.Stack().PopArrayElements(numElements)
-	arr := v.Factory().NewArray(v.Frame().Id(), elements)
-	v.Stack().Push(arr)
+	elements := op.vm.Stack().PopArrayElements(numElements)
+	arr := op.vm.Factory().NewArray(op.vm.Frame().Id(), elements)
+	op.vm.Stack().Push(arr)
 }

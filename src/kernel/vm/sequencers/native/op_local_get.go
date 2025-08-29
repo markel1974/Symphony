@@ -13,20 +13,24 @@ func init() {
 // OpLocalGet represents an operation to retrieve a local variable from the stack using its index.
 type OpLocalGet struct {
 	*bytecode.Opcode
+	vm *core.VM
 }
 
 // NewOpLocalGet creates a new OpLocalGet instance and initializes it with details for the OpLocalGet opcode.
-func NewOpLocalGet(op *bytecode.Opcodes) core.IOpExecutor {
-	return &OpLocalGet{Opcode: op.Opcode(bytecode.OpLocalGet)}
+func NewOpLocalGet(vm *core.VM, op *bytecode.Opcodes) core.IOpExecutor {
+	return &OpLocalGet{
+		Opcode: op.Opcode(bytecode.OpLocalGet),
+		vm:     vm,
+	}
 }
 
 // Execute retrieves a local variable from the current frame's base pointer and pushes it onto the stack.
-func (op *OpLocalGet) Execute(v *core.VM, decoder *core.Decoder) {
+func (op *OpLocalGet) Execute(decoder *core.Decoder) {
 	// Operands Offset 1 (8-bit)
 	localIndex := decoder.Read(0)
-	val := v.Stack().PeekAbsolute(v.Frame().BasePointer() + localIndex)
+	val := op.vm.Stack().PeekAbsolute(op.vm.Frame().BasePointer() + localIndex)
 	if obj, ok := val.(*objects.ObjectPointer); ok {
 		val = *obj.Value()
 	}
-	v.Stack().Push(val)
+	op.vm.Stack().Push(val)
 }

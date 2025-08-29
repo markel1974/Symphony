@@ -12,19 +12,23 @@ func init() {
 // OpJumpFalsy represents an instruction that performs a conditional jump if the stack's top value evaluates to falsy.
 type OpJumpFalsy struct {
 	*bytecode.Opcode
+	vm *core.VM
 }
 
 // NewOpJumpFalsy creates and returns a new instance of OpJumpFalsy initialized with its corresponding Opcode.
-func NewOpJumpFalsy(op *bytecode.Opcodes) core.IOpExecutor {
-	return &OpJumpFalsy{Opcode: op.Opcode(bytecode.OpJumpFalsy)}
+func NewOpJumpFalsy(vm *core.VM, op *bytecode.Opcodes) core.IOpExecutor {
+	return &OpJumpFalsy{
+		Opcode: op.Opcode(bytecode.OpJumpFalsy),
+		vm:     vm,
+	}
 }
 
 // Execute advances the instruction pointer, evaluates the stack's top element, and updates the pointer if false.
-func (op *OpJumpFalsy) Execute(v *core.VM, decoder *core.Decoder) {
+func (op *OpJumpFalsy) Execute(decoder *core.Decoder) {
 	// Operands Offset 2 (16-bit)
-	obj := v.Stack().Pop()
+	obj := op.vm.Stack().Pop()
 	if obj.Falsy() {
 		pos := decoder.Read(0)
-		v.SetIp(pos - 1)
+		op.vm.SetIp(pos - 1)
 	}
 }

@@ -15,22 +15,26 @@ func init() {
 // OpIteratorKey wraps bytecode.Opcode to represent the iterator key retrieval operation in a virtual machine.
 type OpIteratorKey struct {
 	*bytecode.Opcode
+	vm *core.VM
 }
 
 // NewOpIteratorKey creates a new instance of OpIteratorKey with associated opcode details.
-func NewOpIteratorKey(op *bytecode.Opcodes) core.IOpExecutor {
-	return &OpIteratorKey{Opcode: op.Opcode(bytecode.OpIteratorKey)}
+func NewOpIteratorKey(vm *core.VM, op *bytecode.Opcodes) core.IOpExecutor {
+	return &OpIteratorKey{
+		Opcode: op.Opcode(bytecode.OpIteratorKey),
+		vm:     vm,
+	}
 }
 
 // Execute processes the "iterator key" operation, retrieves the iterator key, and pushes it onto the VM stack.
-func (op *OpIteratorKey) Execute(v *core.VM, decoder *core.Decoder) {
+func (op *OpIteratorKey) Execute(decoder *core.Decoder) {
 	// Operands Offset 1 (8-bit)
 	localIndex := decoder.Read(0)
-	iteratorObj := v.Stack().PeekAbsolute(v.Frame().BasePointer() + localIndex)
+	iteratorObj := op.vm.Stack().PeekAbsolute(op.vm.Frame().BasePointer() + localIndex)
 	iterator, ok := iteratorObj.(objects.IIterator)
 	if !ok {
-		v.SetError(fmt.Errorf("not an iterator: %s", iteratorObj.TypeName()))
+		op.vm.SetError(fmt.Errorf("not an iterator: %s", iteratorObj.TypeName()))
 		return
 	}
-	v.Stack().Push(iterator.Key(v.Frame().Id()))
+	op.vm.Stack().Push(iterator.Key(op.vm.Frame().Id()))
 }

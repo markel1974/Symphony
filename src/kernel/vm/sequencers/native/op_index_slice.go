@@ -14,36 +14,40 @@ func init() {
 // It embeds Opcode to inherit opcode, operand, and name information for execution and identification.
 type OpIndexSlice struct {
 	*bytecode.Opcode
+	vm *core.VM
 }
 
 // NewOpIndexSlice creates a new instance of OpIndexSlice containing details for the slice indexing bytecode operation.
-func NewOpIndexSlice(op *bytecode.Opcodes) core.IOpExecutor {
-	return &OpIndexSlice{Opcode: op.Opcode(bytecode.OpIndexSlice)}
+func NewOpIndexSlice(vm *core.VM, op *bytecode.Opcodes) core.IOpExecutor {
+	return &OpIndexSlice{
+		Opcode: op.Opcode(bytecode.OpIndexSlice),
+		vm:     vm,
+	}
 }
 
 // Execute processes the slice operation on the stack, adjusting bounds and supporting various object types like arrays and strings.
-func (op *OpIndexSlice) Execute(v *core.VM, _ *core.Decoder) {
+func (op *OpIndexSlice) Execute(_ *core.Decoder) {
 	// Operands Offset  0
-	highStack := v.Stack().Pop()
-	lowStack := v.Stack().Pop()
-	leftStack := v.Stack().Pop()
-	lowIdx, highIdx, err := v.Factory().BoundsCheck(lowStack, highStack, int64(leftStack.Length()))
+	highStack := op.vm.Stack().Pop()
+	lowStack := op.vm.Stack().Pop()
+	leftStack := op.vm.Stack().Pop()
+	lowIdx, highIdx, err := op.vm.Factory().BoundsCheck(lowStack, highStack, int64(leftStack.Length()))
 	if err != nil {
-		v.SetError(err)
+		op.vm.SetError(err)
 		return
 	}
 	var val objects.IObject = nil
 	switch left := leftStack.(type) {
 	case *objects.Array:
-		val = v.Factory().NewArray(v.Frame().Id(), left.Values()[lowIdx:highIdx])
+		val = op.vm.Factory().NewArray(op.vm.Frame().Id(), left.Values()[lowIdx:highIdx])
 	case *objects.ArrayImmutable:
-		val = v.Factory().NewArray(v.Frame().Id(), left.Values()[lowIdx:highIdx])
+		val = op.vm.Factory().NewArray(op.vm.Frame().Id(), left.Values()[lowIdx:highIdx])
 	case *objects.String:
-		val = v.Factory().NewString(v.Frame().Id(), left.Value()[lowIdx:highIdx])
+		val = op.vm.Factory().NewString(op.vm.Frame().Id(), left.Value()[lowIdx:highIdx])
 	case *objects.Bytes:
-		val = v.Factory().NewBytes(v.Frame().Id(), left.Value()[lowIdx:highIdx])
+		val = op.vm.Factory().NewBytes(op.vm.Frame().Id(), left.Value()[lowIdx:highIdx])
 	}
 	if val != nil {
-		v.Stack().Push(val)
+		op.vm.Stack().Push(val)
 	}
 }

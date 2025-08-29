@@ -13,24 +13,28 @@ func init() {
 // OpBinary represents a type that performs binary operations by extending bytecode.Opcode.
 type OpBinary struct {
 	*bytecode.Opcode
+	vm *core.VM
 }
 
 // NewOpBinary creates a new instance of OpBinary with its corresponding Opcode initialized.
-func NewOpBinary(op *bytecode.Opcodes) core.IOpExecutor {
-	return &OpBinary{Opcode: op.Opcode(bytecode.OpBinary)}
+func NewOpBinary(vm *core.VM, op *bytecode.Opcodes) core.IOpExecutor {
+	return &OpBinary{
+		Opcode: op.Opcode(bytecode.OpBinary),
+		vm:     vm,
+	}
 }
 
 // Execute performs a binary operation using operands from the stack, updates the instruction pointer, and handles errors.
-func (op *OpBinary) Execute(v *core.VM, decoder *core.Decoder) {
+func (op *OpBinary) Execute(decoder *core.Decoder) {
 	// Operands Offset  1 (8 bits)
 	opcode := decoder.Read(0)
-	right := v.Stack().Pop()
-	left := v.Stack().Pop()
+	right := op.vm.Stack().Pop()
+	left := op.vm.Stack().Pop()
 	operator := objects.Operator(opcode)
-	res, err := left.BinaryOp(v.Frame().Id(), operator, right)
+	res, err := left.BinaryOp(op.vm.Frame().Id(), operator, right)
 	if err != nil {
-		v.SetError(err)
+		op.vm.SetError(err)
 		return
 	}
-	v.Stack().Push(res)
+	op.vm.Stack().Push(res)
 }

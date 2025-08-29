@@ -15,21 +15,25 @@ func init() {
 // It embeds Opcode for detailed opcode information.
 type OpGlobalGet struct {
 	*bytecode.Opcode
+	vm *core.VM
 }
 
 // NewOpGetGlobal creates a new instance of OpGlobalGet with its associated opcode details.
-func NewOpGetGlobal(op *bytecode.Opcodes) core.IOpExecutor {
-	return &OpGlobalGet{Opcode: op.Opcode(bytecode.OpGlobalGet)}
+func NewOpGetGlobal(vm *core.VM, op *bytecode.Opcodes) core.IOpExecutor {
+	return &OpGlobalGet{
+		Opcode: op.Opcode(bytecode.OpGlobalGet),
+		vm:     vm,
+	}
 }
 
 // Execute retrieves a global object using its index, pushes it onto the stack, and advances the instruction pointer.
-func (op *OpGlobalGet) Execute(v *core.VM, decoder *core.Decoder) {
+func (op *OpGlobalGet) Execute(decoder *core.Decoder) {
 	// Operands Offset 2 (16-bit)
 	glIndex := decoder.Read(0)
-	glObj := v.Globals().Get(uint(glIndex))
+	glObj := op.vm.Globals().Get(uint(glIndex))
 	if glObj == nil {
-		v.SetError(fmt.Errorf("undefined global: %d", glIndex))
+		op.vm.SetError(fmt.Errorf("undefined global: %d", glIndex))
 		return
 	}
-	v.Stack().Push(glObj)
+	op.vm.Stack().Push(glObj)
 }

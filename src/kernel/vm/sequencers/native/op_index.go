@@ -13,25 +13,29 @@ func init() {
 // OpIndex represents the operation for performing an indexing operation on a value.
 type OpIndex struct {
 	*bytecode.Opcode
+	vm *core.VM
 }
 
 // NewOpIndex creates and returns a new instance of OpIndex initialized with its associated Opcode.
-func NewOpIndex(op *bytecode.Opcodes) core.IOpExecutor {
-	return &OpIndex{Opcode: op.Opcode(bytecode.OpIndex)}
+func NewOpIndex(vm *core.VM, op *bytecode.Opcodes) core.IOpExecutor {
+	return &OpIndex{
+		Opcode: op.Opcode(bytecode.OpIndex),
+		vm:     vm,
+	}
 }
 
 // Execute processes the index operation on the stack, retrieving a value or setting an error if indexing is invalid.
-func (op *OpIndex) Execute(v *core.VM, _ *core.Decoder) {
+func (op *OpIndex) Execute(_ *core.Decoder) {
 	// Operands Offset  0
-	index := v.Stack().Pop()
-	left := v.Stack().Pop()
-	val, err := left.IndexGet(v.Frame().Id(), index)
+	index := op.vm.Stack().Pop()
+	left := op.vm.Stack().Pop()
+	val, err := left.IndexGet(op.vm.Frame().Id(), index)
 	if err != nil {
-		v.SetError(objects.ComputeIndexGetError(err, index.TypeName(), index.TypeName()))
+		op.vm.SetError(objects.ComputeIndexGetError(err, index.TypeName(), index.TypeName()))
 		return
 	}
 	if val == nil {
-		val = v.Factory().UndefinedValue()
+		val = op.vm.Factory().UndefinedValue()
 	}
-	v.Stack().Push(val)
+	op.vm.Stack().Push(val)
 }

@@ -15,26 +15,30 @@ func init() {
 // OpIteratorNext represents an operation code for advancing an iterator to the next element in the virtual machine.
 type OpIteratorNext struct {
 	*bytecode.Opcode
+	vm *core.VM
 }
 
 // NewOpIteratorNext creates a new instance of OpIteratorNext with associated opcode details.
-func NewOpIteratorNext(op *bytecode.Opcodes) core.IOpExecutor {
-	return &OpIteratorNext{Opcode: op.Opcode(bytecode.OpIteratorNext)}
+func NewOpIteratorNext(vm *core.VM, op *bytecode.Opcodes) core.IOpExecutor {
+	return &OpIteratorNext{
+		Opcode: op.Opcode(bytecode.OpIteratorNext),
+		vm:     vm,
+	}
 }
 
 // Execute processes the next iterator state in the current frame, pushing a boolean to the stack indicating iteration status.
-func (op *OpIteratorNext) Execute(v *core.VM, decoder *core.Decoder) {
+func (op *OpIteratorNext) Execute(decoder *core.Decoder) {
 	// Operands Offset 1 (8-bit)
 	localIndex := decoder.Read(0)
-	iteratorObj := v.Stack().PeekAbsolute(v.Frame().BasePointer() + localIndex)
+	iteratorObj := op.vm.Stack().PeekAbsolute(op.vm.Frame().BasePointer() + localIndex)
 	iterator, ok := iteratorObj.(objects.IIterator)
 	if !ok {
-		v.SetError(fmt.Errorf("not an iterator: %s", iteratorObj.TypeName()))
+		op.vm.SetError(fmt.Errorf("not an iterator: %s", iteratorObj.TypeName()))
 		return
 	}
 	if iterator.Next() {
-		v.Stack().Push(v.Factory().TrueValue())
+		op.vm.Stack().Push(op.vm.Factory().TrueValue())
 	} else {
-		v.Stack().Push(v.Factory().FalseValue())
+		op.vm.Stack().Push(op.vm.Factory().FalseValue())
 	}
 }

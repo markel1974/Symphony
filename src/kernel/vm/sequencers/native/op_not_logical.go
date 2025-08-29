@@ -13,22 +13,26 @@ func init() {
 // OpNotLogical represents the logical NOT (!) operation opcode in the virtual machine's instruction set.
 type OpNotLogical struct {
 	*bytecode.Opcode
+	vm *core.VM
 }
 
 // NewOpNotLogical creates a new instance of OpNotLogical, representing a logical NOT operation (!).
-func NewOpNotLogical(op *bytecode.Opcodes) core.IOpExecutor {
-	return &OpNotLogical{Opcode: op.Opcode(bytecode.OpNotLogical)}
+func NewOpNotLogical(vm *core.VM, op *bytecode.Opcodes) core.IOpExecutor {
+	return &OpNotLogical{
+		Opcode: op.Opcode(bytecode.OpNotLogical),
+		vm:     vm,
+	}
 }
 
 // Execute performs a logical NOT operation on the operand at the top of the stack, pushing the result back onto the stack.
-func (op *OpNotLogical) Execute(v *core.VM, _ *core.Decoder) {
+func (op *OpNotLogical) Execute(_ *core.Decoder) {
 	// Operands Offset  0
-	operand := v.Stack().Pop()
+	operand := op.vm.Stack().Pop()
 	var val objects.IObject
 	if operand.Falsy() {
-		val = v.Factory().TrueValue()
+		val = op.vm.Factory().TrueValue()
 	} else {
-		val = v.Factory().FalseValue()
+		val = op.vm.Factory().FalseValue()
 	}
-	v.Stack().Push(val)
+	op.vm.Stack().Push(val)
 }

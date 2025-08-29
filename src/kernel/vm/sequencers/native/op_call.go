@@ -12,18 +12,22 @@ func init() {
 // OpCall represents an operation code for invoking a function call in the virtual machine.
 type OpCall struct {
 	*bytecode.Opcode
+	vm *core.VM
 }
 
 // NewOpCall creates and returns a new instance of OpCall with initialized Opcode for the OpCall opcode.
-func NewOpCall(op *bytecode.Opcodes) core.IOpExecutor {
-	return &OpCall{Opcode: op.Opcode(bytecode.OpCall)}
+func NewOpCall(vm *core.VM, op *bytecode.Opcodes) core.IOpExecutor {
+	return &OpCall{
+		Opcode: op.Opcode(bytecode.OpCall),
+		vm:     vm,
+	}
 }
 
 // Execute processes the OpCall instruction, invoking the callable or handling array spreads, and manages the stack state.
-func (op *OpCall) Execute(v *core.VM, decoder *core.Decoder) {
+func (op *OpCall) Execute(decoder *core.Decoder) {
 	// Operands Offset 2 (8-bit|8-bit)
 	spread := decoder.Read(0)
 	numArgs := decoder.Read(1)
-	value := v.Stack().PeekOffset(-1 - numArgs)
-	v.Call(value, spread == 1, numArgs)
+	value := op.vm.Stack().PeekOffset(-1 - numArgs)
+	op.vm.Call(value, spread == 1, numArgs)
 }

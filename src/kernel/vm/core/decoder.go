@@ -19,7 +19,7 @@ const (
 type Decoder struct {
 	executor        IOpExecutor
 	name            string
-	execute         func(vm *VM, data *Decoder)
+	execute         func(data *Decoder)
 	fullWidth       int
 	operands        []int
 	decodedOperands []int
@@ -78,8 +78,8 @@ func (d *Decoder) Decode(frame *Frame, ip int) int {
 }
 
 // Execute runs the logic associated with the current instruction using the provided virtual machine instance.
-func (d *Decoder) Execute(v *VM) {
-	d.execute(v, d)
+func (d *Decoder) Execute() {
+	d.execute(d)
 }
 
 // Read retrieves a decoded operand from the `decodedOperands` slice using a masked index derived from the input parameter.

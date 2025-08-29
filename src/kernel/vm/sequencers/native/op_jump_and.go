@@ -12,21 +12,25 @@ func init() {
 // OpJumpAnd represents a logical AND operation followed by a conditional jump in the bytecode execution process.
 type OpJumpAnd struct {
 	*bytecode.Opcode
+	vm *core.VM
 }
 
 // NewOpJumpAnd creates and returns a new instance of OpJumpAnd, initializing it with details for the OpJumpAnd opcode.
-func NewOpJumpAnd(op *bytecode.Opcodes) core.IOpExecutor {
-	return &OpJumpAnd{Opcode: op.Opcode(bytecode.OpJumpAnd)}
+func NewOpJumpAnd(vm *core.VM, op *bytecode.Opcodes) core.IOpExecutor {
+	return &OpJumpAnd{
+		Opcode: op.Opcode(bytecode.OpJumpAnd),
+		vm:     vm,
+	}
 }
 
 // Execute updates the instruction pointer, evaluates a condition, and adjusts or decrements the stack based on the result.
-func (op *OpJumpAnd) Execute(v *core.VM, decoder *core.Decoder) {
+func (op *OpJumpAnd) Execute(decoder *core.Decoder) {
 	// Operands Offset  2 (16-bit)
-	obj := v.Stack().Peek()
+	obj := op.vm.Stack().Peek()
 	if obj.Falsy() {
 		pos := decoder.Read(0)
-		v.SetIp(pos - 1)
+		op.vm.SetIp(pos - 1)
 	} else {
-		v.Stack().Decrement()
+		op.vm.Stack().Decrement()
 	}
 }

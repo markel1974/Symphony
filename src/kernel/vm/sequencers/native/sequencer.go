@@ -8,7 +8,7 @@ import (
 )
 
 // registerFunc is a function type that registers an operation with the provided bytecode.Opcodes and returns a core.IOpExecutor.
-type registerFunc = func(op *bytecode.Opcodes) core.IOpExecutor
+type registerFunc = func(vm *core.VM, op *bytecode.Opcodes) core.IOpExecutor
 
 // _registerContainer holds a list of functions that register operational executors for bytecode instructions.
 var _registerContainer []registerFunc
@@ -31,19 +31,19 @@ func NewSequencer(op *bytecode.Opcodes) core.ISequencer {
 }
 
 // Create initializes and returns a slice of IOpExecutor with default OpUnknown executors, supplemented by static mappings.
-func (ds *Sequencer) Create() []core.IOpExecutor {
-	v, _ := ds.createRegistered()
+func (ds *Sequencer) Create(vm *core.VM) []core.IOpExecutor {
+	v, _ := ds.createRegistered(vm)
 	return v
 }
 
 // createRegistered constructs and registers custom IOpExecutors using functions from _registerContainer and updates the sequence.
-func (ds *Sequencer) createRegistered() ([]core.IOpExecutor, error) {
+func (ds *Sequencer) createRegistered(vm *core.VM) ([]core.IOpExecutor, error) {
 	container := make([]core.IOpExecutor, bytecode.OpcodesLen)
 	for idx := range container {
-		container[idx] = NewOpUnknown(ds.op)
+		container[idx] = NewOpUnknown(vm, ds.op)
 	}
 	for _, fn := range _registerContainer {
-		seq := fn(ds.op)
+		seq := fn(vm, ds.op)
 		data := container[seq.OpcodeId()&bytecode.OpcodesMask]
 		if data.OpcodeId() != bytecode.OpUnknown {
 			return nil, fmt.Errorf("opcode %d already registered: %s", seq.OpcodeId(), data.Name())
@@ -54,57 +54,57 @@ func (ds *Sequencer) createRegistered() ([]core.IOpExecutor, error) {
 }
 
 // createStatic initializes and assigns specific op executors to the sequencer's container in a pre-defined sequence.
-func (ds *Sequencer) createStatic() []core.IOpExecutor {
+func (ds *Sequencer) createStatic(vm *core.VM) []core.IOpExecutor {
 	container := make([]core.IOpExecutor, bytecode.OpcodesLen)
 	for idx := range container {
-		container[idx] = NewOpUnknown(ds.op)
+		container[idx] = NewOpUnknown(vm, ds.op)
 	}
-	ds.setSequence(container[:], NewOpConstant(ds.op))
-	ds.setSequence(container[:], NewOpNull(ds.op))
-	ds.setSequence(container[:], NewOpBinary(ds.op))
-	ds.setSequence(container[:], NewOpReferences(ds.op))
-	ds.setSequence(container[:], NewOpEqual(ds.op))
-	ds.setSequence(container[:], NewOpNotEqual(ds.op))
-	ds.setSequence(container[:], NewOpPop(ds.op))
-	ds.setSequence(container[:], NewOpTrue(ds.op))
-	ds.setSequence(container[:], NewOpFalse(ds.op))
-	ds.setSequence(container[:], NewOpNotLogical(ds.op))
-	ds.setSequence(container[:], NewOpBitwiseComplement(ds.op))
-	ds.setSequence(container[:], NewOpMinus(ds.op))
-	ds.setSequence(container[:], NewOpJumpFalsy(ds.op))
-	ds.setSequence(container[:], NewOpJumpAnd(ds.op))
-	ds.setSequence(container[:], NewOpJumpOr(ds.op))
-	ds.setSequence(container[:], NewOpJump(ds.op))
-	ds.setSequence(container[:], NewOpGlobalSet(ds.op))
-	ds.setSequence(container[:], NewOpGlobalSelSet(ds.op))
-	ds.setSequence(container[:], NewOpGetGlobal(ds.op))
-	ds.setSequence(container[:], NewOpArray(ds.op))
-	ds.setSequence(container[:], NewOpMap(ds.op))
-	ds.setSequence(container[:], NewOpStruct(ds.op))
-	ds.setSequence(container[:], NewOpError(ds.op))
-	ds.setSequence(container[:], NewOpImmutable(ds.op))
-	ds.setSequence(container[:], NewOpIndex(ds.op))
-	ds.setSequence(container[:], NewOpIndexSlice(ds.op))
-	ds.setSequence(container[:], NewOpCall(ds.op))
-	ds.setSequence(container[:], NewOpReturn(ds.op))
-	ds.setSequence(container[:], NewOpLocalDefine(ds.op))
-	ds.setSequence(container[:], NewOpLocalSet(ds.op))
-	ds.setSequence(container[:], NewOpLocalSelSet(ds.op))
-	ds.setSequence(container[:], NewOpLocalGet(ds.op))
-	ds.setSequence(container[:], NewOpClosure(ds.op))
-	ds.setSequence(container[:], NewOpFreeGetPtr(ds.op))
-	ds.setSequence(container[:], NewOpFreeGet(ds.op))
-	ds.setSequence(container[:], NewOpFreeSet(ds.op))
-	ds.setSequence(container[:], NewOpLocalPtrGet(ds.op))
-	ds.setSequence(container[:], NewOpFreeSelSet(ds.op))
-	ds.setSequence(container[:], NewOpIteratorInit(ds.op))
-	ds.setSequence(container[:], NewOpIteratorNext(ds.op))
-	ds.setSequence(container[:], NewOpIteratorKey(ds.op))
-	ds.setSequence(container[:], NewOpIteratorValue(ds.op))
-	ds.setSequence(container[:], NewOpIntOp(ds.op))
-	ds.setSequence(container[:], NewOpDeref(ds.op))
-	ds.setSequence(container[:], NewOpNoOp(ds.op))
-	ds.setSequence(container[:], NewOpSuspend(ds.op))
+	ds.setSequence(container[:], NewOpConstant(vm, ds.op))
+	ds.setSequence(container[:], NewOpNull(vm, ds.op))
+	ds.setSequence(container[:], NewOpBinary(vm, ds.op))
+	ds.setSequence(container[:], NewOpReferences(vm, ds.op))
+	ds.setSequence(container[:], NewOpEqual(vm, ds.op))
+	ds.setSequence(container[:], NewOpNotEqual(vm, ds.op))
+	ds.setSequence(container[:], NewOpPop(vm, ds.op))
+	ds.setSequence(container[:], NewOpTrue(vm, ds.op))
+	ds.setSequence(container[:], NewOpFalse(vm, ds.op))
+	ds.setSequence(container[:], NewOpNotLogical(vm, ds.op))
+	ds.setSequence(container[:], NewOpBitwiseComplement(vm, ds.op))
+	ds.setSequence(container[:], NewOpMinus(vm, ds.op))
+	ds.setSequence(container[:], NewOpJumpFalsy(vm, ds.op))
+	ds.setSequence(container[:], NewOpJumpAnd(vm, ds.op))
+	ds.setSequence(container[:], NewOpJumpOr(vm, ds.op))
+	ds.setSequence(container[:], NewOpJump(vm, ds.op))
+	ds.setSequence(container[:], NewOpGlobalSet(vm, ds.op))
+	ds.setSequence(container[:], NewOpGlobalSelSet(vm, ds.op))
+	ds.setSequence(container[:], NewOpGetGlobal(vm, ds.op))
+	ds.setSequence(container[:], NewOpArray(vm, ds.op))
+	ds.setSequence(container[:], NewOpMap(vm, ds.op))
+	ds.setSequence(container[:], NewOpStruct(vm, ds.op))
+	ds.setSequence(container[:], NewOpError(vm, ds.op))
+	ds.setSequence(container[:], NewOpImmutable(vm, ds.op))
+	ds.setSequence(container[:], NewOpIndex(vm, ds.op))
+	ds.setSequence(container[:], NewOpIndexSlice(vm, ds.op))
+	ds.setSequence(container[:], NewOpCall(vm, ds.op))
+	ds.setSequence(container[:], NewOpReturn(vm, ds.op))
+	ds.setSequence(container[:], NewOpLocalDefine(vm, ds.op))
+	ds.setSequence(container[:], NewOpLocalSet(vm, ds.op))
+	ds.setSequence(container[:], NewOpLocalSelSet(vm, ds.op))
+	ds.setSequence(container[:], NewOpLocalGet(vm, ds.op))
+	ds.setSequence(container[:], NewOpClosure(vm, ds.op))
+	ds.setSequence(container[:], NewOpFreeGetPtr(vm, ds.op))
+	ds.setSequence(container[:], NewOpFreeGet(vm, ds.op))
+	ds.setSequence(container[:], NewOpFreeSet(vm, ds.op))
+	ds.setSequence(container[:], NewOpLocalPtrGet(vm, ds.op))
+	ds.setSequence(container[:], NewOpFreeSelSet(vm, ds.op))
+	ds.setSequence(container[:], NewOpIteratorInit(vm, ds.op))
+	ds.setSequence(container[:], NewOpIteratorNext(vm, ds.op))
+	ds.setSequence(container[:], NewOpIteratorKey(vm, ds.op))
+	ds.setSequence(container[:], NewOpIteratorValue(vm, ds.op))
+	ds.setSequence(container[:], NewOpIntOp(vm, ds.op))
+	ds.setSequence(container[:], NewOpDeref(vm, ds.op))
+	ds.setSequence(container[:], NewOpNoOp(vm, ds.op))
+	ds.setSequence(container[:], NewOpSuspend(vm, ds.op))
 	return container
 }
 

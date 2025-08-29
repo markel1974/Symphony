@@ -13,24 +13,28 @@ func init() {
 // OpLocalPtrGet retrieves a local variable as a pointer using its index within the current frame.
 type OpLocalPtrGet struct {
 	*bytecode.Opcode
+	vm *core.VM
 }
 
 // NewOpLocalPtrGet creates and returns a new instance of OpLocalPtrGet, initializing its Opcode.
-func NewOpLocalPtrGet(op *bytecode.Opcodes) core.IOpExecutor {
-	return &OpLocalPtrGet{Opcode: op.Opcode(bytecode.OpLocalPtrGet)}
+func NewOpLocalPtrGet(vm *core.VM, op *bytecode.Opcodes) core.IOpExecutor {
+	return &OpLocalPtrGet{
+		Opcode: op.Opcode(bytecode.OpLocalPtrGet),
+		vm:     vm,
+	}
 }
 
 // Execute advances the instruction pointer, retrieves a local variable, and pushes an ObjectPointer to the stack.
-func (op *OpLocalPtrGet) Execute(v *core.VM, decoder *core.Decoder) {
+func (op *OpLocalPtrGet) Execute(decoder *core.Decoder) {
 	// Operands Offset 1 (8-bit)
 	localIndex := decoder.Read(0)
-	sp := v.Frame().BasePointer() + localIndex
-	val := v.Stack().PeekAbsolute(sp)
+	sp := op.vm.Frame().BasePointer() + localIndex
+	val := op.vm.Stack().PeekAbsolute(sp)
 	if obj, ok := val.(*objects.ObjectPointer); ok {
-		v.Stack().Push(obj)
+		op.vm.Stack().Push(obj)
 		return
 	}
-	freeVar := v.Factory().NewObjectPointer(v.Frame().Id(), &val)
-	v.Stack().SetAbsolute(sp, freeVar)
-	v.Stack().Push(freeVar)
+	freeVar := op.vm.Factory().NewObjectPointer(op.vm.Frame().Id(), &val)
+	op.vm.Stack().SetAbsolute(sp, freeVar)
+	op.vm.Stack().Push(freeVar)
 }

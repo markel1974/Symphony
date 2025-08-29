@@ -13,17 +13,21 @@ func init() {
 // This type embeds Opcode, which provides opcode metadata such as identifier, operands, and name.
 type OpFreePtrGet struct {
 	*bytecode.Opcode
+	vm *core.VM
 }
 
 // NewOpFreeGetPtr creates a new instance of OpFreePtrGet initialized with the corresponding Opcode.
-func NewOpFreeGetPtr(op *bytecode.Opcodes) core.IOpExecutor {
-	return &OpFreePtrGet{Opcode: op.Opcode(bytecode.OpFreePtrGet)}
+func NewOpFreeGetPtr(vm *core.VM, op *bytecode.Opcodes) core.IOpExecutor {
+	return &OpFreePtrGet{
+		Opcode: op.Opcode(bytecode.OpFreePtrGet),
+		vm:     vm,
+	}
 }
 
 // Execute executes the OpFreePtrGet operation, pushing a free variable onto the stack based on the current instruction pointer.
-func (op *OpFreePtrGet) Execute(v *core.VM, decoder *core.Decoder) {
+func (op *OpFreePtrGet) Execute(decoder *core.Decoder) {
 	// Operands Offset 1 (8-bit)
 	freeIndex := decoder.Read(0)
-	val := v.Frame().FreeVarsIndex(freeIndex)
-	v.Stack().Push(val)
+	val := op.vm.Frame().FreeVarsIndex(freeIndex)
+	op.vm.Stack().Push(val)
 }

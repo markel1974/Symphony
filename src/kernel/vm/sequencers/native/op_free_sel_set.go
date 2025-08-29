@@ -13,27 +13,31 @@ func init() {
 // OpFreeSelSet represents an operation to set a free variable's value using selectors.
 type OpFreeSelSet struct {
 	*bytecode.Opcode
+	vm *core.VM
 }
 
 // NewOpFreeSelSet creates a new instance of OpFreeSelSet with initialized Opcode referencing OpFreeSelSet.
-func NewOpFreeSelSet(op *bytecode.Opcodes) core.IOpExecutor {
-	return &OpFreeSelSet{Opcode: op.Opcode(bytecode.OpFreeSelSet)}
+func NewOpFreeSelSet(vm *core.VM, op *bytecode.Opcodes) core.IOpExecutor {
+	return &OpFreeSelSet{
+		Opcode: op.Opcode(bytecode.OpFreeSelSet),
+		vm:     vm,
+	}
 }
 
 // Execute updates the instruction pointer, retrieves operands, processes selectors, and performs indexed assignment in the VM.
-func (op *OpFreeSelSet) Execute(v *core.VM, decoder *core.Decoder) {
+func (op *OpFreeSelSet) Execute(decoder *core.Decoder) {
 	// Operands Offset 2 (8-bit|8-bit)
 	numSelectors := decoder.Read(0)
 	freeIndex := decoder.Read(1)
 	selectors := make([]objects.IObject, numSelectors)
 	for i := 0; i < numSelectors; i++ {
-		selectors[i] = v.Stack().PeekOffset(-numSelectors + i)
+		selectors[i] = op.vm.Stack().PeekOffset(-numSelectors + i)
 	}
-	val := v.Stack().PeekOffset(-numSelectors - 1)
-	v.Stack().DecrementCount(numSelectors + 1)
-	fvi := v.Frame().FreeVarsIndex(freeIndex)
-	if err := v.Factory().IndexAssign(v.Frame().Id(), *fvi.Value(), val, selectors); err != nil {
-		v.SetError(err)
+	val := op.vm.Stack().PeekOffset(-numSelectors - 1)
+	op.vm.Stack().DecrementCount(numSelectors + 1)
+	fvi := op.vm.Frame().FreeVarsIndex(freeIndex)
+	if err := op.vm.Factory().IndexAssign(op.vm.Frame().Id(), *fvi.Value(), val, selectors); err != nil {
+		op.vm.SetError(err)
 		return
 	}
 }
