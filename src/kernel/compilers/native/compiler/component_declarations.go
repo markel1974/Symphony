@@ -130,19 +130,15 @@ func (c *Declarations) ValueSpec(node *ast.ValueSpec) error {
 			if i > len(node.Values)-1 {
 				return tables.NewCompilerError(c.fileSet, node, "too few values for %s", name.Name)
 			}
-
 			if err := c.compile(node.Values[i]); err != nil {
 				return err
 			}
-
 			symbol, err := c.scopes.SymbolDefine(name.Name)
 			if err != nil {
 				return err
 			}
-
 			var assignedStructSymbol *tables.Symbol
 			isInterfaceAssignment := false
-
 			if node.Type != nil {
 				if typeIdent, ok := node.Type.(*ast.Ident); ok {
 					if typeSymbol, ok := c.scopes.SymbolResolve(typeIdent.Name); ok && typeSymbol.IsInterface() {
@@ -152,7 +148,6 @@ func (c *Declarations) ValueSpec(node *ast.ValueSpec) error {
 					}
 				}
 			}
-
 			if rhsIdent, ok := node.Values[i].(*ast.Ident); ok {
 				assignedStructSymbol, _ = c.scopes.SymbolResolve(rhsIdent.Name)
 			} else if compLit, ok := node.Values[i].(*ast.CompositeLit); ok {
@@ -160,7 +155,6 @@ func (c *Declarations) ValueSpec(node *ast.ValueSpec) error {
 					assignedStructSymbol, _ = c.scopes.SymbolResolve(ident.Name)
 				}
 			}
-
 			if isInterfaceAssignment && assignedStructSymbol != nil && assignedStructSymbol.IsStruct() {
 				if err := c.handleInterfaceAssignment(symbol, assignedStructSymbol); err != nil {
 					return tables.NewCompilerError(c.fileSet, node, err.Error())
