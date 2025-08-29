@@ -77,8 +77,8 @@ const (
 
 	OpInterface
 
-	// OpJumpIfNotError gestisce il pattern 'if err != nil', saltando il blocco if se l'oggetto in cima allo stack è nullo o non è un errore.
-	OpJumpIfNotError
+	// OpJumpNotError gestisce il pattern 'if err != nil', saltando il blocco if se l'oggetto in cima allo stack è nullo o non è un errore.
+	OpJumpNotError
 
 	// OpTypeAssert implementa l'asserzione di tipo 'val, ok := i.(Type)'.
 	OpTypeAssert
@@ -249,7 +249,7 @@ func NewOpcodes() *Opcodes {
 	op.createOpcode(OpJumpAnd, []int{2}, "OpJumpAnd")
 	op.createOpcode(OpJumpOr, []int{2}, "OpJumpOr")
 	op.createOpcode(OpJump, []int{2}, "OpJump")
-	op.createOpcode(OpJumpIfNotError, []int{2}, "OpJumpIfNotError")
+	op.createOpcode(OpJumpNotError, []int{2}, "OpJumpNotError")
 	op.createOpcode(OpNull, []int{}, "OpNull")
 	op.createOpcode(OpGlobalGet, []int{2}, "OpGlobalGet")
 	op.createOpcode(OpGlobalSet, []int{2}, "OpGlobalSet")
