@@ -147,19 +147,19 @@ func vmTest() {
 	if err = comp.Compile(fileName, dataFile); err != nil {
 		log.Fatalf("compiler error: %s", err)
 	}
-	bc := bytecode.NewBytecode(op, comp.Constants(), comp.References(), comp.Globals())
-	_ = bc.AddFile(comp.FileSet())
+	bc := bytecode.NewBytecode(op, comp.Constants(), comp.References(), comp.Globals(), comp.FileSet())
 	d := bytecode.NewDisassembler(bc)
 	d.Disassemble(log.Writer())
 	machine, err := vm.NewVM(gk, op, sequencerId)
 	if err != nil {
 		log.Fatalf("VM error: %s", err)
 	}
-	if err = machine.Setup(loader, bc); err != nil {
+	entryPoints, err := machine.Setup(loader, bc)
+	if err != nil {
 		machine.Print(log.Writer())
 		log.Fatalf("VM setup error: %s", err)
 	}
-	if err = machine.Run("main", args...); err != nil {
+	if err = machine.Run(entryPoints["main"], args...); err != nil {
 		machine.Print(log.Writer())
 		log.Fatalf("VM runtime error: %s", err)
 	}

@@ -19,14 +19,16 @@ func NewFiles() *Files {
 
 // AddFile adds a new source file with the specified filename, base offset, and size to the Files.
 // Returns a pointer to the created SourceFile. Panics if base or size is invalid or if offset overflows.
-func (s *Files) AddFile(f IFile) error {
+func (s *Files) AddFile(f IFile) {
+	if f == nil {
+		return
+	}
 	if f.Base() < 0 {
-		return fmt.Errorf("offset overflow (> 2G of source code in file set)")
+		return //overflow > 2G
 	}
 	s.base = f.Base()
 	s.files = append(s.files, f)
 	s.lastFile = f
-	return nil
 }
 
 // File retrieves the SourceFile containing the given position p, or nil if p is NoPos or not valid for any file.

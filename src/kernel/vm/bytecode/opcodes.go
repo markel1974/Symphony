@@ -94,10 +94,10 @@ const (
 	// OpReturn represents the opcode for returning from a function or operation, potentially with a value.
 	OpReturn
 
-	// OpGlobalGet retrieves a value from the global scope by its index in the constants pool.
+	// OpGlobalGet retrieves a value from the globals scope by its index in the constants pool.
 	OpGlobalGet
 
-	// OpGlobalSet is an opcode used to assign a value to a global variable within a global scope.
+	// OpGlobalSet is an opcode used to assign a value to a globals variable within a globals scope.
 	OpGlobalSet
 
 	// OpGlobalSelSet represents an operation for setting a value in a globally selected field or property.
@@ -275,7 +275,7 @@ func NewOpcodes() *Opcodes {
 	return op
 }
 
-// createOpcode associates opcode with a specific opcodeId, storing it in a global lookup by applying a mask.
+// createOpcode associates opcode with a specific opcodeId, storing it in a globals lookup by applying a mask.
 func (op *Opcodes) createOpcode(opcodeId OpcodeId, operands []int, name string) {
 	od := NewOpcode(opcodeId, operands, name)
 	op.container[od.opcodeId&OpcodesMask] = od

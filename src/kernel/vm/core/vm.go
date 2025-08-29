@@ -3,7 +3,6 @@ package core
 import (
 	"fmt"
 	"io"
-	"log"
 
 	"github.com/markel1974/c64emu/src/kernel/vm/bytecode"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
@@ -23,31 +22,28 @@ const (
 
 // VM represents a virtual machine that executes bytecode instructions, handles stack, and manages execution frames.
 type VM struct {
-	gk          objects.IGateKeeper
-	op          *bytecode.Opcodes
-	sourceFiles *bytecode.Files
-	stack       *Stack
-	frames      *Frames
-	currFrame   *Frame
-	ip          int
-	shutdown    bool
-	err         error
-	sequencer   []*Decoder
-	references  *References
-	constants   *Constants
-	globals     *Globals
-	entryPoints map[string]*objects.FuncCompiled
+	gk         objects.IGateKeeper
+	op         *bytecode.Opcodes
+	bc         *bytecode.Bytecode
+	stack      *Stack
+	frames     *Frames
+	currFrame  *Frame
+	ip         int
+	shutdown   bool
+	err        error
+	sequencer  []*Decoder
+	references *References
+	constants  *Constants
+	globals    *Globals
 }
 
 // New initializes and returns a new virtual machine instance configured with the provided components and settings.
 func New(gk objects.IGateKeeper, sequencer ISequencer, op *bytecode.Opcodes) *VM {
 	v := &VM{
-		gk:          gk,
-		op:          op,
-		ip:          resetIp,
-		sourceFiles: nil,
-		references:  nil,
-		entryPoints: make(map[string]*objects.FuncCompiled),
+		gk:         gk,
+		op:         op,
+		ip:         resetIp,
+		references: nil,
 	}
 	v.constants = NewConstants(gk, v.SetError)
 	v.references = NewReferences(gk, v.SetError)
@@ -63,68 +59,59 @@ func New(gk objects.IGateKeeper, sequencer ISequencer, op *bytecode.Opcodes) *VM
 }
 
 // Setup initializes the virtual machine with the provided bytecode and loader components.
-func (v *VM) Setup(loader bytecode.ILoader, codes ...*bytecode.Bytecode) error {
-	var bc *bytecode.Bytecode
+func (v *VM) Setup(loader bytecode.ILoader, codes ...*bytecode.Bytecode) (map[string]uint, error) {
 	switch len(codes) {
 	case 1:
-		bc = codes[0]
+		v.bc = codes[0]
 	default:
 		var err error
 		relocator := bytecode.NewRelocator(v.gk, loader, v.op, []string{bytecode.PreInitFunction, bytecode.InitFunction})
-		if bc, err = relocator.Relocate(codes); err != nil {
-			return err
+		if v.bc, err = relocator.Relocate(codes); err != nil {
+			return nil, err
 		}
 	}
-	if bc == nil {
-		return fmt.Errorf("no bytecode provided")
+	if v.bc == nil {
+		return nil, fmt.Errorf("no bytecode provided")
 	}
-	if err := v.references.Setup(loader, bc.References()); err != nil {
-		return err
+	if err := v.references.Setup(loader, v.bc.References()); err != nil {
+		return nil, err
 	}
-	if err := v.constants.Setup(bc.Constants()); err != nil {
-		return err
+	if err := v.constants.Setup(v.bc.Constants()); err != nil {
+		return nil, err
 	}
-	if err := v.globals.Setup(bc.Globals()); err != nil {
-		return err
+	if err := v.globals.Setup(v.bc.Globals()); err != nil {
+		return nil, err
 	}
 	var init []*objects.FuncCompiled
-	for _, global := range bc.Globals() {
+	entryPoints := make(map[string]uint)
+	for idx, global := range v.bc.Globals() {
 		switch c := global.(type) {
 		case *objects.FuncCompiled:
 			if c.Name() == bytecode.PreInitFunction {
 				if err := v.exec(c); err != nil {
-					return err
+					return nil, err
 				}
 			} else if c.Name() == bytecode.InitFunction {
 				init = append(init, c)
 			} else {
-				v.entryPoints[c.Name()] = c
+				entryPoints[c.Name()] = uint(idx)
 			}
 		}
 	}
 	for _, fn := range init {
 		if err := v.exec(fn); err != nil {
-			return err
+			return nil, err
 		}
 	}
-	return nil
+	return entryPoints, nil
 }
 
-// EntryPoints returns a list of entry point function names registered with the VM instance.
-func (v *VM) EntryPoints() []string {
-	entryPoints := make([]string, 0, len(v.entryPoints))
-	for k := range v.entryPoints {
-		entryPoints = append(entryPoints, k)
-	}
-	return entryPoints
-}
-
-// Run executes the specified function by mainId with provided arguments after initializing the VM with "__init__".
-// Returns an error if initialization or function execution fails.
-func (v *VM) Run(mainId string, args ...interface{}) error {
-	mainFn, ok := v.entryPoints[mainId]
+// Run executes the main function identified by mainId with the provided arguments in the virtual machine context.
+func (v *VM) Run(mainId uint, args ...interface{}) error {
+	obj := v.globals.Get(mainId)
+	mainFn, ok := obj.(*objects.FuncCompiled)
 	if !ok {
-		return fmt.Errorf("entry point not found: %s", mainId)
+		return fmt.Errorf("entry point not found: %d", mainId)
 	}
 	return v.exec(mainFn, args...)
 }
@@ -320,16 +307,13 @@ func (v *VM) exec(mainFn *objects.FuncCompiled, args ...interface{}) error {
 	v.loop()
 
 	if v.err != nil {
-		if v.sourceFiles != nil {
-			filePos, _ := v.sourceFiles.Position(v.currFrame.SourcePos(v.ip - 1))
-			err := fmt.Errorf("runtime error %w at %s", v.err, filePos)
-			for _, frame := range v.frames.Unroll() {
-				filePos, _ = v.sourceFiles.Position(frame.SourcePos(frame.SavedIP() - 1))
-				err = fmt.Errorf("%w at %s", err, filePos)
-			}
-			return err
+		filePos, _ := v.bc.Position(v.currFrame.SourcePos(v.ip - 1))
+		err := fmt.Errorf("runtime error %w at %s", v.err, filePos)
+		for _, frame := range v.frames.Unroll() {
+			filePos, _ = v.bc.Position(frame.SourcePos(frame.SavedIP() - 1))
+			err = fmt.Errorf("%w at %s", err, filePos)
 		}
-		return v.err
+		return err
 	}
 	return nil
 }
@@ -343,7 +327,7 @@ func (v *VM) loop() {
 		opcode = v.currFrame.Get8(v.ip)
 		decoder = v.sequencer[opcode]
 		v.ip = decoder.Decode(v.currFrame, v.ip)
-		log.Printf("Executing instruction opcode: %d name: %s ip: %d decoded: %v", opcode, decoder.Name(), v.ip, decoder.decodedOperands[:decoder.fullWidth])
+		//log.Printf("Executing instruction opcode: %d name: %s ip: %d decoded: %v", opcode, decoder.Name(), v.ip, decoder.decodedOperands[:decoder.fullWidth])
 		decoder.Execute(v)
 		if v.shutdown {
 			break

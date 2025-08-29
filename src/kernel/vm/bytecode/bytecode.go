@@ -24,24 +24,26 @@ type Bytecode struct {
 	files      *Files
 	constants  []objects.IObject
 	references []objects.IObject
-	global     []objects.IObject
+	globals    []objects.IObject
 }
 
 // NewBytecode creates and returns a new instance of Bytecode with an initialized Files object.
-func NewBytecode(op *Opcodes, constants []objects.IObject, references []objects.IObject, global []objects.IObject) *Bytecode {
-	return &Bytecode{
+func NewBytecode(op *Opcodes, constants []objects.IObject, references []objects.IObject, global []objects.IObject, f IFile) *Bytecode {
+	bc := &Bytecode{
 		opcodes:    op,
 		files:      NewFiles(),
 		constants:  constants,
 		references: references,
-		global:     global,
+		globals:    global,
 	}
+	bc.AddFile(f)
+	return bc
 }
 
 // AddFile adds an IFile to the internal files collection of the Bytecode.
 // Returns an error if the file cannot be added.
-func (b *Bytecode) AddFile(f IFile) error {
-	return b.files.AddFile(f)
+func (b *Bytecode) AddFile(f IFile) {
+	b.files.AddFile(f)
 }
 
 // Position retrieves the FilePos structure for a given position p in the bytecode's source files.
@@ -67,7 +69,7 @@ func (b *Bytecode) References() []objects.IObject {
 
 // Globals retrieves the list of IObject references stored in the Bytecode.
 func (b *Bytecode) Globals() []objects.IObject {
-	return b.global
+	return b.globals
 }
 
 // Encode serializes the Bytecode object and writes it to the provided io.Writer in gob format. Returns an error if encoding fails.
@@ -82,7 +84,7 @@ func (b *Bytecode) Encode(w io.Writer) error {
 	if err := enc.Encode(b.references); err != nil {
 		return err
 	}
-	if err := enc.Encode(b.global); err != nil {
+	if err := enc.Encode(b.globals); err != nil {
 		return err
 	}
 	return nil
@@ -100,7 +102,7 @@ func (b *Bytecode) Decode(r io.Reader) error {
 	if err := dec.Decode(&b.references); err != nil {
 		return err
 	}
-	if err := dec.Decode(&b.global); err != nil {
+	if err := dec.Decode(&b.globals); err != nil {
 		return err
 	}
 	return nil

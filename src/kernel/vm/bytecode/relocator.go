@@ -29,18 +29,18 @@ func NewRelocator(gk objects.IGateKeeper, loader ILoader, opcodes *Opcodes, pres
 	}
 }
 
+// Relocate processes a slice of Bytecode instances, ensuring each bytecode is fixed and reconstructed correctly.
+// Returns a new Bytecode instance or an error if the fixing process fails.
 func (c *Relocator) Relocate(codes []*Bytecode) (*Bytecode, error) {
 	var constants []objects.IObject
 	var references []objects.IObject
 	var globals []objects.IObject
-	sourceFiles := NewFiles()
+	var sourceFiles []IFile
 	for _, bc := range codes {
 		references = append(references, bc.References()...)
 		constants = append(constants, bc.Constants()...)
 		globals = append(globals, bc.Globals()...)
-		for _, sf := range bc.SourceFiles().files {
-			_ = sourceFiles.AddFile(sf)
-		}
+		sourceFiles = append(sourceFiles, bc.SourceFiles().files...)
 	}
 	var err error
 	if constants, err = c.RelocateObjects(constants); err != nil {
@@ -52,8 +52,10 @@ func (c *Relocator) Relocate(codes []*Bytecode) (*Bytecode, error) {
 	if globals, err = c.RelocateObjects(globals); err != nil {
 		return nil, err
 	}
-	out := NewBytecode(c.opcodes, constants, references, globals)
-	out.files = sourceFiles
+	out := NewBytecode(c.opcodes, constants, references, globals, nil)
+	for _, sf := range sourceFiles {
+		out.AddFile(sf)
+	}
 	return out, nil
 }
 

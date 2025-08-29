@@ -2,7 +2,7 @@ package bytecode
 
 import "github.com/markel1974/c64emu/src/kernel/vm/objects"
 
-// ICompiler defines an interface for compiling source code and managing constants, references, and global objects.
+// ICompiler defines an interface for compiling source code and managing constants, references, and globals objects.
 type ICompiler interface {
 	Id() string
 
