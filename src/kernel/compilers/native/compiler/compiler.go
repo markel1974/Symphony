@@ -13,6 +13,9 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
+//TODO
+// 1) "val, err := func()" è da introdurre 2) "al, ok := i.(TipoConcreto)) e i type switch"
+
 // Compiler represents a structure to manage the compilation process, including scopes and associated token file sets.
 type Compiler struct {
 	gk                objects.IGateKeeper
