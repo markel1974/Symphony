@@ -194,6 +194,22 @@ func (f *GateAllocator) NewFuncPackageFrame(frame int, kind string, name string,
 	return newFuncPackage(f.gk, frame, kind, name, fn)
 }
 
+// NewFuncJit creates a new JIT-compiled function object with the specified kind, name, and bytecode data.
+func (f *GateAllocator) NewFuncJit(kind string, name string, data []byte) IObject {
+	if err := f.acquireObject(); err != nil {
+		return f.undefinedValue
+	}
+	return newFuncJit(f.gk, FrameStatic, kind, name, data)
+}
+
+// NewFuncJitFrame creates a new JIT-compiled function frame with provided frame ID, kind, name, and associated data.
+func (f *GateAllocator) NewFuncJitFrame(frame int, kind string, name string, data []byte) IObject {
+	if err := f.acquireObject(); err != nil {
+		return f.undefinedValue
+	}
+	return newFuncJit(f.gk, frame, kind, name, data)
+}
+
 // NewBuiltin creates a new Builtin object with the specified name and index using the GateKeeper.
 func (f *GateAllocator) NewBuiltin(frame int, name string, index int) IObject {
 	if err := f.acquireObject(); err != nil {

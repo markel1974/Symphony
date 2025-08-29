@@ -46,6 +46,8 @@ var (
 	ErrSelectorNotProvided = errors.New("selector not provided")
 
 	ErrAllocationLimit = errors.New("allocation limit")
+
+	ErrUnimplemented = errors.New("unimplemented")
 )
 
 // NewInvalidArgumentError creates an error indicating an argument has an unexpected type, providing its name, expected, and actual types.

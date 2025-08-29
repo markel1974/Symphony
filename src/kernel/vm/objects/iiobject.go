@@ -49,6 +49,8 @@ type IGateAllocator interface {
 	NewFuncPackage(kind string, name string, fn FuncCallable) IObject
 	NewFuncPackageFrame(frame int, kind string, name string, fn FuncCallable) IObject
 	NewBuiltin(frame int, name string, index int) IObject
+	NewFuncJit(kind string, name string, data []byte) IObject
+	NewFuncJitFrame(frame int, kind string, name string, data []byte) IObject
 	NewArray(frame int, values []IObject) IObject
 	NewArrayImmutable(frame int, values []IObject) IObject
 	NewBool(frame int, value bool) IObject

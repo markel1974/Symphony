@@ -276,6 +276,11 @@ func (v *VM) SetError(err error) {
 	v.shutdown = true
 }
 
+// Rewrite updates the global function mapping with the given JIT-compiled function for the specified identifier.
+func (v *VM) Rewrite(id uint, jit *objects.FuncJit) {
+	v.globals.Set(id, jit)
+}
+
 // Reset reinitializes the virtual machine's state, clears the stack and frames, and resets execution-related variables.
 func (v *VM) prepare() {
 	v.ip = resetIp
