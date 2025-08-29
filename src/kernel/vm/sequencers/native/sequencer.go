@@ -112,3 +112,26 @@ func (ds *Sequencer) createStatic(vm *core.VM) []core.IOpExecutor {
 func (ds *Sequencer) setSequence(container []core.IOpExecutor, seq core.IOpExecutor) {
 	container[seq.OpcodeId()&bytecode.OpcodesMask] = seq
 }
+
+func (ds *Sequencer) facadeForOpcode(opcodeId bytecode.OpcodeId, vm *core.VM) interface{} {
+	switch opcodeId {
+	// Category: Stack & Constants (Read-Only)
+	case bytecode.OpConstant, bytecode.OpGlobalGet, bytecode.OpReferences, bytecode.OpFreeGet, bytecode.OpLocalGet:
+		return IVMReadOnly(vm)
+	// Category: Control Flow
+	case bytecode.OpJump, bytecode.OpJumpFalsy, bytecode.OpJumpAnd, bytecode.OpJumpOr:
+		return IVMControlFlow(vm)
+	// Category: Simple Stack
+	case bytecode.OpPop, bytecode.OpTrue, bytecode.OpFalse, bytecode.OpNull, bytecode.OpNotLogical, bytecode.OpMinus:
+		// These instructions only manipulate the top of the stack.
+		return IVMStackOnly(vm)
+	// Category: Full Access (use with caution)
+	case bytecode.OpCall, bytecode.OpReturn, bytecode.OpCallMethod, bytecode.OpClosure:
+		// These complex operations need wider access.
+		return IVMFullAccess(vm)
+	// Default Case
+	default:
+		// Basic read/write access.
+		return IVMReadWrite(vm)
+	}
+}
