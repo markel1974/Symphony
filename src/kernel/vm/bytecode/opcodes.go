@@ -77,6 +77,18 @@ const (
 
 	OpInterface
 
+	// OpJumpIfNotError gestisce il pattern 'if err != nil', saltando il blocco if se l'oggetto in cima allo stack è nullo o non è un errore.
+	OpJumpIfNotError
+
+	// OpTypeAssert implementa l'asserzione di tipo 'val, ok := i.(Type)'.
+	OpTypeAssert
+
+	// OpIsType è un helper per il type switch, controlla il tipo e pusha un booleano.
+	OpIsType
+
+	// OpAsType è un helper per il type switch, esegue il cast del valore senza controlli.
+	OpAsType
+
 	// OpImmutable represents an opcode that creates an immutable object or marks an operation as associated with immutability.
 	OpImmutable
 
@@ -237,6 +249,7 @@ func NewOpcodes() *Opcodes {
 	op.createOpcode(OpJumpAnd, []int{2}, "OpJumpAnd")
 	op.createOpcode(OpJumpOr, []int{2}, "OpJumpOr")
 	op.createOpcode(OpJump, []int{2}, "OpJump")
+	op.createOpcode(OpJumpIfNotError, []int{2}, "OpJumpIfNotError")
 	op.createOpcode(OpNull, []int{}, "OpNull")
 	op.createOpcode(OpGlobalGet, []int{2}, "OpGlobalGet")
 	op.createOpcode(OpGlobalSet, []int{2}, "OpGlobalSet")
@@ -270,6 +283,9 @@ func NewOpcodes() *Opcodes {
 	op.createOpcode(OpIntOp, []int{2, 1}, "OpIntOp")
 	op.createOpcode(OpDeref, []int{}, "OpDeref")
 	op.createOpcode(OpDerefSet, []int{}, "OpDerefSet")
+	op.createOpcode(OpTypeAssert, []int{2}, "OpTypeAssert")
+	op.createOpcode(OpIsType, []int{2}, "OpIsType")
+	op.createOpcode(OpAsType, []int{2}, "OpAsType")
 	op.createOpcode(OpSuspend, []int{}, "OpSuspend")
 	op.createOpcode(OpError, []int{}, "OpError")
 	return op

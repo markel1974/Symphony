@@ -92,6 +92,33 @@ This design ensures that every instruction operates under the **Principle of Lea
 
 This architectural choice creates a system that is not only secure by design but is also **self-auditing**, where any deviation from the intended security policy is caught automatically at startup.
 
+
+### Future-Proof by Design: The Path to a Hybrid JIT Runtime
+
+While the VM is architected as a highly efficient bytecode interpreter to ensure maximum portability ("runs wherever Go runs," including WASM), its design deliberately paves the way for a more advanced, hybrid execution model without requiring a fundamental rewrite. The system is predisposed to evolve into a Just-In-Time (JIT) compiler.
+
+This evolution is made possible by the same principles that make the current architecture robust: extreme modularity and separation of concerns.
+
+#### The Hybrid JIT Model
+
+The path forward does not involve replacing the interpreter but augmenting it. The system can operate in a hybrid mode:
+1.  **Interpreted by Default**: All code begins execution in the safe, portable bytecode interpreter. This ensures a fast startup and low memory footprint.
+2.  **Profiling**: A runtime profiler (which can be built as a separate component) identifies "hot spots"—functions or loops that are executed frequently and are critical for performance.
+3.  **Just-In-Time Compilation**: Once a hot spot is identified, a JIT compiler (another distinct component) would translate its bytecode into highly optimized native machine code (e.g., x86-64, ARM) on the fly.
+4.  **Transparent Execution Upgrade**: The VM would then transparently swap the bytecode implementation of the hot function with its newly compiled native version.
+
+From that point on, every call to that function would execute native code directly, resulting in a massive performance boost, while the rest of the "cold" code continues to run safely in the interpreter.
+
+#### Architectural Enablers
+
+This advanced evolution is not an afterthought but a natural consequence of the core design:
+
+* **Clean Intermediate Representation (IR)**: The bytecode produced by the compiler is not an opaque binary format. It's a high-level, well-structured IR that is trivial to parse and translate into machine code, as most of the complex semantic analysis has already been done.
+* **Decoupled Execution Logic**: Because the core VM is completely agnostic to *how* a function is executed (it only calls the `IObject` interface), swapping a `FuncCompiled` object with a new `FuncJIT` object holding a pointer to native code would be a seamless operation.
+* **Non-Invasive Integration**: The entire JIT engine can be built as an external module. The only addition required to the core VM would be a single, simple method like `Rewrite(functionID, newFunctionObject)`, which would handle the atomic swap. The main execution loop would remain unchanged.
+
+This makes the architecture not just powerful for what it is today, but for what it can effortlessly become tomorrow: a high-performance, hybrid runtime that offers both universal portability and native speed where it matters most.
+
 ---
 
 ## Conclusion:
