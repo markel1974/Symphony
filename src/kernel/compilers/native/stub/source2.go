@@ -1,22 +1,18 @@
 package stub
 
-const Source2 = `
-package main
-
 import "fmt"
 
-func test() {
+func test() (bool, bool) {
 	fmt.Println("home")
+	return true, false
 }
 
 func main() {
-	test()
+	y, z := test()
 	x := "home"
-	a := 0
+	a, b := 0, 1000
 	for idx, v := range x {
 		a++
-		fmt.Println(v, " ", a)
+		fmt.Println(string(v), " ", a, b, y, z, idx)
 	}
-	return 0
 }
-`

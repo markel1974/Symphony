@@ -3,7 +3,9 @@ package tables
 import (
 	"fmt"
 	"go/ast"
+	"go/token"
 
+	"github.com/markel1974/c64emu/src/kernel/vm/bytecode"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
@@ -85,7 +87,61 @@ func (f *FunctionTable) CountParams(fieldList *ast.FieldList) int {
 	return count
 }
 
-// SymbolsFromParameters creates and returns a slice of Symbols for the function parameters.
+func (f *FunctionTable) DefineFunctionVariables(tok token.Token, callExpr *ast.CallExpr, lhs []ast.Expr) error {
+	var funcReturnTypes []string
+	if ident, isIdent := callExpr.Fun.(*ast.Ident); isIdent {
+		if ident.Name != "" {
+			if funcSymbol, ok := f.scopes.SymbolResolve(ident.Name); ok {
+				funcReturnTypes = funcSymbol.ReturnTypes()
+			}
+		}
+	}
+	if len(lhs) != len(funcReturnTypes) {
+		return fmt.Errorf("assignment mismatch: %d variables but %d return values", len(lhs), len(funcReturnTypes))
+	}
+	if len(lhs) == 0 {
+		return nil
+	}
+	//controlla il tipo di ogni variabile es: a, b := Test()
+	for i := len(lhs) - 1; i >= 0; i-- {
+		ident, ok := lhs[i].(*ast.Ident)
+		if !ok {
+			return fmt.Errorf("unsupported multiple assignment to type %T", lhs)
+		}
+		var symbol *Symbol
+		if tok == token.DEFINE {
+			var err error
+			if symbol, err = f.scopes.SymbolDefine(ident.Name); err != nil {
+				return err
+			}
+		} else {
+			var found bool
+			if symbol, found = f.scopes.SymbolResolve(ident.Name); !found {
+				return fmt.Errorf("undefined variable: %s", ident.Name)
+			}
+		}
+		// Complete type inference for each variable
+		inferredTypeName := funcReturnTypes[i]
+		if err := f.structTable.AssignSymbol(symbol, inferredTypeName, []string{inferredTypeName}); err != nil {
+			return err
+		}
+		// Emit correct opcode based on ':=' or '='
+		if tok == token.DEFINE {
+			if err := f.scopes.EmitSymbolDefine(symbol); err != nil {
+				return err
+			}
+		} else {
+			if err := f.scopes.EmitSymbolSet(symbol); err != nil {
+				return err
+			}
+		}
+		if _, err := f.scopes.Emit(bytecode.OpPop); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // SymbolsFromParameters creates and returns a slice of Symbols for the function parameters.
 func (f *FunctionTable) SymbolsFromParameters(fieldList *ast.FieldList) ([]*Symbol, error) {
 	var symbols []*Symbol
@@ -100,21 +156,15 @@ func (f *FunctionTable) SymbolsFromParameters(fieldList *ast.FieldList) ([]*Symb
 					typeName = ident.Name
 				}
 			}
-
-			// --- INIZIO MODIFICA ---
 			// Determina se il tipo è uno struct o un'interfaccia conosciuta
 			isStruct := f.structTable.Has(typeName)
 			isInterface := f.interfaceTable.Has(typeName)
-			// --- FINE MODIFICA ---
-
 			for _, name := range p.Names {
 				symbol, err := f.scopes.SymbolDefine(name.Name)
 				if err != nil {
 					return nil, err
 				}
 				symbol.SetScope(LocalScope)
-
-				// --- INIZIO MODIFICA ---
 				if isStruct {
 					// Se è uno struct, assegna le informazioni dello struct
 					if err = f.structTable.AssignSymbol(symbol, typeName, []string{typeName}); err != nil {
@@ -124,8 +174,6 @@ func (f *FunctionTable) SymbolsFromParameters(fieldList *ast.FieldList) ([]*Symb
 					// Se è un'interfaccia, contrassegnalo come tale!
 					symbol.SetInterface(typeName)
 				}
-				// --- FINE MODIFICA ---
-
 				symbols = append(symbols, symbol)
 			}
 		}
