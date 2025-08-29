@@ -7,7 +7,7 @@ import (
 
 // IVM defines an interface for managing a virtual machine with functionalities for version retrieval.
 type IVM interface {
-	Version() int
+	Version() string
 }
 
 // IVMStackOnly defines an interface for managing a virtual machine stack with functionalities for stack retrieval,

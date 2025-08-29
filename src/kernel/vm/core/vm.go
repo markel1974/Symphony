@@ -8,6 +8,8 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
+const Version = "0.1"
+
 // resetIp is the instruction pointer value used to reset the VM's instruction pointer to the beginning of the main function.'
 const (
 	resetIp = -1
@@ -94,6 +96,11 @@ func (v *VM) Setup(loader bytecode.ILoader, codes ...*bytecode.Bytecode) (map[st
 		}
 	}
 	return entryPoints, nil
+}
+
+// Version returns the version of the virtual machine.
+func (v *VM) Version() string {
+	return Version
 }
 
 // Run executes the main function identified by mainId with the provided arguments in the virtual machine context.

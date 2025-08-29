@@ -3,7 +3,7 @@
     <option name="myName" value="Project Default" />
     <inspection_tool class="DuplicatedCode" enabled="true" level="WEAK WARNING" enabled_by_default="true">
       <Languages>
-        <language minSize="162" name="Go" />
+        <language minSize="231" name="Go" />
       </Languages>
     </inspection_tool>
     <inspection_tool class="GoStandardMethods" enabled="false" level="WARNING" enabled_by_default="false" />
