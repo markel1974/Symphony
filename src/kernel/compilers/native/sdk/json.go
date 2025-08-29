@@ -46,7 +46,7 @@ func (j *Json) Get(name string) (objects.IObject, bool) {
 // Unmarshal parses a JSON-encoded string or byte slice into a Map object and returns it as IObject.
 func (j *Json) unmarshal(frame int, args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 1 {
-		return nil, objects.ErrWrongNumArguments
+		return nil, objects.ErrInvalidArgumentsNumber
 	}
 	var data []byte
 	switch o := args[0].(type) {
@@ -69,7 +69,7 @@ func (j *Json) unmarshal(frame int, args ...objects.IObject) (ret objects.IObjec
 // Marshal serializes a single IObject into a JSON-encoded byte slice and returns it as a Bytes object.
 func (j *Json) marshal(frame int, args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 1 {
-		return nil, objects.ErrWrongNumArguments
+		return nil, objects.ErrInvalidArgumentsNumber
 	}
 	result, err := json.Marshal(j.factory.ToInterface(args[0]))
 	if err != nil {
@@ -81,7 +81,7 @@ func (j *Json) marshal(frame int, args ...objects.IObject) (ret objects.IObject,
 // Indent takes a JSON object (bytes or string), a prefix, and an indent string, and returns the indented JSON.
 func (j *Json) indent(frame int, args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 3 {
-		return nil, objects.ErrWrongNumArguments
+		return nil, objects.ErrInvalidArgumentsNumber
 	}
 	prefix, err := j.factory.ToStringArg(1, args[1])
 	if err != nil {
@@ -117,7 +117,7 @@ func (j *Json) indent(frame int, args ...objects.IObject) (ret objects.IObject, 
 // Errors if the number of arguments is not exactly one.
 func (j *Json) htmlEscape(frame int, args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 1 {
-		return nil, objects.ErrWrongNumArguments
+		return nil, objects.ErrInvalidArgumentsNumber
 	}
 	switch o := args[0].(type) {
 	case *objects.Bytes:

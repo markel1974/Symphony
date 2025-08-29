@@ -64,51 +64,31 @@ func New(gk objects.IGateKeeper, sequencer ISequencer, op *bytecode.Opcodes) *VM
 
 // Setup initializes the virtual machine with the provided bytecode and loader components.
 func (v *VM) Setup(loader bytecode.ILoader, codes ...*bytecode.Bytecode) error {
-	if len(codes) == 0 {
-		return fmt.Errorf("no bytecode provided")
-	}
-	var constants []objects.IObject
-	var references []objects.IObject
-	var globals []objects.IObject
-
-	if len(codes) == 1 {
-		bc := codes[0]
-		constants = bc.Constants()
-		references = bc.References()
-		globals = bc.Global()
-		v.sourceFiles = bc.SourceFiles()
-	} else {
-		for _, bc := range codes {
-			references = append(references, bc.References()...)
-			constants = append(constants, bc.Constants()...)
-			globals = append(globals, bc.Global()...)
-			//TODO add source files
-			//v.sourceFiles.AddFile()
-		}
+	var bc *bytecode.Bytecode
+	switch len(codes) {
+	case 1:
+		bc = codes[0]
+	default:
 		var err error
 		relocator := bytecode.NewRelocator(v.gk, loader, v.op, []string{bytecode.PreInitFunction, bytecode.InitFunction})
-		if constants, err = relocator.Relocate(constants); err != nil {
-			return err
-		}
-		if references, err = relocator.Relocate(references); err != nil {
-			return err
-		}
-		if globals, err = relocator.Relocate(globals); err != nil {
+		if bc, err = relocator.Relocate(codes); err != nil {
 			return err
 		}
 	}
-	if err := v.references.Setup(loader, references); err != nil {
+	if bc == nil {
+		return fmt.Errorf("no bytecode provided")
+	}
+	if err := v.references.Setup(loader, bc.References()); err != nil {
 		return err
 	}
-	if err := v.constants.Setup(constants); err != nil {
+	if err := v.constants.Setup(bc.Constants()); err != nil {
 		return err
 	}
-	if err := v.globals.Setup(globals); err != nil {
+	if err := v.globals.Setup(bc.Globals()); err != nil {
 		return err
 	}
-
 	var init []*objects.FuncCompiled
-	for _, global := range globals {
+	for _, global := range bc.Globals() {
 		switch c := global.(type) {
 		case *objects.FuncCompiled:
 			if c.Name() == bytecode.PreInitFunction {
@@ -190,49 +170,54 @@ func (v *VM) GetIp() int {
 }
 
 // Call executes a function or method with the specified number of arguments and handles variadic functions if applicable.
-func (v *VM) Call(value objects.IObject, spread int, numArgs int) {
-	if !value.CanCall() {
-		v.SetError(fmt.Errorf("%s is not callable: %s", value.String(), value.TypeName()))
+func (v *VM) Call(value objects.IObject, spread bool, numArgs int) {
+	if numArgs < 0 {
+		v.SetError(fmt.Errorf("invalid number of arguments: %d", numArgs))
 		return
 	}
-	if spread == 1 {
-		arrObj := v.Stack().Pop()
-		switch z := arrObj.(type) {
+	if !value.CanCall() {
+		v.SetError(fmt.Errorf("not callable %s:%s", value.String(), value.TypeName()))
+		return
+	}
+	if spread {
+		var args []objects.IObject
+		obj := v.Stack().Pop()
+		switch z := obj.(type) {
 		case *objects.Array:
-			for _, item := range z.Values() {
-				v.Stack().Push(item)
-			}
-			numArgs += z.Length() - 1
+			args = z.Values()
 		case *objects.ArrayImmutable:
-			for _, item := range z.Values() {
-				v.Stack().Push(item)
-			}
-			numArgs += z.Length() - 1
+			args = z.Values()
 		default:
-			v.SetError(fmt.Errorf("not an array: %s", arrObj.TypeName()))
+			v.SetError(fmt.Errorf("unexpected type (array required): %s", obj.TypeName()))
 			return
 		}
+		if argsLen := len(args); argsLen > 0 {
+			for _, item := range args {
+				v.Stack().Push(item)
+			}
+			numArgs += argsLen - 1
+		}
 	}
-	switch callee := value.(type) {
+	switch ce := value.(type) {
 	case *objects.FuncCompiled:
-		if callee.VarArgs() {
-			v.Stack().PushVarArgs(v.currFrame.Id(), numArgs, callee.NumParameters()-1)
-			numArgs = callee.NumParameters()
+		numParams := ce.NumParameters()
+		if ce.VarArgs() {
+			if numParams > 0 {
+				numParams--
+			}
+			v.Stack().PushVarArgs(v.currFrame.Id(), numArgs, numParams)
+			numArgs = ce.NumParameters()
 		} else {
-			if numArgs != callee.NumParameters() {
-				numParams := callee.NumParameters()
-				if callee.VarArgs() {
-					numParams--
-				}
-				v.SetError(fmt.Errorf("%s wrong number of arguments: want>=%d, got=%d", callee.Name(), numParams, numArgs))
+			if numArgs != numParams {
+				v.SetError(fmt.Errorf("%s invalid arguments [vargs: %v] : want>=%d, got=%d", ce.Name(), ce.VarArgs(), numParams, numArgs))
 				return
 			}
 		}
-		v.compiledCall(callee, numArgs)
+		v.callCompiled(ce, numArgs)
 	default:
 		var args []objects.IObject
 		args = append(args, v.Stack().PeekArrayObject(numArgs)...)
-		v.libraryCall(value, args, numArgs)
+		v.callNative(value, args, numArgs)
 	}
 }
 
@@ -366,17 +351,13 @@ func (v *VM) loop() {
 	}
 }
 
-// libraryCall invokes a callable object with the given arguments and handles stack cleanup and error management.
-func (v *VM) libraryCall(value objects.IObject, args []objects.IObject, numArgs int) {
+// callNative invokes a callable object with the given arguments and handles stack cleanup and error management.
+func (v *VM) callNative(value objects.IObject, args []objects.IObject, numArgs int) {
 	ret, err := value.Call(v.currFrame.Id(), args...)
 	// Cleans the stack from the function and its arguments
 	v.stack.DecrementCount(numArgs + 1)
 	if err != nil {
-		if objects.Is(err, objects.ErrWrongNumArguments) {
-			v.SetError(fmt.Errorf("wrong number of arguments in call to '%s'", value.TypeName()))
-			return
-		}
-		v.SetError(err)
+		v.SetError(objects.ComputeCallError(err, value.TypeName()))
 		return
 	}
 	if ret == nil {
@@ -386,17 +367,15 @@ func (v *VM) libraryCall(value objects.IObject, args []objects.IObject, numArgs 
 	}
 }
 
-// compiledCall sets up a new execution frame for a compiled function and manages stack allocation for local variables.
+// callCompiled sets up a new execution frame for a compiled function and manages stack allocation for local variables.
 // Callee specifies the compiled function to be executed, and numArgs determines the number of arguments passed.
 // It reserves stack space for all local variables and adjusts the instruction pointer accordingly.
-func (v *VM) compiledCall(callee *objects.FuncCompiled, numArgs int) {
-	// Frame setup
+func (v *VM) callCompiled(callee *objects.FuncCompiled, numArgs int) {
 	v.currFrame = v.frames.Get()
 	v.frames.Next()
 	bp := v.stack.StackPointer() - numArgs
 	v.currFrame.Bind(v.GetIp(), callee, bp)
-	// Reserve space for *all* local variables of the new function
-	// by simply advancing the stack pointer.
+	// Reserve space for *all* local variables of the new function by simply advancing the stack pointer.
 	// This ensures that space for temporary calculations starts *after*
 	// the space reserved for local variables, avoiding collisions.
 	v.stack.SetStackPointer(v.stack.StackPointer() + callee.NumLocals())

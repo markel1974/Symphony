@@ -25,5 +25,5 @@ func (op *OpCall) Execute(v *core.VM, decoder *core.Decoder) {
 	spread := decoder.Read(0)
 	numArgs := decoder.Read(1)
 	value := v.Stack().PeekOffset(-1 - numArgs)
-	v.Call(value, spread, numArgs)
+	v.Call(value, spread == 1, numArgs)
 }

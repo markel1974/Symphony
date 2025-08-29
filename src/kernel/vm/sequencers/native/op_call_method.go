@@ -71,5 +71,5 @@ func (op *OpCallMethod) Execute(v *core.VM, decoder *core.Decoder) {
 	// 5. Delegate call logic to VM.
 	// VM will handle creating new frame, etc.
 	// Number of arguments for VM includes the receiver.
-	v.Call(callee, 0, numArgs+1)
+	v.Call(callee, false, numArgs+1)
 }

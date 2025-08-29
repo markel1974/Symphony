@@ -50,7 +50,7 @@ func (z *Rand) Get(name string) (objects.IObject, bool) {
 // Read reads random data into a byte slice and returns the number of bytes written as an integer or an error if it occurs.
 func (z *Rand) read(frame int, args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, objects.ErrWrongNumArguments
+		return nil, objects.ErrInvalidArgumentsNumber
 	}
 	bs1, err := z.gk.ToBytesArg(0, args[0])
 	if err != nil {
@@ -66,7 +66,7 @@ func (z *Rand) read(frame int, args ...objects.IObject) (objects.IObject, error)
 // Rand generates a new random number generator using the provided seed argument and returns its options as a map.
 func (z *Rand) rand(frame int, args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, objects.ErrWrongNumArguments
+		return nil, objects.ErrInvalidArgumentsNumber
 	}
 	i1, err := z.gk.ToInt64Arg(0, args[0])
 	if err != nil {
@@ -92,7 +92,7 @@ func (z *Rand) rand(frame int, args ...objects.IObject) (objects.IObject, error)
 // RandOptionsRead reads random data into a provided byte slice, returning the number of bytes read or an error.
 func (z *Rand) randOptionsRead(r *rand.Rand, frame int, args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, objects.ErrWrongNumArguments
+		return nil, objects.ErrInvalidArgumentsNumber
 	}
 	bs1, err := z.gk.ToBytesArg(0, args[0])
 	if err != nil {
@@ -110,7 +110,7 @@ func (z *Rand) randOptionsRead(r *rand.Rand, frame int, args ...objects.IObject)
 func (z *Rand) int63(fn func() int64) objects.FuncCallable {
 	return func(frame int, args ...objects.IObject) (ret objects.IObject, err error) {
 		if len(args) != 0 {
-			return nil, objects.ErrWrongNumArguments
+			return nil, objects.ErrInvalidArgumentsNumber
 		}
 		return z.gk.NewInt(frame, fn()), nil
 	}
@@ -122,7 +122,7 @@ func (z *Rand) int63(fn func() int64) objects.FuncCallable {
 func (z *Rand) int63n(fn func(int64) int64) objects.FuncCallable {
 	return func(frame int, args ...objects.IObject) (ret objects.IObject, err error) {
 		if len(args) != 1 {
-			return nil, objects.ErrWrongNumArguments
+			return nil, objects.ErrInvalidArgumentsNumber
 		}
 		i1, err := z.gk.ToInt64Arg(0, args[0])
 		if err != nil {
@@ -133,11 +133,11 @@ func (z *Rand) int63n(fn func(int64) int64) objects.FuncCallable {
 }
 
 // funcInOf64 wraps a no-argument function returning float64 into a FuncCallable to integrate with the GateAdapter system.
-// It enforces no arguments and converts the float64 result to an IObject, returning ErrWrongNumArguments for invalid input.
+// It enforces no arguments and converts the float64 result to an IObject, returning ErrInvalidArgumentsNumber for invalid input.
 func (z *Rand) funcInOf64(fn func() float64) objects.FuncCallable {
 	return func(frame int, args ...objects.IObject) (ret objects.IObject, err error) {
 		if len(args) != 0 {
-			return nil, objects.ErrWrongNumArguments
+			return nil, objects.ErrInvalidArgumentsNumber
 		}
 		return z.gk.NewFloat(frame, fn()), nil
 	}

@@ -119,7 +119,7 @@ func (o *Array) BinaryOp(frame int, op Operator, in IObject) (IObject, error) {
 				return o, nil
 			}
 			if len(o.values)+len(rhs.values) > maxArrayLen {
-				return nil, ErrExceedingLimit
+				return nil, ErrLimitExceed
 			}
 			return o.gk.NewArray(frame, append(o.values, rhs.values...)), nil
 		default:

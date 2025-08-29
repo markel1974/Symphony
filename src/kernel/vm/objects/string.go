@@ -45,10 +45,10 @@ func (o *String) Frame() int {
 	return o.frame
 }
 
-// IndexSet attempts to assign a value to an index in the object but always returns ErrNotIndexAssignable,
+// IndexSet attempts to assign a value to an index in the object but always returns ErrUnsupportedIndex,
 // as this operation is unsupported.
 func (o *String) IndexSet(_, _ IObject) (err error) {
-	return ErrNotIndexAssignable
+	return ErrUnsupportedIndex
 }
 
 // Call invokes the Object with the provided arguments, returning a result object and an error, if any.
@@ -90,13 +90,13 @@ func (o *String) BinaryOp(frame int, op Operator, rhs IObject) (IObject, error) 
 		switch rhs := rhs.(type) {
 		case *String:
 			if len(o.value)+len(rhs.value) > MaxStringLen {
-				return nil, ErrExceedingLimit
+				return nil, ErrLimitExceed
 			}
 			return o.GateKeeper().NewString(frame, o.value+rhs.value), nil
 		default:
 			rhsStr := rhs.String()
 			if len(o.value)+len(rhsStr) > MaxStringLen {
-				return nil, ErrExceedingLimit
+				return nil, ErrLimitExceed
 			}
 			return o.GateKeeper().NewString(frame, o.value+rhsStr), nil
 		}

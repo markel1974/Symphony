@@ -52,7 +52,7 @@ func (s *Strconv) Get(name string) (objects.IObject, bool) {
 // FormatBool converts a boolean argument to its string representation ("true" or "false"). Returns an error if the argument is invalid.
 func (s *Strconv) formatBool(frame int, args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, objects.ErrWrongNumArguments
+		return nil, objects.ErrInvalidArgumentsNumber
 	}
 	b1, err := s.factory.ToBoolArg(0, args[0])
 	if err != nil {
@@ -67,7 +67,7 @@ func (s *Strconv) formatBool(frame int, args ...objects.IObject) (objects.IObjec
 // FormatFloat converts a float64 into a string representation according to the specified format, precision, and bit size.
 func (s *Strconv) formatFloat(frame int, args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 4 {
-		return nil, objects.ErrWrongNumArguments
+		return nil, objects.ErrInvalidArgumentsNumber
 	}
 	f1, err := s.factory.ToFloat64Arg(0, args[0])
 	if err != nil {
@@ -91,7 +91,7 @@ func (s *Strconv) formatFloat(frame int, args ...objects.IObject) (objects.IObje
 // FormatInt formats an int64 number as a string in the specified base, provided by the second argument.
 func (s *Strconv) formatInt(frame int, args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 2 {
-		return nil, objects.ErrWrongNumArguments
+		return nil, objects.ErrInvalidArgumentsNumber
 	}
 	i1, err := s.factory.ToInt64Arg(0, args[0])
 	if err != nil {
@@ -107,7 +107,7 @@ func (s *Strconv) formatInt(frame int, args ...objects.IObject) (objects.IObject
 // ParseBool parses a string representation of a boolean value and returns the corresponding boolean object or an error.
 func (s *Strconv) parseBool(frame int, args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 1 {
-		err = objects.ErrWrongNumArguments
+		err = objects.ErrInvalidArgumentsNumber
 		return
 	}
 	s1, ok := args[0].(*objects.String)
@@ -131,7 +131,7 @@ func (s *Strconv) parseBool(frame int, args ...objects.IObject) (ret objects.IOb
 // ParseFloat parses a string argument as a floating-point number using the specified precision and returns the result.
 func (s *Strconv) parseFloat(frame int, args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 2 {
-		return nil, objects.ErrWrongNumArguments
+		return nil, objects.ErrInvalidArgumentsNumber
 	}
 	s1, err := s.factory.ToStringArg(0, args[0])
 	if err != nil {
@@ -151,7 +151,7 @@ func (s *Strconv) parseFloat(frame int, args ...objects.IObject) (objects.IObjec
 // ParseNumber extracts and parses numeric values from a string, returning a float object or an error if parsing fails.
 func (s *Strconv) parseNumber(frame int, args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, objects.ErrWrongNumArguments
+		return nil, objects.ErrInvalidArgumentsNumber
 	}
 	s1, err := s.factory.ToStringArg(0, args[0])
 	if err != nil {
@@ -173,7 +173,7 @@ func (s *Strconv) parseNumber(frame int, args ...objects.IObject) (objects.IObje
 // ParseInt converts a string argument to an integer with the specified base and bit size after validating arguments.
 func (s *Strconv) parseInt(frame int, args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 3 {
-		return nil, objects.ErrWrongNumArguments
+		return nil, objects.ErrInvalidArgumentsNumber
 	}
 	s1, err := s.factory.ToStringArg(0, args[0])
 	if err != nil {

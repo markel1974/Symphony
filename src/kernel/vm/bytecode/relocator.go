@@ -29,6 +29,34 @@ func NewRelocator(gk objects.IGateKeeper, loader ILoader, opcodes *Opcodes, pres
 	}
 }
 
+func (c *Relocator) Relocate(codes []*Bytecode) (*Bytecode, error) {
+	var constants []objects.IObject
+	var references []objects.IObject
+	var globals []objects.IObject
+	sourceFiles := NewFiles()
+	for _, bc := range codes {
+		references = append(references, bc.References()...)
+		constants = append(constants, bc.Constants()...)
+		globals = append(globals, bc.Globals()...)
+		for _, sf := range bc.SourceFiles().files {
+			_ = sourceFiles.AddFile(sf)
+		}
+	}
+	var err error
+	if constants, err = c.RelocateObjects(constants); err != nil {
+		return nil, err
+	}
+	if references, err = c.RelocateObjects(references); err != nil {
+		return nil, err
+	}
+	if globals, err = c.RelocateObjects(globals); err != nil {
+		return nil, err
+	}
+	out := NewBytecode(c.opcodes, constants, references, globals)
+	out.files = sourceFiles
+	return out, nil
+}
+
 // Fix processes a slice of IObject instances, ensuring each object is fixed and reconstructed correctly.
 // Returns a slice of fixed IObject instances or an error if the fixing process fails.
 func (c *Relocator) Fix(o []objects.IObject) ([]objects.IObject, error) {
@@ -85,8 +113,8 @@ func (c *Relocator) fixObject(o objects.IObject) (objects.IObject, error) {
 	return o, nil
 }
 
-// Relocate modifies a slice of IObject instances by deduplicating input and updating bytecode constant indexes accordingly.
-func (c *Relocator) Relocate(in []objects.IObject) ([]objects.IObject, error) {
+// RelocateObjects modifies a slice of IObject instances by deduplicating input and updating bytecode constant indexes accordingly.
+func (c *Relocator) RelocateObjects(in []objects.IObject) ([]objects.IObject, error) {
 	outDeduped, outIndexContainer, err := c.processDuplicates(in)
 	if err != nil {
 		return nil, err

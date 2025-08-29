@@ -1,8 +1,6 @@
 package native
 
 import (
-	"fmt"
-
 	"github.com/markel1974/c64emu/src/kernel/vm/bytecode"
 	"github.com/markel1974/c64emu/src/kernel/vm/core"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
@@ -29,15 +27,7 @@ func (op *OpIndex) Execute(v *core.VM, _ *core.Decoder) {
 	left := v.Stack().Pop()
 	val, err := left.IndexGet(v.Frame().Id(), index)
 	if err != nil {
-		if objects.Is(err, objects.ErrNotIndexable) {
-			v.SetError(fmt.Errorf("not indexable: %s", index.TypeName()))
-			return
-		}
-		if objects.Is(err, objects.ErrInvalidIndexType) {
-			v.SetError(fmt.Errorf("invalid index type: %s", index.TypeName()))
-			return
-		}
-		v.SetError(err)
+		v.SetError(objects.ComputeIndexGetError(err, index.TypeName(), index.TypeName()))
 		return
 	}
 	if val == nil {

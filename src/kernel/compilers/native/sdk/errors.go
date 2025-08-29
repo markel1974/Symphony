@@ -29,7 +29,7 @@ func NewErrors(factory objects.IGateKeeper) IPackage {
 // New creates a new error object from the provided argument, ensuring it is a valid string and returning an error if not.
 func (e *Errors) New(frame int, args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 1 {
-		return nil, objects.ErrWrongNumArguments
+		return nil, objects.ErrInvalidArgumentsNumber
 	}
 	s, err := e.factory.ToStringArg(0, args[0])
 	if err != nil {

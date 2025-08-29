@@ -136,7 +136,7 @@ func (o *ArrayImmutable) Equals(in IObject) bool {
 }
 
 func (o *ArrayImmutable) IndexSet(_, _ IObject) error {
-	return ErrNotIndexAssignable
+	return ErrUnsupportedIndex
 }
 
 // IndexGet retrieves an element from the array at the specified index. Returns error for invalid index type or out of bounds.

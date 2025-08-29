@@ -73,7 +73,7 @@ func (s *Strings) Get(name string) (objects.IObject, bool) {
 // Replace replaces occurrences of a substring within a string with the specified replacement string up to a given limit.
 func (s *Strings) replace(frame int, args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 4 {
-		return nil, objects.ErrWrongNumArguments
+		return nil, objects.ErrInvalidArgumentsNumber
 	}
 	s1, err := s.factory.ToStringArg(0, args[0])
 	if err != nil {
@@ -99,7 +99,7 @@ func (s *Strings) replace(frame int, args ...objects.IObject) (objects.IObject, 
 func (s *Strings) Substring(frame int, args ...objects.IObject) (objects.IObject, error) {
 	argsLen := len(args)
 	if argsLen != 2 && argsLen != 3 {
-		return nil, objects.ErrWrongNumArguments
+		return nil, objects.ErrInvalidArgumentsNumber
 	}
 	s1, err := s.factory.ToStringArg(0, args[0])
 	if err != nil {
@@ -138,7 +138,7 @@ func (s *Strings) Substring(frame int, args ...objects.IObject) (objects.IObject
 func (s *Strings) padLeft(frame int, args ...objects.IObject) (objects.IObject, error) {
 	argsLen := len(args)
 	if argsLen != 2 && argsLen != 3 {
-		return nil, objects.ErrWrongNumArguments
+		return nil, objects.ErrInvalidArgumentsNumber
 	}
 	s1, err := s.factory.ToStringArg(0, args[0])
 	if err != nil {
@@ -172,7 +172,7 @@ func (s *Strings) padLeft(frame int, args ...objects.IObject) (objects.IObject, 
 func (s *Strings) padRight(frame int, args ...objects.IObject) (objects.IObject, error) {
 	argsLen := len(args)
 	if argsLen != 2 && argsLen != 3 {
-		return nil, objects.ErrWrongNumArguments
+		return nil, objects.ErrInvalidArgumentsNumber
 	}
 	s1, err := s.factory.ToStringArg(0, args[0])
 	if err != nil {
@@ -205,7 +205,7 @@ func (s *Strings) padRight(frame int, args ...objects.IObject) (objects.IObject,
 // Repeat repeats the input string a specified number of times and returns the concatenated result.
 func (s *Strings) repeat(frame int, args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 2 {
-		return nil, objects.ErrWrongNumArguments
+		return nil, objects.ErrInvalidArgumentsNumber
 	}
 	s1, err := s.factory.ToStringArg(0, args[0])
 	if err != nil {
@@ -221,7 +221,7 @@ func (s *Strings) repeat(frame int, args ...objects.IObject) (objects.IObject, e
 // Join concatenates elements of an array into a single string, using a specified separator string.
 func (s *Strings) join(frame int, args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 2 {
-		return nil, objects.ErrWrongNumArguments
+		return nil, objects.ErrInvalidArgumentsNumber
 	}
 	var sLen int
 	var ss1 []string

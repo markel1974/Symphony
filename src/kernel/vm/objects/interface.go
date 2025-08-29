@@ -94,7 +94,7 @@ func (o *Interface) CanIterate() bool {
 
 // Call invokes the object with the specified frame and arguments, returning the result or an error if unsupported.
 func (o *Interface) Call(frame int, args ...IObject) (ret IObject, err error) {
-	return nil, ErrUnsupported
+	return nil, ErrUnsupportedOperation
 }
 
 // CanCall determines whether the object can be invoked as a callable function. Always returns false for this implementation.

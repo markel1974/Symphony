@@ -40,10 +40,10 @@ func (o *Undefined) BinaryOp(_ int, _ Operator, _ IObject) (IObject, error) {
 	return nil, ErrInvalidOperator
 }
 
-// IndexSet attempts to assign a value to an index in the object but always returns ErrNotIndexAssignable,
+// IndexSet attempts to assign a value to an index in the object but always returns ErrUnsupportedIndex,
 // as this operation is unsupported.
 func (o *Undefined) IndexSet(_, _ IObject) (err error) {
-	return ErrNotIndexAssignable
+	return ErrUnsupportedIndex
 }
 
 // Call invokes the Object with the provided arguments, returning a result object and an error, if any.

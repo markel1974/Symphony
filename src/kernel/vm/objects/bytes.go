@@ -43,10 +43,10 @@ func (o *Bytes) Frame() int {
 	return o.frame
 }
 
-// IndexSet attempts to assign a value to an index in the object but always returns ErrNotIndexAssignable,
+// IndexSet attempts to assign a value to an index in the object but always returns ErrUnsupportedIndex,
 // as this operation is unsupported.
 func (o *Bytes) IndexSet(_, _ IObject) (err error) {
-	return ErrNotIndexAssignable
+	return ErrUnsupportedIndex
 }
 
 // Call invokes the Object with the provided arguments, returning a result object and an error, if any.
@@ -88,7 +88,7 @@ func (o *Bytes) BinaryOp(frame int, op Operator, in IObject) (IObject, error) {
 		switch rhs := in.(type) {
 		case *Bytes:
 			if len(o.values)+len(rhs.values) > maxBytesLen {
-				return nil, ErrExceedingLimit
+				return nil, ErrLimitExceed
 			}
 			return o.GateKeeper().NewBytes(frame, append(o.values, rhs.values...)), nil
 		}

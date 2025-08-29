@@ -54,10 +54,10 @@ func (o *Error) BinaryOp(_ int, _ Operator, _ IObject) (IObject, error) {
 	return nil, ErrInvalidOperator
 }
 
-// IndexSet attempts to assign a value to an index in the object but always returns ErrNotIndexAssignable,
+// IndexSet attempts to assign a value to an index in the object but always returns ErrUnsupportedIndex,
 // as this operation is unsupported.
 func (o *Error) IndexSet(_, _ IObject) (err error) {
-	return ErrNotIndexAssignable
+	return ErrUnsupportedIndex
 }
 
 // Iterate returns an IIterator to traverse over the elements of the object. If iteration is not supported, it returns nil.
@@ -121,7 +121,7 @@ func (o *Error) Equals(x IObject) bool {
 // IndexGet retrieves the values associated with the "values" index in an Error object or returns an error for invalid indices.
 func (o *Error) IndexGet(_ int, index IObject) (res IObject, err error) {
 	if strIdx, _ := o.GateKeeper().ToString(index); strIdx != "values" {
-		err = ErrInvalidIndexOnError
+		err = ErrInvalidIndexValueType
 		return
 	}
 	res = o.value

@@ -60,10 +60,10 @@ func (o *FuncPackage) IndexGet(_ int, _ IObject) (res IObject, err error) {
 	return nil, ErrNotIndexable
 }
 
-// IndexSet attempts to assign a value to an index in the object but always returns ErrNotIndexAssignable,
+// IndexSet attempts to assign a value to an index in the object but always returns ErrUnsupportedIndex,
 // as this operation is unsupported.
 func (o *FuncPackage) IndexSet(_, _ IObject) (err error) {
-	return ErrNotIndexAssignable
+	return ErrUnsupportedIndex
 }
 
 // Iterate returns an IIterator to traverse over the elements of the object. If iteration is not supported, it returns nil.

@@ -32,7 +32,7 @@ func (d *Disassembler) Disassemble(writer io.Writer) {
 	for idx, v := range d.disassembleReferences() {
 		_, _ = fmt.Fprintf(writer, "%04d => %s\n", idx, v)
 	}
-	_, _ = fmt.Fprintf(writer, "--- Global ---\n")
+	_, _ = fmt.Fprintf(writer, "--- Globals ---\n")
 	for idx, v := range d.disassembleGlobal() {
 		_, _ = fmt.Fprintf(writer, "%04d => %s\n", idx, v)
 	}
@@ -50,7 +50,7 @@ func (d *Disassembler) disassembleConstants() []string {
 // disassembleConstants iterates through bytecode constants, disassembles each, and returns the results as a slice of strings.
 func (d *Disassembler) disassembleGlobal() []string {
 	var output []string
-	for cIdx, constant := range d.bc.Global() {
+	for cIdx, constant := range d.bc.Globals() {
 		output = append(output, d.disassembleObject(cIdx, constant)...)
 	}
 	return output

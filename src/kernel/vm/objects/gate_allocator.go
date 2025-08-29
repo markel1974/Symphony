@@ -56,7 +56,7 @@ func (f *GateAllocator) acquireObject() error {
 	f.counter++
 	if f.maxAllocations > 0 {
 		if f.counter > f.maxAllocations {
-			return ErrObjectAllocLimit
+			return ErrAllocationLimit
 		}
 	}
 	return nil

@@ -55,7 +55,7 @@ func (r *Regexp) Get(name string) (objects.IObject, bool) {
 // Returns a boolean object indicating match success or failure, and an error if any issues occur.
 func (r *Regexp) match(frame int, args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 2 {
-		return nil, objects.ErrWrongNumArguments
+		return nil, objects.ErrInvalidArgumentsNumber
 	}
 	s1, err := r.factory.ToStringArg(0, args[0])
 	if err != nil {
@@ -81,7 +81,7 @@ func (r *Regexp) match(frame int, args ...objects.IObject) (objects.IObject, err
 func (r *Regexp) find(frame int, args ...objects.IObject) (objects.IObject, error) {
 	numArgs := len(args)
 	if numArgs != 2 && numArgs != 3 {
-		return nil, objects.ErrWrongNumArguments
+		return nil, objects.ErrInvalidArgumentsNumber
 	}
 	s1, err := r.factory.ToStringArg(0, args[0])
 	if err != nil {
@@ -149,7 +149,7 @@ func (r *Regexp) find(frame int, args ...objects.IObject) (objects.IObject, erro
 func (r *Regexp) split(frame int, args ...objects.IObject) (objects.IObject, error) {
 	numArgs := len(args)
 	if numArgs != 2 && numArgs != 3 {
-		return nil, objects.ErrWrongNumArguments
+		return nil, objects.ErrInvalidArgumentsNumber
 	}
 	s1, err := r.factory.ToStringArg(0, args[0])
 	if err != nil {
@@ -185,7 +185,7 @@ func (r *Regexp) split(frame int, args ...objects.IObject) (objects.IObject, err
 // Compile compiles a single string argument into a regular expression and returns an object encapsulating its options.
 func (r *Regexp) compile(frame int, args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, objects.ErrWrongNumArguments
+		return nil, objects.ErrInvalidArgumentsNumber
 	}
 	s1, ok := r.factory.ToString(args[0])
 	if !ok {
@@ -223,7 +223,7 @@ func (r *Regexp) compile(frame int, args ...objects.IObject) (objects.IObject, e
 // Replace performs a regex-based replacement on the input string with the specified replacement string and returns the result.
 func (r *Regexp) replace(frame int, args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 3 {
-		return nil, objects.ErrWrongNumArguments
+		return nil, objects.ErrInvalidArgumentsNumber
 	}
 	s1, err := r.factory.ToStringArg(0, args[0])
 	if err != nil {
@@ -249,7 +249,7 @@ func (r *Regexp) replace(frame int, args ...objects.IObject) (objects.IObject, e
 // CompileOptionMatch checks if the given regular expression matches the provided string argument and returns a boolean result.
 func (r *Regexp) compileOptionMatch(_ int, re *regexp.Regexp, args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, objects.ErrWrongNumArguments
+		return nil, objects.ErrInvalidArgumentsNumber
 	}
 	s1, err := r.factory.ToStringArg(0, args[0])
 	if err != nil {
@@ -268,7 +268,7 @@ func (r *Regexp) compileOptionMatch(_ int, re *regexp.Regexp, args ...objects.IO
 func (r *Regexp) compileOptionFind(frame int, re *regexp.Regexp, args ...objects.IObject) (objects.IObject, error) {
 	numArgs := len(args)
 	if numArgs != 1 && numArgs != 2 {
-		return nil, objects.ErrWrongNumArguments
+		return nil, objects.ErrInvalidArgumentsNumber
 	}
 	s1, err := r.factory.ToStringArg(0, args[0])
 	if err != nil {
@@ -329,7 +329,7 @@ func (r *Regexp) compileOptionFind(frame int, re *regexp.Regexp, args ...objects
 // CompileOptionReplace replaces occurrences in the input string matching the regular expression with the replacement string.
 func (r *Regexp) compileOptionReplace(frame int, re *regexp.Regexp, args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 2 {
-		return nil, objects.ErrWrongNumArguments
+		return nil, objects.ErrInvalidArgumentsNumber
 	}
 	s1, err := r.factory.ToStringArg(0, args[0])
 	if err != nil {
@@ -347,7 +347,7 @@ func (r *Regexp) compileOptionReplace(frame int, re *regexp.Regexp, args ...obje
 func (r *Regexp) compileOptionSplit(frame int, re *regexp.Regexp, args ...objects.IObject) (objects.IObject, error) {
 	numArgs := len(args)
 	if numArgs != 1 && numArgs != 2 {
-		return nil, objects.ErrWrongNumArguments
+		return nil, objects.ErrInvalidArgumentsNumber
 	}
 	s1, err := r.factory.ToStringArg(0, args[0])
 	if err != nil {

@@ -1,6 +1,8 @@
 package objects
 
-import "fmt"
+import (
+	"fmt"
+)
 
 // Code		Meaning		Go-Type			Description
 //	I		Input			-			Prefix indicating input parameters.
@@ -30,7 +32,7 @@ func NewGateAdapter(gk *GateKeeper) *GateAdapter {
 func (ga *GateAdapter) FuncIi64On(fn func(int64)) FuncCallable {
 	return func(frame int, args ...IObject) (ret IObject, err error) {
 		if len(args) != 1 {
-			return nil, ErrWrongNumArguments
+			return nil, ErrInvalidArgumentsNumber
 		}
 		i1, err := ga.gk.ToInt64Arg(0, args[0])
 		if err != nil {
@@ -45,7 +47,7 @@ func (ga *GateAdapter) FuncIi64On(fn func(int64)) FuncCallable {
 func (ga *GateAdapter) FuncIiOiS(fn func(int) []int) FuncCallable {
 	return func(frame int, args ...IObject) (ret IObject, err error) {
 		if len(args) != 1 {
-			return nil, ErrWrongNumArguments
+			return nil, ErrInvalidArgumentsNumber
 		}
 		i1, err := ga.gk.ToInt64Arg(0, args[0])
 		if err != nil {
@@ -70,7 +72,7 @@ func (ga *GateAdapter) FuncIiOiS(fn func(int) []int) FuncCallable {
 func (ga *GateAdapter) FuncIf64Of64(fn func(float64) float64) FuncCallable {
 	return func(frame int, args ...IObject) (ret IObject, err error) {
 		if len(args) != 1 {
-			return nil, ErrWrongNumArguments
+			return nil, ErrInvalidArgumentsNumber
 		}
 		f1, err := ga.gk.ToFloat64Arg(0, args[0])
 		if err != nil {
@@ -84,7 +86,7 @@ func (ga *GateAdapter) FuncIf64Of64(fn func(float64) float64) FuncCallable {
 func (ga *GateAdapter) FuncIiOf64(fn func(int) float64) FuncCallable {
 	return func(frame int, args ...IObject) (ret IObject, err error) {
 		if len(args) != 1 {
-			return nil, ErrWrongNumArguments
+			return nil, ErrInvalidArgumentsNumber
 		}
 		i1, err := ga.gk.ToInt64Arg(0, args[0])
 		if err != nil {
@@ -98,7 +100,7 @@ func (ga *GateAdapter) FuncIiOf64(fn func(int) float64) FuncCallable {
 func (ga *GateAdapter) FuncIf64Oi(fn func(float64) int) FuncCallable {
 	return func(frame int, args ...IObject) (ret IObject, err error) {
 		if len(args) != 1 {
-			return nil, ErrWrongNumArguments
+			return nil, ErrInvalidArgumentsNumber
 		}
 		f1, err := ga.gk.ToFloat64Arg(0, args[0])
 		if err != nil {
@@ -114,7 +116,7 @@ func (ga *GateAdapter) FuncIf64Oi(fn func(float64) int) FuncCallable {
 func (ga *GateAdapter) FuncIf64f64Of64(fn func(float64, float64) float64) FuncCallable {
 	return func(frame int, args ...IObject) (ret IObject, err error) {
 		if len(args) != 2 {
-			return nil, ErrWrongNumArguments
+			return nil, ErrInvalidArgumentsNumber
 		}
 		f1, err := ga.gk.ToFloat64Arg(0, args[0])
 		if err != nil {
@@ -132,7 +134,7 @@ func (ga *GateAdapter) FuncIf64f64Of64(fn func(float64, float64) float64) FuncCa
 func (ga *GateAdapter) FuncIif64Of64(fn func(int, float64) float64) FuncCallable {
 	return func(frame int, args ...IObject) (ret IObject, err error) {
 		if len(args) != 2 {
-			return nil, ErrWrongNumArguments
+			return nil, ErrInvalidArgumentsNumber
 		}
 		i1, err := ga.gk.ToInt64Arg(0, args[0])
 		if err != nil {
@@ -152,7 +154,7 @@ func (ga *GateAdapter) FuncIif64Of64(fn func(int, float64) float64) FuncCallable
 func (ga *GateAdapter) FuncIf64iOf64(fn func(float64, int) float64) FuncCallable {
 	return func(frame int, args ...IObject) (ret IObject, err error) {
 		if len(args) != 2 {
-			return nil, ErrWrongNumArguments
+			return nil, ErrInvalidArgumentsNumber
 		}
 		f1, err := ga.gk.ToFloat64Arg(0, args[0])
 		if err != nil {
@@ -169,11 +171,11 @@ func (ga *GateAdapter) FuncIf64iOf64(fn func(float64, int) float64) FuncCallable
 // FuncIf64iOb wraps a function of type func(float64, int) bool into a FuncCallable compatible with IObject arguments.
 // It converts the first argument to float64 and the second argument to int, validates their types, and applies the function.
 // Returns the system-defined TrueValue or FalseValue based on the function's result, or an error on failure.
-// Returns ErrWrongNumArguments if the number of arguments passed is not exactly two.
+// Returns ErrInvalidArgumentsNumber if the number of arguments passed is not exactly two.
 func (ga *GateAdapter) FuncIf64iOb(fn func(float64, int) bool) FuncCallable {
 	return func(frame int, args ...IObject) (ret IObject, err error) {
 		if len(args) != 2 {
-			return nil, ErrWrongNumArguments
+			return nil, ErrInvalidArgumentsNumber
 		}
 		f1, err := ga.gk.ToFloat64Arg(0, args[0])
 		if err != nil {
@@ -196,7 +198,7 @@ func (ga *GateAdapter) FuncIf64iOb(fn func(float64, int) bool) FuncCallable {
 func (ga *GateAdapter) FuncIf64Ob(fn func(float64) bool) FuncCallable {
 	return func(frame int, args ...IObject) (ret IObject, err error) {
 		if len(args) != 1 {
-			return nil, ErrWrongNumArguments
+			return nil, ErrInvalidArgumentsNumber
 		}
 		f1, err := ga.gk.ToFloat64Arg(0, args[0])
 		if err != nil {
@@ -214,7 +216,7 @@ func (ga *GateAdapter) FuncIf64Ob(fn func(float64) bool) FuncCallable {
 func (ga *GateAdapter) FuncIsOs(fn func(string) string) FuncCallable {
 	return func(frame int, args ...IObject) (IObject, error) {
 		if len(args) != 1 {
-			return nil, ErrWrongNumArguments
+			return nil, ErrInvalidArgumentsNumber
 		}
 		s1, err := ga.gk.ToStringArg(0, args[0])
 		if err != nil {
@@ -229,7 +231,7 @@ func (ga *GateAdapter) FuncIsOs(fn func(string) string) FuncCallable {
 func (ga *GateAdapter) FuncIsOsS(fn func(string) []string) FuncCallable {
 	return func(frame int, args ...IObject) (IObject, error) {
 		if len(args) != 1 {
-			return nil, ErrWrongNumArguments
+			return nil, ErrInvalidArgumentsNumber
 		}
 		s1, err := ga.gk.ToStringArg(0, args[0])
 		if err != nil {
@@ -254,7 +256,7 @@ func (ga *GateAdapter) FuncIsOsS(fn func(string) []string) FuncCallable {
 func (ga *GateAdapter) FuncIsOse(fn func(string) (string, error)) FuncCallable {
 	return func(frame int, args ...IObject) (IObject, error) {
 		if len(args) != 1 {
-			return nil, ErrWrongNumArguments
+			return nil, ErrInvalidArgumentsNumber
 		}
 		s1, err := ga.gk.ToStringArg(0, args[0])
 		if err != nil {
@@ -273,7 +275,7 @@ func (ga *GateAdapter) FuncIsOse(fn func(string) (string, error)) FuncCallable {
 func (ga *GateAdapter) FuncIssOsS(fn func(string, string) []string) FuncCallable {
 	return func(frame int, args ...IObject) (IObject, error) {
 		if len(args) != 2 {
-			return nil, ErrWrongNumArguments
+			return nil, ErrInvalidArgumentsNumber
 		}
 		s1, err := ga.gk.ToStringArg(0, args[0])
 		if err != nil {
@@ -300,7 +302,7 @@ func (ga *GateAdapter) FuncIssOsS(fn func(string, string) []string) FuncCallable
 func (ga *GateAdapter) FuncIssiOsS(fn func(string, string, int) []string) FuncCallable {
 	return func(frame int, args ...IObject) (IObject, error) {
 		if len(args) != 3 {
-			return nil, ErrWrongNumArguments
+			return nil, ErrInvalidArgumentsNumber
 		}
 		s1, err := ga.gk.ToStringArg(0, args[0])
 		if err != nil {
@@ -331,7 +333,7 @@ func (ga *GateAdapter) FuncIssiOsS(fn func(string, string, int) []string) FuncCa
 func (ga *GateAdapter) FuncIssOi(fn func(string, string) int) FuncCallable {
 	return func(frame int, args ...IObject) (IObject, error) {
 		if len(args) != 2 {
-			return nil, ErrWrongNumArguments
+			return nil, ErrInvalidArgumentsNumber
 		}
 		s1, err := ga.gk.ToStringArg(0, args[0])
 		if err != nil {
@@ -349,7 +351,7 @@ func (ga *GateAdapter) FuncIssOi(fn func(string, string) int) FuncCallable {
 func (ga *GateAdapter) FuncIssOs(fn func(string, string) string) FuncCallable {
 	return func(frame int, args ...IObject) (IObject, error) {
 		if len(args) != 2 {
-			return nil, ErrWrongNumArguments
+			return nil, ErrInvalidArgumentsNumber
 		}
 		s1, err := ga.gk.ToStringArg(0, args[0])
 		if err != nil {
@@ -369,7 +371,7 @@ func (ga *GateAdapter) FuncIssOs(fn func(string, string) string) FuncCallable {
 func (ga *GateAdapter) FuncIssOb(fn func(string, string) bool) FuncCallable {
 	return func(frame int, args ...IObject) (IObject, error) {
 		if len(args) != 2 {
-			return nil, ErrWrongNumArguments
+			return nil, ErrInvalidArgumentsNumber
 		}
 		s1, err := ga.gk.ToStringArg(0, args[0])
 		if err != nil {
@@ -390,7 +392,7 @@ func (ga *GateAdapter) FuncIssOb(fn func(string, string) bool) FuncCallable {
 func (ga *GateAdapter) FuncIbSOs(fn func([]byte) string) FuncCallable {
 	return func(frame int, args ...IObject) (ret IObject, err error) {
 		if len(args) != 1 {
-			return nil, ErrWrongNumArguments
+			return nil, ErrInvalidArgumentsNumber
 		}
 		bs1, err := ga.gk.ToBytesArg(0, args[0])
 		if err != nil {
@@ -407,7 +409,7 @@ func (ga *GateAdapter) FuncIbSOs(fn func([]byte) string) FuncCallable {
 func (ga *GateAdapter) FuncIsOie(fn func(string) (int, error)) FuncCallable {
 	return func(frame int, args ...IObject) (ret IObject, err error) {
 		if len(args) != 1 {
-			return nil, ErrWrongNumArguments
+			return nil, ErrInvalidArgumentsNumber
 		}
 		s1, err := ga.gk.ToStringArg(0, args[0])
 		if err != nil {
@@ -426,7 +428,7 @@ func (ga *GateAdapter) FuncIsOie(fn func(string) (int, error)) FuncCallable {
 func (ga *GateAdapter) FuncIsObSe(fn func(string) ([]byte, error)) FuncCallable {
 	return func(frame int, args ...IObject) (ret IObject, err error) {
 		if len(args) != 1 {
-			return nil, ErrWrongNumArguments
+			return nil, ErrInvalidArgumentsNumber
 		}
 		s1, err := ga.gk.ToStringArg(0, args[0])
 		if err != nil {
@@ -444,7 +446,7 @@ func (ga *GateAdapter) FuncIsObSe(fn func(string) ([]byte, error)) FuncCallable 
 func (ga *GateAdapter) FuncIiOs(fn func(int) string) FuncCallable {
 	return func(frame int, args ...IObject) (ret IObject, err error) {
 		if len(args) != 1 {
-			return nil, ErrWrongNumArguments
+			return nil, ErrInvalidArgumentsNumber
 		}
 		i1, err := ga.gk.ToInt64Arg(0, args[0])
 		if err != nil {
@@ -551,31 +553,18 @@ func (ga *GateAdapter) BoundsCheck(lowStack IObject, highStack IObject, numEleme
 // Returns an error if any selector is invalid, the object is not indexable, or the assignment fails.
 func (ga *GateAdapter) IndexAssign(frame int, dst IObject, src IObject, selectors []IObject) error {
 	if len(selectors) == 0 {
-		return fmt.Errorf("no selectors provided")
+		return ErrSelectorNotProvided
 	}
 	numSel := len(selectors)
 	for sIdx := numSel - 1; sIdx > 0; sIdx-- {
 		next, err := dst.IndexGet(frame, selectors[sIdx])
 		if err != nil {
-			if Is(err, ErrNotIndexable) {
-				return fmt.Errorf("not indexable: %s", dst.TypeName())
-			}
-			if Is(err, ErrInvalidIndexType) {
-				return fmt.Errorf("invalid index type: %s",
-					selectors[sIdx].TypeName())
-			}
-			return err
+			return ComputeIndexGetError(err, dst.TypeName(), selectors[sIdx].TypeName())
 		}
 		dst = next
 	}
 	if err := dst.IndexSet(selectors[0], src); err != nil {
-		if Is(err, ErrNotIndexAssignable) {
-			return fmt.Errorf("not index-assignable: %s", dst.TypeName())
-		}
-		if Is(err, ErrInvalidIndexValueType) {
-			return fmt.Errorf("invaid index values type: %s", src.TypeName())
-		}
-		return err
+		return ComputeIndexSetError(err, dst.TypeName(), src.TypeName())
 	}
 	return nil
 }

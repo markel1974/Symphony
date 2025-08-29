@@ -111,7 +111,7 @@ func (t *Time) Get(name string) (objects.IObject, bool) {
 // On success, returns the undefined value.
 func (t *Time) sleep(frame int, args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, objects.ErrWrongNumArguments
+		return nil, objects.ErrInvalidArgumentsNumber
 	}
 	i1, err := t.factory.ToInt64Arg(0, args[0])
 	if err != nil {
@@ -125,7 +125,7 @@ func (t *Time) sleep(frame int, args ...objects.IObject) (objects.IObject, error
 // Accepts exactly one argument of type string. Returns an error object if parsing or type conversion fails.
 func (t *Time) parseDuration(frame int, args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, objects.ErrWrongNumArguments
+		return nil, objects.ErrInvalidArgumentsNumber
 	}
 	s1, err := t.factory.ToStringArg(0, args[0])
 	if err != nil {
@@ -142,7 +142,7 @@ func (t *Time) parseDuration(frame int, args ...objects.IObject) (objects.IObjec
 // Expects exactly one argument of a compatible time type, returns an error if the argument is invalid or missing.
 func (t *Time) since(frame int, args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, objects.ErrWrongNumArguments
+		return nil, objects.ErrInvalidArgumentsNumber
 	}
 	t1, err := t.factory.ToTimeArg(0, args[0])
 	if err != nil {
@@ -155,7 +155,7 @@ func (t *Time) since(frame int, args ...objects.IObject) (objects.IObject, error
 // Returns an error if the argument is missing, invalid, or not a time-compatible object.
 func (t *Time) until(frame int, args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, objects.ErrWrongNumArguments
+		return nil, objects.ErrInvalidArgumentsNumber
 	}
 	t1, err := t.factory.ToTimeArg(0, args[0])
 	if err != nil {
@@ -168,7 +168,7 @@ func (t *Time) until(frame int, args ...objects.IObject) (objects.IObject, error
 // It returns a Float object containing the result or an error if the input is invalid.
 func (t *Time) durationHours(frame int, args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, objects.ErrWrongNumArguments
+		return nil, objects.ErrInvalidArgumentsNumber
 	}
 	i1, err := t.factory.ToInt64Arg(0, args[0])
 	if err != nil {
@@ -181,7 +181,7 @@ func (t *Time) durationHours(frame int, args ...objects.IObject) (objects.IObjec
 // Returns an error if the number of arguments is incorrect or if the argument type is invalid.
 func (t *Time) durationMinutes(frame int, args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, objects.ErrWrongNumArguments
+		return nil, objects.ErrInvalidArgumentsNumber
 	}
 	i1, err := t.factory.ToInt64Arg(0, args[0])
 	if err != nil {
@@ -193,7 +193,7 @@ func (t *Time) durationMinutes(frame int, args ...objects.IObject) (objects.IObj
 // durationNanoseconds returns the nanosecond representation of a given duration argument as an IObject, or an error for invalid input.
 func (t *Time) durationNanoseconds(frame int, args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, objects.ErrWrongNumArguments
+		return nil, objects.ErrInvalidArgumentsNumber
 	}
 	i1, err := t.factory.ToInt64Arg(0, args[0])
 	if err != nil {
@@ -205,7 +205,7 @@ func (t *Time) durationNanoseconds(frame int, args ...objects.IObject) (objects.
 // durationSeconds converts the given integer argument (in nanoseconds) to a float representation of seconds.
 func (t *Time) durationSeconds(frame int, args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, objects.ErrWrongNumArguments
+		return nil, objects.ErrInvalidArgumentsNumber
 	}
 	i1, err := t.factory.ToInt64Arg(0, args[0])
 	if err != nil {
@@ -218,7 +218,7 @@ func (t *Time) durationSeconds(frame int, args ...objects.IObject) (objects.IObj
 // Returns an error if not exactly one argument is provided or if the argument is not a valid integer.
 func (t *Time) durationString(frame int, args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, objects.ErrWrongNumArguments
+		return nil, objects.ErrInvalidArgumentsNumber
 	}
 	i1, err := t.factory.ToInt64Arg(0, args[0])
 	if err != nil {
@@ -231,7 +231,7 @@ func (t *Time) durationString(frame int, args ...objects.IObject) (objects.IObje
 // Returns an error if the argument count is incorrect or if the conversion fails.
 func (t *Time) monthString(frame int, args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, objects.ErrWrongNumArguments
+		return nil, objects.ErrInvalidArgumentsNumber
 	}
 	i1, err := t.factory.ToInt64Arg(0, args[0])
 	if err != nil {
@@ -244,7 +244,7 @@ func (t *Time) monthString(frame int, args ...objects.IObject) (objects.IObject,
 // It requires exactly 7 integer arguments and returns an error if the argument count or types are incorrect.
 func (t *Time) date(frame int, args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 7 {
-		return nil, objects.ErrWrongNumArguments
+		return nil, objects.ErrInvalidArgumentsNumber
 	}
 	i1, err := t.factory.ToInt64Arg(0, args[0])
 	if err != nil {
@@ -280,7 +280,7 @@ func (t *Time) date(frame int, args ...objects.IObject) (objects.IObject, error)
 // Now retrieves the current time as a Time object. Returns an error if any arguments are provided.
 func (t *Time) now(frame int, args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 0 {
-		return nil, objects.ErrWrongNumArguments
+		return nil, objects.ErrInvalidArgumentsNumber
 	}
 	return t.factory.NewTime(frame, time.Now()), nil
 }
@@ -288,7 +288,7 @@ func (t *Time) now(frame int, args ...objects.IObject) (objects.IObject, error) 
 // Parse parses a time string using the given format and returns a new Time object or an error if parsing fails.
 func (t *Time) parse(frame int, args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 2 {
-		return nil, objects.ErrWrongNumArguments
+		return nil, objects.ErrInvalidArgumentsNumber
 	}
 	s1, err := t.factory.ToStringArg(0, args[0])
 	if err != nil {
@@ -308,7 +308,7 @@ func (t *Time) parse(frame int, args ...objects.IObject) (objects.IObject, error
 // Unix creates a new Time object based on the given Unix timestamp and nanoseconds, or returns an error for invalid arguments.
 func (t *Time) unix(frame int, args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 2 {
-		return nil, objects.ErrWrongNumArguments
+		return nil, objects.ErrInvalidArgumentsNumber
 	}
 	i1, err := t.factory.ToInt64Arg(0, args[0])
 	if err != nil {
@@ -324,7 +324,7 @@ func (t *Time) unix(frame int, args ...objects.IObject) (objects.IObject, error)
 // Add adds a duration (int64) to a Time object and returns a new Time object or an error if the inputs are invalid.
 func (t *Time) add(frame int, args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 2 {
-		return nil, objects.ErrWrongNumArguments
+		return nil, objects.ErrInvalidArgumentsNumber
 	}
 	t1, err := t.factory.ToTimeArg(0, args[0])
 	if err != nil {
@@ -340,7 +340,7 @@ func (t *Time) add(frame int, args ...objects.IObject) (objects.IObject, error) 
 // Sub calculates the duration between two time arguments and returns it as an Int object or an error if invalid arguments.
 func (t *Time) sub(frame int, args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 2 {
-		return nil, objects.ErrWrongNumArguments
+		return nil, objects.ErrInvalidArgumentsNumber
 	}
 	t1, err := t.factory.ToTimeArg(0, args[0])
 	if err != nil {
@@ -358,7 +358,7 @@ func (t *Time) sub(frame int, args ...objects.IObject) (objects.IObject, error) 
 // Returns an error if the wrong number of arguments is provided or a type conversion fails.
 func (t *Time) addDate(frame int, args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 4 {
-		return nil, objects.ErrWrongNumArguments
+		return nil, objects.ErrInvalidArgumentsNumber
 	}
 	t1, err := t.factory.ToTimeArg(0, args[0])
 	if err != nil {
@@ -383,7 +383,7 @@ func (t *Time) addDate(frame int, args ...objects.IObject) (objects.IObject, err
 // After compares two time values and returns TrueValue if the first is after the second, otherwise returns FalseValue.
 func (t *Time) after(frame int, args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 2 {
-		return nil, objects.ErrWrongNumArguments
+		return nil, objects.ErrInvalidArgumentsNumber
 	}
 	t1, err := t.factory.ToTimeArg(0, args[0])
 	if err != nil {
@@ -402,7 +402,7 @@ func (t *Time) after(frame int, args ...objects.IObject) (objects.IObject, error
 // Before determines if the first time argument occurs before the second time argument and returns a boolean result.
 func (t *Time) before(frame int, args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 2 {
-		return nil, objects.ErrWrongNumArguments
+		return nil, objects.ErrInvalidArgumentsNumber
 	}
 	t1, err := t.factory.ToTimeArg(0, args[0])
 	if err != nil {
@@ -421,7 +421,7 @@ func (t *Time) before(frame int, args ...objects.IObject) (objects.IObject, erro
 // TimeYear returns the year component of a given time object as an integer. Accepts a single argument of type IObject.
 func (t *Time) timeYear(frame int, args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, objects.ErrWrongNumArguments
+		return nil, objects.ErrInvalidArgumentsNumber
 	}
 	t1, err := t.factory.ToTimeArg(0, args[0])
 	if err != nil {
@@ -434,7 +434,7 @@ func (t *Time) timeYear(frame int, args ...objects.IObject) (objects.IObject, er
 // Returns an error if the argument count is incorrect or the type conversion fails.
 func (t *Time) timeMonth(frame int, args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, objects.ErrWrongNumArguments
+		return nil, objects.ErrInvalidArgumentsNumber
 	}
 	t1, err := t.factory.ToTimeArg(0, args[0])
 	if err != nil {
@@ -446,7 +446,7 @@ func (t *Time) timeMonth(frame int, args ...objects.IObject) (objects.IObject, e
 // TimeDay extracts and returns the day of the month as an integer from a given time object. It requires exactly one argument.
 func (t *Time) timeDay(frame int, args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, objects.ErrWrongNumArguments
+		return nil, objects.ErrInvalidArgumentsNumber
 	}
 	t1, err := t.factory.ToTimeArg(0, args[0])
 	if err != nil {
@@ -458,7 +458,7 @@ func (t *Time) timeDay(frame int, args ...objects.IObject) (objects.IObject, err
 // TimeWeekday returns the weekday of a time object as an integer. Returns an error if the argument count is invalid.
 func (t *Time) timeWeekday(frame int, args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, objects.ErrWrongNumArguments
+		return nil, objects.ErrInvalidArgumentsNumber
 	}
 	t1, err := t.factory.ToTimeArg(0, args[0])
 	if err != nil {
@@ -470,7 +470,7 @@ func (t *Time) timeWeekday(frame int, args ...objects.IObject) (objects.IObject,
 // TimeHour extracts the hour from the given time object and returns it as an Int. Returns an error if arguments are invalid.
 func (t *Time) timeHour(frame int, args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, objects.ErrWrongNumArguments
+		return nil, objects.ErrInvalidArgumentsNumber
 	}
 	t1, err := t.factory.ToTimeArg(0, args[0])
 	if err != nil {
@@ -482,7 +482,7 @@ func (t *Time) timeHour(frame int, args ...objects.IObject) (objects.IObject, er
 // TimeMinute extracts the minute component from a time object and returns it as an integer.
 func (t *Time) timeMinute(frame int, args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, objects.ErrWrongNumArguments
+		return nil, objects.ErrInvalidArgumentsNumber
 	}
 	t1, err := t.factory.ToTimeArg(0, args[0])
 	if err != nil {
@@ -495,7 +495,7 @@ func (t *Time) timeMinute(frame int, args ...objects.IObject) (objects.IObject, 
 // Returns an error if the argument count is not 1 or if the conversion to a time object fails.
 func (t *Time) timeSecond(frame int, args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, objects.ErrWrongNumArguments
+		return nil, objects.ErrInvalidArgumentsNumber
 	}
 	t1, err := t.factory.ToTimeArg(0, args[0])
 	if err != nil {
@@ -508,7 +508,7 @@ func (t *Time) timeSecond(frame int, args ...objects.IObject) (objects.IObject, 
 // Expects a single argument of a time-compatible object. Returns an error for invalid arguments or conversion failures.
 func (t *Time) timeNanosecond(frame int, args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, objects.ErrWrongNumArguments
+		return nil, objects.ErrInvalidArgumentsNumber
 	}
 	t1, err := t.factory.ToTimeArg(0, args[0])
 	if err != nil {
@@ -520,7 +520,7 @@ func (t *Time) timeNanosecond(frame int, args ...objects.IObject) (objects.IObje
 // timeUnix converts a provided time object into its Unix timestamp and returns it as an integer object.
 func (t *Time) timeUnix(frame int, args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, objects.ErrWrongNumArguments
+		return nil, objects.ErrInvalidArgumentsNumber
 	}
 	t1, err := t.factory.ToTimeArg(0, args[0])
 	if err != nil {
@@ -532,7 +532,7 @@ func (t *Time) timeUnix(frame int, args ...objects.IObject) (objects.IObject, er
 // timeUnixNano returns the Unix time in nanoseconds as an IObject for the given time argument. An error is returned for invalid input.
 func (t *Time) timeUnixNano(frame int, args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, objects.ErrWrongNumArguments
+		return nil, objects.ErrInvalidArgumentsNumber
 	}
 	t1, err := t.factory.ToTimeArg(0, args[0])
 	if err != nil {
@@ -544,7 +544,7 @@ func (t *Time) timeUnixNano(frame int, args ...objects.IObject) (objects.IObject
 // timeFormat formats a time object using the provided format and returns the formatted string as an IObject.
 func (t *Time) timeFormat(frame int, args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 2 {
-		return nil, objects.ErrWrongNumArguments
+		return nil, objects.ErrInvalidArgumentsNumber
 	}
 	t1, err := t.factory.ToTimeArg(0, args[0])
 	if err != nil {
@@ -561,7 +561,7 @@ func (t *Time) timeFormat(frame int, args ...objects.IObject) (objects.IObject, 
 // isZero checks if the provided time argument is zero and returns TrueValue if it is, otherwise returns FalseValue.
 func (t *Time) isZero(frame int, args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, objects.ErrWrongNumArguments
+		return nil, objects.ErrInvalidArgumentsNumber
 	}
 	t1, err := t.factory.ToTimeArg(0, args[0])
 	if err != nil {
@@ -576,7 +576,7 @@ func (t *Time) isZero(frame int, args ...objects.IObject) (objects.IObject, erro
 // toLocal converts the given IObject argument to a local time zone Time object or returns an error if conversion fails.
 func (t *Time) toLocal(frame int, args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, objects.ErrWrongNumArguments
+		return nil, objects.ErrInvalidArgumentsNumber
 	}
 	t1, err := t.factory.ToTimeArg(0, args[0])
 	if err != nil {
@@ -588,7 +588,7 @@ func (t *Time) toLocal(frame int, args ...objects.IObject) (objects.IObject, err
 // toUTC converts the provided IObject time argument to UTC and returns a new IObject representing the UTC time.
 func (t *Time) toUTC(frame int, args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, objects.ErrWrongNumArguments
+		return nil, objects.ErrInvalidArgumentsNumber
 	}
 	t1, err := t.factory.ToTimeArg(0, args[0])
 	if err != nil {
@@ -600,7 +600,7 @@ func (t *Time) toUTC(frame int, args ...objects.IObject) (objects.IObject, error
 // timeLocation returns the location (timezone) from the given time object as a string. Takes exactly one argument.
 func (t *Time) timeLocation(frame int, args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, objects.ErrWrongNumArguments
+		return nil, objects.ErrInvalidArgumentsNumber
 	}
 	t1, err := t.factory.ToTimeArg(0, args[0])
 	if err != nil {
@@ -612,7 +612,7 @@ func (t *Time) timeLocation(frame int, args ...objects.IObject) (objects.IObject
 // timeString converts a time instance to its string representation. It requires exactly one argument of type IObject.
 func (t *Time) timeString(frame int, args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, objects.ErrWrongNumArguments
+		return nil, objects.ErrInvalidArgumentsNumber
 	}
 	t1, err := t.factory.ToTimeArg(0, args[0])
 	if err != nil {

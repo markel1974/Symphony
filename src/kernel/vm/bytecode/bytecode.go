@@ -65,8 +65,8 @@ func (b *Bytecode) References() []objects.IObject {
 	return b.references
 }
 
-// Global retrieves the list of IObject references stored in the Bytecode.
-func (b *Bytecode) Global() []objects.IObject {
+// Globals retrieves the list of IObject references stored in the Bytecode.
+func (b *Bytecode) Globals() []objects.IObject {
 	return b.global
 }
 

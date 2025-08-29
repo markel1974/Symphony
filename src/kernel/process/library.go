@@ -97,7 +97,7 @@ func (l *Library) doCreateTimer(_ int, args ...objects.IObject) (ret objects.IOb
 func (l *Library) doPrintf(_ int, args ...objects.IObject) (ret objects.IObject, err error) {
 	argsLen := len(args)
 	if argsLen == 0 {
-		return nil, objects.ErrWrongNumArguments
+		return nil, objects.ErrInvalidArgumentsNumber
 	}
 	s1, err := l.factory.ToStringArg(0, args[0])
 	if err != nil {

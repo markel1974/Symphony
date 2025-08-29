@@ -60,7 +60,7 @@ func (f *Fmt) print(_ int, args ...objects.IObject) (ret objects.IObject, err er
 func (f *Fmt) printf(_ int, args ...objects.IObject) (ret objects.IObject, err error) {
 	argsLen := len(args)
 	if argsLen == 0 {
-		return nil, objects.ErrWrongNumArguments
+		return nil, objects.ErrInvalidArgumentsNumber
 	}
 	s1, err := f.factory.ToStringArg(0, args[0])
 	if err != nil {
@@ -91,7 +91,7 @@ func (f *Fmt) println(_ int, args ...objects.IObject) (ret objects.IObject, err 
 // Sprint formats and concatenates the provided arguments into a single string and returns it as a new String object.
 func (f *Fmt) sprint(frame int, args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) == 0 {
-		return nil, objects.ErrWrongNumArguments
+		return nil, objects.ErrInvalidArgumentsNumber
 	}
 	var ar []interface{}
 	for _, v := range args {
@@ -104,7 +104,7 @@ func (f *Fmt) sprint(frame int, args ...objects.IObject) (ret objects.IObject, e
 func (f *Fmt) sprintf(frame int, args ...objects.IObject) (ret objects.IObject, err error) {
 	argsLen := len(args)
 	if argsLen == 0 {
-		return nil, objects.ErrWrongNumArguments
+		return nil, objects.ErrInvalidArgumentsNumber
 	}
 	s1, err := f.factory.ToStringArg(0, args[0])
 	if err != nil {
@@ -124,7 +124,7 @@ func (f *Fmt) sprintf(frame int, args ...objects.IObject) (ret objects.IObject, 
 func (f *Fmt) errorf(frame int, args ...objects.IObject) (ret objects.IObject, err error) {
 	argsLen := len(args)
 	if argsLen == 0 {
-		return nil, objects.ErrWrongNumArguments
+		return nil, objects.ErrInvalidArgumentsNumber
 	}
 	s1, err := f.factory.ToStringArg(0, args[0])
 	if err != nil {

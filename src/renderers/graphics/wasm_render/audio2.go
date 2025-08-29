@@ -72,7 +72,7 @@ func initWasm(this js.Value, args []js.Value) interface{} {
 	// --- "Magia" Corretta e Sicura per mappare la SharedArrayBuffer in Go ---
 
 	// Ottiene l'array di byte sottostante dalla SharedArrayBuffer
-	jsBuffer := js.Global().Get("Uint8Array").New(_sharedBuffer)
+	jsBuffer := js.Globals().Get("Uint8Array").New(_sharedBuffer)
 
 	// Crea uno slice Go che punta alla stessa memoria (usa unsafe in un solo punto per ottenere il puntatore iniziale)
 	dataSlice := make([]byte, _sharedBuffer.Get("byteLength").Int())
@@ -121,7 +121,7 @@ func addChunk(this js.Value, args []js.Value) interface{} {
 
 	// Copia i dati nel prossimo slot libero del ring buffer
 	offset := int(head) * reader.chunkSize
-	js.CopyBytesToJS(js.Global().Get("Float32Array").New(_sharedBuffer, controlBlockSize+(offset*4), reader.chunkSize), goChunk)
+	js.CopyBytesToJS(js.Globals().Get("Float32Array").New(_sharedBuffer, controlBlockSize+(offset*4), reader.chunkSize), goChunk)
 
 	// Aggiorna l'indice di testa
 	_sharedControl[headControlIndex] = nextHead
@@ -160,7 +160,7 @@ func read(this js.Value, args []js.Value) interface{} {
 		outputJS.Call("set", *stretchedChunk)
 
 		// Scriviamo la seconda metà nello stesso slot del ring buffer, sovrascrivendolo
-		js.CopyBytesToJS(js.Global().Get("Float32Array").New(_sharedBuffer, controlBlockSize+(offset*4), reader.chunkSize), (*stretchedChunk)[reader.chunkSize:])
+		js.CopyBytesToJS(js.Globals().Get("Float32Array").New(_sharedBuffer, controlBlockSize+(offset*4), reader.chunkSize), (*stretchedChunk)[reader.chunkSize:])
 
 		// NON avanziamo il tail. Alla prossima chiamata, il consumatore rileggerà
 		// lo stesso slot, che ora contiene la seconda metà "stirata".
@@ -201,9 +201,9 @@ func read(this js.Value, args []js.Value) interface{} {
 // main registra le funzioni Go per renderle chiamabili da JavaScript.
 func main() {
 	c := make(chan struct{}, 0)
-	js.Global().Set("wasmAudioInit", js.FuncOf(initWasm))
-	js.Global().Set("wasmAudioAddChunk", js.FuncOf(addChunk))
-	js.Global().Set("wasmAudioRead", js.FuncOf(read))
+	js.Globals().Set("wasmAudioInit", js.FuncOf(initWasm))
+	js.Globals().Set("wasmAudioAddChunk", js.FuncOf(addChunk))
+	js.Globals().Set("wasmAudioRead", js.FuncOf(read))
 	<-c // Tiene il programma Go in esecuzione
 }
 */
