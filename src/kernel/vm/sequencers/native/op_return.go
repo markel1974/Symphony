@@ -1,6 +1,8 @@
 package native
 
 import (
+	"fmt"
+
 	"github.com/markel1974/c64emu/src/kernel/vm/bytecode"
 	"github.com/markel1974/c64emu/src/kernel/vm/core"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
@@ -13,15 +15,19 @@ func init() {
 // OpReturn represents a specialized operation that extends the behavior of bytecode.Opcode.
 type OpReturn struct {
 	*bytecode.Opcode
-	vm *core.VM
+	vm core.IVMFullAccess
 }
 
 // NewOpReturn creates a new instance of OpReturn with its Opcode initialized for the OpReturn operation.
-func NewOpReturn(vm *core.VM, op *bytecode.Opcodes) core.IOpExecutor {
+func NewOpReturn(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
+	vmT, ok := vm.(core.IVMFullAccess)
+	if !ok {
+		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
+	}
 	return &OpReturn{
 		Opcode: op.Opcode(bytecode.OpReturn),
-		vm:     vm,
-	}
+		vm:     vmT,
+	}, nil
 }
 
 // Execute performs the return operation for the current frame, manages the stack, and transitions between frames in the VM.

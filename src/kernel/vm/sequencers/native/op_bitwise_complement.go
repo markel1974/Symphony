@@ -16,15 +16,19 @@ func init() {
 // It extends Opcode, inheriting its metadata and behaviors.
 type OpBitwiseComplement struct {
 	*bytecode.Opcode
-	vm *core.VM
+	vm core.IVMFullAccess
 }
 
 // NewOpBitwiseComplement initializes and returns an OpBitwiseComplement instance with the corresponding Opcode configuration.
-func NewOpBitwiseComplement(vm *core.VM, op *bytecode.Opcodes) core.IOpExecutor {
+func NewOpBitwiseComplement(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
+	vmT, ok := vm.(core.IVMFullAccess)
+	if !ok {
+		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
+	}
 	return &OpBitwiseComplement{
 		Opcode: op.Opcode(bytecode.OpBitwiseComplement),
-		vm:     vm,
-	}
+		vm:     vmT,
+	}, nil
 }
 
 // Execute performs the bitwise complement operation on the top stack value. Sets an error if the value is not an integer.

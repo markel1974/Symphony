@@ -15,15 +15,19 @@ func init() {
 // OpDeref represents an operation for dereferencing a pointer.
 type OpDeref struct {
 	*bytecode.Opcode
-	vm *core.VM
+	vm core.IVMFullAccess
 }
 
 // NewOpDeref creates a new OpDeref instance.
-func NewOpDeref(vm *core.VM, op *bytecode.Opcodes) core.IOpExecutor {
+func NewOpDeref(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
+	vmT, ok := vm.(core.IVMFullAccess)
+	if !ok {
+		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
+	}
 	return &OpDeref{
 		Opcode: op.Opcode(bytecode.OpDeref),
-		vm:     vm,
-	}
+		vm:     vmT,
+	}, nil
 }
 
 // Execute performs the dereference operation. It takes a pointer from the

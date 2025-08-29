@@ -1,6 +1,8 @@
 package native
 
 import (
+	"fmt"
+
 	"github.com/markel1974/c64emu/src/kernel/vm/bytecode"
 	"github.com/markel1974/c64emu/src/kernel/vm/core"
 )
@@ -12,15 +14,19 @@ func init() {
 // OpStruct is a wrapper around bytecode.Opcode, representing a struct creation operation in bytecode execution.
 type OpStruct struct {
 	*bytecode.Opcode
-	vm *core.VM
+	vm core.IVMFullAccess
 }
 
 // NewOpStruct initializes and returns a new instance of OpStruct with its Opcode set to OpMap details.
-func NewOpStruct(vm *core.VM, op *bytecode.Opcodes) core.IOpExecutor {
+func NewOpStruct(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
+	vmT, ok := vm.(core.IVMFullAccess)
+	if !ok {
+		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
+	}
 	return &OpStruct{
 		Opcode: op.Opcode(bytecode.OpStruct),
-		vm:     vm,
-	}
+		vm:     vmT,
+	}, nil
 }
 
 // Execute processes the OpMap instruction, adjusts the instruction pointer, and pushes a new map object onto the stack.

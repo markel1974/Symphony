@@ -16,15 +16,19 @@ func init() {
 // It embeds Opcode, providing access to the opcode's metadata and operations.
 type OpIteratorValue struct {
 	*bytecode.Opcode
-	vm *core.VM
+	vm core.IVMFullAccess
 }
 
 // NewOpIteratorValue creates and returns a new instance of OpIteratorValue with its associated Opcode initialized.
-func NewOpIteratorValue(vm *core.VM, op *bytecode.Opcodes) core.IOpExecutor {
+func NewOpIteratorValue(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
+	vmT, ok := vm.(core.IVMFullAccess)
+	if !ok {
+		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
+	}
 	return &OpIteratorValue{
 		Opcode: op.Opcode(bytecode.OpIteratorValue),
-		vm:     vm,
-	}
+		vm:     vmT,
+	}, nil
 }
 
 // Execute processes the next instruction to retrieve and push the current value of an iterator onto the stack.

@@ -1,7 +1,6 @@
-package native
+package core
 
 import (
-	"github.com/markel1974/c64emu/src/kernel/vm/core"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
@@ -14,7 +13,7 @@ type IVM interface {
 // gatekeeper factory access, and error handling.
 type IVMStackOnly interface {
 	IVM
-	Stack() *core.Stack
+	Stack() *Stack
 	Factory() objects.IGateKeeper
 	SetError(err error)
 }
@@ -23,16 +22,16 @@ type IVMStackOnly interface {
 type IVMReadOnly interface {
 	IVM
 	IVMStackOnly
-	Constants() *core.Constants
-	Globals() *core.Globals
-	References() *core.References
-	Frame() *core.Frame
+	Constants() *Constants
+	Globals() *Globals
+	References() *References
+	Frame() *Frame
 }
 
 // IVMReadWrite represents an interface extending IVMReadOnly with additional write capabilities for VM global state.
 type IVMReadWrite interface {
 	IVMReadOnly
-	Globals() *core.Globals // Ridefiniamo per chiarezza, anche se già presente
+	Globals() *Globals // Ridefiniamo per chiarezza, anche se già presente
 }
 
 // IVMControlFlow defines an interface for managing instruction pointers and control flow within a virtual machine.
@@ -50,4 +49,5 @@ type IVMFullAccess interface {
 	IVMControlFlow
 	Call(value objects.IObject, spread bool, numArgs int)
 	Return(returnValues []objects.IObject)
+	Shutdown()
 }

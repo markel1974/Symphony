@@ -16,15 +16,19 @@ func init() {
 // OpDerefSet represents an operation for dereferencing a pointer and setting its value in the virtual machine.
 type OpDerefSet struct {
 	*bytecode.Opcode
-	vm *core.VM
+	vm core.IVMFullAccess
 }
 
 // NewOpDerefSet creates a new OpDerefSet instance with the specified opcode for the dereference and set operation.
-func NewOpDerefSet(vm *core.VM, op *bytecode.Opcodes) core.IOpExecutor {
+func NewOpDerefSet(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
+	vmT, ok := vm.(core.IVMFullAccess)
+	if !ok {
+		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
+	}
 	return &OpDerefSet{
 		Opcode: op.Opcode(bytecode.OpDerefSet),
-		vm:     vm,
-	}
+		vm:     vmT,
+	}, nil
 }
 
 // Execute performs a dereference-and-set operation on the stack, assigning a value to the object pointed by a pointer.

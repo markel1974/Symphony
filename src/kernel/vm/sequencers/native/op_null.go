@@ -1,6 +1,8 @@
 package native
 
 import (
+	"fmt"
+
 	"github.com/markel1974/c64emu/src/kernel/vm/bytecode"
 	"github.com/markel1974/c64emu/src/kernel/vm/core"
 )
@@ -12,15 +14,19 @@ func init() {
 // OpNull represents a virtual machine operation to push a null value onto the stack.
 type OpNull struct {
 	*bytecode.Opcode
-	vm *core.VM
+	vm core.IVMFullAccess
 }
 
 // NewOpNull creates a new OpNull instance with details mapped from the OpNull opcode.
-func NewOpNull(vm *core.VM, op *bytecode.Opcodes) core.IOpExecutor {
+func NewOpNull(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
+	vmT, ok := vm.(core.IVMFullAccess)
+	if !ok {
+		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
+	}
 	return &OpNull{
 		Opcode: op.Opcode(bytecode.OpNull),
-		vm:     vm,
-	}
+		vm:     vmT,
+	}, nil
 }
 
 // Execute pushes an undefined value onto the virtual machine's stack.

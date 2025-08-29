@@ -15,15 +15,19 @@ func init() {
 // It embeds Opcode for detailed opcode information.
 type OpGlobalGet struct {
 	*bytecode.Opcode
-	vm *core.VM
+	vm core.IVMFullAccess
 }
 
 // NewOpGetGlobal creates a new instance of OpGlobalGet with its associated opcode details.
-func NewOpGetGlobal(vm *core.VM, op *bytecode.Opcodes) core.IOpExecutor {
+func NewOpGetGlobal(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
+	vmT, ok := vm.(core.IVMFullAccess)
+	if !ok {
+		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
+	}
 	return &OpGlobalGet{
 		Opcode: op.Opcode(bytecode.OpGlobalGet),
-		vm:     vm,
-	}
+		vm:     vmT,
+	}, nil
 }
 
 // Execute retrieves a global object using its index, pushes it onto the stack, and advances the instruction pointer.

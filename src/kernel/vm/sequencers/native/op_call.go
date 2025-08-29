@@ -1,6 +1,8 @@
 package native
 
 import (
+	"fmt"
+
 	"github.com/markel1974/c64emu/src/kernel/vm/bytecode"
 	"github.com/markel1974/c64emu/src/kernel/vm/core"
 )
@@ -12,15 +14,19 @@ func init() {
 // OpCall represents an operation code for invoking a function call in the virtual machine.
 type OpCall struct {
 	*bytecode.Opcode
-	vm *core.VM
+	vm core.IVMFullAccess
 }
 
 // NewOpCall creates and returns a new instance of OpCall with initialized Opcode for the OpCall opcode.
-func NewOpCall(vm *core.VM, op *bytecode.Opcodes) core.IOpExecutor {
+func NewOpCall(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
+	vmT, ok := vm.(core.IVMFullAccess)
+	if !ok {
+		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
+	}
 	return &OpCall{
 		Opcode: op.Opcode(bytecode.OpCall),
-		vm:     vm,
-	}
+		vm:     vmT,
+	}, nil
 }
 
 // Execute processes the OpCall instruction, invoking the callable or handling array spreads, and manages the stack state.

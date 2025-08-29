@@ -1,6 +1,8 @@
 package native
 
 import (
+	"fmt"
+
 	"github.com/markel1974/c64emu/src/kernel/vm/bytecode"
 	"github.com/markel1974/c64emu/src/kernel/vm/core"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
@@ -13,15 +15,19 @@ func init() {
 // OpImmutable represents an operation that creates immutable objects, inheriting details from Opcode.
 type OpImmutable struct {
 	*bytecode.Opcode
-	vm *core.VM
+	vm core.IVMFullAccess
 }
 
 // NewOpImmutable creates a new instance of OpImmutable with details loaded from bytecode.OpcodeToDetails.
-func NewOpImmutable(vm *core.VM, op *bytecode.Opcodes) core.IOpExecutor {
+func NewOpImmutable(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
+	vmT, ok := vm.(core.IVMFullAccess)
+	if !ok {
+		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
+	}
 	return &OpImmutable{
 		Opcode: op.Opcode(bytecode.OpImmutable),
-		vm:     vm,
-	}
+		vm:     vmT,
+	}, nil
 }
 
 // Execute processes the top element on the stack and converts it into an immutable version if it's an array or map.

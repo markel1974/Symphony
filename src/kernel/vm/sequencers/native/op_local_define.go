@@ -1,6 +1,8 @@
 package native
 
 import (
+	"fmt"
+
 	"github.com/markel1974/c64emu/src/kernel/vm/bytecode"
 	"github.com/markel1974/c64emu/src/kernel/vm/core"
 )
@@ -12,15 +14,19 @@ func init() {
 // OpLocalDefine represents the opcode for defining a new local variable within the current frame's scope.
 type OpLocalDefine struct {
 	*bytecode.Opcode
-	vm *core.VM
+	vm core.IVMFullAccess
 }
 
 // NewOpLocalDefine creates a new instance of OpLocalDefine with its associated opcode details.
-func NewOpLocalDefine(vm *core.VM, op *bytecode.Opcodes) core.IOpExecutor {
+func NewOpLocalDefine(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
+	vmT, ok := vm.(core.IVMFullAccess)
+	if !ok {
+		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
+	}
 	return &OpLocalDefine{
 		Opcode: op.Opcode(bytecode.OpLocalDefine),
-		vm:     vm,
-	}
+		vm:     vmT,
+	}, nil
 }
 
 // Execute increments the instruction pointer, retrieves a local index, and assigns a stack value to a designated slot.

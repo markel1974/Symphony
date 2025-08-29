@@ -1,6 +1,8 @@
 package native
 
 import (
+	"fmt"
+
 	"github.com/markel1974/c64emu/src/kernel/vm/bytecode"
 	"github.com/markel1974/c64emu/src/kernel/vm/core"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
@@ -14,15 +16,19 @@ func init() {
 // It embeds Opcode for opcode-specific information such as name, operands, and code.
 type OpLocalSet struct {
 	*bytecode.Opcode
-	vm *core.VM
+	vm core.IVMFullAccess
 }
 
 // NewOpLocalSet initializes and returns a new instance of OpLocalSet with associated opcode details.
-func NewOpLocalSet(vm *core.VM, op *bytecode.Opcodes) core.IOpExecutor {
+func NewOpLocalSet(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
+	vmT, ok := vm.(core.IVMFullAccess)
+	if !ok {
+		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
+	}
 	return &OpLocalSet{
 		Opcode: op.Opcode(bytecode.OpLocalSet),
-		vm:     vm,
-	}
+		vm:     vmT,
+	}, nil
 }
 
 // Execute updates a local variable in the current frame using the stack's top value and the local index from instructions.

@@ -1,6 +1,8 @@
 package native
 
 import (
+	"fmt"
+
 	"github.com/markel1974/c64emu/src/kernel/vm/bytecode"
 	"github.com/markel1974/c64emu/src/kernel/vm/core"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
@@ -13,15 +15,19 @@ func init() {
 // OpLocalPtrGet retrieves a local variable as a pointer using its index within the current frame.
 type OpLocalPtrGet struct {
 	*bytecode.Opcode
-	vm *core.VM
+	vm core.IVMFullAccess
 }
 
 // NewOpLocalPtrGet creates and returns a new instance of OpLocalPtrGet, initializing its Opcode.
-func NewOpLocalPtrGet(vm *core.VM, op *bytecode.Opcodes) core.IOpExecutor {
+func NewOpLocalPtrGet(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
+	vmT, ok := vm.(core.IVMFullAccess)
+	if !ok {
+		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
+	}
 	return &OpLocalPtrGet{
 		Opcode: op.Opcode(bytecode.OpLocalPtrGet),
-		vm:     vm,
-	}
+		vm:     vmT,
+	}, nil
 }
 
 // Execute advances the instruction pointer, retrieves a local variable, and pushes an ObjectPointer to the stack.

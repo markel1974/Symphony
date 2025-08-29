@@ -17,16 +17,20 @@ func init() {
 // It extends the bytecode.Opcode structure to access opcode details like id, operands, and name.
 type OpInterface struct {
 	*bytecode.Opcode
-	vm *core.VM
+	vm core.IVMFullAccess
 }
 
 // NewOpInterface creates a new instance of OpInterface using the provided Opcodes instance.
 // It returns an implementation of the core.IOpExecutor interface for bytecode execution.
-func NewOpInterface(vm *core.VM, op *bytecode.Opcodes) core.IOpExecutor {
+func NewOpInterface(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
+	vmT, ok := vm.(core.IVMFullAccess)
+	if !ok {
+		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
+	}
 	return &OpInterface{
 		Opcode: op.Opcode(bytecode.OpInterface),
-		vm:     vm,
-	}
+		vm:     vmT,
+	}, nil
 }
 
 // Execute processes an `OpInterface` operation, constructing an interface by combining methods and a concrete value.

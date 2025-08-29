@@ -16,15 +16,19 @@ func init() {
 // It embeds Opcode, providing details such as the opcode, operands, and name.
 type OpMinus struct {
 	*bytecode.Opcode
-	vm *core.VM
+	vm core.IVMFullAccess
 }
 
 // NewOpMinus creates and returns a new OpMinus instance, initializing it with the details of the OpMinus bytecode.
-func NewOpMinus(vm *core.VM, op *bytecode.Opcodes) core.IOpExecutor {
+func NewOpMinus(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
+	vmT, ok := vm.(core.IVMFullAccess)
+	if !ok {
+		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
+	}
 	return &OpMinus{
 		Opcode: op.Opcode(bytecode.OpMinus),
-		vm:     vm,
-	}
+		vm:     vmT,
+	}, nil
 }
 
 // Execute performs a subtraction operation by negating the top stack element, supporting integers and floats.

@@ -1,6 +1,8 @@
 package native
 
 import (
+	"fmt"
+
 	"github.com/markel1974/c64emu/src/kernel/vm/bytecode"
 	"github.com/markel1974/c64emu/src/kernel/vm/core"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
@@ -13,15 +15,19 @@ func init() {
 // OpLocalGet represents an operation to retrieve a local variable from the stack using its index.
 type OpLocalGet struct {
 	*bytecode.Opcode
-	vm *core.VM
+	vm core.IVMFullAccess
 }
 
 // NewOpLocalGet creates a new OpLocalGet instance and initializes it with details for the OpLocalGet opcode.
-func NewOpLocalGet(vm *core.VM, op *bytecode.Opcodes) core.IOpExecutor {
+func NewOpLocalGet(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
+	vmT, ok := vm.(core.IVMFullAccess)
+	if !ok {
+		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
+	}
 	return &OpLocalGet{
 		Opcode: op.Opcode(bytecode.OpLocalGet),
-		vm:     vm,
-	}
+		vm:     vmT,
+	}, nil
 }
 
 // Execute retrieves a local variable from the current frame's base pointer and pushes it onto the stack.

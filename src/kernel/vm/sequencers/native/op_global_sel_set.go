@@ -1,6 +1,8 @@
 package native
 
 import (
+	"fmt"
+
 	"github.com/markel1974/c64emu/src/kernel/vm/bytecode"
 	"github.com/markel1974/c64emu/src/kernel/vm/core"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
@@ -13,15 +15,19 @@ func init() {
 // OpGlobalSelSet represents an operation for setting a global variable's value using selectors for indexing or access.
 type OpGlobalSelSet struct {
 	*bytecode.Opcode
-	vm *core.VM
+	vm core.IVMFullAccess
 }
 
 // NewOpGlobalSelSet creates a new instance of OpGlobalSelSet with its corresponding Opcode initialized.
-func NewOpGlobalSelSet(vm *core.VM, op *bytecode.Opcodes) core.IOpExecutor {
+func NewOpGlobalSelSet(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
+	vmT, ok := vm.(core.IVMFullAccess)
+	if !ok {
+		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
+	}
 	return &OpGlobalSelSet{
 		Opcode: op.Opcode(bytecode.OpGlobalSelSet),
-		vm:     vm,
-	}
+		vm:     vmT,
+	}, nil
 }
 
 // Execute performs the operation defined by OpGlobalSelSet, updating the VM state and handling global index assignment.

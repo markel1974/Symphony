@@ -1,6 +1,8 @@
 package native
 
 import (
+	"fmt"
+
 	"github.com/markel1974/c64emu/src/kernel/vm/bytecode"
 	"github.com/markel1974/c64emu/src/kernel/vm/core"
 )
@@ -12,15 +14,19 @@ func init() {
 // OpJumpFalsy represents an instruction that performs a conditional jump if the stack's top value evaluates to falsy.
 type OpJumpFalsy struct {
 	*bytecode.Opcode
-	vm *core.VM
+	vm core.IVMFullAccess
 }
 
 // NewOpJumpFalsy creates and returns a new instance of OpJumpFalsy initialized with its corresponding Opcode.
-func NewOpJumpFalsy(vm *core.VM, op *bytecode.Opcodes) core.IOpExecutor {
+func NewOpJumpFalsy(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
+	vmT, ok := vm.(core.IVMFullAccess)
+	if !ok {
+		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
+	}
 	return &OpJumpFalsy{
 		Opcode: op.Opcode(bytecode.OpJumpFalsy),
-		vm:     vm,
-	}
+		vm:     vmT,
+	}, nil
 }
 
 // Execute advances the instruction pointer, evaluates the stack's top element, and updates the pointer if false.

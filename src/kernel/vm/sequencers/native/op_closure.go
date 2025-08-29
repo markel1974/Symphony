@@ -15,15 +15,19 @@ func init() {
 // OpClosure represents a closure operation that creates a new closure in the virtual machine.
 type OpClosure struct {
 	*bytecode.Opcode
-	vm *core.VM
+	vm core.IVMFullAccess
 }
 
 // NewOpClosure returns a new instance of OpClosure initialized with the details of the OpClosure opcode.
-func NewOpClosure(vm *core.VM, op *bytecode.Opcodes) core.IOpExecutor {
+func NewOpClosure(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
+	vmT, ok := vm.(core.IVMFullAccess)
+	if !ok {
+		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
+	}
 	return &OpClosure{
 		Opcode: op.Opcode(bytecode.OpClosure),
-		vm:     vm,
-	}
+		vm:     vmT,
+	}, nil
 }
 
 // Execute performs the operation associated with the OpClosure opcode, creating a closure and pushing it onto the stack.

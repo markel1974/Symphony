@@ -1,6 +1,8 @@
 package native
 
 import (
+	"fmt"
+
 	"github.com/markel1974/c64emu/src/kernel/vm/bytecode"
 	"github.com/markel1974/c64emu/src/kernel/vm/core"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
@@ -14,15 +16,19 @@ func init() {
 // It embeds Opcode to utilize its properties like opcode, name, and operands.
 type OpLocalSelSet struct {
 	*bytecode.Opcode
-	vm *core.VM
+	vm core.IVMFullAccess
 }
 
 // NewOpLocalSelSet creates and returns a new instance of the OpLocalSelSet operation executor.
-func NewOpLocalSelSet(vm *core.VM, op *bytecode.Opcodes) core.IOpExecutor {
+func NewOpLocalSelSet(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
+	vmT, ok := vm.(core.IVMFullAccess)
+	if !ok {
+		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
+	}
 	return &OpLocalSelSet{
 		Opcode: op.Opcode(bytecode.OpLocalSelSet),
-		vm:     vm,
-	}
+		vm:     vmT,
+	}, nil
 }
 
 // Execute performs the operation of retrieving, modifying, and reassigning a value using selectors in the local scope.

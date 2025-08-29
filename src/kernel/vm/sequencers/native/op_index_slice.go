@@ -1,6 +1,8 @@
 package native
 
 import (
+	"fmt"
+
 	"github.com/markel1974/c64emu/src/kernel/vm/bytecode"
 	"github.com/markel1974/c64emu/src/kernel/vm/core"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
@@ -14,15 +16,19 @@ func init() {
 // It embeds Opcode to inherit opcode, operand, and name information for execution and identification.
 type OpIndexSlice struct {
 	*bytecode.Opcode
-	vm *core.VM
+	vm core.IVMFullAccess
 }
 
 // NewOpIndexSlice creates a new instance of OpIndexSlice containing details for the slice indexing bytecode operation.
-func NewOpIndexSlice(vm *core.VM, op *bytecode.Opcodes) core.IOpExecutor {
+func NewOpIndexSlice(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
+	vmT, ok := vm.(core.IVMFullAccess)
+	if !ok {
+		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
+	}
 	return &OpIndexSlice{
 		Opcode: op.Opcode(bytecode.OpIndexSlice),
-		vm:     vm,
-	}
+		vm:     vmT,
+	}, nil
 }
 
 // Execute processes the slice operation on the stack, adjusting bounds and supporting various object types like arrays and strings.

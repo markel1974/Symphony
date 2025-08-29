@@ -15,15 +15,19 @@ func init() {
 // OpCallMethod represents a bytecode operation for invoking a method on an interface or object with dynamic dispatch.
 type OpCallMethod struct {
 	*bytecode.Opcode
-	vm *core.VM
+	vm core.IVMFullAccess
 }
 
 // NewOpCallMethod creates and returns a new instance of OpCallMethod with initialized Opcode for the OpCallMethod opcode.
-func NewOpCallMethod(vm *core.VM, op *bytecode.Opcodes) core.IOpExecutor {
+func NewOpCallMethod(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
+	vmT, ok := vm.(core.IVMFullAccess)
+	if !ok {
+		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
+	}
 	return &OpCallMethod{
 		Opcode: op.Opcode(bytecode.OpCallMethod),
-		vm:     vm,
-	}
+		vm:     vmT,
+	}, nil
 }
 
 // Execute performs the dynamic dispatch logic.

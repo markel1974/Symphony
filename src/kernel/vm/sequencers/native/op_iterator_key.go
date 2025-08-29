@@ -15,15 +15,19 @@ func init() {
 // OpIteratorKey wraps bytecode.Opcode to represent the iterator key retrieval operation in a virtual machine.
 type OpIteratorKey struct {
 	*bytecode.Opcode
-	vm *core.VM
+	vm core.IVMFullAccess
 }
 
 // NewOpIteratorKey creates a new instance of OpIteratorKey with associated opcode details.
-func NewOpIteratorKey(vm *core.VM, op *bytecode.Opcodes) core.IOpExecutor {
+func NewOpIteratorKey(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
+	vmT, ok := vm.(core.IVMFullAccess)
+	if !ok {
+		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
+	}
 	return &OpIteratorKey{
 		Opcode: op.Opcode(bytecode.OpIteratorKey),
-		vm:     vm,
-	}
+		vm:     vmT,
+	}, nil
 }
 
 // Execute processes the "iterator key" operation, retrieves the iterator key, and pushes it onto the VM stack.

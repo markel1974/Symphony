@@ -15,15 +15,19 @@ func init() {
 // OpIntOp extends Opcode and represents integer operations performed on a virtual machine.
 type OpIntOp struct {
 	*bytecode.Opcode
-	vm *core.VM
+	vm core.IVMFullAccess
 }
 
 // NewOpIntOp initializes and returns a new instance of OpIntOp with relevant opcode details provided by bytecode.Opcodes.
-func NewOpIntOp(vm *core.VM, op *bytecode.Opcodes) core.IOpExecutor {
+func NewOpIntOp(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
+	vmT, ok := vm.(core.IVMFullAccess)
+	if !ok {
+		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
+	}
 	return &OpIntOp{
 		Opcode: op.Opcode(bytecode.OpIntOp),
-		vm:     vm,
-	}
+		vm:     vmT,
+	}, nil
 }
 
 // Execute performs a specified binary operation between two integers from the stack and stores the result in a destination slot.

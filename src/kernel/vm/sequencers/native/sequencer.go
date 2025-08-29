@@ -8,7 +8,7 @@ import (
 )
 
 // registerFunc is a function type that registers an operation with the provided bytecode.Opcodes and returns a core.IOpExecutor.
-type registerFunc = func(vm *core.VM, op *bytecode.Opcodes) core.IOpExecutor
+type registerFunc = func(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error)
 
 // _registerContainer holds a list of functions that register operational executors for bytecode instructions.
 var _registerContainer []registerFunc
@@ -37,13 +37,20 @@ func (ds *Sequencer) Create(vm *core.VM) []core.IOpExecutor {
 }
 
 // createRegistered constructs and registers custom IOpExecutors using functions from _registerContainer and updates the sequence.
-func (ds *Sequencer) createRegistered(vm *core.VM) ([]core.IOpExecutor, error) {
+func (ds *Sequencer) createRegistered(vmIn *core.VM) ([]core.IOpExecutor, error) {
+	fullAccess := core.IVMFullAccess(vmIn)
 	container := make([]core.IOpExecutor, bytecode.OpcodesLen)
 	for idx := range container {
-		container[idx] = NewOpUnknown(vm, ds.op)
+		var err error
+		if container[idx], err = NewOpUnknown(fullAccess, ds.op); err != nil {
+			return nil, err
+		}
 	}
 	for _, fn := range _registerContainer {
-		seq := fn(vm, ds.op)
+		seq, err := fn(fullAccess, ds.op)
+		if err != nil {
+			return nil, err
+		}
 		data := container[seq.OpcodeId()&bytecode.OpcodesMask]
 		if data.OpcodeId() != bytecode.OpUnknown {
 			return nil, fmt.Errorf("opcode %d already registered: %s", seq.OpcodeId(), data.Name())
@@ -54,84 +61,94 @@ func (ds *Sequencer) createRegistered(vm *core.VM) ([]core.IOpExecutor, error) {
 }
 
 // createStatic initializes and assigns specific op executors to the sequencer's container in a pre-defined sequence.
-func (ds *Sequencer) createStatic(vm *core.VM) []core.IOpExecutor {
+func (ds *Sequencer) createStatic(vmIn *core.VM) ([]core.IOpExecutor, error) {
+	fullAccess := core.IVMFullAccess(vmIn)
 	container := make([]core.IOpExecutor, bytecode.OpcodesLen)
 	for idx := range container {
-		container[idx] = NewOpUnknown(vm, ds.op)
+		var err error
+		if container[idx], err = NewOpUnknown(fullAccess, ds.op); err != nil {
+			return nil, err
+		}
 	}
-	ds.setSequence(container[:], NewOpConstant(vm, ds.op))
-	ds.setSequence(container[:], NewOpNull(vm, ds.op))
-	ds.setSequence(container[:], NewOpBinary(vm, ds.op))
-	ds.setSequence(container[:], NewOpReferences(vm, ds.op))
-	ds.setSequence(container[:], NewOpEqual(vm, ds.op))
-	ds.setSequence(container[:], NewOpNotEqual(vm, ds.op))
-	ds.setSequence(container[:], NewOpPop(vm, ds.op))
-	ds.setSequence(container[:], NewOpTrue(vm, ds.op))
-	ds.setSequence(container[:], NewOpFalse(vm, ds.op))
-	ds.setSequence(container[:], NewOpNotLogical(vm, ds.op))
-	ds.setSequence(container[:], NewOpBitwiseComplement(vm, ds.op))
-	ds.setSequence(container[:], NewOpMinus(vm, ds.op))
-	ds.setSequence(container[:], NewOpJumpFalsy(vm, ds.op))
-	ds.setSequence(container[:], NewOpJumpAnd(vm, ds.op))
-	ds.setSequence(container[:], NewOpJumpOr(vm, ds.op))
-	ds.setSequence(container[:], NewOpJump(vm, ds.op))
-	ds.setSequence(container[:], NewOpGlobalSet(vm, ds.op))
-	ds.setSequence(container[:], NewOpGlobalSelSet(vm, ds.op))
-	ds.setSequence(container[:], NewOpGetGlobal(vm, ds.op))
-	ds.setSequence(container[:], NewOpArray(vm, ds.op))
-	ds.setSequence(container[:], NewOpMap(vm, ds.op))
-	ds.setSequence(container[:], NewOpStruct(vm, ds.op))
-	ds.setSequence(container[:], NewOpError(vm, ds.op))
-	ds.setSequence(container[:], NewOpImmutable(vm, ds.op))
-	ds.setSequence(container[:], NewOpIndex(vm, ds.op))
-	ds.setSequence(container[:], NewOpIndexSlice(vm, ds.op))
-	ds.setSequence(container[:], NewOpCall(vm, ds.op))
-	ds.setSequence(container[:], NewOpReturn(vm, ds.op))
-	ds.setSequence(container[:], NewOpLocalDefine(vm, ds.op))
-	ds.setSequence(container[:], NewOpLocalSet(vm, ds.op))
-	ds.setSequence(container[:], NewOpLocalSelSet(vm, ds.op))
-	ds.setSequence(container[:], NewOpLocalGet(vm, ds.op))
-	ds.setSequence(container[:], NewOpClosure(vm, ds.op))
-	ds.setSequence(container[:], NewOpFreeGetPtr(vm, ds.op))
-	ds.setSequence(container[:], NewOpFreeGet(vm, ds.op))
-	ds.setSequence(container[:], NewOpFreeSet(vm, ds.op))
-	ds.setSequence(container[:], NewOpLocalPtrGet(vm, ds.op))
-	ds.setSequence(container[:], NewOpFreeSelSet(vm, ds.op))
-	ds.setSequence(container[:], NewOpIteratorInit(vm, ds.op))
-	ds.setSequence(container[:], NewOpIteratorNext(vm, ds.op))
-	ds.setSequence(container[:], NewOpIteratorKey(vm, ds.op))
-	ds.setSequence(container[:], NewOpIteratorValue(vm, ds.op))
-	ds.setSequence(container[:], NewOpIntOp(vm, ds.op))
-	ds.setSequence(container[:], NewOpDeref(vm, ds.op))
-	ds.setSequence(container[:], NewOpNoOp(vm, ds.op))
-	ds.setSequence(container[:], NewOpSuspend(vm, ds.op))
-	return container
-}
 
-// setSequence assigns the given IOpExecutor to the Sequencer's container, using the bit-masked opcode as the index.
-func (ds *Sequencer) setSequence(container []core.IOpExecutor, seq core.IOpExecutor) {
-	container[seq.OpcodeId()&bytecode.OpcodesMask] = seq
+	var z []registerFunc
+
+	z = append(z, NewOpConstant)
+	z = append(z, NewOpNull)
+	z = append(z, NewOpBinary)
+	z = append(z, NewOpReferences)
+	z = append(z, NewOpEqual)
+	z = append(z, NewOpNotEqual)
+	z = append(z, NewOpPop)
+	z = append(z, NewOpTrue)
+	z = append(z, NewOpFalse)
+	z = append(z, NewOpNotLogical)
+	z = append(z, NewOpBitwiseComplement)
+	z = append(z, NewOpMinus)
+	z = append(z, NewOpJumpFalsy)
+	z = append(z, NewOpJumpAnd)
+	z = append(z, NewOpJumpOr)
+	z = append(z, NewOpJump)
+	z = append(z, NewOpGlobalSet)
+	z = append(z, NewOpGlobalSelSet)
+	z = append(z, NewOpGetGlobal)
+	z = append(z, NewOpArray)
+	z = append(z, NewOpMap)
+	z = append(z, NewOpStruct)
+	z = append(z, NewOpError)
+	z = append(z, NewOpImmutable)
+	z = append(z, NewOpIndex)
+	z = append(z, NewOpIndexSlice)
+	z = append(z, NewOpCall)
+	z = append(z, NewOpReturn)
+	z = append(z, NewOpLocalDefine)
+	z = append(z, NewOpLocalSet)
+	z = append(z, NewOpLocalSelSet)
+	z = append(z, NewOpLocalGet)
+	z = append(z, NewOpClosure)
+	z = append(z, NewOpFreeGetPtr)
+	z = append(z, NewOpFreeGet)
+	z = append(z, NewOpFreeSet)
+	z = append(z, NewOpLocalPtrGet)
+	z = append(z, NewOpFreeSelSet)
+	z = append(z, NewOpIteratorInit)
+	z = append(z, NewOpIteratorNext)
+	z = append(z, NewOpIteratorKey)
+	z = append(z, NewOpIteratorValue)
+	z = append(z, NewOpIntOp)
+	z = append(z, NewOpDeref)
+	z = append(z, NewOpNoOp)
+	z = append(z, NewOpSuspend)
+
+	for _, fn := range z {
+		seq, err := fn(fullAccess, ds.op)
+		if err != nil {
+			return nil, err
+		}
+		container[seq.OpcodeId()&bytecode.OpcodesMask] = seq
+	}
+	return container, nil
 }
 
 func (ds *Sequencer) facadeForOpcode(opcodeId bytecode.OpcodeId, vm *core.VM) interface{} {
 	switch opcodeId {
 	// Category: Stack & Constants (Read-Only)
 	case bytecode.OpConstant, bytecode.OpGlobalGet, bytecode.OpReferences, bytecode.OpFreeGet, bytecode.OpLocalGet:
-		return IVMReadOnly(vm)
+		return core.IVMReadOnly(vm)
 	// Category: Control Flow
 	case bytecode.OpJump, bytecode.OpJumpFalsy, bytecode.OpJumpAnd, bytecode.OpJumpOr:
-		return IVMControlFlow(vm)
+		return core.IVMControlFlow(vm)
 	// Category: Simple Stack
 	case bytecode.OpPop, bytecode.OpTrue, bytecode.OpFalse, bytecode.OpNull, bytecode.OpNotLogical, bytecode.OpMinus:
 		// These instructions only manipulate the top of the stack.
-		return IVMStackOnly(vm)
+		return core.IVMStackOnly(vm)
 	// Category: Full Access (use with caution)
 	case bytecode.OpCall, bytecode.OpReturn, bytecode.OpCallMethod, bytecode.OpClosure:
 		// These complex operations need wider access.
-		return IVMFullAccess(vm)
+		return core.IVMFullAccess(vm)
 	// Default Case
 	default:
 		// Basic read/write access.
-		return IVMReadWrite(vm)
+		return core.IVMReadWrite(vm)
 	}
 }
