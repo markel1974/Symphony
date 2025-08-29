@@ -271,6 +271,9 @@ func (c *Declarations) Ident(node *ast.Ident) error {
 // Returns an error if there are issues during statement compilation, undefined variables, or invalid assignment targets.
 func (c *Declarations) AssignStmt(node *ast.AssignStmt) error {
 	if callExpr, ok := node.Rhs[0].(*ast.CallExpr); ok {
+		if len(node.Rhs) > 1 {
+			return tables.NewCompilerError(c.fileSet, node, "invalid number of values to assign")
+		}
 		if err := c.compile(node.Rhs[0]); err != nil {
 			return err
 		}
@@ -280,10 +283,11 @@ func (c *Declarations) AssignStmt(node *ast.AssignStmt) error {
 		}
 		return nil
 	}
+
+	// Handle multiple assignments (e.g. x, y := 1, 2)
 	if len(node.Lhs) != len(node.Rhs) {
 		return tables.NewCompilerError(c.fileSet, node, "invalid number of values to assign")
 	}
-	// Handle multiple assignments (e.g. x, y := 1, 2)
 	for i := len(node.Lhs) - 1; i >= 0; i-- {
 		// Handle assignment (e.g. x = 1 or x := 1)
 		if err := c.compile(node.Rhs[i]); err != nil {
