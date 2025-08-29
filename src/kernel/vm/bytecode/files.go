@@ -7,9 +7,9 @@ import (
 
 // Files represents a collection of source files with positional metadata for efficient file and position lookups.
 type Files struct {
-	base     int     // base offset for the next file
-	files    []IFile // list of files in the order added to the set
-	lastFile IFile   // cache of last file looked up
+	base     int
+	files    []IFile
+	lastFile IFile
 }
 
 // NewFiles creates and returns a new instance of Files initialized with a base offset of 1.
