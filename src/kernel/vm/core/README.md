@@ -56,6 +56,42 @@ The VM operates on a flexible and powerful type system defined in the `vm/object
 -   **Rich Type Support:** The system includes a comprehensive set of built-in types, including primitives, complex data structures (`Array`, `Map` with mutable and immutable variants), and first-class functions.
 -   **Advanced Features:** The object system has native support for **closures**, correctly managing "free variables" that are captured from outer scopes. This is a hallmark of a mature language implementation.
 
+### 5. The Architectural Handshake: A Mutual Verification Security Model
+
+While the Strategy Pattern provides modularity, this VM's architecture takes security and robustness a step further by implementing a **"Mutual Verification"** model, also known as an "Architectural Handshake." This solves a complex challenge: how to maintain a simple, decentralized auto-registration mechanism for executors while enforcing a strict, centralized security policy.
+
+This design ensures that every instruction operates under the **Principle of Least Privilege**, but does so through a cooperative, fail-fast verification between the system's core components.
+
+#### The Handshake Protocol:
+
+1.  **Granular Access Contracts (`core/iaccess.go`):** The system defines a hierarchy of Go interfaces (`IVMStackOnly`, `IVMReadOnly`, `IVMControlFlow`, etc.). Each interface acts as a formal contract, exposing only the minimal set of VM functionalities required for a specific class of operations (e.g., stack manipulation, control flow changes, read-only access).
+
+2.  **The Sequencer as the Policy Maker:** The `Sequencer` is the sole authority on security policy. It is responsible for deciding which access contract (which interface) is appropriate for each opcode. For instance, its policy dictates that `OpConstant` should only have read-only access, while `OpJump` requires control-flow privileges.
+
+3.  **The Executor as the Verifier:** Each `IOpExecutor`'s constructor accepts a base `IVM` interface, allowing for a uniform signature that enables clean auto-registration via `init()` functions. However, as its very first action, the constructor performs a type assertion to verify that the provided VM object implements the *exact* specific interface it requires to function correctly.
+
+    ```go
+    // Example from the NewOpArray constructor
+    func NewOpArray(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
+        // The executor verifies that the policy supplied by the Sequencer is correct.
+        vmFullAccess, ok := vm.(core.IVMFullAccess)
+        if !ok {
+            // If the contract is not met, the VM fails to initialize.
+            return nil, fmt.Errorf("vm does not implement IVMFullAccess")
+        }
+        return &OpArray{ vm: vmFullAccess, ... }, nil
+    }
+    ```
+
+
+#### The Benefits of Mutual Verification:
+
+* **Fail-Fast Robustness:** This is not a runtime security check. It's an **initialization-time** guarantee. If a developer makes a mistake in the `Sequencer`'s policy (e.g., assigning the wrong access level to an opcode), the type assertion in the executor's constructor will fail, and the VM will refuse to start. This prevents the system from ever running in an insecure or misconfigured state.
+* **Decoupled yet Cohesive:** The security policy is centralized in the `Sequencer`, while the *requirements* for that policy are documented and enforced programmatically within each executor. This keeps the components decoupled but ensures they work together correctly.
+* **Preserves Modularity:** The uniform constructor signature allows the elegant `init()`-based auto-registration system to be preserved, making the VM exceptionally easy to extend with new instructions.
+
+This architectural choice creates a system that is not only secure by design but is also **self-auditing**, where any deviation from the intended security policy is caught automatically at startup.
+
 ---
 
 ## Conclusion:
