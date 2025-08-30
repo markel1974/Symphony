@@ -106,7 +106,7 @@ func (r *Regexp) find(frame int, args ...objects.IObject) (objects.IObject, erro
 			return nil, fmt.Errorf("expected Array, got %T", obj)
 		}
 		for i := 0; i < len(m); i += 2 {
-			arr.Append(r.factory.NewMapImmutable(frame, map[string]objects.IObject{
+			arr.Append(r.factory.NewMap(frame, map[string]objects.IObject{
 				RegexpTextDef:  r.factory.NewString(frame, s2[m[i]:m[i+1]]),
 				RegexpBeginDef: r.factory.NewInt(frame, int64(m[i])),
 				RegexpEndDef:   r.factory.NewInt(frame, int64(m[i+1])),
@@ -134,7 +134,7 @@ func (r *Regexp) find(frame int, args ...objects.IObject) (objects.IObject, erro
 			return nil, fmt.Errorf("expected Array, got %T", obj)
 		}
 		for i := 0; i < len(m); i += 2 {
-			subMatch.Append(r.factory.NewMapImmutable(frame, map[string]objects.IObject{
+			subMatch.Append(r.factory.NewMap(frame, map[string]objects.IObject{
 				RegexpTextDef:  r.factory.NewString(frame, s2[m[i]:m[i+1]]),
 				RegexpBeginDef: r.factory.NewInt(frame, int64(m[i])),
 				RegexpEndDef:   r.factory.NewInt(frame, int64(m[i+1])),
@@ -196,7 +196,7 @@ func (r *Regexp) compile(frame int, args ...objects.IObject) (objects.IObject, e
 		return r.factory.NewError(frame, err.Error()), nil
 	}
 
-	obj := r.factory.NewMapImmutable(frame,
+	obj := r.factory.NewMap(frame,
 		map[string]objects.IObject{
 			// match(text) => bool
 			"Match": r.factory.NewFuncPackageFrame(frame, objects.FuncPackageDef, "Match", func(frame int, args ...objects.IObject) (objects.IObject, error) {
@@ -213,7 +213,7 @@ func (r *Regexp) compile(frame int, args ...objects.IObject) (objects.IObject, e
 			}),
 		},
 	)
-	mImm, ok := obj.(*objects.MapImmutable)
+	mImm, ok := obj.(*objects.Map)
 	if !ok {
 		return nil, fmt.Errorf("unexpected object type: %T", obj)
 	}
@@ -285,7 +285,7 @@ func (r *Regexp) compileOptionFind(frame int, re *regexp.Regexp, args ...objects
 			return nil, fmt.Errorf("expected Array, got %T", base)
 		}
 		for i := 0; i < len(mRe); i += 2 {
-			arr.Append(r.factory.NewMapImmutable(frame,
+			arr.Append(r.factory.NewMap(frame,
 				map[string]objects.IObject{
 					RegexpTextDef:  r.factory.NewString(frame, s1[mRe[i]:mRe[i+1]]),
 					RegexpBeginDef: r.factory.NewInt(frame, int64(mRe[i])),
@@ -314,7 +314,7 @@ func (r *Regexp) compileOptionFind(frame int, re *regexp.Regexp, args ...objects
 			return nil, fmt.Errorf("expected Array, got %T", obj)
 		}
 		for i := 0; i < len(m); i += 2 {
-			subMatch.Append(r.factory.NewMapImmutable(frame,
+			subMatch.Append(r.factory.NewMap(frame,
 				map[string]objects.IObject{
 					RegexpTextDef:  r.factory.NewString(frame, s1[m[i]:m[i+1]]),
 					RegexpBeginDef: r.factory.NewInt(frame, int64(m[i])),

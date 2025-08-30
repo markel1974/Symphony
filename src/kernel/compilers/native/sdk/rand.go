@@ -74,7 +74,7 @@ func (z *Rand) rand(frame int, args ...objects.IObject) (objects.IObject, error)
 	}
 	src := rand.NewSource(i1)
 	r := rand.New(src)
-	return z.gk.NewMapImmutable(frame,
+	return z.gk.NewMap(frame,
 		map[string]objects.IObject{
 			"Int63":       z.gk.NewFuncPackageFrame(frame, objects.FuncPackageDef, "Int63", z.int63(r.Int63)),
 			"Float64":     z.gk.NewFuncPackageFrame(frame, objects.FuncPackageDef, "Float64", z.funcInOf64(r.Float64)),

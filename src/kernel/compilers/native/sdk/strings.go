@@ -235,15 +235,6 @@ func (s *Strings) join(frame int, args ...objects.IObject) (ret objects.IObject,
 			sLen += len(as)
 			ss1 = append(ss1, as)
 		}
-	case *objects.ArrayImmutable:
-		for idx, a := range arg0.Values() {
-			as, err := s.factory.ToStringArg(idx, a)
-			if err != nil {
-				return nil, err
-			}
-			sLen += len(as)
-			ss1 = append(ss1, as)
-		}
 	default:
 		return nil, objects.NewInvalidArgumentError(0, "array", args[0].TypeName())
 	}
