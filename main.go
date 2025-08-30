@@ -135,36 +135,49 @@ func vmTest() {
 	const sequencerId = "native"
 	gk := objects.NewGateKeeper(0)
 	op := bytecode.NewOpcodes()
-	comp, loader, err := compilers.NewCompiler(gk, op, sequencerId)
+	baseDir := "../src/kernel/compilers/native/stub"
+	data, err := os.ReadDir(baseDir)
 	if err != nil {
-		log.Fatalf("compiler error: %s", err)
+		log.Fatalf("error: %s", err)
 	}
-	var args []interface{} = nil
-	//args := []interface{}{1, 2}
-	fileName := "source7.go"
-	dataFile, _ := os.Open("../src/kernel/compilers/native/stub/" + fileName)
-	defer dataFile.Close()
-	if err = comp.Compile(fileName, dataFile); err != nil {
-		log.Fatalf("compiler error: %s", err)
-	}
-	bc := bytecode.NewBytecode(op, comp.Constants(), comp.References(), comp.Globals(), comp.FileSet())
-	d := bytecode.NewDisassembler(bc)
-	d.Disassemble(log.Writer())
-	machine, err := vm.NewVM(gk, op, sequencerId)
-	if err != nil {
-		log.Fatalf("VM error: %s", err)
-	}
-	entryPoints, err := machine.Setup(loader, bc)
-	if err != nil {
+	for _, v := range data {
+		if v.IsDir() {
+			continue
+		}
+		if !strings.HasPrefix(v.Name(), "source1.go") {
+			continue
+		}
+		comp, loader, err := compilers.NewCompiler(gk, op, sequencerId)
+		if err != nil {
+			log.Fatalf("compiler error: %s", err)
+		}
+		var args []interface{} = nil
+		//args := []interface{}{1, 2}
+		//fileName := "source9.go"
+		dataFile, _ := os.Open(baseDir + string(os.PathSeparator) + v.Name())
+		defer dataFile.Close()
+		if err = comp.Compile(v.Name(), dataFile); err != nil {
+			log.Fatalf("compiler error: %s", err)
+		}
+		bc := bytecode.NewBytecode(op, comp.Constants(), comp.References(), comp.Globals(), comp.FileSet())
+		d := bytecode.NewDisassembler(bc)
+		d.Disassemble(log.Writer())
+		machine, err := vm.NewVM(gk, op, sequencerId)
+		if err != nil {
+			log.Fatalf("VM error: %s", err)
+		}
+		entryPoints, err := machine.Setup(loader, bc)
+		if err != nil {
+			machine.Print(log.Writer())
+			log.Fatalf("VM setup error: %s", err)
+		}
+		if err = machine.Run(entryPoints["main"], args...); err != nil {
+			machine.Print(log.Writer())
+			log.Fatalf("VM runtime error: %s", err)
+		}
 		machine.Print(log.Writer())
-		log.Fatalf("VM setup error: %s", err)
+		log.Println("RETURN VALUE", machine.GetReturnValue(0))
 	}
-	if err = machine.Run(entryPoints["main"], args...); err != nil {
-		machine.Print(log.Writer())
-		log.Fatalf("VM runtime error: %s", err)
-	}
-	machine.Print(log.Writer())
-	log.Println("RETURN VALUE", machine.GetReturnValue(0))
 	os.Exit(0)
 }
 

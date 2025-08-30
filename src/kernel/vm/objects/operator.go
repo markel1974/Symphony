@@ -1,7 +1,11 @@
 package objects
 
-// Operator represents an enumerated type for various binary operation identifiers.
-type Operator int
+// ArithmeticOperator represents a numeric type used to define arithmetic operators like addition, subtraction, etc.
+type ArithmeticOperator int
+
+// LogicalOperator represents an enumerated type for logical operators.
+// It is primarily used to define logical operation constants.
+type LogicalOperator int
 
 // OperatorAdd represents the addition operator (+).
 // OperatorSub represents the subtraction operator (-).
@@ -14,24 +18,33 @@ type Operator int
 // OperatorXor represents the bitwise XOR operator (^).
 // OperatorShl represents the left shift operator (<<).
 // OperatorShr represents the right shift operator (>>).
-// OperatorLess represents the less than operator (<).
-// OperatorGreater represents the greater than operator (>).
-// OperatorLessEq represents the less than or equal to operator (<=).
-// OperatorGreaterEq represents the greater than or equal to operator (>=).
 const (
-	OperatorAdd     Operator = iota // +
-	OperatorSub                     // -
-	OperatorMul                     // *
-	OperatorQuo                     // /
-	OperatorRem                     // %
-	OperatorAnd                     // &
-	OperatorAndNot                  // &^
-	OperatorOr                      // |
-	OperatorXor                     // ^
-	OperatorShl                     // <<
-	OperatorShr                     // >>
-	OperatorLess                    // <
-	OperatorGreater                 // >
-	OperatorLessEq
-	OperatorGreaterEq
+	OperatorAdd    ArithmeticOperator = iota // +
+	OperatorSub                              // -
+	OperatorMul                              // *
+	OperatorQuo                              // /
+	OperatorRem                              // %
+	OperatorAnd                              // &
+	OperatorAndNot                           // &^
+	OperatorOr                               // |
+	OperatorXor                              // ^
+	OperatorShl                              // <<
+	OperatorShr                              // >>
+)
+
+// OperatorLogicalOr represents the logical OR operator.
+// OperatorLogicalAnd represents the logical AND operator.
+// OperatorLogicalLess represents the logical LESS THAN (<) operator.
+// OperatorLogicalGreater represents the logical GREATER THAN (>) operator.
+// OperatorLogicalLessEq represents the logical LESS THAN OR EQUAL TO operator.
+// OperatorLogicalGreaterEq represents the logical GREATER THAN OR EQUAL TO operator.
+const (
+	OperatorLogicalEq LogicalOperator = iota
+	OperatorLogicalNotEq
+	OperatorLogicalOr
+	OperatorLogicalAnd
+	OperatorLogicalLess    // <
+	OperatorLogicalGreater // >
+	OperatorLogicalLessEq
+	OperatorLogicalGreaterEq
 )

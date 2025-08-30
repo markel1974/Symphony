@@ -458,60 +458,17 @@ func (ga *GateAdapter) FuncIiOs(fn func(int) string) FuncCallable {
 	}
 }
 
-// BinaryOpInt64 performs a binary operation on two integer values and returns the result.
-func (ga *GateAdapter) BinaryOpInt64(op Operator, lhs int64, rhs int64) (int64, error) {
-	switch op {
-	case OperatorAdd:
-		return lhs + rhs, nil
-	case OperatorSub:
-		return lhs - rhs, nil
-	case OperatorMul:
-		return lhs * rhs, nil
-	case OperatorQuo:
-		if rhs == 0 {
-			return 0, ErrDivisionByZero
-		}
-		return lhs / rhs, nil
-	case OperatorRem:
-		if rhs == 0 {
-			return 0, ErrDivisionByZero
-		}
-		return lhs % rhs, nil
-	case OperatorAnd:
-		return lhs & rhs, nil
-	case OperatorOr:
-		return lhs | rhs, nil
-	case OperatorXor:
-		return lhs ^ rhs, nil
-	case OperatorAndNot:
-		return lhs &^ rhs, nil
-	case OperatorShl:
-		return lhs << uint64(rhs), nil
-	case OperatorShr:
-		return lhs >> uint64(rhs), nil
-	case OperatorLess:
-		if lhs < rhs {
-			return 1, nil
-		}
-		return 0, nil
-	case OperatorGreater:
-		if lhs > rhs {
-			return 1, nil
-		}
-		return 0, nil
-	case OperatorLessEq:
-		if lhs <= rhs {
-			return 1, nil
-		}
-		return 0, nil
-	case OperatorGreaterEq:
-		if lhs >= rhs {
-			return 1, nil
-		}
-		return 0, nil
-	default:
-		return 0, ErrInvalidOperator
-	}
+// ArithmeticOpInt64 performs integer arithmetic or bitwise operations on two int64 values based on the provided operator.
+// Returns the result of the operation and an error if an invalid operator is used or division by zero occurs.
+func (ga *GateAdapter) ArithmeticOpInt64(op ArithmeticOperator, lhs int64, rhs int64) (int64, error) {
+	return arithmeticOpInt64(lhs, op, rhs)
+}
+
+// LogicalOpInt64 performs the specified logical operation on two int64 values and returns a boolean result or an error.
+// Supported operations include less than, greater than, less than or equal, and greater than or equal.
+// Returns ErrInvalidOperator if an unsupported operator is provided.
+func (ga *GateAdapter) LogicalOpInt64(op LogicalOperator, lhs int64, rhs int64) (bool, error) {
+	return logicalOpInt64(lhs, op, rhs)
 }
 
 // BoundsCheck validates and adjusts slice bounds using provided low and high indices, ensuring they are within valid range.

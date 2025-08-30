@@ -37,10 +37,11 @@ type VM struct {
 	references *References
 	constants  *Constants
 	globals    *Globals
+	seq        ISequencer
 }
 
 // New initializes and returns a new virtual machine instance configured with the provided components and settings.
-func New(gk objects.IGateKeeper, sequencer ISequencer, op *bytecode.Opcodes) *VM {
+func New(gk objects.IGateKeeper, seq ISequencer, op *bytecode.Opcodes) *VM {
 	v := &VM{
 		gk:         gk,
 		op:         op,
@@ -52,16 +53,20 @@ func New(gk objects.IGateKeeper, sequencer ISequencer, op *bytecode.Opcodes) *VM
 	v.globals = NewGlobals(gk, v.SetError)
 	v.stack = NewStack(gk, stackSize, v.SetError)
 	v.frames = NewFrames(gk, maxFrames, v.SetError)
-	seq := sequencer.Create(v)
-	v.sequencer = make([]*Decoder, len(seq))
-	for i, s := range seq {
-		v.sequencer[i] = NewDecoder(s)
-	}
+	v.seq = seq
 	return v
 }
 
 // Setup initializes the virtual machine with the provided bytecode and loader components.
 func (v *VM) Setup(loader bytecode.ILoader, codes ...*bytecode.Bytecode) (map[string]uint, error) {
+	sequencer, err := v.seq.Create(v)
+	if err != nil {
+		return nil, err
+	}
+	v.sequencer = make([]*Decoder, len(sequencer))
+	for i, s := range sequencer {
+		v.sequencer[i] = NewDecoder(s)
+	}
 	switch len(codes) {
 	case 1:
 		v.bc = codes[0]

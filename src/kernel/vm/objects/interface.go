@@ -60,9 +60,16 @@ func (o *Interface) Copy(frame int, depth int) IObject {
 	return o.value.Copy(frame, depth)
 }
 
-// BinaryOp performs a binary operation with the current object using the provided operator and right-hand side operand.
-func (o *Interface) BinaryOp(frame int, op Operator, rightHandSide IObject) (IObject, error) {
-	return o.value.BinaryOp(frame, op, rightHandSide)
+// LogicalOp applies a logical operation (e.g., AND, OR) between the current object and a right-hand-side object.
+// It returns the result of the operation or an error if the operation cannot be performed.
+func (o *Interface) LogicalOp(frame int, op LogicalOperator, rightHandSide IObject) (IObject, error) {
+	return o.value.LogicalOp(frame, op, rightHandSide)
+}
+
+// ArithmeticOp performs an arithmetic operation specified by the operator on the current object and the right-hand side operand.
+// It uses the provided frame for managing execution context, returning the result or an error if the operation fails.
+func (o *Interface) ArithmeticOp(frame int, op ArithmeticOperator, rightHandSide IObject) (IObject, error) {
+	return o.value.ArithmeticOp(frame, op, rightHandSide)
 }
 
 // IndexGet retrieves the value at the specified index from the object, using the provided execution frame and index.

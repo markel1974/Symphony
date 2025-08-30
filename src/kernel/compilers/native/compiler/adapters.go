@@ -23,29 +23,34 @@ func NewTokenAdapter(op bytecode.OpcodeId, arguments []int) *TokenAdapter {
 
 // _binaryAdapter maps token types to their corresponding TokenAdapter for processing binary operations.
 var _binaryAdapter = map[token.Token]*TokenAdapter{
-	token.EQL:     NewTokenAdapter(bytecode.OpEqual, nil),
-	token.NEQ:     NewTokenAdapter(bytecode.OpNotEqual, nil),
-	token.ADD:     NewTokenAdapter(bytecode.OpBinary, []int{int(objects.OperatorAdd)}),
-	token.SUB:     NewTokenAdapter(bytecode.OpBinary, []int{int(objects.OperatorSub)}),
-	token.MUL:     NewTokenAdapter(bytecode.OpBinary, []int{int(objects.OperatorMul)}),
-	token.QUO:     NewTokenAdapter(bytecode.OpBinary, []int{int(objects.OperatorQuo)}),
-	token.LSS:     NewTokenAdapter(bytecode.OpBinary, []int{int(objects.OperatorLess)}),
-	token.GTR:     NewTokenAdapter(bytecode.OpBinary, []int{int(objects.OperatorGreater)}),
-	token.GEQ:     NewTokenAdapter(bytecode.OpBinary, []int{int(objects.OperatorGreaterEq)}),
-	token.LEQ:     NewTokenAdapter(bytecode.OpBinary, []int{int(objects.OperatorLessEq)}),
-	token.AND:     NewTokenAdapter(bytecode.OpBinary, []int{int(objects.OperatorAnd)}),
-	token.AND_NOT: NewTokenAdapter(bytecode.OpBinary, []int{int(objects.OperatorAndNot)}),
-	token.OR:      NewTokenAdapter(bytecode.OpBinary, []int{int(objects.OperatorOr)}),
-	token.XOR:     NewTokenAdapter(bytecode.OpBinary, []int{int(objects.OperatorXor)}),
-	token.REM:     NewTokenAdapter(bytecode.OpBinary, []int{int(objects.OperatorRem)}),
-	token.SHL:     NewTokenAdapter(bytecode.OpBinary, []int{int(objects.OperatorShl)}),
-	token.SHR:     NewTokenAdapter(bytecode.OpBinary, []int{int(objects.OperatorShr)}),
+	//logical operators
+	token.EQL:  NewTokenAdapter(bytecode.OpLogical, []int{int(objects.OperatorLogicalEq)}),
+	token.NEQ:  NewTokenAdapter(bytecode.OpLogical, []int{int(objects.OperatorLogicalNotEq)}),
+	token.LOR:  NewTokenAdapter(bytecode.OpLogical, []int{int(objects.OperatorLogicalOr)}),
+	token.LAND: NewTokenAdapter(bytecode.OpLogical, []int{int(objects.OperatorLogicalAnd)}),
+	token.LSS:  NewTokenAdapter(bytecode.OpLogical, []int{int(objects.OperatorLogicalLess)}),
+	token.GTR:  NewTokenAdapter(bytecode.OpLogical, []int{int(objects.OperatorLogicalGreater)}),
+	token.GEQ:  NewTokenAdapter(bytecode.OpLogical, []int{int(objects.OperatorLogicalGreaterEq)}),
+	token.LEQ:  NewTokenAdapter(bytecode.OpLogical, []int{int(objects.OperatorLogicalLessEq)}),
+
+	//arithmetic operators
+	token.ADD:     NewTokenAdapter(bytecode.OpArithmetic, []int{int(objects.OperatorAdd)}),
+	token.SUB:     NewTokenAdapter(bytecode.OpArithmetic, []int{int(objects.OperatorSub)}),
+	token.MUL:     NewTokenAdapter(bytecode.OpArithmetic, []int{int(objects.OperatorMul)}),
+	token.QUO:     NewTokenAdapter(bytecode.OpArithmetic, []int{int(objects.OperatorQuo)}),
+	token.AND:     NewTokenAdapter(bytecode.OpArithmetic, []int{int(objects.OperatorAnd)}),
+	token.AND_NOT: NewTokenAdapter(bytecode.OpArithmetic, []int{int(objects.OperatorAndNot)}),
+	token.OR:      NewTokenAdapter(bytecode.OpArithmetic, []int{int(objects.OperatorOr)}),
+	token.XOR:     NewTokenAdapter(bytecode.OpArithmetic, []int{int(objects.OperatorXor)}),
+	token.REM:     NewTokenAdapter(bytecode.OpArithmetic, []int{int(objects.OperatorRem)}),
+	token.SHL:     NewTokenAdapter(bytecode.OpArithmetic, []int{int(objects.OperatorShl)}),
+	token.SHR:     NewTokenAdapter(bytecode.OpArithmetic, []int{int(objects.OperatorShr)}),
 }
 
 // _unaryAdapter maps unary token types to their corresponding TokenAdapter configurations for bytecode operations.
 var _unaryAdapter = map[token.Token]*TokenAdapter{
 	token.SUB: NewTokenAdapter(bytecode.OpMinus, nil),
-	token.NOT: NewTokenAdapter(bytecode.OpNotLogical, nil),
+	token.NOT: NewTokenAdapter(bytecode.OpNot, nil),
 	token.XOR: NewTokenAdapter(bytecode.OpBitwiseComplement, nil),
 }
 

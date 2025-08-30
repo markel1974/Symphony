@@ -24,7 +24,8 @@ type IObject interface {
 	TypeName() string
 	String() string
 	Frame() int
-	BinaryOp(frame int, op Operator, rightHandSide IObject) (IObject, error)
+	LogicalOp(frame int, op LogicalOperator, rightHandSide IObject) (IObject, error)
+	ArithmeticOp(frame int, op ArithmeticOperator, rightHandSide IObject) (IObject, error)
 	Falsy() bool
 	Equals(other IObject) bool
 	Copy(frame int, depth int) IObject
@@ -123,7 +124,8 @@ type IGateAdapter interface {
 	FuncIf64iOf64(fn func(float64, int) float64) FuncCallable
 	FuncIf64iOb(fn func(float64, int) bool) FuncCallable
 
-	BinaryOpInt64(op Operator, lhs int64, rhs int64) (int64, error)
+	LogicalOpInt64(op LogicalOperator, lhs int64, rhs int64) (bool, error)
+	ArithmeticOpInt64(op ArithmeticOperator, lhs int64, rhs int64) (int64, error)
 	BoundsCheck(lowStack IObject, highStack IObject, numElements int64) (int64, int64, error)
 	IndexAssign(frame int, dst IObject, src IObject, selectors []IObject) error
 }

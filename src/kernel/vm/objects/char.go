@@ -87,85 +87,37 @@ func (o *Char) TypeName() string {
 	return CharType
 }
 
-// BinaryOp performs a binary operation between the Char object and another IObject using the specified operator.
-func (o *Char) BinaryOp(frame int, op Operator, in IObject) (IObject, error) {
-	switch rhs := in.(type) {
-	case *Char:
-		switch op {
-		case OperatorAdd:
-			r := o.value + rhs.value
-			if r == o.value {
-				return o, nil
-			}
-			return o.GateKeeper().NewChar(frame, r), nil
-		case OperatorSub:
-			r := o.value - rhs.value
-			if r == o.value {
-				return o, nil
-			}
-			return o.GateKeeper().NewChar(frame, r), nil
-		case OperatorLess:
-			if o.value < rhs.value {
-				return o.GateKeeper().TrueValue(), nil
-			}
-			return o.GateKeeper().FalseValue(), nil
-		case OperatorGreater:
-			if o.value > rhs.value {
-				return o.GateKeeper().TrueValue(), nil
-			}
-			return o.GateKeeper().FalseValue(), nil
-		case OperatorLessEq:
-			if o.value <= rhs.value {
-				return o.GateKeeper().TrueValue(), nil
-			}
-			return o.GateKeeper().FalseValue(), nil
-		case OperatorGreaterEq:
-			if o.value >= rhs.value {
-				return o.GateKeeper().TrueValue(), nil
-			}
-			return o.GateKeeper().FalseValue(), nil
-		default:
-			return nil, ErrInvalidOperator
-		}
-	case *Int:
-		switch op {
-		case OperatorAdd:
-			r := o.value + rune(rhs.value)
-			if r == o.value {
-				return o, nil
-			}
-			return o.GateKeeper().NewChar(frame, r), nil
-		case OperatorSub:
-			r := o.value - rune(rhs.value)
-			if r == o.value {
-				return o, nil
-			}
-			return o.GateKeeper().NewChar(frame, r), nil
-		case OperatorLess:
-			if int64(o.Value()) < rhs.value {
-				return o.GateKeeper().TrueValue(), nil
-			}
-			return o.GateKeeper().FalseValue(), nil
-		case OperatorGreater:
-			if int64(o.Value()) > rhs.value {
-				return o.GateKeeper().TrueValue(), nil
-			}
-			return o.GateKeeper().FalseValue(), nil
-		case OperatorLessEq:
-			if int64(o.Value()) <= rhs.value {
-				return o.GateKeeper().TrueValue(), nil
-			}
-			return o.GateKeeper().FalseValue(), nil
-		case OperatorGreaterEq:
-			if int64(o.Value()) >= rhs.value {
-				return o.GateKeeper().TrueValue(), nil
-			}
-			return o.GateKeeper().FalseValue(), nil
-		default:
-			return nil, ErrInvalidOperator
-		}
+// LogicalOp performs a logical operation between the current Char object and another IObject using the specified operator.
+func (o *Char) LogicalOp(_ int, op LogicalOperator, in IObject) (IObject, error) {
+	rhsValue, err := toInt64(in)
+	if err != nil {
+		return nil, err
 	}
-	return nil, ErrInvalidOperator
+	ret, err := logicalOpInt64(int64(o.value), op, rhsValue)
+	if err != nil {
+		return nil, err
+	}
+	if ret {
+		return o.gk.TrueValue(), nil
+	}
+	return o.gk.FalseValue(), nil
+}
+
+// ArithmeticOp applies the specified arithmetic operation between a Char object and another IObject, returning the result.
+// Returns an error if the operation is invalid or unsupported.
+func (o *Char) ArithmeticOp(frame int, op ArithmeticOperator, in IObject) (IObject, error) {
+	rhsValue, err := toInt64(in)
+	if err != nil {
+		return nil, err
+	}
+	ret, err := arithmeticOpInt64(int64(o.value), op, rhsValue)
+	if err != nil {
+		return nil, err
+	}
+	if ret == int64(o.value) {
+		return o, nil
+	}
+	return o.GateKeeper().NewChar(frame, rune(ret)), nil
 }
 
 // Copy creates and returns a new instance of the Char object with the same values.

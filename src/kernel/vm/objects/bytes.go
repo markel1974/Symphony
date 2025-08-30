@@ -79,10 +79,9 @@ func (o *Bytes) TypeName() string {
 	return BytesType
 }
 
-// BinaryOp performs a binary operation on the Bytes object based on the specified operator and operand.
-// Supports addition for concatenating two Bytes objects, ensuring the combined length does not exceed MaxBytesLen.
-// Returns the resulting Bytes object or an error if the operation or operand is invalid.
-func (o *Bytes) BinaryOp(frame int, op Operator, in IObject) (IObject, error) {
+// ArithmeticOp performs an arithmetic operation on the Bytes object using the specified operator and operand.
+// Returns the result of the operation or an error if the operation is invalid or exceeds limitations.
+func (o *Bytes) ArithmeticOp(frame int, op ArithmeticOperator, in IObject) (IObject, error) {
 	switch op {
 	case OperatorAdd:
 		switch rhs := in.(type) {
@@ -95,6 +94,11 @@ func (o *Bytes) BinaryOp(frame int, op Operator, in IObject) (IObject, error) {
 	default:
 		return nil, ErrInvalidOperator
 	}
+	return nil, ErrInvalidOperator
+}
+
+// LogicalOp performs a logical operation on the Bytes object using the specified operator and operand, returning an error.
+func (o *Bytes) LogicalOp(_ int, _ LogicalOperator, _ IObject) (IObject, error) {
 	return nil, ErrInvalidOperator
 }
 

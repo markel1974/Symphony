@@ -1,40 +1,41 @@
 package stub
 
-const Source1 = `
-package main
-
 import "fmt"
 
 type MyStruct struct {
 	Name string
 }
 
-func (z * MyStruct) PrintA(a string) int {
+func (z *MyStruct) PrintA(a string) int {
 	fmt.Println(a)
 	return 10
 }
 
-func (z * MyStruct) PrintB(b string) int {
+func (z *MyStruct) PrintB(b string) int {
 	fmt.Println(b)
 	return 20
 }
 
-func testFunc(a int) (string, int) {
+func testFunc1(a int) (string, int) {
 	fmt.Println("Hello, world!")
 	return "prova", 2
 }
 
-func test() int {
+func test1() int {
 	return 10
 }
 
 func main() {
 	b := 4
 	var y = 15
-	z := b+y
+	z := b + y
+
+	if z == 19 || b == 4 {
+		fmt.Println("PROVA")
+	}
 	fmt.Println(z)
 	//var kk = 5
-	//a := test()
+	//a := test1()
 	//fmt.Println(a)
 	//for x:=10; x==0; x-- {
 	//	fmt.Println(x)
@@ -46,10 +47,9 @@ func main() {
 	//fmt.Println(z)
 	//return z
 	//a := 10
-    //kk := MyStruct{}
+	//kk := MyStruct{}
 	//retA := kk.PrintA("prova")
 	//retB := kk.PrintB("prova")
-	//myVar, mainRet := testFunc(5)
+	//myVar, mainRet := testFunc1(5)
 	//fmt.Println(retA, retB, myVar, mainRet)
 }
-`

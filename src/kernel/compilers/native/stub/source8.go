@@ -1,16 +1,13 @@
 package stub
 
-const Source8 = `
-package main
-
 import "fmt"
 
 type Task struct {
-	Name    string
+	Name string
 }
 
 func main() {
-	//t2 := Task{Name: "Task2"}
+	t2 := Task{Name: "Task2"}
 	//t2.Name = "Task1_mod"
 	allTasks := []Task{Task{Name: "Task1"}, t2}
 	//allTasks := []Task{}
@@ -18,4 +15,3 @@ func main() {
 		fmt.Println(taskT)
 	}
 }
-`

@@ -92,110 +92,37 @@ func (o *Float) TypeName() string {
 	return FloatType
 }
 
-// BinaryOp performs a binary operation between the current Float and another IObject based on the specified operator.
-// Returns the result of the operation as an IObject or an error if the operation is invalid.
-func (o *Float) BinaryOp(frame int, op Operator, rhs IObject) (IObject, error) {
-	switch rhs := rhs.(type) {
-	case *Float:
-		switch op {
-		case OperatorAdd:
-			r := o.value + rhs.value
-			if r == o.value {
-				return o, nil
-			}
-			return o.GateKeeper().NewFloat(frame, r), nil
-		case OperatorSub:
-			r := o.value - rhs.value
-			if r == o.value {
-				return o, nil
-			}
-			return o.GateKeeper().NewFloat(frame, r), nil
-		case OperatorMul:
-			r := o.value * rhs.value
-			if r == o.value {
-				return o, nil
-			}
-			return o.GateKeeper().NewFloat(frame, r), nil
-		case OperatorQuo:
-			r := o.value / rhs.value
-			if r == o.value {
-				return o, nil
-			}
-			return o.GateKeeper().NewFloat(frame, r), nil
-		case OperatorLess:
-			if o.value < rhs.value {
-				return o.GateKeeper().TrueValue(), nil
-			}
-			return o.GateKeeper().FalseValue(), nil
-		case OperatorGreater:
-			if o.value > rhs.value {
-				return o.GateKeeper().TrueValue(), nil
-			}
-			return o.GateKeeper().FalseValue(), nil
-		case OperatorLessEq:
-			if o.value <= rhs.value {
-				return o.GateKeeper().TrueValue(), nil
-			}
-			return o.GateKeeper().FalseValue(), nil
-		case OperatorGreaterEq:
-			if o.value >= rhs.value {
-				return o.GateKeeper().TrueValue(), nil
-			}
-			return o.GateKeeper().FalseValue(), nil
-		default:
-			return nil, ErrInvalidOperator
-		}
-	case *Int:
-		switch op {
-		case OperatorAdd:
-			r := o.value + float64(rhs.value)
-			if r == o.value {
-				return o, nil
-			}
-			return o.GateKeeper().NewFloat(frame, r), nil
-		case OperatorSub:
-			r := o.value - float64(rhs.value)
-			if r == o.value {
-				return o, nil
-			}
-			return o.GateKeeper().NewFloat(frame, r), nil
-		case OperatorMul:
-			r := o.value * float64(rhs.value)
-			if r == o.value {
-				return o, nil
-			}
-			return o.GateKeeper().NewFloat(frame, r), nil
-		case OperatorQuo:
-			r := o.value / float64(rhs.value)
-			if r == o.value {
-				return o, nil
-			}
-			return o.GateKeeper().NewFloat(frame, r), nil
-		case OperatorLess:
-			if o.value < float64(rhs.value) {
-				return o.GateKeeper().TrueValue(), nil
-			}
-			return o.GateKeeper().FalseValue(), nil
-		case OperatorGreater:
-			if o.value > float64(rhs.value) {
-				return o.GateKeeper().TrueValue(), nil
-			}
-			return o.GateKeeper().FalseValue(), nil
-		case OperatorLessEq:
-			if o.value <= float64(rhs.value) {
-				return o.GateKeeper().TrueValue(), nil
-			}
-			return o.GateKeeper().FalseValue(), nil
-		case OperatorGreaterEq:
-			if o.value >= float64(rhs.value) {
-				return o.GateKeeper().TrueValue(), nil
-			}
-			return o.GateKeeper().FalseValue(), nil
-		default:
-			return nil, ErrInvalidOperator
-		}
+// LogicalOp performs a logical operation between the Float object and another IObject using the specified operator.
+// Returns a boolean IObject representing the result or an error if the operation is invalid.
+func (o *Float) LogicalOp(_ int, op LogicalOperator, rhs IObject) (IObject, error) {
+	rhsValue, err := toFloat64(rhs)
+	if err != nil {
+		return nil, err
 	}
-	return nil, ErrInvalidOperator
+	ret, err := logicalOpFloat64(o.value, op, rhsValue)
+	if err != nil {
+		return nil, err
+	}
+	if ret {
+		return o.gk.TrueValue(), nil
+	}
+	return o.gk.FalseValue(), nil
+}
+
+// ArithmeticOp performs an arithmetic operation with the specified operator and returns the result or an error.
+func (o *Float) ArithmeticOp(frame int, op ArithmeticOperator, rhs IObject) (IObject, error) {
+	rhsValue, err := toFloat64(rhs)
+	if err != nil {
+		return nil, err
+	}
+	ret, err := arithmeticOpFloat64(o.value, op, rhsValue)
+	if err != nil {
+		return nil, err
+	}
+	if ret == o.value {
+		return o, nil
+	}
+	return o.GateKeeper().NewFloat(frame, ret), nil
 }
 
 // Copy creates and returns a new instance of the Float object, duplicating its current state.

@@ -1,16 +1,12 @@
 package stub
 
-const Source4 = `
-package main
-
 import "fmt"
 
-func Beta() (int, bool) {
-    return 10, false
+func Beta4() (int, bool) {
+	return 10, false
 }
 
 func main() {
-	a, b := Beta()
+	a, b := Beta4()
 	fmt.Println("PROVA", a, b)
 }
-`

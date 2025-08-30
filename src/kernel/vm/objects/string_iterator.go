@@ -41,9 +41,13 @@ func (o *StringIterator) Frame() int {
 	return o.frame
 }
 
-// BinaryOp performs a binary operation on the current object and another object using the specified operator.
-// Returns the result of the operation or an error if the operation is not supported.
-func (o *StringIterator) BinaryOp(_ int, _ Operator, _ IObject) (IObject, error) {
+// LogicalOp performs a logical operation using a specified operator and right-hand operand, but always returns an error.
+func (o *StringIterator) LogicalOp(_ int, _ LogicalOperator, _ IObject) (IObject, error) {
+	return nil, ErrInvalidOperator
+}
+
+// ArithmeticOp performs an arithmetic operation on the StringIterator but always returns ErrInvalidOperator and no result.
+func (o *StringIterator) ArithmeticOp(_ int, _ ArithmeticOperator, _ IObject) (IObject, error) {
 	return nil, ErrInvalidOperator
 }
 

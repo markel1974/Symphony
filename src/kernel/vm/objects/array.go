@@ -109,9 +109,13 @@ func (o *Array) String() string {
 	return fmt.Sprintf("[%s]", strings.Join(elements, "; "))
 }
 
-// BinaryOp performs a binary operation on the Array with the given operator and right-hand side object.
-// It supports the addition operator (OperatorAdd) for concatenating arrays. Returns the result or an error for invalid operations.
-func (o *Array) BinaryOp(frame int, op Operator, in IObject) (IObject, error) {
+// LogicalOp performs a logical operation on the array using the given operator and operand, returning an error if invalid.
+func (o *Array) LogicalOp(_ int, _ LogicalOperator, _ IObject) (IObject, error) {
+	return nil, ErrInvalidOperator
+}
+
+// ArithmeticOp performs arithmetic operations between the current Array and another Array based on the specified operator.
+func (o *Array) ArithmeticOp(frame int, op ArithmeticOperator, in IObject) (IObject, error) {
 	if rhs, ok := in.(*Array); ok {
 		switch op {
 		case OperatorAdd:

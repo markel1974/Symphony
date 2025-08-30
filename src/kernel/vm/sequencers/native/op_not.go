@@ -9,29 +9,29 @@ import (
 )
 
 func init() {
-	SequencerRegister(NewOpNotLogical)
+	SequencerRegister(NewOpNot)
 }
 
-// OpNotLogical represents the logical NOT (!) operation opcode in the virtual machine's instruction set.
-type OpNotLogical struct {
+// OpNot represents the logical NOT (!) operation opcode in the virtual machine's instruction set.
+type OpNot struct {
 	*bytecode.Opcode
 	vm core.IVMFullAccess
 }
 
-// NewOpNotLogical creates a new instance of OpNotLogical, representing a logical NOT operation (!).
-func NewOpNotLogical(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
+// NewOpNot creates a new instance of OpNot, representing a logical NOT operation (!).
+func NewOpNot(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
 	vmT, ok := vm.(core.IVMFullAccess)
 	if !ok {
 		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
 	}
-	return &OpNotLogical{
-		Opcode: op.Opcode(bytecode.OpNotLogical),
+	return &OpNot{
+		Opcode: op.Opcode(bytecode.OpNot),
 		vm:     vmT,
 	}, nil
 }
 
 // Execute performs a logical NOT operation on the operand at the top of the stack, pushing the result back onto the stack.
-func (op *OpNotLogical) Execute(_ *core.Decoder) {
+func (op *OpNot) Execute(_ *core.Decoder) {
 	// Operands Offset  0
 	operand := op.vm.Stack().Pop()
 	var val objects.IObject

@@ -41,9 +41,13 @@ func (o *BytesIterator) Frame() int {
 	return o.frame
 }
 
-// BinaryOp performs a binary operation on the current object and another object using the specified operator.
-// Returns the result of the operation or an error if the operation is not supported.
-func (o *BytesIterator) BinaryOp(_ int, _ Operator, _ IObject) (IObject, error) {
+// LogicalOp performs a logical operation on the BytesIterator object, always returning an error for invalid operations.
+func (o *BytesIterator) LogicalOp(_ int, _ LogicalOperator, _ IObject) (IObject, error) {
+	return nil, ErrInvalidOperator
+}
+
+// ArithmeticOp performs an arithmetic operation with the given operator and operands; returns an error for invalid operators.
+func (o *BytesIterator) ArithmeticOp(_ int, _ ArithmeticOperator, _ IObject) (IObject, error) {
 	return nil, ErrInvalidOperator
 }
 

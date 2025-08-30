@@ -1,18 +1,15 @@
 package stub
 
-const Source3 = `
-package main
-
 import "fmt"
 
 type Home struct {
-	Name string
-	Age int
+	Name    string
+	Age     int
 	Address string
 }
 
 func Beta() {
-	fmt.Println("test", 5 + 6)
+	fmt.Println("test", 5+6)
 }
 
 func NewHome() *Home {
@@ -35,4 +32,3 @@ func main() {
 	home.test()
 	Beta()
 }
-`

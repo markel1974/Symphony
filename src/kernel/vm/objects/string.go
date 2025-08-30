@@ -81,10 +81,52 @@ func (o *String) String() string {
 	return strconv.Quote(o.value)
 }
 
-// BinaryOp performs the specified binary operation on the calling string object and a right-hand operand.
-// Supported operations include addition and comparison (e.g., less than, greater than, and their equal variants).
-// Returns the result of the operation or an error if the operation is invalid or exceeds size limits.
-func (o *String) BinaryOp(frame int, op Operator, rhs IObject) (IObject, error) {
+// LogicalOp performs logical comparison between the String object and a right-hand side IObject based on the given operator.
+// Returns a boolean IObject or an error for unsupported operations or invalid types.
+func (o *String) LogicalOp(_ int, op LogicalOperator, rhs IObject) (IObject, error) {
+	switch op {
+	case OperatorLogicalLess:
+		switch rhs := rhs.(type) {
+		case *String:
+			if o.value < rhs.value {
+				return o.GateKeeper().TrueValue(), nil
+			}
+			return o.GateKeeper().FalseValue(), nil
+		}
+	case OperatorLogicalLessEq:
+		switch rhs := rhs.(type) {
+		case *String:
+			if o.value <= rhs.value {
+				return o.GateKeeper().TrueValue(), nil
+			}
+			return o.GateKeeper().FalseValue(), nil
+		}
+	case OperatorLogicalGreater:
+		switch rhs := rhs.(type) {
+		case *String:
+			if o.value > rhs.value {
+				return o.GateKeeper().TrueValue(), nil
+			}
+			return o.GateKeeper().FalseValue(), nil
+		}
+	case OperatorLogicalGreaterEq:
+		switch rhs := rhs.(type) {
+		case *String:
+			if o.value >= rhs.value {
+				return o.GateKeeper().TrueValue(), nil
+			}
+			return o.GateKeeper().FalseValue(), nil
+		}
+	default:
+		return nil, ErrInvalidOperator
+	}
+	return nil, ErrInvalidOperator
+}
+
+// ArithmeticOp performs an arithmetic operation based on the given operator and right-hand side operand.
+// Supports concatenation with strings if the operator is OperatorAdd.
+// Returns a new resulting object or an error for unsupported operations or excessive string length.
+func (o *String) ArithmeticOp(frame int, op ArithmeticOperator, rhs IObject) (IObject, error) {
 	switch op {
 	case OperatorAdd:
 		switch rhs := rhs.(type) {
@@ -100,42 +142,9 @@ func (o *String) BinaryOp(frame int, op Operator, rhs IObject) (IObject, error) 
 			}
 			return o.GateKeeper().NewString(frame, o.value+rhsStr), nil
 		}
-	case OperatorLess:
-		switch rhs := rhs.(type) {
-		case *String:
-			if o.value < rhs.value {
-				return o.GateKeeper().TrueValue(), nil
-			}
-			return o.GateKeeper().FalseValue(), nil
-		}
-	case OperatorLessEq:
-		switch rhs := rhs.(type) {
-		case *String:
-			if o.value <= rhs.value {
-				return o.GateKeeper().TrueValue(), nil
-			}
-			return o.GateKeeper().FalseValue(), nil
-		}
-	case OperatorGreater:
-		switch rhs := rhs.(type) {
-		case *String:
-			if o.value > rhs.value {
-				return o.GateKeeper().TrueValue(), nil
-			}
-			return o.GateKeeper().FalseValue(), nil
-		}
-	case OperatorGreaterEq:
-		switch rhs := rhs.(type) {
-		case *String:
-			if o.value >= rhs.value {
-				return o.GateKeeper().TrueValue(), nil
-			}
-			return o.GateKeeper().FalseValue(), nil
-		}
 	default:
 		return nil, ErrInvalidOperator
 	}
-	return nil, ErrInvalidOperator
 }
 
 // Falsy returns true if the String's values is an empty string, indicating it is considered falsy in a boolean context.

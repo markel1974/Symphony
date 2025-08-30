@@ -31,9 +31,9 @@ func NewSequencer(op *bytecode.Opcodes) core.ISequencer {
 }
 
 // Create initializes and returns a slice of IOpExecutor with default OpUnknown executors, supplemented by static mappings.
-func (ds *Sequencer) Create(vm *core.VM) []core.IOpExecutor {
-	v, _ := ds.createRegistered(vm)
-	return v
+func (ds *Sequencer) Create(vm *core.VM) ([]core.IOpExecutor, error) {
+	v, err := ds.createRegistered(vm)
+	return v, err
 }
 
 // createRegistered constructs and registers custom IOpExecutors using functions from _registerContainer and updates the sequence.
@@ -75,14 +75,13 @@ func (ds *Sequencer) createStatic(vmIn *core.VM) ([]core.IOpExecutor, error) {
 
 	z = append(z, NewOpConstant)
 	z = append(z, NewOpNull)
-	z = append(z, NewOpBinary)
+	z = append(z, NewOpLogical)
+	z = append(z, NewOpArithmetic)
 	z = append(z, NewOpReferences)
-	z = append(z, NewOpEqual)
-	z = append(z, NewOpNotEqual)
 	z = append(z, NewOpPop)
 	z = append(z, NewOpTrue)
 	z = append(z, NewOpFalse)
-	z = append(z, NewOpNotLogical)
+	z = append(z, NewOpNot)
 	z = append(z, NewOpBitwiseComplement)
 	z = append(z, NewOpMinus)
 	z = append(z, NewOpJumpFalsy)
@@ -115,7 +114,8 @@ func (ds *Sequencer) createStatic(vmIn *core.VM) ([]core.IOpExecutor, error) {
 	z = append(z, NewOpIteratorNext)
 	z = append(z, NewOpIteratorKey)
 	z = append(z, NewOpIteratorValue)
-	z = append(z, NewOpIntOp)
+	z = append(z, NewOpIntLogical)
+	z = append(z, NewOpIntArithmetic)
 	z = append(z, NewOpDeref)
 	z = append(z, NewOpNoOp)
 	z = append(z, NewOpSuspend)
@@ -140,7 +140,7 @@ func (ds *Sequencer) facadeForOpcode(opcodeId bytecode.OpcodeId, vm *core.VM) in
 	case bytecode.OpJump, bytecode.OpJumpFalsy, bytecode.OpJumpAnd, bytecode.OpJumpOr:
 		return core.IVMControlFlow(vm)
 	// Category: Simple Stack
-	case bytecode.OpPop, bytecode.OpTrue, bytecode.OpFalse, bytecode.OpNull, bytecode.OpNotLogical, bytecode.OpMinus:
+	case bytecode.OpPop, bytecode.OpTrue, bytecode.OpFalse, bytecode.OpNull, bytecode.OpNot, bytecode.OpMinus:
 		// These instructions only manipulate the top of the stack.
 		return core.IVMStackOnly(vm)
 	// Category: Full Access (use with caution)

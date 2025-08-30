@@ -52,9 +52,14 @@ func (o *StructIterator) Frame() int {
 	return o.frame
 }
 
-// BinaryOp performs a binary operation on the current object and another object using the specified operator.
-// Returns the result of the operation or an error if the operation is not supported.
-func (o *StructIterator) BinaryOp(_ int, _ Operator, _ IObject) (IObject, error) {
+// LogicalOp performs a logical operation between the StructIterator and another object using the specified operator.
+// It returns ErrInvalidOperator as logical operations are unsupported for StructIterator.
+func (o *StructIterator) LogicalOp(_ int, _ LogicalOperator, _ IObject) (IObject, error) {
+	return nil, ErrInvalidOperator
+}
+
+// ArithmeticOp performs an arithmetic operation specified by the Operator on the object and another IObject, returning the result or an error.
+func (o *StructIterator) ArithmeticOp(_ int, _ ArithmeticOperator, _ IObject) (IObject, error) {
 	return nil, ErrInvalidOperator
 }
 

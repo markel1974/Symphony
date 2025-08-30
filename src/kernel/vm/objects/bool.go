@@ -2,22 +2,24 @@ package objects
 
 import "encoding/gob"
 
+// BoolType defines the string representation of the boolean type. It is used as the type name for boolean objects.
 const (
 	BoolType = "bool"
 )
 
+// init registers the Bool type with the gob package for encoding and decoding.
 func init() {
 	gob.Register(&Bool{})
 }
 
-// Bool is a custom type representing a boolean values, implementing IObject interface and encapsulating a boolean value.
+// Bool represents a boolean type with frame-specific and gatekeeper-managed value assignments.
 type Bool struct {
 	gk    IGateKeeper
 	frame int
 	value bool
 }
 
-// NewBool creates and returns a new Bool object with the specified boolean value.
+// newBool creates and returns a new instance of Bool, initializing it with the given frame and boolean value.
 func newBool(factory IGateKeeper, frame int, value bool) IObject {
 	return &Bool{
 		gk:    factory,
@@ -26,59 +28,94 @@ func newBool(factory IGateKeeper, frame int, value bool) IObject {
 	}
 }
 
-// GateKeeper returns a reference to the GateKeeper associated with the Object.
+// GateKeeper returns the IGateKeeper instance associated with the Bool object.
 func (o *Bool) GateKeeper() IGateKeeper {
 	return o.gk
 }
 
-// Frame returns the current frame value of the Object.
+// Frame returns the execution frame associated with the Bool object.
 func (o *Bool) Frame() int {
 	return o.frame
 }
 
-// BinaryOp performs a binary operation on the current object and another object using the specified operator.
-// Returns the result of the operation or an error if the operation is not supported.
-func (o *Bool) BinaryOp(_ int, _ Operator, _ IObject) (IObject, error) {
-	return nil, ErrInvalidOperator
+// LogicalOp performs a logical operation on the Bool instance using the provided operator and right-hand operand.
+// Returns the result of the operation as an IObject or an error if the operation is invalid.
+func (o *Bool) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, error) {
+	rhsValue, err := toInt64(rhsIn)
+	if err != nil {
+		return nil, err
+	}
+	lhsValue := int64(0)
+	if o.value {
+		lhsValue = 1
+	}
+	ret, err := logicalOpInt64(lhsValue, op, rhsValue)
+	if err != nil {
+		return nil, err
+	}
+	if ret {
+		return o.gk.TrueValue(), nil
+	}
+	return o.gk.FalseValue(), nil
 }
 
-// IndexGet attempts to retrieve a value at the given index and returns an error if the object is not indexable.
+// ArithmeticOp performs an arithmetic operation between the Bool object and a given IObject using the specified operator.
+// Returns the result as an IObject and an error if the operation is not valid or executable.
+func (o *Bool) ArithmeticOp(_ int, op ArithmeticOperator, rhsIn IObject) (IObject, error) {
+	rhsValue, err := toInt64(rhsIn)
+	if err != nil {
+		return nil, err
+	}
+	lhsValue := int64(0)
+	if o.value {
+		lhsValue = 1
+	}
+	ret, err := arithmeticOpInt64(lhsValue, op, rhsValue)
+	if err != nil {
+		return nil, err
+	}
+	if ret != 0 {
+		return o.gk.TrueValue(), nil
+	}
+	return o.gk.FalseValue(), nil
+}
+
+// IndexGet retrieves the value at a given index from the Bool object, but always returns an error as Bool is not indexable.
 func (o *Bool) IndexGet(_ int, _ IObject) (res IObject, err error) {
 	return nil, ErrNotIndexable
 }
 
-// IndexSet attempts to assign a value to an index in the object but always returns ErrUnsupportedIndex,
-// as this operation is unsupported.
+// IndexSet attempts to set an index on the Bool object but always returns ErrUnsupportedIndex as Bool is not indexable.
 func (o *Bool) IndexSet(_, _ IObject) (err error) {
 	return ErrUnsupportedIndex
 }
 
-// Iterate returns an IIterator to traverse over the elements of the object. If iteration is not supported, it returns nil.
+// Iterate returns nil as Bool does not support iteration.
 func (o *Bool) Iterate(_ int) IIterator {
 	return nil
 }
 
-// CanIterate determines if the object can be iterated over and returns false for this implementation.
+// CanIterate indicates whether the Bool object can be iterated. Always returns false.
 func (o *Bool) CanIterate() bool {
 	return false
 }
 
-// Call invokes the Object with the provided arguments, returning a result object and an error, if any.
+// Call invokes the Bool object as a callable function with the provided arguments, returning nil and no error.
 func (o *Bool) Call(_ int, _ ...IObject) (ret IObject, err error) {
 	return nil, nil
 }
 
-// CanCall determines if the object can be invoked as a callable. Returns false for non-callable objects.
+// CanCall determines if the Bool object can be called as a function, always returning false.
 func (o *Bool) CanCall() bool {
 	return false
 }
 
-// Length returns the length of the Int object.
+// Length returns the length of the Bool object, which is always 0.
 func (o *Bool) Length() int {
 	return 0
 }
 
-// String returns the string representation of the Bool object, index.e., "true" if the value is true, otherwise "false".
+// String returns the string representation of the Bool object, either "true" or "false" based on its boolean value.
 func (o *Bool) String() string {
 	if o.value {
 		return "true"
@@ -86,33 +123,33 @@ func (o *Bool) String() string {
 	return "false"
 }
 
-// TypeName returns the name of the type as a string, specifically "bool" for the Bool type.
+// TypeName returns the type name of the Bool object as a string.
 func (o *Bool) TypeName() string {
 	return BoolType
 }
 
-// Copy creates and returns a reference to the current Bool object.
+// Copy creates and returns a new Bool instance with the same value and the specified execution frame.
 func (o *Bool) Copy(frame int, _ int) IObject {
 	return o.gk.NewBool(frame, o.value)
 }
 
-// Falsy returns true if the Bool value is false, otherwise returns false.
+// Falsy determines if the Bool's value is logically false by returning the negation of its `value` field.
 func (o *Bool) Falsy() bool {
 	return !o.value
 }
 
-// Equals compares the Bool object with another IObject and returns true if both are equal, otherwise false.
+// Equals checks if the current Bool object is equal to the provided IObject.
 func (o *Bool) Equals(x IObject) bool {
 	return o == x
 }
 
-// GobDecode decodes a byte slice into the Bool value, setting the Bool's value to true if the first byte equals 1.
+// GobDecode decodes the Bool object from a byte slice encoded using Gob into its internal value.
 func (o *Bool) GobDecode(b []byte) (err error) {
 	o.value = b[0] == 1
 	return
 }
 
-// GobEncode serializes the Bool object into a byte slice based on its boolean value. Returns the serialized data and error, if any.
+// GobEncode encodes the Bool instance into a byte slice representation. Returns the byte slice and any encoding error.
 func (o *Bool) GobEncode() (b []byte, err error) {
 	if o.value {
 		b = []byte{1}

@@ -50,9 +50,15 @@ func (o *MapIterator) Frame() int {
 	return o.frame
 }
 
-// BinaryOp performs a binary operation on the current object and another object using the specified operator.
-// Returns the result of the operation or an error if the operation is not supported.
-func (o *MapIterator) BinaryOp(_ int, _ Operator, _ IObject) (IObject, error) {
+// LogicalOp performs a logical operation on the MapIterator object using the specified operator and operand.
+// Returns nil and ErrInvalidOperator as logical operations are unsupported for MapIterator.
+func (o *MapIterator) LogicalOp(_ int, _ LogicalOperator, _ IObject) (IObject, error) {
+	return nil, ErrInvalidOperator
+}
+
+// ArithmeticOp performs an arithmetic operation specified by the operator on the current object and the given operand.
+// Returns an error if the operation is unsupported.
+func (o *MapIterator) ArithmeticOp(_ int, _ ArithmeticOperator, _ IObject) (IObject, error) {
 	return nil, ErrInvalidOperator
 }
 

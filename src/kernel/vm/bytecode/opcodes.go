@@ -39,17 +39,11 @@ const (
 	// OpFalse represents an operation code for pushing the boolean value 'false' onto the stack in the virtual machine.
 	OpFalse
 
-	// OpEqual represents the opcode for checking equality between two values.
-	OpEqual
-
-	// OpNotEqual represents the opcode for the "not equal" comparison operation in the instruction set.
-	OpNotEqual
-
 	// OpMinus represents the opcode for performing unary negation operations.
 	OpMinus
 
-	// OpNotLogical represents the logical NOT (!) operation in the opcode set.
-	OpNotLogical
+	// OpNot represents the logical NOT (!) operation in the opcode set.
+	OpNot
 
 	// OpJumpFalsy represents a conditional jump instruction that redirects execution if the top stack value is falsy.
 	OpJumpFalsy
@@ -157,14 +151,20 @@ const (
 	// OpIteratorValue represents the OpcodeId used to retrieve the current value during an iterator operation.
 	OpIteratorValue
 
-	// OpBinary represents a binary operation, such as addition, subtraction, or comparison, within the instruction set.
-	OpBinary
+	// OpArithmetic represents an operation code for performing arithmetic operations between operands.
+	OpArithmetic
+
+	// OpLogical represents an opcode for performing logical operations within the instruction set.
+	OpLogical
 
 	// OpReferences represents an opcode for handling references, typically operating with two associated operands.
 	OpReferences
 
-	// OpIntOp is an opcode representing integer-based operations, utilizing two operands and one result within the stack.
-	OpIntOp
+	// OpIntLogical performs integer-specific logical operations such as AND, OR, or XOR for the appropriate operands.
+	OpIntLogical
+
+	// OpIntArithmetic represents an operation code for performing integer arithmetic instructions.
+	OpIntArithmetic
 
 	// OpDeref is an opcode that dereferences a pointer or reference to retrieve its value.
 	OpDeref
@@ -241,10 +241,8 @@ func NewOpcodes() *Opcodes {
 	op.createOpcode(OpTrue, []int{}, "OpTrue")
 	op.createOpcode(OpFalse, []int{}, "OpFalse")
 	op.createOpcode(OpBitwiseComplement, []int{}, "OpBitwiseComplement")
-	op.createOpcode(OpEqual, []int{}, "OpEqual")
-	op.createOpcode(OpNotEqual, []int{}, "OpNotEqual")
 	op.createOpcode(OpMinus, []int{}, "OpMinus")
-	op.createOpcode(OpNotLogical, []int{}, "OpNotLogical")
+	op.createOpcode(OpNot, []int{}, "OpNot")
 	op.createOpcode(OpJumpFalsy, []int{2}, "OpJumpFalsy")
 	op.createOpcode(OpJumpAnd, []int{2}, "OpJumpAnd")
 	op.createOpcode(OpJumpOr, []int{2}, "OpJumpOr")
@@ -278,9 +276,11 @@ func NewOpcodes() *Opcodes {
 	op.createOpcode(OpIteratorNext, []int{1}, "OpIteratorNext")
 	op.createOpcode(OpIteratorKey, []int{1}, "OpIteratorKey")
 	op.createOpcode(OpIteratorValue, []int{1}, "OpIteratorValue")
-	op.createOpcode(OpBinary, []int{1}, "OpBinary")
+	op.createOpcode(OpLogical, []int{1}, "OpLogical")
+	op.createOpcode(OpArithmetic, []int{1}, "OpArithmetic")
 	op.createOpcode(OpReferences, []int{2}, "OpReferences")
-	op.createOpcode(OpIntOp, []int{2, 1}, "OpIntOp")
+	op.createOpcode(OpIntLogical, []int{2, 1}, "OpIntLogical")
+	op.createOpcode(OpIntArithmetic, []int{2, 1}, "OpIntArithmetic")
 	op.createOpcode(OpDeref, []int{}, "OpDeref")
 	op.createOpcode(OpDerefSet, []int{}, "OpDerefSet")
 	op.createOpcode(OpTypeAssert, []int{2}, "OpTypeAssert")

@@ -190,9 +190,16 @@ func (c *ControlFlow) SwitchStmt(node *ast.SwitchStmt) error {
 		if err := c.compile(clause.List[0]); err != nil { // Simplified: assumes one value per case
 			return err
 		}
-		if _, err := c.scopes.Emit(bytecode.OpEqual); err != nil {
+		eql, ok := BinaryAdapterFor(token.EQL)
+		if !ok {
+			return tables2.NewCompilerError(c.fileSet, node, "unhandled binary op: %s", token.EQL)
+		}
+		if _, err := c.scopes.Emit(eql.op, eql.arguments...); err != nil {
 			return err
 		}
+		//if _, err := c.scopes.Emit(bytecode.OpLogical, int(objects.OperatorLogicalEq)); err != nil {
+		//	return err
+		//}
 		// 4. Jump to the next-case if the condition is false
 		jumpPos, err := c.scopes.Emit(bytecode.OpJumpFalsy, 9999)
 		if err != nil {

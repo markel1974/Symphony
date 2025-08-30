@@ -52,8 +52,13 @@ func (o *ArrayIterator) CanCall() bool {
 	return false
 }
 
-// BinaryOp attempts a binary operation on the ArrayIterator but always returns nil and ErrInvalidOperator.
-func (o *ArrayIterator) BinaryOp(_ int, _ Operator, _ IObject) (IObject, error) {
+// LogicalOp attempts to perform a logical operation, returning an error as this operation is not supported.
+func (o *ArrayIterator) LogicalOp(_ int, _ LogicalOperator, _ IObject) (IObject, error) {
+	return nil, ErrInvalidOperator
+}
+
+// ArithmeticOp performs an arithmetic operation on the ArrayIterator using a specified operator and operand, returning an error.
+func (o *ArrayIterator) ArithmeticOp(_ int, _ ArithmeticOperator, _ IObject) (IObject, error) {
 	return nil, ErrInvalidOperator
 }
 

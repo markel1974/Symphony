@@ -44,9 +44,14 @@ func (o *FuncPackage) Frame() int {
 	return o.frame
 }
 
-// BinaryOp performs a binary operation on the current object and another object using the specified operator.
-// Returns the result of the operation or an error if the operation is not supported.
-func (o *FuncPackage) BinaryOp(_ int, _ Operator, _ IObject) (IObject, error) {
+// LogicalOp performs a logical operation between the object and a right-hand operand using the specified operator.
+// Returns the resulting object or an ErrInvalidOperator error if the operation is not valid.
+func (o *FuncPackage) LogicalOp(_ int, _ LogicalOperator, _ IObject) (IObject, error) {
+	return nil, ErrInvalidOperator
+}
+
+// ArithmeticOp performs an arithmetic operation using the specified operator and operand, returning an error for invalid operations.
+func (o *FuncPackage) ArithmeticOp(_ int, _ ArithmeticOperator, _ IObject) (IObject, error) {
 	return nil, ErrInvalidOperator
 }
 

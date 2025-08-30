@@ -90,9 +90,41 @@ func (o *Time) TypeName() string {
 	return TimeType
 }
 
-// BinaryOp performs a binary operation between the Time object and another IObject using a specified Operator.
-// Returns the resulting IObject or an error if the operation is invalid or unsupported.
-func (o *Time) BinaryOp(frame int, op Operator, in IObject) (IObject, error) {
+// LogicalOp performs logical comparison operations (e.g., <, >, <=, >=) between the Time object and another Time object.
+func (o *Time) LogicalOp(_ int, op LogicalOperator, in IObject) (IObject, error) {
+	switch rhs := in.(type) {
+	case *Time:
+		switch op {
+		case OperatorLogicalLess:
+			if o.value.Before(rhs.value) {
+				return o.GateKeeper().TrueValue(), nil
+			}
+			return o.GateKeeper().FalseValue(), nil
+		case OperatorLogicalGreater:
+			if o.value.After(rhs.value) {
+				return o.GateKeeper().TrueValue(), nil
+			}
+			return o.GateKeeper().FalseValue(), nil
+		case OperatorLogicalLessEq:
+			if o.value.Equal(rhs.value) || o.value.Before(rhs.value) {
+				return o.GateKeeper().TrueValue(), nil
+			}
+			return o.GateKeeper().FalseValue(), nil
+		case OperatorLogicalGreaterEq:
+			if o.value.Equal(rhs.value) || o.value.After(rhs.value) {
+				return o.GateKeeper().TrueValue(), nil
+			}
+			return o.GateKeeper().FalseValue(), nil
+		default:
+			return nil, ErrInvalidOperator
+		}
+	}
+	return nil, ErrInvalidOperator
+}
+
+// ArithmeticOp performs arithmetic operations (addition, subtraction) on the Time object based on the given operator.
+// Supports operations with Int and Time objects. Returns a new IObject or an error for invalid operators.
+func (o *Time) ArithmeticOp(frame int, op ArithmeticOperator, in IObject) (IObject, error) {
 	switch rhs := in.(type) {
 	case *Int:
 		switch op {
@@ -113,26 +145,6 @@ func (o *Time) BinaryOp(frame int, op Operator, in IObject) (IObject, error) {
 		switch op {
 		case OperatorSub:
 			return o.GateKeeper().NewInt(frame, int64(o.value.Sub(rhs.value))), nil
-		case OperatorLess:
-			if o.value.Before(rhs.value) {
-				return o.GateKeeper().TrueValue(), nil
-			}
-			return o.GateKeeper().FalseValue(), nil
-		case OperatorGreater:
-			if o.value.After(rhs.value) {
-				return o.GateKeeper().TrueValue(), nil
-			}
-			return o.GateKeeper().FalseValue(), nil
-		case OperatorLessEq:
-			if o.value.Equal(rhs.value) || o.value.Before(rhs.value) {
-				return o.GateKeeper().TrueValue(), nil
-			}
-			return o.GateKeeper().FalseValue(), nil
-		case OperatorGreaterEq:
-			if o.value.Equal(rhs.value) || o.value.After(rhs.value) {
-				return o.GateKeeper().TrueValue(), nil
-			}
-			return o.GateKeeper().FalseValue(), nil
 		default:
 			return nil, ErrInvalidOperator
 		}
