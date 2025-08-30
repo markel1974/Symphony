@@ -10,6 +10,7 @@ func test() (bool, bool) {
 func main() {
 	y, z := test()
 	x := "home"
+	k, ok := y.(bool)
 	a, b := 0, 1000
 	for idx, v := range x {
 		a++

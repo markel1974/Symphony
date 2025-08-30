@@ -270,7 +270,9 @@ func (c *Declarations) Ident(node *ast.Ident) error {
 // It supports single assignments, multiple return from functions, and advanced cases like selector and pointer assignments.
 // Returns an error if there are issues during statement compilation, undefined variables, or invalid assignment targets.
 func (c *Declarations) AssignStmt(node *ast.AssignStmt) error {
-	if callExpr, ok := node.Rhs[0].(*ast.CallExpr); ok {
+	switch rhs := node.Rhs[0].(type) {
+	case *ast.CallExpr:
+		// Gestione di x = f(1, 2)
 		if len(node.Rhs) > 1 {
 			return tables.NewCompilerError(c.fileSet, node, "invalid number of values to assign")
 		}
@@ -278,8 +280,30 @@ func (c *Declarations) AssignStmt(node *ast.AssignStmt) error {
 			return err
 		}
 		// Handle multiple return values from function calls
-		if err := c.functionTables.DefineFunctionVariables(node.Tok, callExpr, node.Lhs); err != nil {
+		if err := c.functionTables.DefineFunctionVariables(node.Tok, rhs, node.Lhs); err != nil {
 			return tables.NewCompilerError(c.fileSet, node, err.Error())
+		}
+		return nil
+	case *ast.TypeAssertExpr:
+		// the lhs values can be 1 or 2 (e.g. 'val' or 'val, ok')
+		if len(node.Lhs) < 1 || len(node.Lhs) > 2 {
+			return tables.NewCompilerError(c.fileSet, node, "invalid number of values to assign")
+		}
+		// Handle type assertion like val, ok := i.(ConcreteType)
+		// Compile the interface object (e.g. 'i')
+		if err := c.compile(rhs.X); err != nil {
+			return err
+		}
+		// Extract the target type name (e.g. "User")
+		targetTypeName := rhs.Type.(*ast.Ident).Name
+		constIndex := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, targetTypeName))
+		if _, err := c.scopes.Emit(bytecode.OpTypeAssert, constIndex); err != nil {
+			return tables.NewCompilerError(c.fileSet, node, err.Error())
+		}
+		for i := len(node.Lhs) - 1; i >= 0; i-- {
+			if err := c.handleVariableDeclaration(node.Tok, rhs, node.Lhs[i]); err != nil {
+				return tables.NewCompilerError(c.fileSet, node, err.Error())
+			}
 		}
 		return nil
 	}
@@ -293,96 +317,8 @@ func (c *Declarations) AssignStmt(node *ast.AssignStmt) error {
 		if err := c.compile(node.Rhs[i]); err != nil {
 			return err
 		}
-		var rhsName string
-		switch rhs := node.Rhs[i].(type) {
-		case *ast.Ident:
-			rhsName = rhs.Name
-		case *ast.CompositeLit:
-			if ident, ok := rhs.Type.(*ast.Ident); ok {
-				rhsName = ident.Name
-			}
-		}
-		switch lhs := node.Lhs[i].(type) {
-		case *ast.Ident:
-			name := lhs.Name
-			var symbol *tables.Symbol
-			if node.Tok == token.DEFINE { // Specific case for ':='
-				var err error
-				if symbol, err = c.scopes.SymbolDefine(name); err != nil {
-					return tables.NewCompilerError(c.fileSet, node, err.Error())
-				}
-				if structName, returnTypes, isStructInference := c.structTable.Inference(node.Rhs[0]); isStructInference {
-					if err = c.structTable.AssignSymbol(symbol, structName, returnTypes); err != nil {
-						return tables.NewCompilerError(c.fileSet, node, err.Error())
-					}
-				}
-				if err = c.scopes.EmitSymbolDefine(symbol); err != nil {
-					return tables.NewCompilerError(c.fileSet, node, err.Error())
-				}
-			} else { // Case for normal assignment '='
-				var ok bool
-				symbol, ok = c.scopes.SymbolResolve(name)
-				if !ok {
-					return tables.NewCompilerError(c.fileSet, node, "[AssignStmt] undefined variable: %s", name)
-				}
-				if symbol.IsInterface() {
-					if len(rhsName) > 0 {
-						if assignedStructSymbol, ok := c.scopes.SymbolResolve(rhsName); ok && assignedStructSymbol.IsStruct() {
-							if err := c.handleInterfaceAssignment(symbol, assignedStructSymbol); err != nil {
-								return tables.NewCompilerError(c.fileSet, node, err.Error())
-							}
-						}
-					} else {
-						return tables.NewCompilerError(c.fileSet, node, "cannot assign interface to interface")
-					}
-				}
-				if err := c.scopes.EmitSymbolSet(symbol); err != nil {
-					return tables.NewCompilerError(c.fileSet, node, err.Error())
-				}
-			}
-			if _, err := c.scopes.Emit(bytecode.OpPop); err != nil {
-				return tables.NewCompilerError(c.fileSet, node, err.Error())
-			}
-		case *ast.SelectorExpr: // e.g. myStruct.Field = ...
-			if node.Tok == token.DEFINE {
-				return tables.NewCompilerError(c.fileSet, node, "cannot define a field with :=")
-			}
-			receiverIdent, ok := lhs.X.(*ast.Ident)
-			if !ok {
-				return tables.NewCompilerError(c.fileSet, node, "unsupported receiver for field assignment")
-			}
-			symbol, ok := c.scopes.SymbolResolve(receiverIdent.Name)
-			if !ok {
-				return tables.NewCompilerError(c.fileSet, node, "undefined variable: %s", receiverIdent.Name)
-			}
-			fieldName := lhs.Sel.Name
-			keyConst := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, fieldName))
-			if _, err := c.scopes.Emit(bytecode.OpConstant, keyConst); err != nil {
-				return err
-			}
-			const numSelectors = 1
-			scope := bytecode.OpLocalSelSet
-			if symbol.Scope() == tables.GlobalScope {
-				scope = bytecode.OpGlobalSelSet
-			}
-			if _, err := c.scopes.Emit(scope, symbol.Index(), numSelectors); err != nil {
-				return err
-			}
-		case *ast.StarExpr: // Handles cases like '*myVar = ...'
-			if node.Tok == token.DEFINE {
-				return tables.NewCompilerError(c.fileSet, node, "cannot define a variable with dereference")
-			}
-			if err := c.compile(lhs.X); err != nil {
-				return err
-			}
-			if _, err := c.scopes.Emit(bytecode.OpDerefSet); err != nil {
-				return err
-			}
-			if _, err := c.scopes.Emit(bytecode.OpPop); err != nil {
-				return err
-			}
-		default:
-			return tables.NewCompilerError(c.fileSet, node, "unsupported left-hand side in assignment: %T", node.Lhs[0])
+		if err := c.handleVariableDeclaration(node.Tok, node.Rhs[i], node.Lhs[i]); err != nil {
+			return tables.NewCompilerError(c.fileSet, node, err.Error())
 		}
 	}
 	return nil
@@ -536,4 +472,104 @@ func (c *Declarations) handleInterfaceAssignment(variableSymbol *tables.Symbol, 
 		return err
 	}
 	return nil
+}
+
+// handleVariableDeclaration processes variable declarations or assignments based on the provided token and expressions.
+// It supports standard assignments, type inferences, field assignments, and pointers dereferencing.
+// Returns an error if the operation is invalid or cannot be resolved within the current scope.
+func (c *Declarations) handleVariableDeclaration(tok token.Token, rhsIn ast.Expr, lhsIn ast.Expr) error {
+	switch lhs := lhsIn.(type) {
+	case *ast.Ident:
+		name := lhs.Name
+		var symbol *tables.Symbol
+		if tok == token.DEFINE { // Specific case for ':='
+			var err error
+			if symbol, err = c.scopes.SymbolDefine(name); err != nil {
+				return err
+			}
+			if structName, returnTypes, isStructInference := c.structTable.Inference(rhsIn); isStructInference {
+				if err = c.structTable.AssignSymbol(symbol, structName, returnTypes); err != nil {
+					return err
+				}
+			}
+			if err = c.scopes.EmitSymbolDefine(symbol); err != nil {
+				return err
+			}
+		} else { // Case for normal assignment '='
+			var ok bool
+			symbol, ok = c.scopes.SymbolResolve(name)
+			if !ok {
+				return fmt.Errorf("[AssignStmt] undefined variable: %s", name)
+			}
+			if symbol.IsInterface() {
+				var rhsName string
+				switch rhs := rhsIn.(type) {
+				case *ast.Ident:
+					rhsName = rhs.Name
+				case *ast.CompositeLit:
+					if ident, ok := rhs.Type.(*ast.Ident); ok {
+						rhsName = ident.Name
+					}
+				}
+				if len(rhsName) > 0 {
+					if assignedStructSymbol, ok := c.scopes.SymbolResolve(rhsName); ok && assignedStructSymbol.IsStruct() {
+						if err := c.handleInterfaceAssignment(symbol, assignedStructSymbol); err != nil {
+							return err
+						}
+					}
+				} else {
+					return fmt.Errorf("cannot assign interface to interface")
+				}
+			}
+			if err := c.scopes.EmitSymbolSet(symbol); err != nil {
+				return err
+			}
+		}
+		if _, err := c.scopes.Emit(bytecode.OpPop); err != nil {
+			return err
+		}
+		return nil
+	case *ast.SelectorExpr: // e.g. myStruct.Field = ...
+		if tok == token.DEFINE {
+			return fmt.Errorf("cannot define a field with :=")
+		}
+		receiverIdent, ok := lhs.X.(*ast.Ident)
+		if !ok {
+			return fmt.Errorf("unsupported receiver for field assignment")
+		}
+		symbol, ok := c.scopes.SymbolResolve(receiverIdent.Name)
+		if !ok {
+			return fmt.Errorf("undefined variable: %s", receiverIdent.Name)
+		}
+		fieldName := lhs.Sel.Name
+		keyConst := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, fieldName))
+		if _, err := c.scopes.Emit(bytecode.OpConstant, keyConst); err != nil {
+			return err
+		}
+		const numSelectors = 1
+		scope := bytecode.OpLocalSelSet
+		if symbol.Scope() == tables.GlobalScope {
+			scope = bytecode.OpGlobalSelSet
+		}
+		if _, err := c.scopes.Emit(scope, symbol.Index(), numSelectors); err != nil {
+			return err
+		}
+		return nil
+	case *ast.StarExpr: // Handles cases like '*myVar = ...'
+		if tok == token.DEFINE {
+			return fmt.Errorf("cannot define a variable with dereference")
+		}
+		if err := c.compile(lhs.X); err != nil {
+			return err
+		}
+		if _, err := c.scopes.Emit(bytecode.OpDerefSet); err != nil {
+			return err
+		}
+		if _, err := c.scopes.Emit(bytecode.OpPop); err != nil {
+			return err
+		}
+		return nil
+	default:
+		return fmt.Errorf("unsupported left-hand side in assignment: %T", lhs)
+	}
 }
