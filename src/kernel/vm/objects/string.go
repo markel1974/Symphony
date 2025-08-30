@@ -98,10 +98,10 @@ func (o *String) TypeName() string {
 
 // LogicalOp performs logical comparison between the String object and a right-hand side IObject based on the given operator.
 // Returns a boolean IObject or an error for unsupported operations or invalid types.
-func (o *String) LogicalOp(_ int, op LogicalOperator, rhs IObject) (IObject, error) {
+func (o *String) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, error) {
 	switch op {
 	case OperatorLogicalLess:
-		switch rhs := rhs.(type) {
+		switch rhs := rhsIn.(type) {
 		case *String:
 			if o.value < rhs.value {
 				return o.GateKeeper().TrueValue(), nil
@@ -109,7 +109,7 @@ func (o *String) LogicalOp(_ int, op LogicalOperator, rhs IObject) (IObject, err
 			return o.GateKeeper().FalseValue(), nil
 		}
 	case OperatorLogicalLessEq:
-		switch rhs := rhs.(type) {
+		switch rhs := rhsIn.(type) {
 		case *String:
 			if o.value <= rhs.value {
 				return o.GateKeeper().TrueValue(), nil
@@ -117,7 +117,7 @@ func (o *String) LogicalOp(_ int, op LogicalOperator, rhs IObject) (IObject, err
 			return o.GateKeeper().FalseValue(), nil
 		}
 	case OperatorLogicalGreater:
-		switch rhs := rhs.(type) {
+		switch rhs := rhsIn.(type) {
 		case *String:
 			if o.value > rhs.value {
 				return o.GateKeeper().TrueValue(), nil
@@ -125,7 +125,7 @@ func (o *String) LogicalOp(_ int, op LogicalOperator, rhs IObject) (IObject, err
 			return o.GateKeeper().FalseValue(), nil
 		}
 	case OperatorLogicalGreaterEq:
-		switch rhs := rhs.(type) {
+		switch rhs := rhsIn.(type) {
 		case *String:
 			if o.value >= rhs.value {
 				return o.GateKeeper().TrueValue(), nil
@@ -141,21 +141,21 @@ func (o *String) LogicalOp(_ int, op LogicalOperator, rhs IObject) (IObject, err
 // ArithmeticOp performs an arithmetic operation based on the given operator and right-hand side operand.
 // Supports concatenation with strings if the operator is OperatorAdd.
 // Returns a new resulting object or an error for unsupported operations or excessive string length.
-func (o *String) ArithmeticOp(frame int, op ArithmeticOperator, rhs IObject) (IObject, error) {
+func (o *String) ArithmeticOp(frame int, op ArithmeticOperator, rhsIn IObject) (IObject, error) {
 	switch op {
 	case OperatorAdd:
-		switch rhs := rhs.(type) {
+		switch rhs := rhsIn.(type) {
 		case *String:
 			if len(o.value)+len(rhs.value) > MaxStringLen {
 				return nil, ErrLimitExceed
 			}
 			return o.GateKeeper().NewString(frame, o.value+rhs.value), nil
 		default:
-			rhsStr := rhs.AsString()
-			if len(o.value)+len(rhsStr) > MaxStringLen {
+			str := rhs.AsString()
+			if len(o.value)+len(str) > MaxStringLen {
 				return nil, ErrLimitExceed
 			}
-			return o.GateKeeper().NewString(frame, o.value+rhsStr), nil
+			return o.GateKeeper().NewString(frame, o.value+str), nil
 		}
 	default:
 		return nil, ErrInvalidOperator

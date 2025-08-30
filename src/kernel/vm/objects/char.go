@@ -104,8 +104,7 @@ func (o *Char) TypeName() string {
 
 // LogicalOp performs a logical operation between the current Char object and another IObject using the specified operator.
 func (o *Char) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, error) {
-	rhsValue := rhsIn.AsInt64()
-	ret, err := logicalOpInt64(int64(o.value), op, rhsValue)
+	ret, err := logicalOpInt64(int64(o.value), op, rhsIn.AsInt64())
 	if err != nil {
 		return nil, err
 	}
@@ -118,8 +117,7 @@ func (o *Char) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, err
 // ArithmeticOp applies the specified arithmetic operation between a Char object and another IObject, returning the result.
 // Returns an error if the operation is invalid or unsupported.
 func (o *Char) ArithmeticOp(frame int, op ArithmeticOperator, rhsIn IObject) (IObject, error) {
-	rhsValue := rhsIn.AsInt64()
-	ret, err := arithmeticOpInt64(int64(o.value), op, rhsValue)
+	ret, err := arithmeticOpInt64(int64(o.value), op, rhsIn.AsInt64())
 	if err != nil {
 		return nil, err
 	}

@@ -110,8 +110,7 @@ func (o *Float) TypeName() string {
 // LogicalOp performs a logical operation between the Float object and another IObject using the specified operator.
 // Returns a boolean IObject representing the result or an error if the operation is invalid.
 func (o *Float) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, error) {
-	rhsValue := rhsIn.AsFloat64()
-	ret, err := logicalOpFloat64(o.value, op, rhsValue)
+	ret, err := logicalOpFloat64(o.value, op, rhsIn.AsFloat64())
 	if err != nil {
 		return nil, err
 	}
@@ -123,8 +122,7 @@ func (o *Float) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, er
 
 // ArithmeticOp performs an arithmetic operation with the specified operator and returns the result or an error.
 func (o *Float) ArithmeticOp(frame int, op ArithmeticOperator, rhsIn IObject) (IObject, error) {
-	rhsValue := rhsIn.AsFloat64()
-	ret, err := arithmeticOpFloat64(o.value, op, rhsValue)
+	ret, err := arithmeticOpFloat64(o.value, op, rhsIn.AsFloat64())
 	if err != nil {
 		return nil, err
 	}

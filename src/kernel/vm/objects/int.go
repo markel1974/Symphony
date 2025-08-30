@@ -112,8 +112,7 @@ func (o *Int) TypeName() string {
 
 // LogicalOp performs a logical operation between the object's value and a given operand, using the specified operator.
 func (o *Int) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, error) {
-	rhsValue := rhsIn.AsInt64()
-	ret, err := logicalOpInt64(o.value, op, rhsValue)
+	ret, err := logicalOpInt64(o.value, op, rhsIn.AsInt64())
 	if err != nil {
 		return nil, err
 	}
@@ -125,8 +124,7 @@ func (o *Int) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, erro
 
 // ArithmeticOp performs a binary arithmetic operation on the Int object using the specified operator and right-hand operand.
 func (o *Int) ArithmeticOp(frame int, op ArithmeticOperator, rhsIn IObject) (IObject, error) {
-	rhsValue := rhsIn.AsInt64()
-	ret, err := arithmeticOpInt64(o.value, op, rhsValue)
+	ret, err := arithmeticOpInt64(o.value, op, rhsIn.AsInt64())
 	if err != nil {
 		return nil, err
 	}

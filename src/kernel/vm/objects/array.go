@@ -130,10 +130,16 @@ func (o *Array) LogicalOp(_ int, _ LogicalOperator, _ IObject) (IObject, error) 
 }
 
 // ArithmeticOp performs arithmetic operations between the current Array and another Array based on the specified operator.
-func (o *Array) ArithmeticOp(frame int, op ArithmeticOperator, in IObject) (IObject, error) {
-	if rhs, ok := in.(*Array); ok {
-		switch op {
-		case OperatorAdd:
+func (o *Array) ArithmeticOp(frame int, op ArithmeticOperator, rhsIn IObject) (IObject, error) {
+	switch op {
+	case OperatorAdd:
+		switch rhs := rhsIn.(type) {
+		case *Bool, *Int, *Float, *Char, *String:
+			if len(o.values)+rhsIn.Length() > maxArrayLen {
+				return nil, ErrLimitExceed
+			}
+			return o.gk.NewArray(frame, append(o.values, rhsIn)), nil
+		case *Array:
 			if len(rhs.values) == 0 {
 				return o, nil
 			}
@@ -141,9 +147,9 @@ func (o *Array) ArithmeticOp(frame int, op ArithmeticOperator, in IObject) (IObj
 				return nil, ErrLimitExceed
 			}
 			return o.gk.NewArray(frame, append(o.values, rhs.values...)), nil
-		default:
-			return nil, ErrInvalidOperator
 		}
+	default:
+		return nil, ErrInvalidOperator
 	}
 	return nil, ErrInvalidOperator
 }

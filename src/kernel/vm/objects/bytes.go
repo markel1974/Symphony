@@ -105,11 +105,16 @@ func (o *Bytes) ArithmeticOp(frame int, op ArithmeticOperator, in IObject) (IObj
 				return nil, ErrLimitExceed
 			}
 			return o.GateKeeper().NewBytes(frame, append(o.values, rhs.values...)), nil
+		default:
+			if len(o.values)+1 > maxBytesLen {
+				return nil, ErrLimitExceed
+			}
+			v := byte(in.AsInt64())
+			return o.GateKeeper().NewBytes(frame, append(o.values, v)), nil
 		}
 	default:
 		return nil, ErrInvalidOperator
 	}
-	return nil, ErrInvalidOperator
 }
 
 // LogicalOp performs a logical operation on the Bytes object using the specified operator and operand, returning an error.

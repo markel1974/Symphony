@@ -69,12 +69,11 @@ func (o *Bool) Frame() int {
 // LogicalOp performs a logical operation on the Bool instance using the provided operator and right-hand operand.
 // Returns the result of the operation as an IObject or an error if the operation is invalid.
 func (o *Bool) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, error) {
-	rhsValue := rhsIn.AsInt64()
 	lhsValue := int64(0)
 	if o.value {
 		lhsValue = 1
 	}
-	ret, err := logicalOpInt64(lhsValue, op, rhsValue)
+	ret, err := logicalOpInt64(lhsValue, op, rhsIn.AsInt64())
 	if err != nil {
 		return nil, err
 	}
@@ -87,12 +86,11 @@ func (o *Bool) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, err
 // ArithmeticOp performs an arithmetic operation between the Bool object and a given IObject using the specified operator.
 // Returns the result as an IObject and an error if the operation is not valid or executable.
 func (o *Bool) ArithmeticOp(_ int, op ArithmeticOperator, rhsIn IObject) (IObject, error) {
-	rhsValue := rhsIn.AsInt64()
 	lhsValue := int64(0)
 	if o.value {
 		lhsValue = 1
 	}
-	ret, err := arithmeticOpInt64(lhsValue, op, rhsValue)
+	ret, err := arithmeticOpInt64(lhsValue, op, rhsIn.AsInt64())
 	if err != nil {
 		return nil, err
 	}
