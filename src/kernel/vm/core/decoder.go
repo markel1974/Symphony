@@ -70,7 +70,7 @@ func (d *Decoder) Decode(frame *Frame, ip int) int {
 		case 1:
 			d.decodedOperands[idx] = int(frame.Get8(readOffset))
 		case 2:
-			d.decodedOperands[idx] = int(frame.Get8(readOffset))
+			d.decodedOperands[idx] = int(frame.Get16(readOffset))
 		}
 		readOffset -= width
 	}
