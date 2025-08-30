@@ -84,51 +84,51 @@ func (o *StringIterator) Length() int {
 }
 
 // Copy creates and returns a new instance of StringIterator with the same state as the current one.
-func (i *StringIterator) Copy(frame int, _ int) IObject {
-	ret := i.GateKeeper().NewStringIterator(frame, i.values, i.index)
+func (o *StringIterator) Copy(frame int, _ int) IObject {
+	ret := o.GateKeeper().NewStringIterator(frame, o.values, o.index)
 	return ret
 }
 
 // TypeName returns the type name of the StringIterator as a string.
-func (i *StringIterator) TypeName() string {
+func (o *StringIterator) TypeName() string {
 	return StringIteratorType
 }
 
 // String returns the string representation of the StringIterator, useful for debugging or logging.
-func (i *StringIterator) String() string {
+func (o *StringIterator) String() string {
 	return StringIteratorLabel
 }
 
 // Falsy returns true, indicating the iterator is considered falsy in a boolean context.
-func (i *StringIterator) Falsy() bool {
+func (o *StringIterator) Falsy() bool {
 	return true
 }
 
 // Equals compare the current StringIterator with another IObject and determine if they are equal.
-func (i *StringIterator) Equals(IObject) bool {
+func (o *StringIterator) Equals(IObject) bool {
 	return false
 }
 
 // Next advances the iterator to the next position and returns true if the current position is within bounds.
-func (i *StringIterator) Next() bool {
-	i.index++
-	return i.index <= i.length
+func (o *StringIterator) Next() bool {
+	o.index++
+	return o.index <= o.length
 }
 
 // Key returns the zero-based index of the current element in the iteration as an Int object.
-func (i *StringIterator) Key(frame int) IObject {
-	idx := i.index - 1
-	if idx < 0 || idx >= i.length {
-		return i.GateKeeper().UndefinedValue()
+func (o *StringIterator) Key(frame int) IObject {
+	idx := o.index - 1
+	if idx < 0 || idx >= o.length {
+		return o.GateKeeper().UndefinedValue()
 	}
-	return i.GateKeeper().NewInt(frame, int64(idx))
+	return o.GateKeeper().NewInt(frame, int64(idx))
 }
 
 // Value returns the current character as an IObject wrapped in a Char instance from the internal rune slice.
-func (i *StringIterator) Value(frame int) IObject {
-	idx := i.index - 1
-	if idx < 0 || idx >= i.length {
-		return i.GateKeeper().UndefinedValue()
+func (o *StringIterator) Value(frame int) IObject {
+	idx := o.index - 1
+	if idx < 0 || idx >= o.length {
+		return o.GateKeeper().UndefinedValue()
 	}
-	return i.GateKeeper().NewChar(frame, i.values[idx])
+	return o.GateKeeper().NewChar(frame, o.values[idx])
 }

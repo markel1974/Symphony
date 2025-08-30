@@ -122,15 +122,7 @@ func (d *Disassembler) countObjects(in objects.IObject) int {
 		for _, v := range o.Values() {
 			c += d.countObjects(v)
 		}
-	case *objects.ArrayImmutable:
-		for _, v := range o.Values() {
-			c += d.countObjects(v)
-		}
 	case *objects.Map:
-		for _, v := range o.Values() {
-			c += d.countObjects(v)
-		}
-	case *objects.MapImmutable:
 		for _, v := range o.Values() {
 			c += d.countObjects(v)
 		}

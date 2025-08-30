@@ -89,9 +89,6 @@ const (
 	// OpAsType è un helper per il type switch, esegue il cast del valore senza controlli.
 	OpAsType
 
-	// OpImmutable represents an opcode that creates an immutable object or marks an operation as associated with immutability.
-	OpImmutable
-
 	// OpIndexGet represents an operation code for indexing operations on arrays, maps, or slices within the virtual machine.
 	OpIndexGet
 
@@ -261,7 +258,6 @@ func NewOpcodes() *Opcodes {
 	op.createOpcode(OpMap, []int{2}, "OpMap")
 	op.createOpcode(OpStruct, []int{2}, "OpStruct")
 	op.createOpcode(OpInterface, []int{1}, "OpInterface")
-	op.createOpcode(OpImmutable, []int{}, "OpImmutable")
 	op.createOpcode(OpIndexGet, []int{}, "OpIndexGet")
 	op.createOpcode(OpIndexSet, []int{}, "OpIndexSet")
 	op.createOpcode(OpIndexSlice, []int{}, "OpIndexSlice")

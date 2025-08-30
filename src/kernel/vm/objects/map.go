@@ -90,7 +90,7 @@ func (o *Map) Has(key string) bool {
 	return ok
 }
 
-// Values returns the internal map of key-values pairs stored in the Map object.
+// Values return the internal map of key-values pairs stored in the Map object.
 func (o *Map) Values() map[string]IObject {
 	return o.values
 }
@@ -137,8 +137,6 @@ func (o *Map) Equals(in IObject) bool {
 	switch x := in.(type) {
 	case *Map:
 		xVal = x.values
-	case *MapImmutable:
-		xVal = x.Values()
 	default:
 		return false
 	}

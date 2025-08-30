@@ -80,41 +80,41 @@ func (o *UndefinedIterator) Length() int {
 }
 
 // Copy creates and returns a reference to the same UndefinedIterator, ignoring the input parameters.
-func (i *UndefinedIterator) Copy(_ int, _ int) IObject {
-	return i
+func (o *UndefinedIterator) Copy(_ int, _ int) IObject {
+	return o
 }
 
 // TypeName returns the type name of the UndefinedIterator object as a string.
-func (i *UndefinedIterator) TypeName() string {
+func (o *UndefinedIterator) TypeName() string {
 	return UndefinedIteratorType
 }
 
 // String returns a string representation of the UndefinedIterator object.
-func (i *UndefinedIterator) String() string {
+func (o *UndefinedIterator) String() string {
 	return UndefinedIteratorLabel
 }
 
 // Falsy returns the boolean representation of the UndefinedIterator, which is always true.
-func (i *UndefinedIterator) Falsy() bool {
+func (o *UndefinedIterator) Falsy() bool {
 	return true
 }
 
 // Equals checks if the current UndefinedIterator is equal to the provided IObject and always returns false.
-func (i *UndefinedIterator) Equals(IObject) bool {
+func (o *UndefinedIterator) Equals(IObject) bool {
 	return false
 }
 
 // Next advances the iterator and returns false, as the UndefinedIterator does not support iteration.
-func (i *UndefinedIterator) Next() bool {
+func (o *UndefinedIterator) Next() bool {
 	return false
 }
 
 // Key returns the key of the current element in the iteration, which is always the undefined value for this iterator type.
-func (i *UndefinedIterator) Key(frame int) IObject {
-	return i.GateKeeper().UndefinedValue()
+func (o *UndefinedIterator) Key(_ int) IObject {
+	return o.GateKeeper().UndefinedValue()
 }
 
 // Value retrieves the undefined value associated with the current UndefinedIterator.
-func (i *UndefinedIterator) Value(_ int) IObject {
-	return i.GateKeeper().UndefinedValue()
+func (o *UndefinedIterator) Value(_ int) IObject {
+	return o.GateKeeper().UndefinedValue()
 }

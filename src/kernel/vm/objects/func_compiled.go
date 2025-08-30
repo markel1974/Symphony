@@ -156,7 +156,7 @@ func (o *FuncCompiled) Data() []byte {
 	return o.instructions.Data()
 }
 
-// Instructions returns the bytecode instructions associated with the compiled function.
+// Instructions return the bytecode instructions associated with the compiled function.
 func (o *FuncCompiled) Instructions() *Instructions {
 	return o.instructions
 }

@@ -20,6 +20,7 @@ type BytesIterator struct {
 	length int
 }
 
+// NewBytesIterator creates and returns a new BytesIterator instance with the given slice of bytes.
 func newBytesIterator(factory IGateKeeper, frame int, v []byte, index int) IIterator {
 	return &BytesIterator{
 		gk:     factory,
@@ -88,46 +89,46 @@ func (o *BytesIterator) Length() int {
 }
 
 // TypeName returns the string representation of the type name, which is "bytes-iterator".
-func (i *BytesIterator) TypeName() string {
+func (o *BytesIterator) TypeName() string {
 	return BytesIteratorType
 }
 
 // String returns the string representation of the BytesIterator.
-func (i *BytesIterator) String() string {
+func (o *BytesIterator) String() string {
 	return BytesIteratorLabel
 }
 
 // Equals checks whether the BytesIterator is equal to another object implementing the IObject interface.
-func (i *BytesIterator) Equals(IObject) bool {
+func (o *BytesIterator) Equals(IObject) bool {
 	return false
 }
 
 // Copy creates and returns a new instance of BytesIterator with the same state as the current instance.
-func (i *BytesIterator) Copy(frame int, _ int) IObject {
-	ret := i.GateKeeper().NewBytesIterator(frame, i.values, i.index)
+func (o *BytesIterator) Copy(frame int, _ int) IObject {
+	ret := o.GateKeeper().NewBytesIterator(frame, o.values, o.index)
 	return ret
 }
 
 // Next advances the iterator to the next position and returns true if the current position is within bounds.
-func (i *BytesIterator) Next() bool {
-	i.index++
-	return i.index <= i.length
+func (o *BytesIterator) Next() bool {
+	o.index++
+	return o.index <= o.length
 }
 
 // Key returns the current index of the iterator as an IObject, decremented by one from the internal index tracker.
-func (i *BytesIterator) Key(frame int) IObject {
-	idx := i.index - 1
-	if idx < 0 || idx >= i.length {
-		return i.GateKeeper().UndefinedValue()
+func (o *BytesIterator) Key(frame int) IObject {
+	idx := o.index - 1
+	if idx < 0 || idx >= o.length {
+		return o.GateKeeper().UndefinedValue()
 	}
-	return i.GateKeeper().NewInt(frame, int64(idx))
+	return o.GateKeeper().NewInt(frame, int64(idx))
 }
 
 // Value returns the values of the current byte in the iteration as an IObject, wrapped in an Int struct.
-func (i *BytesIterator) Value(frame int) IObject {
-	idx := i.index - 1
-	if idx < 0 || idx >= i.length {
-		return i.GateKeeper().UndefinedValue()
+func (o *BytesIterator) Value(frame int) IObject {
+	idx := o.index - 1
+	if idx < 0 || idx >= o.length {
+		return o.GateKeeper().UndefinedValue()
 	}
-	return i.GateKeeper().NewInt(frame, int64(i.values[idx]))
+	return o.GateKeeper().NewInt(frame, int64(o.values[idx]))
 }

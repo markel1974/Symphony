@@ -50,9 +50,7 @@ func NewBuiltinFunctions(gk objects.IGateKeeper) IBuiltin {
 		gk.NewFuncPackage(objects.FuncBuiltinDef, "isChar", b.isChar),
 		gk.NewFuncPackage(objects.FuncBuiltinDef, "isBytes", b.isBytes),
 		gk.NewFuncPackage(objects.FuncBuiltinDef, "isArray", b.isArray),
-		gk.NewFuncPackage(objects.FuncBuiltinDef, "isImmutableArray", b.isImmutableArray),
 		gk.NewFuncPackage(objects.FuncBuiltinDef, "isMap", b.isMap),
-		gk.NewFuncPackage(objects.FuncBuiltinDef, "isImmutableMap", b.isImmutableMap),
 		gk.NewFuncPackage(objects.FuncBuiltinDef, "isIterable", b.isIterable),
 		gk.NewFuncPackage(objects.FuncBuiltinDef, "isTime", b.isTime),
 		gk.NewFuncPackage(objects.FuncBuiltinDef, "isError", b.isError),
@@ -163,35 +161,12 @@ func (h *BuiltinFunctions) isArray(_ int, args ...objects.IObject) (objects.IObj
 	return h.gk.FalseValue(), nil
 }
 
-// IsImmutableArray checks if the provided argument is of type ArrayImmutable. Returns TrueValue if true, otherwise FalseValue.
-func (h *BuiltinFunctions) isImmutableArray(_ int, args ...objects.IObject) (objects.IObject, error) {
-	if len(args) != 1 {
-		return nil, objects.ErrInvalidArgumentsNumber
-	}
-	if _, ok := args[0].(*objects.ArrayImmutable); ok {
-		return h.gk.TrueValue(), nil
-	}
-	return h.gk.FalseValue(), nil
-}
-
 // IsMap checks if the provided argument is of type Map and returns TrueValue if true; otherwise, FalseValue.
 func (h *BuiltinFunctions) isMap(_ int, args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, objects.ErrInvalidArgumentsNumber
 	}
 	if _, ok := args[0].(*objects.Map); ok {
-		return h.gk.TrueValue(), nil
-	}
-	return h.gk.FalseValue(), nil
-}
-
-// IsImmutableMap checks if the first argument is of type MapImmutable and returns TrueValue if true, otherwise FalseValue.
-// Returns an error if the number of arguments provided is not exactly one.
-func (h *BuiltinFunctions) isImmutableMap(_ int, args ...objects.IObject) (objects.IObject, error) {
-	if len(args) != 1 {
-		return nil, objects.ErrInvalidArgumentsNumber
-	}
-	if _, ok := args[0].(*objects.MapImmutable); ok {
 		return h.gk.TrueValue(), nil
 	}
 	return h.gk.FalseValue(), nil
@@ -273,15 +248,11 @@ func (h *BuiltinFunctions) len(frame int, args ...objects.IObject) (objects.IObj
 	switch arg := args[0].(type) {
 	case *objects.Array:
 		return h.gk.NewInt(frame, int64(arg.Length())), nil
-	case *objects.ArrayImmutable:
-		return h.gk.NewInt(frame, int64(arg.Length())), nil
 	case *objects.String:
 		return h.gk.NewInt(frame, int64(arg.Length())), nil
 	case *objects.Bytes:
 		return h.gk.NewInt(frame, int64(arg.Length())), nil
 	case *objects.Map:
-		return h.gk.NewInt(frame, int64(arg.Length())), nil
-	case *objects.MapImmutable:
 		return h.gk.NewInt(frame, int64(arg.Length())), nil
 	default:
 		return nil, objects.NewInvalidArgumentError(0, "container", arg.TypeName())
@@ -511,8 +482,6 @@ func (h *BuiltinFunctions) append(frame int, args ...objects.IObject) (objects.I
 	}
 	switch arg := args[0].(type) {
 	case *objects.Array:
-		return h.gk.NewArray(frame, append(arg.Values(), args[1:]...)), nil
-	case *objects.ArrayImmutable:
 		return h.gk.NewArray(frame, append(arg.Values(), args[1:]...)), nil
 	default:
 		return nil, objects.NewInvalidArgumentError(0, "array", arg.TypeName())

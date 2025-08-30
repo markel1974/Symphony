@@ -35,19 +35,9 @@ func (gc *GateConverter) ToInterface(in IObject) (res interface{}) {
 		for i, val := range o.Values() {
 			res.([]interface{})[i] = gc.ToInterface(val)
 		}
-	case *ArrayImmutable:
-		res = make([]interface{}, o.Length())
-		for i, val := range o.Values() {
-			res.([]interface{})[i] = gc.ToInterface(val)
-		}
 	case *Map:
 		res = make(map[string]interface{})
 		for key, v := range o.values {
-			res.(map[string]interface{})[key] = gc.ToInterface(v)
-		}
-	case *MapImmutable:
-		res = make(map[string]interface{})
-		for key, v := range o.Values() {
 			res.(map[string]interface{})[key] = gc.ToInterface(v)
 		}
 	case *Time:

@@ -96,7 +96,6 @@ func (ds *Sequencer) createStatic(vmIn *core.VM) ([]core.IOpExecutor, error) {
 	z = append(z, NewOpMap)
 	z = append(z, NewOpStruct)
 	z = append(z, NewOpError)
-	z = append(z, NewOpImmutable)
 	z = append(z, NewOpIndexGet)
 	z = append(z, NewOpIndexSet)
 	z = append(z, NewOpIndexSlice)

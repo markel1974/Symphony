@@ -226,14 +226,6 @@ func (f *GateAllocator) NewArray(frame int, values []IObject) IObject {
 	return newArray(f.gk, frame, values)
 }
 
-// NewArrayImmutable constructs a new ArrayImmutable instance with the provided slice of IObject, ensuring immutability.
-func (f *GateAllocator) NewArrayImmutable(frame int, values []IObject) IObject {
-	if err := f.acquireObject(); err != nil {
-		return f.undefinedValue
-	}
-	return newArrayImmutable(f.gk, frame, values)
-}
-
 // NewBool creates and returns a new Bool object initialized with the specified boolean value.
 func (f *GateAllocator) NewBool(frame int, value bool) IObject {
 	if err := f.acquireObject(); err != nil {
@@ -314,14 +306,6 @@ func (f *GateAllocator) NewMap(frame int, v map[string]IObject) IObject {
 		return f.undefinedValue
 	}
 	return newMap(f.gk, frame, v)
-}
-
-// NewMapImmutable creates a new immutable map with string keys and IObject values from the provided map.
-func (f *GateAllocator) NewMapImmutable(frame int, v map[string]IObject) IObject {
-	if err := f.acquireObject(); err != nil {
-		return f.undefinedValue
-	}
-	return newMapImmutable(f.gk, frame, v)
 }
 
 // NewString creates a new instance of String with the given value, utilizing the GateKeeper for initialization.

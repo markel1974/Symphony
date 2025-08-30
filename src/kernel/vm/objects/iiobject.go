@@ -52,7 +52,6 @@ type IGateAllocator interface {
 	NewFuncJit(kind string, name string, data []byte) IObject
 	NewFuncJitFrame(frame int, kind string, name string, data []byte) IObject
 	NewArray(frame int, values []IObject) IObject
-	NewArrayImmutable(frame int, values []IObject) IObject
 	NewBool(frame int, value bool) IObject
 	NewBytes(frame int, value []byte) IObject
 	NewChar(frame int, value rune) IObject
@@ -61,7 +60,6 @@ type IGateAllocator interface {
 	NewInt(frame int, v int64) IObject
 	NewObjectPointer(frame int, value *IObject) IObject
 	NewMap(frame int, v map[string]IObject) IObject
-	NewMapImmutable(frame int, v map[string]IObject) IObject
 	NewString(frame int, value string) IObject
 	NewStruct(frame int, value map[string]IObject) IObject
 	NewTime(frame int, value time.Time) IObject

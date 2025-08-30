@@ -46,8 +46,6 @@ func (op *OpIndexSlice) Execute(_ *core.Decoder) {
 	switch left := leftStack.(type) {
 	case *objects.Array:
 		val = op.vm.Factory().NewArray(op.vm.Frame().Id(), left.Values()[lowIdx:highIdx])
-	case *objects.ArrayImmutable:
-		val = op.vm.Factory().NewArray(op.vm.Frame().Id(), left.Values()[lowIdx:highIdx])
 	case *objects.String:
 		val = op.vm.Factory().NewString(op.vm.Frame().Id(), left.Value()[lowIdx:highIdx])
 	case *objects.Bytes:

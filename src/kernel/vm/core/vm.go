@@ -169,8 +169,6 @@ func (v *VM) Call(value objects.IObject, spread bool, numArgs int) {
 		switch z := obj.(type) {
 		case *objects.Array:
 			args = z.Values()
-		case *objects.ArrayImmutable:
-			args = z.Values()
 		default:
 			v.SetError(fmt.Errorf("unexpected type (array required): %s", obj.TypeName()))
 			return

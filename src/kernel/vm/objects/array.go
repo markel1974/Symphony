@@ -44,7 +44,7 @@ func (o *Array) Frame() int {
 }
 
 // Call executes the Array instance as a callable object, passing the given arguments, and returns the result or an error.
-func (o *Array) Call(frame int, args ...IObject) (ret IObject, err error) {
+func (o *Array) Call(_ int, _ ...IObject) (ret IObject, err error) {
 	return nil, nil
 }
 
@@ -76,7 +76,7 @@ func (o *Array) Length() int {
 	return len(o.values)
 }
 
-// SetValue assigns a given IObject values to the specified index in the Array if the index is within bounds. No action otherwise.
+// SetValue assigns a given IObject value to the specified index in the Array if the index is within bounds
 func (o *Array) SetValue(idx int, value IObject) {
 	if idx < 0 || idx >= len(o.values) {
 		return
@@ -146,14 +146,12 @@ func (o *Array) Falsy() bool {
 	return len(o.values) == 0
 }
 
-// Equals compares the current Array with another IObject and returns true if they have equivalent values and order.
+// Equals compare the current Array with another IObject and return true if they have equivalent values and order.
 func (o *Array) Equals(in IObject) bool {
 	var xVal []IObject
 	switch x := in.(type) {
 	case *Array:
 		xVal = x.values
-	case *ArrayImmutable:
-		xVal = x.Values()
 	default:
 		return false
 	}
@@ -184,7 +182,7 @@ func (o *Array) IndexGet(_ int, index IObject) (res IObject, err error) {
 	return
 }
 
-// IndexSet assigns a given values to the specified index in the array, returning an error if the operation is invalid.
+// IndexSet assigns a given value to the specified index in the array, returning an error if the operation is invalid.
 func (o *Array) IndexSet(index IObject, value IObject) (err error) {
 	idx, ok := o.GateKeeper().ToInt64(index)
 	if !ok {

@@ -2,13 +2,6 @@ package objects
 
 import "encoding/gob"
 
-// InterfaceType defines a string constant representing the word "interface".
-// InterfaceLabel defines a string constant combining "<" with InterfaceType and ">" to form a label.
-const (
-	InterfaceType  = "interface"
-	InterfaceLabel = "<" + InterfaceType + ">"
-)
-
 // init registers the Interface type with the gob package for encoding and decoding operations.
 func init() {
 	gob.Register(&Interface{})
@@ -93,7 +86,7 @@ func (o *Interface) CanIterate() bool {
 }
 
 // Call invokes the object with the specified frame and arguments, returning the result or an error if unsupported.
-func (o *Interface) Call(frame int, args ...IObject) (ret IObject, err error) {
+func (o *Interface) Call(_ int, _ ...IObject) (ret IObject, err error) {
 	return nil, ErrUnsupportedOperation
 }
 

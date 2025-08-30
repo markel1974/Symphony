@@ -93,14 +93,6 @@ func (c *Relocator) fixObject(o objects.IObject) (objects.IObject, error) {
 			}
 			o.SetValue(i, fv)
 		}
-	case *objects.ArrayImmutable:
-		for i, v := range o.Values() {
-			fv, err := c.fixObject(v)
-			if err != nil {
-				return nil, err
-			}
-			o.SetValue(i, fv)
-		}
 	case *objects.Map:
 		for k, v := range o.Values() {
 			fv, err := c.fixObject(v)
@@ -109,8 +101,6 @@ func (c *Relocator) fixObject(o objects.IObject) (objects.IObject, error) {
 			}
 			o.Set(k, fv)
 		}
-	case *objects.MapImmutable:
-		//nothing
 	}
 	return o, nil
 }

@@ -84,51 +84,51 @@ func (o *ArrayIterator) Length() int {
 }
 
 // TypeName returns the type name of the ArrayIterator as a string.
-func (i *ArrayIterator) TypeName() string {
+func (o *ArrayIterator) TypeName() string {
 	return ArrayIteratorType
 }
 
 // String returns a string representation of the ArrayIterator instance.
-func (i *ArrayIterator) String() string {
+func (o *ArrayIterator) String() string {
 	return ArrayIteratorLabel
 }
 
-// Falsy determines whether the ArrayIterator should be considered a falsy values. Always returns true.
-func (i *ArrayIterator) Falsy() bool {
+// Falsy determines whether the ArrayIterator should be considered a falsy value. Always returns true.
+func (o *ArrayIterator) Falsy() bool {
 	return true
 }
 
 // Equals checks whether the given IObject is equal to the current ArrayIterator instance by values comparison.
-func (i *ArrayIterator) Equals(IObject) bool {
+func (o *ArrayIterator) Equals(IObject) bool {
 	return false
 }
 
 // Copy creates and returns a duplicate of the ArrayIterator, preserving its current state.
-func (i *ArrayIterator) Copy(frame int, _ int) IObject {
-	ret := i.gk.NewArrayIterator(frame, i.values, i.index)
+func (o *ArrayIterator) Copy(frame int, _ int) IObject {
+	ret := o.gk.NewArrayIterator(frame, o.values, o.index)
 	return ret
 }
 
 // Next advances the iterator to the next element and returns true if the current position is within bounds.
-func (i *ArrayIterator) Next() bool {
-	i.index++
-	return i.index <= i.length
+func (o *ArrayIterator) Next() bool {
+	o.index++
+	return o.index <= o.length
 }
 
 // Key returns the index of the current element in the iteration as an IObject.
-func (i *ArrayIterator) Key(frame int) IObject {
-	idx := int64(i.index - 1)
-	if idx < 0 || idx >= int64(i.length) {
-		return i.gk.UndefinedValue()
+func (o *ArrayIterator) Key(frame int) IObject {
+	idx := int64(o.index - 1)
+	if idx < 0 || idx >= int64(o.length) {
+		return o.gk.UndefinedValue()
 	}
-	return i.gk.NewInt(frame, idx)
+	return o.gk.NewInt(frame, idx)
 }
 
 // Value returns the current element in the iteration based on the iterator's internal position.
-func (i *ArrayIterator) Value(frame int) IObject {
-	idx := int64(i.index - 1)
-	if idx < 0 || idx >= int64(i.length) {
-		return i.gk.UndefinedValue()
+func (o *ArrayIterator) Value(_ int) IObject {
+	idx := int64(o.index - 1)
+	if idx < 0 || idx >= int64(o.length) {
+		return o.gk.UndefinedValue()
 	}
-	return i.values[idx]
+	return o.values[idx]
 }

@@ -93,53 +93,53 @@ func (o *MapIterator) Length() int {
 }
 
 // Copy creates and returns a new instance of MapIterator, duplicating its current state.
-func (i *MapIterator) Copy(frame int, _ int) IObject {
-	ret := i.GateKeeper().NewMapIterator(frame, i.values, i.index)
+func (o *MapIterator) Copy(frame int, _ int) IObject {
+	ret := o.GateKeeper().NewMapIterator(frame, o.values, o.index)
 	return ret
 }
 
 // TypeName returns the type name of the MapIterator as a string.
-func (i *MapIterator) TypeName() string {
+func (o *MapIterator) TypeName() string {
 	return MapIteratorType
 }
 
 // String returns the string representation of the MapIterator.
-func (i *MapIterator) String() string {
+func (o *MapIterator) String() string {
 	return MapIteratorLabel
 }
 
 // Falsy returns true, indicating the MapIterator is considered falsy in a boolean context.
-func (i *MapIterator) Falsy() bool {
+func (o *MapIterator) Falsy() bool {
 	return true
 }
 
 // Equals determine if the current MapIterator is equal to another IObject. Returns false by default.
-func (i *MapIterator) Equals(IObject) bool {
+func (o *MapIterator) Equals(IObject) bool {
 	return false
 }
 
 // Next advances the iterator to the next element and returns true if there are more elements to iterate over.
-func (i *MapIterator) Next() bool {
-	i.index++
-	return i.index <= i.length
+func (o *MapIterator) Next() bool {
+	o.index++
+	return o.index <= o.length
 }
 
 // Key retrieves the key of the current element in the iteration as an IObject.
-func (i *MapIterator) Key(frame int) IObject {
-	idx := i.index - 1
-	if idx < 0 || idx >= i.length {
-		return i.GateKeeper().UndefinedValue()
+func (o *MapIterator) Key(frame int) IObject {
+	idx := o.index - 1
+	if idx < 0 || idx >= o.length {
+		return o.GateKeeper().UndefinedValue()
 	}
-	k := i.keys[idx]
-	return i.GateKeeper().NewString(frame, k)
+	k := o.keys[idx]
+	return o.GateKeeper().NewString(frame, k)
 }
 
 // Value retrieves the values of the current element in the iteration based on the iterator's current position.
-func (i *MapIterator) Value(_ int) IObject {
-	idx := i.index - 1
-	if idx < 0 || idx >= i.length {
-		return i.GateKeeper().UndefinedValue()
+func (o *MapIterator) Value(_ int) IObject {
+	idx := o.index - 1
+	if idx < 0 || idx >= o.length {
+		return o.GateKeeper().UndefinedValue()
 	}
-	k := i.keys[idx]
-	return i.values[k]
+	k := o.keys[idx]
+	return o.values[k]
 }
