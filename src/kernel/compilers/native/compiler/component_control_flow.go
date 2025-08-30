@@ -154,10 +154,7 @@ func (c *ControlFlow) SwitchStmt(node *ast.SwitchStmt) error {
 		if err != nil {
 			return err
 		}
-		if err := c.scopes.EmitSymbolDefine(tagSymbol); err != nil {
-			return err
-		}
-		if _, err := c.scopes.Emit(bytecode.OpPop); err != nil {
+		if err = c.scopes.EmitSymbolDefineAndPop(tagSymbol); err != nil {
 			return err
 		}
 	}

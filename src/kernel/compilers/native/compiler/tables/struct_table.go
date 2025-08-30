@@ -127,7 +127,10 @@ func (st *StructTable) Has(name string) bool {
 
 // Inference infers struct type information from the given AST expression and scope context.
 // It returns a generated struct name, a list of associated base type names, and a boolean indicating success.
-func (st *StructTable) Inference(expr ast.Expr) (string, []string, bool) {
+func (st *StructTable) Inference(expr ast.Expr, inferredTypeName string) (string, []string, bool) {
+	if len(inferredTypeName) > 0 {
+		return inferredTypeName, []string{inferredTypeName}, true
+	}
 	switch rhs := expr.(type) {
 	case *ast.BinaryExpr:
 		//nothing to do

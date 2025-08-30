@@ -217,10 +217,7 @@ func (c *Functions) CallExpr(node *ast.CallExpr) error {
 			}
 			tempSymbol.SetScope(tables.LocalScope)
 			tempSymbolMap[arg] = tempSymbol
-			if err = c.scopes.EmitSymbolSet(tempSymbol); err != nil {
-				return err
-			}
-			if _, err = c.scopes.Emit(bytecode.OpPop); err != nil {
+			if err = c.scopes.EmitSymbolSetAndPop(tempSymbol); err != nil {
 				return err
 			}
 		}

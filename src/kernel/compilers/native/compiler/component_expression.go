@@ -184,11 +184,7 @@ func (c *Expression) IncDecStmt(node *ast.IncDecStmt) error {
 	} else {
 		return tables.NewCompilerError(c.fileSet, node, "unsupported IncDec token: %s", node.Tok)
 	}
-	if err := c.scopes.EmitSymbolSet(symbol); err != nil {
-		return err
-	}
-	// the increment/decrement operation leaves the result on the stack. Since this is a statement, we need to clean this value.
-	if _, err := c.scopes.Emit(bytecode.OpPop); err != nil {
+	if err := c.scopes.EmitSymbolSetAndPop(symbol); err != nil {
 		return err
 	}
 	return nil

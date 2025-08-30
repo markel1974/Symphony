@@ -186,10 +186,7 @@ func (c *Loops) RangeStmt(node *ast.RangeStmt) error {
 		if _, err = c.scopes.Emit(bytecode.OpIteratorValue, iteratorSymbol.Index()); err != nil {
 			return err
 		}
-		if err = c.scopes.EmitSymbolSet(valueSymbol); err != nil {
-			return err
-		}
-		if _, err = c.scopes.Emit(bytecode.OpPop); err != nil {
+		if err = c.scopes.EmitSymbolSetAndPop(valueSymbol); err != nil {
 			return err
 		}
 	}
@@ -197,10 +194,7 @@ func (c *Loops) RangeStmt(node *ast.RangeStmt) error {
 		if _, err = c.scopes.Emit(bytecode.OpIteratorKey, iteratorSymbol.Index()); err != nil {
 			return err
 		}
-		if err = c.scopes.EmitSymbolSet(keySymbol); err != nil {
-			return err
-		}
-		if _, err = c.scopes.Emit(bytecode.OpPop); err != nil {
+		if err = c.scopes.EmitSymbolSetAndPop(keySymbol); err != nil {
 			return err
 		}
 	}

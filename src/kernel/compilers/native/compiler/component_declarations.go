@@ -160,7 +160,7 @@ func (c *Declarations) ValueSpec(node *ast.ValueSpec) error {
 					return tables.NewCompilerError(c.fileSet, node, err.Error())
 				}
 			} else {
-				structName, returnTypes, _ := c.structTable.Inference(node.Values[i])
+				structName, returnTypes, _ := c.structTable.Inference(node.Values[i], "")
 				if len(structName) > 0 {
 					if err = c.structTable.AssignSymbol(symbol, structName, returnTypes); err != nil {
 						return err
@@ -169,10 +169,7 @@ func (c *Declarations) ValueSpec(node *ast.ValueSpec) error {
 					symbol.SetObject(c.gk.NewString(objects.FrameStatic, symbol.Name()))
 				}
 			}
-			if err = c.scopes.EmitSymbolDefine(symbol); err != nil {
-				return err
-			}
-			if _, err := c.scopes.Emit(bytecode.OpPop); err != nil {
+			if err = c.scopes.EmitSymbolDefineAndPop(symbol); err != nil {
 				return err
 			}
 		}
@@ -204,10 +201,7 @@ func (c *Declarations) ValueSpec(node *ast.ValueSpec) error {
 			return err
 		}
 		// Define the variable and initialize it with 'nil'
-		if err = c.scopes.EmitSymbolDefine(symbol); err != nil {
-			return err
-		}
-		if _, err = c.scopes.Emit(bytecode.OpPop); err != nil {
+		if err = c.scopes.EmitSymbolDefineAndPop(symbol); err != nil {
 			return err
 		}
 	}
@@ -270,54 +264,73 @@ func (c *Declarations) Ident(node *ast.Ident) error {
 // It supports single assignments, multiple return from functions, and advanced cases like selector and pointer assignments.
 // Returns an error if there are issues during statement compilation, undefined variables, or invalid assignment targets.
 func (c *Declarations) AssignStmt(node *ast.AssignStmt) error {
-	switch rhs := node.Rhs[0].(type) {
+	type rhs struct {
+		node       ast.Expr
+		returnType string
+	}
+	var rhsContainer []*rhs
+	if len(node.Rhs) == 0 {
+		return tables.NewCompilerError(c.fileSet, node, "invalid number of values to assign")
+	}
+	switch rhsType := node.Rhs[0].(type) {
 	case *ast.CallExpr:
-		// Gestione di x = f(1, 2)
+		// handle x = f(1, 2)
 		if len(node.Rhs) > 1 {
 			return tables.NewCompilerError(c.fileSet, node, "invalid number of values to assign")
 		}
+		// Compile the function call (e.g. 'f(1, 2)')
 		if err := c.compile(node.Rhs[0]); err != nil {
 			return err
 		}
-		// Handle multiple return values from function calls
-		if err := c.functionTables.DefineFuncVariablesDeclaration(node.Tok, rhs, node.Lhs); err != nil {
-			return tables.NewCompilerError(c.fileSet, node, err.Error())
+		if ident, ok := rhsType.Fun.(*ast.Ident); ok && len(ident.Name) > 0 {
+			if funcSymbol, ok := c.scopes.SymbolResolve(ident.Name); ok {
+				returnTypes := funcSymbol.ReturnTypes()
+				rhsContainer = make([]*rhs, len(returnTypes))
+				for idx := range rhsContainer {
+					rhsContainer[idx] = &rhs{node: node.Rhs[0], returnType: returnTypes[idx]}
+				}
+			}
 		}
-		return nil
 	case *ast.TypeAssertExpr:
+		// handle type assertion like val, ok := i.(ConcreteType)
 		// the lhs values can be 1 or 2 (e.g. 'val' or 'val, ok')
 		if len(node.Lhs) < 1 || len(node.Lhs) > 2 {
 			return tables.NewCompilerError(c.fileSet, node, "invalid number of values to assign")
 		}
-		// Handle type assertion like val, ok := i.(ConcreteType)
 		// Compile the interface object (e.g. 'i')
-		if err := c.compile(rhs.X); err != nil {
+		if err := c.compile(rhsType.X); err != nil {
 			return err
 		}
 		// Extract the target type name (e.g. "User")
-		targetTypeName := rhs.Type.(*ast.Ident).Name
+		targetTypeName := rhsType.Type.(*ast.Ident).Name
 		constIndex := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, targetTypeName))
 		if _, err := c.scopes.Emit(bytecode.OpTypeAssert, constIndex); err != nil {
 			return tables.NewCompilerError(c.fileSet, node, err.Error())
 		}
-		for i := len(node.Lhs) - 1; i >= 0; i-- {
-			if err := c.handleVariableDeclaration(node.Tok, rhs, node.Lhs[i]); err != nil {
-				return tables.NewCompilerError(c.fileSet, node, err.Error())
-			}
+		rhsContainer = make([]*rhs, len(node.Lhs))
+		for idx := range node.Lhs {
+			rhsContainer[idx] = &rhs{node: node.Rhs[0], returnType: ""}
 		}
-		return nil
+	default:
+		if len(node.Lhs) != len(node.Rhs) {
+			return tables.NewCompilerError(c.fileSet, node, "invalid number of values to assign")
+		}
+		rhsContainer = make([]*rhs, len(node.Rhs))
+		for i := len(node.Rhs) - 1; i >= 0; i-- {
+			if err := c.compile(node.Rhs[i]); err != nil {
+				return err
+			}
+			rhsContainer[i] = &rhs{node: node.Rhs[i], returnType: ""}
+		}
+	}
+
+	if len(node.Lhs) != len(rhsContainer) {
+		return tables.NewCompilerError(c.fileSet, node, "assignment mismatch: %d variables but %d return values", len(node.Lhs), len(rhsContainer))
 	}
 
 	// Handle multiple assignments (e.g. x, y := 1, 2)
-	if len(node.Lhs) != len(node.Rhs) {
-		return tables.NewCompilerError(c.fileSet, node, "invalid number of values to assign")
-	}
 	for i := len(node.Lhs) - 1; i >= 0; i-- {
-		// Handle assignment (e.g. x = 1 or x := 1)
-		if err := c.compile(node.Rhs[i]); err != nil {
-			return err
-		}
-		if err := c.handleVariableDeclaration(node.Tok, node.Rhs[i], node.Lhs[i]); err != nil {
+		if err := c.handleVariableDeclaration(node.Tok, rhsContainer[i].node, node.Lhs[i], rhsContainer[i].returnType); err != nil {
 			return tables.NewCompilerError(c.fileSet, node, err.Error())
 		}
 	}
@@ -477,7 +490,7 @@ func (c *Declarations) handleInterfaceAssignment(variableSymbol *tables.Symbol, 
 // handleVariableDeclaration processes variable declarations or assignments based on the provided token and expressions.
 // It supports standard assignments, type inferences, field assignments, and pointers dereferencing.
 // Returns an error if the operation is invalid or cannot be resolved within the current scope.
-func (c *Declarations) handleVariableDeclaration(tok token.Token, rhsIn ast.Expr, lhsIn ast.Expr) error {
+func (c *Declarations) handleVariableDeclaration(tok token.Token, rhsIn ast.Expr, lhsIn ast.Expr, inferredTypeName string) error {
 	switch lhs := lhsIn.(type) {
 	case *ast.Ident:
 		if tok == token.DEFINE {
@@ -486,7 +499,7 @@ func (c *Declarations) handleVariableDeclaration(tok token.Token, rhsIn ast.Expr
 			if err != nil {
 				return err
 			}
-			if structName, returnTypes, isStructInference := c.structTable.Inference(rhsIn); isStructInference {
+			if structName, returnTypes, isStructInference := c.structTable.Inference(rhsIn, inferredTypeName); isStructInference {
 				if err = c.structTable.AssignSymbol(symbol, structName, returnTypes); err != nil {
 					return err
 				}
@@ -494,35 +507,41 @@ func (c *Declarations) handleVariableDeclaration(tok token.Token, rhsIn ast.Expr
 			if err = c.scopes.EmitSymbolDefineAndPop(symbol); err != nil {
 				return err
 			}
-			return nil
-		}
-		// Case for normal assignment '='
-		symbol, ok := c.scopes.SymbolResolve(lhs.Name)
-		if !ok {
-			return fmt.Errorf("[AssignStmt] undefined variable: %s", lhs.Name)
-		}
-		if symbol.IsInterface() {
-			var rhsName string
-			switch rhs := rhsIn.(type) {
-			case *ast.Ident:
-				rhsName = rhs.Name
-			case *ast.CompositeLit:
-				if ident, ok := rhs.Type.(*ast.Ident); ok {
-					rhsName = ident.Name
-				}
+		} else {
+			// Case for normal assignment '='
+			symbol, ok := c.scopes.SymbolResolve(lhs.Name)
+			if !ok {
+				return fmt.Errorf("[AssignStmt] undefined variable: %s", lhs.Name)
 			}
-			if len(rhsName) > 0 {
-				if assignedStructSymbol, ok := c.scopes.SymbolResolve(rhsName); ok && assignedStructSymbol.IsStruct() {
-					if err := c.handleInterfaceAssignment(symbol, assignedStructSymbol); err != nil {
+			if symbol.IsInterface() {
+				var rhsName string
+				switch rhs := rhsIn.(type) {
+				case *ast.Ident:
+					rhsName = rhs.Name
+				case *ast.CompositeLit:
+					if ident, ok := rhs.Type.(*ast.Ident); ok {
+						rhsName = ident.Name
+					}
+				}
+				if len(rhsName) > 0 {
+					if assignedStructSymbol, ok := c.scopes.SymbolResolve(rhsName); ok && assignedStructSymbol.IsStruct() {
+						if err := c.handleInterfaceAssignment(symbol, assignedStructSymbol); err != nil {
+							return err
+						}
+					}
+				} else {
+					return fmt.Errorf("cannot assign interface to interface")
+				}
+			} else {
+				if structName, returnTypes, isStructInference := c.structTable.Inference(rhsIn, inferredTypeName); isStructInference {
+					if err := c.structTable.AssignSymbol(symbol, structName, returnTypes); err != nil {
 						return err
 					}
 				}
-			} else {
-				return fmt.Errorf("cannot assign interface to interface")
 			}
-		}
-		if err := c.scopes.EmitSymbolSetAndPop(symbol); err != nil {
-			return err
+			if err := c.scopes.EmitSymbolSetAndPop(symbol); err != nil {
+				return err
+			}
 		}
 		return nil
 	case *ast.SelectorExpr:

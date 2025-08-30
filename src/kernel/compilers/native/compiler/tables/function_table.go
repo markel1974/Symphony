@@ -3,7 +3,6 @@ package tables
 import (
 	"fmt"
 	"go/ast"
-	"go/token"
 
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
@@ -84,61 +83,6 @@ func (f *FunctionTable) CountParams(fieldList *ast.FieldList) int {
 		}
 	}
 	return count
-}
-
-// DefineFuncVariablesDeclaration handles the definition and type inference of variables from function call assignments.
-// It ensures correct assignment based on token type (:= or =) and aligns the number of variables to return types.
-// Emits appropriate bytecode for defining or setting variables and supports scoped symbol management.
-func (f *FunctionTable) DefineFuncVariablesDeclaration(tok token.Token, callExpr *ast.CallExpr, lhs []ast.Expr) error {
-	var funcReturnTypes []string
-	if ident, isIdent := callExpr.Fun.(*ast.Ident); isIdent {
-		if ident.Name != "" {
-			if funcSymbol, ok := f.scopes.SymbolResolve(ident.Name); ok {
-				funcReturnTypes = funcSymbol.ReturnTypes()
-			}
-		}
-	}
-	if len(lhs) != len(funcReturnTypes) {
-		return fmt.Errorf("assignment mismatch: %d variables but %d return values", len(lhs), len(funcReturnTypes))
-	}
-	if len(lhs) == 0 {
-		return nil
-	}
-	// Check type of each variable e.g.: a, b := Test()
-	for i := len(lhs) - 1; i >= 0; i-- {
-		ident, ok := lhs[i].(*ast.Ident)
-		if !ok {
-			return fmt.Errorf("unsupported multiple assignment to type %T", lhs)
-		}
-		if tok == token.DEFINE {
-			symbol, err := f.scopes.SymbolDefine(ident.Name)
-			if err != nil {
-				return err
-			}
-			// Complete type inference for each variable
-			inferredTypeName := funcReturnTypes[i]
-			if err = f.structTable.AssignSymbol(symbol, inferredTypeName, []string{inferredTypeName}); err != nil {
-				return err
-			}
-			if err = f.scopes.EmitSymbolDefineAndPop(symbol); err != nil {
-				return err
-			}
-		} else {
-			symbol, found := f.scopes.SymbolResolve(ident.Name)
-			if !found {
-				return fmt.Errorf("undefined variable: %s", ident.Name)
-			}
-			// Complete type inference for each variable
-			inferredTypeName := funcReturnTypes[i]
-			if err := f.structTable.AssignSymbol(symbol, inferredTypeName, []string{inferredTypeName}); err != nil {
-				return err
-			}
-			if err := f.scopes.EmitSymbolSetAndPop(symbol); err != nil {
-				return err
-			}
-		}
-	}
-	return nil
 }
 
 // SymbolsFromParameters creates and returns a slice of Symbols for the function parameters.
