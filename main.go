@@ -141,7 +141,7 @@ func vmTest() {
 	}
 	var args []interface{} = nil
 	//args := []interface{}{1, 2}
-	fileName := "source2.go"
+	fileName := "source7.go"
 	dataFile, _ := os.Open("../src/kernel/compilers/native/stub/" + fileName)
 	defer dataFile.Close()
 	if err = comp.Compile(fileName, dataFile); err != nil {

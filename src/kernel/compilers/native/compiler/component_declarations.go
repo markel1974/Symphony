@@ -280,7 +280,7 @@ func (c *Declarations) AssignStmt(node *ast.AssignStmt) error {
 			return err
 		}
 		// Handle multiple return values from function calls
-		if err := c.functionTables.DefineFunctionVariables(node.Tok, rhs, node.Lhs); err != nil {
+		if err := c.functionTables.DefineFuncVariablesDeclaration(node.Tok, rhs, node.Lhs); err != nil {
 			return tables.NewCompilerError(c.fileSet, node, err.Error())
 		}
 		return nil
@@ -480,11 +480,10 @@ func (c *Declarations) handleInterfaceAssignment(variableSymbol *tables.Symbol, 
 func (c *Declarations) handleVariableDeclaration(tok token.Token, rhsIn ast.Expr, lhsIn ast.Expr) error {
 	switch lhs := lhsIn.(type) {
 	case *ast.Ident:
-		name := lhs.Name
-		var symbol *tables.Symbol
-		if tok == token.DEFINE { // Specific case for ':='
-			var err error
-			if symbol, err = c.scopes.SymbolDefine(name); err != nil {
+		if tok == token.DEFINE {
+			// Specific case for ':='
+			symbol, err := c.scopes.SymbolDefine(lhs.Name)
+			if err != nil {
 				return err
 			}
 			if structName, returnTypes, isStructInference := c.structTable.Inference(rhsIn); isStructInference {
@@ -492,44 +491,42 @@ func (c *Declarations) handleVariableDeclaration(tok token.Token, rhsIn ast.Expr
 					return err
 				}
 			}
-			if err = c.scopes.EmitSymbolDefine(symbol); err != nil {
+			if err = c.scopes.EmitSymbolDefineAndPop(symbol); err != nil {
 				return err
 			}
-		} else { // Case for normal assignment '='
-			var ok bool
-			symbol, ok = c.scopes.SymbolResolve(name)
-			if !ok {
-				return fmt.Errorf("[AssignStmt] undefined variable: %s", name)
-			}
-			if symbol.IsInterface() {
-				var rhsName string
-				switch rhs := rhsIn.(type) {
-				case *ast.Ident:
-					rhsName = rhs.Name
-				case *ast.CompositeLit:
-					if ident, ok := rhs.Type.(*ast.Ident); ok {
-						rhsName = ident.Name
-					}
-				}
-				if len(rhsName) > 0 {
-					if assignedStructSymbol, ok := c.scopes.SymbolResolve(rhsName); ok && assignedStructSymbol.IsStruct() {
-						if err := c.handleInterfaceAssignment(symbol, assignedStructSymbol); err != nil {
-							return err
-						}
-					}
-				} else {
-					return fmt.Errorf("cannot assign interface to interface")
+			return nil
+		}
+		// Case for normal assignment '='
+		symbol, ok := c.scopes.SymbolResolve(lhs.Name)
+		if !ok {
+			return fmt.Errorf("[AssignStmt] undefined variable: %s", lhs.Name)
+		}
+		if symbol.IsInterface() {
+			var rhsName string
+			switch rhs := rhsIn.(type) {
+			case *ast.Ident:
+				rhsName = rhs.Name
+			case *ast.CompositeLit:
+				if ident, ok := rhs.Type.(*ast.Ident); ok {
+					rhsName = ident.Name
 				}
 			}
-			if err := c.scopes.EmitSymbolSet(symbol); err != nil {
-				return err
+			if len(rhsName) > 0 {
+				if assignedStructSymbol, ok := c.scopes.SymbolResolve(rhsName); ok && assignedStructSymbol.IsStruct() {
+					if err := c.handleInterfaceAssignment(symbol, assignedStructSymbol); err != nil {
+						return err
+					}
+				}
+			} else {
+				return fmt.Errorf("cannot assign interface to interface")
 			}
 		}
-		if _, err := c.scopes.Emit(bytecode.OpPop); err != nil {
+		if err := c.scopes.EmitSymbolSetAndPop(symbol); err != nil {
 			return err
 		}
 		return nil
-	case *ast.SelectorExpr: // e.g. myStruct.Field = ...
+	case *ast.SelectorExpr:
+		// e.g. myStruct.Field = ...
 		if tok == token.DEFINE {
 			return fmt.Errorf("cannot define a field with :=")
 		}
@@ -555,17 +552,15 @@ func (c *Declarations) handleVariableDeclaration(tok token.Token, rhsIn ast.Expr
 			return err
 		}
 		return nil
-	case *ast.StarExpr: // Handles cases like '*myVar = ...'
+	case *ast.StarExpr:
+		// Handles cases like '*myVar = ...'
 		if tok == token.DEFINE {
 			return fmt.Errorf("cannot define a variable with dereference")
 		}
 		if err := c.compile(lhs.X); err != nil {
 			return err
 		}
-		if _, err := c.scopes.Emit(bytecode.OpDerefSet); err != nil {
-			return err
-		}
-		if _, err := c.scopes.Emit(bytecode.OpPop); err != nil {
+		if err := c.scopes.EmitAndPop(bytecode.OpDerefSet); err != nil {
 			return err
 		}
 		return nil

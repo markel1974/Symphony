@@ -5,7 +5,6 @@ import (
 	"go/ast"
 	"go/token"
 
-	"github.com/markel1974/c64emu/src/kernel/vm/bytecode"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
@@ -87,10 +86,10 @@ func (f *FunctionTable) CountParams(fieldList *ast.FieldList) int {
 	return count
 }
 
-// DefineFunctionVariables handles the definition and type inference of variables from function call assignments.
+// DefineFuncVariablesDeclaration handles the definition and type inference of variables from function call assignments.
 // It ensures correct assignment based on token type (:= or =) and aligns the number of variables to return types.
 // Emits appropriate bytecode for defining or setting variables and supports scoped symbol management.
-func (f *FunctionTable) DefineFunctionVariables(tok token.Token, callExpr *ast.CallExpr, lhs []ast.Expr) error {
+func (f *FunctionTable) DefineFuncVariablesDeclaration(tok token.Token, callExpr *ast.CallExpr, lhs []ast.Expr) error {
 	var funcReturnTypes []string
 	if ident, isIdent := callExpr.Fun.(*ast.Ident); isIdent {
 		if ident.Name != "" {
@@ -111,35 +110,32 @@ func (f *FunctionTable) DefineFunctionVariables(tok token.Token, callExpr *ast.C
 		if !ok {
 			return fmt.Errorf("unsupported multiple assignment to type %T", lhs)
 		}
-		var symbol *Symbol
 		if tok == token.DEFINE {
-			var err error
-			if symbol, err = f.scopes.SymbolDefine(ident.Name); err != nil {
+			symbol, err := f.scopes.SymbolDefine(ident.Name)
+			if err != nil {
+				return err
+			}
+			// Complete type inference for each variable
+			inferredTypeName := funcReturnTypes[i]
+			if err = f.structTable.AssignSymbol(symbol, inferredTypeName, []string{inferredTypeName}); err != nil {
+				return err
+			}
+			if err = f.scopes.EmitSymbolDefineAndPop(symbol); err != nil {
 				return err
 			}
 		} else {
-			var found bool
-			if symbol, found = f.scopes.SymbolResolve(ident.Name); !found {
+			symbol, found := f.scopes.SymbolResolve(ident.Name)
+			if !found {
 				return fmt.Errorf("undefined variable: %s", ident.Name)
 			}
-		}
-		// Complete type inference for each variable
-		inferredTypeName := funcReturnTypes[i]
-		if err := f.structTable.AssignSymbol(symbol, inferredTypeName, []string{inferredTypeName}); err != nil {
-			return err
-		}
-		// Emit correct opcode based on ':=' or '='
-		if tok == token.DEFINE {
-			if err := f.scopes.EmitSymbolDefine(symbol); err != nil {
+			// Complete type inference for each variable
+			inferredTypeName := funcReturnTypes[i]
+			if err := f.structTable.AssignSymbol(symbol, inferredTypeName, []string{inferredTypeName}); err != nil {
 				return err
 			}
-		} else {
-			if err := f.scopes.EmitSymbolSet(symbol); err != nil {
+			if err := f.scopes.EmitSymbolSetAndPop(symbol); err != nil {
 				return err
 			}
-		}
-		if _, err := f.scopes.Emit(bytecode.OpPop); err != nil {
-			return err
 		}
 	}
 	return nil
