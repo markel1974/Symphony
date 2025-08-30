@@ -57,7 +57,7 @@ func New(gk objects.IGateKeeper, loader bytecode.ILoader, opcodes *bytecode.Opco
 	components = append(components, expressions)
 	functions := NewFunctions(gk, constants, scopes, imports, declarations, structTable, functionTable, interfaceTable)
 	components = append(components, functions)
-	controlFlow := NewControlFlow(gk, scopes)
+	controlFlow := NewControlFlow(gk, constants, scopes, structTable)
 	components = append(components, controlFlow)
 	loops := NewLoops(gk, scopes, structTable, functionTable)
 	components = append(components, loops)
@@ -204,6 +204,8 @@ func (c *Compiler) compile(in ast.Node) error {
 		err = c.controlFlow.BranchStmt(node)
 	case *ast.SwitchStmt:
 		err = c.controlFlow.SwitchStmt(node)
+	case *ast.TypeSwitchStmt:
+		err = c.controlFlow.TypeSwitchStmt(node)
 	default:
 		err = tables.NewCompilerError(c.fileSet, node, "unsupported expression type: %T", node)
 	}

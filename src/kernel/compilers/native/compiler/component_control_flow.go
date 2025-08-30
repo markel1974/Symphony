@@ -12,17 +12,21 @@ import (
 // ControlFlow is a structure used to manage and compile AST nodes with the associated file sets and scope information.
 // It leverages an IGateKeeper for managing object interactions during the compilation process.
 type ControlFlow struct {
-	gk      objects.IGateKeeper
-	fileSet *token.FileSet
-	scopes  *tables.Scopes
-	compile func(node ast.Node) error
+	gk          objects.IGateKeeper
+	fileSet     *token.FileSet
+	scopes      *tables.Scopes
+	structTable *tables.StructTable
+	constants   *Constants
+	compile     func(node ast.Node) error
 }
 
 // NewControlFlow creates and returns a new instance of ControlFlow with the specified gatekeeper and scope parameters.
-func NewControlFlow(gk objects.IGateKeeper, scopes *tables.Scopes) *ControlFlow {
+func NewControlFlow(gk objects.IGateKeeper, constants *Constants, scopes *tables.Scopes, structTable *tables.StructTable) *ControlFlow {
 	return &ControlFlow{
-		gk:     gk,
-		scopes: scopes,
+		gk:          gk,
+		constants:   constants,
+		scopes:      scopes,
+		structTable: structTable,
 	}
 }
 
@@ -227,6 +231,129 @@ func (c *ControlFlow) SwitchStmt(node *ast.SwitchStmt) error {
 	// 8. Final back-patch: update all jumps to end
 	afterSwitchPos := scope.InstructionsLen()
 	for _, pos := range scope.CurrentSwitch().EndJumps {
+		if err := c.scopes.ChangeOperand(pos, afterSwitchPos); err != nil {
+			return err
+		}
+	}
+	scope.LeaveSwitch()
+	return nil
+}
+
+// TypeSwitchStmt processes a given *ast.TypeSwitchStmt node, handles scopes, and generates bytecode for a type switch statement.
+// It manages compilation of the type assertion, case clauses, default clause, and handles necessary jump instructions.
+func (c *ControlFlow) TypeSwitchStmt(node *ast.TypeSwitchStmt) error {
+	scope, err := c.scopes.Current()
+	if err != nil {
+		return err
+	}
+	scope.EnterSwitch()
+	// 1. Compile the interface object (e.g. 'i' in 'i.(type)') and save it in a temp variable to access in each case.
+	if err = c.compile(node.Assign.(*ast.AssignStmt).Rhs[0].(*ast.TypeAssertExpr).X); err != nil {
+		return err
+	}
+	interfaceSymbol, err := c.scopes.SymbolDefineUnique("__type_switch_interface")
+	if err != nil {
+		return err
+	}
+	if err = c.scopes.EmitSymbolDefine(interfaceSymbol); err != nil {
+		return err
+	}
+	var defaultClause *ast.CaseClause
+	var jumpsToNextCase []int
+	var endJumps []int
+
+	// 2. Iterate over all 'case' clauses
+	for _, clauseStmt := range node.Body.List {
+		clause := clauseStmt.(*ast.CaseClause)
+		// Save default for later
+		if clause.List == nil {
+			defaultClause = clause
+			continue
+		}
+		// Back-patch jumps from previous case to this one
+		afterPreviousCasePos := scope.InstructionsLen()
+		for _, pos := range jumpsToNextCase {
+			if err := c.scopes.ChangeOperand(pos, afterPreviousCasePos); err != nil {
+				return err
+			}
+		}
+		jumpsToNextCase = []int{}
+		// 3. Execute type assertion for this case
+		// Load interface from temporary variable
+		if err := c.scopes.EmitSymbolGet(interfaceSymbol); err != nil {
+			return err
+		}
+		// Get type name to check against (e.g. "int", "string")
+		targetTypeName := clause.List[0].(*ast.Ident).Name
+		constIndex := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, targetTypeName))
+		if _, err := c.scopes.Emit(bytecode.OpTypeAssert, constIndex); err != nil {
+			return err
+		}
+		// Stack now contains [converted_value, success_boolean]
+		// Use boolean for conditional jump
+		jumpPos, err := c.scopes.Emit(bytecode.OpJumpFalsy, 9999)
+		if err != nil {
+			return err
+		}
+		jumpsToNextCase = append(jumpsToNextCase, jumpPos)
+		// 4. If type matches, define new variable (e.g. 'v')
+		//	in a new scope for case body
+		if err := c.scopes.Enter(""); err != nil {
+			return err
+		}
+		assignStmt := node.Assign.(*ast.AssignStmt)
+		variableName := assignStmt.Lhs[0].(*ast.Ident).Name
+		// Define symbol 'v' with correct type
+		caseVarSymbol, err := c.scopes.SymbolDefine(variableName)
+		if err != nil {
+			return err
+		}
+		// Type inference for symbol
+		if err = c.structTable.AssignSymbol(caseVarSymbol, targetTypeName, []string{targetTypeName}); err != nil {
+			return err
+		}
+		// Assign value (already on stack) to new variable
+		if err = c.scopes.EmitSymbolSetAndPop(caseVarSymbol); err != nil {
+			return err
+		}
+		// 5. Compile case body
+		for _, stmt := range clause.Body {
+			if err := c.compile(stmt); err != nil {
+				return err
+			}
+		}
+		// Exit case scope
+		if _, err = c.scopes.Leave(); err != nil {
+			return err
+		}
+		// Add jump to end of switch
+		endJumpPos, err := c.scopes.Emit(bytecode.OpJump, 9999)
+		if err != nil {
+			return err
+		}
+		endJumps = append(endJumps, endJumpPos)
+	}
+	// 6. Compile 'default' if it exists
+	afterLastCasePos := scope.InstructionsLen()
+	for _, pos := range jumpsToNextCase {
+		if err := c.scopes.ChangeOperand(pos, afterLastCasePos); err != nil {
+			return err
+		}
+	}
+	if defaultClause != nil {
+		// In default, converted value not needed
+		if _, err := c.scopes.Emit(bytecode.OpPop); err != nil {
+			return err
+		}
+		for _, stmt := range defaultClause.Body {
+			if err := c.compile(stmt); err != nil {
+				return err
+			}
+		}
+	}
+	// 7. Final back-patch
+	afterSwitchPos := scope.InstructionsLen()
+	for _, pos := range endJumps {
 		if err := c.scopes.ChangeOperand(pos, afterSwitchPos); err != nil {
 			return err
 		}
