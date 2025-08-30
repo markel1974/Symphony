@@ -144,7 +144,8 @@ func vmTest() {
 		if v.IsDir() {
 			continue
 		}
-		if !strings.HasPrefix(v.Name(), "source1.go") {
+		if !strings.HasPrefix(v.Name(), "test_05") {
+			//if !strings.HasPrefix(v.Name(), "source1.go") {
 			continue
 		}
 		comp, loader, err := compilers.NewCompiler(gk, op, sequencerId)

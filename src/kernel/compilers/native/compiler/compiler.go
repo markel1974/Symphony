@@ -8,7 +8,7 @@ import (
 	"io"
 
 	"github.com/markel1974/c64emu/src/kernel/compilers/native/common"
-	tables2 "github.com/markel1974/c64emu/src/kernel/compilers/native/tables"
+	"github.com/markel1974/c64emu/src/kernel/compilers/native/tables"
 	"github.com/markel1974/c64emu/src/kernel/vm/bytecode"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
@@ -22,7 +22,7 @@ type Compiler struct {
 	components        []IComponent
 	fileSet           *token.FileSet
 	loader            bytecode.ILoader
-	scopes            *tables2.Scopes
+	scopes            *tables.Scopes
 	constants         *Constants
 	references        *Constants
 	imports           *Imports
@@ -33,9 +33,9 @@ type Compiler struct {
 	declarations      *Declarations
 	controlFlow       *ControlFlow
 	loops             *Loops
-	structsTable      *tables2.StructTable
-	functionTable     *tables2.FunctionTable
-	interfaceTable    *tables2.InterfaceTable
+	structsTable      *tables.StructTable
+	functionTable     *tables.FunctionTable
+	interfaceTable    *tables.InterfaceTable
 	typeCompatibility *TypeCompatibility
 	rootNode          *ast.File
 }
@@ -43,10 +43,10 @@ type Compiler struct {
 // New creates and returns a new instance of Compiler with initialized scopes using a standard library loader.
 func New(gk objects.IGateKeeper, loader bytecode.ILoader, opcodes *bytecode.Opcodes) *Compiler {
 	var components []IComponent
-	scopes := tables2.NewScopes(gk, opcodes)
-	structTable := tables2.NewStructTable(gk, scopes)
-	interfaceTable := tables2.NewInterfaceTable(gk, scopes)
-	functionTable := tables2.NewFunctionTable(gk, scopes, structTable, interfaceTable)
+	scopes := tables.NewScopes(gk, opcodes)
+	structTable := tables.NewStructTable(gk, scopes)
+	interfaceTable := tables.NewInterfaceTable(gk, scopes)
+	functionTable := tables.NewFunctionTable(gk, scopes, structTable, interfaceTable)
 	constants := NewConstants()
 	references := NewConstants()
 	imports := NewImports(gk, loader, references, scopes)
@@ -150,6 +150,8 @@ func (c *Compiler) compile(in ast.Node) error {
 	switch node := in.(type) {
 	case *ast.File:
 		err = c.File(node)
+	case *ast.ParenExpr:
+		return c.expressions.ParenExpr(node)
 	case *ast.ImportSpec:
 		err = c.imports.ImportSpec(node)
 	case *ast.DeclStmt:
@@ -207,7 +209,7 @@ func (c *Compiler) compile(in ast.Node) error {
 	case *ast.TypeSwitchStmt:
 		err = c.controlFlow.TypeSwitchStmt(node)
 	default:
-		err = tables2.NewCompilerError(c.fileSet, node, "unsupported expression type: %T", node)
+		err = tables.NewCompilerError(c.fileSet, node, "unsupported expression type: %T", node)
 	}
 	return err
 }

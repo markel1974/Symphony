@@ -257,13 +257,15 @@ func (st *StructTable) AssignSymbol(symbol *Symbol, structName string, returnTyp
 	if len(structName) == 0 {
 		return nil
 	}
-	structFields, ok := st.container[structName]
-	if !ok {
-		return nil
-	}
-	fields := make([]string, len(structFields))
-	for x, field := range structFields {
-		fields[x] = field.name
+	var fields []string
+	if structFields, ok := st.container[structName]; ok {
+		fields = make([]string, len(structFields))
+		for x, field := range structFields {
+			fields[x] = field.name
+		}
+	} else {
+		fields = make([]string, len(returnTypes))
+		copy(fields, returnTypes)
 	}
 	description := structName + "=>" + symbol.Name() + ":" + strings.Join(returnTypes, " ")
 	symbol.SetStruct(structName, fields)

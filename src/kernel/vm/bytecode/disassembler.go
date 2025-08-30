@@ -78,7 +78,8 @@ func (d *Disassembler) disassembleObject(cIdx int, constant objects.IObject) []s
 			output = append(output, fmt.Sprintf("\t\t%s", l))
 		}
 	default:
-		output = append(output, fmt.Sprintf("[% 3d] %s (%s|%p)", cIdx, cn, reflect.TypeOf(cn).Elem().Name(), &cn))
+		z := reflect.TypeOf(cn)
+		output = append(output, fmt.Sprintf("[% 3d] %s (%s|%p)", cIdx, cn.TypeName(), z.Elem().Name(), &cn))
 	}
 	return output
 }
