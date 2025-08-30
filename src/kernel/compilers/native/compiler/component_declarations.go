@@ -487,12 +487,19 @@ func (c *Declarations) handleInterfaceAssignment(variableSymbol *tables.Symbol, 
 	return nil
 }
 
-// handleVariableDeclaration processes variable declarations or assignments based on the provided token and expressions.
-// It supports standard assignments, type inferences, field assignments, and pointers dereferencing.
-// Returns an error if the operation is invalid or cannot be resolved within the current scope.
+// handleVariableDeclaration processes variable declarations and assignments, handling various cases like ':=' and '='.
+// It resolves symbols, infers types, and manages scope and structure assignments based on the given token and expressions.
+// Returns an error if the operation fails or if invalid assignments are attempted.
 func (c *Declarations) handleVariableDeclaration(tok token.Token, rhsIn ast.Expr, lhsIn ast.Expr, inferredTypeName string) error {
 	switch lhs := lhsIn.(type) {
 	case *ast.Ident:
+		if lhs.Name == tables.UndefinedSymbol {
+			// if is '_', we don't create a symbol, simply discard the corresponding value from the top of the stack.
+			if _, err := c.scopes.Emit(bytecode.OpPop); err != nil {
+				return err
+			}
+			return nil
+		}
 		if tok == token.DEFINE {
 			// Specific case for ':='
 			symbol, err := c.scopes.SymbolDefine(lhs.Name)
@@ -542,6 +549,27 @@ func (c *Declarations) handleVariableDeclaration(tok token.Token, rhsIn ast.Expr
 			if err := c.scopes.EmitSymbolSetAndPop(symbol); err != nil {
 				return err
 			}
+		}
+		return nil
+	case *ast.IndexExpr:
+		// Handles cases like 'myMap[key] = value' or 'mySlice[index] = value'
+		if tok == token.DEFINE {
+			return fmt.Errorf("cannot define variable with index assignment using :=")
+		}
+		// 1. Compile the container (e.g. myMap, mySlice). This puts it on the stack.
+		if err := c.compile(lhs.X); err != nil {
+			return err
+		}
+		// 2. Compile the index (e.g. key, index). This also goes on the stack.
+		if err := c.compile(lhs.Index); err != nil {
+			return err
+		}
+		// 3. The RHS value has already been compiled and is at the top of the stack.
+		//	The stack now looks like this (from bottom to top):
+		//	[... container, index, value_to_assign]
+		// 4. Emit a new opcode that the VM will use to perform the assignment.
+		if err := c.scopes.EmitAndPop(bytecode.OpIndex); err != nil {
+			return err
 		}
 		return nil
 	case *ast.SelectorExpr:
