@@ -147,7 +147,7 @@ func (c *Expression) SelectorExpr(node *ast.SelectorExpr) error {
 		if _, err := c.scopes.Emit(bytecode.OpConstant, keyConst); err != nil {
 			return err
 		}
-		if _, err := c.scopes.Emit(bytecode.OpIndex); err != nil {
+		if _, err := c.scopes.Emit(bytecode.OpIndexGet); err != nil {
 			return err
 		}
 		return nil

@@ -97,7 +97,8 @@ func (ds *Sequencer) createStatic(vmIn *core.VM) ([]core.IOpExecutor, error) {
 	z = append(z, NewOpStruct)
 	z = append(z, NewOpError)
 	z = append(z, NewOpImmutable)
-	z = append(z, NewOpIndex)
+	z = append(z, NewOpIndexGet)
+	z = append(z, NewOpIndexSet)
 	z = append(z, NewOpIndexSlice)
 	z = append(z, NewOpCall)
 	z = append(z, NewOpReturn)
@@ -130,6 +131,7 @@ func (ds *Sequencer) createStatic(vmIn *core.VM) ([]core.IOpExecutor, error) {
 	return container, nil
 }
 
+// facadeForOpcode returns a facade for the provided opcodeId.
 func (ds *Sequencer) facadeForOpcode(opcodeId bytecode.OpcodeId, vm *core.VM) interface{} {
 	switch opcodeId {
 	// Category: Stack & Constants (Read-Only)

@@ -92,8 +92,11 @@ const (
 	// OpImmutable represents an opcode that creates an immutable object or marks an operation as associated with immutability.
 	OpImmutable
 
-	// OpIndex represents an operation code for indexing operations on arrays, maps, or slices within the virtual machine.
-	OpIndex
+	// OpIndexGet represents an operation code for indexing operations on arrays, maps, or slices within the virtual machine.
+	OpIndexGet
+
+	// OpIndexSet represents an operation code for setting a value in an array, map, or slice.
+	OpIndexSet
 
 	// OpIndexSlice is a constant representing the operation code for slice-based indexing in bytecode execution.
 	OpIndexSlice
@@ -259,7 +262,8 @@ func NewOpcodes() *Opcodes {
 	op.createOpcode(OpStruct, []int{2}, "OpStruct")
 	op.createOpcode(OpInterface, []int{1}, "OpInterface")
 	op.createOpcode(OpImmutable, []int{}, "OpImmutable")
-	op.createOpcode(OpIndex, []int{}, "OpIndex")
+	op.createOpcode(OpIndexGet, []int{}, "OpIndexGet")
+	op.createOpcode(OpIndexSet, []int{}, "OpIndexSet")
 	op.createOpcode(OpIndexSlice, []int{}, "OpIndexSlice")
 	op.createOpcode(OpCall, []int{1, 1}, "OpCall")
 	op.createOpcode(OpCallMethod, []int{2, 1}, "OpCallMethod")

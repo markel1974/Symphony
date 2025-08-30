@@ -442,8 +442,8 @@ func (c *Declarations) IndexExpr(node *ast.IndexExpr) error {
 	if err := c.compile(node.Index); err != nil {
 		return err
 	}
-	// Emit OpIndex instruction. The VM will take the index and container from the stack and perform the access.
-	_, err := c.scopes.Emit(bytecode.OpIndex)
+	// Emit OpIndexGet instruction. The VM will take the index and container from the stack and perform the access.
+	_, err := c.scopes.Emit(bytecode.OpIndexGet)
 	return err
 }
 
@@ -568,34 +568,57 @@ func (c *Declarations) handleVariableDeclaration(tok token.Token, rhsIn ast.Expr
 		//	The stack now looks like this (from bottom to top):
 		//	[... container, index, value_to_assign]
 		// 4. Emit a new opcode that the VM will use to perform the assignment.
-		if err := c.scopes.EmitAndPop(bytecode.OpIndex); err != nil {
+		if err := c.scopes.EmitAndPop(bytecode.OpIndexSet); err != nil {
 			return err
 		}
 		return nil
 	case *ast.SelectorExpr:
-		// e.g. myStruct.Field = ...
 		if tok == token.DEFINE {
 			return fmt.Errorf("cannot define a field with :=")
 		}
-		receiverIdent, ok := lhs.X.(*ast.Ident)
-		if !ok {
-			return fmt.Errorf("unsupported receiver for field assignment")
+		// Try to use the fast path for simple receivers (e.g. myVar.Field)
+		if receiverIdent, ok := lhs.X.(*ast.Ident); ok {
+			if symbol, ok := c.scopes.SymbolResolve(receiverIdent.Name); ok {
+				// It's a known symbol, use specific Op...SelSet opcodes
+				// RHS value is already on stack, leave it there
+				// Push the field name as key.
+				fieldName := lhs.Sel.Name
+				keyConst := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, fieldName))
+				if _, err := c.scopes.Emit(bytecode.OpConstant, keyConst); err != nil {
+					return err
+				}
+				// Stack is now: [..., value, "fieldName"]
+				const numSelectors = 1
+				scope := bytecode.OpLocalSelSet
+				if symbol.Scope() == tables.GlobalScope {
+					scope = bytecode.OpGlobalSelSet
+				}
+				if err := c.scopes.EmitAndPop(scope, symbol.Index(), numSelectors); err != nil {
+					return err
+				}
+				return nil
+			}
 		}
-		symbol, ok := c.scopes.SymbolResolve(receiverIdent.Name)
-		if !ok {
-			return fmt.Errorf("undefined variable: %s", receiverIdent.Name)
+		// fallback to a general path for complex receivers (e.g. mySlice[0].Field)
+		tempSymbol, err := c.scopes.SymbolDefineUnique("__temp_assign_rhs")
+		if err != nil {
+			return err
+		}
+		if err = c.scopes.EmitSymbolSet(tempSymbol); err != nil {
+			return err
+		}
+		if err = c.compile(lhs.X); err != nil {
+			return err
 		}
 		fieldName := lhs.Sel.Name
 		keyConst := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, fieldName))
-		if _, err := c.scopes.Emit(bytecode.OpConstant, keyConst); err != nil {
+		if _, err = c.scopes.Emit(bytecode.OpConstant, keyConst); err != nil {
 			return err
 		}
-		const numSelectors = 1
-		scope := bytecode.OpLocalSelSet
-		if symbol.Scope() == tables.GlobalScope {
-			scope = bytecode.OpGlobalSelSet
+		if err = c.scopes.EmitSymbolGet(tempSymbol); err != nil {
+			return err
 		}
-		if _, err := c.scopes.Emit(scope, symbol.Index(), numSelectors); err != nil {
+		if err = c.scopes.EmitAndPop(bytecode.OpIndexSet); err != nil {
 			return err
 		}
 		return nil

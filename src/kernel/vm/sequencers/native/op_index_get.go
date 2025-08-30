@@ -9,29 +9,29 @@ import (
 )
 
 func init() {
-	SequencerRegister(NewOpIndex)
+	SequencerRegister(NewOpIndexGet)
 }
 
-// OpIndex represents the operation for performing an indexing operation on a value.
-type OpIndex struct {
+// OpIndexGet represents the operation for performing an indexing operation on a value.
+type OpIndexGet struct {
 	*bytecode.Opcode
 	vm core.IVMFullAccess
 }
 
-// NewOpIndex creates and returns a new instance of OpIndex initialized with its associated Opcode.
-func NewOpIndex(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
+// NewOpIndexGet creates and returns a new instance of OpIndexGet initialized with its associated Opcode.
+func NewOpIndexGet(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
 	vmT, ok := vm.(core.IVMFullAccess)
 	if !ok {
 		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
 	}
-	return &OpIndex{
-		Opcode: op.Opcode(bytecode.OpIndex),
+	return &OpIndexGet{
+		Opcode: op.Opcode(bytecode.OpIndexGet),
 		vm:     vmT,
 	}, nil
 }
 
 // Execute processes the index operation on the stack, retrieving a value or setting an error if indexing is invalid.
-func (op *OpIndex) Execute(_ *core.Decoder) {
+func (op *OpIndexGet) Execute(_ *core.Decoder) {
 	// Operands Offset  0
 	index := op.vm.Stack().Pop()
 	left := op.vm.Stack().Pop()
