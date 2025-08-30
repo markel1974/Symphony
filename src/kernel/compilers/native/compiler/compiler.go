@@ -14,7 +14,7 @@ import (
 )
 
 //TODO
-// 1) "val, err := func()" è da introdurre 2) type switch"
+// 1) type switch"
 
 // Compiler represents a structure to manage the compilation process, including scopes and associated token file sets.
 type Compiler struct {
