@@ -6,7 +6,7 @@ import (
 	"go/token"
 	"strings"
 
-	"github.com/markel1974/c64emu/src/kernel/compilers/native/compiler/tables"
+	tables2 "github.com/markel1974/c64emu/src/kernel/compilers/native/tables"
 	"github.com/markel1974/c64emu/src/kernel/vm/bytecode"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
@@ -16,7 +16,7 @@ type Imports struct {
 	gk         objects.IGateKeeper
 	loader     bytecode.ILoader
 	references *Constants
-	scopes     *tables.Scopes
+	scopes     *tables2.Scopes
 	imports    map[string]bool
 	builtin    map[string]int
 	container  []ast.Decl
@@ -25,7 +25,7 @@ type Imports struct {
 }
 
 // NewImports creates and initializes a new Imports instance with provided GateKeeper, Constants, and Scopes references.
-func NewImports(gk objects.IGateKeeper, loader bytecode.ILoader, references *Constants, scopes *tables.Scopes) *Imports {
+func NewImports(gk objects.IGateKeeper, loader bytecode.ILoader, references *Constants, scopes *tables2.Scopes) *Imports {
 	i := &Imports{
 		gk:         gk,
 		loader:     loader,
@@ -132,7 +132,7 @@ func (i *Imports) Attach(name string, selName string) (string, int, bool) {
 
 // PackageFunctionAttach registers and attaches a function from a given package, returning its mangled name, index, and any error.
 func (i *Imports) packageFunctionAttach(pkgName string, fnName string) (string, int, error) {
-	mangledName := tables.GetMangledName(pkgName, fnName)
+	mangledName := tables2.GetMangledName(pkgName, fnName)
 	nameIndex, found := i.references.Get(mangledName)
 	if !found {
 		attrArray := i.gk.NewArray(objects.FrameStatic, []objects.IObject{
