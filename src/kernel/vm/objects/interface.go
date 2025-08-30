@@ -30,6 +30,26 @@ func (o *Interface) GateKeeper() IGateKeeper {
 	return o.factory
 }
 
+// AsBool converts and returns the Interface's underlying value as a boolean.
+func (o *Interface) AsBool() bool {
+	return o.AsBool()
+}
+
+// AsInt64 returns the length of the array as an int64 value.
+func (o *Interface) AsInt64() int64 {
+	return o.AsInt64()
+}
+
+// AsFloat64 returns the length of the array as an int64 value.
+func (o *Interface) AsFloat64() float64 {
+	return o.AsFloat64()
+}
+
+// AsString returns the string representation of the Interface instance by delegating to the underlying IObject value.
+func (o *Interface) AsString() string {
+	return o.value.AsString()
+}
+
 // Frame returns the current execution frame associated with the Interface instance.
 func (o *Interface) Frame() int {
 	return o.frame
@@ -38,11 +58,6 @@ func (o *Interface) Frame() int {
 // TypeName returns the type name of the underlying IObject.
 func (o *Interface) TypeName() string {
 	return o.value.TypeName()
-}
-
-// String returns the string representation of the Interface instance by delegating to the underlying IObject value.
-func (o *Interface) String() string {
-	return o.value.String()
 }
 
 // Falsy determines whether the underlying value of the object evaluates to a falsy value, returning true if it does.

@@ -37,6 +37,26 @@ func (o *Builtin) GateKeeper() IGateKeeper {
 	return o.gk
 }
 
+// AsBool returns true if the object is not empty, otherwise false.
+func (o *Builtin) AsBool() bool {
+	return false
+}
+
+// AsInt64 returns the length of the array as an int64 value.
+func (o *Builtin) AsInt64() int64 {
+	return 0
+}
+
+// AsFloat64 returns the length of the array as an int64 value.
+func (o *Builtin) AsFloat64() float64 {
+	return 0
+}
+
+// AsString returns a string representation of the Builtin object, formatted as "name: value".
+func (o *Builtin) AsString() string {
+	return fmt.Sprintf("%s: %d", o.name, o.index)
+}
+
 // Frame returns the current frame value of the Object.
 func (o *Builtin) Frame() int {
 	return o.frame
@@ -97,11 +117,6 @@ func (o *Builtin) Name() string {
 // Value returns the integer value associated with the Builtin object.
 func (o *Builtin) Value() int {
 	return o.index
-}
-
-// String returns a string representation of the Builtin object, formatted as "name: value".
-func (o *Builtin) String() string {
-	return fmt.Sprintf("%s: %d", o.name, o.index)
 }
 
 // TypeName returns the type name of the Builtin object as a string.

@@ -131,7 +131,7 @@ func (v *Stack) PopMapElements(numElements int) map[string]objects.IObject {
 		value := v.stack[i+1]
 		key, ok := k.(*objects.String)
 		if !ok {
-			v.errSignal(fmt.Errorf("expected key to be of type String, got %T (value is %v)", k, value))
+			v.errSignal(fmt.Errorf("expected key to be of type AsString, got %T (value is %v)", k, value))
 			return nil
 		}
 		kv[key.Value()] = value

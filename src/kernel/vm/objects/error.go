@@ -43,6 +43,29 @@ func (o *Error) GateKeeper() IGateKeeper {
 	return o.gk
 }
 
+// AsBool returns true if the object is not empty, otherwise false.
+func (o *Error) AsBool() bool {
+	return false
+}
+
+// AsInt64 returns the length of the array as an int64 value.
+func (o *Error) AsInt64() int64 {
+	return 0
+}
+
+// AsFloat64 returns the length of the array as an int64 value.
+func (o *Error) AsFloat64() float64 {
+	return 0
+}
+
+// AsString returns the string representation of the Error object. If the values is nil, it returns "error".
+func (o *Error) AsString() string {
+	if o.value != nil {
+		return fmt.Sprintf("%s: %s", ErrorType, o.value.AsString())
+	}
+	return ErrorType
+}
+
 // Frame returns the current frame value of the Object.
 func (o *Error) Frame() int {
 	return o.frame
@@ -96,14 +119,6 @@ func (o *Error) Value() IObject {
 
 // TypeName returns the name of the type as a string, which is "error".
 func (o *Error) TypeName() string {
-	return ErrorType
-}
-
-// String returns the string representation of the Error object. If the values is nil, it returns "error".
-func (o *Error) String() string {
-	if o.value != nil {
-		return fmt.Sprintf("%s: %s", ErrorType, o.value.String())
-	}
 	return ErrorType
 }
 

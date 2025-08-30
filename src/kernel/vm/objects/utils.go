@@ -1,5 +1,6 @@
 package objects
 
+/*
 // toInt64 converts an IObject to an int64 value with a success flag.
 // Returns the converted int64 value if successful and a boolean indicating success or failure.
 func toInt64(rhsIn IObject) (int64, error) {
@@ -17,7 +18,7 @@ func toInt64(rhsIn IObject) (int64, error) {
 		return int64(rhs.value), nil
 	case *Time:
 		return rhs.value.Unix(), nil
-	case *String:
+	case *AsString:
 		return int64(rhs.Length()), nil
 	case *Map:
 		return int64(rhs.Length()), nil
@@ -44,7 +45,7 @@ func toFloat64(rhsIn IObject) (float64, error) {
 		return float64(rhs.value), nil
 	case *Time:
 		return float64(rhs.value.Unix()), nil
-	case *String:
+	case *AsString:
 		return float64(rhs.Length()), nil
 	case *Map:
 		return float64(rhs.Length()), nil
@@ -54,6 +55,7 @@ func toFloat64(rhsIn IObject) (float64, error) {
 		return 0, ErrInvalidOperator
 	}
 }
+*/
 
 // logicalOpInt64 performs a logical comparison between two int64 values using the specified LogicalOperator.
 // Returns the boolean result of the operation or an error if the operator is invalid.

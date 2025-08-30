@@ -37,6 +37,26 @@ func (o *ArrayIterator) GateKeeper() IGateKeeper {
 	return o.gk
 }
 
+// AsBool returns true if the array is not empty, otherwise false.
+func (o *ArrayIterator) AsBool() bool {
+	return o.length > 0
+}
+
+// AsInt64 returns the length of the array as an int64 value.
+func (o *ArrayIterator) AsInt64() int64 {
+	return int64(o.length)
+}
+
+// AsFloat64 returns the length of the array as an int64 value.
+func (o *ArrayIterator) AsFloat64() float64 {
+	return float64(o.length)
+}
+
+// AsString returns a string representation of the ArrayIterator instance.
+func (o *ArrayIterator) AsString() string {
+	return ArrayIteratorLabel
+}
+
 // Frame returns the current execution frame associated with the ArrayIterator.
 func (o *ArrayIterator) Frame() int {
 	return o.frame
@@ -91,11 +111,6 @@ func (o *ArrayIterator) Length() int {
 // TypeName returns the type name of the ArrayIterator as a string.
 func (o *ArrayIterator) TypeName() string {
 	return ArrayIteratorType
-}
-
-// String returns a string representation of the ArrayIterator instance.
-func (o *ArrayIterator) String() string {
-	return ArrayIteratorLabel
 }
 
 // Falsy determines whether the ArrayIterator should be considered a falsy value. Always returns true.

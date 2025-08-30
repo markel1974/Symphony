@@ -45,6 +45,26 @@ func (o *MapIterator) GateKeeper() IGateKeeper {
 	return o.factory
 }
 
+// AsBool returns true if the map is not empty, otherwise false.
+func (o *MapIterator) AsBool() bool {
+	return o.length > 0
+}
+
+// AsInt64 returns the length of the array as an int64 value.
+func (o *MapIterator) AsInt64() int64 {
+	return int64(o.length)
+}
+
+// AsFloat64 returns the length of the array as an int64 value.
+func (o *MapIterator) AsFloat64() float64 {
+	return float64(o.length)
+}
+
+// AsString returns the string representation of the MapIterator.
+func (o *MapIterator) AsString() string {
+	return MapIteratorLabel
+}
+
 // Frame returns the current frame value of the Object.
 func (o *MapIterator) Frame() int {
 	return o.frame
@@ -107,11 +127,6 @@ func (o *MapIterator) Copy(frame int, _ int) IObject {
 // TypeName returns the type name of the MapIterator as a string.
 func (o *MapIterator) TypeName() string {
 	return MapIteratorType
-}
-
-// String returns the string representation of the MapIterator.
-func (o *MapIterator) String() string {
-	return MapIteratorLabel
 }
 
 // Falsy returns true, indicating the MapIterator is considered falsy in a boolean context.

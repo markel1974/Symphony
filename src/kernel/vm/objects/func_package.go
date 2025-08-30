@@ -39,6 +39,21 @@ func (o *FuncPackage) GateKeeper() IGateKeeper {
 	return o.gk
 }
 
+// AsBool returns a boolean representation of the object, always returning false.
+func (o *FuncPackage) AsBool() bool {
+	return false
+}
+
+// AsInt64 returns the length of the array as an int64 value.
+func (o *FuncPackage) AsInt64() int64 {
+	return 0
+}
+
+// AsFloat64 returns the length of the array as an int64 value.
+func (o *FuncPackage) AsFloat64() float64 {
+	return 0
+}
+
 // Frame returns the current frame value of the Object.
 func (o *FuncPackage) Frame() int {
 	return o.frame
@@ -96,8 +111,8 @@ func (o *FuncPackage) TypeName() string {
 	return o.kind + ":" + o.name
 }
 
-// String returns the string representation of a FuncPackage object.
-func (o *FuncPackage) String() string {
+// AsString returns the string representation of a FuncPackage object.
+func (o *FuncPackage) AsString() string {
 	return "<" + o.kind + ">"
 }
 

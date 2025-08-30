@@ -165,7 +165,7 @@ func (v *VM) Call(value objects.IObject, spread bool, numArgs int) {
 		return
 	}
 	if !value.CanCall() {
-		v.SetError(fmt.Errorf("not callable %s:%s", value.String(), value.TypeName()))
+		v.SetError(fmt.Errorf("not callable %s:%s", value.AsString(), value.TypeName()))
 		return
 	}
 	if spread {

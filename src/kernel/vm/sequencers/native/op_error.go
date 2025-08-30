@@ -33,6 +33,6 @@ func NewOpError(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
 func (op *OpError) Execute(_ *core.Decoder) {
 	// Operands Offset  0
 	value := op.vm.Stack().Peek()
-	e := op.vm.Factory().NewError(op.vm.Frame().Id(), value.String())
+	e := op.vm.Factory().NewError(op.vm.Frame().Id(), value.AsString())
 	op.vm.Stack().Set(e)
 }

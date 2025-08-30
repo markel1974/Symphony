@@ -29,6 +29,21 @@ func (o *Undefined) GateKeeper() IGateKeeper {
 	return o.factory
 }
 
+// AsBool returns the boolean representation of the Undefined object, which is always false.
+func (o *Undefined) AsBool() bool {
+	return false
+}
+
+// AsInt64 returns the length of the array as an int64 value.
+func (o *Undefined) AsInt64() int64 {
+	return 0
+}
+
+// AsFloat64 returns the length of the array as an int64 value.
+func (o *Undefined) AsFloat64() float64 {
+	return 0
+}
+
 // Frame returns the current frame value of the Object.
 func (o *Undefined) Frame() int {
 	return o.frame
@@ -70,7 +85,7 @@ func (o *Undefined) TypeName() string {
 	return UndefinedType
 }
 
-func (o *Undefined) String() string {
+func (o *Undefined) AsString() string {
 	return UndefinedLabel
 }
 

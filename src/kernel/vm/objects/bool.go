@@ -33,6 +33,34 @@ func (o *Bool) GateKeeper() IGateKeeper {
 	return o.gk
 }
 
+func (o *Bool) AsBool() bool {
+	return o.value
+}
+
+// AsInt64 returns the length of the array as an int64 value.
+func (o *Bool) AsInt64() int64 {
+	if o.value {
+		return 1
+	}
+	return 0
+}
+
+// AsFloat64 returns the length of the array as an int64 value.
+func (o *Bool) AsFloat64() float64 {
+	if o.value {
+		return 1
+	}
+	return 0
+}
+
+// AsString returns the string representation of the Bool object, either "true" or "false" based on its boolean value.
+func (o *Bool) AsString() string {
+	if o.value {
+		return "true"
+	}
+	return "false"
+}
+
 // Frame returns the execution frame associated with the Bool object.
 func (o *Bool) Frame() int {
 	return o.frame
@@ -41,10 +69,7 @@ func (o *Bool) Frame() int {
 // LogicalOp performs a logical operation on the Bool instance using the provided operator and right-hand operand.
 // Returns the result of the operation as an IObject or an error if the operation is invalid.
 func (o *Bool) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, error) {
-	rhsValue, err := toInt64(rhsIn)
-	if err != nil {
-		return nil, err
-	}
+	rhsValue := rhsIn.AsInt64()
 	lhsValue := int64(0)
 	if o.value {
 		lhsValue = 1
@@ -62,10 +87,7 @@ func (o *Bool) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, err
 // ArithmeticOp performs an arithmetic operation between the Bool object and a given IObject using the specified operator.
 // Returns the result as an IObject and an error if the operation is not valid or executable.
 func (o *Bool) ArithmeticOp(_ int, op ArithmeticOperator, rhsIn IObject) (IObject, error) {
-	rhsValue, err := toInt64(rhsIn)
-	if err != nil {
-		return nil, err
-	}
+	rhsValue := rhsIn.AsInt64()
 	lhsValue := int64(0)
 	if o.value {
 		lhsValue = 1
@@ -113,14 +135,6 @@ func (o *Bool) CanCall() bool {
 // Length returns the length of the Bool object, which is always 0.
 func (o *Bool) Length() int {
 	return 0
-}
-
-// String returns the string representation of the Bool object, either "true" or "false" based on its boolean value.
-func (o *Bool) String() string {
-	if o.value {
-		return "true"
-	}
-	return "false"
 }
 
 // TypeName returns the type name of the Bool object as a string.

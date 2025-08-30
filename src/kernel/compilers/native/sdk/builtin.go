@@ -84,7 +84,7 @@ func (h *BuiltinFunctions) typeName(frame int, args ...objects.IObject) (objects
 	return h.gk.NewString(frame, args[0].TypeName()), nil
 }
 
-// IsString checks if the given argument is of type String and returns TrueValue if it is, otherwise FalseValue.
+// IsString checks if the given argument is of type AsString and returns TrueValue if it is, otherwise FalseValue.
 func (h *BuiltinFunctions) isString(_ int, args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, objects.ErrInvalidArgumentsNumber
@@ -314,7 +314,7 @@ func (h *BuiltinFunctions) rangeInit(frame int, args ...objects.IObject) (object
 	return arr, nil
 }
 
-// Format applies a format string to a variable number of arguments, returning the formatted result as a String object.
+// Format applies a format string to a variable number of arguments, returning the formatted result as a AsString object.
 func (h *BuiltinFunctions) format(frame int, args ...objects.IObject) (objects.IObject, error) {
 	numArgs := len(args)
 	if numArgs == 0 {
@@ -342,7 +342,7 @@ func (h *BuiltinFunctions) copy(frame int, args ...objects.IObject) (objects.IOb
 	return args[0].Copy(frame, 0), nil
 }
 
-// String converts an object to a string representation or returns a default value if conversion is not possible.
+// AsString converts an object to a string representation or returns a default value if conversion is not possible.
 func (h *BuiltinFunctions) string(frame int, args ...objects.IObject) (objects.IObject, error) {
 	argsLen := len(args)
 	if !(argsLen == 1 || argsLen == 2) {
@@ -567,7 +567,7 @@ func (h *BuiltinFunctions) panic(_ int, args ...objects.IObject) (objects.IObjec
 		return nil, objects.ErrInvalidArgumentsNumber
 	}
 	// Create an error with the panic message
-	err := fmt.Errorf("%s", args[0].String())
+	err := fmt.Errorf("%s", args[0].AsString())
 	// Signal the error to the VM. This is the key point!
 	// The VM already has a mechanism to stop execution in case of error.
 	// Calling SetError will stop the main execution loop.

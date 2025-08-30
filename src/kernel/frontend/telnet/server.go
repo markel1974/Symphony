@@ -38,7 +38,7 @@ func (r *Server) SetPrompt(prompt string) {
 }
 
 func (r *Server) handleConnection(c net.Conn) {
-	//fmt.Printf("Serving %s\n", c.RemoteAddr().String())
+	//fmt.Printf("Serving %s\n", c.RemoteAddr().AsString())
 
 	defer func() {
 		if r := recover(); nil != r {

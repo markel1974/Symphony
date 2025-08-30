@@ -31,6 +31,26 @@ func (o *Char) GateKeeper() IGateKeeper {
 	return o.gk
 }
 
+// AsBool returns true if the object is not empty, otherwise false.
+func (o *Char) AsBool() bool {
+	return o.value != 0
+}
+
+// AsInt64 returns the length of the array as an int64 value.
+func (o *Char) AsInt64() int64 {
+	return int64(o.value)
+}
+
+// AsFloat64 returns the length of the array as an int64 value.
+func (o *Char) AsFloat64() float64 {
+	return float64(o.value)
+}
+
+// AsString returns the string representation of the Char object's values.
+func (o *Char) AsString() string {
+	return string(o.value)
+}
+
 // Frame returns the current frame value of the Object.
 func (o *Char) Frame() int {
 	return o.frame
@@ -77,22 +97,14 @@ func (o *Char) Value() rune {
 	return o.value
 }
 
-// String returns the string representation of the Char object's values.
-func (o *Char) String() string {
-	return string(o.value)
-}
-
 // TypeName returns the name of the type as a string.
 func (o *Char) TypeName() string {
 	return CharType
 }
 
 // LogicalOp performs a logical operation between the current Char object and another IObject using the specified operator.
-func (o *Char) LogicalOp(_ int, op LogicalOperator, in IObject) (IObject, error) {
-	rhsValue, err := toInt64(in)
-	if err != nil {
-		return nil, err
-	}
+func (o *Char) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, error) {
+	rhsValue := rhsIn.AsInt64()
 	ret, err := logicalOpInt64(int64(o.value), op, rhsValue)
 	if err != nil {
 		return nil, err
@@ -105,11 +117,8 @@ func (o *Char) LogicalOp(_ int, op LogicalOperator, in IObject) (IObject, error)
 
 // ArithmeticOp applies the specified arithmetic operation between a Char object and another IObject, returning the result.
 // Returns an error if the operation is invalid or unsupported.
-func (o *Char) ArithmeticOp(frame int, op ArithmeticOperator, in IObject) (IObject, error) {
-	rhsValue, err := toInt64(in)
-	if err != nil {
-		return nil, err
-	}
+func (o *Char) ArithmeticOp(frame int, op ArithmeticOperator, rhsIn IObject) (IObject, error) {
+	rhsValue := rhsIn.AsInt64()
 	ret, err := arithmeticOpInt64(int64(o.value), op, rhsValue)
 	if err != nil {
 		return nil, err

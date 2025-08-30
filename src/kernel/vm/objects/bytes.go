@@ -38,6 +38,26 @@ func (o *Bytes) GateKeeper() IGateKeeper {
 	return o.gk
 }
 
+// AsBool returns true if the object is not empty, otherwise false.
+func (o *Bytes) AsBool() bool {
+	return len(o.values) > 0
+}
+
+// AsInt64 returns the length of the array as an int64 value.
+func (o *Bytes) AsInt64() int64 {
+	return int64(len(o.values))
+}
+
+// AsFloat64 returns the length of the array as an int64 value.
+func (o *Bytes) AsFloat64() float64 {
+	return float64(len(o.values))
+}
+
+// AsString returns the string representation of the Bytes object by converting its underlying byte slice to a string.
+func (o *Bytes) AsString() string {
+	return string(o.values)
+}
+
 // Frame returns the current frame value of the Object.
 func (o *Bytes) Frame() int {
 	return o.frame
@@ -67,11 +87,6 @@ func (o *Bytes) Length() int {
 // Value returns the underlying byte slice of the Bytes object.
 func (o *Bytes) Value() []byte {
 	return o.values
-}
-
-// String returns the string representation of the Bytes object by converting its underlying byte slice to a string.
-func (o *Bytes) String() string {
-	return string(o.values)
 }
 
 // TypeName returns the name of the type as a string, which is "bytes".

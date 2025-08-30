@@ -80,6 +80,6 @@ func (c *Constants) Retrieve() []objects.IObject {
 // Print prints the constants to the provided writer.
 func (c *Constants) Print(writer io.Writer) {
 	for idx, v := range c.constants {
-		_, _ = fmt.Fprintf(writer, "%d => %s", idx, v.String())
+		_, _ = fmt.Fprintf(writer, "%d => %s", idx, v.AsString())
 	}
 }

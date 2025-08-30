@@ -38,6 +38,30 @@ func (o *Array) GateKeeper() IGateKeeper {
 	return o.gk
 }
 
+// AsBool returns true if the array is not empty, otherwise false.
+func (o *Array) AsBool() bool {
+	return len(o.values) > 0
+}
+
+// AsInt64 returns the length of the array as an int64 value.
+func (o *Array) AsInt64() int64 {
+	return int64(len(o.values))
+}
+
+// AsFloat64 returns the length of the array as an int64 value.
+func (o *Array) AsFloat64() float64 {
+	return float64(len(o.values))
+}
+
+// AsString returns a string representation of the Array, formatting its elements in a comma-separated list enclosed in brackets.
+func (o *Array) AsString() string {
+	var elements []string
+	for _, e := range o.values {
+		elements = append(elements, e.AsString())
+	}
+	return fmt.Sprintf("[%s]", strings.Join(elements, "; "))
+}
+
 // Frame retrieves the current execution frame associated with the Array instance.
 func (o *Array) Frame() int {
 	return o.frame
@@ -98,15 +122,6 @@ func (o *Array) Assign(v []IObject) {
 		v = v[0:maxArrayLen]
 	}
 	o.values = v
-}
-
-// String returns a string representation of the Array, formatting its elements in a comma-separated list enclosed in brackets.
-func (o *Array) String() string {
-	var elements []string
-	for _, e := range o.values {
-		elements = append(elements, e.String())
-	}
-	return fmt.Sprintf("[%s]", strings.Join(elements, "; "))
 }
 
 // LogicalOp performs a logical operation on the array using the given operator and operand, returning an error if invalid.

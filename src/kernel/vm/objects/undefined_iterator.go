@@ -27,9 +27,24 @@ func newUndefinedIterator(factory IGateKeeper, frame int) IIterator {
 	}
 }
 
+// AsBool returns a boolean representation of the object, always returning false.
+func (o *UndefinedIterator) AsBool() bool {
+	return false
+}
+
 // GateKeeper returns a reference to the GateKeeper associated with the Object.
 func (o *UndefinedIterator) GateKeeper() IGateKeeper {
 	return o.factory
+}
+
+// AsInt64 returns the length of the array as an int64 value.
+func (o *UndefinedIterator) AsInt64() int64 {
+	return 0
+}
+
+// AsFloat64 returns the length of the array as an int64 value.
+func (o *UndefinedIterator) AsFloat64() float64 {
+	return 0
 }
 
 // Frame returns the current frame value of the Object.
@@ -94,7 +109,7 @@ func (o *UndefinedIterator) TypeName() string {
 }
 
 // String returns a string representation of the UndefinedIterator object.
-func (o *UndefinedIterator) String() string {
+func (o *UndefinedIterator) AsString() string {
 	return UndefinedIteratorLabel
 }
 

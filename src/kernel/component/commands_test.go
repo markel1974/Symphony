@@ -52,7 +52,7 @@ func TestCommand_Exec(t *testing.T) {
 		{"Valid Execution", addCmd, []interface{}{1, 2}, 3, false, ""},
 		{"Wrong Arg Count", addCmd, []interface{}{1}, nil, true, "wrong number of arguments"},
 		{"Wrong Arg Type", addCmd, []interface{}{1, "two"}, nil, true, "wrong argument type"},
-		{"Valid String Concat", strCmd, []interface{}{"hello", " world"}, "hello world", false, ""},
+		{"Valid AsString Concat", strCmd, []interface{}{"hello", " world"}, "hello world", false, ""},
 		{"No arguments command", noArgCmd, []interface{}{}, 0, false, ""},
 		{"No arguments command wrong", noArgCmd, []interface{}{1}, nil, true, "wrong number of arguments"},
 	}

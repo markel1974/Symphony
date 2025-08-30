@@ -22,7 +22,10 @@ import (
 type IObject interface {
 	GateKeeper() IGateKeeper
 	TypeName() string
-	String() string
+	AsBool() bool
+	AsInt64() int64
+	AsFloat64() float64
+	AsString() string
 	Frame() int
 	LogicalOp(frame int, op LogicalOperator, rightHandSide IObject) (IObject, error)
 	ArithmeticOp(frame int, op ArithmeticOperator, rightHandSide IObject) (IObject, error)

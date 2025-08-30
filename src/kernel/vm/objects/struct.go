@@ -46,6 +46,30 @@ func (o *Struct) GateKeeper() IGateKeeper {
 	return o.factory
 }
 
+// AsBool converts the Struct to a boolean, returning true if the Struct contains at least one key-value pair; otherwise false.
+func (o *Struct) AsBool() bool {
+	return len(o.values) > 0
+}
+
+// AsInt64 returns the length of the array as an int64 value.
+func (o *Struct) AsInt64() int64 {
+	return int64(len(o.values))
+}
+
+// AsFloat64 returns the length of the array as an int64 value.
+func (o *Struct) AsFloat64() float64 {
+	return float64(len(o.values))
+}
+
+// AsString returns a string representation of the Struct object, formatting its key-value pairs into a map-like structure.
+func (o *Struct) AsString() string {
+	var pairs []string
+	for k, v := range o.values {
+		pairs = append(pairs, fmt.Sprintf("%s: %s", k, v.AsString()))
+	}
+	return fmt.Sprintf("{%s}", strings.Join(pairs, ", "))
+}
+
 // Frame returns the current frame value of the Object.
 func (o *Struct) Frame() int {
 	return o.frame
@@ -98,15 +122,6 @@ func (o *Struct) GetValue(k string) (IObject, bool) {
 // TypeName returns the type name of the object as a string.
 func (o *Struct) TypeName() string {
 	return StructType
-}
-
-// String returns a string representation of the Struct object, formatting its key-value pairs into a map-like structure.
-func (o *Struct) String() string {
-	var pairs []string
-	for k, v := range o.values {
-		pairs = append(pairs, fmt.Sprintf("%s: %s", k, v.String()))
-	}
-	return fmt.Sprintf("{%s}", strings.Join(pairs, ", "))
 }
 
 // Copy creates and returns a new IObject by duplicating the internal state of the Struct instance.

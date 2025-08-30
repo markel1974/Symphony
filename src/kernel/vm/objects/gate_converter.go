@@ -43,7 +43,7 @@ func (gc *GateConverter) ToInterface(in IObject) (res interface{}) {
 	case *Time:
 		res = o.value
 	case *Error:
-		res = errors.New(o.String())
+		res = errors.New(o.AsString())
 	case *Undefined:
 		res = nil
 	case IObject:
@@ -205,7 +205,7 @@ func (gc *GateConverter) ToString(o IObject) (string, bool) {
 	if str, isStr := o.(*String); isStr {
 		return str.value, true
 	}
-	return o.String(), true
+	return o.AsString(), true
 }
 
 // ToStringArg attempts to convert an IObject to a string. Returns an error if conversion fails or type is incompatible.

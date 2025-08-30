@@ -34,6 +34,26 @@ func (o *ObjectPointer) GateKeeper() IGateKeeper {
 	return o.factory
 }
 
+// AsBool returns the boolean representation of the ObjectPointer, defaulting to false.
+func (o *ObjectPointer) AsBool() bool {
+	return false
+}
+
+// AsInt64 returns the length of the array as an int64 value.
+func (o *ObjectPointer) AsInt64() int64 {
+	return 0
+}
+
+// AsFloat64 returns the length of the array as an int64 value.
+func (o *ObjectPointer) AsFloat64() float64 {
+	return 0
+}
+
+// AsString returns the string representation of the ObjectPointer instance.
+func (o *ObjectPointer) AsString() string {
+	return ObjectPointerType
+}
+
 // Frame returns the current frame value of the Object.
 func (o *ObjectPointer) Frame() int {
 	return o.frame
@@ -94,11 +114,6 @@ func (o *ObjectPointer) Value() *IObject {
 // SetValue sets the internal values field of the ObjectPointer to the provided IObject pointer.
 func (o *ObjectPointer) SetValue(value IObject) {
 	*o.value = value
-}
-
-// String returns the string representation of the ObjectPointer instance.
-func (o *ObjectPointer) String() string {
-	return ObjectPointerType
 }
 
 // TypeName returns the type name of the ObjectPointer as a string.

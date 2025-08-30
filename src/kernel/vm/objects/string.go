@@ -40,6 +40,26 @@ func (o *String) GateKeeper() IGateKeeper {
 	return o.factory
 }
 
+// AsBool converts the String object to a boolean. Returns true if the string has non-zero length, otherwise false.
+func (o *String) AsBool() bool {
+	return len(o.value) > 0
+}
+
+// AsInt64 returns the length of the array as an int64 value.
+func (o *String) AsInt64() int64 {
+	return int64(len(o.value))
+}
+
+// AsFloat64 returns the length of the array as an int64 value.
+func (o *String) AsFloat64() float64 {
+	return float64(len(o.value))
+}
+
+// AsString returns the quoted string representation of the String object.
+func (o *String) AsString() string {
+	return strconv.Quote(o.value)
+}
+
 // Frame returns the current frame value of the Object.
 func (o *String) Frame() int {
 	return o.frame
@@ -74,11 +94,6 @@ func (o *String) Length() int {
 // TypeName returns the name of the type "string".
 func (o *String) TypeName() string {
 	return StringType
-}
-
-// String returns the quoted string representation of the String object.
-func (o *String) String() string {
-	return strconv.Quote(o.value)
 }
 
 // LogicalOp performs logical comparison between the String object and a right-hand side IObject based on the given operator.
@@ -136,7 +151,7 @@ func (o *String) ArithmeticOp(frame int, op ArithmeticOperator, rhs IObject) (IO
 			}
 			return o.GateKeeper().NewString(frame, o.value+rhs.value), nil
 		default:
-			rhsStr := rhs.String()
+			rhsStr := rhs.AsString()
 			if len(o.value)+len(rhsStr) > MaxStringLen {
 				return nil, ErrLimitExceed
 			}

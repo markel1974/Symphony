@@ -47,6 +47,26 @@ func (o *StructIterator) GateKeeper() IGateKeeper {
 	return o.factory
 }
 
+// AsBool returns true if the array is not empty, otherwise false.
+func (o *StructIterator) AsBool() bool {
+	return o.length > 0
+}
+
+// AsInt64 returns the length of the array as an int64 value.
+func (o *StructIterator) AsInt64() int64 {
+	return int64(o.length)
+}
+
+// AsFloat64 returns the length of the array as an int64 value.
+func (o *StructIterator) AsFloat64() float64 {
+	return float64(o.length)
+}
+
+// AsString returns the string representation of the StructIterator instance.
+func (o *StructIterator) AsString() string {
+	return StructIteratorLabel
+}
+
 // Frame returns the current frame value of the Object.
 func (o *StructIterator) Frame() int {
 	return o.frame
@@ -108,11 +128,6 @@ func (o *StructIterator) Copy(frame int, _ int) IObject {
 // TypeName returns the type name of the StructIterator object as a string.
 func (o *StructIterator) TypeName() string {
 	return StructIteratorType
-}
-
-// String returns the string representation of the StructIterator instance.
-func (o *StructIterator) String() string {
-	return StructIteratorLabel
 }
 
 // Falsy returns true, indicating the current StructIterator is truthy.

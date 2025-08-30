@@ -384,6 +384,6 @@ func PlotLineChart(values []float64, newline string, minimum float64, maximum fl
 		}
 	}
 
-	return lines.String()
+	return lines.AsString()
 }
 */

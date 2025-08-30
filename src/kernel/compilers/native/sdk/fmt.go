@@ -88,7 +88,7 @@ func (f *Fmt) println(_ int, args ...objects.IObject) (ret objects.IObject, err 
 	return nil, nil
 }
 
-// Sprint formats and concatenates the provided arguments into a single string and returns it as a new String object.
+// Sprint formats and concatenates the provided arguments into a single string and returns it as a new AsString object.
 func (f *Fmt) sprint(frame int, args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) == 0 {
 		return nil, objects.ErrInvalidArgumentsNumber

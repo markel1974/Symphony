@@ -37,6 +37,26 @@ func (o *Float) GateKeeper() IGateKeeper {
 	return o.gk
 }
 
+// AsBool returns true if the object is not empty, otherwise false.
+func (o *Float) AsBool() bool {
+	return o.value != 0
+}
+
+// AsInt64 returns the length of the array as an int64 value.
+func (o *Float) AsInt64() int64 {
+	return int64(o.value)
+}
+
+// AsFloat64 returns the length of the array as an int64 value.
+func (o *Float) AsFloat64() float64 {
+	return o.value
+}
+
+// AsString returns the string representation of the Float object using its internal float64 values.
+func (o *Float) AsString() string {
+	return strconv.FormatFloat(o.value, 'f', -1, 64)
+}
+
 // Frame returns the current frame value of the Object.
 func (o *Float) Frame() int {
 	return o.frame
@@ -82,11 +102,6 @@ func (o *Float) Value() float64 {
 	return o.value
 }
 
-// String returns the string representation of the Float object using its internal float64 values.
-func (o *Float) String() string {
-	return strconv.FormatFloat(o.value, 'f', -1, 64)
-}
-
 // TypeName returns the name of the type.
 func (o *Float) TypeName() string {
 	return FloatType
@@ -94,11 +109,8 @@ func (o *Float) TypeName() string {
 
 // LogicalOp performs a logical operation between the Float object and another IObject using the specified operator.
 // Returns a boolean IObject representing the result or an error if the operation is invalid.
-func (o *Float) LogicalOp(_ int, op LogicalOperator, rhs IObject) (IObject, error) {
-	rhsValue, err := toFloat64(rhs)
-	if err != nil {
-		return nil, err
-	}
+func (o *Float) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, error) {
+	rhsValue := rhsIn.AsFloat64()
 	ret, err := logicalOpFloat64(o.value, op, rhsValue)
 	if err != nil {
 		return nil, err
@@ -110,11 +122,8 @@ func (o *Float) LogicalOp(_ int, op LogicalOperator, rhs IObject) (IObject, erro
 }
 
 // ArithmeticOp performs an arithmetic operation with the specified operator and returns the result or an error.
-func (o *Float) ArithmeticOp(frame int, op ArithmeticOperator, rhs IObject) (IObject, error) {
-	rhsValue, err := toFloat64(rhs)
-	if err != nil {
-		return nil, err
-	}
+func (o *Float) ArithmeticOp(frame int, op ArithmeticOperator, rhsIn IObject) (IObject, error) {
+	rhsValue := rhsIn.AsFloat64()
 	ret, err := arithmeticOpFloat64(o.value, op, rhsValue)
 	if err != nil {
 		return nil, err

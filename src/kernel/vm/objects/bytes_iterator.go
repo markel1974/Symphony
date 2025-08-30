@@ -36,6 +36,26 @@ func (o *BytesIterator) GateKeeper() IGateKeeper {
 	return o.gk
 }
 
+// AsBool returns true if the object is not empty, otherwise false.
+func (o *BytesIterator) AsBool() bool {
+	return o.length > 0
+}
+
+// AsInt64 returns the length of the array as an int64 value.
+func (o *BytesIterator) AsInt64() int64 {
+	return int64(o.length)
+}
+
+// AsFloat64 returns the length of the array as an int64 value.
+func (o *BytesIterator) AsFloat64() float64 {
+	return float64(o.length)
+}
+
+// AsString returns the string representation of the BytesIterator.
+func (o *BytesIterator) AsString() string {
+	return BytesIteratorLabel
+}
+
 // Frame returns the current frame value of the Object.
 func (o *BytesIterator) Frame() int {
 	return o.frame
@@ -95,11 +115,6 @@ func (o *BytesIterator) Length() int {
 // TypeName returns the string representation of the type name, which is "bytes-iterator".
 func (o *BytesIterator) TypeName() string {
 	return BytesIteratorType
-}
-
-// String returns the string representation of the BytesIterator.
-func (o *BytesIterator) String() string {
-	return BytesIteratorLabel
 }
 
 // Equals checks whether the BytesIterator is equal to another object implementing the IObject interface.

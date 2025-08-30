@@ -99,6 +99,26 @@ func (o *FuncCompiled) GateKeeper() IGateKeeper {
 	return o.gk
 }
 
+// AsBool returns a boolean representation of the FuncCompiled object, always returning false.
+func (o *FuncCompiled) AsBool() bool {
+	return false
+}
+
+// AsInt64 returns the length of the array as an int64 value.
+func (o *FuncCompiled) AsInt64() int64 {
+	return 0
+}
+
+// AsFloat64 returns the length of the array as an int64 value.
+func (o *FuncCompiled) AsFloat64() float64 {
+	return 0
+}
+
+// AsString returns a human-readable string representation of the FuncCompiled object.
+func (o *FuncCompiled) AsString() string {
+	return FuncCompiledLabel
+}
+
 // Frame returns the current frame value of the Object.
 func (o *FuncCompiled) Frame() int {
 	return o.frame
@@ -190,11 +210,6 @@ func (o *FuncCompiled) Free() []*ObjectPointer {
 // TypeName returns the type name of the object as a string, specifically "compiled-function".
 func (o *FuncCompiled) TypeName() string {
 	return FuncCompiledDef
-}
-
-// String returns a human-readable string representation of the FuncCompiled object.
-func (o *FuncCompiled) String() string {
-	return FuncCompiledLabel
 }
 
 // Copy creates and returns a new instance of FuncCompiled, duplicating its state, except for its variable pointers.

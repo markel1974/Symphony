@@ -33,6 +33,26 @@ func (o *FuncJit) GateKeeper() IGateKeeper {
 	return o.gk
 }
 
+// AsBool returns a boolean representation of the object, always returning false for FuncJit.
+func (o *FuncJit) AsBool() bool {
+	return false
+}
+
+// AsInt64 returns the length of the array as an int64 value.
+func (o *FuncJit) AsInt64() int64 {
+	return 0
+}
+
+// AsFloat64 returns the length of the array as an int64 value.
+func (o *FuncJit) AsFloat64() float64 {
+	return 0
+}
+
+// AsString returns the string representation of a FuncPackage object.
+func (o *FuncJit) AsString() string {
+	return "<" + o.kind + ">"
+}
+
 // Frame returns the current frame value of the Object.
 func (o *FuncJit) Frame() int {
 	return o.frame
@@ -88,11 +108,6 @@ func (o *FuncJit) Name() string {
 // TypeName returns the type name of the FuncPackage as a string.
 func (o *FuncJit) TypeName() string {
 	return o.kind + ":" + o.name
-}
-
-// String returns the string representation of a FuncPackage object.
-func (o *FuncJit) String() string {
-	return "<" + o.kind + ">"
 }
 
 // Copy creates and returns a new FuncPackage instance with the same Value field as the original object.
