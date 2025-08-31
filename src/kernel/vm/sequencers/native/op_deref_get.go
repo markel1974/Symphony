@@ -39,6 +39,5 @@ func (op *OpDerefGet) Execute(_ *core.Decoder) {
 		op.vm.SetError(fmt.Errorf("invalid operation: cannot dereference non-pointer type %s", operand.TypeName()))
 		return
 	}
-	// Replace the stack pointer with the value it points to.
 	op.vm.Stack().Push(*ptr.Value())
 }
