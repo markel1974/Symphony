@@ -69,6 +69,7 @@ const (
 	// OpStruct represents an opcode for initializing a struct with a specified number of key-value pairs.
 	OpStruct
 
+	// OpInterface represents the opcode used to construct an interface object with required method bindings on the stack.
 	OpInterface
 
 	// OpJumpNotError gestisce il pattern 'if err != nil', saltando il blocco if se l'oggetto in cima allo stack è nullo o non è un errore.
@@ -95,6 +96,7 @@ const (
 	// OpCall represents the opcode for function or method invocation with specified argument and receiver counts.
 	OpCall
 
+	// OpCallMethod represents an opcode for invoking a method directly on an object with specified arguments.
 	OpCallMethod
 
 	// OpReturn represents the opcode for returning from a function or operation, potentially with a value.
@@ -133,9 +135,6 @@ const (
 	// OpFreeSet is an opcode used to set the value of a free variable in an enclosing scope.
 	OpFreeSet
 
-	// OpFreeSelSet is an operation code used to set a value on a closed-over variable with a selected attribute.
-	OpFreeSelSet
-
 	// OpClosure represents the opcode used to create a function closure with constants and free variables.
 	OpClosure
 
@@ -166,8 +165,8 @@ const (
 	// OpIntArithmetic represents an operation code for performing integer arithmetic instructions.
 	OpIntArithmetic
 
-	// OpDeref is an opcode that dereferences a pointer or reference to retrieve its value.
-	OpDeref
+	// OpDerefGet is an opcode that dereferences a pointer or reference to retrieve its value.
+	OpDerefGet
 
 	// OpDerefSet represents an operation that assigns a value to the memory location pointed to by a dereferenced pointer.
 	OpDerefSet
@@ -265,13 +264,12 @@ func NewOpcodes() *Opcodes {
 	op.createOpcode(OpLocalGet, []int{1}, "OpLocalGet")
 	op.createOpcode(OpLocalSet, []int{1}, "OpLocalSet")
 	op.createOpcode(OpLocalDefine, []int{1}, "OpLocalDefine")
+	op.createOpcode(OpLocalPtrGet, []int{1}, "OpLocalPtrGet")
 	op.createOpcode(OpLocalSelSet, []int{1, 1}, "OpLocalSelSet")
 	op.createOpcode(OpClosure, []int{2, 1}, "OpClosure")
-	op.createOpcode(OpFreePtrGet, []int{1}, "OpFreePtrGet")
 	op.createOpcode(OpFreeGet, []int{1}, "OpFreeGet")
 	op.createOpcode(OpFreeSet, []int{1}, "OpFreeSet")
-	op.createOpcode(OpLocalPtrGet, []int{1}, "OpLocalPtrGet")
-	op.createOpcode(OpFreeSelSet, []int{1, 1}, "OpFreeSelSet")
+	op.createOpcode(OpFreePtrGet, []int{1}, "OpFreePtrGet")
 	op.createOpcode(OpIteratorInit, []int{1}, "OpIteratorInit")
 	op.createOpcode(OpIteratorNext, []int{1}, "OpIteratorNext")
 	op.createOpcode(OpIteratorKey, []int{1}, "OpIteratorKey")
@@ -281,7 +279,7 @@ func NewOpcodes() *Opcodes {
 	op.createOpcode(OpReferences, []int{2}, "OpReferences")
 	op.createOpcode(OpIntLogical, []int{2, 1}, "OpIntLogical")
 	op.createOpcode(OpIntArithmetic, []int{2, 1}, "OpIntArithmetic")
-	op.createOpcode(OpDeref, []int{}, "OpDeref")
+	op.createOpcode(OpDerefGet, []int{}, "OpDerefGet")
 	op.createOpcode(OpDerefSet, []int{}, "OpDerefSet")
 	op.createOpcode(OpTypeAssert, []int{2}, "OpTypeAssert")
 	op.createOpcode(OpIsType, []int{2}, "OpIsType")

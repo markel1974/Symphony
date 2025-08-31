@@ -428,7 +428,7 @@ func (c *Declarations) StarExpr(node *ast.StarExpr) error {
 	if err := c.compile(node.X); err != nil {
 		return err
 	}
-	_, err := c.scopes.Emit(bytecode.OpDeref)
+	_, err := c.scopes.Emit(bytecode.OpDerefGet)
 	return err
 }
 

@@ -137,7 +137,7 @@ func vmTest() {
 	const baseDir = "../src/kernel/compilers/native/stub/tests"
 	gk := objects.NewGateKeeper(0)
 	op := bytecode.NewOpcodes()
-	for _, fileName := range stub.Prepare(baseDir, "test_07") {
+	for _, fileName := range stub.Prepare(baseDir, "test_") {
 		comp, loader, err := compilers.NewCompiler(gk, op, sequencerId)
 		if err != nil {
 			log.Fatalf("compiler error: %s", err)

@@ -9,30 +9,30 @@ import (
 )
 
 func init() {
-	SequencerRegister(NewOpDeref)
+	SequencerRegister(NewOpDerefGet)
 }
 
-// OpDeref represents an operation for dereferencing a pointer.
-type OpDeref struct {
+// OpDerefGet represents an operation for dereferencing a pointer.
+type OpDerefGet struct {
 	*bytecode.Opcode
 	vm core.IVMFullAccess
 }
 
-// NewOpDeref creates a new OpDeref instance.
-func NewOpDeref(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
+// NewOpDerefGet creates a new OpDerefGet instance.
+func NewOpDerefGet(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
 	vmT, ok := vm.(core.IVMFullAccess)
 	if !ok {
 		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
 	}
-	return &OpDeref{
-		Opcode: op.Opcode(bytecode.OpDeref),
+	return &OpDerefGet{
+		Opcode: op.Opcode(bytecode.OpDerefGet),
 		vm:     vmT,
 	}, nil
 }
 
 // Execute performs the dereference operation. It takes a pointer from the
 // stack and replaces it with the value it points to.
-func (op *OpDeref) Execute(_ *core.Decoder) {
+func (op *OpDerefGet) Execute(_ *core.Decoder) {
 	operand := op.vm.Stack().Pop()
 	ptr, ok := operand.(*objects.ObjectPointer)
 	if !ok {
