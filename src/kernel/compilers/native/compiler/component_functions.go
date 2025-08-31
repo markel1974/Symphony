@@ -118,6 +118,7 @@ func (c *Functions) funcBodyPrepare(fd *tables.FunctionDescription) error {
 	if err != nil {
 		return err
 	}
+	placeHolder.SetReturnTypes(fd.ReturnTypes)
 	if len(fd.StructName) > 0 {
 		if err = c.structTable.AssignSymbol(placeHolder, fd.StructName, nil); err != nil {
 			return err

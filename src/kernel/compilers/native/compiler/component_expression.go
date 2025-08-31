@@ -190,7 +190,42 @@ func (c *Expression) IncDecStmt(node *ast.IncDecStmt) error {
 	return nil
 }
 
+// ParenExpr processes a parenthesized expression and delegates the compilation to the contained sub-expression.
 func (c *Expression) ParenExpr(node *ast.ParenExpr) error {
 	//panic("not implemented")
 	return c.compile(node.X)
+}
+
+// SliceExpr compiles a slice expression, processing the target, low, and high indices, and emits the slice bytecode.
+func (c *Expression) SliceExpr(node *ast.SliceExpr) error {
+	// 1. Compile the object to slice from (e.g. array)
+	if err := c.compile(node.X); err != nil {
+		return err
+	}
+	// 2. Compile the 'low' index (starting position)
+	if node.Low != nil {
+		if err := c.compile(node.Low); err != nil {
+			return err
+		}
+	} else {
+		// If 'low' index is omitted, push 'undefined' (OpNull)
+		if _, err := c.scopes.Emit(bytecode.OpNull); err != nil {
+			return err
+		}
+	}
+	// 3. Compile the 'high' index (ending position)
+	if node.High != nil {
+		if err := c.compile(node.High); err != nil {
+			return err
+		}
+	} else {
+		// If 'high' index is omitted, push 'undefined' (OpNull)
+		if _, err := c.scopes.Emit(bytecode.OpNull); err != nil {
+			return err
+		}
+	}
+	if _, err := c.scopes.Emit(bytecode.OpIndexSlice); err != nil {
+		return err
+	}
+	return nil
 }

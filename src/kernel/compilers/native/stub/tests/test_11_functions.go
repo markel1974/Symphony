@@ -12,19 +12,15 @@ func factorial(n int) int {
 	}
 	f := factorial(n - 1)
 	z := n * f
-	fmt.Println("factorial", z)
 	return z
 }
 
 func main() {
 	fmt.Println("--- Running Test: Functions and Recursion ---")
-
 	sum := add(10, 20)
 	fact5 := factorial(5)
-
 	finalValue := fact5 + sum
 	expectedValue := 150
-
 	if finalValue == expectedValue {
 		fmt.Println("[TEST PASSED] Functions and recursion worked correctly.")
 	} else {

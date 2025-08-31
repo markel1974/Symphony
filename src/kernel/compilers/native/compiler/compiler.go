@@ -192,6 +192,8 @@ func (c *Compiler) compile(in ast.Node) error {
 		err = c.expressions.UnaryExpr(node)
 	case *ast.SelectorExpr:
 		err = c.expressions.SelectorExpr(node)
+	case *ast.SliceExpr:
+		return c.expressions.SliceExpr(node)
 	case *ast.FuncLit:
 		err = c.functions.FuncLit(node)
 	case *ast.FuncDecl:
