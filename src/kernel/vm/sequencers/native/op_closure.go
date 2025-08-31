@@ -44,19 +44,19 @@ func (op *OpClosure) Execute(
 	}
 	free := make([]*objects.ObjectPointer, numFree)
 	for i := 0; i < numFree; i++ {
-		o := op.vm.Stack().PeekOffset(-numFree + i)
-		switch freeVar := o.(type) {
+		offset := numFree - i + 1
+		freeObj := op.vm.Stack().PeekOffset(-offset)
+		switch freeVar := freeObj.(type) {
 		case *objects.ObjectPointer:
 			free[i] = freeVar
 		default:
-			t := op.vm.Stack().PeekOffset(-numFree + i)
-			obj := op.vm.Factory().NewObjectPointer(op.vm.Frame().Id(), &t)
-			ptr, ok := obj.(*objects.ObjectPointer)
+			freObj := op.vm.Factory().NewObjectPointer(op.vm.Frame().Id(), &freeObj)
+			freePtr, ok := freObj.(*objects.ObjectPointer)
 			if !ok {
-				op.vm.SetError(fmt.Errorf("not a pointer: %s", t.TypeName()))
+				op.vm.SetError(fmt.Errorf("not a pointer: %s", freeObj.TypeName()))
 				return
 			}
-			free[i] = ptr
+			free[i] = freePtr
 		}
 	}
 	op.vm.Stack().DecrementCount(numFree)
