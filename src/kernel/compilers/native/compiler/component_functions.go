@@ -398,19 +398,13 @@ func (c *Functions) FuncLit(node *ast.FuncLit) error {
 	if err != nil {
 		return err
 	}
-	//for x := len(freeSymbols) - 1; x >= 0; x-- {
-	//	freeConstantIdx := c.constants.Add(closureName+"_free", c.gk.NewInt(objects.FrameStatic, int64(freeSymbols[x])))
-	//	if _, err = c.scopes.Emit(bytecode.OpConstant, freeConstantIdx); err != nil {
-	//		return err
-	//	}
-	//}
-	for _, freeIndex := range freeSymbols {
-		freeConstantIdx := c.constants.Add(closureName+"_free", c.gk.NewInt(objects.FrameStatic, int64(freeIndex)))
-		if _, err = c.scopes.Emit(bytecode.OpConstant, freeConstantIdx); err != nil {
-			return err
-		}
+	freeData := make([]objects.IObject, len(freeSymbols))
+	for idx, freeIndex := range freeSymbols {
+		freeData[idx] = c.gk.NewInt(objects.FrameStatic, int64(freeIndex))
 	}
-	if _, err = c.scopes.Emit(bytecode.OpArray, len(freeSymbols)); err != nil {
+	freeContainer := c.gk.NewArray(objects.FrameStatic, freeData)
+	freeContainerIdx := c.constants.Add(closureName+"_free", freeContainer)
+	if _, err = c.scopes.Emit(bytecode.OpConstant, freeContainerIdx); err != nil {
 		return err
 	}
 	compiledFn := c.gk.NewFuncCompiled(objects.FrameStatic, "", code, nLocals, nParams, false, nil, freeObj)
