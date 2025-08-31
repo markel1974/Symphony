@@ -97,14 +97,9 @@ func (c *Scopes) SymbolCount() int {
 	return c.symbolTable.Count()
 }
 
-// SymbolFreeConvert converts and retrieves free symbols from the symbol table as a slice of ObjectPointer.
-func (c *Scopes) SymbolFreeConvert() []*objects.ObjectPointer {
-	return c.symbolTable.ConvertFreeSymbols()
-}
-
-// SymbolFreeCount returns the count of free symbols in the current scope's symbol table.
-func (c *Scopes) SymbolFreeCount() int {
-	return c.symbolTable.FreeSymbolsLen()
+// SymbolFree retrieves a slice of integers representing free symbols from the internal symbol table within Scopes.
+func (c *Scopes) SymbolFree() []int {
+	return c.symbolTable.FreeSymbols()
 }
 
 // Current returns the current CompilationScope based on the internal scope index. Returns an error if the index is invalid.

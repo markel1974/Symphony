@@ -127,37 +127,27 @@ func (c *Functions) funcBodyPrepare(fd *tables.FunctionDescription) error {
 	return nil
 }
 
-// funcBodyCompile compiles the body of a function declaration and generates the necessary bytecode instructions.
+// funcBodyCompile compiles the body of a function, defines symbols for receivers and parameters, and emits bytecode instructions.
+// It manages scope transitions, symbol resolution, and ensures the function ends with an appropriate return statement.
+// Returns an error if any step in the compilation process encounters a failure.
 func (c *Functions) funcBodyCompile(fd *tables.FunctionDescription) error {
 	node := fd.FuncDecl
 	if err := c.scopes.Enter(tables.UnknownScope, fd.Name); err != nil {
 		return err
 	}
-
-	// --- INIZIO MODIFICA ---
-	// Sostituiamo la vecchia logica con chiamate dirette a SymbolsFromParameters,
-	// che processa correttamente i tipi di struct e interfacce.
-
-	// Definisci i simboli per i ricevitori del metodo (se presenti)
+	// Define symbols for method receivers (if present)
 	if node.Recv != nil && len(node.Recv.List) > 0 {
 		if _, err := c.functionTable.SymbolsFromParameters(node.Recv); err != nil {
 			return err
 		}
 	}
-
-	// Definisci i simboli per i parametri di input
+	// Define symbols for input parameters
 	if _, err := c.functionTable.SymbolsFromParameters(node.Type.Params); err != nil {
 		return err
 	}
-	// --- FINE MODIFICA ---
-
-	// Il vecchio codice che iterava su fd.StructReceivers e fd.InputParams viene rimosso
-	// perché ora è gestito in modo più completo dalla logica qui sopra.
-
 	if err := c.compile(node.Body); err != nil {
 		return err
 	}
-
 	scope, err := c.scopes.Current()
 	if err != nil {
 		return err
@@ -167,31 +157,28 @@ func (c *Functions) funcBodyCompile(fd *tables.FunctionDescription) error {
 			return err
 		}
 	}
-
-	freeSymbols := c.scopes.SymbolFreeConvert()
-	numFree := c.scopes.SymbolFreeCount()
+	//only closure has free symbols
+	var freeObj []*objects.ObjectPointer = nil
+	freeNum := 0
 	nLocals := c.scopes.SymbolCount()
 	code, err := c.scopes.Leave()
 	if err != nil {
 		return err
 	}
-
 	nParams := c.functionTable.CountParams(node.Type.Params)
-
 	if node.Recv != nil && len(node.Recv.List) > 0 {
 		nParams++
 	}
-
 	fnSymbol, ok := c.scopes.SymbolRebuildScope(fd.Name, tables.UnknownScope)
 	if !ok {
 		return tables.NewCompilerError(c.fileSet, node, "undefined function: %s", fd.Name)
 	}
-	compiledFn := c.gk.NewFuncCompiled(objects.FrameStatic, fd.Name, code, nLocals, nParams, false, nil, freeSymbols)
+	compiledFn := c.gk.NewFuncCompiled(objects.FrameStatic, fd.Name, code, nLocals, nParams, false, nil, freeObj)
 	fnSymbol.SetObject(compiledFn)
 	fnSymbol.SetReturnTypes(fd.ReturnTypes)
 
 	if node.Recv == nil && !c.scopes.IsRootScope() {
-		if _, err = c.scopes.Emit(bytecode.OpClosure, fnSymbol.Index(), numFree); err != nil {
+		if _, err = c.scopes.Emit(bytecode.OpClosure, fnSymbol.Index(), freeNum); err != nil {
 			return err
 		}
 		symbol, _ := c.scopes.SymbolResolve(node.Name.Name)
@@ -401,17 +388,24 @@ func (c *Functions) FuncLit(node *ast.FuncLit) error {
 			return err
 		}
 	}
-	freeSymbols := c.scopes.SymbolFreeConvert()
-	numFree := c.scopes.SymbolFreeCount()
+	freeSymbols := c.scopes.SymbolFree()
+	freeObj := make([]*objects.ObjectPointer, len(freeSymbols))
 	nParams := c.functionTable.CountParams(node.Type.Params)
 	nLocals := c.scopes.SymbolCount()
 	code, err := c.scopes.Leave()
 	if err != nil {
 		return err
 	}
-	compiledFn := c.gk.NewFuncCompiled(objects.FrameStatic, "", code, nLocals, nParams, false, nil, freeSymbols)
+	compiledFn := c.gk.NewFuncCompiled(objects.FrameStatic, "", code, nLocals, nParams, false, nil, freeObj)
 	constIndex := c.constants.Add("", compiledFn)
-	if _, err = c.scopes.Emit(bytecode.OpClosure, constIndex, numFree); err != nil {
+
+	for _, symbolIndex := range freeSymbols {
+		if _, err = c.scopes.Emit(bytecode.OpLocalGet, symbolIndex); err != nil {
+			return err
+		}
+	}
+
+	if _, err = c.scopes.Emit(bytecode.OpClosure, constIndex, len(freeSymbols)); err != nil {
 		return err
 	}
 	return nil

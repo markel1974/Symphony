@@ -43,13 +43,9 @@ func (op *OpClosure) Execute(
 		return
 	}
 
-	//a := op.vm.Stack().StackPointer()
-	//b := op.vm.Frame().BasePointer()
-	//fmt.Println(a - b)
-
 	free := make([]*objects.ObjectPointer, numFree)
 	for i := 0; i < numFree; i++ {
-		offset := numFree - i + 1
+		offset := numFree - i
 		objOffset := op.vm.Stack().PeekOffset(-offset)
 		switch objType := objOffset.(type) {
 		case *objects.ObjectPointer:

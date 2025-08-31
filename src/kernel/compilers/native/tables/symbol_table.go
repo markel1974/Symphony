@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"io"
 	"strconv"
-
-	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
 // SymbolScope represents the scope of a symbol in a program, such as global, local, free, builtin, or type-specific.
@@ -75,15 +73,16 @@ func (s *SymbolTable) Outer() *SymbolTable {
 	return s.outer
 }
 
-// ConvertFreeSymbols transforms the free symbols in the symbol table into a slice of ObjectPointer and returns it.
-func (s *SymbolTable) ConvertFreeSymbols() []*objects.ObjectPointer {
-	// Implementazione fittizia per far compilare il codice
-	return make([]*objects.ObjectPointer, len(s.freeSymbols))
-}
-
-// FreeSymbolsLen returns the number of free symbols in the symbol table.
-func (s *SymbolTable) FreeSymbolsLen() int {
-	return len(s.freeSymbols)
+// FreeSymbols returns a slice of integers representing the indices of free symbols within the SymbolTable.
+func (s *SymbolTable) FreeSymbols() []int {
+	if len(s.freeSymbols) == 0 {
+		return []int{}
+	}
+	ret := make([]int, len(s.freeSymbols))
+	for idx, v := range s.freeSymbols {
+		ret[idx] = v.Index()
+	}
+	return ret
 }
 
 // DefineUnique generates a unique symbol name using a provided base name and counter, then defines and returns the symbol.

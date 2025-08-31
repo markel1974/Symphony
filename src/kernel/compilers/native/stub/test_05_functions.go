@@ -9,9 +9,9 @@ func counterFactory2(start int) func() int {
 	d := 3
 	e := 4
 	return func() int {
-		count := 2
-		fmt.Println("here", count, a, b, c, d, e)
-		return count
+		local := "local"
+		fmt.Println("here", local, a, b, c, d, e)
+		return 1000
 	}
 }
 
