@@ -8,7 +8,7 @@ import (
 	"go/token"
 	"strconv"
 
-	tables2 "github.com/markel1974/c64emu/src/kernel/compilers/native/tables"
+	"github.com/markel1974/c64emu/src/kernel/compilers/native/tables"
 	"github.com/markel1974/c64emu/src/kernel/vm/bytecode"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
@@ -20,17 +20,17 @@ type Declarations struct {
 	gk             objects.IGateKeeper
 	references     *Constants
 	constants      *Constants
-	scopes         *tables2.Scopes
+	scopes         *tables.Scopes
 	fileSet        *token.FileSet
 	imports        *Imports
-	structTable    *tables2.StructTable
-	functionTables *tables2.FunctionTable
-	interfaceTable *tables2.InterfaceTable
+	structTable    *tables.StructTable
+	functionTables *tables.FunctionTable
+	interfaceTable *tables.InterfaceTable
 	compile        func(node ast.Node) error
 }
 
 // NewDeclarations creates and initializes a new Declarations instance with gatekeeper, constants, scopes, and structs table.
-func NewDeclarations(gk objects.IGateKeeper, references *Constants, constants *Constants, scopes *tables2.Scopes, imports *Imports, structsTable *tables2.StructTable, functionTables *tables2.FunctionTable, interfaceTable *tables2.InterfaceTable) *Declarations {
+func NewDeclarations(gk objects.IGateKeeper, references *Constants, constants *Constants, scopes *tables.Scopes, imports *Imports, structsTable *tables.StructTable, functionTables *tables.FunctionTable, interfaceTable *tables.InterfaceTable) *Declarations {
 	return &Declarations{
 		gk: gk, references: references, constants: constants, scopes: scopes,
 		compile:        nil,
@@ -81,7 +81,7 @@ func (c *Declarations) GenDecl(node *ast.GenDecl) error {
 func (c *Declarations) TypeSpec(node *ast.TypeSpec) error {
 	typeName := node.Name.Name
 	if _, ok := c.scopes.SymbolResolve(typeName); ok {
-		return tables2.NewCompilerError(c.fileSet, node, "type '%s' already defined", typeName)
+		return tables.NewCompilerError(c.fileSet, node, "type '%s' already defined", typeName)
 	}
 
 	switch t := node.Type.(type) {
@@ -91,7 +91,7 @@ func (c *Declarations) TypeSpec(node *ast.TypeSpec) error {
 				var typeNameBuf bytes.Buffer
 				var base = c.structTable.ExtractBaseName(field.Type)
 				if err := printer.Fprint(&typeNameBuf, c.fileSet, field.Type); err != nil {
-					return tables2.NewCompilerError(c.fileSet, node, "failed to resolve type for field in struct '%s'", typeName)
+					return tables.NewCompilerError(c.fileSet, node, "failed to resolve type for field in struct '%s'", typeName)
 				}
 				fieldType := typeNameBuf.String()
 				for _, name := range field.Names {
@@ -108,7 +108,7 @@ func (c *Declarations) TypeSpec(node *ast.TypeSpec) error {
 	case *ast.InterfaceType:
 		// Aggiungi la definizione dell'interfaccia alla nostra nuova tabella
 		if err := c.interfaceTable.Add(typeName, t); err != nil {
-			return tables2.NewCompilerError(c.fileSet, node, err.Error())
+			return tables.NewCompilerError(c.fileSet, node, err.Error())
 		}
 		// Aggiungi un simbolo per il tipo interfaccia
 		symbol, err := c.scopes.SymbolDefine(typeName)
@@ -128,7 +128,7 @@ func (c *Declarations) ValueSpec(node *ast.ValueSpec) error {
 	if len(node.Values) > 0 {
 		for i, name := range node.Names {
 			if i > len(node.Values)-1 {
-				return tables2.NewCompilerError(c.fileSet, node, "too few values for %s", name.Name)
+				return tables.NewCompilerError(c.fileSet, node, "too few values for %s", name.Name)
 			}
 			if err := c.compile(node.Values[i]); err != nil {
 				return err
@@ -137,7 +137,7 @@ func (c *Declarations) ValueSpec(node *ast.ValueSpec) error {
 			if err != nil {
 				return err
 			}
-			var assignedStructSymbol *tables2.Symbol
+			var assignedStructSymbol *tables.Symbol
 			isInterfaceAssignment := false
 			if node.Type != nil {
 				if typeIdent, ok := node.Type.(*ast.Ident); ok {
@@ -157,7 +157,7 @@ func (c *Declarations) ValueSpec(node *ast.ValueSpec) error {
 			}
 			if isInterfaceAssignment && assignedStructSymbol != nil && assignedStructSymbol.IsStruct() {
 				if err := c.handleInterfaceAssignment(symbol, assignedStructSymbol); err != nil {
-					return tables2.NewCompilerError(c.fileSet, node, err.Error())
+					return tables.NewCompilerError(c.fileSet, node, err.Error())
 				}
 			} else {
 				structName, returnTypes, _ := c.structTable.Inference(node.Values[i], "")
@@ -222,7 +222,7 @@ func (c *Declarations) BasicLit(node *ast.BasicLit) error {
 		val, _ := strconv.Unquote(node.Value)
 		obj = c.gk.NewString(objects.FrameStatic, val)
 	default:
-		return tables2.NewCompilerError(c.fileSet, node, "unhandled literal: %s", node.Kind)
+		return tables.NewCompilerError(c.fileSet, node, "unhandled literal: %s", node.Kind)
 	}
 	id := c.constants.Add("", obj)
 	if _, err := c.scopes.Emit(bytecode.OpConstant, id); err != nil {
@@ -270,32 +270,48 @@ func (c *Declarations) AssignStmt(node *ast.AssignStmt) error {
 	}
 	var rhsContainer []*rhs
 	if len(node.Rhs) == 0 {
-		return tables2.NewCompilerError(c.fileSet, node, "invalid number of values to assign")
+		return tables.NewCompilerError(c.fileSet, node, "invalid number of values to assign")
 	}
 	switch rhsType := node.Rhs[0].(type) {
 	case *ast.CallExpr:
 		// handle x = f(1, 2)
 		if len(node.Rhs) > 1 {
-			return tables2.NewCompilerError(c.fileSet, node, "invalid number of values to assign")
+			return tables.NewCompilerError(c.fileSet, node, "invalid number of values to assign")
 		}
 		// Compile the function call (e.g. 'f(1, 2)')
 		if err := c.compile(node.Rhs[0]); err != nil {
 			return err
 		}
-		if ident, ok := rhsType.Fun.(*ast.Ident); ok && len(ident.Name) > 0 {
-			if funcSymbol, ok := c.scopes.SymbolResolve(ident.Name); ok {
-				returnTypes := funcSymbol.ReturnTypes()
-				rhsContainer = make([]*rhs, len(returnTypes))
-				for idx := range rhsContainer {
-					rhsContainer[idx] = &rhs{node: node.Rhs[0], returnType: returnTypes[idx]}
-				}
+		var targetName string
+		switch funType := rhsType.Fun.(type) {
+		case *ast.Ident:
+			if len(funType.Name) > 0 {
+				targetName = funType.Name
 			}
+		case *ast.SelectorExpr:
+			if receiverIdent, ok := funType.X.(*ast.Ident); ok {
+				targetName = receiverIdent.Name
+			}
+		default:
+			return tables.NewCompilerError(c.fileSet, node, "function type %T not supported", funType)
+		}
+		if len(targetName) == 0 {
+			return tables.NewCompilerError(c.fileSet, node, "function symbol name not found")
+		}
+		symbol, ok := c.scopes.SymbolResolve(targetName)
+		if !ok {
+			return tables.NewCompilerError(c.fileSet, node, "function symbol not found")
+		}
+		returnTypes := symbol.ReturnTypes()
+		rhsContainer = make([]*rhs, len(returnTypes))
+		for idx := range rhsContainer {
+			rhsContainer[idx] = &rhs{node: node.Rhs[0], returnType: returnTypes[idx]}
 		}
 	case *ast.TypeAssertExpr:
 		// handle type assertion like val, ok := i.(ConcreteType)
 		// the lhs values can be 1 or 2 (e.g. 'val' or 'val, ok')
 		if len(node.Lhs) < 1 || len(node.Lhs) > 2 {
-			return tables2.NewCompilerError(c.fileSet, node, "invalid number of values to assign")
+			return tables.NewCompilerError(c.fileSet, node, "invalid number of values to assign")
 		}
 		// Compile the interface object (e.g. 'i')
 		if err := c.compile(rhsType.X); err != nil {
@@ -305,7 +321,7 @@ func (c *Declarations) AssignStmt(node *ast.AssignStmt) error {
 		targetTypeName := rhsType.Type.(*ast.Ident).Name
 		constIndex := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, targetTypeName))
 		if _, err := c.scopes.Emit(bytecode.OpTypeAssert, constIndex); err != nil {
-			return tables2.NewCompilerError(c.fileSet, node, err.Error())
+			return tables.NewCompilerError(c.fileSet, node, err.Error())
 		}
 		rhsContainer = make([]*rhs, len(node.Lhs))
 		for idx := range node.Lhs {
@@ -313,7 +329,7 @@ func (c *Declarations) AssignStmt(node *ast.AssignStmt) error {
 		}
 	default:
 		if len(node.Lhs) != len(node.Rhs) {
-			return tables2.NewCompilerError(c.fileSet, node, "invalid number of values to assign")
+			return tables.NewCompilerError(c.fileSet, node, "invalid number of values to assign")
 		}
 		rhsContainer = make([]*rhs, len(node.Rhs))
 		for i := len(node.Rhs) - 1; i >= 0; i-- {
@@ -325,13 +341,13 @@ func (c *Declarations) AssignStmt(node *ast.AssignStmt) error {
 	}
 
 	if len(node.Lhs) != len(rhsContainer) {
-		return tables2.NewCompilerError(c.fileSet, node, "assignment mismatch: %d variables but %d return values", len(node.Lhs), len(rhsContainer))
+		return tables.NewCompilerError(c.fileSet, node, "assignment mismatch: %d variables but %d return values", len(node.Lhs), len(rhsContainer))
 	}
 
 	// Handle multiple assignments (e.g. x, y := 1, 2)
 	for i := len(node.Lhs) - 1; i >= 0; i-- {
 		if err := c.handleVariableDeclaration(node.Tok, rhsContainer[i].node, node.Lhs[i], rhsContainer[i].returnType); err != nil {
-			return tables2.NewCompilerError(c.fileSet, node, err.Error())
+			return tables.NewCompilerError(c.fileSet, node, err.Error())
 		}
 	}
 	return nil
@@ -408,7 +424,7 @@ func (c *Declarations) CompositeLit(node *ast.CompositeLit) error {
 		}
 		return nil
 	default:
-		return tables2.NewCompilerError(c.fileSet, node, "unsupported composite literal type: %T", node.Type)
+		return tables.NewCompilerError(c.fileSet, node, "unsupported composite literal type: %T", node.Type)
 	}
 }
 
@@ -450,7 +466,7 @@ func (c *Declarations) IndexExpr(node *ast.IndexExpr) error {
 // handleInterfaceAssignment validates and assigns a struct to a variable with an interface type, ensuring compatibility.
 // It emits appropriate bytecode for the interface table setup and method bindings required for the variable's interface type.
 // Returns an error if the struct does not implement the interface or if bytecode generation fails.
-func (c *Declarations) handleInterfaceAssignment(variableSymbol *tables2.Symbol, assignedStructSymbol *tables2.Symbol) error {
+func (c *Declarations) handleInterfaceAssignment(variableSymbol *tables.Symbol, assignedStructSymbol *tables.Symbol) error {
 	interfaceName := variableSymbol.InterfaceName()
 	structName := assignedStructSymbol.StructName()
 	// Compatibility check
@@ -471,7 +487,7 @@ func (c *Declarations) handleInterfaceAssignment(variableSymbol *tables2.Symbol,
 			return err
 		}
 		// Push method function
-		mangledMethodName := tables2.GetMangledName(structName, requiredMethod.Name)
+		mangledMethodName := tables.GetMangledName(structName, requiredMethod.Name)
 		methodSymbol, ok := c.scopes.SymbolResolve(mangledMethodName)
 		if !ok {
 			return fmt.Errorf("internal compiler error: could not resolve method %s for struct %s", requiredMethod.Name, structName)
@@ -493,7 +509,7 @@ func (c *Declarations) handleInterfaceAssignment(variableSymbol *tables2.Symbol,
 func (c *Declarations) handleVariableDeclaration(tok token.Token, rhsIn ast.Expr, lhsIn ast.Expr, inferredTypeName string) error {
 	switch lhs := lhsIn.(type) {
 	case *ast.Ident:
-		if lhs.Name == tables2.UndefinedSymbol {
+		if lhs.Name == tables.UndefinedSymbol {
 			// if is '_', we don't create a symbol, simply discard the corresponding value from the top of the stack.
 			if _, err := c.scopes.Emit(bytecode.OpPop); err != nil {
 				return err
@@ -590,7 +606,7 @@ func (c *Declarations) handleVariableDeclaration(tok token.Token, rhsIn ast.Expr
 				// Stack is now: [..., value, "fieldName"]
 				const numSelectors = 1
 				scope := bytecode.OpLocalSelSet
-				if symbol.Scope() == tables2.GlobalScope {
+				if symbol.Scope() == tables.GlobalScope {
 					scope = bytecode.OpGlobalSelSet
 				}
 				if err := c.scopes.EmitAndPop(scope, symbol.Index(), numSelectors); err != nil {
