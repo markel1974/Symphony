@@ -70,6 +70,16 @@ func (o *Struct) AsString() string {
 	return fmt.Sprintf("{%s}", strings.Join(pairs, ", "))
 }
 
+// AssignValue assigns the elements of another Struct to the current Struct if the input is of type *Struct, otherwise returns an error.
+func (o *Struct) AssignValue(v IObject) error {
+	target, ok := v.(*Map)
+	if !ok {
+		return ErrNotAssignable
+	}
+	o.values = target.values
+	return nil
+}
+
 // Frame returns the current frame value of the Object.
 func (o *Struct) Frame() int {
 	return o.frame

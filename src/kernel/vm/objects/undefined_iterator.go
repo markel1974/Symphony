@@ -47,6 +47,11 @@ func (o *UndefinedIterator) AsFloat64() float64 {
 	return 0
 }
 
+// AssignValue sets the current object to the provided IObject, returning ErrNotAssignable if the operation is not supported.
+func (o *UndefinedIterator) AssignValue(_ IObject) error {
+	return ErrNotAssignable
+}
+
 // Frame returns the current frame value of the Object.
 func (o *UndefinedIterator) Frame() int {
 	return o.frame

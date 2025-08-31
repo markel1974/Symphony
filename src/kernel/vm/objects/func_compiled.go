@@ -119,6 +119,11 @@ func (o *FuncCompiled) AsString() string {
 	return FuncCompiledLabel
 }
 
+// AssignValue sets the current object to the provided IObject, returning ErrNotAssignable if the operation is not supported.
+func (o *FuncCompiled) AssignValue(_ IObject) error {
+	return ErrNotAssignable
+}
+
 // Frame returns the current frame value of the Object.
 func (o *FuncCompiled) Frame() int {
 	return o.frame

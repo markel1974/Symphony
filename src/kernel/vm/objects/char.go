@@ -51,6 +51,16 @@ func (o *Char) AsString() string {
 	return string(o.value)
 }
 
+// AssignValue assigns the value of another IObject to the current Char object if the type is compatible, otherwise returns an error.
+func (o *Char) AssignValue(v IObject) error {
+	target, ok := v.(*Char)
+	if !ok {
+		return ErrNotAssignable
+	}
+	o.value = target.value
+	return nil
+}
+
 // Frame returns the current frame value of the Object.
 func (o *Char) Frame() int {
 	return o.frame

@@ -67,6 +67,11 @@ func (o *StructIterator) AsString() string {
 	return StructIteratorLabel
 }
 
+// AssignValue sets the current object to the provided IObject, returning ErrNotAssignable if the operation is not supported.
+func (o *StructIterator) AssignValue(_ IObject) error {
+	return ErrNotAssignable
+}
+
 // Frame returns the current frame value of the Object.
 func (o *StructIterator) Frame() int {
 	return o.frame

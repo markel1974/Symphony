@@ -54,6 +54,16 @@ func (o *Time) AsString() string {
 	return o.value.String()
 }
 
+// AssignValue assigns the value of another IObject to the current Time object if the type is compatible, otherwise returns an error.
+func (o *Time) AssignValue(v IObject) error {
+	target, ok := v.(*Time)
+	if !ok {
+		return ErrNotAssignable
+	}
+	o.value = target.value
+	return nil
+}
+
 // Frame returns the current frame value of the Object.
 func (o *Time) Frame() int {
 	return o.frame

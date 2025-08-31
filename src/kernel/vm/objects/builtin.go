@@ -57,6 +57,11 @@ func (o *Builtin) AsString() string {
 	return fmt.Sprintf("%s: %d", o.name, o.index)
 }
 
+// AssignValue sets the current object to the provided IObject, returning ErrNotAssignable if the operation is not supported.
+func (o *Builtin) AssignValue(_ IObject) error {
+	return ErrNotAssignable
+}
+
 // Frame returns the current frame value of the Object.
 func (o *Builtin) Frame() int {
 	return o.frame

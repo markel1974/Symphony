@@ -50,6 +50,11 @@ func (o *Interface) AsString() string {
 	return o.value.AsString()
 }
 
+// AssignValue sets the current object to the provided IObject, returning ErrNotAssignable if the operation is not supported.
+func (o *Interface) AssignValue(v IObject) error {
+	return o.value.AssignValue(v)
+}
+
 // Frame returns the current execution frame associated with the Interface instance.
 func (o *Interface) Frame() int {
 	return o.frame

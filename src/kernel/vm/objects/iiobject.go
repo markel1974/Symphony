@@ -4,21 +4,27 @@ import (
 	"time"
 )
 
-// IObject represents a generic interface for any object in the system.
-// TypeName returns the name of the type of the object.
-// String returns a string representation of the object.
-// Frame retrieves the current execution frame associated with the object.
-// BinaryOp performs a binary operation using the specified operator and operands, returning the result or an error.
-// Boolean evaluates and returns the boolean value of the object.
-// Equals returns true if the object is equal to another given object.
-// Copy creates and returns a deep copy of the object within the given frame.
-// IndexGet retrieves the value at a given index from the object, returning the value or an error.
-// IndexSet updates the value at a given index within the object, returning an error if the operation fails.
-// Iterate returns an iterator for the object, enabling traversal over its elements.
-// CanIterate checks whether the object supports iteration.
-// Call invokes the object as a callable function with the provided arguments, returning the result or an error.
-// CanCall checks whether the object supports being called as a function.
-// Length returns the length of the object, if applicable.
+// IObject defines an interface for handling various object types in a flexible and extensible manner.
+// GateKeeper returns the IGateKeeper instance associated with the object for managing object operations.
+// TypeName returns the name of the object's type as a string.
+// AsBool converts the object to a boolean value, if possible.
+// AsInt64 converts the object to a 64-bit integer, if possible.
+// AsFloat64 converts the object to a 64-bit floating-point number, if possible.
+// AsString converts the object to a string value, if possible.
+// Assign assigns the current object with attributes of another IObject, returning an error if the operation fails.
+// Frame retrieves the execution frame ID associated with the object.
+// LogicalOp performs a logical operation between the object and another IObject, returning a new result or an error.
+// ArithmeticOp performs an arithmetic operation between the object and another IObject, returning a new result or an error.
+// Falsy checks if the object evaluates to a false-like value.
+// Equals determines if the current object is equal to another IObject.
+// Copy creates a copy of the current object within the specified execution frame and recursion depth.
+// IndexGet retrieves a value from the object at the specified index and returns it, or an error if unavailable.
+// IndexSet updates the object at the specified index with a new value, potentially returning an error.
+// Iterate returns an iterator for traversing the object if it's iterable.
+// CanIterate checks if the object supports iteration.
+// Call invokes the object as if it's a callable function, passing arguments and returning the result or an error.
+// CanCall checks if the object can be invoked as a callable entity.
+// Length returns the length of the object, typically for iterable or sized entities.
 type IObject interface {
 	GateKeeper() IGateKeeper
 	TypeName() string
@@ -26,6 +32,7 @@ type IObject interface {
 	AsInt64() int64
 	AsFloat64() float64
 	AsString() string
+	AssignValue(object IObject) error
 	Frame() int
 	LogicalOp(frame int, op LogicalOperator, rightHandSide IObject) (IObject, error)
 	ArithmeticOp(frame int, op ArithmeticOperator, rightHandSide IObject) (IObject, error)

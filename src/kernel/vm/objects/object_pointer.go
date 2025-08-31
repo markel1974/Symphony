@@ -54,6 +54,11 @@ func (o *ObjectPointer) AsString() string {
 	return ObjectPointerType
 }
 
+// AssignValue sets the current object to the provided IObject, returning ErrNotAssignable if the operation is not supported.
+func (o *ObjectPointer) AssignValue(v IObject) error {
+	return (*o.value).AssignValue(v)
+}
+
 // Frame returns the current frame value of the Object.
 func (o *ObjectPointer) Frame() int {
 	return o.frame

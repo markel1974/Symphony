@@ -61,6 +61,16 @@ func (o *Bool) AsString() string {
 	return "false"
 }
 
+// AssignValue assigns the value of another Bool instance to the current instance. Returns an error if the input is not a Bool.
+func (o *Bool) AssignValue(v IObject) error {
+	target, ok := v.(*Bool)
+	if !ok {
+		return ErrNotAssignable
+	}
+	o.value = target.value
+	return nil
+}
+
 // Frame returns the execution frame associated with the Bool object.
 func (o *Bool) Frame() int {
 	return o.frame

@@ -33,20 +33,16 @@ func NewOpDerefSet(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) 
 
 // Execute performs a dereference-and-set operation on the stack, assigning a value to the object pointed by a pointer.
 func (op *OpDerefSet) Execute(_ *core.Decoder) {
-	// Stack (dall'alto verso il basso): [valore, puntatore, ...]
-	valueToSet := op.vm.Stack().Pop()
 	pointerObj := op.vm.Stack().Pop()
-
+	valueToSet := op.vm.Stack().Pop()
 	ptr, ok := pointerObj.(*objects.ObjectPointer)
 	if !ok {
 		op.vm.SetError(fmt.Errorf("invalid operation: cannot assign to a non-pointer type %s", pointerObj.TypeName()))
 		return
 	}
-
-	// Assegna il nuovo valore all'oggetto puntato.
-	ptr.SetValue(valueToSet)
-
-	// Lascia il valore assegnato sullo stack per possibili assegnazioni a catena,
-	// o può essere rimosso con un OpPop successivo se necessario.
+	if err := ptr.AssignValue(valueToSet); err != nil {
+		op.vm.SetError(err)
+		return
+	}
 	op.vm.Stack().Push(valueToSet)
 }

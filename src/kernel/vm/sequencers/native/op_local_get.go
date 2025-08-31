@@ -5,7 +5,6 @@ import (
 
 	"github.com/markel1974/c64emu/src/kernel/vm/bytecode"
 	"github.com/markel1974/c64emu/src/kernel/vm/core"
-	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
 func init() {
@@ -35,8 +34,5 @@ func (op *OpLocalGet) Execute(decoder *core.Decoder) {
 	// Operands Offset 1 (8-bit)
 	localIndex := decoder.Read(0)
 	val := op.vm.Stack().PeekAbsolute(op.vm.Frame().BasePointer() + localIndex)
-	if obj, ok := val.(*objects.ObjectPointer); ok {
-		val = *obj.Value()
-	}
 	op.vm.Stack().Push(val)
 }

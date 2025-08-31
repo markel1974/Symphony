@@ -52,6 +52,16 @@ func (o *Float) AsFloat64() float64 {
 	return o.value
 }
 
+// AssignValue assigns the value of another IObject to the current Float object if the type is compatible, otherwise returns an error.
+func (o *Float) AssignValue(v IObject) error {
+	target, ok := v.(*Float)
+	if !ok {
+		return ErrNotAssignable
+	}
+	o.value = target.value
+	return nil
+}
+
 // AsString returns the string representation of the Float object using its internal float64 values.
 func (o *Float) AsString() string {
 	return strconv.FormatFloat(o.value, 'f', -1, 64)

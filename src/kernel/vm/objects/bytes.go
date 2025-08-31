@@ -58,6 +58,16 @@ func (o *Bytes) AsString() string {
 	return string(o.values)
 }
 
+// AssignValue assigns the values from another `Bytes` object to the current instance, returning an error if the types are incompatible.
+func (o *Bytes) AssignValue(v IObject) error {
+	target, ok := v.(*Bytes)
+	if !ok {
+		return ErrNotAssignable
+	}
+	o.values = target.values
+	return nil
+}
+
 // Frame returns the current frame value of the Object.
 func (o *Bytes) Frame() int {
 	return o.frame

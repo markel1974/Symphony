@@ -27,6 +27,8 @@ var (
 
 	ErrInvalidOperator = errors.New("invalid operator")
 
+	ErrNotAssignable = errors.New("not assignable")
+
 	ErrInvalidArgumentsNumber = errors.New("invalid arguments number")
 
 	ErrInvalidRangeStep = errors.New("invalid range step")

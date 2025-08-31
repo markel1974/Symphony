@@ -54,6 +54,16 @@ func (o *Int) AsString() string {
 	return strconv.FormatInt(o.value, 10)
 }
 
+// AssignValue assigns the value of another IObject to the current Int object if the type is compatible, otherwise returns an error.
+func (o *Int) AssignValue(v IObject) error {
+	target, ok := v.(*Int)
+	if !ok {
+		return ErrNotAssignable
+	}
+	o.value = target.value
+	return nil
+}
+
 // Frame returns the current frame value of the Object.
 func (o *Int) Frame() int {
 	return o.frame

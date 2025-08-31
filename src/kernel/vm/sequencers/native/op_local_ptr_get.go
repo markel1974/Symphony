@@ -41,6 +41,5 @@ func (op *OpLocalPtrGet) Execute(decoder *core.Decoder) {
 		return
 	}
 	freeVar := op.vm.Factory().NewObjectPointer(op.vm.Frame().Id(), &val)
-	op.vm.Stack().SetAbsolute(sp, freeVar)
 	op.vm.Stack().Push(freeVar)
 }

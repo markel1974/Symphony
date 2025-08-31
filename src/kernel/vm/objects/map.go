@@ -69,6 +69,16 @@ func (o *Map) AsString() string {
 	return fmt.Sprintf("{%s}", strings.Join(pairs, ", "))
 }
 
+// AssignValue assigns the elements of another Map to the current Map if the input is of type *Map, otherwise returns an error.
+func (o *Map) AssignValue(v IObject) error {
+	target, ok := v.(*Map)
+	if !ok {
+		return ErrNotAssignable
+	}
+	o.values = target.values
+	return nil
+}
+
 // Frame returns the current frame value of the Object.
 func (o *Map) Frame() int {
 	return o.frame

@@ -62,6 +62,16 @@ func (o *Array) AsString() string {
 	return fmt.Sprintf("[%s]", strings.Join(elements, "; "))
 }
 
+// AssignValue assigns the elements of another Array to the current Array if the input is of type *Array, otherwise returns an error.
+func (o *Array) AssignValue(v IObject) error {
+	target, ok := v.(*Array)
+	if !ok {
+		return ErrNotAssignable
+	}
+	o.Assign(target.values)
+	return nil
+}
+
 // Frame retrieves the current execution frame associated with the Array instance.
 func (o *Array) Frame() int {
 	return o.frame

@@ -57,6 +57,11 @@ func (o *ArrayIterator) AsString() string {
 	return ArrayIteratorLabel
 }
 
+// AssignValue assigns the elements of another Array to the current Array if the input is of type *Array, otherwise returns an error.
+func (o *ArrayIterator) AssignValue(_ IObject) error {
+	return ErrNotAssignable
+}
+
 // Frame returns the current execution frame associated with the ArrayIterator.
 func (o *ArrayIterator) Frame() int {
 	return o.frame
