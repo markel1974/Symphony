@@ -10,7 +10,8 @@ func counterFactory2(start int) func() int {
 	e := 4
 	return func() int {
 		local := "local"
-		fmt.Println("here", local, a, b, c, d, e)
+		//fmt.Println("here", local, a, b, e)
+		fmt.Println("here", local, start, e, b, c)
 		return 1000
 	}
 }
@@ -18,7 +19,8 @@ func counterFactory2(start int) func() int {
 func main() {
 	fmt.Println("--- Running Test 07: Closures and Free Variables ---")
 	counterA := counterFactory2(100)
-	counterA()
+	z := counterA()
+	fmt.Println("RESULT", z)
 	//z := counterA()
 	//fmt.Println(z)
 }

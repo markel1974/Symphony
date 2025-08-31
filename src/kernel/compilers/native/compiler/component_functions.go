@@ -388,6 +388,8 @@ func (c *Functions) FuncLit(node *ast.FuncLit) error {
 			return err
 		}
 	}
+
+	//prepare free symbols
 	freeSymbols := c.scopes.SymbolFree()
 	freeObj := make([]*objects.ObjectPointer, len(freeSymbols))
 	nParams := c.functionTable.CountParams(node.Type.Params)
@@ -396,16 +398,24 @@ func (c *Functions) FuncLit(node *ast.FuncLit) error {
 	if err != nil {
 		return err
 	}
-	compiledFn := c.gk.NewFuncCompiled(objects.FrameStatic, "", code, nLocals, nParams, false, nil, freeObj)
-	constIndex := c.constants.Add("", compiledFn)
-
-	for _, symbolIndex := range freeSymbols {
-		if _, err = c.scopes.Emit(bytecode.OpLocalGet, symbolIndex); err != nil {
+	//for x := len(freeSymbols) - 1; x >= 0; x-- {
+	//	freeConstantIdx := c.constants.Add(closureName+"_free", c.gk.NewInt(objects.FrameStatic, int64(freeSymbols[x])))
+	//	if _, err = c.scopes.Emit(bytecode.OpConstant, freeConstantIdx); err != nil {
+	//		return err
+	//	}
+	//}
+	for _, freeIndex := range freeSymbols {
+		freeConstantIdx := c.constants.Add(closureName+"_free", c.gk.NewInt(objects.FrameStatic, int64(freeIndex)))
+		if _, err = c.scopes.Emit(bytecode.OpConstant, freeConstantIdx); err != nil {
 			return err
 		}
 	}
-
-	if _, err = c.scopes.Emit(bytecode.OpClosure, constIndex, len(freeSymbols)); err != nil {
+	if _, err = c.scopes.Emit(bytecode.OpArray, len(freeSymbols)); err != nil {
+		return err
+	}
+	compiledFn := c.gk.NewFuncCompiled(objects.FrameStatic, "", code, nLocals, nParams, false, nil, freeObj)
+	constIndex := c.constants.Add("", compiledFn)
+	if _, err = c.scopes.Emit(bytecode.OpClosure, constIndex, c.scopes.SymbolCount()); err != nil {
 		return err
 	}
 	return nil

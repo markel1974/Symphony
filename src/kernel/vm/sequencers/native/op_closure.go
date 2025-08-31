@@ -31,25 +31,34 @@ func NewOpClosure(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
 }
 
 // Execute performs the operation associated with the OpClosure opcode, creating a closure and pushing it onto the stack.
-func (op *OpClosure) Execute(
-	decoder *core.Decoder) {
+func (op *OpClosure) Execute(decoder *core.Decoder) {
 	// Operands Offset 3 (8-bit|16-bit)
-	numFree := decoder.Read(0)
-	constIndex := decoder.Read(1)
-	glObj := op.vm.Constants().Get(uint(constIndex))
-	fn, ok := glObj.(*objects.FuncCompiled)
+	numTotal := decoder.Read(0)
+	closureIndex := decoder.Read(1)
+	closureObj := op.vm.Constants().Get(uint(closureIndex))
+	fn, ok := closureObj.(*objects.FuncCompiled)
 	if !ok {
 		op.vm.SetError(fmt.Errorf("not a function: %s", fn.TypeName()))
 		return
 	}
-
-	free := make([]*objects.ObjectPointer, numFree)
-	for i := 0; i < numFree; i++ {
-		offset := numFree - i
-		objOffset := op.vm.Stack().PeekOffset(-offset)
+	freeArgs := op.vm.Stack().Pop()
+	freeIndices, ok := freeArgs.(*objects.Array)
+	if !ok {
+		op.vm.SetError(fmt.Errorf("invalid operation: cannot create closure without arguments"))
+		return
+	}
+	free := make([]*objects.ObjectPointer, freeIndices.Length())
+	for idx, freeObjIndex := range freeIndices.Values() {
+		freeIndex, ok := freeObjIndex.(*objects.Int)
+		if !ok {
+			op.vm.SetError(fmt.Errorf("invalid operation: cannot create closure without arguments"))
+			return
+		}
+		offset := numTotal - int(freeIndex.Value())
+		objOffset := op.vm.Stack().PeekOffset(-offset - 1)
 		switch objType := objOffset.(type) {
 		case *objects.ObjectPointer:
-			free[i] = objType
+			free[idx] = objType
 		default:
 			obj := op.vm.Factory().NewObjectPointer(op.vm.Frame().Id(), &objOffset)
 			freeObjPtr, ok := obj.(*objects.ObjectPointer)
@@ -57,10 +66,10 @@ func (op *OpClosure) Execute(
 				op.vm.SetError(fmt.Errorf("not a pointer: %s", obj.TypeName()))
 				return
 			}
-			free[i] = freeObjPtr
+			free[idx] = freeObjPtr
 		}
 	}
-	op.vm.Stack().DecrementCount(numFree)
-	cl := op.vm.Factory().NewFuncCompiled(op.vm.Frame().Id(), "closure", fn.Instructions().Data(), fn.NumLocals(), fn.NumParameters(), fn.VarArgs(), nil, free)
+	op.vm.Stack().DecrementCount(freeIndices.Length())
+	cl := op.vm.Factory().NewFuncCompiled(op.vm.Frame().Id(), fn.Name(), fn.Instructions().Data(), fn.NumLocals(), fn.NumParameters(), fn.VarArgs(), nil, free)
 	op.vm.Stack().Push(cl)
 }
