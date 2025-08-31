@@ -13,6 +13,7 @@ func main() {
 	mapVal := m["two"] + m["three"]
 
 	slice := arr[0:2]
+	fmt.Println("TEST SLICE", slice)
 	sliceSum := slice[0] + slice[1]
 
 	finalValue := val + mapVal + sliceSum
@@ -21,6 +22,6 @@ func main() {
 	if finalValue == expectedValue {
 		fmt.Println("[TEST PASSED] Data structures handled correctly.")
 	} else {
-		fmt.Println("[TEST FAILED] Error in data structure manipulation.")
+		fmt.Printf("[TEST FAILED] Error in data structure manipulation. %d\n", finalValue)
 	}
 }

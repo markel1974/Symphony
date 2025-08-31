@@ -138,6 +138,7 @@ func vmTest() {
 	gk := objects.NewGateKeeper(0)
 	op := bytecode.NewOpcodes()
 	for _, fileName := range stub.Prepare(baseDir, "test_") {
+		fmt.Println("------------------", fileName, "------------------")
 		comp, loader, err := compilers.NewCompiler(gk, op, sequencerId)
 		if err != nil {
 			log.Fatalf("compiler error: %s", err)
