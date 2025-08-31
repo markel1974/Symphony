@@ -3,10 +3,14 @@ package stub
 import "fmt"
 
 func counterFactory2(start int) func() int {
-	//count := start
+	a := start
+	b := 1
+	c := 2
+	d := 3
+	e := 4
 	return func() int {
 		count := 2
-		fmt.Println("here", count)
+		fmt.Println("here", count, a, b, c, d, e)
 		return count
 	}
 }

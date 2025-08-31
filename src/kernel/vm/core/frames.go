@@ -22,7 +22,7 @@ func NewFrames(gk objects.IGateKeeper, maxFrames int, errSignal func(err error))
 		errSignal:   errSignal,
 	}
 	for i := range f.frames {
-		f.frames[i] = NewFunctionCallFrame(i, errSignal)
+		f.frames[i] = NewFrame(gk, i, errSignal)
 	}
 	return f
 }

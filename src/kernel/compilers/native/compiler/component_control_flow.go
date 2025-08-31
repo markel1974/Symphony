@@ -305,7 +305,7 @@ func (c *ControlFlow) TypeSwitchStmt(node *ast.TypeSwitchStmt) error {
 		jumpsToNextCase = append(jumpsToNextCase, jumpPos)
 		// 4. If type matches, define new variable (e.g. 'v')
 		//	in a new scope for case body
-		if err := c.scopes.Enter(""); err != nil {
+		if err := c.scopes.Enter(tables2.UnknownScope, ""); err != nil {
 			return err
 		}
 		assignStmt := node.Assign.(*ast.AssignStmt)

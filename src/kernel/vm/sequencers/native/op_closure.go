@@ -42,21 +42,26 @@ func (op *OpClosure) Execute(
 		op.vm.SetError(fmt.Errorf("not a function: %s", fn.TypeName()))
 		return
 	}
+
+	//a := op.vm.Stack().StackPointer()
+	//b := op.vm.Frame().BasePointer()
+	//fmt.Println(a - b)
+
 	free := make([]*objects.ObjectPointer, numFree)
 	for i := 0; i < numFree; i++ {
 		offset := numFree - i + 1
-		freeObj := op.vm.Stack().PeekOffset(-offset)
-		switch freeVar := freeObj.(type) {
+		objOffset := op.vm.Stack().PeekOffset(-offset)
+		switch objType := objOffset.(type) {
 		case *objects.ObjectPointer:
-			free[i] = freeVar
+			free[i] = objType
 		default:
-			freObj := op.vm.Factory().NewObjectPointer(op.vm.Frame().Id(), &freeObj)
-			freePtr, ok := freObj.(*objects.ObjectPointer)
+			obj := op.vm.Factory().NewObjectPointer(op.vm.Frame().Id(), &objOffset)
+			freeObjPtr, ok := obj.(*objects.ObjectPointer)
 			if !ok {
-				op.vm.SetError(fmt.Errorf("not a pointer: %s", freeObj.TypeName()))
+				op.vm.SetError(fmt.Errorf("not a pointer: %s", obj.TypeName()))
 				return
 			}
-			free[i] = freePtr
+			free[i] = freeObjPtr
 		}
 	}
 	op.vm.Stack().DecrementCount(numFree)

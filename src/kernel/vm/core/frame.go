@@ -7,6 +7,7 @@ import (
 // Frame represents a structure used for maintaining function call frames in a virtual machine execution context.
 // It encapsulates the execution state, free variables, instruction pointer, and base pointer of a function call.
 type Frame struct {
+	gk               objects.IGateKeeper
 	id               int
 	compiledFunction *objects.FuncCompiled
 	freeVars         []*objects.ObjectPointer
@@ -16,9 +17,10 @@ type Frame struct {
 	errSignal        func(err error)
 }
 
-// NewFunctionCallFrame creates and returns a new Frame instance with its instruction pointer initialized to -1.
-func NewFunctionCallFrame(id int, errSignal func(err error)) *Frame {
+// NewFrame creates and returns a new Frame instance with its instruction pointer initialized to -1.
+func NewFrame(gk objects.IGateKeeper, id int, errSignal func(err error)) *Frame {
 	return &Frame{
+		gk:        gk,
 		id:        id,
 		savedIp:   resetIp,
 		errSignal: errSignal,
@@ -63,6 +65,9 @@ func (f *Frame) Get16(low int) uint16 {
 
 // FreeVarsIndex retrieves the free variable at the specified index from the frame's free variables.
 func (f *Frame) FreeVarsIndex(idx int) *objects.ObjectPointer {
+	if idx < 0 || idx >= len(f.freeVars) {
+		return nil
+	}
 	return f.freeVars[idx]
 }
 

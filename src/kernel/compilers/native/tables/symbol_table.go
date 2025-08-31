@@ -32,20 +32,22 @@ type SymbolTable struct {
 	freeSymbols   []*Symbol
 	uniqueCounter int
 	funcName      string
+	defaultScope  SymbolScope
 }
 
 // NewSymbolTable initializes and returns a new instance of SymbolTable with an empty container and counter set to zero.
-func NewSymbolTable() *SymbolTable {
+func NewSymbolTable(defaultScope SymbolScope) *SymbolTable {
 	s := &SymbolTable{
 		symbols:       make(map[string]*Symbol),
 		uniqueCounter: 0,
+		defaultScope:  defaultScope,
 	}
 	return s
 }
 
 // NewEnclosedSymbolTable creates a new symbol table enclosed by the provided outer symbol table.
-func NewEnclosedSymbolTable(outer *SymbolTable, funcName string) *SymbolTable {
-	s := NewSymbolTable()
+func NewEnclosedSymbolTable(outer *SymbolTable, defaultScope SymbolScope, funcName string) *SymbolTable {
+	s := NewSymbolTable(defaultScope)
 	s.outer = outer
 	s.funcName = funcName
 	return s
@@ -61,10 +63,10 @@ func (s *SymbolTable) Print(writer io.Writer) {
 		s.outer.Print(writer)
 	}
 	for k, v := range s.symbols {
-		_, _ = fmt.Fprintf(writer, "%s %s %v %d %v", k, v.Name(), v.Scope(), v.Index())
+		_, _ = fmt.Fprintf(writer, "%s %s %v %d", k, v.Name(), v.Scope(), v.Index())
 	}
 	for idx, v := range s.freeSymbols {
-		_, _ = fmt.Fprintf(writer, "%d %s %v %d %v", idx, v.Name(), v.Scope(), v.Index())
+		_, _ = fmt.Fprintf(writer, "%d %s %v %d", idx, v.Name(), v.Scope(), v.Index())
 	}
 }
 
@@ -96,8 +98,8 @@ func (s *SymbolTable) Define(name string) (*Symbol, error) {
 	if _, ok := s.symbols[name]; ok {
 		return nil, fmt.Errorf("symbol '%s' already defined", name)
 	}
-	scope := s.computeScope(UnknownScope)
-	symbol := NewSymbol(name, len(s.definitions), scope)
+	computedScope := s.computeScope(s.defaultScope)
+	symbol := NewSymbol(name, len(s.definitions), computedScope)
 	s.definitions = append(s.definitions, symbol)
 	s.symbols[name] = symbol
 	return symbol, nil
@@ -106,27 +108,27 @@ func (s *SymbolTable) Define(name string) (*Symbol, error) {
 // Resolve attempts to look up a symbol by name in the current SymbolTable and outer scopes, if applicable.
 // It returns the found Symbol and a boolean indicating whether the resolution was successful.
 func (s *SymbolTable) Resolve(name string) (*Symbol, bool) {
-	if obj, ok := s.symbols[name]; ok {
-		return obj, true
+	if symbol, ok := s.symbols[name]; ok {
+		return symbol, true
 	}
 	if s.outer == nil {
 		return nil, false
 	}
-	obj, ok := s.outer.Resolve(name)
+	symbol, ok := s.outer.Resolve(name)
 	if !ok {
-		return obj, ok
+		return symbol, ok
 	}
 	// Types, global variables, and builtin functions are directly accessible
 	// from inner scopes and should not be converted to "free variables".
-	if obj.Scope() == GlobalScope {
-		return obj, true
+	if symbol.Scope() == GlobalScope {
+		return symbol, true
 	}
-	s.freeSymbols = append(s.freeSymbols, obj)
-	symbol := obj.Clone()
-	obj.index = len(s.freeSymbols) - 1
-	obj.scope = FreeScope
-	s.symbols[obj.Name()] = symbol
-	return symbol, true
+	s.freeSymbols = append(s.freeSymbols, symbol)
+	freeSymbol := symbol.Clone()
+	freeSymbol.index = len(s.freeSymbols) - 1
+	freeSymbol.scope = FreeScope
+	s.symbols[symbol.Name()] = freeSymbol
+	return freeSymbol, true
 }
 
 // RebuildScope updates the scope of a Symbol if it exists and returns the updated Symbol alongside a boolean for success.

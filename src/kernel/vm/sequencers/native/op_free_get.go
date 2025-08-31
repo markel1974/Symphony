@@ -33,6 +33,11 @@ func NewOpFreeGet(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
 func (op *OpFreeGet) Execute(decoder *core.Decoder) {
 	// Operands Offset 1 (8-bit)
 	freeIndex := decoder.Read(0)
-	val := *op.vm.Frame().FreeVarsIndex(freeIndex).Value()
-	op.vm.Stack().Push(val)
+	freeVar := op.vm.Frame().FreeVarsIndex(freeIndex)
+	if freeVar == nil {
+		op.vm.SetError(fmt.Errorf("free variable %d not found", freeIndex))
+		return
+	}
+	z := *freeVar.Value()
+	op.vm.Stack().Push(z)
 }

@@ -30,7 +30,7 @@ func NewScopes(gk objects.IGateKeeper, op *bytecode.Opcodes) *Scopes {
 	c := &Scopes{
 		gk:                   gk,
 		op:                   op,
-		initSymbolTable:      NewSymbolTable(),
+		initSymbolTable:      NewSymbolTable(UnknownScope),
 		symbolTable:          nil,
 		scopeIndex:           0,
 		compilations:         []*CompilationScope{},
@@ -184,12 +184,12 @@ func (c *Scopes) InstructionGet(pos int) (byte, error) {
 }
 
 // Enter creates a new compilation scope, updates the symbol table to be enclosed, and increments the scope index.
-func (c *Scopes) Enter(funcName string) error {
+func (c *Scopes) Enter(defaultScope SymbolScope, funcName string) error {
 	if c.scopeIndex > maxScope {
 		return fmt.Errorf("maximum scope depth exceeded: %d", maxScope)
 	}
 	scope := NewCompilationScope()
-	c.symbolTable = NewEnclosedSymbolTable(c.symbolTable, funcName)
+	c.symbolTable = NewEnclosedSymbolTable(c.symbolTable, defaultScope, funcName)
 	c.compilations = append(c.compilations, scope)
 	c.scopeIndex++
 	return nil
@@ -254,6 +254,17 @@ func (c *Scopes) EmitAndPop(op bytecode.OpcodeId, operands ...int) error {
 	return nil
 }
 
+// EmitSymbolDefineAndPop defines a symbol within the current scope, emits its bytecode, and pops it off the stack.
+func (c *Scopes) EmitSymbolDefineAndPop(s *Symbol) error {
+	if err := c.EmitSymbolDefine(s); err != nil {
+		return err
+	}
+	if _, err := c.Emit(bytecode.OpPop); err != nil {
+		return err
+	}
+	return nil
+}
+
 // EmitSymbolDefine emits the opcode for *defining* a variable.
 func (c *Scopes) EmitSymbolDefine(s *Symbol) error {
 	var op bytecode.OpcodeId
@@ -266,17 +277,6 @@ func (c *Scopes) EmitSymbolDefine(s *Symbol) error {
 		return fmt.Errorf("unsupported symbol scope: %v", s.Scope())
 	}
 	if _, err := c.Emit(op, s.Index()); err != nil {
-		return err
-	}
-	return nil
-}
-
-// EmitSymbolDefineAndPop defines a symbol within the current scope, emits its bytecode, and pops it off the stack.
-func (c *Scopes) EmitSymbolDefineAndPop(s *Symbol) error {
-	if err := c.EmitSymbolDefine(s); err != nil {
-		return err
-	}
-	if _, err := c.Emit(bytecode.OpPop); err != nil {
 		return err
 	}
 	return nil
@@ -301,17 +301,6 @@ func (c *Scopes) EmitSymbolSet(s *Symbol) error {
 	return nil
 }
 
-// EmitSymbolSetAndPop sets a symbol and then emits a pop operation, returning an error if either fails.
-func (c *Scopes) EmitSymbolSetAndPop(s *Symbol) error {
-	if err := c.EmitSymbolSet(s); err != nil {
-		return err
-	}
-	if _, err := c.Emit(bytecode.OpPop); err != nil {
-		return err
-	}
-	return nil
-}
-
 // EmitSymbolGet generates bytecode instructions to retrieve a symbol's value based on its scope and index.
 func (c *Scopes) EmitSymbolGet(s *Symbol) error {
 	var op bytecode.OpcodeId
@@ -326,6 +315,17 @@ func (c *Scopes) EmitSymbolGet(s *Symbol) error {
 		return fmt.Errorf("unsupported symbol scope: %v", s.Scope())
 	}
 	if _, err := c.Emit(op, s.Index()); err != nil {
+		return err
+	}
+	return nil
+}
+
+// EmitSymbolSetAndPop sets a symbol and then emits a pop operation, returning an error if either fails.
+func (c *Scopes) EmitSymbolSetAndPop(s *Symbol) error {
+	if err := c.EmitSymbolSet(s); err != nil {
+		return err
+	}
+	if _, err := c.Emit(bytecode.OpPop); err != nil {
 		return err
 	}
 	return nil
