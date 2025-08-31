@@ -1,4 +1,4 @@
-package stub
+package tests
 
 import "fmt"
 
@@ -7,15 +7,15 @@ func increment(val *int) {
 }
 
 func main() {
-	fmt.Println("--- Running Test 09: Pointers ---")
+	fmt.Println("--- Running Test: Pointers ---")
 
 	x := 10
-	ptr_x := &x
-	increment(ptr_x)
+	ptrX := &x
+	increment(ptrX)
 
 	y := 20
-	ptr_y := &y
-	increment(ptr_y)
+	ptrY := &y
+	increment(ptrY)
 
 	finalValue := x + y
 	expectedValue := 32

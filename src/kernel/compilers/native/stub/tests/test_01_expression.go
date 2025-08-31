@@ -1,9 +1,9 @@
-package stub
+package tests
 
 import "fmt"
 
 func main() {
-	fmt.Println("--- Running Test 01: Expressions and Operators ---")
+	fmt.Println("--- Running Test: Expressions and Operators ---")
 
 	a := 10
 	b := 20

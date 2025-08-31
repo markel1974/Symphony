@@ -1,4 +1,4 @@
-package stub
+package tests
 
 import "fmt"
 
@@ -28,7 +28,7 @@ func getTotalArea(s Shape) int {
 }
 
 func main() {
-	fmt.Println("--- Running Test 10: Interfaces and Type Assertion ---")
+	fmt.Println("--- Running Test: Interfaces and Type Assertion ---")
 
 	r := RectangleShape{width: 10, height: 4}
 	c := CircleShape{radius: 5}

@@ -1,9 +1,9 @@
-package stub
+package tests
 
 import "fmt"
 
 func main() {
-	fmt.Println("--- Running Test 04: Loops (for, range) ---")
+	fmt.Println("--- Running Test: Loops (for, range) ---")
 
 	sum := 0
 	for i := 0; i < 10; i = i + 1 {

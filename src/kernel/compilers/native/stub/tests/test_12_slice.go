@@ -1,9 +1,9 @@
-package stub
+package tests
 
 import "fmt"
 
 func main() {
-	fmt.Println("--- Running Test 06: Data Structures (Array, Map, Slice) ---")
+	fmt.Println("--- Running Test: Data Structures (Array, Map, Slice) ---")
 
 	arr := []int{10, 20, 30}
 	val := arr[1]

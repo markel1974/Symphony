@@ -1,4 +1,4 @@
-package stub
+package tests
 
 import "fmt"
 
@@ -11,8 +11,12 @@ func (r RectangleStruct) Area() int {
 	return r.width * r.height
 }
 
+func NewRectangleStruct(width int, height int) RectangleStruct {
+	return RectangleStruct{width: width, height: height}
+}
+
 func main() {
-	fmt.Println("--- Running Test 08: Structs and Methods ---")
+	fmt.Println("--- Running Test: Structs and Methods ---")
 
 	r1 := RectangleStruct{width: 10, height: 5}
 	area := r1.Area()

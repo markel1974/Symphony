@@ -1,4 +1,4 @@
-package stub
+package tests
 
 import "fmt"
 
@@ -15,7 +15,7 @@ func checkValue(v int) int {
 }
 
 func main() {
-	fmt.Println("--- Running Test 03: Control Flow (if-else) ---")
+	fmt.Println("--- Running Test: Control Flow (if-else) ---")
 
 	r1 := checkValue(200)
 	r2 := checkValue(75)

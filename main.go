@@ -11,6 +11,7 @@ import (
 	"github.com/markel1974/c64emu/src"
 	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/kernel/compilers"
+	"github.com/markel1974/c64emu/src/kernel/compilers/native/stub"
 	"github.com/markel1974/c64emu/src/kernel/component"
 	"github.com/markel1974/c64emu/src/kernel/frontend"
 	"github.com/markel1974/c64emu/src/kernel/frontend/authenticator"
@@ -133,31 +134,19 @@ func BuildDrives(d string) ([]*config.Drive, error) {
 
 func vmTest() {
 	const sequencerId = "native"
+	const baseDir = "../src/kernel/compilers/native/stub/tests"
 	gk := objects.NewGateKeeper(0)
 	op := bytecode.NewOpcodes()
-	baseDir := "../src/kernel/compilers/native/stub"
-	data, err := os.ReadDir(baseDir)
-	if err != nil {
-		log.Fatalf("error: %s", err)
-	}
-	for _, v := range data {
-		if v.IsDir() {
-			continue
-		}
-		if !strings.HasPrefix(v.Name(), "test_05") {
-			//if !strings.HasPrefix(v.Name(), "source1.go") {
-			continue
-		}
+	for _, fileName := range stub.Prepare(baseDir, "test_07") {
 		comp, loader, err := compilers.NewCompiler(gk, op, sequencerId)
 		if err != nil {
 			log.Fatalf("compiler error: %s", err)
 		}
 		var args []interface{} = nil
 		//args := []interface{}{1, 2}
-		//fileName := "source9.go"
-		dataFile, _ := os.Open(baseDir + string(os.PathSeparator) + v.Name())
+		dataFile, _ := os.Open(baseDir + string(os.PathSeparator) + fileName)
 		defer dataFile.Close()
-		if err = comp.Compile(v.Name(), dataFile); err != nil {
+		if err = comp.Compile(fileName, dataFile); err != nil {
 			log.Fatalf("compiler error: %s", err)
 		}
 		bc := bytecode.NewBytecode(op, comp.Constants(), comp.References(), comp.Globals(), comp.FileSet())

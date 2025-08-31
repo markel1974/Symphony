@@ -1,11 +1,11 @@
-package stub
+package tests
 
 import "fmt"
 
 var globalVar int = 100
 
 func main() {
-	fmt.Println("--- Running Test 02: Variables and Scopes ---")
+	fmt.Println("--- Running Test: Variables and Scopes ---")
 
 	res := globalVar
 	localVar := 20

@@ -1,4 +1,4 @@
-package stub
+package tests
 
 import "fmt"
 
@@ -17,7 +17,7 @@ func factorial(n int) int {
 }
 
 func main() {
-	fmt.Println("--- Running Test 05: Functions and Recursion ---")
+	fmt.Println("--- Running Test: Functions and Recursion ---")
 
 	sum := add(10, 20)
 	fact5 := factorial(5)
