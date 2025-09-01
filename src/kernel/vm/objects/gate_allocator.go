@@ -344,20 +344,12 @@ func (f *GateAllocator) NewFuncCompiled(frame int, name string, instructions []b
 	return newFuncCompiled(f.gk, frame, name, instructions, numLocals, numParameters, varArgs, sourceMap, free)
 }
 
-// NewFuncPackage creates a new function package with the given kind, name, and callable function. Returns an IObject instance.
-func (f *GateAllocator) NewFuncPackage(name string, fn FuncCallable) IObject {
+// NewFuncExternal creates a new function external object with the specified frame, kind, name, and callable.
+func (f *GateAllocator) NewFuncExternal(frame int, name string, fn FuncCallable) IObject {
 	if err := f.acquireObject(); err != nil {
 		return f.undefinedValue
 	}
-	return newFuncPackage(f.gk, FrameStatic, name, fn)
-}
-
-// NewFuncPackageFrame creates a new function package object with the specified frame, kind, name, and callable.
-func (f *GateAllocator) NewFuncPackageFrame(frame int, name string, fn FuncCallable) IObject {
-	if err := f.acquireObject(); err != nil {
-		return f.undefinedValue
-	}
-	return newFuncPackage(f.gk, frame, name, fn)
+	return newFuncExternal(f.gk, frame, name, fn)
 }
 
 // NewFuncJit creates a new JIT-compiled function object with the provided kind, name, and bytecode.

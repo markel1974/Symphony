@@ -12,18 +12,15 @@ func init() {
 
 // Hex represents a structure encapsulating a module of named IObject functions, typically for hex operations.
 type Hex struct {
-	factory   objects.IGateKeeper
 	container map[string]objects.IObject
 }
 
 // NewHex initializes and returns a new Hex instance with a predefined module containing encoding and decoding functions.
-func NewHex(factory objects.IGateKeeper) IPackage {
-	h := &Hex{
-		factory: factory,
-	}
+func NewHex(gk objects.IGateKeeper) IPackage {
+	h := &Hex{}
 	container := []objects.IObject{
-		factory.NewFuncPackage("EncodeToString", factory.FuncIbSOs(hex.EncodeToString)),
-		factory.NewFuncPackage("DecodeString", factory.FuncIsObSe(hex.DecodeString)),
+		gk.NewFuncExternal(objects.FrameStatic, "EncodeToString", gk.FuncIbSOs(hex.EncodeToString)),
+		gk.NewFuncExternal(objects.FrameStatic, "DecodeString", gk.FuncIsObSe(hex.DecodeString)),
 	}
 	h.container = BuildContainer(container, nil)
 	return h

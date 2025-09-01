@@ -21,39 +21,39 @@ func NewBuiltinFunctions(gk objects.IGateKeeper) IBuiltin {
 	b := &BuiltinFunctions{}
 	b.pkg = []objects.IObject{
 		//functions
-		gk.NewFuncPackage("len", b.len),
-		gk.NewFuncPackage("copy", b.copy),
-		gk.NewFuncPackage("append", b.append),
-		gk.NewFuncPackage("delete", b.delete),
-		gk.NewFuncPackage("splice", b.splice),
-		gk.NewFuncPackage("format", b.format),
-		gk.NewFuncPackage("panic", b.panic),
-		gk.NewFuncPackage("recover", b.recover),
+		gk.NewFuncExternal(objects.FrameStatic, "len", b.len),
+		gk.NewFuncExternal(objects.FrameStatic, "copy", b.copy),
+		gk.NewFuncExternal(objects.FrameStatic, "append", b.append),
+		gk.NewFuncExternal(objects.FrameStatic, "delete", b.delete),
+		gk.NewFuncExternal(objects.FrameStatic, "splice", b.splice),
+		gk.NewFuncExternal(objects.FrameStatic, "format", b.format),
+		gk.NewFuncExternal(objects.FrameStatic, "panic", b.panic),
+		gk.NewFuncExternal(objects.FrameStatic, "recover", b.recover),
 		//cast
-		gk.NewFuncPackage("int", b.int),
-		gk.NewFuncPackage("bool", b.bool),
-		gk.NewFuncPackage("float", b.float),
-		gk.NewFuncPackage("char", b.char),
-		gk.NewFuncPackage("bytes", b.bytes),
-		gk.NewFuncPackage("string", b.string),
-		gk.NewFuncPackage("time", b.time),
+		gk.NewFuncExternal(objects.FrameStatic, "int", b.int),
+		gk.NewFuncExternal(objects.FrameStatic, "bool", b.bool),
+		gk.NewFuncExternal(objects.FrameStatic, "float", b.float),
+		gk.NewFuncExternal(objects.FrameStatic, "char", b.char),
+		gk.NewFuncExternal(objects.FrameStatic, "bytes", b.bytes),
+		gk.NewFuncExternal(objects.FrameStatic, "string", b.string),
+		gk.NewFuncExternal(objects.FrameStatic, "time", b.time),
 		//
-		gk.NewFuncPackage("typeName", b.typeName),
+		gk.NewFuncExternal(objects.FrameStatic, "typeName", b.typeName),
 		//type check
-		gk.NewFuncPackage("isInt", b.isInt),
-		gk.NewFuncPackage("isFloat", b.isFloat),
-		gk.NewFuncPackage("isString", b.isString),
-		gk.NewFuncPackage("isBool", b.isBool),
-		gk.NewFuncPackage("isChar", b.isChar),
-		gk.NewFuncPackage("isBytes", b.isBytes),
-		gk.NewFuncPackage("isArray", b.isArray),
-		gk.NewFuncPackage("isMap", b.isMap),
-		gk.NewFuncPackage("isIterable", b.isIterable),
-		gk.NewFuncPackage("isTime", b.isTime),
-		gk.NewFuncPackage("isError", b.isError),
-		gk.NewFuncPackage("isUndefined", b.isUndefined),
-		gk.NewFuncPackage("isFunction", b.isFunction),
-		gk.NewFuncPackage("isCallable", b.isCallable),
+		gk.NewFuncExternal(objects.FrameStatic, "isInt", b.isInt),
+		gk.NewFuncExternal(objects.FrameStatic, "isFloat", b.isFloat),
+		gk.NewFuncExternal(objects.FrameStatic, "isString", b.isString),
+		gk.NewFuncExternal(objects.FrameStatic, "isBool", b.isBool),
+		gk.NewFuncExternal(objects.FrameStatic, "isChar", b.isChar),
+		gk.NewFuncExternal(objects.FrameStatic, "isBytes", b.isBytes),
+		gk.NewFuncExternal(objects.FrameStatic, "isArray", b.isArray),
+		gk.NewFuncExternal(objects.FrameStatic, "isMap", b.isMap),
+		gk.NewFuncExternal(objects.FrameStatic, "isIterable", b.isIterable),
+		gk.NewFuncExternal(objects.FrameStatic, "isTime", b.isTime),
+		gk.NewFuncExternal(objects.FrameStatic, "isError", b.isError),
+		gk.NewFuncExternal(objects.FrameStatic, "isUndefined", b.isUndefined),
+		gk.NewFuncExternal(objects.FrameStatic, "isFunction", b.isFunction),
+		gk.NewFuncExternal(objects.FrameStatic, "isCallable", b.isCallable),
 	}
 	return b
 }
@@ -68,7 +68,7 @@ func (h *BuiltinFunctions) Name() string {
 	return "builtin"
 }
 
-// Package returns a slice of pointers to FuncPackage objects representing the built-in function modules.
+// Package returns a slice of pointers to FuncExternal objects representing the built-in function modules.
 func (h *BuiltinFunctions) Package() []objects.IObject {
 	return h.pkg
 }

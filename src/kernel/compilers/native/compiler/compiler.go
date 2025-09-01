@@ -330,10 +330,11 @@ func (c *Compiler) createBuiltinInterface(baseName string, methods []*tables.Met
 		methodSymbol.SetReturnTypes(method.ReturnTypes)
 		methodSymbol.SetInterface(baseName)
 		methodSymbol.SetStruct(baseName, sFields)
-		methodSymbol.SetObject(c.gk.NewFuncPackage(mangledName,
-			func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (ret objects.IObject, err error) {
-				return gk.NewString(objects.FrameStatic, "TESTTTTT"), nil
-			}))
+		//TODO COMPLETE!
+		//methodSymbol.SetObject(c.gk.NewFuncExternal(mangledName,
+		//	func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (ret objects.IObject, err error) {
+		//		return gk.NewString(objects.FrameStatic, "TESTTTTT"), nil
+		//	}))
 	}
 	return nil
 }

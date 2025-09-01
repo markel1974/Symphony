@@ -17,7 +17,7 @@ type Errors struct {
 func NewErrors(factory objects.IGateKeeper) IPackage {
 	e := &Errors{}
 	container := []objects.IObject{
-		factory.NewFuncPackage("New", e.New),
+		factory.NewFuncExternal(objects.FrameStatic, "New", e.New),
 	}
 	e.container = BuildContainer(container, nil)
 	return e

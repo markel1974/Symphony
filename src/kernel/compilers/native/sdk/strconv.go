@@ -19,17 +19,17 @@ type Strconv struct {
 func NewStrconv(factory objects.IGateKeeper) IPackage {
 	s := &Strconv{}
 	container := []objects.IObject{
-		factory.NewFuncPackage("Atoi", factory.FuncIsOie(strconv.Atoi)),
-		factory.NewFuncPackage("FormatBool", s.formatBool),
-		factory.NewFuncPackage("FormatFloat", s.formatFloat),
-		factory.NewFuncPackage("FormatInt", s.formatInt),
-		factory.NewFuncPackage("Itoa", factory.FuncIiOs(strconv.Itoa)),
-		factory.NewFuncPackage("ParseBool", s.parseBool),
-		factory.NewFuncPackage("ParseFloat", s.parseFloat),
-		factory.NewFuncPackage("ParseNumber", s.parseNumber),
-		factory.NewFuncPackage("ParseInt", s.parseInt),
-		factory.NewFuncPackage("Quote", factory.FuncIsOs(strconv.Quote)),
-		factory.NewFuncPackage("Unquote", factory.FuncIsOse(strconv.Unquote)),
+		factory.NewFuncExternal(objects.FrameStatic, "Atoi", factory.FuncIsOie(strconv.Atoi)),
+		factory.NewFuncExternal(objects.FrameStatic, "FormatBool", s.formatBool),
+		factory.NewFuncExternal(objects.FrameStatic, "FormatFloat", s.formatFloat),
+		factory.NewFuncExternal(objects.FrameStatic, "FormatInt", s.formatInt),
+		factory.NewFuncExternal(objects.FrameStatic, "Itoa", factory.FuncIiOs(strconv.Itoa)),
+		factory.NewFuncExternal(objects.FrameStatic, "ParseBool", s.parseBool),
+		factory.NewFuncExternal(objects.FrameStatic, "ParseFloat", s.parseFloat),
+		factory.NewFuncExternal(objects.FrameStatic, "ParseNumber", s.parseNumber),
+		factory.NewFuncExternal(objects.FrameStatic, "ParseInt", s.parseInt),
+		factory.NewFuncExternal(objects.FrameStatic, "Quote", factory.FuncIsOs(strconv.Quote)),
+		factory.NewFuncExternal(objects.FrameStatic, "Unquote", factory.FuncIsOse(strconv.Unquote)),
 	}
 	s.container = BuildContainer(container, nil)
 	return s
