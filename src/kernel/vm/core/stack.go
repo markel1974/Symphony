@@ -165,6 +165,17 @@ func (v *Stack) Peek() objects.IObject {
 	return ret
 }
 
+// PeekInterval returns a slice of objects from the stack within the specified range [start:end). Returns nil for invalid ranges.
+func (v *Stack) PeekInterval(start int, end int) []objects.IObject {
+	if start == end {
+		return nil
+	}
+	if start < 0 || end > len(v.stack) || start > end {
+		return nil
+	}
+	return v.stack[start:end]
+}
+
 // PeekArrayObject retrieves a slice of IObject elements from the stack, based on the specified number of arguments.
 func (v *Stack) PeekArrayObject(numArgs int) []objects.IObject {
 	start := v.sp - numArgs
@@ -179,15 +190,68 @@ func (v *Stack) PeekArrayObject(numArgs int) []objects.IObject {
 	return z
 }
 
-// ReleaseObjects releases all objects in the specified range of the stack.
-func (v *Stack) ReleaseObjects(start int, end int) {
-	if start == end {
+// CopyOffset copies a specified number of arguments from the source stack area to the designated frame in the stack.
+// It performs bounds checks to prevent stack underflow or overflow and signals an error if any condition is violated.
+func (v *Stack) CopyOffset(start int, count int) {
+	if count == 0 {
 		return
 	}
-	if start < 0 || end > len(v.stack) || start > end {
+	sourceStart := v.sp - count
+	destinationEnd := start + count
+	if sourceStart < 0 {
+		v.errSignal(fmt.Errorf("stack underflow during argument copy: sourceStart is %d", sourceStart))
 		return
 	}
-	v.gk.ReleaseObjects(v.stack[start:end])
+	if destinationEnd > len(v.stack) {
+		v.errSignal(fmt.Errorf("stack overflow during argument copy: destinationEnd is %d", destinationEnd))
+		return
+	}
+	copy(v.stack[start:destinationEnd], v.stack[sourceStart:v.sp])
+}
+
+// ReleaseObjects releases objects from the stack within the range [start:end), excluding those in the preserve list.
+// Objects are managed by a gatekeeper (gk) for proper disposal. It handles optimized cases for single-item preservation.
+// The function ensures safe operations with bounds checks and no operation for invalid ranges.
+func (v *Stack) ReleaseObjects(start int, end int, preserve []objects.IObject) {
+	if start >= end {
+		return
+	}
+	if start < 0 || end > len(v.stack) {
+		return
+	}
+	switch len(preserve) {
+	case 0:
+		v.gk.ReleaseObjects(v.stack[start:end])
+		return
+	case 1:
+		// Optimized case: single value, avoiding map usage.
+		preserveObj := preserve[0]
+		batchList := make([]objects.IObject, 0, end-start)
+		for i := start; i < end; i++ {
+			if obj := v.stack[i]; obj != preserveObj {
+				batchList = append(batchList, obj)
+			}
+		}
+		if len(batchList) > 0 {
+			v.gk.ReleaseObjects(batchList)
+		}
+		return
+	default:
+		preserveHelper := make(map[objects.IObject]bool, len(preserve))
+		for _, obj := range preserve {
+			preserveHelper[obj] = true
+		}
+		batchList := make([]objects.IObject, 0, end-start)
+		for i := start; i < end; i++ {
+			if obj := v.stack[i]; !preserveHelper[obj] {
+				batchList = append(batchList, obj)
+			}
+		}
+		if len(batchList) > 0 {
+			v.gk.ReleaseObjects(batchList)
+		}
+		return
+	}
 }
 
 // Print outputs each element in the stack from the bottom to the current stack pointer.

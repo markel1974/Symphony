@@ -169,6 +169,7 @@ func (v *VM) Call(value objects.IObject, spread bool, numArgs int) {
 		v.SetError(fmt.Errorf("not callable %s:%s", value.AsString(), value.TypeName()))
 		return
 	}
+
 	if spread {
 		var args []objects.IObject
 		obj := v.Stack().Pop()
@@ -186,6 +187,7 @@ func (v *VM) Call(value objects.IObject, spread bool, numArgs int) {
 			numArgs += argsLen - 1
 		}
 	}
+
 	switch ce := value.(type) {
 	case *objects.FuncCompiled:
 		numParams := ce.NumParameters()
@@ -203,6 +205,7 @@ func (v *VM) Call(value objects.IObject, spread bool, numArgs int) {
 		}
 		v.callCompiled(ce, numArgs)
 	default:
+		// La chiamata a funzioni native non cambia
 		var args []objects.IObject
 		args = append(args, v.Stack().PeekArrayObject(numArgs)...)
 		v.callNative(value, args, numArgs)
@@ -214,7 +217,9 @@ func (v *VM) Return(returnValues []objects.IObject) {
 	shutdown := false
 	prevIp := v.currFrame.SavedIP()
 	leavingFrameBasePointer := v.currFrame.BasePointer()
-	v.stack.ReleaseObjects(leavingFrameBasePointer, v.stack.StackPointer())
+	// release objects in the current frame's stack'
+	v.stack.ReleaseObjects(leavingFrameBasePointer, v.stack.StackPointer(), returnValues)
+
 	if v.frames.Index() > 1 {
 		v.frames.Previous()
 		v.currFrame = v.frames.GetPrev()
@@ -296,7 +301,6 @@ func (v *VM) prepare() {
 }
 
 // Run executes the virtual machine's bytecode, managing the stack, frames, and instruction pointer state.
-// mainId string
 func (v *VM) exec(mainFn *objects.FuncCompiled, args ...interface{}) error {
 	v.prepare()
 	v.currFrame = v.frames.Head()
@@ -361,13 +365,20 @@ func (v *VM) callNative(value objects.IObject, args []objects.IObject, numArgs i
 // Callee specifies the compiled function to be executed, and numArgs determines the number of arguments passed.
 // It reserves stack space for all local variables and adjusts the instruction pointer accordingly.
 func (v *VM) callCompiled(callee *objects.FuncCompiled, numArgs int) {
+	// 1. Calculate the new basePointer safely, anchoring it to the caller's frame.
+	//	The new "floor" begins exactly where the caller's local variable space ends.
+	bp := v.currFrame.BasePointer() + v.currFrame.NumLocals()
+
+	v.stack.CopyOffset(bp, numArgs)
+
+	// 3. Advance to the next frame
 	v.currFrame = v.frames.Get()
 	v.frames.Next()
-	bp := v.stack.StackPointer() - numArgs
+
+	// 4. Bind the new frame to function and correct basePointer
 	v.currFrame.Bind(v.GetIp(), callee, bp)
-	// Reserve space for *all* local variables of the new function by simply advancing the stack pointer.
-	// This ensures that space for temporary calculations starts *after*
-	// the space reserved for local variables, avoiding collisions.
-	v.stack.SetStackPointer(v.stack.StackPointer() + callee.NumLocals())
+
+	// 5. Set stack pointer to include arguments and space for new locals
+	v.stack.SetStackPointer(bp + numArgs + callee.NumLocals())
 	v.ReseIp()
 }

@@ -24,6 +24,6 @@ func main() {
 	if finalValue == expectedValue {
 		fmt.Println("[TEST PASSED] Functions and recursion worked correctly.")
 	} else {
-		fmt.Println("[TEST FAILED] Mismatch in function call or recursion result.")
+		fmt.Printf("[TEST FAILED] Mismatch in function call or recursion result: %d -> %d\n", finalValue, expectedValue)
 	}
 }
