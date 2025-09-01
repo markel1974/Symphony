@@ -37,9 +37,9 @@ func (op *OpReturn) Execute(decoder *core.Decoder) {
 	// this is necessary to uncover the underlying values.
 	var returnValues []objects.IObject
 	if numReturnVals := decoder.Read(0); numReturnVals > 0 {
-		returnValues = make([]objects.IObject, decoder.Read(0))
-		for idx := numReturnVals - 1; idx >= 0; idx-- {
-			returnValues[idx] = op.vm.Stack().Pop()
+		returnValues = make([]objects.IObject, numReturnVals)
+		for i := 0; i < numReturnVals; i++ {
+			returnValues[i] = op.vm.Stack().Pop()
 		}
 	}
 	op.vm.Return(returnValues)
