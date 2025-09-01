@@ -23,10 +23,10 @@ func NewJson(factory objects.IGateKeeper) IPackage {
 		factory: factory,
 	}
 	container := []objects.IObject{
-		factory.NewFuncPackage(objects.FuncPackageDef, "Unmarshal", j.unmarshal),
-		factory.NewFuncPackage(objects.FuncPackageDef, "Marshal", j.marshal),
-		factory.NewFuncPackage(objects.FuncPackageDef, "Indent", j.indent),
-		factory.NewFuncPackage(objects.FuncPackageDef, "HTMLEscape", j.htmlEscape),
+		factory.NewFuncPackage("Unmarshal", j.unmarshal),
+		factory.NewFuncPackage("Marshal", j.marshal),
+		factory.NewFuncPackage("Indent", j.indent),
+		factory.NewFuncPackage("HTMLEscape", j.htmlEscape),
 	}
 	j.container = BuildContainer(container, nil)
 	return j

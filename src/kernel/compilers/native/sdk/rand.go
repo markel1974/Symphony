@@ -22,15 +22,15 @@ func NewRand(gk objects.IGateKeeper) IPackage {
 		gk: gk,
 	}
 	container := []objects.IObject{
-		gk.NewFuncPackage(objects.FuncPackageDef, "Int63", z.int63(rand.Int63)),
-		gk.NewFuncPackage(objects.FuncPackageDef, "Float64", z.funcInOf64(rand.Float64)),
-		gk.NewFuncPackage(objects.FuncPackageDef, "Int63n", z.int63n(rand.Int63n)),
-		gk.NewFuncPackage(objects.FuncPackageDef, "ExpFloat64", z.funcInOf64(rand.ExpFloat64)),
-		gk.NewFuncPackage(objects.FuncPackageDef, "NormFloat64", z.funcInOf64(rand.NormFloat64)),
-		gk.NewFuncPackage(objects.FuncPackageDef, "Perm", gk.FuncIiOiS(rand.Perm)),
-		gk.NewFuncPackage(objects.FuncPackageDef, "Seed", gk.FuncIi64On(rand.Seed)),
-		gk.NewFuncPackage(objects.FuncPackageDef, "Read", z.read),
-		gk.NewFuncPackage(objects.FuncPackageDef, "Rand", z.rand),
+		gk.NewFuncPackage("Int63", z.int63(rand.Int63)),
+		gk.NewFuncPackage("Float64", z.funcInOf64(rand.Float64)),
+		gk.NewFuncPackage("Int63n", z.int63n(rand.Int63n)),
+		gk.NewFuncPackage("ExpFloat64", z.funcInOf64(rand.ExpFloat64)),
+		gk.NewFuncPackage("NormFloat64", z.funcInOf64(rand.NormFloat64)),
+		gk.NewFuncPackage("Perm", gk.FuncIiOiS(rand.Perm)),
+		gk.NewFuncPackage("Seed", gk.FuncIi64On(rand.Seed)),
+		gk.NewFuncPackage("Read", z.read),
+		gk.NewFuncPackage("Rand", z.rand),
 	}
 	z.container = BuildContainer(container, nil)
 	return z
@@ -76,14 +76,14 @@ func (z *Rand) rand(frame int, args ...objects.IObject) (objects.IObject, error)
 	r := rand.New(src)
 	return z.gk.NewMap(frame,
 		map[string]objects.IObject{
-			"Int63":       z.gk.NewFuncPackageFrame(frame, objects.FuncPackageDef, "Int63", z.int63(r.Int63)),
-			"Float64":     z.gk.NewFuncPackageFrame(frame, objects.FuncPackageDef, "Float64", z.funcInOf64(r.Float64)),
-			"Int63n":      z.gk.NewFuncPackageFrame(frame, objects.FuncPackageDef, "Int63n", z.int63n(r.Int63n)),
-			"ExpFloat64":  z.gk.NewFuncPackageFrame(frame, objects.FuncPackageDef, "ExpFloat64", z.funcInOf64(r.ExpFloat64)),
-			"NormFloat64": z.gk.NewFuncPackageFrame(frame, objects.FuncPackageDef, "NormFloat64", z.funcInOf64(r.NormFloat64)),
-			"Perm":        z.gk.NewFuncPackageFrame(frame, objects.FuncPackageDef, "Perm", z.gk.FuncIiOiS(r.Perm)),
-			"Seed":        z.gk.NewFuncPackageFrame(frame, objects.FuncPackageDef, "Seed", z.gk.FuncIi64On(r.Seed)),
-			"Read": z.gk.NewFuncPackageFrame(frame, objects.FuncPackageDef, "Read", func(frame int, args ...objects.IObject) (objects.IObject, error) {
+			"Int63":       z.gk.NewFuncPackageFrame(frame, "Int63", z.int63(r.Int63)),
+			"Float64":     z.gk.NewFuncPackageFrame(frame, "Float64", z.funcInOf64(r.Float64)),
+			"Int63n":      z.gk.NewFuncPackageFrame(frame, "Int63n", z.int63n(r.Int63n)),
+			"ExpFloat64":  z.gk.NewFuncPackageFrame(frame, "ExpFloat64", z.funcInOf64(r.ExpFloat64)),
+			"NormFloat64": z.gk.NewFuncPackageFrame(frame, "NormFloat64", z.funcInOf64(r.NormFloat64)),
+			"Perm":        z.gk.NewFuncPackageFrame(frame, "Perm", z.gk.FuncIiOiS(r.Perm)),
+			"Seed":        z.gk.NewFuncPackageFrame(frame, "Seed", z.gk.FuncIi64On(r.Seed)),
+			"Read": z.gk.NewFuncPackageFrame(frame, "Read", func(frame int, args ...objects.IObject) (objects.IObject, error) {
 				return z.randOptionsRead(r, frame, args...)
 			}),
 		}), nil

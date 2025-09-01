@@ -13,9 +13,6 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
-//TODO
-// 1) type switch"
-
 // Compiler represents a structure to manage the compilation process, including scopes and associated token file sets.
 type Compiler struct {
 	gk                objects.IGateKeeper
@@ -333,6 +330,10 @@ func (c *Compiler) createBuiltinInterface(baseName string, methods []*tables.Met
 		methodSymbol.SetReturnTypes(method.ReturnTypes)
 		methodSymbol.SetInterface(baseName)
 		methodSymbol.SetStruct(baseName, sFields)
+		methodSymbol.SetObject(c.gk.NewFuncPackage(mangledName,
+			func(frame int, args ...objects.IObject) (ret objects.IObject, err error) {
+				return c.gk.NewString(objects.FrameStatic, "TESTTTTT"), nil
+			}))
 	}
 	return nil
 }

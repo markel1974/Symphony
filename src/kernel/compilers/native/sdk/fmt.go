@@ -22,12 +22,12 @@ func NewFmt(factory objects.IGateKeeper) IPackage {
 		factory: factory,
 	}
 	container := []objects.IObject{
-		factory.NewFuncPackage(objects.FuncPackageDef, "Print", f.print),
-		factory.NewFuncPackage(objects.FuncPackageDef, "Printf", f.printf),
-		factory.NewFuncPackage(objects.FuncPackageDef, "Println", f.println),
-		factory.NewFuncPackage(objects.FuncPackageDef, "Sprintf", f.sprint),
-		factory.NewFuncPackage(objects.FuncPackageDef, "Sprintf", f.sprintf),
-		factory.NewFuncPackage(objects.FuncPackageDef, "Errorf", f.errorf),
+		factory.NewFuncPackage("Print", f.print),
+		factory.NewFuncPackage("Printf", f.printf),
+		factory.NewFuncPackage("Println", f.println),
+		factory.NewFuncPackage("Sprintf", f.sprint),
+		factory.NewFuncPackage("Sprintf", f.sprintf),
+		factory.NewFuncPackage("Errorf", f.errorf),
 	}
 	f.container = BuildContainer(container, nil)
 	return f

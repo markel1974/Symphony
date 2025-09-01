@@ -3,8 +3,8 @@ package objects
 import "encoding/gob"
 
 const (
-	FuncBuiltinDef = "func_builtin"
-	FuncPackageDef = "func_package"
+// FuncBuiltinDef = "func_builtin"
+// FuncPackageDef = "func_package"
 )
 
 func init() {
@@ -18,17 +18,15 @@ type FuncCallable = func(frame int, args ...IObject) (ret IObject, err error)
 type FuncPackage struct {
 	gk    IGateKeeper
 	frame int
-	kind  string
 	name  string
 	value FuncCallable
 }
 
 // NewFuncPackage creates a new FuncPackage instance with the specified Id and callable function.
-func newFuncPackage(factory IGateKeeper, frame int, kind string, name string, fn FuncCallable) IObject {
+func newFuncPackage(factory IGateKeeper, frame int, name string, fn FuncCallable) IObject {
 	return &FuncPackage{
 		gk:    factory,
 		frame: frame,
-		kind:  kind,
 		name:  name,
 		value: fn,
 	}
@@ -126,17 +124,17 @@ func (o *FuncPackage) Name() string {
 
 // TypeName returns the type name of the FuncPackage as a string.
 func (o *FuncPackage) TypeName() string {
-	return o.kind + ":" + o.name
+	return "FuncPackage:" + o.name
 }
 
 // AsString returns the string representation of a FuncPackage object.
 func (o *FuncPackage) AsString() string {
-	return "<" + o.kind + ">"
+	return "<FuncPackage>"
 }
 
 // Copy creates and returns a new FuncPackage instance with the same Value field as the original object.
 func (o *FuncPackage) Copy(frame int, _ int) IObject {
-	return o.GateKeeper().NewFuncPackageFrame(frame, o.kind, o.name, o.value)
+	return o.GateKeeper().NewFuncPackageFrame(frame, o.name, o.value)
 }
 
 // Equals checks whether the current FuncPackage is equal to another object of type IObject. Always returns false.

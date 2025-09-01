@@ -22,8 +22,8 @@ func NewHex(factory objects.IGateKeeper) IPackage {
 		factory: factory,
 	}
 	container := []objects.IObject{
-		factory.NewFuncPackage(objects.FuncPackageDef, "EncodeToString", factory.FuncIbSOs(hex.EncodeToString)),
-		factory.NewFuncPackage(objects.FuncPackageDef, "DecodeString", factory.FuncIsObSe(hex.DecodeString)),
+		factory.NewFuncPackage("EncodeToString", factory.FuncIbSOs(hex.EncodeToString)),
+		factory.NewFuncPackage("DecodeString", factory.FuncIsObSe(hex.DecodeString)),
 	}
 	h.container = BuildContainer(container, nil)
 	return h

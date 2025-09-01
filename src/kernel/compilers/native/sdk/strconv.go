@@ -22,17 +22,17 @@ func NewStrconv(factory objects.IGateKeeper) IPackage {
 		factory: factory,
 	}
 	container := []objects.IObject{
-		factory.NewFuncPackage(objects.FuncPackageDef, "Atoi", factory.FuncIsOie(strconv.Atoi)),
-		factory.NewFuncPackage(objects.FuncPackageDef, "FormatBool", s.formatBool),
-		factory.NewFuncPackage(objects.FuncPackageDef, "FormatFloat", s.formatFloat),
-		factory.NewFuncPackage(objects.FuncPackageDef, "FormatInt", s.formatInt),
-		factory.NewFuncPackage(objects.FuncPackageDef, "Itoa", factory.FuncIiOs(strconv.Itoa)),
-		factory.NewFuncPackage(objects.FuncPackageDef, "ParseBool", s.parseBool),
-		factory.NewFuncPackage(objects.FuncPackageDef, "ParseFloat", s.parseFloat),
-		factory.NewFuncPackage(objects.FuncPackageDef, "ParseNumber", s.parseNumber),
-		factory.NewFuncPackage(objects.FuncPackageDef, "ParseInt", s.parseInt),
-		factory.NewFuncPackage(objects.FuncPackageDef, "Quote", factory.FuncIsOs(strconv.Quote)),
-		factory.NewFuncPackage(objects.FuncPackageDef, "Unquote", factory.FuncIsOse(strconv.Unquote)),
+		factory.NewFuncPackage("Atoi", factory.FuncIsOie(strconv.Atoi)),
+		factory.NewFuncPackage("FormatBool", s.formatBool),
+		factory.NewFuncPackage("FormatFloat", s.formatFloat),
+		factory.NewFuncPackage("FormatInt", s.formatInt),
+		factory.NewFuncPackage("Itoa", factory.FuncIiOs(strconv.Itoa)),
+		factory.NewFuncPackage("ParseBool", s.parseBool),
+		factory.NewFuncPackage("ParseFloat", s.parseFloat),
+		factory.NewFuncPackage("ParseNumber", s.parseNumber),
+		factory.NewFuncPackage("ParseInt", s.parseInt),
+		factory.NewFuncPackage("Quote", factory.FuncIsOs(strconv.Quote)),
+		factory.NewFuncPackage("Unquote", factory.FuncIsOse(strconv.Unquote)),
 	}
 	s.container = BuildContainer(container, nil)
 	return s

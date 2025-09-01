@@ -23,7 +23,7 @@ func NewDisassembler(b *Bytecode) *Disassembler {
 // Disassemble parses and logs details of objects, constants, and references within the associated bytecode.
 func (d *Disassembler) Disassemble(writer io.Writer) {
 	_, _ = fmt.Fprintf(writer, "--- Object Count ---\n")
-	_, _ = fmt.Fprintf(writer, "%d", d.CountObjects())
+	_, _ = fmt.Fprintf(writer, "%d\n", d.CountObjects())
 	_, _ = fmt.Fprintf(writer, "--- Constants ---\n")
 	for idx, v := range d.disassembleConstants() {
 		_, _ = fmt.Fprintf(writer, "%04d => %s\n", idx, v)
@@ -79,7 +79,7 @@ func (d *Disassembler) disassembleObject(cIdx int, constant objects.IObject) []s
 		}
 	default:
 		z := reflect.TypeOf(cn)
-		output = append(output, fmt.Sprintf("[% 3d] %s (%s|%p)", cIdx, cn.TypeName(), z.Elem().Name(), &cn))
+		output = append(output, fmt.Sprintf("[% 3d] %s -> '%s' (%s|%p)", cIdx, cn.TypeName(), cn.AsString(), z.Elem().Name(), &cn))
 	}
 	return output
 }

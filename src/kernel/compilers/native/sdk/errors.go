@@ -20,7 +20,7 @@ func NewErrors(factory objects.IGateKeeper) IPackage {
 		factory: factory,
 	}
 	container := []objects.IObject{
-		factory.NewFuncPackage(objects.FuncPackageDef, "New", e.New),
+		factory.NewFuncPackage("New", e.New),
 	}
 	e.container = BuildContainer(container, nil)
 	return e

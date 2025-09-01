@@ -30,11 +30,11 @@ type Regexp struct {
 func NewRegexp(factory objects.IGateKeeper) IPackage {
 	r := &Regexp{factory: factory}
 	container := []objects.IObject{
-		factory.NewFuncPackage(objects.FuncPackageDef, "Match", r.match),
-		factory.NewFuncPackage(objects.FuncPackageDef, "Find", r.find),
-		factory.NewFuncPackage(objects.FuncPackageDef, "Replace", r.replace),
-		factory.NewFuncPackage(objects.FuncPackageDef, "Split", r.split),
-		factory.NewFuncPackage(objects.FuncPackageDef, "Compile", r.compile),
+		factory.NewFuncPackage("Match", r.match),
+		factory.NewFuncPackage("Find", r.find),
+		factory.NewFuncPackage("Replace", r.replace),
+		factory.NewFuncPackage("Split", r.split),
+		factory.NewFuncPackage("Compile", r.compile),
 	}
 	r.container = BuildContainer(container, nil)
 	return r
@@ -199,16 +199,16 @@ func (r *Regexp) compile(frame int, args ...objects.IObject) (objects.IObject, e
 	obj := r.factory.NewMap(frame,
 		map[string]objects.IObject{
 			// match(text) => bool
-			"Match": r.factory.NewFuncPackageFrame(frame, objects.FuncPackageDef, "Match", func(frame int, args ...objects.IObject) (objects.IObject, error) {
+			"Match": r.factory.NewFuncPackageFrame(frame, "Match", func(frame int, args ...objects.IObject) (objects.IObject, error) {
 				return r.compileOptionMatch(frame, re, args...)
 			}),
-			"Find": r.factory.NewFuncPackageFrame(frame, objects.FuncPackageDef, "Find", func(frame int, args ...objects.IObject) (objects.IObject, error) {
+			"Find": r.factory.NewFuncPackageFrame(frame, "Find", func(frame int, args ...objects.IObject) (objects.IObject, error) {
 				return r.compileOptionFind(frame, re, args...)
 			}),
-			"Replace": r.factory.NewFuncPackageFrame(frame, objects.FuncPackageDef, "Replace", func(frame int, args ...objects.IObject) (objects.IObject, error) {
+			"Replace": r.factory.NewFuncPackageFrame(frame, "Replace", func(frame int, args ...objects.IObject) (objects.IObject, error) {
 				return r.compileOptionReplace(frame, re, args...)
 			}),
-			"Split": r.factory.NewFuncPackageFrame(frame, objects.FuncPackageDef, "Split", func(frame int, args ...objects.IObject) (objects.IObject, error) {
+			"Split": r.factory.NewFuncPackageFrame(frame, "Split", func(frame int, args ...objects.IObject) (objects.IObject, error) {
 				return r.compileOptionSplit(frame, re, args...)
 			}),
 		},

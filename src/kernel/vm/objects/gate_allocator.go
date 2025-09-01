@@ -345,35 +345,35 @@ func (f *GateAllocator) NewFuncCompiled(frame int, name string, instructions []b
 }
 
 // NewFuncPackage creates a new function package with the given kind, name, and callable function. Returns an IObject instance.
-func (f *GateAllocator) NewFuncPackage(kind string, name string, fn FuncCallable) IObject {
+func (f *GateAllocator) NewFuncPackage(name string, fn FuncCallable) IObject {
 	if err := f.acquireObject(); err != nil {
 		return f.undefinedValue
 	}
-	return newFuncPackage(f.gk, FrameStatic, kind, name, fn)
+	return newFuncPackage(f.gk, FrameStatic, name, fn)
 }
 
 // NewFuncPackageFrame creates a new function package object with the specified frame, kind, name, and callable.
-func (f *GateAllocator) NewFuncPackageFrame(frame int, kind string, name string, fn FuncCallable) IObject {
+func (f *GateAllocator) NewFuncPackageFrame(frame int, name string, fn FuncCallable) IObject {
 	if err := f.acquireObject(); err != nil {
 		return f.undefinedValue
 	}
-	return newFuncPackage(f.gk, frame, kind, name, fn)
+	return newFuncPackage(f.gk, frame, name, fn)
 }
 
 // NewFuncJit creates a new JIT-compiled function object with the provided kind, name, and bytecode.
-func (f *GateAllocator) NewFuncJit(kind string, name string, data []byte) IObject {
+func (f *GateAllocator) NewFuncJit(name string, data []byte) IObject {
 	if err := f.acquireObject(); err != nil {
 		return f.undefinedValue
 	}
-	return newFuncJit(f.gk, FrameStatic, kind, name, data)
+	return newFuncJit(f.gk, FrameStatic, name, data)
 }
 
 // NewFuncJitFrame creates a new just-in-time (JIT) function object with the specified frame, kind, name, and data.
-func (f *GateAllocator) NewFuncJitFrame(frame int, kind string, name string, data []byte) IObject {
+func (f *GateAllocator) NewFuncJitFrame(frame int, name string, data []byte) IObject {
 	if err := f.acquireObject(); err != nil {
 		return f.undefinedValue
 	}
-	return newFuncJit(f.gk, frame, kind, name, data)
+	return newFuncJit(f.gk, frame, name, data)
 }
 
 // NewBuiltin creates a new built-in function object with the specified frame, name, and index. Returns an undefined value on error.

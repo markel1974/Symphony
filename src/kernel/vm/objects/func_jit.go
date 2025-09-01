@@ -12,17 +12,15 @@ func init() {
 type FuncJit struct {
 	gk    IGateKeeper
 	frame int
-	kind  string
 	name  string
 	value []byte
 }
 
 // NewFuncPackage creates a new FuncPackage instance with the specified Id and callable function.
-func newFuncJit(factory IGateKeeper, frame int, kind string, name string, fn []byte) IObject {
+func newFuncJit(factory IGateKeeper, frame int, name string, fn []byte) IObject {
 	return &FuncJit{
 		gk:    factory,
 		frame: frame,
-		kind:  kind,
 		name:  name,
 		value: fn,
 	}
@@ -50,7 +48,7 @@ func (o *FuncJit) AsFloat64() float64 {
 
 // AsString returns the string representation of a FuncPackage object.
 func (o *FuncJit) AsString() string {
-	return "<" + o.kind + ">"
+	return "<FuncJit>"
 }
 
 // AssignValue sets the current object to the provided IObject, returning ErrNotAssignable if the operation is not supported.
@@ -125,12 +123,12 @@ func (o *FuncJit) Name() string {
 
 // TypeName returns the type name of the FuncPackage as a string.
 func (o *FuncJit) TypeName() string {
-	return o.kind + ":" + o.name
+	return "FuncJit:" + o.name
 }
 
 // Copy creates and returns a new FuncPackage instance with the same Value field as the original object.
 func (o *FuncJit) Copy(frame int, _ int) IObject {
-	return o.GateKeeper().NewFuncJitFrame(frame, o.kind, o.name, o.value)
+	return o.GateKeeper().NewFuncJitFrame(frame, o.name, o.value)
 }
 
 // Equals checks whether the current FuncPackage is equal to another object of type IObject. Always returns false.
