@@ -67,6 +67,11 @@ func (o *Float) AsString() string {
 	return strconv.FormatFloat(o.value, 'f', -1, 64)
 }
 
+// SetStatic sets the frame to FrameStatic, marking it with a static execution context.
+func (o *Float) SetStatic() {
+	o.frame = FrameStatic
+}
+
 // Frame returns the current frame value of the Object.
 func (o *Float) Frame() int {
 	return o.frame

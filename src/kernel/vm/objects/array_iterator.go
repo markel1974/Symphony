@@ -62,6 +62,11 @@ func (o *ArrayIterator) AssignValue(_ IObject) error {
 	return ErrNotAssignable
 }
 
+// SetStatic sets the frame to FrameStatic, marking it with a static execution context.
+func (o *ArrayIterator) SetStatic() {
+	o.frame = FrameStatic
+}
+
 // Frame returns the current execution frame associated with the ArrayIterator.
 func (o *ArrayIterator) Frame() int {
 	return o.frame

@@ -55,6 +55,11 @@ func (o *Interface) AssignValue(v IObject) error {
 	return o.value.AssignValue(v)
 }
 
+// SetStatic sets the frame to FrameStatic, marking it with a static execution context.
+func (o *Interface) SetStatic() {
+	o.frame = FrameStatic
+}
+
 // Frame returns the current execution frame associated with the Interface instance.
 func (o *Interface) Frame() int {
 	return o.frame

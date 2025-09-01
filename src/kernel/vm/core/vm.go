@@ -217,8 +217,24 @@ func (v *VM) Return(returnValues []objects.IObject) {
 	shutdown := false
 	prevIp := v.currFrame.SavedIP()
 	leavingFrameBasePointer := v.currFrame.BasePointer()
-	// release objects in the current frame's stack'
-	v.stack.ReleaseObjects(leavingFrameBasePointer, v.stack.StackPointer(), returnValues)
+
+	// Function arguments belong to the caller and should not be released when the function ends.
+	numArgs := v.currFrame.NumParameters()
+	totalArgs := numArgs + len(returnValues)
+	var objectsToPreserve []objects.IObject
+
+	if totalArgs > 0 {
+		// Create a combined list, pre-allocating capacity for efficiency
+		objectsToPreserve = make([]objects.IObject, 0, totalArgs)
+		objectsToPreserve = append(objectsToPreserve, returnValues...)
+		// Add arguments which are located at the start of the current frame
+		for i := 0; i < numArgs; i++ {
+			arg := v.stack.PeekAbsolute(leavingFrameBasePointer + i)
+			objectsToPreserve = append(objectsToPreserve, arg)
+		}
+	}
+
+	v.stack.ReleaseObjects(leavingFrameBasePointer, v.stack.StackPointer(), objectsToPreserve)
 
 	if v.frames.Index() > 1 {
 		v.frames.Previous()
@@ -227,16 +243,17 @@ func (v *VM) Return(returnValues []objects.IObject) {
 	} else {
 		shutdown = true
 	}
+
 	v.stack.SetStackPointer(leavingFrameBasePointer)
-	// push return values onto the new stack (caller's stack).
+
 	if lRet := len(returnValues); lRet > 0 {
-		// iterate over the slice in reverse to restore the original order.
 		for i := lRet - 1; i >= 0; i-- {
 			v.stack.Push(returnValues[i])
 		}
 	} else {
 		v.stack.Push(v.gk.UndefinedValue())
 	}
+
 	if shutdown {
 		v.Shutdown()
 	}
@@ -303,6 +320,10 @@ func (v *VM) prepare() {
 // Run executes the virtual machine's bytecode, managing the stack, frames, and instruction pointer state.
 func (v *VM) exec(mainFn *objects.FuncCompiled, args ...interface{}) error {
 	v.prepare()
+	defer func() {
+		// Stack cleanup is performed on the entire used stack (from 0 to final pointer).
+		v.stack.ReleaseObjects(0, v.stack.StackPointer(), nil)
+	}()
 	v.currFrame = v.frames.Head()
 	v.currFrame.Bind(v.ip, mainFn, 0)
 	v.stack.SetStackPointer(v.currFrame.NumLocals())

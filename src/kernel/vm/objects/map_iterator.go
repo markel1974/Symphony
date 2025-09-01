@@ -70,6 +70,11 @@ func (o *MapIterator) AssignValue(_ IObject) error {
 	return ErrNotAssignable
 }
 
+// SetStatic sets the frame to FrameStatic, marking it with a static execution context.
+func (o *MapIterator) SetStatic() {
+	o.frame = FrameStatic
+}
+
 // Frame returns the current frame value of the Object.
 func (o *MapIterator) Frame() int {
 	return o.frame

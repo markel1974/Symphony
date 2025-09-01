@@ -59,6 +59,11 @@ func (o *ObjectPointer) AssignValue(v IObject) error {
 	return (*o.value).AssignValue(v)
 }
 
+// SetStatic sets the frame to FrameStatic, marking it with a static execution context.
+func (o *ObjectPointer) SetStatic() {
+	o.frame = FrameStatic
+}
+
 // Frame returns the current frame value of the Object.
 func (o *ObjectPointer) Frame() int {
 	return o.frame

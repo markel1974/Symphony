@@ -1,11 +1,11 @@
 package objects
 
 import (
-	"log"
 	"sync"
 	"time"
 )
 
+// GateAllocator manages object pooling and allocation limits for various types, including primitives, containers, and iterators.
 type GateAllocator struct {
 	gk *GateKeeper
 
@@ -16,161 +16,326 @@ type GateAllocator struct {
 	maxAllocations    int64
 	undefinedIterator IIterator
 
-	poolBool  sync.Pool
-	poolChar  sync.Pool
-	poolInt   sync.Pool
-	poolFloat sync.Pool
+	// Pools for primitive and common types
+	poolBool          sync.Pool
+	poolChar          sync.Pool
+	poolInt           sync.Pool
+	poolFloat         sync.Pool
+	poolString        sync.Pool
+	poolBytes         sync.Pool
+	poolObjectPointer sync.Pool
+	poolError         sync.Pool
+
+	// Pools for containers
+	poolArray  sync.Pool
+	poolMap    sync.Pool
+	poolStruct sync.Pool
+
+	// Pools for iterators
+	poolArrayIterator  sync.Pool
+	poolBytesIterator  sync.Pool
+	poolStringIterator sync.Pool
+	poolMapIterator    sync.Pool
+	poolStructIterator sync.Pool
 }
 
+// NewGateAllocator initializes and returns a new instance of GateAllocator with the specified GateKeeper and max allocations.
+// It pre-configures internal pools for various types and iterators to optimize object creation and reuse.
 func NewGateAllocator(gk *GateKeeper, maxAllocations int64) *GateAllocator {
 	ga := &GateAllocator{
 		gk:             gk,
 		maxAllocations: maxAllocations,
 	}
+
+	// Initialization of static values
 	ga.trueValue = newBool(gk, FrameStatic, true)
 	ga.falseValue = newBool(gk, FrameStatic, false)
 	ga.undefinedValue = newUndefined(gk, FrameStatic)
 	ga.undefinedIterator = newUndefinedIterator(gk, FrameStatic)
-	ga.maxAllocations = maxAllocations
 
-	ga.poolBool.New = func() any {
-		return newBool(gk, FrameStatic, false)
-	}
-	ga.poolChar.New = func() any {
-		return newChar(gk, FrameStatic, 0)
-	}
-	ga.poolInt.New = func() any {
-		return newInt(gk, FrameStatic, 0)
-	}
-	ga.poolFloat.New = func() any {
-		return newFloat(gk, FrameStatic, 0)
-	}
+	// Primitive types
+	ga.poolBool.New = func() any { return newBool(gk, FrameStatic, false) }
+	ga.poolChar.New = func() any { return newChar(gk, FrameStatic, 0) }
+	ga.poolInt.New = func() any { return newInt(gk, FrameStatic, 0) }
+	ga.poolFloat.New = func() any { return newFloat(gk, FrameStatic, 0) }
+	ga.poolString.New = func() any { return newString(gk, FrameStatic, "") }
+	ga.poolBytes.New = func() any { return newBytes(gk, FrameStatic, nil) }
+	ga.poolObjectPointer.New = func() any { return newObjectPointer(gk, FrameStatic, nil) }
+	ga.poolError.New = func() any { return newError(gk, FrameStatic, "") }
+
+	// Containers
+	ga.poolArray.New = func() any { return newArray(gk, FrameStatic, nil) }
+	ga.poolMap.New = func() any { return newMap(gk, FrameStatic, make(map[string]IObject)) }
+	ga.poolStruct.New = func() any { return newStruct(gk, FrameStatic, make(map[string]IObject)) }
+
+	// Iterators
+	ga.poolArrayIterator.New = func() any { return newArrayIterator(gk, FrameStatic, nil, 0) }
+	ga.poolBytesIterator.New = func() any { return newBytesIterator(gk, FrameStatic, nil, 0) }
+	ga.poolStringIterator.New = func() any { return newStringIterator(gk, FrameStatic, nil, 0) }
+	ga.poolMapIterator.New = func() any { return newMapIterator(gk, FrameStatic, nil, 0) }
+	ga.poolStructIterator.New = func() any { return newStructIterator(gk, FrameStatic, nil, 0) }
+
 	return ga
 }
 
+// Reset sets the counter of GateAllocator to zero.
 func (f *GateAllocator) Reset() {
 	f.counter = 0
 }
 
+// acquireObject increments the allocation counter and checks against the maximum allocation limit, returning an error if exceeded.
 func (f *GateAllocator) acquireObject() error {
 	f.counter++
-	if f.maxAllocations > 0 {
-		if f.counter > f.maxAllocations {
-			return ErrAllocationLimit
-		}
+	if f.maxAllocations > 0 && f.counter > f.maxAllocations {
+		return ErrAllocationLimit
 	}
 	return nil
 }
 
-// FalseValue returns the false representation as an IObject from the GateKeeper instance.
+// FalseValue retrieves the predefined object representing a "false" boolean value within the GateAllocator.
 func (f *GateAllocator) FalseValue() IObject {
 	return f.falseValue
 }
 
-// TrueValue returns the IObject instance representing the true value from the GateKeeper.
+// TrueValue returns the predefined value representing "true" in the GateAllocator.
 func (f *GateAllocator) TrueValue() IObject {
 	return f.trueValue
 }
 
-// UndefinedValue returns the undefined value of the GateKeeper as an IObject.
+// UndefinedValue returns the predefined "undefined" value for the GateAllocator instance.
 func (f *GateAllocator) UndefinedValue() IObject {
 	return f.undefinedValue
 }
 
-// ReleaseObjects releases the given objects back to the pool.
-func (f *GateAllocator) ReleaseObjects(obj []IObject) {
-	for _, o := range obj {
+// ReleaseObjects releases a slice of IObject instances back to their respective pools to free resources.
+func (f *GateAllocator) ReleaseObjects(objects []IObject) {
+	for _, o := range objects {
 		f.ReleaseObject(o)
 	}
 }
 
-// ReleaseObject releases the given object back to the pool.
+// ReleaseObject releases an object back to the relevant pool, resetting its state and freeing associated resources.
 func (f *GateAllocator) ReleaseObject(obj IObject) {
-	if obj.Frame() == FrameStatic {
+	if obj == nil || obj.Frame() == FrameStatic {
 		return
 	}
+
 	switch o := obj.(type) {
 	case *Bool:
-		o.value = false
 		o.frame = FrameStatic
-		f.poolBool.Put(obj)
+		f.poolBool.Put(o)
 	case *Char:
-		o.value = 0
 		o.frame = FrameStatic
-		f.poolChar.Put(obj)
+		f.poolChar.Put(o)
 	case *Int:
-		o.value = 0
 		o.frame = FrameStatic
-		f.poolInt.Put(obj)
+		f.poolInt.Put(o)
 	case *Float:
-		o.value = 0
 		o.frame = FrameStatic
-		f.poolFloat.Put(obj)
+		f.poolFloat.Put(o)
 	case *String:
-		//v.factory.ReleaseString(o)
+		o.frame = FrameStatic
+		f.poolString.Put(o)
+	case *Bytes:
+		o.frame = FrameStatic
+		o.values = nil
+		f.poolBytes.Put(o)
+	case *ObjectPointer:
+		o.frame = FrameStatic
+		o.value = nil
+		f.poolObjectPointer.Put(o)
+	case *Error:
+		o.frame = FrameStatic
+		o.value = nil
+		f.poolError.Put(o)
 	case *Array:
-		//v.factory.ReleaseArray(o)
+		f.ReleaseObjects(o.values)
+		o.values = o.values[:0]
+		o.frame = FrameStatic
+		f.poolArray.Put(o)
+	case *Map:
+		for _, v := range o.values {
+			f.ReleaseObject(v)
+		}
+		for k := range o.values {
+			delete(o.values, k)
+		}
+		o.frame = FrameStatic
+		f.poolMap.Put(o)
+	case *Struct:
+		for _, v := range o.values {
+			f.ReleaseObject(v)
+		}
+		for k := range o.values {
+			delete(o.values, k)
+		}
+		o.frame = FrameStatic
+		f.poolStruct.Put(o)
+	case *ArrayIterator:
+		f.poolArrayIterator.Put(o)
+	case *BytesIterator:
+		f.poolBytesIterator.Put(o)
+	case *StringIterator:
+		f.poolStringIterator.Put(o)
+	case *MapIterator:
+		f.poolMapIterator.Put(o)
+	case *StructIterator:
+		f.poolStructIterator.Put(o)
 	}
 }
 
-// NewInt creates and returns a new instance of Int initialized with the given int64 value.
+// NewInt creates a new integer object from the pool, setting its frame and value, and returns it as an IObject.
 func (f *GateAllocator) NewInt(frame int, v int64) IObject {
-	if err := f.acquireObject(); err != nil {
-		return f.undefinedValue
-	}
-	//return newInt(f.gk, frame, v)
-	i := f.poolInt.Get()
-	obj, ok := i.(*Int)
-	if !ok {
-		log.Printf("Error: poolInt.Get() returned wrong type: %T\n", i)
-		return f.undefinedValue
-	}
-	obj.value = v
+	obj := f.poolInt.Get().(*Int)
 	obj.frame = frame
+	obj.value = v
 	return obj
 }
 
-// NewBytesIterator creates a new BytesIterator for iterating over the provided byte slice `v` using the specified GateKeeper.
+// NewBool creates a new boolean object with the specified frame and value. Returns preallocated true or false objects.
+func (f *GateAllocator) NewBool(frame int, v bool) IObject {
+	if v {
+		return f.trueValue
+	}
+	return f.falseValue
+}
+
+// NewChar creates a new Char object from the pool, sets its frame and value, and returns it as an IObject.
+func (f *GateAllocator) NewChar(frame int, v rune) IObject {
+	obj := f.poolChar.Get().(*Char)
+	obj.frame = frame
+	obj.value = v
+	return obj
+}
+
+// NewFloat allocates and returns a new Float object from the pool, setting its frame and value properties.
+func (f *GateAllocator) NewFloat(frame int, v float64) IObject {
+	obj := f.poolFloat.Get().(*Float)
+	obj.frame = frame
+	obj.value = v
+	return obj
+}
+
+// NewString creates a new String object with the specified frame and string value, truncating the value if it exceeds MaxStringLen.
+func (f *GateAllocator) NewString(frame int, v string) IObject {
+	if len(v) > MaxStringLen {
+		v = v[0:MaxStringLen]
+	}
+	obj := f.poolString.Get().(*String)
+	obj.frame = frame
+	obj.value = v
+	obj.runeStr = nil
+	return obj
+}
+
+// NewBytes creates a new Bytes object from the provided byte slice and associates it with the specified frame.
+// If the byte slice exceeds the maximum allowed length, it is truncated.
+func (f *GateAllocator) NewBytes(frame int, v []byte) IObject {
+	if len(v) > maxBytesLen {
+		v = v[0:maxBytesLen]
+	}
+	obj := f.poolBytes.Get().(*Bytes)
+	obj.frame = frame
+	obj.values = v
+	return obj
+}
+
+// NewArray creates a new array object with the specified frame and values, truncating the input if it exceeds the max length.
+func (f *GateAllocator) NewArray(frame int, v []IObject) IObject {
+	if len(v) > maxArrayLen {
+		v = v[0:maxArrayLen]
+	}
+	obj := f.poolArray.Get().(*Array)
+	obj.frame = frame
+	obj.values = v
+	return obj
+}
+
+// NewMap creates a new map object with the specified frame and values. Limits the map length to maxMapLen if exceeded.
+func (f *GateAllocator) NewMap(frame int, v map[string]IObject) IObject {
+	if len(v) > maxMapLen {
+		// Tronca mappa
+	}
+	obj := f.poolMap.Get().(*Map)
+	obj.frame = frame
+	obj.values = v
+	return obj
+}
+
+// NewStruct creates and initializes a new Struct object with the specified frame and map of values.
+func (f *GateAllocator) NewStruct(frame int, v map[string]IObject) IObject {
+	if len(v) > maxStructLen {
+		// Tronca struct
+	}
+	obj := f.poolStruct.Get().(*Struct)
+	obj.frame = frame
+	obj.values = v
+	return obj
+}
+
+// NewError creates and returns a new error object from the pool, initializing it with the specified frame and error string.
+func (f *GateAllocator) NewError(frame int, e string) IObject {
+	obj := f.poolError.Get().(*Error)
+	obj.frame = frame
+	obj.err = e
+	obj.value = f.NewString(FrameStatic, e) // Stringa statica, non legata al frame
+	return obj
+}
+
+// NewObjectPointer creates a new ObjectPointer instance, initializes it with the provided frame and value, and returns it.
+func (f *GateAllocator) NewObjectPointer(frame int, v *IObject) IObject {
+	obj := f.poolObjectPointer.Get().(*ObjectPointer)
+	obj.frame = frame
+	obj.value = v
+	return obj
+}
+
+// NewArrayIterator creates and initializes a new ArrayIterator instance with the provided frame, array, and starting index.
+func (f *GateAllocator) NewArrayIterator(frame int, v []IObject, index int) IIterator {
+	obj := f.poolArrayIterator.Get().(*ArrayIterator)
+	obj.frame, obj.values, obj.index, obj.length = frame, v, index, len(v)
+	return obj
+}
+
+// NewBytesIterator initializes and returns a BytesIterator with the given frame, byte slice, and starting index.
 func (f *GateAllocator) NewBytesIterator(frame int, v []byte, index int) IIterator {
-	if err := f.acquireObject(); err != nil {
-		return f.undefinedIterator
-	}
-	return newBytesIterator(f.gk, frame, v, index)
+	obj := f.poolBytesIterator.Get().(*BytesIterator)
+	obj.frame, obj.values, obj.index, obj.length = frame, v, index, len(v)
+	return obj
 }
 
-// NewArrayIterator creates a new ArrayIterator for iterating over the provided slice of IObject values.
-func (f *GateAllocator) NewArrayIterator(frame int, values []IObject, index int) IIterator {
-	if err := f.acquireObject(); err != nil {
-		return f.undefinedIterator
-	}
-	return newArrayIterator(f.gk, frame, values, index)
-}
-
-// NewStringIterator creates a new StringIterator instance for a given slice of runes, enabling character traversal.
+// NewStringIterator creates and initializes a new StringIterator from a pool with the specified frame, rune slice, and index.
 func (f *GateAllocator) NewStringIterator(frame int, v []rune, index int) IIterator {
-	if err := f.acquireObject(); err != nil {
-		return f.undefinedIterator
-	}
-	return newStringIterator(f.gk, frame, v, index)
+	obj := f.poolStringIterator.Get().(*StringIterator)
+	obj.frame, obj.values, obj.index, obj.length = frame, v, index, len(v)
+	return obj
 }
 
-// NewStructIterator creates a new StructIterator instance for iterating over a map with string keys and IObject values.
-func (f *GateAllocator) NewStructIterator(frame int, v map[string]IObject, index int) IIterator {
-	if err := f.acquireObject(); err != nil {
-		return f.undefinedIterator
-	}
-	return newStructIterator(f.gk, frame, v, index)
-}
-
-// NewMapIterator creates and returns a new MapIterator for the provided map of string keys and IObject values.
+// NewMapIterator creates and initializes a new MapIterator object from a map of string keys and associated IObject values.
 func (f *GateAllocator) NewMapIterator(frame int, v map[string]IObject, index int) IIterator {
-	if err := f.acquireObject(); err != nil {
-		return f.undefinedIterator
+	obj := f.poolMapIterator.Get().(*MapIterator)
+	keys := make([]string, 0, len(v))
+	for k := range v {
+		keys = append(keys, k)
 	}
-	return newMapIterator(f.gk, frame, v, index)
+	obj.frame, obj.values, obj.keys, obj.index, obj.length = frame, v, keys, index, len(keys)
+	return obj
 }
 
-// NewFuncCompiled creates and returns a new FuncCompiled instance using the provided function metadata and bytecode.
+// NewStructIterator creates and initializes a StructIterator, setting its frame, values, keys, index, and length.
+func (f *GateAllocator) NewStructIterator(frame int, v map[string]IObject, index int) IIterator {
+	obj := f.poolStructIterator.Get().(*StructIterator)
+	keys := make([]string, 0, len(v))
+	for k := range v {
+		keys = append(keys, k)
+	}
+	obj.frame, obj.values, obj.keys, obj.index, obj.length = frame, v, keys, index, len(keys)
+	return obj
+}
+
+// --- Methods for Non-Poolable objects ---
+
+// NewFuncCompiled creates a new compiled function object with provided frame, name, instructions, locals, parameters, and metadata.
 func (f *GateAllocator) NewFuncCompiled(frame int, name string, instructions []byte, numLocals int, numParameters int, varArgs bool, sourceMap map[int]int, free []*ObjectPointer) IObject {
 	if err := f.acquireObject(); err != nil {
 		return f.undefinedValue
@@ -178,7 +343,7 @@ func (f *GateAllocator) NewFuncCompiled(frame int, name string, instructions []b
 	return newFuncCompiled(f.gk, frame, name, instructions, numLocals, numParameters, varArgs, sourceMap, free)
 }
 
-// NewFuncPackage creates a new instance of FuncPackage with the specified kind, name, and callable function.
+// NewFuncPackage creates a new function package with the given kind, name, and callable function. Returns an IObject instance.
 func (f *GateAllocator) NewFuncPackage(kind string, name string, fn FuncCallable) IObject {
 	if err := f.acquireObject(); err != nil {
 		return f.undefinedValue
@@ -186,7 +351,7 @@ func (f *GateAllocator) NewFuncPackage(kind string, name string, fn FuncCallable
 	return newFuncPackage(f.gk, FrameStatic, kind, name, fn)
 }
 
-// NewFuncPackageFrame creates a new instance of FuncPackage with the specified kind, name, and callable function.
+// NewFuncPackageFrame creates a new function package object with the specified frame, kind, name, and callable.
 func (f *GateAllocator) NewFuncPackageFrame(frame int, kind string, name string, fn FuncCallable) IObject {
 	if err := f.acquireObject(); err != nil {
 		return f.undefinedValue
@@ -194,7 +359,7 @@ func (f *GateAllocator) NewFuncPackageFrame(frame int, kind string, name string,
 	return newFuncPackage(f.gk, frame, kind, name, fn)
 }
 
-// NewFuncJit creates a new JIT-compiled function object with the specified kind, name, and bytecode data.
+// NewFuncJit creates a new JIT-compiled function object with the provided kind, name, and bytecode.
 func (f *GateAllocator) NewFuncJit(kind string, name string, data []byte) IObject {
 	if err := f.acquireObject(); err != nil {
 		return f.undefinedValue
@@ -202,7 +367,7 @@ func (f *GateAllocator) NewFuncJit(kind string, name string, data []byte) IObjec
 	return newFuncJit(f.gk, FrameStatic, kind, name, data)
 }
 
-// NewFuncJitFrame creates a new JIT-compiled function frame with provided frame ID, kind, name, and associated data.
+// NewFuncJitFrame creates a new just-in-time (JIT) function object with the specified frame, kind, name, and data.
 func (f *GateAllocator) NewFuncJitFrame(frame int, kind string, name string, data []byte) IObject {
 	if err := f.acquireObject(); err != nil {
 		return f.undefinedValue
@@ -210,7 +375,7 @@ func (f *GateAllocator) NewFuncJitFrame(frame int, kind string, name string, dat
 	return newFuncJit(f.gk, frame, kind, name, data)
 }
 
-// NewBuiltin creates a new Builtin object with the specified name and index using the GateKeeper.
+// NewBuiltin creates a new built-in function object with the specified frame, name, and index. Returns an undefined value on error.
 func (f *GateAllocator) NewBuiltin(frame int, name string, index int) IObject {
 	if err := f.acquireObject(); err != nil {
 		return f.undefinedValue
@@ -218,114 +383,7 @@ func (f *GateAllocator) NewBuiltin(frame int, name string, index int) IObject {
 	return newBuiltin(f.gk, frame, name, index)
 }
 
-// NewArray creates and returns a new Array populated with the provided slice of IObject elements.
-func (f *GateAllocator) NewArray(frame int, values []IObject) IObject {
-	if err := f.acquireObject(); err != nil {
-		return f.undefinedValue
-	}
-	return newArray(f.gk, frame, values)
-}
-
-// NewBool creates and returns a new Bool object initialized with the specified boolean value.
-func (f *GateAllocator) NewBool(frame int, value bool) IObject {
-	if err := f.acquireObject(); err != nil {
-		return f.undefinedValue
-	}
-	//return newBool(f.gk, frame, value)
-	i := f.poolBool.Get()
-	obj, ok := i.(*Bool)
-	if !ok {
-		log.Printf("Error: poolBool.Get() returned wrong type: %T\n", i)
-		return f.undefinedValue
-	}
-	obj.value = value
-	obj.frame = frame
-	return obj
-}
-
-// NewBytes creates and returns a new instance of Bytes initialized with the provided byte slice and gk context.
-func (f *GateAllocator) NewBytes(frame int, value []byte) IObject {
-	if err := f.acquireObject(); err != nil {
-		return f.undefinedValue
-	}
-	return newBytes(f.gk, frame, value)
-}
-
-// NewChar creates a new Char instance associated with the GateKeeper, initialized with the given rune value.
-func (f *GateAllocator) NewChar(frame int, value rune) IObject {
-	if err := f.acquireObject(); err != nil {
-		return f.undefinedValue
-	}
-	//return newChar(f.gk, frame, value)
-	i := f.poolChar.Get()
-	obj, ok := i.(*Char)
-	if !ok {
-		log.Printf("Error: poolChar.Get() returned wrong type: %T\n", i)
-		return f.undefinedValue
-	}
-	obj.value = value
-	obj.frame = frame
-	return obj
-}
-
-// NewError creates and returns a new Error instance based on the provided IObject value and the associated GateKeeper.
-func (f *GateAllocator) NewError(frame int, e string) IObject {
-	if err := f.acquireObject(); err != nil {
-		return f.undefinedValue
-	}
-	return newError(f.gk, frame, e)
-}
-
-// NewFloat creates a new Float instance with the given float64 value, using the GateKeeper for initialization.
-func (f *GateAllocator) NewFloat(frame int, v float64) IObject {
-	if err := f.acquireObject(); err != nil {
-		return f.undefinedValue
-	}
-	//return newFloat(f.gk, frame, v)
-	i := f.poolFloat.Get()
-	obj, ok := i.(*Float)
-	if !ok {
-		log.Printf("Error: poolFloat.Get() returned wrong type: %T\n", i)
-		return f.undefinedValue
-	}
-	obj.value = v
-	obj.frame = frame
-	return obj
-}
-
-// NewObjectPointer creates a new ObjectPointer instance wrapping the provided IObject pointer.
-func (f *GateAllocator) NewObjectPointer(frame int, value *IObject) IObject {
-	if err := f.acquireObject(); err != nil {
-		return f.undefinedValue
-	}
-	return newObjectPointer(f.gk, frame, value)
-}
-
-// NewMap creates and returns a new instance of Map initialized with the provided map of string keys and IObject values.
-func (f *GateAllocator) NewMap(frame int, v map[string]IObject) IObject {
-	if err := f.acquireObject(); err != nil {
-		return f.undefinedValue
-	}
-	return newMap(f.gk, frame, v)
-}
-
-// NewString creates a new instance of String with the given value, utilizing the GateKeeper for initialization.
-func (f *GateAllocator) NewString(frame int, value string) IObject {
-	if err := f.acquireObject(); err != nil {
-		return f.undefinedValue
-	}
-	return newString(f.gk, frame, value)
-}
-
-// NewStruct creates and returns a new instance of Struct using the provided map of string keys and IObject values.
-func (f *GateAllocator) NewStruct(frame int, value map[string]IObject) IObject {
-	if err := f.acquireObject(); err != nil {
-		return f.undefinedValue
-	}
-	return newStruct(f.gk, frame, value)
-}
-
-// NewTime creates a new instance of Time using the provided time.Time value and initializes it with the gk instance.
+// NewTime creates a new Time object with the specified frame and time value. Returns undefinedValue on allocation error.
 func (f *GateAllocator) NewTime(frame int, value time.Time) IObject {
 	if err := f.acquireObject(); err != nil {
 		return f.undefinedValue
@@ -333,7 +391,7 @@ func (f *GateAllocator) NewTime(frame int, value time.Time) IObject {
 	return newTime(f.gk, frame, value)
 }
 
-// NewInterface creates a new instance of Interface using the provided IObject value and itable map.
+// NewInterface creates a new interface object with the specified frame, value, and interface table.
 func (f *GateAllocator) NewInterface(frame int, value IObject, itable map[string]IObject) IObject {
 	if err := f.acquireObject(); err != nil {
 		return f.undefinedValue

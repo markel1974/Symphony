@@ -71,5 +71,6 @@ func (g *Globals) Set(index uint, value objects.IObject) {
 		g.errSignal(fmt.Errorf("invalid constant index: %d", index))
 		return
 	}
+	value.SetStatic()
 	g.container[index] = value
 }

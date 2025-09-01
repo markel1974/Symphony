@@ -71,6 +71,11 @@ func (o *Bool) AssignValue(v IObject) error {
 	return nil
 }
 
+// SetStatic sets the frame to FrameStatic, marking it with a static execution context.
+func (o *Bool) SetStatic() {
+	o.frame = FrameStatic
+}
+
 // Frame returns the execution frame associated with the Bool object.
 func (o *Bool) Frame() int {
 	return o.frame

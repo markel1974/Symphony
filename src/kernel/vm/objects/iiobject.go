@@ -33,6 +33,7 @@ type IObject interface {
 	AsFloat64() float64
 	AsString() string
 	AssignValue(object IObject) error
+	SetStatic()
 	Frame() int
 	LogicalOp(frame int, op LogicalOperator, rightHandSide IObject) (IObject, error)
 	ArithmeticOp(frame int, op ArithmeticOperator, rightHandSide IObject) (IObject, error)

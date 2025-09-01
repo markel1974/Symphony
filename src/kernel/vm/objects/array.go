@@ -72,6 +72,11 @@ func (o *Array) AssignValue(v IObject) error {
 	return nil
 }
 
+// SetStatic sets the frame to FrameStatic, marking it with a static execution context.
+func (o *Array) SetStatic() {
+	o.frame = FrameStatic
+}
+
 // Frame retrieves the current execution frame associated with the Array instance.
 func (o *Array) Frame() int {
 	return o.frame

@@ -64,6 +64,11 @@ func (o *Int) AssignValue(v IObject) error {
 	return nil
 }
 
+// SetStatic sets the frame to FrameStatic, marking it with a static execution context.
+func (o *Int) SetStatic() {
+	o.frame = FrameStatic
+}
+
 // Frame returns the current frame value of the Object.
 func (o *Int) Frame() int {
 	return o.frame

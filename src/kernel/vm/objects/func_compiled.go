@@ -124,6 +124,11 @@ func (o *FuncCompiled) AssignValue(_ IObject) error {
 	return ErrNotAssignable
 }
 
+// SetStatic sets the frame to FrameStatic, marking it with a static execution context.
+func (o *FuncCompiled) SetStatic() {
+	o.frame = FrameStatic
+}
+
 // Frame returns the current frame value of the Object.
 func (o *FuncCompiled) Frame() int {
 	return o.frame

@@ -52,6 +52,11 @@ func (o *UndefinedIterator) AssignValue(_ IObject) error {
 	return ErrNotAssignable
 }
 
+// SetStatic sets the frame to FrameStatic, marking it with a static execution context.
+func (o *UndefinedIterator) SetStatic() {
+	o.frame = FrameStatic
+}
+
 // Frame returns the current frame value of the Object.
 func (o *UndefinedIterator) Frame() int {
 	return o.frame
