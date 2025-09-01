@@ -31,11 +31,19 @@ type InterfaceTable struct {
 
 // NewInterfaceTable creates and initializes a new InterfaceTable with a gatekeeper, scopes, and an empty container map.
 func NewInterfaceTable(gk objects.IGateKeeper, scopes *Scopes) *InterfaceTable {
-	return &InterfaceTable{
+	it := &InterfaceTable{
 		gk:        gk,
 		scopes:    scopes,
 		container: make(map[string]*InterfaceDescription),
 	}
+	return it
+}
+
+// CreateInterface creates a new InterfaceDescription and adds it to the container map.
+func (it *InterfaceTable) CreateInterface(id string, methods []*MethodDescription) *InterfaceDescription {
+	v := &InterfaceDescription{Name: id, Methods: methods}
+	it.container[id] = v
+	return v
 }
 
 // Keys returns a slice of all the keys present in the container map of the InterfaceTable.

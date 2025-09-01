@@ -104,6 +104,9 @@ func (c *Compiler) FileSet() bytecode.IFile {
 
 // Compile parses the provided source file and compiles it into bytecode. Returns compiled bytecode or an error.
 func (c *Compiler) Compile(filename string, source any) error {
+	if err := c.createBuiltin(); err != nil {
+		return err
+	}
 	c.fileSet = token.NewFileSet()
 	for _, component := range c.components {
 		if err := component.Setup(c.fileSet, c.compile); err != nil {
@@ -292,5 +295,44 @@ func (c *Compiler) createInit() error {
 	}
 	compiledInitFn := c.gk.NewFuncCompiled(objects.FrameStatic, initSymbols.Name(), initFuncCode, numLocals, 0, false, nil, nil)
 	initSymbols.SetObject(compiledInitFn)
+	return nil
+}
+
+// createBuiltin initializes built-in types or interfaces, such as the error interface, in the compiler's scope or tables.
+// It ensures these built-ins are correctly defined and accessible for later compilation stages.
+// Returns an error if the setup of any built-in entity fails.
+func (c *Compiler) createBuiltin() error {
+	errorName := "error"
+	errorMethod := &tables.MethodDescription{
+		Name: "Error", InputParams: []string{}, ReturnTypes: []string{"string"},
+	}
+	if err := c.createBuiltinInterface(errorName, []*tables.MethodDescription{errorMethod}); err != nil {
+		return err
+	}
+	return nil
+}
+
+// createBuiltinInterface defines a built-in interface with the given name and methods in the compiler's scope and interface table.
+func (c *Compiler) createBuiltinInterface(baseName string, methods []*tables.MethodDescription) error {
+	sFields := make([]string, len(methods))
+	for x, field := range methods {
+		sFields[x] = field.Name
+	}
+	c.interfaceTable.CreateInterface(baseName, methods)
+	interfaceSymbol, err := c.scopes.SymbolDefine(baseName)
+	if err != nil {
+		return fmt.Errorf("failed to define built-in error symbol: %v", err)
+	}
+	interfaceSymbol.SetInterface(baseName)
+	for _, method := range methods {
+		mangledName := tables.GetMangledName(baseName, method.Name)
+		methodSymbol, err := c.scopes.SymbolDefine(mangledName)
+		if err != nil {
+			return fmt.Errorf("failed to define built-in error.Error symbol: %v", err)
+		}
+		methodSymbol.SetReturnTypes(method.ReturnTypes)
+		methodSymbol.SetInterface(baseName)
+		methodSymbol.SetStruct(baseName, sFields)
+	}
 	return nil
 }

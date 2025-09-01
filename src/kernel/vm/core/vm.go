@@ -339,7 +339,7 @@ func (v *VM) exec(mainFn *objects.FuncCompiled, args ...interface{}) error {
 
 	if v.err != nil {
 		filePos, _ := v.bc.Position(v.currFrame.SourcePos(v.ip - 1))
-		err := fmt.Errorf("runtime error %w at %s", v.err, filePos)
+		err := fmt.Errorf("%w at %s", v.err, filePos)
 		for _, frame := range v.frames.Unroll() {
 			filePos, _ = v.bc.Position(frame.SourcePos(frame.SavedIP() - 1))
 			err = fmt.Errorf("%w at %s", err, filePos)

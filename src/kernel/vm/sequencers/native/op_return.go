@@ -38,8 +38,8 @@ func (op *OpReturn) Execute(decoder *core.Decoder) {
 	var returnValues []objects.IObject
 	if numReturnVals := decoder.Read(0); numReturnVals > 0 {
 		returnValues = make([]objects.IObject, decoder.Read(0))
-		for i := 0; i < numReturnVals; i++ {
-			returnValues[i] = op.vm.Stack().Pop()
+		for idx := numReturnVals - 1; idx >= 0; idx-- {
+			returnValues[idx] = op.vm.Stack().Pop()
 		}
 	}
 	op.vm.Return(returnValues)
