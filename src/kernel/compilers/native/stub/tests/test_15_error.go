@@ -28,7 +28,8 @@ func main() {
 	// Caso 2: Fallimento
 	_, err2 := processData(false)
 	if err2 != nil {
-		resultLog = resultLog + " | " + err2.Error()
+		fmt.Printf("Error: %s\n", err2)
+		resultLog = resultLog + " | " + err2 //.Error()
 	} else {
 		resultLog = "Test failed on error case"
 	}

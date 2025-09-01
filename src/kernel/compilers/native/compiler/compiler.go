@@ -299,13 +299,16 @@ func (c *Compiler) createInit() error {
 // It ensures these built-ins are correctly defined and accessible for later compilation stages.
 // Returns an error if the setup of any built-in entity fails.
 func (c *Compiler) createBuiltin() error {
-	errorName := "error"
-	errorMethod := &tables.MethodDescription{
-		Name: "Error", InputParams: []string{}, ReturnTypes: []string{"string"},
-	}
-	if err := c.createBuiltinInterface(errorName, []*tables.MethodDescription{errorMethod}); err != nil {
-		return err
-	}
+	/*
+		errorName := "error"
+		errorMethod := &tables.MethodDescription{
+			Name: "Error", InputParams: []string{}, ReturnTypes: []string{"string"},
+		}
+		if err := c.createBuiltinInterface(errorName, []*tables.MethodDescription{errorMethod}); err != nil {
+			return err
+		}
+
+	*/
 	return nil
 }
 

@@ -2,7 +2,6 @@ package objects
 
 import (
 	"encoding/gob"
-	"fmt"
 )
 
 const (
@@ -61,7 +60,7 @@ func (o *Error) AsFloat64() float64 {
 // AsString returns the string representation of the Error object. If the values is nil, it returns "error".
 func (o *Error) AsString() string {
 	if o.value != nil {
-		return fmt.Sprintf("%s: %s", ErrorType, o.value.AsString())
+		return o.value.AsString()
 	}
 	return ErrorType
 }
