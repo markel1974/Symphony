@@ -5,7 +5,7 @@ import (
 )
 
 func init() {
-	gob.Register(&FuncPackage{})
+	gob.Register(&FuncExternal{})
 }
 
 // FuncJit is a callable object type that encapsulates a function and provides execution context information.
@@ -16,7 +16,7 @@ type FuncJit struct {
 	value []byte
 }
 
-// NewFuncPackage creates a new FuncPackage instance with the specified Id and callable function.
+// NewFuncExternal creates a new FuncExternal instance with the specified Id and callable function.
 func newFuncJit(factory IGateKeeper, frame int, name string, fn []byte) IObject {
 	return &FuncJit{
 		gk:    factory,
@@ -46,7 +46,7 @@ func (o *FuncJit) AsFloat64() float64 {
 	return 0
 }
 
-// AsString returns the string representation of a FuncPackage object.
+// AsString returns the string representation of a FuncExternal object.
 func (o *FuncJit) AsString() string {
 	return "<FuncJit>"
 }
@@ -116,32 +116,32 @@ func (o *FuncJit) Length() int {
 	return 0
 }
 
-// Name returns the name of the FuncPackage as a string.
+// Name returns the name of the FuncExternal as a string.
 func (o *FuncJit) Name() string {
 	return o.name
 }
 
-// TypeName returns the type name of the FuncPackage as a string.
+// TypeName returns the type name of the FuncExternal as a string.
 func (o *FuncJit) TypeName() string {
 	return "FuncJit:" + o.name
 }
 
-// Copy creates and returns a new FuncPackage instance with the same Value field as the original object.
+// Copy creates and returns a new FuncExternal instance with the same Value field as the original object.
 func (o *FuncJit) Copy(frame int, _ int) IObject {
 	return o.GateKeeper().NewFuncJitFrame(frame, o.name, o.value)
 }
 
-// Equals checks whether the current FuncPackage is equal to another object of type IObject. Always returns false.
+// Equals checks whether the current FuncExternal is equal to another object of type IObject. Always returns false.
 func (o *FuncJit) Equals(_ IObject) bool {
 	return false
 }
 
-// Call invokes the function encapsulated within the FuncPackage with the provided arguments and returns the result or an error.
+// Call invokes the function encapsulated within the FuncExternal with the provided arguments and returns the result or an error.
 func (o *FuncJit) Call(_ int, _ ...IObject) (IObject, error) {
 	return nil, ErrUnimplemented
 }
 
-// CanCall checks whether the FuncPackage instance can be invoked as a callable function. Always returns true.
+// CanCall checks whether the FuncExternal instance can be invoked as a callable function. Always returns true.
 func (o *FuncJit) CanCall() bool {
 	return true
 }
