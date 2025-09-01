@@ -10,15 +10,12 @@ func init() {
 
 // Errors is a type that encapsulates a map of module functions accessible as objects.
 type Errors struct {
-	factory   objects.IGateKeeper
 	container map[string]objects.IObject
 }
 
 // NewErrors initializes and returns a new Errors instance with pre-defined function modules.
 func NewErrors(factory objects.IGateKeeper) IPackage {
-	e := &Errors{
-		factory: factory,
-	}
+	e := &Errors{}
 	container := []objects.IObject{
 		factory.NewFuncPackage("New", e.New),
 	}
@@ -27,15 +24,15 @@ func NewErrors(factory objects.IGateKeeper) IPackage {
 }
 
 // New creates a new error object from the provided argument, ensuring it is a valid string and returning an error if not.
-func (e *Errors) New(frame int, args ...objects.IObject) (ret objects.IObject, err error) {
+func (e *Errors) New(gk objects.IGateKeeper, frame int, args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 1 {
 		return nil, objects.ErrInvalidArgumentsNumber
 	}
-	s, err := e.factory.ToStringArg(0, args[0])
+	s, err := gk.ToStringArg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
-	return e.factory.NewError(frame, s), nil
+	return gk.NewError(frame, s), nil
 }
 
 // Name returns the name identifier of the Errors type.

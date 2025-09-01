@@ -12,15 +12,12 @@ func init() {
 
 // Fmt represents a struct that provides formatted output methods using a map of predefined functions.
 type Fmt struct {
-	factory   objects.IGateKeeper
 	container map[string]objects.IObject
 }
 
 // NewFmt initializes and returns a new Fmt instance with predefined formatting functions as module properties.
 func NewFmt(factory objects.IGateKeeper) IPackage {
-	f := &Fmt{
-		factory: factory,
-	}
+	f := &Fmt{}
 	container := []objects.IObject{
 		factory.NewFuncPackage("Print", f.print),
 		factory.NewFuncPackage("Printf", f.printf),
@@ -45,10 +42,10 @@ func (f *Fmt) Get(name string) (objects.IObject, bool) {
 }
 
 // Print writes the string representations of the provided arguments to the standard output without appending a newline.
-func (f *Fmt) print(_ int, args ...objects.IObject) (ret objects.IObject, err error) {
+func (f *Fmt) print(gk objects.IGateKeeper, _ int, args ...objects.IObject) (ret objects.IObject, err error) {
 	var printArgs []interface{}
 	for _, arg := range args {
-		printArgs = append(printArgs, f.factory.ToInterface(arg))
+		printArgs = append(printArgs, gk.ToInterface(arg))
 	}
 	_, _ = fmt.Print(printArgs...)
 	return nil, nil
@@ -57,12 +54,12 @@ func (f *Fmt) print(_ int, args ...objects.IObject) (ret objects.IObject, err er
 // Printf formats and outputs a string using the provided format and arguments, implementing similar behavior to fmt.Printf.
 // The first argument must be a format string, with additional arguments used to populate the format specifiers.
 // Returns an error if the number of arguments is insufficient or if the format argument is incompatible.
-func (f *Fmt) printf(_ int, args ...objects.IObject) (ret objects.IObject, err error) {
+func (f *Fmt) printf(gk objects.IGateKeeper, _ int, args ...objects.IObject) (ret objects.IObject, err error) {
 	argsLen := len(args)
 	if argsLen == 0 {
 		return nil, objects.ErrInvalidArgumentsNumber
 	}
-	s1, err := f.factory.ToStringArg(0, args[0])
+	s1, err := gk.ToStringArg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
@@ -72,70 +69,70 @@ func (f *Fmt) printf(_ int, args ...objects.IObject) (ret objects.IObject, err e
 	}
 	var ar []interface{}
 	for _, v := range args[1:] {
-		ar = append(ar, f.factory.ToInterface(v))
+		ar = append(ar, gk.ToInterface(v))
 	}
 	fmt.Printf(s1, ar...)
 	return nil, nil
 }
 
 // Println writes the given arguments to the standard output with a newline and returns nil and no error.
-func (f *Fmt) println(_ int, args ...objects.IObject) (ret objects.IObject, err error) {
+func (f *Fmt) println(gk objects.IGateKeeper, _ int, args ...objects.IObject) (ret objects.IObject, err error) {
 	var printArgs []interface{}
 	for _, arg := range args {
-		printArgs = append(printArgs, f.factory.ToInterface(arg))
+		printArgs = append(printArgs, gk.ToInterface(arg))
 	}
 	_, _ = fmt.Println(printArgs...)
 	return nil, nil
 }
 
 // Sprint formats and concatenates the provided arguments into a single string and returns it as a new AsString object.
-func (f *Fmt) sprint(frame int, args ...objects.IObject) (ret objects.IObject, err error) {
+func (f *Fmt) sprint(gk objects.IGateKeeper, frame int, args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) == 0 {
 		return nil, objects.ErrInvalidArgumentsNumber
 	}
 	var ar []interface{}
 	for _, v := range args {
-		ar = append(ar, f.factory.ToInterface(v))
+		ar = append(ar, gk.ToInterface(v))
 	}
-	return f.factory.NewString(frame, fmt.Sprint(ar)), nil
+	return gk.NewString(frame, fmt.Sprint(ar)), nil
 }
 
 // Sprintf formats a string using a format specifier and optional arguments, returning it as a new string object.
-func (f *Fmt) sprintf(frame int, args ...objects.IObject) (ret objects.IObject, err error) {
+func (f *Fmt) sprintf(gk objects.IGateKeeper, frame int, args ...objects.IObject) (ret objects.IObject, err error) {
 	argsLen := len(args)
 	if argsLen == 0 {
 		return nil, objects.ErrInvalidArgumentsNumber
 	}
-	s1, err := f.factory.ToStringArg(0, args[0])
+	s1, err := gk.ToStringArg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
 	if len(args) == 1 {
-		return f.factory.NewString(frame, s1), nil
+		return gk.NewString(frame, s1), nil
 	}
 	var ar []interface{}
 	for _, v := range args[1:] {
-		ar = append(ar, f.factory.ToInterface(v))
+		ar = append(ar, gk.ToInterface(v))
 	}
-	return f.factory.NewString(frame, fmt.Sprintf(s1, ar...)), nil
+	return gk.NewString(frame, fmt.Sprintf(s1, ar...)), nil
 }
 
 // Errorf formats an error message using a format string and arguments, returning an IObject error representation.
-func (f *Fmt) errorf(frame int, args ...objects.IObject) (ret objects.IObject, err error) {
+func (f *Fmt) errorf(gk objects.IGateKeeper, frame int, args ...objects.IObject) (ret objects.IObject, err error) {
 	argsLen := len(args)
 	if argsLen == 0 {
 		return nil, objects.ErrInvalidArgumentsNumber
 	}
-	s1, err := f.factory.ToStringArg(0, args[0])
+	s1, err := gk.ToStringArg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
 	if len(args) == 1 {
-		return f.factory.NewError(frame, s1), nil
+		return gk.NewError(frame, s1), nil
 	}
 	var ar []interface{}
 	for _, v := range args[1:] {
-		ar = append(ar, f.factory.ToInterface(v))
+		ar = append(ar, gk.ToInterface(v))
 	}
-	return f.factory.NewError(frame, s1), nil
+	return gk.NewError(frame, s1), nil
 }

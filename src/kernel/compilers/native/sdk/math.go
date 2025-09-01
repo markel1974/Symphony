@@ -12,15 +12,12 @@ func init() {
 
 // Math serves as a container for mathematical operations and modules, mapping module names to their respective objects.
 type Math struct {
-	gk        objects.IGateKeeper
 	container map[string]objects.IObject
 }
 
 // NewMath initializes and returns a new instance of Math with predefined mathematical constants and function modules.
 func NewMath(factory objects.IGateKeeper) IPackage {
-	m := &Math{
-		gk: factory,
-	}
+	m := &Math{}
 	constants := map[string]objects.IObject{
 		"E":       factory.NewFloat(objects.FrameStatic, math.E),
 		"Pi":      factory.NewFloat(objects.FrameStatic, math.Pi),
@@ -107,10 +104,10 @@ func (m *Math) Get(name string) (objects.IObject, bool) {
 // funcInOf64 wraps a no-argument function returning float64 into a FuncCallable to integrate with the GateAdapter system.
 // It enforces no arguments and converts the float64 result to an IObject, returning ErrInvalidArgumentsNumber for invalid input.
 func (m *Math) funcInOf64(fn func() float64) objects.FuncCallable {
-	return func(frame int, args ...objects.IObject) (ret objects.IObject, err error) {
+	return func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (ret objects.IObject, err error) {
 		if len(args) != 0 {
 			return nil, objects.ErrInvalidArgumentsNumber
 		}
-		return m.gk.NewFloat(frame, fn()), nil
+		return gk.NewFloat(frame, fn()), nil
 	}
 }

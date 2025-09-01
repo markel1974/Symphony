@@ -331,8 +331,8 @@ func (c *Compiler) createBuiltinInterface(baseName string, methods []*tables.Met
 		methodSymbol.SetInterface(baseName)
 		methodSymbol.SetStruct(baseName, sFields)
 		methodSymbol.SetObject(c.gk.NewFuncPackage(mangledName,
-			func(frame int, args ...objects.IObject) (ret objects.IObject, err error) {
-				return c.gk.NewString(objects.FrameStatic, "TESTTTTT"), nil
+			func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (ret objects.IObject, err error) {
+				return gk.NewString(objects.FrameStatic, "TESTTTTT"), nil
 			}))
 	}
 	return nil

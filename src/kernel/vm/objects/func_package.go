@@ -2,17 +2,12 @@ package objects
 
 import "encoding/gob"
 
-const (
-// FuncBuiltinDef = "func_builtin"
-// FuncPackageDef = "func_package"
-)
-
 func init() {
 	gob.Register(&FuncPackage{})
 }
 
 // FuncCallable is a type alias for a function that takes a variadic list of IObject arguments and returns an IObject and an error.
-type FuncCallable = func(frame int, args ...IObject) (ret IObject, err error)
+type FuncCallable = func(gk IGateKeeper, frame int, args ...IObject) (ret IObject, err error)
 
 // FuncPackage is a callable object type that encapsulates a function and provides execution context information.
 type FuncPackage struct {
@@ -144,7 +139,7 @@ func (o *FuncPackage) Equals(_ IObject) bool {
 
 // Call invokes the function encapsulated within the FuncPackage with the provided arguments and returns the result or an error.
 func (o *FuncPackage) Call(frame int, args ...IObject) (IObject, error) {
-	return o.value(frame, args...)
+	return o.value(o.gk, frame, args...)
 }
 
 // CanCall checks whether the FuncPackage instance can be invoked as a callable function. Always returns true.

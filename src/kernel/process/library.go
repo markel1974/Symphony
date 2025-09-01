@@ -11,7 +11,6 @@ import (
 // Library represents a collection of modules that interact with system processes and provide various functionalities.
 // It contains a reference to a Process and a map of module names to their respective objects.
 type Library struct {
-	factory objects.IGateKeeper
 	process *Process
 	pkg     map[string]objects.IObject
 }
@@ -19,7 +18,6 @@ type Library struct {
 // NewLibrary creates and initializes a new Library instance with the provided Process.
 func NewLibrary(factory objects.IGateKeeper, process *Process) *Library {
 	l := &Library{
-		factory: factory,
 		process: process,
 		pkg:     make(map[string]objects.IObject),
 	}
@@ -73,19 +71,19 @@ func (l *Library) Package() map[string]objects.IObject {
 }
 
 // doCreateTimer validates and extracts three integer arguments, then creates a timer using these arguments. Returns nil or an error.
-func (l *Library) doCreateTimer(_ int, args ...objects.IObject) (ret objects.IObject, err error) {
+func (l *Library) doCreateTimer(gk objects.IGateKeeper, _ int, args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 3 {
 		return nil, errors.New("invalid number of arguments")
 	}
-	i1, err := l.factory.ToInt64Arg(0, args[0])
+	i1, err := gk.ToInt64Arg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
-	i2, err := l.factory.ToInt64Arg(1, args[1])
+	i2, err := gk.ToInt64Arg(1, args[1])
 	if err != nil {
 		return nil, err
 	}
-	i3, err := l.factory.ToInt64Arg(2, args[2])
+	i3, err := gk.ToInt64Arg(2, args[2])
 	if err != nil {
 		return nil, err
 	}
@@ -94,12 +92,12 @@ func (l *Library) doCreateTimer(_ int, args ...objects.IObject) (ret objects.IOb
 }
 
 // doPrintf formats and writes a string output using provided arguments; returns an error for invalid input or formatting.
-func (l *Library) doPrintf(_ int, args ...objects.IObject) (ret objects.IObject, err error) {
+func (l *Library) doPrintf(gk objects.IGateKeeper, _ int, args ...objects.IObject) (ret objects.IObject, err error) {
 	argsLen := len(args)
 	if argsLen == 0 {
 		return nil, objects.ErrInvalidArgumentsNumber
 	}
-	s1, err := l.factory.ToStringArg(0, args[0])
+	s1, err := gk.ToStringArg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
@@ -109,7 +107,7 @@ func (l *Library) doPrintf(_ int, args ...objects.IObject) (ret objects.IObject,
 	} else {
 		var ar []interface{}
 		for _, v := range args[1:] {
-			ar = append(ar, l.factory.ToInterface(v))
+			ar = append(ar, gk.ToInterface(v))
 		}
 		val = fmt.Sprintf(s1, ar...)
 	}
@@ -117,24 +115,24 @@ func (l *Library) doPrintf(_ int, args ...objects.IObject) (ret objects.IObject,
 	return nil, nil
 }
 
-func (l *Library) doIsActive(_ int, args ...objects.IObject) (ret objects.IObject, err error) {
+func (l *Library) doIsActive(gk objects.IGateKeeper, _ int, args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 1 {
 		return nil, errors.New("invalid number of arguments")
 	}
-	i1, err := l.factory.ToInt64Arg(0, args[0])
+	i1, err := gk.ToInt64Arg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
 	v := l.process.IsActive(int(i1))
-	return l.factory.FromBool(v), nil
+	return gk.FromBool(v), nil
 }
 
 // doKill terminates a process identified by the provided argument, which must be convertible to an int64. Returns no value.
-func (l *Library) doKill(_ int, args ...objects.IObject) (ret objects.IObject, err error) {
+func (l *Library) doKill(gk objects.IGateKeeper, _ int, args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 1 {
 		return nil, errors.New("invalid number of arguments")
 	}
-	i1, err := l.factory.ToInt64Arg(0, args[0])
+	i1, err := gk.ToInt64Arg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
@@ -143,7 +141,7 @@ func (l *Library) doKill(_ int, args ...objects.IObject) (ret objects.IObject, e
 }
 
 // doKillForeground terminates the foreground process if no arguments are provided, returning nil or an error.
-func (l *Library) doKillForeground(_ int, args ...objects.IObject) (ret objects.IObject, err error) {
+func (l *Library) doKillForeground(_ objects.IGateKeeper, _ int, args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 0 {
 		return nil, errors.New("invalid number of arguments")
 	}
@@ -153,14 +151,14 @@ func (l *Library) doKillForeground(_ int, args ...objects.IObject) (ret objects.
 
 // doKillAll terminates all processes matching the given context name, passed as a single string argument.
 // Returns an error if the argument is invalid or conversion to string fails.
-func (l *Library) doKillAll(_ int, args ...objects.IObject) (ret objects.IObject, err error) {
+func (l *Library) doKillAll(gk objects.IGateKeeper, _ int, args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 0 {
 		return nil, errors.New("invalid number of arguments")
 	}
 	if len(args) != 1 {
 		return nil, errors.New("invalid number of arguments")
 	}
-	s1, err := l.factory.ToStringArg(0, args[0])
+	s1, err := gk.ToStringArg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
@@ -169,7 +167,7 @@ func (l *Library) doKillAll(_ int, args ...objects.IObject) (ret objects.IObject
 }
 
 // doWindowsSelectionEnd finalizes a windows selection operation, ensuring no arguments are passed and invoking WindowsSelectionEnd.
-func (l *Library) doWindowsSelectionEnd(_ int, args ...objects.IObject) (ret objects.IObject, err error) {
+func (l *Library) doWindowsSelectionEnd(_ objects.IGateKeeper, _ int, args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 0 {
 		return nil, errors.New("invalid number of arguments")
 	}
@@ -179,7 +177,7 @@ func (l *Library) doWindowsSelectionEnd(_ int, args ...objects.IObject) (ret obj
 
 // doWindowsSelectionBegin initializes the window selection process in the current library context.
 // Returns an error if invalid arguments are passed.
-func (l *Library) doWindowsSelectionBegin(_ int, args ...objects.IObject) (ret objects.IObject, err error) {
+func (l *Library) doWindowsSelectionBegin(_ objects.IGateKeeper, _ int, args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 0 {
 		return nil, errors.New("invalid number of arguments")
 	}
@@ -188,11 +186,11 @@ func (l *Library) doWindowsSelectionBegin(_ int, args ...objects.IObject) (ret o
 }
 
 // doProcessExec validates arguments and executes a process based on a string argument. Returns an error if invalid.
-func (l *Library) doProcessExec(_ int, args ...objects.IObject) (ret objects.IObject, err error) {
+func (l *Library) doProcessExec(gk objects.IGateKeeper, _ int, args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 1 {
 		return nil, errors.New("invalid number of arguments")
 	}
-	s1, err := l.factory.ToStringArg(0, args[0])
+	s1, err := gk.ToStringArg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
@@ -203,7 +201,7 @@ func (l *Library) doProcessExec(_ int, args ...objects.IObject) (ret objects.IOb
 // doPaintRequest performs a paint request by invoking the PaintRequest method of the Library's internal painter instance.
 // It validates that no arguments are passed; otherwise, it returns an error.
 // Returns nil if the operation succeeds or an error if the argument validation fails.
-func (l *Library) doPaintRequest(_ int, args ...objects.IObject) (ret objects.IObject, err error) {
+func (l *Library) doPaintRequest(_ objects.IGateKeeper, _ int, args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 0 {
 		return nil, errors.New("invalid number of arguments")
 	}
@@ -212,64 +210,64 @@ func (l *Library) doPaintRequest(_ int, args ...objects.IObject) (ret objects.IO
 }
 
 // doGetScreenSize retrieves the screen dimensions as a map containing "width" and "height" with their respective values.
-func (l *Library) doGetScreenSize(frame int, args ...objects.IObject) (ret objects.IObject, err error) {
+func (l *Library) doGetScreenSize(gk objects.IGateKeeper, frame int, args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 0 {
 		return nil, errors.New("invalid number of arguments")
 	}
 	w, h := l.process.GetScreenSize()
-	return l.factory.NewMap(frame, map[string]objects.IObject{
-		"width":  l.factory.NewInt(frame, int64(w)),
-		"height": l.factory.NewInt(frame, int64(h)),
+	return gk.NewMap(frame, map[string]objects.IObject{
+		"width":  gk.NewInt(frame, int64(w)),
+		"height": gk.NewInt(frame, int64(h)),
 	}), nil
 }
 
 // doCWDDirectoryListing returns the directory listing of the current working directory as an IObject array.
 // It expects no arguments and raises an error if arguments are provided.
-func (l *Library) doCWDDirectoryListing(frame int, args ...objects.IObject) (ret objects.IObject, err error) {
+func (l *Library) doCWDDirectoryListing(gk objects.IGateKeeper, frame int, args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 0 {
 		return nil, errors.New("invalid number of arguments")
 	}
 	v := l.process.CWDDirectoryListing()
-	return l.factory.FromStringArray(frame, v)
+	return gk.FromStringArray(frame, v)
 }
 
 // doCWDSet sets the current working directory (CWD) using the provided string argument. Returns a boolean as IObject.
-func (l *Library) doCWDSet(_ int, args ...objects.IObject) (ret objects.IObject, err error) {
+func (l *Library) doCWDSet(gk objects.IGateKeeper, _ int, args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 1 {
 		return nil, errors.New("invalid number of arguments")
 	}
-	s1, err := l.factory.ToStringArg(0, args[0])
+	s1, err := gk.ToStringArg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
 	v := l.process.CWDSet(s1)
-	return l.factory.FromBool(v), nil
+	return gk.FromBool(v), nil
 }
 
 // doCWDPath returns the current working directory's path as a string object or an error if arguments are provided.
-func (l *Library) doCWDPath(frame int, args ...objects.IObject) (ret objects.IObject, err error) {
+func (l *Library) doCWDPath(gk objects.IGateKeeper, frame int, args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 0 {
 		return nil, errors.New("invalid number of arguments")
 	}
 	v := l.process.CWDPath()
-	return l.factory.NewString(frame, v), nil
+	return gk.NewString(frame, v), nil
 }
 
 // doCWDName retrieves the current working directory name, returns it as a string object, and validates argument count.
-func (l *Library) doCWDName(frame int, args ...objects.IObject) (ret objects.IObject, err error) {
+func (l *Library) doCWDName(gk objects.IGateKeeper, frame int, args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 0 {
 		return nil, errors.New("invalid number of arguments")
 	}
 	v := l.process.CWDName()
-	return l.factory.NewString(frame, v), nil
+	return gk.NewString(frame, v), nil
 }
 
 // doHelp retrieves and returns a help string for the provided argument, which must be a single string-compatible object.
-func (l *Library) doHelp(frame int, args ...objects.IObject) (ret objects.IObject, err error) {
+func (l *Library) doHelp(gk objects.IGateKeeper, frame int, args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 1 {
 		return nil, errors.New("invalid number of arguments")
 	}
-	s1, err := l.factory.ToStringArg(0, args[0])
+	s1, err := gk.ToStringArg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
@@ -277,20 +275,20 @@ func (l *Library) doHelp(frame int, args ...objects.IObject) (ret objects.IObjec
 	if err != nil {
 		return nil, err
 	}
-	return l.factory.NewString(frame, v), nil
+	return gk.NewString(frame, v), nil
 }
 
 // doSuggestion processes two arguments: a string and an integer, to trigger the Suggestion functionality within the library.
 // Returns an error for invalid argument types or count.
-func (l *Library) doSuggestion(_ int, args ...objects.IObject) (ret objects.IObject, err error) {
+func (l *Library) doSuggestion(gk objects.IGateKeeper, _ int, args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 2 {
 		return nil, errors.New("invalid number of arguments")
 	}
-	s1, err := l.factory.ToStringArg(0, args[0])
+	s1, err := gk.ToStringArg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
-	i2, err := l.factory.ToInt64Arg(1, args[1])
+	i2, err := gk.ToInt64Arg(1, args[1])
 	if err != nil {
 		return nil, err
 	}
@@ -300,7 +298,7 @@ func (l *Library) doSuggestion(_ int, args ...objects.IObject) (ret objects.IObj
 
 // doSetExit sets the exit condition for the associated process and returns nil if successful or an error otherwise.
 // Accepts no arguments; an error is returned if arguments are provided.
-func (l *Library) doSetExit(_ int, args ...objects.IObject) (ret objects.IObject, err error) {
+func (l *Library) doSetExit(_ objects.IGateKeeper, _ int, args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 0 {
 		return nil, errors.New("invalid number of arguments")
 	}
@@ -310,7 +308,7 @@ func (l *Library) doSetExit(_ int, args ...objects.IObject) (ret objects.IObject
 }
 
 // doClearScreen clears the terminal screen and returns nil if successful or an error if invalid arguments are passed.
-func (l *Library) doClearScreen(_ int, args ...objects.IObject) (ret objects.IObject, err error) {
+func (l *Library) doClearScreen(_ objects.IGateKeeper, _ int, args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 0 {
 		return nil, errors.New("invalid number of arguments")
 	}
@@ -319,7 +317,7 @@ func (l *Library) doClearScreen(_ int, args ...objects.IObject) (ret objects.IOb
 }
 
 // doRestoreCursor restores the cursor to its previously saved position, returning an error for invalid arguments.
-func (l *Library) doRestoreCursor(_ int, args ...objects.IObject) (ret objects.IObject, err error) {
+func (l *Library) doRestoreCursor(_ objects.IGateKeeper, _ int, args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 0 {
 		return nil, errors.New("invalid number of arguments")
 	}
@@ -328,7 +326,7 @@ func (l *Library) doRestoreCursor(_ int, args ...objects.IObject) (ret objects.I
 }
 
 // doSaveCursor saves the current cursor position. Returns an error for invalid argument count.
-func (l *Library) doSaveCursor(_ int, args ...objects.IObject) (ret objects.IObject, err error) {
+func (l *Library) doSaveCursor(_ objects.IGateKeeper, _ int, args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 0 {
 		return nil, errors.New("invalid number of arguments")
 	}
@@ -338,7 +336,7 @@ func (l *Library) doSaveCursor(_ int, args ...objects.IObject) (ret objects.IObj
 }
 
 // doMoveCursorRight moves the cursor to the right and accepts no arguments, returning an error if any are provided.
-func (l *Library) doMoveCursorRight(_ int, args ...objects.IObject) (ret objects.IObject, err error) {
+func (l *Library) doMoveCursorRight(_ objects.IGateKeeper, _ int, args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 0 {
 		return nil, errors.New("invalid number of arguments")
 	}
@@ -347,7 +345,7 @@ func (l *Library) doMoveCursorRight(_ int, args ...objects.IObject) (ret objects
 }
 
 // doMoveCursorLeft moves the cursor one position to the left if the number of arguments is zero, otherwise returns an error.
-func (l *Library) doMoveCursorLeft(_ int, args ...objects.IObject) (ret objects.IObject, err error) {
+func (l *Library) doMoveCursorLeft(_ objects.IGateKeeper, _ int, args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 0 {
 		return nil, errors.New("invalid number of arguments")
 	}
@@ -358,19 +356,19 @@ func (l *Library) doMoveCursorLeft(_ int, args ...objects.IObject) (ret objects.
 // doWriteForeground writes text to the foreground using specified string, color, and a boolean flag for emphasis.
 // Accepts three arguments: a string, an int64 representing color, and a boolean indicating emphasis.
 // Returns an error if the argument count is invalid or conversion of arguments fails.
-func (l *Library) doWriteForeground(_ int, args ...objects.IObject) (ret objects.IObject, err error) {
+func (l *Library) doWriteForeground(gk objects.IGateKeeper, _ int, args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 3 {
 		return nil, errors.New("invalid number of arguments")
 	}
-	s1, err := l.factory.ToStringArg(0, args[0])
+	s1, err := gk.ToStringArg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
-	i2, err := l.factory.ToInt64Arg(1, args[1])
+	i2, err := gk.ToInt64Arg(1, args[1])
 	if err != nil {
 		return nil, err
 	}
-	b3, err := l.factory.ToBoolArg(2, args[2])
+	b3, err := gk.ToBoolArg(2, args[2])
 	if err != nil {
 		return nil, err
 	}
@@ -379,27 +377,27 @@ func (l *Library) doWriteForeground(_ int, args ...objects.IObject) (ret objects
 }
 
 // doWriteColor writes colored text to the output using specified color definitions, mode, and a boolean flag.
-func (l *Library) doWriteColor(_ int, args ...objects.IObject) (ret objects.IObject, err error) {
+func (l *Library) doWriteColor(gk objects.IGateKeeper, _ int, args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 5 {
 		return nil, errors.New("invalid number of arguments")
 	}
-	s1, err := l.factory.ToStringArg(0, args[0])
+	s1, err := gk.ToStringArg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
-	i2, err := l.factory.ToInt64Arg(1, args[1])
+	i2, err := gk.ToInt64Arg(1, args[1])
 	if err != nil {
 		return nil, err
 	}
-	i3, err := l.factory.ToInt64Arg(2, args[2])
+	i3, err := gk.ToInt64Arg(2, args[2])
 	if err != nil {
 		return nil, err
 	}
-	i4, err := l.factory.ToInt64Arg(3, args[3])
+	i4, err := gk.ToInt64Arg(3, args[3])
 	if err != nil {
 		return nil, err
 	}
-	b5, err := l.factory.ToBoolArg(4, args[4])
+	b5, err := gk.ToBoolArg(4, args[4])
 	if err != nil {
 		return nil, err
 	}
@@ -408,15 +406,15 @@ func (l *Library) doWriteColor(_ int, args ...objects.IObject) (ret objects.IObj
 }
 
 // doWritePromptLine writes a prompt line using two string arguments from objects.IObject and returns nil or an error.
-func (l *Library) doWritePromptLine(_ int, args ...objects.IObject) (ret objects.IObject, err error) {
+func (l *Library) doWritePromptLine(gk objects.IGateKeeper, _ int, args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 2 {
 		return nil, errors.New("invalid number of arguments")
 	}
-	s1, err := l.factory.ToStringArg(0, args[0])
+	s1, err := gk.ToStringArg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
-	s2, err := l.factory.ToStringArg(1, args[1])
+	s2, err := gk.ToStringArg(1, args[1])
 	if err != nil {
 		return nil, err
 	}
@@ -425,15 +423,15 @@ func (l *Library) doWritePromptLine(_ int, args ...objects.IObject) (ret objects
 }
 
 // doWritePromptEOL writes a prompt with an end-of-line flag based on the provided string and boolean arguments.
-func (l *Library) doWritePromptEOL(_ int, args ...objects.IObject) (ret objects.IObject, err error) {
+func (l *Library) doWritePromptEOL(gk objects.IGateKeeper, _ int, args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 2 {
 		return nil, errors.New("invalid number of arguments")
 	}
-	s1, err := l.factory.ToStringArg(0, args[0])
+	s1, err := gk.ToStringArg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
-	b2, err := l.factory.ToBoolArg(1, args[1])
+	b2, err := gk.ToBoolArg(1, args[1])
 	if err != nil {
 		return nil, err
 	}
@@ -442,15 +440,15 @@ func (l *Library) doWritePromptEOL(_ int, args ...objects.IObject) (ret objects.
 }
 
 // doWrite writes a string with optional newline control using provided arguments; validates input and returns errors if invalid.
-func (l *Library) doWrite(_ int, args ...objects.IObject) (ret objects.IObject, err error) {
+func (l *Library) doWrite(gk objects.IGateKeeper, _ int, args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 2 {
 		return nil, errors.New("invalid number of arguments")
 	}
-	s1, err := l.factory.ToStringArg(0, args[0])
+	s1, err := gk.ToStringArg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
-	b2, err := l.factory.ToBoolArg(1, args[1])
+	b2, err := gk.ToBoolArg(1, args[1])
 	if err != nil {
 		return nil, err
 	}
@@ -459,7 +457,7 @@ func (l *Library) doWrite(_ int, args ...objects.IObject) (ret objects.IObject, 
 }
 
 // doProcessSetSelfForeground sets the current process as the foreground and ensures no arguments are passed during invocation.
-func (l *Library) doProcessSetSelfForeground(_ int, args ...objects.IObject) (ret objects.IObject, err error) {
+func (l *Library) doProcessSetSelfForeground(_ objects.IGateKeeper, _ int, args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 0 {
 		return nil, errors.New("invalid number of arguments")
 	}
@@ -468,11 +466,11 @@ func (l *Library) doProcessSetSelfForeground(_ int, args ...objects.IObject) (re
 }
 
 // doProcessSetForeground sets the specified process as the foreground process using the provided integer argument.
-func (l *Library) doProcessSetForeground(_ int, args ...objects.IObject) (ret objects.IObject, err error) {
+func (l *Library) doProcessSetForeground(gk objects.IGateKeeper, _ int, args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 1 {
 		return nil, errors.New("invalid number of arguments")
 	}
-	i1, err := l.factory.ToInt64Arg(0, args[0])
+	i1, err := gk.ToInt64Arg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
@@ -482,27 +480,27 @@ func (l *Library) doProcessSetForeground(_ int, args ...objects.IObject) (ret ob
 
 // doProcessList retrieves a map of running processes, including details like name, PID, line, and start time.
 // Returns an error if any arguments are provided.
-func (l *Library) doProcessList(frame int, args ...objects.IObject) (ret objects.IObject, err error) {
+func (l *Library) doProcessList(gk objects.IGateKeeper, frame int, args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 0 {
 		return nil, errors.New("invalid number of arguments")
 	}
 	res := make(map[string]objects.IObject)
 	for _, p := range l.process.ProcessList() {
 		c := map[string]objects.IObject{
-			"line": l.factory.NewString(frame, p.Line()),
-			"name": l.factory.NewString(frame, p.Name()),
-			"time": l.factory.NewTime(frame, p.Time()),
-			"pid":  l.factory.NewInt(frame, int64(p.PID())),
+			"line": gk.NewString(frame, p.Line()),
+			"name": gk.NewString(frame, p.Name()),
+			"time": gk.NewTime(frame, p.Time()),
+			"pid":  gk.NewInt(frame, int64(p.PID())),
 		}
-		res[p.Name()] = l.factory.NewMap(frame, c)
+		res[p.Name()] = gk.NewMap(frame, c)
 	}
-	return l.factory.NewMap(frame, res), nil
+	return gk.NewMap(frame, res), nil
 }
 
 // doWindowsSelectionPrevious navigates to the previous selection in the Windows selection context.
 // Returns an error if any arguments are provided.
 // Calls the underlying WindowsSelectionPrevious method to perform the operation.
-func (l *Library) doWindowsSelectionPrevious(_ int, args ...objects.IObject) (ret objects.IObject, err error) {
+func (l *Library) doWindowsSelectionPrevious(_ objects.IGateKeeper, _ int, args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 0 {
 		return nil, errors.New("invalid number of arguments")
 	}
@@ -511,7 +509,7 @@ func (l *Library) doWindowsSelectionPrevious(_ int, args ...objects.IObject) (re
 }
 
 // doWindowsSelectionNext advances to the next item in the windows selection process. Returns an error for invalid arguments.
-func (l *Library) doWindowsSelectionNext(_ int, args ...objects.IObject) (ret objects.IObject, err error) {
+func (l *Library) doWindowsSelectionNext(_ objects.IGateKeeper, _ int, args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 0 {
 		return nil, errors.New("invalid number of arguments")
 	}
@@ -523,15 +521,15 @@ func (l *Library) doWindowsSelectionNext(_ int, args ...objects.IObject) (ret ob
 // Expects exactly two arguments: a rune (int64) and a float64.
 // Returns an error if argument count is invalid or conversion of arguments fails.
 // Invokes WindowsSelectionOptions method with the parsed inputs.
-func (l *Library) doWindowsSelectionOptions(_ int, args ...objects.IObject) (ret objects.IObject, err error) {
+func (l *Library) doWindowsSelectionOptions(gk objects.IGateKeeper, _ int, args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 2 {
 		return nil, errors.New("invalid number of arguments")
 	}
-	i1, err := l.factory.ToInt64Arg(0, args[0])
+	i1, err := gk.ToInt64Arg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
-	f2, err := l.factory.ToFloat64Arg(0, args[0])
+	f2, err := gk.ToFloat64Arg(0, args[0])
 	if err != nil {
 		return nil, err
 	}

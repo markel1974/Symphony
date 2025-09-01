@@ -14,13 +14,12 @@ func init() {
 // Strings provides a collection of string operations and functionality wrapped in a module.
 // It includes functions for manipulation, comparison, trimming, padding, splitting, and other string-related utilities.
 type Strings struct {
-	factory   objects.IGateKeeper
 	container map[string]objects.IObject
 }
 
 // NewStrings creates and returns a new instance of Strings with a preconfigured map of string utility functions.
 func NewStrings(factory objects.IGateKeeper) IPackage {
-	s := &Strings{factory: factory}
+	s := &Strings{}
 	container := []objects.IObject{
 		factory.NewFuncPackage("Compare", factory.FuncIssOi(strings.Compare)),
 		factory.NewFuncPackage("Contains", factory.FuncIssOb(strings.Contains)),
@@ -71,48 +70,48 @@ func (s *Strings) Get(name string) (objects.IObject, bool) {
 }
 
 // Replace replaces occurrences of a substring within a string with the specified replacement string up to a given limit.
-func (s *Strings) replace(frame int, args ...objects.IObject) (objects.IObject, error) {
+func (s *Strings) replace(gk objects.IGateKeeper, frame int, args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 4 {
 		return nil, objects.ErrInvalidArgumentsNumber
 	}
-	s1, err := s.factory.ToStringArg(0, args[0])
+	s1, err := gk.ToStringArg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
-	s2, err := s.factory.ToStringArg(1, args[1])
+	s2, err := gk.ToStringArg(1, args[1])
 	if err != nil {
 		return nil, err
 	}
-	s3, err := s.factory.ToStringArg(2, args[2])
+	s3, err := gk.ToStringArg(2, args[2])
 	if err != nil {
 		return nil, err
 	}
-	i4, err := s.factory.ToInt64Arg(3, args[3])
+	i4, err := gk.ToInt64Arg(3, args[3])
 	if err != nil {
 		return nil, err
 	}
-	ret := s.stringsReplace(frame, s1, s2, s3, int(i4))
-	return s.factory.NewString(frame, ret), nil
+	ret := s.stringsReplace(gk, frame, s1, s2, s3, int(i4))
+	return gk.NewString(frame, ret), nil
 }
 
 // Substring extracts a portion of a string based on the starting and ending indices provided as arguments.
-func (s *Strings) Substring(frame int, args ...objects.IObject) (objects.IObject, error) {
+func (s *Strings) Substring(gk objects.IGateKeeper, frame int, args ...objects.IObject) (objects.IObject, error) {
 	argsLen := len(args)
 	if argsLen != 2 && argsLen != 3 {
 		return nil, objects.ErrInvalidArgumentsNumber
 	}
-	s1, err := s.factory.ToStringArg(0, args[0])
+	s1, err := gk.ToStringArg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
-	i2, err := s.factory.ToInt64Arg(1, args[1])
+	i2, err := gk.ToInt64Arg(1, args[1])
 	if err != nil {
 		return nil, err
 	}
 	strlen := int64(len(s1))
 	i3 := strlen
 	if argsLen == 3 {
-		i3, err = s.factory.ToInt64Arg(2, args[2])
+		i3, err = gk.ToInt64Arg(2, args[2])
 		if err != nil {
 			return nil, err
 		}
@@ -130,96 +129,96 @@ func (s *Strings) Substring(frame int, args ...objects.IObject) (objects.IObject
 	} else if i3 > strlen {
 		i3 = strlen
 	}
-	return s.factory.NewString(frame, s1[i2:i3]), nil
+	return gk.NewString(frame, s1[i2:i3]), nil
 }
 
 // PadLeft adds padding to the left of a string to ensure its total length is at least the specified value.
 // The padding string can be optionally provided; otherwise, a space is used.
-func (s *Strings) padLeft(frame int, args ...objects.IObject) (objects.IObject, error) {
+func (s *Strings) padLeft(gk objects.IGateKeeper, frame int, args ...objects.IObject) (objects.IObject, error) {
 	argsLen := len(args)
 	if argsLen != 2 && argsLen != 3 {
 		return nil, objects.ErrInvalidArgumentsNumber
 	}
-	s1, err := s.factory.ToStringArg(0, args[0])
+	s1, err := gk.ToStringArg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
-	i2, err := s.factory.ToInt64Arg(1, args[1])
+	i2, err := gk.ToInt64Arg(1, args[1])
 	if err != nil {
 		return nil, err
 	}
 	sLen := int64(len(s1))
 	if sLen >= i2 {
-		return s.factory.NewString(frame, s1), nil
+		return gk.NewString(frame, s1), nil
 	}
 	s3 := " "
 	if argsLen == 3 {
-		s3, err = s.factory.ToStringArg(2, args[2])
+		s3, err = gk.ToStringArg(2, args[2])
 		if err != nil {
 			return nil, err
 		}
 	}
 	padStrLen := int64(len(s3))
 	if padStrLen == 0 {
-		return s.factory.NewString(frame, s1), nil
+		return gk.NewString(frame, s1), nil
 	}
 	padCount := ((i2 - padStrLen) / padStrLen) + 1
 	retStr := strings.Repeat(s3, int(padCount)) + s1
-	return s.factory.NewString(frame, retStr[int64(len(retStr))-i2:]), nil
+	return gk.NewString(frame, retStr[int64(len(retStr))-i2:]), nil
 }
 
 // PadRight pads the input string on the right with a specified string or space until it reaches the desired length.
-func (s *Strings) padRight(frame int, args ...objects.IObject) (objects.IObject, error) {
+func (s *Strings) padRight(gk objects.IGateKeeper, frame int, args ...objects.IObject) (objects.IObject, error) {
 	argsLen := len(args)
 	if argsLen != 2 && argsLen != 3 {
 		return nil, objects.ErrInvalidArgumentsNumber
 	}
-	s1, err := s.factory.ToStringArg(0, args[0])
+	s1, err := gk.ToStringArg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
-	i2, err := s.factory.ToInt64Arg(1, args[1])
+	i2, err := gk.ToInt64Arg(1, args[1])
 	if err != nil {
 		return nil, err
 	}
 	sLen := int64(len(s1))
 	if sLen >= i2 {
-		return s.factory.NewString(frame, s1), nil
+		return gk.NewString(frame, s1), nil
 	}
 	s3 := " "
 	if argsLen == 3 {
-		s3, err = s.factory.ToStringArg(2, args[2])
+		s3, err = gk.ToStringArg(2, args[2])
 		if err != nil {
 			return nil, err
 		}
 	}
 	padStrLen := int64(len(s3))
 	if padStrLen == 0 {
-		return s.factory.NewString(frame, s1), nil
+		return gk.NewString(frame, s1), nil
 	}
 	padCount := ((i2 - padStrLen) / padStrLen) + 1
 	retStr := s1 + strings.Repeat(s3, int(padCount))
-	return s.factory.NewString(frame, retStr[:i2]), nil
+	return gk.NewString(frame, retStr[:i2]), nil
 }
 
 // Repeat repeats the input string a specified number of times and returns the concatenated result.
-func (s *Strings) repeat(frame int, args ...objects.IObject) (objects.IObject, error) {
+func (s *Strings) repeat(gk objects.IGateKeeper, frame int, args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 2 {
 		return nil, objects.ErrInvalidArgumentsNumber
 	}
-	s1, err := s.factory.ToStringArg(0, args[0])
+	s1, err := gk.ToStringArg(0, args[0])
 	if err != nil {
 		return nil, err
 	}
-	i2, err := s.factory.ToInt64Arg(1, args[1])
+	i2, err := gk.ToInt64Arg(1, args[1])
 	if err != nil {
 		return nil, err
 	}
-	return s.factory.NewString(frame, strings.Repeat(s1, int(i2))), nil
+	return gk.NewString(frame, strings.Repeat(s1, int(i2))), nil
 }
 
 // Join concatenates elements of an array into a single string, using a specified separator string.
-func (s *Strings) join(frame int, args ...objects.IObject) (ret objects.IObject, err error) {
+func (s *Strings) join(gk objects.IGateKeeper, frame int, args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 2 {
 		return nil, objects.ErrInvalidArgumentsNumber
 	}
@@ -228,7 +227,7 @@ func (s *Strings) join(frame int, args ...objects.IObject) (ret objects.IObject,
 	switch arg0 := args[0].(type) {
 	case *objects.Array:
 		for idx, a := range arg0.Values() {
-			as, err := s.factory.ToStringArg(idx, a)
+			as, err := gk.ToStringArg(idx, a)
 			if err != nil {
 				return nil, err
 			}
@@ -238,16 +237,16 @@ func (s *Strings) join(frame int, args ...objects.IObject) (ret objects.IObject,
 	default:
 		return nil, objects.NewInvalidArgumentError(0, "array", args[0].TypeName())
 	}
-	s2, err := s.factory.ToStringArg(1, args[1])
+	s2, err := gk.ToStringArg(1, args[1])
 	if err != nil {
 		return nil, err
 	}
-	return s.factory.NewString(frame, strings.Join(ss1, s2)), nil
+	return gk.NewString(frame, strings.Join(ss1, s2)), nil
 }
 
 // stringsReplace replaces up to n occurrences of the substring old with the substring new in the input string str.
 // Returns the modified string and a boolean indicating success. Returns the original string if no replacement is needed.
-func (s *Strings) stringsReplace(_ int, str string, old string, new string, n int) string {
+func (s *Strings) stringsReplace(_ objects.IGateKeeper, _ int, str string, old string, new string, n int) string {
 	if old == new || n == 0 {
 		return str
 	}
