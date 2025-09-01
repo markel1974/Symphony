@@ -29,7 +29,7 @@ func main() {
 	_, err2 := processData(false)
 	if err2 != nil {
 		fmt.Printf("Error: %s\n", err2)
-		resultLog = resultLog + " | " + err2 //.Error()
+		resultLog = resultLog + " | " + err2.Error()
 	} else {
 		resultLog = "Test failed on error case"
 	}

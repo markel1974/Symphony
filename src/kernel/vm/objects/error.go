@@ -2,6 +2,7 @@ package objects
 
 import (
 	"encoding/gob"
+	"fmt"
 )
 
 const (
@@ -132,13 +133,20 @@ func (o *Error) CanIterate() bool {
 }
 
 // Call invokes the Object with the provided arguments, returning a result object and an error, if any.
-func (o *Error) Call(_ int, _ ...IObject) (ret IObject, err error) {
-	return nil, nil
+func (o *Error) Call(_ int, params ...IObject) (ret IObject, err error) {
+	if len(params) != 1 {
+		return o.gk.UndefinedValue(), fmt.Errorf("expected 1 param, got %d", len(params))
+	}
+	switch params[0].AsString() {
+	case "Error":
+		return o.value, nil
+	}
+	return o.gk.UndefinedValue(), fmt.Errorf("invalid param: %s", params[0].AsString())
 }
 
 // CanCall determines if the object can be invoked as a callable. Returns false for non-callable objects.
 func (o *Error) CanCall() bool {
-	return false
+	return true
 }
 
 // Length returns the length of the Int object.

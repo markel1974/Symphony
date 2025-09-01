@@ -249,6 +249,13 @@ func (c *Functions) CallExpr(node *ast.CallExpr) error {
 			return tables.NewCompilerError(c.fileSet, node, "undefined variable: %s", receiverIdent.Name)
 		}
 
+		if receiverSymbol.StructName() == "error" {
+			if err := c.handleBuiltin(receiverSymbol, fun.Sel.Name, node.Args); err != nil {
+				return err
+			}
+			return nil
+		}
+
 		// Path 2: Method call on an interface
 		if receiverSymbol.IsInterface() {
 			// 2a. Load the interface variable (the receiver) onto the stack.
@@ -411,6 +418,27 @@ func (c *Functions) FuncLit(node *ast.FuncLit) error {
 	compiledFn := c.gk.NewFuncCompiled(objects.FrameStatic, "", code, nLocals, nParams, false, nil, freeObj)
 	constIndex := c.constants.Add("", compiledFn)
 	if _, err = c.scopes.Emit(bytecode.OpClosure, constIndex, c.scopes.SymbolCount()); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *Functions) handleBuiltin(receiverSymbol *tables.Symbol, methodName string, args []ast.Expr) error {
+	if err := c.scopes.EmitSymbolGet(receiverSymbol); err != nil {
+		return err
+	}
+
+	//arguments must be passed as operands after method name
+	methodIdx := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, methodName))
+	if _, err := c.scopes.Emit(bytecode.OpConstant, methodIdx); err != nil {
+		return err
+	}
+	//for _, arg := range args {
+	//	if err := c.compile(arg); err != nil {
+	//		return err
+	//	}
+	//}
+	if _, err := c.scopes.Emit(bytecode.OpCall, 1, 0); err != nil {
 		return err
 	}
 	return nil
