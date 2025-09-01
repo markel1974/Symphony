@@ -114,6 +114,11 @@ func (o *String) TypeName() string {
 // Returns a boolean IObject or an error for unsupported operations or invalid types.
 func (o *String) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, error) {
 	switch op {
+	case OperatorLogicalNotEq:
+		if o.value != rhsIn.AsString() {
+			return o.GateKeeper().TrueValue(), nil
+		}
+		return o.GateKeeper().FalseValue(), nil
 	case OperatorLogicalEq:
 		if o.value == rhsIn.AsString() {
 			return o.GateKeeper().TrueValue(), nil
