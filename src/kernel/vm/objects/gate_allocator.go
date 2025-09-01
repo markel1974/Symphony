@@ -263,12 +263,13 @@ func (f *GateAllocator) NewMap(frame int, v map[string]IObject) IObject {
 }
 
 // NewStruct creates and initializes a new Struct object with the specified frame and map of values.
-func (f *GateAllocator) NewStruct(frame int, v map[string]IObject) IObject {
+func (f *GateAllocator) NewStruct(frame int, name string, v map[string]IObject) IObject {
 	if len(v) > maxStructLen {
 		// Tronca struct
 	}
 	obj := f.poolStruct.Get().(*Struct)
 	obj.frame = frame
+	obj.typeName = name
 	obj.values = v
 	return obj
 }

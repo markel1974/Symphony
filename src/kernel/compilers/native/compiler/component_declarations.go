@@ -375,7 +375,13 @@ func (c *Declarations) CompositeLit(node *ast.CompositeLit) error {
 	switch node.Type.(type) {
 	case *ast.Ident:
 		// struct literal (es. MyStruct{...})
-		structFields, err := c.structTable.FieldsFromLiteral(node)
+		// struct literal (es. MyStruct{...})
+		t, ok := node.Type.(*ast.Ident)
+		if !ok {
+			return tables.NewCompilerError(c.fileSet, node, "unsupported composite literal type: %T", node)
+		}
+		structName := t.Name
+		structFields, err := c.structTable.FieldsFromLiteral(structName, node.Elts)
 		if err != nil {
 			return err
 		}
@@ -393,6 +399,10 @@ func (c *Declarations) CompositeLit(node *ast.CompositeLit) error {
 					return err
 				}
 			}
+		}
+		structNameIdx := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, structName))
+		if _, err = c.scopes.Emit(bytecode.OpConstant, structNameIdx); err != nil {
+			return tables.NewCompilerError(c.fileSet, node, err.Error())
 		}
 		structLen := len(structFields) * 2
 		if _, err = c.scopes.Emit(bytecode.OpStruct, structLen); err != nil {

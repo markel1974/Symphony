@@ -6,20 +6,16 @@ import (
 	"strings"
 )
 
-// StructType represents the constant string identifier for a struct type in the application context.
-const (
-	StructType = "struct"
-)
-
 func init() {
 	gob.Register(&Struct{})
 }
 
 // Struct is a composite object that implements the IObject interface and stores a collection of key-value pairs.
 type Struct struct {
-	factory IGateKeeper
-	frame   int
-	values  map[string]IObject
+	factory  IGateKeeper
+	typeName string
+	frame    int
+	values   map[string]IObject
 }
 
 // NewStruct creates a new instance of MapImmutable with the provided map of string keys and IObject values.
@@ -35,9 +31,10 @@ func newStruct(factory IGateKeeper, frame int, value map[string]IObject) IObject
 		value = nv
 	}
 	return &Struct{
-		factory: factory,
-		frame:   frame,
-		values:  value,
+		factory:  factory,
+		frame:    frame,
+		typeName: "",
+		values:   value,
 	}
 }
 
@@ -136,7 +133,7 @@ func (o *Struct) GetValue(k string) (IObject, bool) {
 
 // TypeName returns the type name of the object as a string.
 func (o *Struct) TypeName() string {
-	return StructType
+	return o.typeName
 }
 
 // Copy creates and returns a new IObject by duplicating the internal state of the Struct instance.
@@ -148,7 +145,7 @@ func (o *Struct) Copy(frame int, depth int) IObject {
 		}
 		c[k] = v.Copy(frame, depth+1)
 	}
-	return o.GateKeeper().NewStruct(frame, c)
+	return o.GateKeeper().NewStruct(frame, o.typeName, c)
 }
 
 // Falsy returns true if the Struct contains no values, otherwise false.

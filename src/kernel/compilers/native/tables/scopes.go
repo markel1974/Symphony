@@ -73,7 +73,7 @@ func (c *Scopes) SymbolDefineUnique(symbol string) (*Symbol, error) {
 // SymbolDefine defines a new symbol in the current symbol table with the specified name, scope, and struct flag.
 // It returns the created symbol or an error if the operation fails.
 func (c *Scopes) SymbolDefine(symbol string) (*Symbol, error) {
-	//if symbol == "allTasks" || symbol == "taskT" {
+	//if symbol == "rect" {
 	//	fmt.Println("symbol taskT found!!!!")
 	//}
 	return c.symbolTable.Define(symbol)

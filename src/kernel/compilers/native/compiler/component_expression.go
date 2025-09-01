@@ -105,19 +105,39 @@ func (c *Expression) UnaryExpr(node *ast.UnaryExpr) error {
 
 // BinaryExpr processes a binary expression node, compiling both operands and emitting the corresponding binary operation.
 func (c *Expression) BinaryExpr(node *ast.BinaryExpr) error {
-	if err := c.compile(node.X); err != nil {
-		return err
+	if _, isCall := node.Y.(*ast.CallExpr); isCall {
+		if err := c.compile(node.Y); err != nil {
+			return err
+		}
+		tempSymbol, err := c.scopes.SymbolDefineUnique("__temp_rhs")
+		if err != nil {
+			return err
+		}
+		if err = c.scopes.EmitSymbolSetAndPop(tempSymbol); err != nil {
+			return err
+		}
+		if err = c.compile(node.X); err != nil {
+			return err
+		}
+		if err = c.scopes.EmitSymbolGet(tempSymbol); err != nil {
+			return err
+		}
+	} else {
+		if err := c.compile(node.X); err != nil {
+			return err
+		}
+		if err := c.compile(node.Y); err != nil {
+			return err
+		}
 	}
-	if err := c.compile(node.Y); err != nil {
-		return err
-	}
-	z, ok := BinaryAdapterFor(node.Op)
+	adapter, ok := BinaryAdapterFor(node.Op)
 	if !ok {
 		return tables.NewCompilerError(c.fileSet, node, "unhandled binary op: %s", node.Op)
 	}
-	if _, err := c.scopes.Emit(z.op, z.arguments...); err != nil {
+	if _, err := c.scopes.Emit(adapter.op, adapter.arguments...); err != nil {
 		return err
 	}
+
 	return nil
 }
 

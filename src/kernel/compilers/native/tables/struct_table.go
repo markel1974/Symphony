@@ -163,44 +163,44 @@ func (st *StructTable) Inference(expr ast.Expr, inferredTypeName string) (string
 				}
 			}
 		}
+	case *ast.TypeAssertExpr:
+		targetTypeName := rhs.Type.(*ast.Ident).Name
+		if returnSymbol, ok := st.scopes.SymbolResolve(targetTypeName); ok && returnSymbol.IsStruct() {
+			return returnSymbol.Name(), []string{returnSymbol.Name()}, true
+		}
 	}
 	return "", nil, false
 }
 
 // FieldsFromLiteral extracts and assigns struct fields from a given composite literal node, handling both keyed and positional formats.
-func (st *StructTable) FieldsFromLiteral(node *ast.CompositeLit) ([]*FieldDescription, error) {
-	// struct literal (es. MyStruct{...})
-	t, ok := node.Type.(*ast.Ident)
+func (st *StructTable) FieldsFromLiteral(tName string, eltS []ast.Expr) ([]*FieldDescription, error) {
+	structFields, ok := st.getFields(tName)
 	if !ok {
-		return nil, fmt.Errorf("unsupported composite literal type: %T", node)
+		return nil, fmt.Errorf("unknown composite literal type: %st", tName)
 	}
-	structFields, ok := st.getFields(t.Name)
-	if !ok {
-		return nil, fmt.Errorf("unknown composite literal type: %st", t.Name)
+	if len(eltS) > len(structFields) {
+		return nil, fmt.Errorf("too many values in positional struct literal for type '%st'", tName)
 	}
-	if len(node.Elts) > len(structFields) {
-		return nil, fmt.Errorf("too many values in positional struct literal for type '%st'", t.Name)
-	}
-	symbol, ok := st.scopes.SymbolResolve(t.Name)
+	symbol, ok := st.scopes.SymbolResolve(tName)
 	if !ok {
 		var err error
-		if symbol, err = st.scopes.SymbolDefine(t.Name); err != nil {
+		if symbol, err = st.scopes.SymbolDefine(tName); err != nil {
 			return nil, err
 		}
 	}
-	if err := st.AssignSymbol(symbol, t.Name, []string{t.Name}); err != nil {
+	if err := st.AssignSymbol(symbol, tName, []string{tName}); err != nil {
 		return nil, err
 	}
 	isKeyed := false
-	if len(node.Elts) > 0 {
-		if _, ok := node.Elts[0].(*ast.KeyValueExpr); ok {
+	if len(eltS) > 0 {
+		if _, ok := eltS[0].(*ast.KeyValueExpr); ok {
 			isKeyed = true
 		}
 	}
 	if isKeyed {
 		// key literal (es. Home{Name: "Alfa", Address: "Shanghai"})
 		providedFields := make(map[string]ast.Expr)
-		for _, elt := range node.Elts {
+		for _, elt := range eltS {
 			kvExpr, ok := elt.(*ast.KeyValueExpr)
 			if !ok {
 				return nil, fmt.Errorf("cannot mix keyed and unkeyed values in struct literal")
@@ -218,7 +218,7 @@ func (st *StructTable) FieldsFromLiteral(node *ast.CompositeLit) ([]*FieldDescri
 		}
 	} else {
 		// positional literal (es. Home{"Alfa", 20, "Shanghai"}) ---
-		for i, elt := range node.Elts {
+		for i, elt := range eltS {
 			structFields[i].node = elt
 		}
 	}

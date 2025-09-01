@@ -11,16 +11,16 @@ type RectangleShape struct {
 	height int
 }
 
-func (r RectangleShape) Area() int {
-	return r.width * r.height
+func (rs RectangleShape) Area() int {
+	return rs.width * rs.height
 }
 
 type CircleShape struct {
 	radius int
 }
 
-func (c CircleShape) Area() int {
-	return 3 * c.radius * c.radius
+func (cs CircleShape) Area() int {
+	return 3 * cs.radius * cs.radius
 }
 
 func getTotalArea(s Shape) int {
@@ -30,11 +30,11 @@ func getTotalArea(s Shape) int {
 func main() {
 	fmt.Println("--- Running Test: Interfaces and Type Assertion ---")
 
-	r := RectangleShape{width: 10, height: 4}
+	rShape := RectangleShape{width: 10, height: 4}
 	c := CircleShape{radius: 5}
 
 	var s Shape
-	s = r
+	s = rShape
 	total := getTotalArea(s)
 
 	s = c
@@ -55,6 +55,6 @@ func main() {
 	if finalValue == expectedValue {
 		fmt.Println("[TEST PASSED] Interfaces, polymorphism, and type assertion worked correctly.")
 	} else {
-		fmt.Println("[TEST FAILED] Error in interface or type assertion logic.")
+		fmt.Printf("[TEST FAILED] Error in interface or type assertion logic: %d | %d\n", finalValue, expectedValue)
 	}
 }

@@ -5,6 +5,7 @@ import (
 
 	"github.com/markel1974/c64emu/src/kernel/vm/bytecode"
 	"github.com/markel1974/c64emu/src/kernel/vm/core"
+	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
 func init() {
@@ -33,6 +34,12 @@ func NewOpStruct(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
 func (op *OpStruct) Execute(decoder *core.Decoder) {
 	// Operands Offset 2 (16-bit)
 	numElements := decoder.Read(0)
+	typeNameObj := op.vm.Stack().Pop()
+	typeName, ok := typeNameObj.(*objects.String)
+	if !ok {
+		op.vm.SetError(fmt.Errorf("expected string type for struct name, but got %s", typeNameObj.TypeName()))
+		return
+	}
 	mElem := op.vm.Stack().PopMapElements(numElements)
-	op.vm.Stack().Push(op.vm.Factory().NewStruct(op.vm.Frame().Id(), mElem))
+	op.vm.Stack().Push(op.vm.Factory().NewStruct(op.vm.Frame().Id(), typeName.Value(), mElem))
 }
