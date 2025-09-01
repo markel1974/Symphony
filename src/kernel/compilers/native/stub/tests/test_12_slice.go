@@ -13,7 +13,6 @@ func main() {
 	mapVal := m["two"] + m["three"]
 
 	slice := arr[0:2]
-	fmt.Println("TEST SLICE", slice)
 	sliceSum := slice[0] + slice[1]
 
 	finalValue := val + mapVal + sliceSum

@@ -2,7 +2,6 @@ package objects
 
 import (
 	"encoding/gob"
-	"strconv"
 )
 
 const (
@@ -57,7 +56,7 @@ func (o *String) AsFloat64() float64 {
 
 // AsString returns the quoted string representation of the String object.
 func (o *String) AsString() string {
-	return strconv.Quote(o.value)
+	return o.value
 }
 
 // AssignValue assigns the value of another IObject to the current String object if the type is compatible, otherwise returns an error.
@@ -115,42 +114,34 @@ func (o *String) TypeName() string {
 // Returns a boolean IObject or an error for unsupported operations or invalid types.
 func (o *String) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, error) {
 	switch op {
+	case OperatorLogicalEq:
+		if o.value == rhsIn.AsString() {
+			return o.GateKeeper().TrueValue(), nil
+		}
+		return o.GateKeeper().FalseValue(), nil
 	case OperatorLogicalLess:
-		switch rhs := rhsIn.(type) {
-		case *String:
-			if o.value < rhs.value {
-				return o.GateKeeper().TrueValue(), nil
-			}
-			return o.GateKeeper().FalseValue(), nil
+		if o.value < rhsIn.AsString() {
+			return o.GateKeeper().TrueValue(), nil
 		}
+		return o.GateKeeper().FalseValue(), nil
 	case OperatorLogicalLessEq:
-		switch rhs := rhsIn.(type) {
-		case *String:
-			if o.value <= rhs.value {
-				return o.GateKeeper().TrueValue(), nil
-			}
-			return o.GateKeeper().FalseValue(), nil
+		if o.value <= rhsIn.AsString() {
+			return o.GateKeeper().TrueValue(), nil
 		}
+		return o.GateKeeper().FalseValue(), nil
 	case OperatorLogicalGreater:
-		switch rhs := rhsIn.(type) {
-		case *String:
-			if o.value > rhs.value {
-				return o.GateKeeper().TrueValue(), nil
-			}
-			return o.GateKeeper().FalseValue(), nil
+		if o.value > rhsIn.AsString() {
+			return o.GateKeeper().TrueValue(), nil
 		}
+		return o.GateKeeper().FalseValue(), nil
 	case OperatorLogicalGreaterEq:
-		switch rhs := rhsIn.(type) {
-		case *String:
-			if o.value >= rhs.value {
-				return o.GateKeeper().TrueValue(), nil
-			}
-			return o.GateKeeper().FalseValue(), nil
+		if o.value >= rhsIn.AsString() {
+			return o.GateKeeper().TrueValue(), nil
 		}
+		return o.GateKeeper().FalseValue(), nil
 	default:
 		return nil, ErrInvalidOperator
 	}
-	return nil, ErrInvalidOperator
 }
 
 // ArithmeticOp performs an arithmetic operation based on the given operator and right-hand side operand.
@@ -159,19 +150,11 @@ func (o *String) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, e
 func (o *String) ArithmeticOp(frame int, op ArithmeticOperator, rhsIn IObject) (IObject, error) {
 	switch op {
 	case OperatorAdd:
-		switch rhs := rhsIn.(type) {
-		case *String:
-			if len(o.value)+len(rhs.value) > MaxStringLen {
-				return nil, ErrLimitExceed
-			}
-			return o.GateKeeper().NewString(frame, o.value+rhs.value), nil
-		default:
-			str := rhs.AsString()
-			if len(o.value)+len(str) > MaxStringLen {
-				return nil, ErrLimitExceed
-			}
-			return o.GateKeeper().NewString(frame, o.value+str), nil
+		str := rhsIn.AsString()
+		if len(o.value)+len(str) > MaxStringLen {
+			return nil, ErrLimitExceed
 		}
+		return o.GateKeeper().NewString(frame, o.value+str), nil
 	default:
 		return nil, ErrInvalidOperator
 	}

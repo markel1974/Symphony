@@ -582,19 +582,23 @@ func (c *Declarations) handleVariableDeclaration(tok token.Token, rhsIn ast.Expr
 		if tok == token.DEFINE {
 			return fmt.Errorf("cannot define variable with index assignment using :=")
 		}
-		// 1. Compile the container (e.g. myMap, mySlice). This puts it on the stack.
-		if err := c.compile(lhs.X); err != nil {
+		tempSymbol, err := c.scopes.SymbolDefineUnique("__temp_assign_rhs")
+		if err != nil {
 			return err
 		}
-		// 2. Compile the index (e.g. key, index). This also goes on the stack.
-		if err := c.compile(lhs.Index); err != nil {
+		if err = c.scopes.EmitSymbolSetAndPop(tempSymbol); err != nil {
 			return err
 		}
-		// 3. The RHS value has already been compiled and is at the top of the stack.
-		//	The stack now looks like this (from bottom to top):
-		//	[... container, index, value_to_assign]
-		// 4. Emit a new opcode that the VM will use to perform the assignment.
-		if err := c.scopes.EmitAndPop(bytecode.OpIndexSet); err != nil {
+		if err = c.compile(lhs.X); err != nil { // Compiles 'm'
+			return err
+		}
+		if err = c.compile(lhs.Index); err != nil { // Compiles "three"
+			return err
+		}
+		if err = c.scopes.EmitSymbolGet(tempSymbol); err != nil {
+			return err
+		}
+		if _, err = c.scopes.Emit(bytecode.OpIndexSet); err != nil {
 			return err
 		}
 		return nil
