@@ -137,7 +137,7 @@ func vmTest() {
 	const baseDir = "../src/kernel/compilers/native/stub/tests"
 	gk := objects.NewGateKeeper(0)
 	op := bytecode.NewOpcodes()
-	for _, fileName := range stub.Prepare(baseDir, "test_15") {
+	for _, fileName := range stub.Prepare(baseDir, "test_") {
 		fmt.Println("------------------", fileName, "------------------")
 		comp, loader, err := compilers.NewCompiler(gk, op, sequencerId)
 		if err != nil {
@@ -146,10 +146,10 @@ func vmTest() {
 		var args []interface{} = nil
 		//args := []interface{}{1, 2}
 		dataFile, _ := os.Open(baseDir + string(os.PathSeparator) + fileName)
-		defer dataFile.Close()
 		if err = comp.Compile(fileName, dataFile); err != nil {
 			log.Fatalf("compiler error: %s", err)
 		}
+		dataFile.Close()
 		bc := bytecode.NewBytecode(op, comp.Constants(), comp.References(), comp.Globals(), comp.FileSet())
 		d := bytecode.NewDisassembler(bc)
 		d.Disassemble(log.Writer())
