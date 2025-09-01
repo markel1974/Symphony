@@ -16,7 +16,7 @@ func init() {
 // This type embeds Object and supports operations like indexing, iteration, comparison, and copying.
 // It implements IObject and provides a richer functionality for string manipulation within the runtime system.
 type String struct {
-	factory IGateKeeper
+	gk      IGateKeeper
 	frame   int
 	value   string
 	runeStr []rune
@@ -28,15 +28,15 @@ func newString(factory IGateKeeper, frame int, value string) IObject {
 		value = value[0:MaxStringLen]
 	}
 	return &String{
-		factory: factory,
-		frame:   frame,
-		value:   value,
+		gk:    factory,
+		frame: frame,
+		value: value,
 	}
 }
 
 // GateKeeper returns a reference to the GateKeeper associated with the Object.
 func (o *String) GateKeeper() IGateKeeper {
-	return o.factory
+	return o.gk
 }
 
 // AsBool converts the String object to a boolean. Returns true if the string has non-zero length, otherwise false.
@@ -57,6 +57,11 @@ func (o *String) AsFloat64() float64 {
 // AsString returns the quoted string representation of the String object.
 func (o *String) AsString() string {
 	return o.value
+}
+
+// Nil checks if the object is nil and always returns false.
+func (o *String) Nil() bool {
+	return false
 }
 
 // AssignValue assigns the value of another IObject to the current String object if the type is compatible, otherwise returns an error.
@@ -113,6 +118,10 @@ func (o *String) TypeName() string {
 // LogicalOp performs logical comparison between the String object and a right-hand side IObject based on the given operator.
 // Returns a boolean IObject or an error for unsupported operations or invalid types.
 func (o *String) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, error) {
+	if rhsIn.Nil() {
+		return logicalOpNil(o.gk, op)
+	}
+
 	switch op {
 	case OperatorLogicalNotEq:
 		if o.value != rhsIn.AsString() {

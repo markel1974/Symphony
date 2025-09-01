@@ -9,25 +9,25 @@ func init() {
 
 // Interface represents an object with contextual execution information and dynamic properties managed within a frame.
 type Interface struct {
-	factory IGateKeeper
-	frame   int
-	value   IObject
-	iTable  map[string]IObject
+	gk     IGateKeeper
+	frame  int
+	value  IObject
+	iTable map[string]IObject
 }
 
-// newInterface creates a new instance of Interface with the provided factory, frame ID, value, and interface table.
-func newInterface(factory IGateKeeper, frame int, value IObject, itable map[string]IObject) IObject {
+// newInterface creates a new instance of Interface with the provided gk, frame ID, value, and interface table.
+func newInterface(gk IGateKeeper, frame int, value IObject, itable map[string]IObject) IObject {
 	return &Interface{
-		factory: factory,
-		frame:   frame,
-		value:   value,
-		iTable:  itable,
+		gk:     gk,
+		frame:  frame,
+		value:  value,
+		iTable: itable,
 	}
 }
 
 // GateKeeper retrieves the IGateKeeper instance associated with the Interface.
 func (o *Interface) GateKeeper() IGateKeeper {
-	return o.factory
+	return o.gk
 }
 
 // AsBool converts and returns the Interface's underlying value as a boolean.
@@ -53,6 +53,11 @@ func (o *Interface) AsString() string {
 // AssignValue sets the current object to the provided IObject, returning ErrNotAssignable if the operation is not supported.
 func (o *Interface) AssignValue(v IObject) error {
 	return o.value.AssignValue(v)
+}
+
+// Nil checks if the object is nil and always returns false.
+func (o *Interface) Nil() bool {
+	return false
 }
 
 // SetStatic sets the frame to FrameStatic, marking it with a static execution context.
@@ -87,8 +92,11 @@ func (o *Interface) Copy(frame int, depth int) IObject {
 
 // LogicalOp applies a logical operation (e.g., AND, OR) between the current object and a right-hand-side object.
 // It returns the result of the operation or an error if the operation cannot be performed.
-func (o *Interface) LogicalOp(frame int, op LogicalOperator, rightHandSide IObject) (IObject, error) {
-	return o.value.LogicalOp(frame, op, rightHandSide)
+func (o *Interface) LogicalOp(frame int, op LogicalOperator, rhsIn IObject) (IObject, error) {
+	if rhsIn.Nil() {
+		return logicalOpNil(o.gk, op)
+	}
+	return o.value.LogicalOp(frame, op, rhsIn)
 }
 
 // ArithmeticOp performs an arithmetic operation specified by the operator on the current object and the right-hand side operand.

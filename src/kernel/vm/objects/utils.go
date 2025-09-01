@@ -1,61 +1,15 @@
 package objects
 
-/*
-// toInt64 converts an IObject to an int64 value with a success flag.
-// Returns the converted int64 value if successful and a boolean indicating success or failure.
-func toInt64(rhsIn IObject) (int64, error) {
-	switch rhs := rhsIn.(type) {
-	case *Bool:
-		if rhs.value {
-			return 1, nil
-		}
-		return 0, nil
-	case *Int:
-		return rhs.value, nil
-	case *Float:
-		return int64(rhs.value), nil
-	case *Char:
-		return int64(rhs.value), nil
-	case *Time:
-		return rhs.value.Unix(), nil
-	case *AsString:
-		return int64(rhs.Length()), nil
-	case *Map:
-		return int64(rhs.Length()), nil
-	case *Array:
-		return int64(rhs.Length()), nil
+func logicalOpNil(gk IGateAllocator, op LogicalOperator) (IObject, error) {
+	switch op {
+	case OperatorLogicalEq:
+		return gk.FalseValue(), nil
+	case OperatorLogicalNotEq:
+		return gk.TrueValue(), nil
 	default:
-		return 0, ErrInvalidOperator
+		return gk.FalseValue(), ErrInvalidOperator
 	}
 }
-
-// toFloat64 converts an IObject to a float64 if possible, returning the converted value and a boolean indicating success.
-func toFloat64(rhsIn IObject) (float64, error) {
-	switch rhs := rhsIn.(type) {
-	case *Bool:
-		if rhs.value {
-			return 1, nil
-		}
-		return 0, nil
-	case *Int:
-		return float64(rhs.value), nil
-	case *Float:
-		return rhs.value, nil
-	case *Char:
-		return float64(rhs.value), nil
-	case *Time:
-		return float64(rhs.value.Unix()), nil
-	case *AsString:
-		return float64(rhs.Length()), nil
-	case *Map:
-		return float64(rhs.Length()), nil
-	case *Array:
-		return float64(rhs.Length()), nil
-	default:
-		return 0, ErrInvalidOperator
-	}
-}
-*/
 
 // logicalOpInt64 performs a logical comparison between two int64 values using the specified LogicalOperator.
 // Returns the boolean result of the operation or an error if the operator is invalid.

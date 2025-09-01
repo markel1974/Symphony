@@ -61,6 +61,11 @@ func (o *Char) AssignValue(v IObject) error {
 	return nil
 }
 
+// Nil checks if the object is nil and always returns false.
+func (o *Char) Nil() bool {
+	return false
+}
+
 // SetStatic sets the frame to FrameStatic, marking it with a static execution context.
 func (o *Char) SetStatic() {
 	o.frame = FrameStatic
@@ -119,6 +124,9 @@ func (o *Char) TypeName() string {
 
 // LogicalOp performs a logical operation between the current Char object and another IObject using the specified operator.
 func (o *Char) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, error) {
+	if rhsIn.Nil() {
+		return logicalOpNil(o.gk, op)
+	}
 	ret, err := logicalOpInt64(int64(o.value), op, rhsIn.AsInt64())
 	if err != nil {
 		return nil, err

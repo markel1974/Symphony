@@ -72,6 +72,11 @@ func (o *Array) AssignValue(v IObject) error {
 	return nil
 }
 
+// Nil checks if the object is nil and always returns false.
+func (o *Array) Nil() bool {
+	return false
+}
+
 // SetStatic sets the frame to FrameStatic, marking it with a static execution context.
 func (o *Array) SetStatic() {
 	o.frame = FrameStatic
@@ -140,7 +145,10 @@ func (o *Array) Assign(v []IObject) {
 }
 
 // LogicalOp performs a logical operation on the array using the given operator and operand, returning an error if invalid.
-func (o *Array) LogicalOp(_ int, _ LogicalOperator, _ IObject) (IObject, error) {
+func (o *Array) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, error) {
+	if rhsIn.Nil() {
+		return logicalOpNil(o.gk, op)
+	}
 	return nil, ErrInvalidOperator
 }
 

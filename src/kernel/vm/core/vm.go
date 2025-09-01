@@ -226,11 +226,17 @@ func (v *VM) Return(returnValues []objects.IObject) {
 	if totalArgs > 0 {
 		// Create a combined list, pre-allocating capacity for efficiency
 		objectsToPreserve = make([]objects.IObject, 0, totalArgs)
-		objectsToPreserve = append(objectsToPreserve, returnValues...)
+		for _, obj := range returnValues {
+			if obj.Frame() != objects.FrameStatic {
+				objectsToPreserve = append(objectsToPreserve, obj)
+			}
+		}
 		// Add arguments which are located at the start of the current frame
 		for i := 0; i < numArgs; i++ {
-			arg := v.stack.PeekAbsolute(leavingFrameBasePointer + i)
-			objectsToPreserve = append(objectsToPreserve, arg)
+			obj := v.stack.PeekAbsolute(leavingFrameBasePointer + i)
+			if obj.Frame() != objects.FrameStatic {
+				objectsToPreserve = append(objectsToPreserve, obj)
+			}
 		}
 	}
 

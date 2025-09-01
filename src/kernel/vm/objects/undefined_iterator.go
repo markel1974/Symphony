@@ -27,14 +27,14 @@ func newUndefinedIterator(factory IGateKeeper, frame int) IIterator {
 	}
 }
 
-// AsBool returns a boolean representation of the object, always returning false.
-func (o *UndefinedIterator) AsBool() bool {
-	return false
-}
-
 // GateKeeper returns a reference to the GateKeeper associated with the Object.
 func (o *UndefinedIterator) GateKeeper() IGateKeeper {
 	return o.factory
+}
+
+// AsBool returns a boolean representation of the object, always returning false.
+func (o *UndefinedIterator) AsBool() bool {
+	return false
 }
 
 // AsInt64 returns the length of the array as an int64 value.
@@ -50,6 +50,11 @@ func (o *UndefinedIterator) AsFloat64() float64 {
 // AssignValue sets the current object to the provided IObject, returning ErrNotAssignable if the operation is not supported.
 func (o *UndefinedIterator) AssignValue(_ IObject) error {
 	return ErrNotAssignable
+}
+
+// Nil checks if the object is nil and always returns false.
+func (o *UndefinedIterator) Nil() bool {
+	return true
 }
 
 // SetStatic sets the frame to FrameStatic, marking it with a static execution context.

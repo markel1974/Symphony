@@ -13,20 +13,20 @@ func init() {
 
 // Undefined represents an undefined values.
 type Undefined struct {
-	factory IGateKeeper
-	frame   int
+	gk    IGateKeeper
+	frame int
 }
 
 func newUndefined(factory IGateKeeper, frame int) IObject {
 	return &Undefined{
-		factory: factory,
-		frame:   frame,
+		gk:    factory,
+		frame: frame,
 	}
 }
 
 // GateKeeper returns a reference to the GateKeeper associated with the Object.
 func (o *Undefined) GateKeeper() IGateKeeper {
-	return o.factory
+	return o.gk
 }
 
 // AsBool returns the boolean representation of the Undefined object, which is always false.
@@ -49,6 +49,11 @@ func (o *Undefined) AssignValue(_ IObject) error {
 	return ErrNotAssignable
 }
 
+// Nil checks if the object is nil and always returns false.
+func (o *Undefined) Nil() bool {
+	return true
+}
+
 // SetStatic sets the frame to FrameStatic, marking it with a static execution context.
 func (o *Undefined) SetStatic() {
 	o.frame = FrameStatic
@@ -60,8 +65,26 @@ func (o *Undefined) Frame() int {
 }
 
 // LogicalOp performs a logical operation using the specified operator and right-hand side operand. Always returns an error.
-func (o *Undefined) LogicalOp(_ int, _ LogicalOperator, _ IObject) (IObject, error) {
-	return nil, ErrInvalidOperator
+func (o *Undefined) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, error) {
+	if rhsIn.Nil() {
+		switch op {
+		case OperatorLogicalEq:
+			return o.GateKeeper().TrueValue(), nil
+		case OperatorLogicalNotEq:
+			return o.GateKeeper().FalseValue(), nil
+		default:
+			return o.GateKeeper().UndefinedValue(), ErrInvalidOperator
+		}
+	} else {
+		switch op {
+		case OperatorLogicalEq:
+			return o.GateKeeper().FalseValue(), nil
+		case OperatorLogicalNotEq:
+			return o.GateKeeper().TrueValue(), nil
+		default:
+			return o.GateKeeper().UndefinedValue(), ErrInvalidOperator
+		}
+	}
 }
 
 // ArithmeticOp performs an arithmetic operation on the object with the specified operator and operand, returning an error for invalid operators.

@@ -67,6 +67,11 @@ func (o *Float) AsString() string {
 	return strconv.FormatFloat(o.value, 'f', -1, 64)
 }
 
+// Nil checks if the object is nil and always returns false.
+func (o *Float) Nil() bool {
+	return false
+}
+
 // SetStatic sets the frame to FrameStatic, marking it with a static execution context.
 func (o *Float) SetStatic() {
 	o.frame = FrameStatic
@@ -125,6 +130,9 @@ func (o *Float) TypeName() string {
 // LogicalOp performs a logical operation between the Float object and another IObject using the specified operator.
 // Returns a boolean IObject representing the result or an error if the operation is invalid.
 func (o *Float) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, error) {
+	if rhsIn.Nil() {
+		return logicalOpNil(o.gk, op)
+	}
 	ret, err := logicalOpFloat64(o.value, op, rhsIn.AsFloat64())
 	if err != nil {
 		return nil, err

@@ -4,27 +4,29 @@ import (
 	"time"
 )
 
-// IObject defines an interface for handling various object types in a flexible and extensible manner.
-// GateKeeper returns the IGateKeeper instance associated with the object for managing object operations.
-// TypeName returns the name of the object's type as a string.
-// AsBool converts the object to a boolean value, if possible.
-// AsInt64 converts the object to a 64-bit integer, if possible.
-// AsFloat64 converts the object to a 64-bit floating-point number, if possible.
-// AsString converts the object to a string value, if possible.
-// Assign assigns the current object with attributes of another IObject, returning an error if the operation fails.
-// Frame retrieves the execution frame ID associated with the object.
-// LogicalOp performs a logical operation between the object and another IObject, returning a new result or an error.
-// ArithmeticOp performs an arithmetic operation between the object and another IObject, returning a new result or an error.
-// Falsy checks if the object evaluates to a false-like value.
-// Equals determines if the current object is equal to another IObject.
-// Copy creates a copy of the current object within the specified execution frame and recursion depth.
-// IndexGet retrieves a value from the object at the specified index and returns it, or an error if unavailable.
-// IndexSet updates the object at the specified index with a new value, potentially returning an error.
-// Iterate returns an iterator for traversing the object if it's iterable.
-// CanIterate checks if the object supports iteration.
-// Call invokes the object as if it's a callable function, passing arguments and returning the result or an error.
-// CanCall checks if the object can be invoked as a callable entity.
-// Length returns the length of the object, typically for iterable or sized entities.
+// IObject defines a polymorphic interface for managing various operations on objects, including conversions and evaluations.
+// GateKeeper returns the associated IGateKeeper instance for object management functions.
+// TypeName provides the name of the object's type as a string.
+// AsBool converts and returns the object as a boolean.
+// AsInt64 converts and returns the object as a 64-bit integer.
+// AsFloat64 converts and returns the object as a 64-bit floating-point value.
+// AsString converts and returns the object as a string.
+// AssignValue assigns the value of another IObject to the implementing object instance.
+// Nil checks if the object is nil or uninitialized.
+// SetStatic marks the object instance as immutable or static.
+// Frame retrieves the execution frame associated with the object.
+// LogicalOp performs a logical operation with another IObject and returns the result.
+// ArithmeticOp performs an arithmetic operation with another IObject and returns the result.
+// Falsy evaluates the "truthiness" of the object and returns false if it is equivalently falsy.
+// Equals determines whether another IObject is equal to the current instance.
+// Copy creates a deep copy of the object, with specified frame and depth.
+// IndexGet retrieves an element from the object using another IObject as an index.
+// IndexSet assigns a value to an index on the object using another IObject as the key.
+// Iterate provides an iterator over the object if it supports iteration.
+// CanIterate checks whether the object can be iterated.
+// Call invokes the object as a callable with the provided arguments.
+// CanCall checks whether the object can be called as a function.
+// Length retrieves the length of the object, if applicable (e.g., arrays, strings).
 type IObject interface {
 	GateKeeper() IGateKeeper
 	TypeName() string
@@ -33,6 +35,7 @@ type IObject interface {
 	AsFloat64() float64
 	AsString() string
 	AssignValue(object IObject) error
+	Nil() bool
 	SetStatic()
 	Frame() int
 	LogicalOp(frame int, op LogicalOperator, rightHandSide IObject) (IObject, error)

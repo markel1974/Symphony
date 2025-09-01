@@ -44,7 +44,9 @@ func main() {
 
 	// Eseguiamo il type switch con entrambi i tipi
 	result1 := performAttack(k)
+	fmt.Println("RESULT1", result1)
 	result2 := performAttack(m)
+	fmt.Println("RESULT2", result2)
 
 	finalValue := result1 + " | " + result2
 	expectedValue := "Knight attacks with power 15 | Mage casts Fireball"

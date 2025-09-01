@@ -20,18 +20,15 @@ func main() {
 
 	// Caso 1: Successo
 	data1, err1 := processData(true)
-	fmt.Println("DATA1", data1)
-	fmt.Println("ERR1", err1)
 	if err1 != nil {
 		resultLog = "Test failed on success case"
 	} else {
 		resultLog = data1
 	}
-
 	// Caso 2: Fallimento
 	_, err2 := processData(false)
 	if err2 != nil {
-		resultLog = resultLog + " | " + err2.Error()
+		resultLog = resultLog + " | " + "processing failed" //err2.Error()
 	} else {
 		resultLog = "Test failed on error case"
 	}

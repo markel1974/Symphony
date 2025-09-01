@@ -54,6 +54,11 @@ func (o *ObjectPointer) AsString() string {
 	return ObjectPointerType
 }
 
+// Nil checks if the object is nil and always returns false.
+func (o *ObjectPointer) Nil() bool {
+	return false
+}
+
 // AssignValue sets the current object to the provided IObject, returning ErrNotAssignable if the operation is not supported.
 func (o *ObjectPointer) AssignValue(v IObject) error {
 	return (*o.value).AssignValue(v)
@@ -70,8 +75,26 @@ func (o *ObjectPointer) Frame() int {
 }
 
 // LogicalOp performs a logical operation with the given operator and RHS object, returning the result or an error.
-func (o *ObjectPointer) LogicalOp(_ int, _ LogicalOperator, _ IObject) (IObject, error) {
-	return nil, ErrInvalidOperator
+func (o *ObjectPointer) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, error) {
+	if rhsIn.Nil() {
+		switch op {
+		case OperatorLogicalEq:
+			if o.value == nil {
+				return o.GateKeeper().TrueValue(), nil
+			} else {
+				return o.GateKeeper().FalseValue(), nil
+			}
+		case OperatorLogicalNotEq:
+			if o.value == nil {
+				return o.GateKeeper().FalseValue(), nil
+			} else {
+				return o.GateKeeper().TrueValue(), nil
+			}
+		default:
+			return o.GateKeeper().UndefinedValue(), ErrInvalidOperator
+		}
+	}
+	return o.GateKeeper().UndefinedValue(), ErrInvalidOperator
 }
 
 // ArithmeticOp performs an arithmetic operation with the given operator and right-hand-side operand and returns the result.

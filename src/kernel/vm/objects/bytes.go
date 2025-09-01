@@ -68,6 +68,11 @@ func (o *Bytes) AssignValue(v IObject) error {
 	return nil
 }
 
+// Nil checks if the object is nil and always returns false.
+func (o *Bytes) Nil() bool {
+	return false
+}
+
 // SetStatic sets the frame to FrameStatic, marking it with a static execution context.
 func (o *Bytes) SetStatic() {
 	o.frame = FrameStatic
@@ -133,7 +138,10 @@ func (o *Bytes) ArithmeticOp(frame int, op ArithmeticOperator, in IObject) (IObj
 }
 
 // LogicalOp performs a logical operation on the Bytes object using the specified operator and operand, returning an error.
-func (o *Bytes) LogicalOp(_ int, _ LogicalOperator, _ IObject) (IObject, error) {
+func (o *Bytes) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, error) {
+	if rhsIn.Nil() {
+		return logicalOpNil(o.gk, op)
+	}
 	return nil, ErrInvalidOperator
 }
 

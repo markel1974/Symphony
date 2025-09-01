@@ -61,6 +61,11 @@ func (o *BytesIterator) AssignValue(_ IObject) error {
 	return ErrNotAssignable
 }
 
+// Nil checks if the object is nil and always returns false.
+func (o *BytesIterator) Nil() bool {
+	return false
+}
+
 // SetStatic sets the frame to FrameStatic, marking it with a static execution context.
 func (o *BytesIterator) SetStatic() {
 	o.frame = FrameStatic
@@ -72,7 +77,10 @@ func (o *BytesIterator) Frame() int {
 }
 
 // LogicalOp performs a logical operation on the BytesIterator object, always returning an error for invalid operations.
-func (o *BytesIterator) LogicalOp(_ int, _ LogicalOperator, _ IObject) (IObject, error) {
+func (o *BytesIterator) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, error) {
+	if rhsIn.Nil() {
+		return logicalOpNil(o.gk, op)
+	}
 	return nil, ErrInvalidOperator
 }
 

@@ -16,9 +16,9 @@ func init() {
 
 // Map represents a collection of key-values pairs where keys are strings and values implement the IObject interface.
 type Map struct {
-	factory IGateKeeper
-	frame   int
-	values  map[string]IObject
+	gk     IGateKeeper
+	frame  int
+	values map[string]IObject
 }
 
 // NewMap creates and returns a new instance of Map initialized with the provided map of string keys to IObject values.
@@ -34,15 +34,15 @@ func newMap(factory IGateKeeper, frame int, value map[string]IObject) IObject {
 		value = nv
 	}
 	return &Map{
-		factory: factory,
-		frame:   frame,
-		values:  value,
+		gk:     factory,
+		frame:  frame,
+		values: value,
 	}
 }
 
 // GateKeeper returns a reference to the GateKeeper associated with the Object.
 func (o *Map) GateKeeper() IGateKeeper {
-	return o.factory
+	return o.gk
 }
 
 // AsBool converts the String object to a boolean. Returns true if the string has non-zero length, otherwise false.
@@ -84,13 +84,21 @@ func (o *Map) SetStatic() {
 	o.frame = FrameStatic
 }
 
+// Nil checks if the object is nil and always returns false.
+func (o *Map) Nil() bool {
+	return false
+}
+
 // Frame returns the current frame value of the Object.
 func (o *Map) Frame() int {
 	return o.frame
 }
 
 // LogicalOp performs a logical operation using the given operator and operand, returning an error for unsupported operators.
-func (o *Map) LogicalOp(_ int, _ LogicalOperator, _ IObject) (IObject, error) {
+func (o *Map) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, error) {
+	if rhsIn.Nil() {
+		return logicalOpNil(o.gk, op)
+	}
 	return nil, ErrInvalidOperator
 }
 

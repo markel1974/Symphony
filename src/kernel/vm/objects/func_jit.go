@@ -58,6 +58,11 @@ func (o *FuncJit) AssignValue(_ IObject) error {
 	return ErrNotAssignable
 }
 
+// Nil checks if the object is nil and always returns false.
+func (o *FuncJit) Nil() bool {
+	return false
+}
+
 // SetStatic sets the frame to FrameStatic, marking it with a static execution context.
 func (o *FuncJit) SetStatic() {
 	o.frame = FrameStatic
@@ -70,7 +75,10 @@ func (o *FuncJit) Frame() int {
 
 // LogicalOp performs a logical operation between the current object and a provided IObject using the specified operator.
 // Always returns nil and ErrInvalidOperator as logical operations are not supported for this object type.
-func (o *FuncJit) LogicalOp(_ int, _ LogicalOperator, _ IObject) (IObject, error) {
+func (o *FuncJit) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, error) {
+	if rhsIn.Nil() {
+		return logicalOpNil(o.gk, op)
+	}
 	return nil, ErrInvalidOperator
 }
 

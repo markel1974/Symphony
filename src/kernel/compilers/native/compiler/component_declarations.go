@@ -244,6 +244,10 @@ func (c *Declarations) Ident(node *ast.Ident) error {
 			return err
 		}
 		return nil
+	case "nil":
+		if _, err := c.scopes.Emit(bytecode.OpNull); err != nil {
+			return err
+		}
 	}
 	symbol, ok := c.scopes.SymbolResolve(node.Name)
 	if !ok {

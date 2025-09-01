@@ -62,6 +62,11 @@ func (o *Builtin) AssignValue(_ IObject) error {
 	return ErrNotAssignable
 }
 
+// Nil checks if the object is nil and always returns false.
+func (o *Builtin) Nil() bool {
+	return false
+}
+
 // SetStatic sets the frame to FrameStatic, marking it with a static execution context.
 func (o *Builtin) SetStatic() {
 	o.frame = FrameStatic
@@ -73,7 +78,10 @@ func (o *Builtin) Frame() int {
 }
 
 // LogicalOp performs a logical operation on the Builtin object using the given operator and operand, returning the result or an error.
-func (o *Builtin) LogicalOp(_ int, _ LogicalOperator, _ IObject) (IObject, error) {
+func (o *Builtin) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, error) {
+	if rhsIn.Nil() {
+		return logicalOpNil(o.gk, op)
+	}
 	return nil, ErrInvalidOperator
 }
 

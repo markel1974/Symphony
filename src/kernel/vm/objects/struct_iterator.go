@@ -18,12 +18,12 @@ func init() {
 // The keys and values are stored in separate slices to facilitate order-preserving iteration.
 // The index tracks the current position within the iteration, and length is the total number of elements.
 type StructIterator struct {
-	factory IGateKeeper
-	frame   int
-	values  map[string]IObject
-	keys    []string
-	index   int
-	length  int
+	gk     IGateKeeper
+	frame  int
+	values map[string]IObject
+	keys   []string
+	index  int
+	length int
 }
 
 // NewStructIterator initializes and returns a new StructIterator for the given map of string keys to IObject values.
@@ -33,18 +33,18 @@ func newStructIterator(factory IGateKeeper, frame int, v map[string]IObject, ind
 		keys = append(keys, k)
 	}
 	return &StructIterator{
-		factory: factory,
-		frame:   frame,
-		values:  v,
-		keys:    keys,
-		length:  len(keys),
-		index:   index,
+		gk:     factory,
+		frame:  frame,
+		values: v,
+		keys:   keys,
+		length: len(keys),
+		index:  index,
 	}
 }
 
 // GateKeeper returns a reference to the GateKeeper associated with the Object.
 func (o *StructIterator) GateKeeper() IGateKeeper {
-	return o.factory
+	return o.gk
 }
 
 // AsBool returns true if the array is not empty, otherwise false.
@@ -67,6 +67,11 @@ func (o *StructIterator) AsString() string {
 	return StructIteratorLabel
 }
 
+// Nil checks if the object is nil and always returns false.
+func (o *StructIterator) Nil() bool {
+	return false
+}
+
 // AssignValue sets the current object to the provided IObject, returning ErrNotAssignable if the operation is not supported.
 func (o *StructIterator) AssignValue(_ IObject) error {
 	return ErrNotAssignable
@@ -84,7 +89,10 @@ func (o *StructIterator) Frame() int {
 
 // LogicalOp performs a logical operation between the StructIterator and another object using the specified operator.
 // It returns ErrInvalidOperator as logical operations are unsupported for StructIterator.
-func (o *StructIterator) LogicalOp(_ int, _ LogicalOperator, _ IObject) (IObject, error) {
+func (o *StructIterator) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, error) {
+	if rhsIn.Nil() {
+		return logicalOpNil(o.gk, op)
+	}
 	return nil, ErrInvalidOperator
 }
 

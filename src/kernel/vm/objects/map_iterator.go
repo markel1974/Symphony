@@ -16,12 +16,12 @@ func init() {
 // The embedded Object provides default implementations for methods from the IObject interface.
 // The internal state includes the map (values), keys (keys), current position index (index), and total keys length (length).
 type MapIterator struct {
-	factory IGateKeeper
-	frame   int
-	values  map[string]IObject
-	keys    []string
-	index   int
-	length  int
+	gk     IGateKeeper
+	frame  int
+	values map[string]IObject
+	keys   []string
+	index  int
+	length int
 }
 
 // NewMapIterator creates and returns a new instance of MapIterator.
@@ -31,18 +31,18 @@ func newMapIterator(factory IGateKeeper, frame int, v map[string]IObject, index 
 		keys = append(keys, k)
 	}
 	return &MapIterator{
-		factory: factory,
-		frame:   frame,
-		values:  v,
-		keys:    keys,
-		length:  len(keys),
-		index:   index,
+		gk:     factory,
+		frame:  frame,
+		values: v,
+		keys:   keys,
+		length: len(keys),
+		index:  index,
 	}
 }
 
 // GateKeeper returns a reference to the GateKeeper associated with the Object.
 func (o *MapIterator) GateKeeper() IGateKeeper {
-	return o.factory
+	return o.gk
 }
 
 // AsBool returns true if the map is not empty, otherwise false.
@@ -70,6 +70,11 @@ func (o *MapIterator) AssignValue(_ IObject) error {
 	return ErrNotAssignable
 }
 
+// Nil checks if the object is nil and always returns false.
+func (o *MapIterator) Nil() bool {
+	return false
+}
+
 // SetStatic sets the frame to FrameStatic, marking it with a static execution context.
 func (o *MapIterator) SetStatic() {
 	o.frame = FrameStatic
@@ -82,7 +87,10 @@ func (o *MapIterator) Frame() int {
 
 // LogicalOp performs a logical operation on the MapIterator object using the specified operator and operand.
 // Returns nil and ErrInvalidOperator as logical operations are unsupported for MapIterator.
-func (o *MapIterator) LogicalOp(_ int, _ LogicalOperator, _ IObject) (IObject, error) {
+func (o *MapIterator) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, error) {
+	if rhsIn.Nil() {
+		return logicalOpNil(o.gk, op)
+	}
 	return nil, ErrInvalidOperator
 }
 

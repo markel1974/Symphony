@@ -15,23 +15,23 @@ func init() {
 
 // Time represents a custom object encapsulating a Go time.Time values with extended behaviors and operations.
 type Time struct {
-	factory IGateKeeper
-	frame   int
-	value   time.Time
+	gk    IGateKeeper
+	frame int
+	value time.Time
 }
 
 // NewTime creates a new instance of Time wrapping the provided time.Time values.
 func newTime(factory IGateKeeper, frame int, value time.Time) IObject {
 	return &Time{
-		factory: factory,
-		frame:   frame,
-		value:   value,
+		gk:    factory,
+		frame: frame,
+		value: value,
 	}
 }
 
 // GateKeeper returns a reference to the GateKeeper associated with the Object.
 func (o *Time) GateKeeper() IGateKeeper {
-	return o.factory
+	return o.gk
 }
 
 // AsBool returns the boolean representation of the Time object, which is true if the value is not zero.
@@ -62,6 +62,11 @@ func (o *Time) AssignValue(v IObject) error {
 	}
 	o.value = target.value
 	return nil
+}
+
+// Nil checks if the object is nil and always returns false.
+func (o *Time) Nil() bool {
+	return false
 }
 
 // SetStatic sets the frame to FrameStatic, marking it with a static execution context.
@@ -121,8 +126,11 @@ func (o *Time) TypeName() string {
 }
 
 // LogicalOp performs logical comparison operations (e.g., <, >, <=, >=) between the Time object and another Time object.
-func (o *Time) LogicalOp(_ int, op LogicalOperator, in IObject) (IObject, error) {
-	switch rhs := in.(type) {
+func (o *Time) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, error) {
+	if rhsIn.Nil() {
+		return logicalOpNil(o.gk, op)
+	}
+	switch rhs := rhsIn.(type) {
 	case *Time:
 		switch op {
 		case OperatorLogicalLess:

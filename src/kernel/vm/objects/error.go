@@ -71,6 +71,11 @@ func (o *Error) AssignValue(_ IObject) error {
 	return ErrNotAssignable
 }
 
+// Nil checks if the object is nil and always returns false.
+func (o *Error) Nil() bool {
+	return false
+}
+
 // SetStatic sets the frame to FrameStatic, marking it with a static execution context.
 func (o *Error) SetStatic() {
 	o.frame = FrameStatic
@@ -82,8 +87,28 @@ func (o *Error) Frame() int {
 }
 
 // LogicalOp performs a logical operation on the Error object with the provided operator and operand, returning an error.
-func (o *Error) LogicalOp(_ int, _ LogicalOperator, _ IObject) (IObject, error) {
-	return nil, ErrInvalidOperator
+func (o *Error) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, error) {
+	if rhsIn.Nil() {
+		return logicalOpNil(o.gk, op)
+	}
+	rhs, ok := rhsIn.(*Error)
+	if !ok {
+		return nil, ErrInvalidOperator
+	}
+	switch op {
+	case OperatorLogicalEq:
+		if o.value == rhs.value {
+			return o.gk.TrueValue(), nil
+		}
+		return o.gk.FalseValue(), nil
+	case OperatorLogicalNotEq:
+		if o.value != rhs.value {
+			return o.gk.TrueValue(), nil
+		}
+		return o.gk.FalseValue(), nil
+	default:
+		return nil, ErrInvalidOperator
+	}
 }
 
 // ArithmeticOp performs the specified arithmetic operation on the Error object and always returns ErrInvalidOperator.
