@@ -20,7 +20,9 @@ func main() {
 
 	r1 := RectangleStruct{width: 10, height: 5}
 	area := r1.Area()
+	fmt.Println("AREA", area)
 	sumFields := r1.width + r1.height
+	fmt.Println("SUM FIELDS", sumFields)
 
 	finalValue := area + sumFields
 	expectedValue := 65
@@ -28,6 +30,6 @@ func main() {
 	if finalValue == expectedValue {
 		fmt.Println("[TEST PASSED] Structs and methods worked correctly.")
 	} else {
-		fmt.Println("[TEST FAILED] Error in struct or method handling.")
+		fmt.Printf("[TEST FAILED] Error in struct or method handling. %d - %d\n", finalValue, expectedValue)
 	}
 }
