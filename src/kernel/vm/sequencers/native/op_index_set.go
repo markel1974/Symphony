@@ -27,7 +27,7 @@ func NewOpIndexSet(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) 
 	if !ok {
 		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
 	}
-	return &OpIndexGet{
+	return &OpIndexSet{
 		Opcode: op.Opcode(bytecode.OpIndexSet),
 		vm:     vmT,
 	}, nil
