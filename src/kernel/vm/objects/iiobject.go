@@ -62,7 +62,7 @@ type IGateAllocator interface {
 	ReleaseObject(IObject)
 	ReleaseObjects([]IObject)
 	NewFuncCompiled(frame int, name string, instructions []byte, numLocals int, numParameters int, varArgs bool, sourceMap map[int]int, free []*ObjectPointer) IObject
-	NewFuncInternal(frame int, name string, id CallId) IObject
+	NewFuncInternal(frame int, id CallId) IObject
 	NewFuncExternal(frame int, name string, fn FuncCallable) IObject
 	NewBuiltin(frame int, name string, index int) IObject
 	NewFuncJit(name string, data []byte) IObject

@@ -3,6 +3,7 @@ package objects
 import (
 	"encoding/gob"
 	"fmt"
+	"strconv"
 	"time"
 )
 
@@ -82,17 +83,15 @@ func init() {
 type FuncInternal struct {
 	gk    IGateKeeper
 	frame int
-	name  string
 	id    CallId
 	fn    func(frame int, args []IObject) (IObject, error)
 }
 
 // NewFuncExternal creates a new FuncExternal instance with the specified Id and callable function.
-func newFuncInternal(factory IGateKeeper, frame int, name string, id CallId) IObject {
+func newFuncInternal(factory IGateKeeper, frame int, id CallId) IObject {
 	fi := &FuncInternal{
 		gk:    factory,
 		frame: frame,
-		name:  name,
 		id:    id,
 		fn:    nil,
 	}
@@ -190,19 +189,14 @@ func (h *FuncInternal) Length() int {
 	return 0
 }
 
-// Name returns the name of the FuncExternal as a string.
-func (h *FuncInternal) Name() string {
-	return h.name
-}
-
 // TypeName returns the type name of the FuncExternal as a string.
 func (h *FuncInternal) TypeName() string {
-	return "FuncInternal:" + h.name
+	return "FuncInternal:" + strconv.Itoa(int(h.id))
 }
 
 // Copy creates and returns a new FuncExternal instance with the same Value field as the original object.
 func (h *FuncInternal) Copy(frame int, _ int) IObject {
-	return h.GateKeeper().NewFuncInternal(frame, h.name, h.id)
+	return h.GateKeeper().NewFuncInternal(frame, h.id)
 }
 
 // Equals checks whether the current FuncExternal is equal to another object of type IObject. Always returns false.
