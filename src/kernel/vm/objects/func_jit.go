@@ -5,7 +5,7 @@ import (
 )
 
 func init() {
-	gob.Register(&FuncExternal{})
+	gob.Register(&FuncJit{})
 }
 
 // FuncJit is a callable object type that encapsulates a function and provides execution context information.

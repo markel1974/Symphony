@@ -352,6 +352,14 @@ func (f *GateAllocator) NewFuncCompiled(frame int, name string, instructions []b
 	return newFuncCompiled(f.gk, frame, name, instructions, numLocals, numParameters, varArgs, sourceMap, free)
 }
 
+// NewFuncInternal creates a new function external object with the specified frame, kind, name, and callable.
+func (f *GateAllocator) NewFuncInternal(frame int, name string, id CallId) IObject {
+	if err := f.acquireObject(); err != nil {
+		return f.undefinedValue
+	}
+	return newFuncInternal(f.gk, frame, name, id)
+}
+
 // NewFuncExternal creates a new function external object with the specified frame, kind, name, and callable.
 func (f *GateAllocator) NewFuncExternal(frame int, name string, fn FuncCallable) IObject {
 	if err := f.acquireObject(); err != nil {

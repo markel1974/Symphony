@@ -62,6 +62,7 @@ type IGateAllocator interface {
 	ReleaseObject(IObject)
 	ReleaseObjects([]IObject)
 	NewFuncCompiled(frame int, name string, instructions []byte, numLocals int, numParameters int, varArgs bool, sourceMap map[int]int, free []*ObjectPointer) IObject
+	NewFuncInternal(frame int, name string, id CallId) IObject
 	NewFuncExternal(frame int, name string, fn FuncCallable) IObject
 	NewBuiltin(frame int, name string, index int) IObject
 	NewFuncJit(name string, data []byte) IObject
@@ -144,15 +145,9 @@ type IGateAdapter interface {
 	IndexAssign(frame int, dst IObject, src IObject, selectors []IObject) error
 }
 
-// IGateCall defines an interface for invoking a callable object with the specified arguments.
-type IGateCall interface {
-	Call(id int, frame int, args ...IObject) (ret IObject, err error)
-}
-
 // IGateKeeper combines IGateAllocator, IGateConverter, and IGateAdapter to manage object creation, conversion, and adaptation.
 type IGateKeeper interface {
 	IGateAllocator
 	IGateConverter
 	IGateAdapter
-	IGateCall
 }
