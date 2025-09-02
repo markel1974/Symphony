@@ -156,8 +156,11 @@ const (
 	// OpLogical represents an opcode for performing logical operations within the instruction set.
 	OpLogical
 
-	// OpImport represents an opcode for handling imports, typically operating with two associated operands.
-	OpImport
+	// OpFuncImport represents an opcode for handling imports, typically operating with two associated operands.
+	OpFuncImport
+
+	// OpFuncInternal represents an opcode for internal operations within the virtual machine.
+	OpFuncInternal
 
 	// OpIntLogical performs integer-specific logical operations such as AND, OR, or XOR for the appropriate operands.
 	OpIntLogical
@@ -276,7 +279,8 @@ func NewOpcodes() *Opcodes {
 	op.createOpcode(OpIteratorValue, []int{1}, "OpIteratorValue")
 	op.createOpcode(OpLogical, []int{1}, "OpLogical")
 	op.createOpcode(OpArithmetic, []int{1}, "OpArithmetic")
-	op.createOpcode(OpImport, []int{2}, "OpImport")
+	op.createOpcode(OpFuncImport, []int{2}, "OpFuncImport")
+	op.createOpcode(OpFuncInternal, []int{2}, "OpFuncInternal")
 	op.createOpcode(OpIntLogical, []int{2, 1}, "OpIntLogical")
 	op.createOpcode(OpIntArithmetic, []int{2, 1}, "OpIntArithmetic")
 	op.createOpcode(OpDerefGet, []int{}, "OpDerefGet")

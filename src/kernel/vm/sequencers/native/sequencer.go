@@ -77,7 +77,8 @@ func (ds *Sequencer) createStatic(vmIn *core.VM) ([]core.IOpExecutor, error) {
 	z = append(z, NewOpNull)
 	z = append(z, NewOpLogical)
 	z = append(z, NewOpArithmetic)
-	z = append(z, NewOpImport)
+	z = append(z, NewOpFuncImport)
+	z = append(z, NewOpFuncInternal)
 	z = append(z, NewOpPop)
 	z = append(z, NewOpTrue)
 	z = append(z, NewOpFalse)
@@ -133,7 +134,7 @@ func (ds *Sequencer) createStatic(vmIn *core.VM) ([]core.IOpExecutor, error) {
 func (ds *Sequencer) facadeForOpcode(opcodeId bytecode.OpcodeId, vm *core.VM) interface{} {
 	switch opcodeId {
 	// Category: Stack & Constants (Read-Only)
-	case bytecode.OpConstant, bytecode.OpGlobalGet, bytecode.OpImport, bytecode.OpFreeGet, bytecode.OpLocalGet:
+	case bytecode.OpConstant, bytecode.OpGlobalGet, bytecode.OpFuncImport, bytecode.OpFreeGet, bytecode.OpLocalGet:
 		return core.IVMReadOnly(vm)
 	// Category: Control Flow
 	case bytecode.OpJump, bytecode.OpJumpFalsy, bytecode.OpJumpAnd, bytecode.OpJumpOr:
