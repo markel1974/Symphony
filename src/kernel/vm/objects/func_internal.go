@@ -492,19 +492,7 @@ func (h *FuncInternal) len(frame int, args []IObject) (IObject, error) {
 	if len(args) != 1 {
 		return nil, ErrInvalidArgumentsNumber
 	}
-	argIn := args[0]
-	switch arg := argIn.(type) {
-	case *Array:
-		return h.gk.NewInt(frame, int64(arg.Length())), nil
-	case *String:
-		return h.gk.NewInt(frame, int64(arg.Length())), nil
-	case *Bytes:
-		return h.gk.NewInt(frame, int64(arg.Length())), nil
-	case *Map:
-		return h.gk.NewInt(frame, int64(arg.Length())), nil
-	default:
-		return nil, NewInvalidArgumentError(0, "container", arg.TypeName())
-	}
+	return h.gk.NewInt(frame, int64(args[0].Length())), nil
 }
 
 // sprintf formats a string using the format specified in args[0] and additional arguments provided.
@@ -617,23 +605,15 @@ func (h *FuncInternal) splice(frame int, args []IObject) (IObject, error) {
 
 // panic triggers a runtime panic with the provided argument or a default message if no argument is given.
 func (h *FuncInternal) panic(_ int, args []IObject) (IObject, error) {
-	var err error
-	if len(args) == 1 {
-		err = fmt.Errorf("%s", args[0].AsString())
-	} else {
-		err = fmt.Errorf("panic")
+	if len(args) > 0 {
+		return nil, fmt.Errorf("%s", args[0].AsString())
 	}
-	// Signal the error to the VM. This is the key point!
-	// The VM already has a mechanism to stop execution in case of error.
-	// Calling SetError will stop the main execution loop.
-	// v.SetError(err) // This call should be made through an interface exposed to builtin
-	// In practice, the VM panic becomes an error that stops the script
-	return nil, err
+	return nil, fmt.Errorf("panic")
 }
 
 // recover is a method that handles logic for recovering from specific scenarios and returns an IObject and an error.
 // It takes an integer and a slice of IObject as arguments and returns a default undefined value and nil error.
-func (h *FuncInternal) recover(_ int, args []IObject) (IObject, error) {
+func (h *FuncInternal) recover(_ int, _ []IObject) (IObject, error) {
 	return h.gk.UndefinedValue(), nil
 }
 
