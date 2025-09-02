@@ -114,14 +114,13 @@ func (f *FunctionTable) SymbolsFromParameters(fieldList *ast.FieldList) ([]*Symb
 					return nil, err
 				}
 				symbol.SetScope(LocalScope)
+				symbol.SetReturnTypes([]string{typeName})
 				if isStruct {
-					// Se è uno struct, assegna le informazioni dello struct
-					if err = f.structTable.AssignSymbol(symbol, typeName, []string{typeName}); err != nil {
-						return nil, err
-					}
+					f.structTable.BindSymbol(symbol, typeName)
+					symbol.SetObject(f.gk.NewString(objects.FrameStatic, typeName+":"+symbol.Name()))
 				} else if isInterface {
-					// Se è un'interfaccia, contrassegnalo come tale!
 					symbol.SetInterface(typeName)
+					symbol.SetObject(f.gk.NewString(objects.FrameStatic, "interface:"+symbol.Name()))
 				}
 				symbols = append(symbols, symbol)
 			}
@@ -145,17 +144,17 @@ func (f *FunctionTable) RangeKey(node *ast.RangeStmt) (*Symbol, error) {
 }
 
 // RangeValue resolves and defines a symbol for the `Value` in a range statement, assigning it a type if specified.
-func (f *FunctionTable) RangeValue(node *ast.RangeStmt, returnTypeName string) (*Symbol, error) {
+func (f *FunctionTable) RangeValue(node *ast.RangeStmt, typeName string) (*Symbol, error) {
 	if node.Value != nil {
 		if ident, ok := node.Value.(*ast.Ident); ok && ident.Name != UndefinedSymbol {
 			valueSymbol, err := f.scopes.SymbolDefine(ident.Name)
 			if err != nil {
 				return nil, err
 			}
-			if len(returnTypeName) > 0 {
-				if err = f.structTable.AssignSymbol(valueSymbol, returnTypeName, []string{returnTypeName}); err != nil {
-					return nil, err
-				}
+			if len(typeName) > 0 {
+				valueSymbol.SetReturnTypes([]string{typeName})
+				valueSymbol.SetObject(f.gk.NewString(objects.FrameStatic, typeName+":"+valueSymbol.Name()))
+				f.structTable.BindSymbol(valueSymbol, typeName)
 			}
 			return valueSymbol, nil
 		}

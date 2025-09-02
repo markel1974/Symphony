@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"go/ast"
 	"go/token"
-	"strings"
 
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
@@ -49,6 +48,7 @@ type StructTable struct {
 	gk              objects.IGateKeeper
 	scopes          *Scopes
 	implementations map[string][]string
+	internals       map[string]bool
 }
 
 // NewStructTable initializes and returns a pointer to a StructTable instance with an empty container map.
@@ -56,9 +56,13 @@ func NewStructTable(gk objects.IGateKeeper, scopes *Scopes) *StructTable {
 	st := &StructTable{
 		container:       make(map[string][]*FieldDescription),
 		implementations: make(map[string][]string),
+		internals:       make(map[string]bool),
 		gk:              gk,
 		scopes:          scopes,
 	}
+	v := NewFieldDescription("error", "", "error", nil)
+	st.container[v.name] = []*FieldDescription{v}
+	st.internals[v.name] = true
 	return st
 }
 
@@ -125,23 +129,25 @@ func (st *StructTable) Has(name string) bool {
 	return false
 }
 
-// Inference infers struct type information from the given AST expression and scope context.
+// TypeInference infers struct type information from the given AST expression and scope context.
 // It returns a generated struct name, a list of associated base type names, and a boolean indicating success.
-func (st *StructTable) Inference(expr ast.Expr, inferredTypeName string) (string, []string, bool) {
-	if len(inferredTypeName) > 0 {
-		return inferredTypeName, []string{inferredTypeName}, true
-	}
+func (st *StructTable) TypeInference(expr ast.Expr) (string, bool) {
+	var ret string
 	switch rhs := expr.(type) {
+	case *ast.Ident:
+		//nothing to do
+		return "", false
 	case *ast.BinaryExpr:
 		//nothing to do
-		return "", nil, false
+		return "", false
 	case *ast.BasicLit:
 		//nothing to do
-		return "", nil, false
+		return "", false
 	case *ast.CompositeLit: // es. MyStruct{...}
-		if baseName := st.ExtractBaseName(rhs.Type); len(baseName) > 0 {
-			return baseName, []string{baseName}, true
-		}
+		ret = st.ExtractBaseName(rhs.Type)
+		//if baseName := st.ExtractBaseName(rhs.Type); len(baseName) > 0 {
+		//	return baseName, []string{baseName}, true
+		//}
 	case *ast.CallExpr: // es. NewStruct()
 		if ident, ok := rhs.Fun.(*ast.Ident); ok {
 			if funcSymbol, ok := st.scopes.SymbolResolve(ident.Name); ok && len(funcSymbol.ReturnTypes()) > 0 {
@@ -149,7 +155,8 @@ func (st *StructTable) Inference(expr ast.Expr, inferredTypeName string) (string
 				returnType := funcSymbol.ReturnTypes()[0]
 				// Verify if the returned type is a struct
 				if typeSymbol, ok := st.scopes.SymbolResolve(returnType); ok && typeSymbol.IsStruct() {
-					return returnType, []string{returnType}, true
+					ret = returnType
+					//return returnType, []string{returnType}, true
 				}
 			}
 		}
@@ -158,7 +165,8 @@ func (st *StructTable) Inference(expr ast.Expr, inferredTypeName string) (string
 			if compLit, ok := rhs.X.(*ast.CompositeLit); ok {
 				if ident, ok := compLit.Type.(*ast.Ident); ok {
 					if returnSymbol, ok := st.scopes.SymbolResolve(ident.Name); ok && returnSymbol.IsStruct() {
-						return returnSymbol.Name(), []string{returnSymbol.Name()}, true
+						ret = returnSymbol.Name()
+						//return returnSymbol.Name(), []string{returnSymbol.Name()}, true
 					}
 				}
 			}
@@ -166,31 +174,37 @@ func (st *StructTable) Inference(expr ast.Expr, inferredTypeName string) (string
 	case *ast.TypeAssertExpr:
 		targetTypeName := rhs.Type.(*ast.Ident).Name
 		if returnSymbol, ok := st.scopes.SymbolResolve(targetTypeName); ok && returnSymbol.IsStruct() {
-			return returnSymbol.Name(), []string{returnSymbol.Name()}, true
+			ret = returnSymbol.Name()
+			//return returnSymbol.Name(), []string{returnSymbol.Name()}, true
 		}
 	}
-	return "", nil, false
+	if len(ret) == 0 {
+		return "", false
+	}
+	return ret, true
+	//return "", nil, false
 }
 
 // FieldsFromLiteral extracts and assigns struct fields from a given composite literal node, handling both keyed and positional formats.
-func (st *StructTable) FieldsFromLiteral(tName string, eltS []ast.Expr) ([]*FieldDescription, error) {
-	structFields, ok := st.getFields(tName)
+func (st *StructTable) FieldsFromLiteral(structName string, eltS []ast.Expr) ([]*FieldDescription, error) {
+	structFields, ok := st.getFields(structName)
 	if !ok {
-		return nil, fmt.Errorf("unknown composite literal type: %st", tName)
+		return nil, fmt.Errorf("unknown composite literal type: %st", structName)
 	}
 	if len(eltS) > len(structFields) {
-		return nil, fmt.Errorf("too many values in positional struct literal for type '%st'", tName)
+		return nil, fmt.Errorf("too many values in positional struct literal for type '%st'", structName)
 	}
-	symbol, ok := st.scopes.SymbolResolve(tName)
+	symbol, ok := st.scopes.SymbolResolve(structName)
 	if !ok {
 		var err error
-		if symbol, err = st.scopes.SymbolDefine(tName); err != nil {
+		if symbol, err = st.scopes.SymbolDefine(structName); err != nil {
 			return nil, err
 		}
 	}
-	if err := st.AssignSymbol(symbol, tName, []string{tName}); err != nil {
-		return nil, err
-	}
+	symbol.SetReturnTypes([]string{structName})
+	symbol.SetObject(st.gk.NewString(objects.FrameStatic, structName+":"+symbol.Name()))
+	st.BindSymbol(symbol, structName)
+
 	isKeyed := false
 	if len(eltS) > 0 {
 		if _, ok := eltS[0].(*ast.KeyValueExpr); ok {
@@ -252,26 +266,21 @@ func (st *StructTable) TypeNameFromSymbolField(name string, fieldName string) (s
 	return "", false
 }
 
-// AssignSymbol assigns a struct name and types to a Symbol, validates the struct, and creates a description object.
-func (st *StructTable) AssignSymbol(symbol *Symbol, structName string, returnTypes []string) error {
-	if len(structName) == 0 {
-		return nil
-	}
-	var fields []string
-	if structFields, ok := st.container[structName]; ok {
-		fields = make([]string, len(structFields))
+// BindSymbol assigns a struct name and types to a Symbol, validates the struct, and creates a description object.
+func (st *StructTable) BindSymbol(symbol *Symbol, typeName string) {
+	if structFields, ok := st.container[typeName]; ok {
+		fields := make([]string, len(structFields))
 		for x, field := range structFields {
 			fields[x] = field.name
 		}
-	} else {
-		fields = make([]string, len(returnTypes))
-		copy(fields, returnTypes)
+		symbol.SetStruct(typeName, fields)
+		return
 	}
-	description := structName + "=>" + symbol.Name() + ":" + strings.Join(returnTypes, " ")
-	symbol.SetStruct(structName, fields)
-	symbol.SetReturnTypes(returnTypes)
-	symbol.SetObject(st.gk.NewString(objects.FrameStatic, description))
-	return nil
+}
+
+// IsInternal returns true if the given name is a struct internal to the compiler.
+func (st *StructTable) IsInternal(name string) bool {
+	return st.internals[name]
 }
 
 // ExtractBaseName extracts the base type name from an AST expression, handling pointers, arrays, maps, and selectors.

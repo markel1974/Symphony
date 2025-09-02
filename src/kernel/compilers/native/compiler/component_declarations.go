@@ -117,6 +117,7 @@ func (c *Declarations) TypeSpec(node *ast.TypeSpec) error {
 		}
 		// Passa il nome del tipo
 		symbol.SetInterface(typeName)
+		symbol.SetObject(c.gk.NewString(objects.FrameStatic, "interface:"+symbol.Name()))
 	}
 	return nil
 }
@@ -145,6 +146,7 @@ func (c *Declarations) ValueSpec(node *ast.ValueSpec) error {
 						isInterfaceAssignment = true // Only in the first block
 						// Pass the type name (e.g. "Printer")
 						symbol.SetInterface(typeIdent.Name)
+						symbol.SetObject(c.gk.NewString(objects.FrameStatic, "interface:"+symbol.Name()))
 					}
 				}
 			}
@@ -160,13 +162,12 @@ func (c *Declarations) ValueSpec(node *ast.ValueSpec) error {
 					return tables.NewCompilerError(c.fileSet, node, err.Error())
 				}
 			} else {
-				structName, returnTypes, _ := c.structTable.Inference(node.Values[i], "")
-				if len(structName) > 0 {
-					if err = c.structTable.AssignSymbol(symbol, structName, returnTypes); err != nil {
-						return err
-					}
+				if inferredTypeName, _ := c.structTable.TypeInference(node.Values[i]); len(inferredTypeName) > 0 {
+					symbol.SetReturnTypes([]string{inferredTypeName})
+					symbol.SetObject(c.gk.NewString(objects.FrameStatic, inferredTypeName+":"+symbol.Name()))
+					c.structTable.BindSymbol(symbol, inferredTypeName)
 				} else {
-					symbol.SetObject(c.gk.NewString(objects.FrameStatic, symbol.Name()))
+					symbol.SetObject(c.gk.NewString(objects.FrameStatic, "unknown:"+symbol.Name()))
 				}
 			}
 			if err = c.scopes.EmitSymbolDefineAndPop(symbol); err != nil {
@@ -187,10 +188,11 @@ func (c *Declarations) ValueSpec(node *ast.ValueSpec) error {
 				if typeSymbol, ok := c.scopes.SymbolResolve(typeIdent.Name); ok {
 					if typeSymbol.IsInterface() {
 						symbol.SetInterface(typeIdent.Name)
+						symbol.SetObject(c.gk.NewString(objects.FrameStatic, "interface:"+symbol.Name()))
 					} else if typeSymbol.IsStruct() {
-						if err := c.structTable.AssignSymbol(symbol, typeSymbol.StructName(), []string{typeSymbol.StructName()}); err != nil {
-							return err
-						}
+						symbol.SetReturnTypes([]string{typeSymbol.StructName()})
+						symbol.SetObject(c.gk.NewString(objects.FrameStatic, typeSymbol.StructName()+":"+symbol.Name()))
+						c.structTable.BindSymbol(symbol, typeSymbol.StructName())
 					}
 				}
 			}
@@ -535,10 +537,13 @@ func (c *Declarations) handleVariableDeclaration(tok token.Token, rhsIn ast.Expr
 			if err != nil {
 				return err
 			}
-			if structName, returnTypes, isStructInference := c.structTable.Inference(rhsIn, inferredTypeName); isStructInference {
-				if err = c.structTable.AssignSymbol(symbol, structName, returnTypes); err != nil {
-					return err
-				}
+			if len(inferredTypeName) == 0 {
+				inferredTypeName, _ = c.structTable.TypeInference(rhsIn)
+			}
+			if len(inferredTypeName) > 0 {
+				symbol.SetReturnTypes([]string{inferredTypeName})
+				symbol.SetObject(c.gk.NewString(objects.FrameStatic, inferredTypeName+":"+symbol.Name()))
+				c.structTable.BindSymbol(symbol, inferredTypeName)
 			}
 			if err = c.scopes.EmitSymbolDefineAndPop(symbol); err != nil {
 				return err
@@ -569,10 +574,13 @@ func (c *Declarations) handleVariableDeclaration(tok token.Token, rhsIn ast.Expr
 					return fmt.Errorf("cannot assign interface to interface")
 				}
 			} else {
-				if structName, returnTypes, isStructInference := c.structTable.Inference(rhsIn, inferredTypeName); isStructInference {
-					if err := c.structTable.AssignSymbol(symbol, structName, returnTypes); err != nil {
-						return err
-					}
+				if len(inferredTypeName) == 0 {
+					inferredTypeName, _ = c.structTable.TypeInference(rhsIn)
+				}
+				if len(inferredTypeName) > 0 {
+					symbol.SetReturnTypes([]string{inferredTypeName})
+					symbol.SetObject(c.gk.NewString(objects.FrameStatic, inferredTypeName+":"+symbol.Name()))
+					c.structTable.BindSymbol(symbol, inferredTypeName)
 				}
 			}
 			if err := c.scopes.EmitSymbolSetAndPop(symbol); err != nil {

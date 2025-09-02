@@ -126,11 +126,9 @@ func (c *Functions) funcBodyPrepare(fd *tables.FunctionDescription) error {
 	placeHolder.SetInputTypes(fd.InputName, fd.InputTypes)
 	placeHolder.SetReturnTypes(fd.ReturnTypes)
 	if len(fd.StructName) > 0 {
+		placeHolder.SetObject(c.gk.NewString(objects.FrameStatic, fd.StructName+":"+placeHolder.Name()))
+		c.structTable.BindSymbol(placeHolder, fd.StructName)
 		c.structTable.Add(fd.StructName, node.Name.Name, "", "func", node)
-
-		if err = c.structTable.AssignSymbol(placeHolder, fd.StructName, nil); err != nil {
-			return err
-		}
 	}
 	//placeHolder.SetStruct(fd.StructName)
 	return nil
@@ -257,7 +255,7 @@ func (c *Functions) CallExpr(node *ast.CallExpr) error {
 			return tables.NewCompilerError(c.fileSet, node, "undefined variable: %s", receiverIdent.Name)
 		}
 
-		if receiverSymbol.StructName() == "error" {
+		if c.structTable.IsInternal(receiverSymbol.StructName()) {
 			if err := c.handleInternalInterface(receiverSymbol, fun.Sel.Name, node.Args); err != nil {
 				return err
 			}
