@@ -40,28 +40,25 @@ func NewOpTypeAssert(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error
 func (op *OpTypeAssert) Execute(decoder *core.Decoder) {
 	// The operand is the index of the target type name in the constants table.
 	typeNameIndex := decoder.Read(0)
-
-	// The interface object is at the top of the stack.
 	interfaceObj := op.vm.Stack().Pop()
-
 	targetTypeObj := op.vm.Constants().Get(uint(typeNameIndex))
 	targetTypeName, ok := targetTypeObj.(*objects.String)
 	if !ok {
 		op.vm.SetError(fmt.Errorf("constant for type assertion is not a string"))
 		return
 	}
-
-	io, isInterface := interfaceObj.(*objects.Interface)
-	if !isInterface {
-		// If not an interface, assertion always fails.
+	concreteValue := op.vm.Factory().UndefinedValue()
+	switch io := interfaceObj.(type) {
+	case *objects.Interface:
+		concreteValue = io.Value()
+	case *objects.Struct:
+		concreteValue = io
+	default:
 		op.vm.Stack().Push(op.vm.Factory().UndefinedValue())
 		op.vm.Stack().Push(op.vm.Factory().FalseValue())
 		return
 	}
-
-	concreteValue := io.Value()
 	if concreteValue.TypeName() == targetTypeName.Value() {
-		// Success!
 		op.vm.Stack().Push(concreteValue)               // Push the "unwrapped" concrete value.
 		op.vm.Stack().Push(op.vm.Factory().TrueValue()) // Push the 'ok' boolean.
 	} else {
