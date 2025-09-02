@@ -370,12 +370,12 @@ func (f *GateAllocator) NewFuncInternals(frame int) IObject {
 	return newArray(f.gk, frame, out)
 }
 
-// NewFuncExternal creates a new function external object with the specified frame, kind, name, and callable.
-func (f *GateAllocator) NewFuncExternal(frame int, name string, fn FuncCallable) IObject {
+// NewFuncImport creates a new function external object with the specified frame, kind, name, and callable.
+func (f *GateAllocator) NewFuncImport(frame int, name string, fn FuncCallable) IObject {
 	if err := f.acquireObject(); err != nil {
 		return f.undefinedValue
 	}
-	return newFuncExternal(f.gk, frame, name, fn)
+	return newFuncImport(f.gk, frame, name, fn)
 }
 
 // NewFuncJit creates a new JIT-compiled function object with the provided kind, name, and bytecode.

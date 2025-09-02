@@ -21,39 +21,39 @@ func NewBuiltinFunctions(gk objects.IGateKeeper) IBuiltin {
 	b := &BuiltinFunctions{}
 	b.pkg = []objects.IObject{
 		//functions
-		gk.NewFuncExternal(objects.FrameStatic, "len", b.len),
-		gk.NewFuncExternal(objects.FrameStatic, "copy", b.copy),
-		gk.NewFuncExternal(objects.FrameStatic, "append", b.append),
-		gk.NewFuncExternal(objects.FrameStatic, "delete", b.delete),
-		gk.NewFuncExternal(objects.FrameStatic, "splice", b.splice),
-		gk.NewFuncExternal(objects.FrameStatic, "format", b.format),
-		gk.NewFuncExternal(objects.FrameStatic, "panic", b.panic),
-		gk.NewFuncExternal(objects.FrameStatic, "recover", b.recover),
+		gk.NewFuncImport(objects.FrameStatic, "len", b.len),
+		gk.NewFuncImport(objects.FrameStatic, "copy", b.copy),
+		gk.NewFuncImport(objects.FrameStatic, "append", b.append),
+		gk.NewFuncImport(objects.FrameStatic, "delete", b.delete),
+		gk.NewFuncImport(objects.FrameStatic, "splice", b.splice),
+		gk.NewFuncImport(objects.FrameStatic, "format", b.format),
+		gk.NewFuncImport(objects.FrameStatic, "panic", b.panic),
+		gk.NewFuncImport(objects.FrameStatic, "recover", b.recover),
 		//cast
-		gk.NewFuncExternal(objects.FrameStatic, "int", b.int),
-		gk.NewFuncExternal(objects.FrameStatic, "bool", b.bool),
-		gk.NewFuncExternal(objects.FrameStatic, "float", b.float),
-		gk.NewFuncExternal(objects.FrameStatic, "char", b.char),
-		gk.NewFuncExternal(objects.FrameStatic, "bytes", b.bytes),
-		gk.NewFuncExternal(objects.FrameStatic, "string", b.string),
-		gk.NewFuncExternal(objects.FrameStatic, "time", b.time),
+		gk.NewFuncImport(objects.FrameStatic, "int", b.int),
+		gk.NewFuncImport(objects.FrameStatic, "bool", b.bool),
+		gk.NewFuncImport(objects.FrameStatic, "float", b.float),
+		gk.NewFuncImport(objects.FrameStatic, "char", b.char),
+		gk.NewFuncImport(objects.FrameStatic, "bytes", b.bytes),
+		gk.NewFuncImport(objects.FrameStatic, "string", b.string),
+		gk.NewFuncImport(objects.FrameStatic, "time", b.time),
 		//
-		gk.NewFuncExternal(objects.FrameStatic, "typeName", b.typeName),
+		gk.NewFuncImport(objects.FrameStatic, "typeName", b.typeName),
 		//type check
-		gk.NewFuncExternal(objects.FrameStatic, "isInt", b.isInt),
-		gk.NewFuncExternal(objects.FrameStatic, "isFloat", b.isFloat),
-		gk.NewFuncExternal(objects.FrameStatic, "isString", b.isString),
-		gk.NewFuncExternal(objects.FrameStatic, "isBool", b.isBool),
-		gk.NewFuncExternal(objects.FrameStatic, "isChar", b.isChar),
-		gk.NewFuncExternal(objects.FrameStatic, "isBytes", b.isBytes),
-		gk.NewFuncExternal(objects.FrameStatic, "isArray", b.isArray),
-		gk.NewFuncExternal(objects.FrameStatic, "isMap", b.isMap),
-		gk.NewFuncExternal(objects.FrameStatic, "isIterable", b.isIterable),
-		gk.NewFuncExternal(objects.FrameStatic, "isTime", b.isTime),
-		gk.NewFuncExternal(objects.FrameStatic, "isError", b.isError),
-		gk.NewFuncExternal(objects.FrameStatic, "isUndefined", b.isUndefined),
-		gk.NewFuncExternal(objects.FrameStatic, "isFunction", b.isFunction),
-		gk.NewFuncExternal(objects.FrameStatic, "isCallable", b.isCallable),
+		gk.NewFuncImport(objects.FrameStatic, "isInt", b.isInt),
+		gk.NewFuncImport(objects.FrameStatic, "isFloat", b.isFloat),
+		gk.NewFuncImport(objects.FrameStatic, "isString", b.isString),
+		gk.NewFuncImport(objects.FrameStatic, "isBool", b.isBool),
+		gk.NewFuncImport(objects.FrameStatic, "isChar", b.isChar),
+		gk.NewFuncImport(objects.FrameStatic, "isBytes", b.isBytes),
+		gk.NewFuncImport(objects.FrameStatic, "isArray", b.isArray),
+		gk.NewFuncImport(objects.FrameStatic, "isMap", b.isMap),
+		gk.NewFuncImport(objects.FrameStatic, "isIterable", b.isIterable),
+		gk.NewFuncImport(objects.FrameStatic, "isTime", b.isTime),
+		gk.NewFuncImport(objects.FrameStatic, "isError", b.isError),
+		gk.NewFuncImport(objects.FrameStatic, "isUndefined", b.isUndefined),
+		gk.NewFuncImport(objects.FrameStatic, "isFunction", b.isFunction),
+		gk.NewFuncImport(objects.FrameStatic, "isCallable", b.isCallable),
 	}
 	return b
 }
@@ -68,7 +68,7 @@ func (h *BuiltinFunctions) Name() string {
 	return "builtin"
 }
 
-// Package returns a slice of pointers to FuncExternal objects representing the built-in function modules.
+// Package returns a slice of pointers to FuncImport objects representing the built-in function modules.
 func (h *BuiltinFunctions) Package() []objects.IObject {
 	return h.pkg
 }

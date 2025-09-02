@@ -121,7 +121,7 @@ type FuncInternal struct {
 	fn    func(frame int, args []IObject) (IObject, error)
 }
 
-// NewFuncExternal creates a new FuncExternal instance with the specified Id and callable function.
+// NewFuncImport creates a new FuncImport instance with the specified Id and callable function.
 func newFuncInternal(factory IGateKeeper, frame int, id CallId) IObject {
 	fi := &FuncInternal{
 		gk:    factory,
@@ -153,7 +153,7 @@ func (h *FuncInternal) AsFloat64() float64 {
 	return 0
 }
 
-// AsString returns the string representation of a FuncExternal object.
+// AsString returns the string representation of a FuncImport object.
 func (h *FuncInternal) AsString() string {
 	return "<FuncJit>"
 }
@@ -223,22 +223,22 @@ func (h *FuncInternal) Length() int {
 	return 0
 }
 
-// TypeName returns the type name of the FuncExternal as a string.
+// TypeName returns the type name of the FuncImport as a string.
 func (h *FuncInternal) TypeName() string {
 	return "FuncInternal:" + strconv.Itoa(int(h.id))
 }
 
-// Copy creates and returns a new FuncExternal instance with the same Value field as the original object.
+// Copy creates and returns a new FuncImport instance with the same Value field as the original object.
 func (h *FuncInternal) Copy(frame int, _ int) IObject {
 	return h.GateKeeper().NewFuncInternal(frame, h.id)
 }
 
-// Equals checks whether the current FuncExternal is equal to another object of type IObject. Always returns false.
+// Equals checks whether the current FuncImport is equal to another object of type IObject. Always returns false.
 func (h *FuncInternal) Equals(_ IObject) bool {
 	return false
 }
 
-// CanCall checks whether the FuncExternal instance can be invoked as a callable function. Always returns true.
+// CanCall checks whether the FuncImport instance can be invoked as a callable function. Always returns true.
 func (h *FuncInternal) CanCall() bool {
 	return true
 }

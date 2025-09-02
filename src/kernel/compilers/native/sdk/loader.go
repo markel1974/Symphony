@@ -49,7 +49,7 @@ func NewLoader(gk objects.IGateKeeper) *Loader {
 		builtins: make([]*BuiltinEntry, len(builtinContainer)),
 	}
 	for i, obj := range builtinContainer {
-		fn, ok := obj.(*objects.FuncExternal)
+		fn, ok := obj.(*objects.FuncImport)
 		if !ok {
 			continue
 		}

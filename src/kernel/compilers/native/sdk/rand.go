@@ -19,15 +19,15 @@ type Rand struct {
 func NewRand(gk objects.IGateKeeper) IPackage {
 	z := &Rand{}
 	container := []objects.IObject{
-		gk.NewFuncExternal(objects.FrameStatic, "Int63", z.int63(rand.Int63)),
-		gk.NewFuncExternal(objects.FrameStatic, "Float64", z.funcInOf64(rand.Float64)),
-		gk.NewFuncExternal(objects.FrameStatic, "Int63n", z.int63n(rand.Int63n)),
-		gk.NewFuncExternal(objects.FrameStatic, "ExpFloat64", z.funcInOf64(rand.ExpFloat64)),
-		gk.NewFuncExternal(objects.FrameStatic, "NormFloat64", z.funcInOf64(rand.NormFloat64)),
-		gk.NewFuncExternal(objects.FrameStatic, "Perm", gk.FuncIiOiS(rand.Perm)),
-		gk.NewFuncExternal(objects.FrameStatic, "Seed", gk.FuncIi64On(rand.Seed)),
-		gk.NewFuncExternal(objects.FrameStatic, "Read", z.read),
-		gk.NewFuncExternal(objects.FrameStatic, "Rand", z.rand),
+		gk.NewFuncImport(objects.FrameStatic, "Int63", z.int63(rand.Int63)),
+		gk.NewFuncImport(objects.FrameStatic, "Float64", z.funcInOf64(rand.Float64)),
+		gk.NewFuncImport(objects.FrameStatic, "Int63n", z.int63n(rand.Int63n)),
+		gk.NewFuncImport(objects.FrameStatic, "ExpFloat64", z.funcInOf64(rand.ExpFloat64)),
+		gk.NewFuncImport(objects.FrameStatic, "NormFloat64", z.funcInOf64(rand.NormFloat64)),
+		gk.NewFuncImport(objects.FrameStatic, "Perm", gk.FuncIiOiS(rand.Perm)),
+		gk.NewFuncImport(objects.FrameStatic, "Seed", gk.FuncIi64On(rand.Seed)),
+		gk.NewFuncImport(objects.FrameStatic, "Read", z.read),
+		gk.NewFuncImport(objects.FrameStatic, "Rand", z.rand),
 	}
 	z.container = BuildContainer(container, nil)
 	return z
@@ -73,14 +73,14 @@ func (z *Rand) rand(gk objects.IGateKeeper, frame int, args ...objects.IObject) 
 	r := rand.New(src)
 	return gk.NewMap(frame,
 		map[string]objects.IObject{
-			"Int63":       gk.NewFuncExternal(frame, "Int63", z.int63(r.Int63)),
-			"Float64":     gk.NewFuncExternal(frame, "Float64", z.funcInOf64(r.Float64)),
-			"Int63n":      gk.NewFuncExternal(frame, "Int63n", z.int63n(r.Int63n)),
-			"ExpFloat64":  gk.NewFuncExternal(frame, "ExpFloat64", z.funcInOf64(r.ExpFloat64)),
-			"NormFloat64": gk.NewFuncExternal(frame, "NormFloat64", z.funcInOf64(r.NormFloat64)),
-			"Perm":        gk.NewFuncExternal(frame, "Perm", gk.FuncIiOiS(r.Perm)),
-			"Seed":        gk.NewFuncExternal(frame, "Seed", gk.FuncIi64On(r.Seed)),
-			"Read": gk.NewFuncExternal(frame, "Read", func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (objects.IObject, error) {
+			"Int63":       gk.NewFuncImport(frame, "Int63", z.int63(r.Int63)),
+			"Float64":     gk.NewFuncImport(frame, "Float64", z.funcInOf64(r.Float64)),
+			"Int63n":      gk.NewFuncImport(frame, "Int63n", z.int63n(r.Int63n)),
+			"ExpFloat64":  gk.NewFuncImport(frame, "ExpFloat64", z.funcInOf64(r.ExpFloat64)),
+			"NormFloat64": gk.NewFuncImport(frame, "NormFloat64", z.funcInOf64(r.NormFloat64)),
+			"Perm":        gk.NewFuncImport(frame, "Perm", gk.FuncIiOiS(r.Perm)),
+			"Seed":        gk.NewFuncImport(frame, "Seed", gk.FuncIi64On(r.Seed)),
+			"Read": gk.NewFuncImport(frame, "Read", func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (objects.IObject, error) {
 				return z.randOptionsRead(gk, r, frame, args...)
 			}),
 		}), nil

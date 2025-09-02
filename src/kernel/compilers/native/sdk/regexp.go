@@ -29,11 +29,11 @@ type Regexp struct {
 func NewRegexp(factory objects.IGateKeeper) IPackage {
 	r := &Regexp{}
 	container := []objects.IObject{
-		factory.NewFuncExternal(objects.FrameStatic, "Match", r.match),
-		factory.NewFuncExternal(objects.FrameStatic, "Find", r.find),
-		factory.NewFuncExternal(objects.FrameStatic, "Replace", r.replace),
-		factory.NewFuncExternal(objects.FrameStatic, "Split", r.split),
-		factory.NewFuncExternal(objects.FrameStatic, "Compile", r.compile),
+		factory.NewFuncImport(objects.FrameStatic, "Match", r.match),
+		factory.NewFuncImport(objects.FrameStatic, "Find", r.find),
+		factory.NewFuncImport(objects.FrameStatic, "Replace", r.replace),
+		factory.NewFuncImport(objects.FrameStatic, "Split", r.split),
+		factory.NewFuncImport(objects.FrameStatic, "Compile", r.compile),
 	}
 	r.container = BuildContainer(container, nil)
 	return r
@@ -198,16 +198,16 @@ func (r *Regexp) compile(gk objects.IGateKeeper, frame int, args ...objects.IObj
 	obj := gk.NewMap(frame,
 		map[string]objects.IObject{
 			// match(text) => bool
-			"Match": gk.NewFuncExternal(frame, "Match", func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (objects.IObject, error) {
+			"Match": gk.NewFuncImport(frame, "Match", func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (objects.IObject, error) {
 				return r.compileOptionMatch(gk, frame, re, args...)
 			}),
-			"Find": gk.NewFuncExternal(frame, "Find", func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (objects.IObject, error) {
+			"Find": gk.NewFuncImport(frame, "Find", func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (objects.IObject, error) {
 				return r.compileOptionFind(gk, frame, re, args...)
 			}),
-			"Replace": gk.NewFuncExternal(frame, "Replace", func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (objects.IObject, error) {
+			"Replace": gk.NewFuncImport(frame, "Replace", func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (objects.IObject, error) {
 				return r.compileOptionReplace(gk, frame, re, args...)
 			}),
-			"Split": gk.NewFuncExternal(frame, "Split", func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (objects.IObject, error) {
+			"Split": gk.NewFuncImport(frame, "Split", func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (objects.IObject, error) {
 				return r.compileOptionSplit(gk, frame, re, args...)
 			}),
 		},

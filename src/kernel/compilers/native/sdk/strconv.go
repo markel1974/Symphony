@@ -19,17 +19,17 @@ type Strconv struct {
 func NewStrconv(factory objects.IGateKeeper) IPackage {
 	s := &Strconv{}
 	container := []objects.IObject{
-		factory.NewFuncExternal(objects.FrameStatic, "Atoi", factory.FuncIsOie(strconv.Atoi)),
-		factory.NewFuncExternal(objects.FrameStatic, "FormatBool", s.formatBool),
-		factory.NewFuncExternal(objects.FrameStatic, "FormatFloat", s.formatFloat),
-		factory.NewFuncExternal(objects.FrameStatic, "FormatInt", s.formatInt),
-		factory.NewFuncExternal(objects.FrameStatic, "Itoa", factory.FuncIiOs(strconv.Itoa)),
-		factory.NewFuncExternal(objects.FrameStatic, "ParseBool", s.parseBool),
-		factory.NewFuncExternal(objects.FrameStatic, "ParseFloat", s.parseFloat),
-		factory.NewFuncExternal(objects.FrameStatic, "ParseNumber", s.parseNumber),
-		factory.NewFuncExternal(objects.FrameStatic, "ParseInt", s.parseInt),
-		factory.NewFuncExternal(objects.FrameStatic, "Quote", factory.FuncIsOs(strconv.Quote)),
-		factory.NewFuncExternal(objects.FrameStatic, "Unquote", factory.FuncIsOse(strconv.Unquote)),
+		factory.NewFuncImport(objects.FrameStatic, "Atoi", factory.FuncIsOie(strconv.Atoi)),
+		factory.NewFuncImport(objects.FrameStatic, "FormatBool", s.formatBool),
+		factory.NewFuncImport(objects.FrameStatic, "FormatFloat", s.formatFloat),
+		factory.NewFuncImport(objects.FrameStatic, "FormatInt", s.formatInt),
+		factory.NewFuncImport(objects.FrameStatic, "Itoa", factory.FuncIiOs(strconv.Itoa)),
+		factory.NewFuncImport(objects.FrameStatic, "ParseBool", s.parseBool),
+		factory.NewFuncImport(objects.FrameStatic, "ParseFloat", s.parseFloat),
+		factory.NewFuncImport(objects.FrameStatic, "ParseNumber", s.parseNumber),
+		factory.NewFuncImport(objects.FrameStatic, "ParseInt", s.parseInt),
+		factory.NewFuncImport(objects.FrameStatic, "Quote", factory.FuncIsOs(strconv.Quote)),
+		factory.NewFuncImport(objects.FrameStatic, "Unquote", factory.FuncIsOse(strconv.Unquote)),
 	}
 	s.container = BuildContainer(container, nil)
 	return s

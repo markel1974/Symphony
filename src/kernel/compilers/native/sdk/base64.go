@@ -18,14 +18,14 @@ type Base64 struct {
 // NewBase64 initializes a new Base64 instance with predefined encoding and decoding functions in the module map.
 func NewBase64(f objects.IGateKeeper) IPackage {
 	container := []objects.IObject{
-		f.NewFuncExternal(objects.FrameStatic, "EncodeToString", f.FuncIbSOs(base64.StdEncoding.EncodeToString)),
-		f.NewFuncExternal(objects.FrameStatic, "EncodeToString", f.FuncIsObSe(base64.StdEncoding.DecodeString)),
-		f.NewFuncExternal(objects.FrameStatic, "RawEncode", f.FuncIbSOs(base64.RawStdEncoding.EncodeToString)),
-		f.NewFuncExternal(objects.FrameStatic, "RawDecode", f.FuncIsObSe(base64.RawStdEncoding.DecodeString)),
-		f.NewFuncExternal(objects.FrameStatic, "UrlEncode", f.FuncIbSOs(base64.URLEncoding.EncodeToString)),
-		f.NewFuncExternal(objects.FrameStatic, "UrlDecode", f.FuncIsObSe(base64.URLEncoding.DecodeString)),
-		f.NewFuncExternal(objects.FrameStatic, "RawUrlEncode", f.FuncIbSOs(base64.RawURLEncoding.EncodeToString)),
-		f.NewFuncExternal(objects.FrameStatic, "rawUrlDecode", f.FuncIsObSe(base64.RawURLEncoding.DecodeString)),
+		f.NewFuncImport(objects.FrameStatic, "EncodeToString", f.FuncIbSOs(base64.StdEncoding.EncodeToString)),
+		f.NewFuncImport(objects.FrameStatic, "EncodeToString", f.FuncIsObSe(base64.StdEncoding.DecodeString)),
+		f.NewFuncImport(objects.FrameStatic, "RawEncode", f.FuncIbSOs(base64.RawStdEncoding.EncodeToString)),
+		f.NewFuncImport(objects.FrameStatic, "RawDecode", f.FuncIsObSe(base64.RawStdEncoding.DecodeString)),
+		f.NewFuncImport(objects.FrameStatic, "UrlEncode", f.FuncIbSOs(base64.URLEncoding.EncodeToString)),
+		f.NewFuncImport(objects.FrameStatic, "UrlDecode", f.FuncIsObSe(base64.URLEncoding.DecodeString)),
+		f.NewFuncImport(objects.FrameStatic, "RawUrlEncode", f.FuncIbSOs(base64.RawURLEncoding.EncodeToString)),
+		f.NewFuncImport(objects.FrameStatic, "rawUrlDecode", f.FuncIsObSe(base64.RawURLEncoding.DecodeString)),
 	}
 	b := &Base64{
 		container: BuildContainer(container, nil),
