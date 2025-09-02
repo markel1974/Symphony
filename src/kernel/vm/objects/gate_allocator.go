@@ -127,39 +127,30 @@ func (f *GateAllocator) ReleaseObject(obj IObject) {
 	if obj == nil || obj.Frame() == FrameStatic {
 		return
 	}
-
+	obj.SetStatic()
 	switch o := obj.(type) {
 	case *Bool:
-		o.frame = FrameStatic
 		f.poolBool.Put(o)
 	case *Char:
-		o.frame = FrameStatic
 		f.poolChar.Put(o)
 	case *Int:
-		o.frame = FrameStatic
 		f.poolInt.Put(o)
 	case *Float:
-		o.frame = FrameStatic
 		f.poolFloat.Put(o)
 	case *String:
-		o.frame = FrameStatic
 		f.poolString.Put(o)
 	case *Bytes:
-		o.frame = FrameStatic
 		o.values = nil
 		f.poolBytes.Put(o)
 	case *ObjectPointer:
-		o.frame = FrameStatic
 		o.value = nil
 		f.poolObjectPointer.Put(o)
 	case *Error:
-		o.frame = FrameStatic
 		o.value = nil
 		f.poolError.Put(o)
 	case *Array:
 		f.ReleaseObjects(o.values)
 		o.values = o.values[:0]
-		o.frame = FrameStatic
 		f.poolArray.Put(o)
 	case *Map:
 		for _, v := range o.values {
@@ -168,7 +159,6 @@ func (f *GateAllocator) ReleaseObject(obj IObject) {
 		for k := range o.values {
 			delete(o.values, k)
 		}
-		o.frame = FrameStatic
 		f.poolMap.Put(o)
 	case *Struct:
 		for _, v := range o.values {
@@ -177,7 +167,6 @@ func (f *GateAllocator) ReleaseObject(obj IObject) {
 		for k := range o.values {
 			delete(o.values, k)
 		}
-		o.frame = FrameStatic
 		f.poolStruct.Put(o)
 	case *ArrayIterator:
 		f.poolArrayIterator.Put(o)
@@ -201,11 +190,8 @@ func (f *GateAllocator) NewInt(frame int, v int64) IObject {
 }
 
 // NewBool creates a new boolean object with the specified frame and value. Returns preallocated true or false objects.
-func (f *GateAllocator) NewBool(frame int, v bool) IObject {
-	if v {
-		return f.trueValue
-	}
-	return f.falseValue
+func (f *GateAllocator) NewBool(_ int, v bool) IObject {
+	return f.Boolean(v)
 }
 
 // NewChar creates a new Char object from the pool, sets its frame and value, and returns it as an IObject.
@@ -379,15 +365,7 @@ func (f *GateAllocator) NewFuncImport(frame int, name string, fn FuncCallable) I
 }
 
 // NewFuncJit creates a new JIT-compiled function object with the provided kind, name, and bytecode.
-func (f *GateAllocator) NewFuncJit(name string, data []byte) IObject {
-	if err := f.acquireObject(); err != nil {
-		return f.undefinedValue
-	}
-	return newFuncJit(f.gk, FrameStatic, name, data)
-}
-
-// NewFuncJitFrame creates a new just-in-time (JIT) function object with the specified frame, kind, name, and data.
-func (f *GateAllocator) NewFuncJitFrame(frame int, name string, data []byte) IObject {
+func (f *GateAllocator) NewFuncJit(frame int, name string, data []byte) IObject {
 	if err := f.acquireObject(); err != nil {
 		return f.undefinedValue
 	}

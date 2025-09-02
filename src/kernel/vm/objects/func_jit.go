@@ -128,7 +128,7 @@ func (o *FuncJit) TypeName() string {
 
 // Copy creates and returns a new FuncImport instance with the same Value field as the original object.
 func (o *FuncJit) Copy(frame int, _ int) IObject {
-	return o.GateKeeper().NewFuncJitFrame(frame, o.name, o.value)
+	return o.GateKeeper().NewFuncJit(frame, o.name, o.value)
 }
 
 // Equals checks whether the current FuncImport is equal to another object of type IObject. Always returns false.

@@ -176,7 +176,7 @@ func (gc *GateConverter) ToInt64(o IObject) (int64, bool) {
 func (gc *GateConverter) ToInt64Arg(index int, o IObject) (int64, error) {
 	v, ok := gc.ToInt64(o)
 	if !ok {
-		return 0, NewInvalidArgumentError(index, "int(compatible)", o.TypeName())
+		return 0, NewInvalidArgumentError(index, "int", o.TypeName())
 	}
 	return v, nil
 }
@@ -212,7 +212,7 @@ func (gc *GateConverter) ToString(o IObject) (string, bool) {
 func (gc *GateConverter) ToStringArg(index int, o IObject) (string, error) {
 	v, ok := gc.ToString(o)
 	if !ok {
-		return "", NewInvalidArgumentError(index, "string(compatible)", o.TypeName())
+		return "", NewInvalidArgumentError(index, "string", o.TypeName())
 	}
 	return v, nil
 }
@@ -223,7 +223,7 @@ func (gc *GateConverter) ToStringArrayArg(index int, arr []IObject) ([]string, e
 	for idx, elem := range arr {
 		str, ok := gc.ToString(elem)
 		if !ok {
-			return nil, NewInvalidArgumentError(index, fmt.Sprintf("%d - string array(compatible)", idx), elem.TypeName())
+			return nil, NewInvalidArgumentError(index, fmt.Sprintf("%d - string array", idx), elem.TypeName())
 		}
 		sArr = append(sArr, str)
 	}
@@ -247,7 +247,7 @@ func (gc *GateConverter) ToBytes(o IObject) ([]byte, bool) {
 func (gc *GateConverter) ToBytesArg(index int, o IObject) ([]byte, error) {
 	b, ok := gc.ToBytes(o)
 	if !ok {
-		return nil, NewInvalidArgumentError(index, "byte slice(compatible)", o.TypeName())
+		return nil, NewInvalidArgumentError(index, "bytes", o.TypeName())
 	}
 	return b, nil
 }
@@ -281,7 +281,7 @@ func (gc *GateConverter) ToFloat64(o IObject) (float64, bool) {
 func (gc *GateConverter) ToFloat64Arg(index int, o IObject) (float64, error) {
 	v, ok := gc.ToFloat64(o)
 	if !ok {
-		return 0, NewInvalidArgumentError(index, "float64(compatible)", o.TypeName())
+		return 0, NewInvalidArgumentError(index, "float64", o.TypeName())
 	}
 	return v, nil
 }
@@ -301,7 +301,7 @@ func (gc *GateConverter) ToTime(o IObject) (time.Time, bool) {
 func (gc *GateConverter) ToTimeArg(index int, o IObject) (time.Time, error) {
 	v, ok := gc.ToTime(o)
 	if !ok {
-		return time.Time{}, NewInvalidArgumentError(index, "time(compatible)", o.TypeName())
+		return time.Time{}, NewInvalidArgumentError(index, "time", o.TypeName())
 	}
 	return v, nil
 }
@@ -325,7 +325,7 @@ func (gc *GateConverter) FromBool(v bool) IObject {
 func (gc *GateConverter) ToBoolArg(index int, o IObject) (bool, error) {
 	b1, ok := o.(*Bool)
 	if !ok {
-		return false, NewInvalidArgumentError(index, "bool(compatible)", o.TypeName())
+		return false, NewInvalidArgumentError(index, "bool", o.TypeName())
 	}
 	return b1.value, nil
 }
