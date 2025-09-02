@@ -126,6 +126,8 @@ func (c *Functions) funcBodyPrepare(fd *tables.FunctionDescription) error {
 	placeHolder.SetInputTypes(fd.InputName, fd.InputTypes)
 	placeHolder.SetReturnTypes(fd.ReturnTypes)
 	if len(fd.StructName) > 0 {
+		c.structTable.Add(fd.StructName, node.Name.Name, "", "func", node)
+
 		if err = c.structTable.AssignSymbol(placeHolder, fd.StructName, nil); err != nil {
 			return err
 		}
