@@ -360,6 +360,16 @@ func (f *GateAllocator) NewFuncInternal(frame int, id CallId) IObject {
 	return newFuncInternal(f.gk, frame, id)
 }
 
+// NewFuncInternals creates a new array of function internal objects with the specified frame and call ids.
+func (f *GateAllocator) NewFuncInternals(frame int) IObject {
+	out := make([]IObject, len(callIdContainer))
+	for _, v := range callIdContainer {
+		newObj := f.NewFuncInternal(frame, v)
+		out = append(out, newObj)
+	}
+	return newArray(f.gk, frame, out)
+}
+
 // NewFuncExternal creates a new function external object with the specified frame, kind, name, and callable.
 func (f *GateAllocator) NewFuncExternal(frame int, name string, fn FuncCallable) IObject {
 	if err := f.acquireObject(); err != nil {

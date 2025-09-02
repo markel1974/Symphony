@@ -75,6 +75,40 @@ const (
 	CallIdMake
 )
 
+var callIdContainer = []CallId{
+	CallIdLen,
+	CallIdCopy,
+	CallIdAppend,
+	CallIdDelete,
+	CallIdSplice,
+	CallIdPanic,
+	CallIdRecover,
+	CallIdInt,
+	CallIdBool,
+	CallIdFloat,
+	CallIdChar,
+	CallIdString,
+	CallIdTime,
+	CallIdTypeName,
+	CallIdIsInt,
+	CallIdIsFloat,
+	CallIdIsString,
+	CallIdIsBool,
+	CallIdIsChar,
+	CallIdIsBytes,
+	CallIdIsArray,
+	CallIdIsMap,
+	CallIdIsIterable,
+	CallIdIsTime,
+	CallIdIsError,
+	CallIdIsUndefined,
+	CallIdIsFunction,
+	CallIdIsCallable,
+	CallIdPrintf,
+	CallIdSprintf,
+	CallIdMake,
+}
+
 func init() {
 	gob.Register(&FuncInternal{})
 }
