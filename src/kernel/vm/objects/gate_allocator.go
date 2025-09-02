@@ -361,13 +361,13 @@ func (f *GateAllocator) NewFuncInternal(frame int, id CallId) IObject {
 }
 
 // NewFuncInternals creates a new array of function internal objects with the specified frame and call ids.
-func (f *GateAllocator) NewFuncInternals(frame int) IObject {
+func (f *GateAllocator) NewFuncInternals(frame int) []IObject {
 	out := make([]IObject, len(callIdContainer))
-	for _, v := range callIdContainer {
+	for idx, v := range callIdContainer {
 		newObj := f.NewFuncInternal(frame, v)
-		out = append(out, newObj)
+		out[idx] = newObj
 	}
-	return newArray(f.gk, frame, out)
+	return out
 }
 
 // NewFuncImport creates a new function external object with the specified frame, kind, name, and callable.
@@ -392,14 +392,6 @@ func (f *GateAllocator) NewFuncJitFrame(frame int, name string, data []byte) IOb
 		return f.undefinedValue
 	}
 	return newFuncJit(f.gk, frame, name, data)
-}
-
-// NewBuiltin creates a new built-in function object with the specified frame, name, and index. Returns an undefined value on error.
-func (f *GateAllocator) NewBuiltin(frame int, name string, index int) IObject {
-	if err := f.acquireObject(); err != nil {
-		return f.undefinedValue
-	}
-	return newBuiltin(f.gk, frame, name, index)
 }
 
 // NewTime creates a new Time object with the specified frame and time value. Returns undefinedValue on allocation error.

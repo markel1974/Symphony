@@ -36,8 +36,6 @@ func NewOpFuncInternal(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, err
 func (op *OpFuncInternal) Execute(decoder *core.Decoder) {
 	// Operands Offset 2 (16-bit)
 	nameIndex := decoder.Read(0)
-	//TODO IMPLEMENT
-	fmt.Println("TODO IMPLEMENT OpFuncInternal", nameIndex)
-	//symbol := op.vm.Imports().Get(uint(nameIndex))
-	//op.vm.Stack().Push(symbol)
+	symbol := op.vm.Internals().Get(uint(nameIndex))
+	op.vm.Stack().Push(symbol)
 }

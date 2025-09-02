@@ -13,9 +13,5 @@ type ILoader interface {
 
 	AddPackage(id string, attr map[string]objects.IObject)
 
-	BuiltinLen() int
-
-	Builtin(idx int) *objects.Builtin
-
 	Resolve([]objects.IObject) ([]objects.IObject, error)
 }

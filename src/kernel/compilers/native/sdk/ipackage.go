@@ -11,25 +11,6 @@ type IPackage interface {
 	Get(name string) (objects.IObject, bool)
 }
 
-// IBuiltin represents an interface to define built-in functions or objects within the system.
-// Container returns a collection of IObject instances associated with the built-in entity.
-type IBuiltin interface {
-	Container() []objects.IObject
-}
-
-// BuiltinEntry is a struct designed to wrap a Builtin instance and its associated IObject for additional functionality.
-type BuiltinEntry struct {
-	builtin *objects.Builtin
-	object  objects.IObject
-}
-
-func NewBuiltinAdapter(builtin *objects.Builtin, object objects.IObject) *BuiltinEntry {
-	return &BuiltinEntry{
-		builtin: builtin,
-		object:  object,
-	}
-}
-
 // Package represents a module with a name and a collection of named objects.
 type Package struct {
 	name      string

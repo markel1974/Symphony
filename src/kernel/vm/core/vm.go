@@ -35,6 +35,7 @@ type VM struct {
 	shutdown  bool
 	err       error
 	sequencer []*Decoder
+	internals *Internals
 	imports   *Imports
 	constants *Constants
 	globals   *Globals
@@ -44,13 +45,15 @@ type VM struct {
 // New initializes and returns a new virtual machine instance configured with the provided components and settings.
 func New(gk objects.IGateKeeper, seq ISequencer, op *bytecode.Opcodes) *VM {
 	v := &VM{
-		gk:      gk,
-		op:      op,
-		ip:      resetIp,
-		imports: nil,
+		gk:        gk,
+		op:        op,
+		ip:        resetIp,
+		imports:   nil,
+		internals: nil,
 	}
 	v.constants = NewConstants(gk, v.SetError)
 	v.imports = NewImports(gk, v.SetError)
+	v.internals = NewInternals(gk, v.SetError)
 	v.globals = NewGlobals(gk, v.SetError)
 	v.stack = NewStack(gk, stackSize, v.SetError)
 	v.frames = NewFrames(gk, maxFrames, v.SetError)
@@ -81,10 +84,14 @@ func (v *VM) Setup(loader bytecode.ILoader, codes ...*bytecode.Bytecode) (map[st
 	if v.bc == nil {
 		return nil, fmt.Errorf("no bytecode provided")
 	}
-	if err := v.imports.Setup(loader, v.bc.Imports()); err != nil {
+
+	if err = v.imports.Setup(loader, v.bc.Imports()); err != nil {
 		return nil, err
 	}
-	if err := v.constants.Setup(v.bc.Constants()); err != nil {
+	if err = v.internals.Setup(); err != nil {
+		return nil, err
+	}
+	if err = v.constants.Setup(v.bc.Constants()); err != nil {
 		return nil, err
 	}
 	entryPoints, err := v.globals.Setup(v.bc.Globals(), bytecode.PreInitFunction, bytecode.InitFunction)
@@ -137,6 +144,11 @@ func (v *VM) Globals() *Globals {
 // Imports return a pointer to the Imports object associated with the VM instance.
 func (v *VM) Imports() *Imports {
 	return v.imports
+}
+
+// Internals returns a pointer to the Internals struct associated with the VM instance.
+func (v *VM) Internals() *Internals {
+	return v.internals
 }
 
 // Factory returns the IGateKeeper instance associated with the VM.

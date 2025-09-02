@@ -10,37 +10,6 @@ import (
 // CallId is a custom integer type used to represent unique identifiers for specific function calls or operations.
 type CallId int
 
-// CallIdLen represents a call identifier for the operation to get the length of an entity.
-// CallIdCopy represents a call identifier for the operation to copy data.
-// CallIdAppend represents a call identifier for the operation to append elements to a slice.
-// CallIdDelete represents a call identifier for the operation to delete an element or data.
-// CallIdSplice represents a call identifier for the operation to splice a collection.
-// CallIdPanic represents a call identifier for the operation to trigger a panic.
-// CallIdRecover represents a call identifier for the operation to recover from a panic.
-// CallIdInt represents a call identifier for the interpretation of data as an integer.
-// CallIdBool represents a call identifier for the interpretation of data as a boolean.
-// CallIdFloat represents a call identifier for the interpretation of data as a floating-point number.
-// CallIdChar represents a call identifier for the interpretation of data as a character.
-// CallIdString represents a call identifier for the interpretation of data as a string.
-// CallIdTime represents a call identifier for the interpretation of data as a time object.
-// CallIdTypeName represents a call identifier for accessing the type name of an entity.
-// CallIdIsInt represents a call identifier for checking if the entity is an integer.
-// CallIdIsFloat represents a call identifier for checking if the entity is a floating-point number.
-// CallIdIsString represents a call identifier for checking if the entity is a string.
-// CallIdIsBool represents a call identifier for checking if the entity is a boolean.
-// CallIdIsChar represents a call identifier for checking if the entity is a character.
-// CallIdIsBytes represents a call identifier for checking if the entity is a byte slice.
-// CallIdIsArray represents a call identifier for checking if the entity is an array.
-// CallIdIsMap represents a call identifier for checking if the entity is a map.
-// CallIdIsIterable represents a call identifier for checking if the entity is iterable.
-// CallIdIsTime represents a call identifier for checking if the entity is a time object.
-// CallIdIsError represents a call identifier for checking if the entity is an error.
-// CallIdIsUndefined represents a call identifier for checking if the entity is undefined.
-// CallIdIsFunction represents a call identifier for checking if the entity is a function.
-// CallIdIsCallable represents a call identifier for checking if the entity is callable.
-// CallIdPrintf represents a call identifier for invoking a printf-style formatted output.
-// CallIdSprintf represents a call identifier for generating a sprintf-style formatted string.
-// CallIdMake represents a call identifier for creating or allocating a new entity.
 const (
 	CallIdLen = CallId(iota)
 	CallIdCopy
@@ -243,6 +212,11 @@ func (h *FuncInternal) CanCall() bool {
 	return true
 }
 
+// Call executes the GateCall with the provided GateKeeper, frame, and arguments, returning an IObject or an error.
+func (h *FuncInternal) Call(frame int, args ...IObject) (IObject, error) {
+	return h.fn(frame, args)
+}
+
 // prepare initializes the function pointer `fn` in GateCall based on the provided CallId.
 // It maps CallId enums to specific methods or operations within the GateCall struct.
 // Returns an error if an undefined CallId is provided.
@@ -313,11 +287,6 @@ func (h *FuncInternal) prepare(id CallId) {
 	default:
 		h.fn = h.undefined
 	}
-}
-
-// Call executes the GateCall with the provided GateKeeper, frame, and arguments, returning an IObject or an error.
-func (h *FuncInternal) Call(frame int, args ...IObject) (IObject, error) {
-	return h.fn(frame, args)
 }
 
 // undefined is a placeholder function for handling undefined arguments.

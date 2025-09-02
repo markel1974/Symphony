@@ -1,12 +1,11 @@
 package compiler
 
 import (
-	"fmt"
 	"go/ast"
 	"go/token"
 	"strings"
 
-	tables2 "github.com/markel1974/c64emu/src/kernel/compilers/native/tables"
+	"github.com/markel1974/c64emu/src/kernel/compilers/native/tables"
 	"github.com/markel1974/c64emu/src/kernel/vm/bytecode"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
@@ -16,23 +15,23 @@ type Imports struct {
 	gk         objects.IGateKeeper
 	loader     bytecode.ILoader
 	references *Constants
-	scopes     *tables2.Scopes
+	scopes     *tables.Scopes
 	imports    map[string]bool
-	builtin    map[string]int
+	builtin    map[string]objects.CallId
 	container  []ast.Decl
 	fileSet    *token.FileSet
 	compile    func(node ast.Node) error
 }
 
 // NewImports creates and initializes a new Imports instance with provided GateKeeper, Constants, and Scopes references.
-func NewImports(gk objects.IGateKeeper, loader bytecode.ILoader, references *Constants, scopes *tables2.Scopes) *Imports {
+func NewImports(gk objects.IGateKeeper, loader bytecode.ILoader, references *Constants, scopes *tables.Scopes) *Imports {
 	i := &Imports{
 		gk:         gk,
 		loader:     loader,
 		references: references,
 		scopes:     scopes,
 		imports:    make(map[string]bool),
-		builtin:    make(map[string]int),
+		builtin:    make(map[string]objects.CallId),
 		compile:    nil,
 	}
 	return i
@@ -42,14 +41,54 @@ func NewImports(gk objects.IGateKeeper, loader bytecode.ILoader, references *Con
 func (i *Imports) Setup(fileSet *token.FileSet, compile func(node ast.Node) error) error {
 	i.fileSet = fileSet
 	i.compile = compile
-	for idx := 0; idx < i.loader.BuiltinLen(); idx++ {
-		bi := i.loader.Builtin(idx)
-		if bi == nil {
-			return fmt.Errorf("builtin %d not found", idx)
-		}
-		builtinId := i.references.Add(bi.Name(), bi)
-		i.builtin[bi.Name()] = builtinId
+
+	i.builtin = map[string]objects.CallId{
+		"len":         objects.CallIdLen,
+		"copy":        objects.CallIdCopy,
+		"append":      objects.CallIdAppend,
+		"delete":      objects.CallIdDelete,
+		"splice":      objects.CallIdSplice,
+		"panic":       objects.CallIdPanic,
+		"recover":     objects.CallIdRecover,
+		"int":         objects.CallIdInt,
+		"bool":        objects.CallIdBool,
+		"float":       objects.CallIdFloat,
+		"char":        objects.CallIdChar,
+		"string":      objects.CallIdString,
+		"time":        objects.CallIdTime,
+		"typeName":    objects.CallIdTypeName,
+		"isInt":       objects.CallIdIsInt,
+		"isFloat":     objects.CallIdIsFloat,
+		"isString":    objects.CallIdIsString,
+		"isBool":      objects.CallIdIsBool,
+		"isChar":      objects.CallIdIsChar,
+		"isBytes":     objects.CallIdIsBytes,
+		"isArray":     objects.CallIdIsArray,
+		"isMap":       objects.CallIdIsMap,
+		"isIterable":  objects.CallIdIsIterable,
+		"isTime":      objects.CallIdIsTime,
+		"isError":     objects.CallIdIsError,
+		"isUndefined": objects.CallIdIsUndefined,
+		"isFunction":  objects.CallIdIsFunction,
+		"isCallable":  objects.CallIdIsCallable,
+		"printf":      objects.CallIdPrintf,
+		"sprintf":     objects.CallIdSprintf,
+		"make":        objects.CallIdMake,
 	}
+
+	/*
+
+
+		for idx := 0; idx < i.loader.BuiltinLen(); idx++ {
+			bi := i.loader.Builtin(idx)
+			if bi == nil {
+				return fmt.Errorf("builtin %d not found", idx)
+			}
+			builtinId := i.references.Add(bi.Name(), bi)
+			i.builtin[bi.Name()] = builtinId
+		}
+
+	*/
 	return nil
 }
 
@@ -104,7 +143,7 @@ func (i *Imports) Emit(name string, selName string) bool {
 	if !ok {
 		return false
 	}
-	if _, err := i.scopes.Emit(bytecode.OpFuncImport, id); err != nil {
+	if _, err := i.scopes.Emit(bytecode.OpFuncInternal, int(id)); err != nil {
 		return false
 	}
 	return true
@@ -127,12 +166,12 @@ func (i *Imports) Attach(name string, selName string) (string, int, bool) {
 	if !ok {
 		return "", 0, false
 	}
-	return name, id, true
+	return name, int(id), true
 }
 
 // PackageFunctionAttach registers and attaches a function from a given package, returning its mangled name, index, and any error.
 func (i *Imports) packageFunctionAttach(pkgName string, fnName string) (string, int, error) {
-	mangledName := tables2.GetMangledName(pkgName, fnName)
+	mangledName := tables.GetMangledName(pkgName, fnName)
 	nameIndex, found := i.references.Get(mangledName)
 	if !found {
 		attrArray := i.gk.NewArray(objects.FrameStatic, []objects.IObject{
