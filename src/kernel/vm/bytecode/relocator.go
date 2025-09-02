@@ -37,7 +37,7 @@ func (c *Relocator) Relocate(codes []*Bytecode) (*Bytecode, error) {
 	var globals []objects.IObject
 	var sourceFiles []IFile
 	for _, bc := range codes {
-		references = append(references, bc.References()...)
+		references = append(references, bc.Imports()...)
 		constants = append(constants, bc.Constants()...)
 		globals = append(globals, bc.Globals()...)
 		sourceFiles = append(sourceFiles, bc.SourceFiles().files...)

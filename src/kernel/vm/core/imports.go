@@ -7,24 +7,24 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
-// References represents a structure for managing object references in a container, utilizing a factory and error signaling.
-type References struct {
+// Imports represents a structure for managing object imports in a container, utilizing a factory and error signaling.
+type Imports struct {
 	gk        objects.IGateKeeper
 	container []objects.IObject
 	errSignal func(err error)
 }
 
-// NewReferences creates and initializes a References instance with the provided IGateKeeper factory and error signaling function.
-func NewReferences(gk objects.IGateKeeper, errSignal func(err error)) *References {
-	return &References{
+// NewImports creates and initializes a Imports instance with the provided IGateKeeper factory and error signaling function.
+func NewImports(gk objects.IGateKeeper, errSignal func(err error)) *Imports {
+	return &Imports{
 		gk:        gk,
 		container: nil,
 		errSignal: errSignal,
 	}
 }
 
-// Setup replaces the current container with the provided list of references.
-func (g *References) Setup(loader bytecode.ILoader, references []objects.IObject) error {
+// Setup replaces the current container with the provided list of imports.
+func (g *Imports) Setup(loader bytecode.ILoader, references []objects.IObject) error {
 	var err error
 	g.container, err = loader.Resolve(references)
 	if err != nil {
@@ -34,7 +34,7 @@ func (g *References) Setup(loader bytecode.ILoader, references []objects.IObject
 }
 
 // Get retrieves the `IObject` at the specified index from the container or returns an undefined value if the index is invalid.
-func (g *References) Get(index uint) objects.IObject {
+func (g *Imports) Get(index uint) objects.IObject {
 	if index >= uint(len(g.container)) {
 		g.errSignal(fmt.Errorf("invalid reference index: %d", index))
 		return g.gk.UndefinedValue()

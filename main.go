@@ -150,7 +150,7 @@ func vmTest() {
 			log.Fatalf("compiler error: %s", err)
 		}
 		dataFile.Close()
-		bc := bytecode.NewBytecode(op, comp.Constants(), comp.References(), comp.Globals(), comp.FileSet())
+		bc := bytecode.NewBytecode(op, comp.Constants(), comp.Imports(), comp.Globals(), comp.FileSet())
 		d := bytecode.NewDisassembler(bc)
 		d.Disassemble(log.Writer())
 		machine, err := vm.NewVM(gk, op, sequencerId)

@@ -95,7 +95,7 @@ func (i *Imports) Emit(name string, selName string) bool {
 		if err != nil {
 			return false
 		}
-		if _, err = i.scopes.Emit(bytecode.OpReferences, nameIndex); err != nil {
+		if _, err = i.scopes.Emit(bytecode.OpImport, nameIndex); err != nil {
 			return false
 		}
 		return true
@@ -104,7 +104,7 @@ func (i *Imports) Emit(name string, selName string) bool {
 	if !ok {
 		return false
 	}
-	if _, err := i.scopes.Emit(bytecode.OpReferences, id); err != nil {
+	if _, err := i.scopes.Emit(bytecode.OpImport, id); err != nil {
 		return false
 	}
 	return true

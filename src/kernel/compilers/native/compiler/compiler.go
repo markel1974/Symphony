@@ -21,7 +21,7 @@ type Compiler struct {
 	loader            bytecode.ILoader
 	scopes            *tables.Scopes
 	constants         *Constants
-	references        *Constants
+	importConstants   *Constants
 	imports           *Imports
 	functions         *Functions
 	types             *Types
@@ -45,10 +45,10 @@ func New(gk objects.IGateKeeper, loader bytecode.ILoader, opcodes *bytecode.Opco
 	interfaceTable := tables.NewInterfaceTable(gk, scopes)
 	functionTable := tables.NewFunctionTable(gk, scopes, structTable, interfaceTable)
 	constants := NewConstants()
-	references := NewConstants()
-	imports := NewImports(gk, loader, references, scopes)
+	importConstants := NewConstants()
+	imports := NewImports(gk, loader, importConstants, scopes)
 	components = append(components, imports)
-	declarations := NewDeclarations(gk, references, constants, scopes, imports, structTable, functionTable, interfaceTable)
+	declarations := NewDeclarations(gk, importConstants, constants, scopes, imports, structTable, functionTable, interfaceTable)
 	components = append(components, declarations)
 	expressions := NewExpression(gk, constants, scopes, imports)
 	components = append(components, expressions)
@@ -71,7 +71,7 @@ func New(gk objects.IGateKeeper, loader bytecode.ILoader, opcodes *bytecode.Opco
 		loader:            loader,
 		scopes:            scopes,
 		constants:         constants,
-		references:        references,
+		importConstants:   importConstants,
 		structsTable:      structTable,
 		functionTable:     functionTable,
 		interfaceTable:    interfaceTable,
@@ -122,9 +122,9 @@ func (c *Compiler) Constants() []objects.IObject {
 	return c.constants.Retrieve()
 }
 
-// References retrieves a list of IObject references from the current compiler scope.
-func (c *Compiler) References() []objects.IObject {
-	return c.references.Retrieve()
+// Imports retrieves a list of IObject references from the current compiler scope.
+func (c *Compiler) Imports() []objects.IObject {
+	return c.importConstants.Retrieve()
 }
 
 // Globals retrieves and returns all global objects from the root scope and any objects tracked by references.
@@ -137,8 +137,8 @@ func (c *Compiler) Globals() []objects.IObject {
 func (c *Compiler) Print(writer io.Writer) {
 	_, _ = fmt.Fprintf(writer, "----- Constants -----")
 	c.constants.Print(writer)
-	_, _ = fmt.Fprintf(writer, "----- References -----")
-	c.references.Print(writer)
+	_, _ = fmt.Fprintf(writer, "----- Imports -----")
+	c.importConstants.Print(writer)
 	c.scopes.Print(writer)
 }
 

@@ -17,24 +17,24 @@ func init() {
 	gob.Register(&Files{})
 }
 
-// Bytecode represents a construct that encapsulates compiled code, associated constants, and object references.
+// Bytecode represents a construct that encapsulates compiled code, associated constants, and object imports.
 // It aggregates information like source files, constant pool, and referenced objects required for execution.
 type Bytecode struct {
-	opcodes    *Opcodes
-	files      *Files
-	constants  []objects.IObject
-	references []objects.IObject
-	globals    []objects.IObject
+	opcodes   *Opcodes
+	files     *Files
+	constants []objects.IObject
+	imports   []objects.IObject
+	globals   []objects.IObject
 }
 
 // NewBytecode creates and returns a new instance of Bytecode with an initialized Files object.
-func NewBytecode(op *Opcodes, constants []objects.IObject, references []objects.IObject, global []objects.IObject, f IFile) *Bytecode {
+func NewBytecode(op *Opcodes, constants []objects.IObject, imports []objects.IObject, global []objects.IObject, f IFile) *Bytecode {
 	bc := &Bytecode{
-		opcodes:    op,
-		files:      NewFiles(),
-		constants:  constants,
-		references: references,
-		globals:    global,
+		opcodes:   op,
+		files:     NewFiles(),
+		constants: constants,
+		imports:   imports,
+		globals:   global,
 	}
 	bc.AddFile(f)
 	return bc
@@ -62,12 +62,12 @@ func (b *Bytecode) Constants() []objects.IObject {
 	return b.constants
 }
 
-// References retrieves the list of IObject references stored in the Bytecode.
-func (b *Bytecode) References() []objects.IObject {
-	return b.references
+// Imports returns the collection of imported objects referenced by the Bytecode.
+func (b *Bytecode) Imports() []objects.IObject {
+	return b.imports
 }
 
-// Globals retrieves the list of IObject references stored in the Bytecode.
+// Globals retrieves the list of global objects stored in the Bytecode instance.
 func (b *Bytecode) Globals() []objects.IObject {
 	return b.globals
 }
@@ -81,7 +81,7 @@ func (b *Bytecode) Encode(w io.Writer) error {
 	if err := enc.Encode(b.constants); err != nil {
 		return err
 	}
-	if err := enc.Encode(b.references); err != nil {
+	if err := enc.Encode(b.imports); err != nil {
 		return err
 	}
 	if err := enc.Encode(b.globals); err != nil {
@@ -99,7 +99,7 @@ func (b *Bytecode) Decode(r io.Reader) error {
 	if err := dec.Decode(&b.constants); err != nil {
 		return err
 	}
-	if err := dec.Decode(&b.references); err != nil {
+	if err := dec.Decode(&b.imports); err != nil {
 		return err
 	}
 	if err := dec.Decode(&b.globals); err != nil {

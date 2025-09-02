@@ -8,7 +8,7 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
-// Disassembler represents a utility for analyzing and processing bytecode by dissecting its constants and references.
+// Disassembler represents a utility for analyzing and processing bytecode by dissecting its constants and imports.
 type Disassembler struct {
 	bc *Bytecode
 }
@@ -20,7 +20,7 @@ func NewDisassembler(b *Bytecode) *Disassembler {
 	}
 }
 
-// Disassemble parses and logs details of objects, constants, and references within the associated bytecode.
+// Disassemble parses and logs details of objects, constants, and imports within the associated bytecode.
 func (d *Disassembler) Disassemble(writer io.Writer) {
 	_, _ = fmt.Fprintf(writer, "--- Object Count ---\n")
 	_, _ = fmt.Fprintf(writer, "%d\n", d.CountObjects())
@@ -28,7 +28,7 @@ func (d *Disassembler) Disassemble(writer io.Writer) {
 	for idx, v := range d.disassembleConstants() {
 		_, _ = fmt.Fprintf(writer, "%04d => %s\n", idx, v)
 	}
-	_, _ = fmt.Fprintf(writer, "--- References ---\n")
+	_, _ = fmt.Fprintf(writer, "--- Imports ---\n")
 	for idx, v := range d.disassembleReferences() {
 		_, _ = fmt.Fprintf(writer, "%04d => %s\n", idx, v)
 	}
@@ -56,10 +56,10 @@ func (d *Disassembler) disassembleGlobal() []string {
 	return output
 }
 
-// disassembleReferences disassembles and formats the references section of the bytecode into a slice of string representations.
+// disassembleReferences disassembles and formats the imports section of the bytecode into a slice of string representations.
 func (d *Disassembler) disassembleReferences() []string {
 	var output []string
-	for cIdx, constant := range d.bc.References() {
+	for cIdx, constant := range d.bc.Imports() {
 		output = append(output, d.disassembleObject(cIdx, constant)...)
 	}
 	return output
@@ -103,13 +103,13 @@ func (d *Disassembler) disassembleInstructions(bc []byte, posOffset int) []strin
 	return out
 }
 
-// CountObjects computes the total number of objects in the Bytecode's constants and references, including nested objects.
+// CountObjects computes the total number of objects in the Bytecode's constants and imports, including nested objects.
 func (d *Disassembler) CountObjects() int {
 	n := 0
 	for _, c := range d.bc.Constants() {
 		n += d.countObjects(c)
 	}
-	for _, c := range d.bc.References() {
+	for _, c := range d.bc.Imports() {
 		n += d.countObjects(c)
 	}
 	return n

@@ -18,13 +18,13 @@ type IVMStackOnly interface {
 	SetError(err error)
 }
 
-// IVMReadOnly is an interface providing read-only access to VM components like constants, globals, references, and frame.
+// IVMReadOnly is an interface providing read-only access to VM components like constants, globals, imports, and frame.
 type IVMReadOnly interface {
 	IVM
 	IVMStackOnly
 	Constants() *Constants
 	Globals() *Globals
-	References() *References
+	Imports() *Imports
 	Frame() *Frame
 }
 

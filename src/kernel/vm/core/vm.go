@@ -25,32 +25,32 @@ const (
 
 // VM represents a virtual machine that executes bytecode instructions, handles stack, and manages execution frames.
 type VM struct {
-	gk         objects.IGateKeeper
-	op         *bytecode.Opcodes
-	bc         *bytecode.Bytecode
-	stack      *Stack
-	frames     *Frames
-	currFrame  *Frame
-	ip         int
-	shutdown   bool
-	err        error
-	sequencer  []*Decoder
-	references *References
-	constants  *Constants
-	globals    *Globals
-	seq        ISequencer
+	gk        objects.IGateKeeper
+	op        *bytecode.Opcodes
+	bc        *bytecode.Bytecode
+	stack     *Stack
+	frames    *Frames
+	currFrame *Frame
+	ip        int
+	shutdown  bool
+	err       error
+	sequencer []*Decoder
+	imports   *Imports
+	constants *Constants
+	globals   *Globals
+	seq       ISequencer
 }
 
 // New initializes and returns a new virtual machine instance configured with the provided components and settings.
 func New(gk objects.IGateKeeper, seq ISequencer, op *bytecode.Opcodes) *VM {
 	v := &VM{
-		gk:         gk,
-		op:         op,
-		ip:         resetIp,
-		references: nil,
+		gk:      gk,
+		op:      op,
+		ip:      resetIp,
+		imports: nil,
 	}
 	v.constants = NewConstants(gk, v.SetError)
-	v.references = NewReferences(gk, v.SetError)
+	v.imports = NewImports(gk, v.SetError)
 	v.globals = NewGlobals(gk, v.SetError)
 	v.stack = NewStack(gk, stackSize, v.SetError)
 	v.frames = NewFrames(gk, maxFrames, v.SetError)
@@ -81,7 +81,7 @@ func (v *VM) Setup(loader bytecode.ILoader, codes ...*bytecode.Bytecode) (map[st
 	if v.bc == nil {
 		return nil, fmt.Errorf("no bytecode provided")
 	}
-	if err := v.references.Setup(loader, v.bc.References()); err != nil {
+	if err := v.imports.Setup(loader, v.bc.Imports()); err != nil {
 		return nil, err
 	}
 	if err := v.constants.Setup(v.bc.Constants()); err != nil {
@@ -134,9 +134,9 @@ func (v *VM) Globals() *Globals {
 	return v.globals
 }
 
-// References return a pointer to the References object associated with the VM instance.
-func (v *VM) References() *References {
-	return v.references
+// Imports return a pointer to the Imports object associated with the VM instance.
+func (v *VM) Imports() *Imports {
+	return v.imports
 }
 
 // Factory returns the IGateKeeper instance associated with the VM.

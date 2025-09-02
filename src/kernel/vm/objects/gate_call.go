@@ -271,7 +271,7 @@ func (h *GateCall) panic(arg IObject) (IObject, error) {
 }
 
 // panic raises an error with the provided message, halting execution if the argument count is exactly one.
-func (h *GateCall) recover( (IObject, error) {
+func (h *GateCall) recover() (IObject, error) {
 	return h.gk.UndefinedValue(), nil
 }
 
