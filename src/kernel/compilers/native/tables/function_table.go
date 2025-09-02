@@ -11,11 +11,17 @@ const (
 	UndefinedSymbol = "_"
 )
 
+type FunctionInput struct {
+	Name string
+	Type string
+}
+
 // FunctionDescription represents the structure to describe a Go function, its metadata, and related declarations.
 type FunctionDescription struct {
 	Name            string
 	ReturnTypes     []string
-	InputParams     []string
+	InputName       []string
+	InputTypes      []string
 	StructName      string
 	StructReceivers []string
 	FuncDecl        *ast.FuncDecl

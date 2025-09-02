@@ -379,7 +379,6 @@ func (c *Declarations) CompositeLit(node *ast.CompositeLit) error {
 	switch node.Type.(type) {
 	case *ast.Ident:
 		// struct literal (es. MyStruct{...})
-		// struct literal (es. MyStruct{...})
 		t, ok := node.Type.(*ast.Ident)
 		if !ok {
 			return tables.NewCompilerError(c.fileSet, node, "unsupported composite literal type: %T", node)

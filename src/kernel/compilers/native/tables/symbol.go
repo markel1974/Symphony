@@ -12,6 +12,8 @@ type Symbol struct {
 	interfaceName string
 	structName    string
 	structFields  []string
+	inputType     []string
+	inputName     []string
 	returnTypes   []string
 	object        objects.IObject
 }
@@ -103,6 +105,11 @@ func (s *Symbol) IsInterface() bool {
 // SetReturnTypes assigns a slice of type names to the Symbol's types field. Use this to define the types associated with a Symbol.
 func (s *Symbol) SetReturnTypes(t []string) {
 	s.returnTypes = t
+}
+
+func (s *Symbol) SetInputTypes(name []string, kind []string) {
+	s.inputName = name
+	s.inputType = kind
 }
 
 // ReturnTypes returns the list of type names associated with the Symbol.

@@ -90,8 +90,13 @@ func (c *Functions) funcBodyPrepare(fd *tables.FunctionDescription) error {
 		return err
 	}
 	for _, p := range node.Type.Params.List {
+		kind := tables.GetIdent(p)
+		if kind == nil {
+			return tables.NewCompilerError(c.fileSet, p, "unsupported parameter type: %T", p.Type)
+		}
 		for _, name := range p.Names {
-			fd.InputParams = append(fd.InputParams, name.Name)
+			fd.InputName = append(fd.InputName, name.Name)
+			fd.InputTypes = append(fd.InputTypes, kind.Name)
 		}
 	}
 	if node.Recv != nil && len(node.Recv.List) > 0 {
@@ -118,6 +123,7 @@ func (c *Functions) funcBodyPrepare(fd *tables.FunctionDescription) error {
 	if err != nil {
 		return err
 	}
+	placeHolder.SetInputTypes(fd.InputName, fd.InputTypes)
 	placeHolder.SetReturnTypes(fd.ReturnTypes)
 	if len(fd.StructName) > 0 {
 		if err = c.structTable.AssignSymbol(placeHolder, fd.StructName, nil); err != nil {
@@ -250,7 +256,7 @@ func (c *Functions) CallExpr(node *ast.CallExpr) error {
 		}
 
 		if receiverSymbol.StructName() == "error" {
-			if err := c.handleBuiltin(receiverSymbol, fun.Sel.Name, node.Args); err != nil {
+			if err := c.handleInternalInterface(receiverSymbol, fun.Sel.Name, node.Args); err != nil {
 				return err
 			}
 			return nil
@@ -423,7 +429,7 @@ func (c *Functions) FuncLit(node *ast.FuncLit) error {
 	return nil
 }
 
-func (c *Functions) handleBuiltin(receiverSymbol *tables.Symbol, methodName string, args []ast.Expr) error {
+func (c *Functions) handleInternalInterface(receiverSymbol *tables.Symbol, methodName string, args []ast.Expr) error {
 	if err := c.scopes.EmitSymbolGet(receiverSymbol); err != nil {
 		return err
 	}
