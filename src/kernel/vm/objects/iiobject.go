@@ -57,6 +57,7 @@ type IGateAllocator interface {
 	Reset()
 	FalseValue() IObject
 	TrueValue() IObject
+	Boolean(v bool) IObject
 	UndefinedValue() IObject
 	ReleaseObject(IObject)
 	ReleaseObjects([]IObject)
@@ -143,9 +144,15 @@ type IGateAdapter interface {
 	IndexAssign(frame int, dst IObject, src IObject, selectors []IObject) error
 }
 
+// IGateCall defines an interface for invoking a callable object with the specified arguments.
+type IGateCall interface {
+	Call(id int, frame int, args ...IObject) (ret IObject, err error)
+}
+
 // IGateKeeper combines IGateAllocator, IGateConverter, and IGateAdapter to manage object creation, conversion, and adaptation.
 type IGateKeeper interface {
 	IGateAllocator
 	IGateConverter
 	IGateAdapter
+	IGateCall
 }

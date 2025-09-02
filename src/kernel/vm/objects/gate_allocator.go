@@ -102,6 +102,14 @@ func (f *GateAllocator) TrueValue() IObject {
 	return f.trueValue
 }
 
+// Boolean returns `trueValue` if the input `v` is true, otherwise returns `falseValue`.
+func (f *GateAllocator) Boolean(v bool) IObject {
+	if v {
+		return f.trueValue
+	}
+	return f.falseValue
+}
+
 // UndefinedValue returns the predefined "undefined" value for the GateAllocator instance.
 func (f *GateAllocator) UndefinedValue() IObject {
 	return f.undefinedValue

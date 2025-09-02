@@ -16,6 +16,7 @@ type GateKeeper struct {
 	IGateAllocator
 	IGateConverter
 	IGateAdapter
+	IGateCall
 }
 
 func (f *GateKeeper) FromMap(frame int, v map[string]interface{}) map[string]IObject {
@@ -33,6 +34,7 @@ func NewGateKeeper(maxAllocations int64) IGateKeeper {
 	f.IGateAllocator = NewGateAllocator(f, maxAllocations)
 	f.IGateConverter = NewGateConverter(f)
 	f.IGateAdapter = NewGateAdapter(f)
+	f.IGateCall = NewGateCall(f)
 	return f
 }
 
