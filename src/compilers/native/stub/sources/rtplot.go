@@ -102,8 +102,10 @@ func (plt *RtPlot) onPaint() {
 	fmt.Println("Painting:", minPlot, maxPlot)
 }
 
-func main() {
+func main() (int, int, int, map[string]interface{}) {
 	plt := NewRtPlotData(0)
 	plt.onPaint()
 	plt.onTimer(0, 0)
+	z := map[string]interface{}{"1000": "valid", "2000": "valid", "3000": "valid"}
+	return 3, 2, 1, z
 }

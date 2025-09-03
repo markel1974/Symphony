@@ -19,6 +19,8 @@ func GetIdent(expr *ast.Field) *ast.Ident {
 	return nil
 }
 
+// GetIdentName extracts and returns the name of the identifier from a given ast.Expr.
+// It supports *ast.Ident, *ast.StarExpr, and *ast.SelectorExpr types.
 func GetIdentName(expr ast.Expr) string {
 	switch t := expr.(type) {
 	case *ast.Ident:
@@ -50,24 +52,30 @@ func GetReceivers(result *ast.FieldList) ([]string, error) {
 		case *ast.Ident:
 			ret = append(ret, v.Name)
 		case *ast.StarExpr:
-			if ident, ok := v.X.(*ast.Ident); ok {
-				ret = append(ret, ident.Name)
-			} else {
-				// Questo caso gestirebbe tipi più complessi come '*[]Home'
-				return nil, fmt.Errorf("unsupported pointer return type: *%T", v.X)
-			}
+			name := GetIdentName(v.X)
+			ret = append(ret, name)
+			//if ident, ok := v.X.(*ast.Ident); ok {
+			//	ret = append(ret, ident.Name)
+			//} else {
+			// This case would handle more complex types like '*[]Home'
+			//	return nil, fmt.Errorf("unsupported pointer return type: *%T", v.X)
+			//}
 		case *ast.FuncType:
-			// Se il tipo di ritorno è una funzione, aggiungiamo un placeholder
-			// generico. Potrebbe essere raffinato per includere i tipi dei parametri
-			// se il tuo symbol system lo richiede.
 			ret = append(ret, "func")
 		case *ast.InterfaceType:
-			// Gestisce il caso di `interface{}` come tipo di ritorno.
+			// Handles the case of `interface{}` as return type
 			if len(v.Methods.List) == 0 {
 				ret = append(ret, "interface{}")
 			} else {
 				return nil, fmt.Errorf("unsupported non-empty interface return type")
 			}
+		case *ast.ArrayType:
+			name := GetIdentName(v.Elt)
+			ret = append(ret, "[]"+name)
+		case *ast.MapType:
+			key := GetIdentName(v.Key)
+			value := GetIdentName(v.Value)
+			ret = append(ret, "map["+key+"]"+value)
 		default:
 			return nil, fmt.Errorf("unsupported return type %T", v)
 		}

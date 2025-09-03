@@ -41,7 +41,9 @@ func VMTest(sequencerId string, baseDir string, prefix string, debug bool) error
 			machine.Print(log.Writer())
 			return fmt.Errorf("vm setup error: %s", err)
 		}
-		if err = machine.Run(entryPoints["main"], args...); err != nil {
+		machine.EnableRetValues(true)
+		rv, err := machine.Run(entryPoints["main"], args...)
+		if err != nil {
 			if debug {
 				machine.Print(log.Writer())
 			}
@@ -50,7 +52,8 @@ func VMTest(sequencerId string, baseDir string, prefix string, debug bool) error
 		if debug {
 			machine.Print(log.Writer())
 		}
-		fmt.Println("RETURN VALUE", machine.GetReturnValue(0))
+		//machine.GetReturnValue(0)
+		fmt.Println("RETURN VALUEs", rv)
 	}
 	return nil
 }

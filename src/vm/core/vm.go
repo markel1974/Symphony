@@ -40,6 +40,7 @@ type VM struct {
 	constants *Constants
 	globals   *Globals
 	seq       ISequencer
+	retValues bool
 }
 
 // New initializes and returns a new virtual machine instance configured with the provided components and settings.
@@ -50,6 +51,7 @@ func New(gk objects.IGateKeeper, seq ISequencer, op *bytecode.Opcodes) *VM {
 		ip:        resetIp,
 		imports:   nil,
 		internals: nil,
+		retValues: false,
 	}
 	v.constants = NewConstants(gk, v.SetError)
 	v.imports = NewImports(gk, v.SetError)
@@ -99,12 +101,12 @@ func (v *VM) Setup(loader bytecode.ILoader, codes ...*bytecode.Bytecode) (map[st
 		return nil, err
 	}
 	for _, fn := range v.globals.PreInitFuncs() {
-		if err = v.exec(fn); err != nil {
+		if _, err = v.exec(fn, false); err != nil {
 			return nil, err
 		}
 	}
 	for _, fn := range v.globals.InitFuncs() {
-		if err = v.exec(fn); err != nil {
+		if _, err = v.exec(fn, false); err != nil {
 			return nil, err
 		}
 	}
@@ -116,14 +118,19 @@ func (v *VM) Version() string {
 	return Version
 }
 
+// EnableRetValues sets the flag to enable or disable returning multiple values from the virtual machine's execution.
+func (v *VM) EnableRetValues(retValues bool) {
+	v.retValues = retValues
+}
+
 // Run executes the main function identified by mainId with the provided arguments in the virtual machine context.
-func (v *VM) Run(mainId uint, args ...interface{}) error {
+func (v *VM) Run(mainId uint, args ...interface{}) ([]interface{}, error) {
 	obj := v.globals.Get(mainId)
 	mainFn, ok := obj.(*objects.FuncCompiled)
 	if !ok {
-		return fmt.Errorf("entry point not found: %d", mainId)
+		return nil, fmt.Errorf("entry point not found: %d", mainId)
 	}
-	return v.exec(mainFn, args...)
+	return v.exec(mainFn, v.retValues, args...)
 }
 
 // Stack returns the current stack instance associated with the VM.
@@ -337,7 +344,7 @@ func (v *VM) prepare() {
 }
 
 // Run executes the virtual machine's bytecode, managing the stack, frames, and instruction pointer state.
-func (v *VM) exec(mainFn *objects.FuncCompiled, args ...interface{}) error {
+func (v *VM) exec(mainFn *objects.FuncCompiled, ret bool, args ...interface{}) ([]interface{}, error) {
 	v.prepare()
 	defer func() {
 		// Stack cleanup is performed on the entire used stack (from 0 to final pointer).
@@ -347,7 +354,7 @@ func (v *VM) exec(mainFn *objects.FuncCompiled, args ...interface{}) error {
 	v.currFrame.Bind(v.ip, mainFn, 0)
 	v.stack.SetStackPointer(v.currFrame.NumLocals())
 	if v.currFrame.NumParameters() != len(args) {
-		return fmt.Errorf("[%s] wrong number of arguments provided: want=%d, got=%d", mainFn.Name(), v.currFrame.NumParameters(), len(args))
+		return nil, fmt.Errorf("[%s] wrong number of arguments provided: want=%d, got=%d", mainFn.Name(), v.currFrame.NumParameters(), len(args))
 	}
 	for idx, arg := range args {
 		argObj := v.gk.FromInterface(objects.FrameStatic, arg)
@@ -363,9 +370,12 @@ func (v *VM) exec(mainFn *objects.FuncCompiled, args ...interface{}) error {
 			filePos, _ = v.bc.Position(frame.SourcePos(frame.SavedIP() - 1))
 			err = fmt.Errorf("%w at %s", err, filePos)
 		}
-		return err
+		return nil, err
 	}
-	return nil
+	if ret {
+		return v.GetReturnValues(), nil
+	}
+	return nil, nil
 }
 
 // loop executes the main instruction loop for the virtual machine, updating the instruction pointer and processing opcodes.
