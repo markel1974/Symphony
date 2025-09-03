@@ -116,21 +116,22 @@ func (f *GateAllocator) UndefinedValue() IObject {
 }
 
 func (f *GateAllocator) SetPointer(ptr *ObjectPointer, value IObject) {
+	//TODO BETTER IMPLEMENTATION
 	if v, release := ptr.release(); release {
-		f.ReleaseObject(v)
+		f.ReleaseObject(v.Frame(), v)
 	}
 	ptr.acquire(&value)
 }
 
 // ReleaseObjects releases a slice of IObject instances back to their respective pools to free resources.
-func (f *GateAllocator) ReleaseObjects(objects []IObject) {
+func (f *GateAllocator) ReleaseObjects(frame int, objects []IObject) {
 	for _, o := range objects {
-		f.ReleaseObject(o)
+		f.ReleaseObject(frame, o)
 	}
 }
 
 // ReleaseObject releases an object back to the relevant pool, resetting its state and freeing associated resources.
-func (f *GateAllocator) ReleaseObject(obj IObject) {
+func (f *GateAllocator) ReleaseObject(frame int, obj IObject) {
 	if obj == nil || obj.Frame() == FrameStatic || obj.RefCount() > 0 {
 		return
 	}
@@ -151,19 +152,19 @@ func (f *GateAllocator) ReleaseObject(obj IObject) {
 		f.poolBytes.Put(o)
 	case *ObjectPointer:
 		if valuePtr, release := o.release(); release {
-			f.ReleaseObject(valuePtr)
+			f.ReleaseObject(frame, valuePtr)
 		}
 		f.poolObjectPointer.Put(o)
 	case *Error:
 		o.value = nil
 		f.poolError.Put(o)
 	case *Array:
-		f.ReleaseObjects(o.values)
+		f.ReleaseObjects(frame, o.values)
 		o.values = o.values[:0]
 		f.poolArray.Put(o)
 	case *Map:
 		for _, v := range o.values {
-			f.ReleaseObject(v)
+			f.ReleaseObject(frame, v)
 		}
 		for k := range o.values {
 			delete(o.values, k)
@@ -171,7 +172,7 @@ func (f *GateAllocator) ReleaseObject(obj IObject) {
 		f.poolMap.Put(o)
 	case *Struct:
 		for _, v := range o.values {
-			f.ReleaseObject(v)
+			f.ReleaseObject(frame, v)
 		}
 		for k := range o.values {
 			delete(o.values, k)

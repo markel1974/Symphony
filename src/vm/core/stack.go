@@ -212,7 +212,7 @@ func (v *Stack) CopyOffset(start int, count int) {
 // ReleaseObjects releases objects from the stack within the range [start:end), excluding those in the preserve list.
 // Objects are managed by a gatekeeper (gk) for proper disposal. It handles optimized cases for single-item preservation.
 // The function ensures safe operations with bounds checks and no operation for invalid ranges.
-func (v *Stack) ReleaseObjects(start int, end int, preserve []objects.IObject) {
+func (v *Stack) ReleaseObjects(frame int, start int, end int, preserve []objects.IObject) {
 	if start >= end {
 		return
 	}
@@ -221,7 +221,7 @@ func (v *Stack) ReleaseObjects(start int, end int, preserve []objects.IObject) {
 	}
 	switch len(preserve) {
 	case 0:
-		v.gk.ReleaseObjects(v.stack[start:end])
+		v.gk.ReleaseObjects(frame, v.stack[start:end])
 		return
 	case 1:
 		// Optimized case: single value, avoiding map usage.
@@ -233,7 +233,7 @@ func (v *Stack) ReleaseObjects(start int, end int, preserve []objects.IObject) {
 			}
 		}
 		if len(batchList) > 0 {
-			v.gk.ReleaseObjects(batchList)
+			v.gk.ReleaseObjects(frame, batchList)
 		}
 		return
 	default:
@@ -248,7 +248,7 @@ func (v *Stack) ReleaseObjects(start int, end int, preserve []objects.IObject) {
 			}
 		}
 		if len(batchList) > 0 {
-			v.gk.ReleaseObjects(batchList)
+			v.gk.ReleaseObjects(frame, batchList)
 		}
 		return
 	}

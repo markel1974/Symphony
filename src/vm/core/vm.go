@@ -229,6 +229,7 @@ func (v *VM) Return(returnValues []objects.IObject) {
 	shutdown := false
 	prevIp := v.currFrame.SavedIP()
 	leavingFrameBasePointer := v.currFrame.BasePointer()
+	leavingFrameId := v.currFrame.Id()
 
 	// Function arguments belong to the caller and should not be released when the function ends.
 	numArgs := v.currFrame.NumParameters()
@@ -252,7 +253,7 @@ func (v *VM) Return(returnValues []objects.IObject) {
 		}
 	}
 
-	v.stack.ReleaseObjects(leavingFrameBasePointer, v.stack.StackPointer(), objectsToPreserve)
+	v.stack.ReleaseObjects(leavingFrameId, leavingFrameBasePointer, v.stack.StackPointer(), objectsToPreserve)
 
 	if v.frames.Index() > 1 {
 		v.frames.Previous()
@@ -340,7 +341,7 @@ func (v *VM) exec(mainFn *objects.FuncCompiled, args ...interface{}) error {
 	v.prepare()
 	defer func() {
 		// Stack cleanup is performed on the entire used stack (from 0 to final pointer).
-		v.stack.ReleaseObjects(0, v.stack.StackPointer(), nil)
+		v.stack.ReleaseObjects(v.currFrame.Id(), 0, v.stack.StackPointer(), nil)
 	}()
 	v.currFrame = v.frames.Head()
 	v.currFrame.Bind(v.ip, mainFn, 0)
