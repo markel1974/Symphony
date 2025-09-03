@@ -10,12 +10,8 @@ func main() {
 	c := 5
 
 	// Aritmetica e precedenza
-	result1 := a + b*c // 110
-	//TODO *ast.ParenExpr
-	//result2 := (a + b) * c // 150
-	tmp := a + b
-	result2 := tmp * c
-
+	result1 := a + b*c     // 110
+	result2 := (a + b) * c // 150
 	// Espressioni booleane
 	ok := true
 	nok := false

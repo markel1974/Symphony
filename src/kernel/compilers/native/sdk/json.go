@@ -41,7 +41,7 @@ func (j *Json) Get(name string) (objects.IObject, bool) {
 }
 
 // Unmarshal parses a JSON-encoded string or byte slice into a Map object and returns it as IObject.
-func (j *Json) unmarshal(gk objects.IGateKeeper, frame int, args ...objects.IObject) (ret objects.IObject, err error) {
+func (j *Json) unmarshal(gk objects.IGateKeeper, frame int, args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, objects.ErrInvalidArgumentsNumber
 	}
@@ -56,7 +56,7 @@ func (j *Json) unmarshal(gk objects.IGateKeeper, frame int, args ...objects.IObj
 		return nil, objects.NewInvalidArgumentError(0, "bytes/string", args[0].TypeName())
 	}
 	d := make(map[string]interface{})
-	if err = json.Unmarshal(data, &d); err != nil {
+	if err := json.Unmarshal(data, &d); err != nil {
 		return gk.NewError(frame, err.Error()), nil
 	}
 	result := gk.NewMap(frame, gk.FromMap(frame, d))
@@ -64,7 +64,7 @@ func (j *Json) unmarshal(gk objects.IGateKeeper, frame int, args ...objects.IObj
 }
 
 // Marshal serializes a single IObject into a JSON-encoded byte slice and returns it as a Bytes object.
-func (j *Json) marshal(gk objects.IGateKeeper, frame int, args ...objects.IObject) (ret objects.IObject, err error) {
+func (j *Json) marshal(gk objects.IGateKeeper, frame int, args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, objects.ErrInvalidArgumentsNumber
 	}
@@ -76,7 +76,7 @@ func (j *Json) marshal(gk objects.IGateKeeper, frame int, args ...objects.IObjec
 }
 
 // Indent takes a JSON object (bytes or string), a prefix, and an indent string, and returns the indented JSON.
-func (j *Json) indent(gk objects.IGateKeeper, frame int, args ...objects.IObject) (ret objects.IObject, err error) {
+func (j *Json) indent(gk objects.IGateKeeper, frame int, args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 3 {
 		return nil, objects.ErrInvalidArgumentsNumber
 	}
@@ -112,7 +112,7 @@ func (j *Json) indent(gk objects.IGateKeeper, frame int, args ...objects.IObject
 // Accepts one argument of type `*objects.Bytes` or `*objects.String`.
 // Returns a new `*objects.Bytes` containing the escaped output or an error if an invalid argument type is provided.
 // Errors if the number of arguments is not exactly one.
-func (j *Json) htmlEscape(gk objects.IGateKeeper, frame int, args ...objects.IObject) (ret objects.IObject, err error) {
+func (j *Json) htmlEscape(gk objects.IGateKeeper, frame int, args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, objects.ErrInvalidArgumentsNumber
 	}

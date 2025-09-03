@@ -10,16 +10,12 @@ import (
 
 	"github.com/markel1974/c64emu/src"
 	"github.com/markel1974/c64emu/src/config"
-	"github.com/markel1974/c64emu/src/kernel/compilers"
 	"github.com/markel1974/c64emu/src/kernel/compilers/native/stub"
 	"github.com/markel1974/c64emu/src/kernel/component"
 	"github.com/markel1974/c64emu/src/kernel/frontend"
 	"github.com/markel1974/c64emu/src/kernel/frontend/authenticator"
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
 	"github.com/markel1974/c64emu/src/kernel/process"
-	"github.com/markel1974/c64emu/src/kernel/vm"
-	"github.com/markel1974/c64emu/src/kernel/vm/bytecode"
-	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 	"github.com/markel1974/c64emu/src/renderers/audio"
 	"github.com/markel1974/c64emu/src/renderers/graphics"
 	"github.com/markel1974/c64emu/src/version"
@@ -135,39 +131,8 @@ func BuildDrives(d string) ([]*config.Drive, error) {
 func vmTest() {
 	const sequencerId = "native"
 	const baseDir = "../src/kernel/compilers/native/stub/tests"
-	gk := objects.NewGateKeeper(0)
-	op := bytecode.NewOpcodes()
-	for _, fileName := range stub.Prepare(baseDir, "test_") {
-		fmt.Println("------------------", fileName, "------------------")
-		comp, loader, err := compilers.NewCompiler(gk, op, sequencerId)
-		if err != nil {
-			log.Fatalf("compiler error: %s", err)
-		}
-		var args []interface{} = nil
-		//args := []interface{}{1, 2}
-		dataFile, _ := os.Open(baseDir + string(os.PathSeparator) + fileName)
-		if err = comp.Compile(fileName, dataFile); err != nil {
-			log.Fatalf("compiler error: %s", err)
-		}
-		dataFile.Close()
-		bc := bytecode.NewBytecode(op, comp.Constants(), comp.Imports(), comp.Globals(), comp.FileSet())
-		d := bytecode.NewDisassembler(bc)
-		d.Disassemble(log.Writer())
-		machine, err := vm.NewVM(gk, op, sequencerId)
-		if err != nil {
-			log.Fatalf("VM error: %s", err)
-		}
-		entryPoints, err := machine.Setup(loader, bc)
-		if err != nil {
-			machine.Print(log.Writer())
-			log.Fatalf("VM setup error: %s", err)
-		}
-		if err = machine.Run(entryPoints["main"], args...); err != nil {
-			machine.Print(log.Writer())
-			log.Fatalf("VM runtime error: %s", err)
-		}
-		machine.Print(log.Writer())
-		log.Println("RETURN VALUE", machine.GetReturnValue(0))
+	if err := stub.VMTest(sequencerId, baseDir, "test_", false); err != nil {
+		log.Fatal(err)
 	}
 	os.Exit(0)
 }

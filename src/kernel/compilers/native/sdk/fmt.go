@@ -42,7 +42,7 @@ func (f *Fmt) Get(name string) (objects.IObject, bool) {
 }
 
 // Print writes the string representations of the provided arguments to the standard output without appending a newline.
-func (f *Fmt) print(gk objects.IGateKeeper, _ int, args ...objects.IObject) (ret objects.IObject, err error) {
+func (f *Fmt) print(gk objects.IGateKeeper, _ int, args ...objects.IObject) (objects.IObject, error) {
 	var printArgs []interface{}
 	for _, arg := range args {
 		printArgs = append(printArgs, gk.ToInterface(arg))
@@ -54,7 +54,7 @@ func (f *Fmt) print(gk objects.IGateKeeper, _ int, args ...objects.IObject) (ret
 // Printf formats and outputs a string using the provided format and arguments, implementing similar behavior to fmt.Printf.
 // The first argument must be a format string, with additional arguments used to populate the format specifiers.
 // Returns an error if the number of arguments is insufficient or if the format argument is incompatible.
-func (f *Fmt) printf(gk objects.IGateKeeper, _ int, args ...objects.IObject) (ret objects.IObject, err error) {
+func (f *Fmt) printf(gk objects.IGateKeeper, _ int, args ...objects.IObject) (objects.IObject, error) {
 	argsLen := len(args)
 	if argsLen == 0 {
 		return nil, objects.ErrInvalidArgumentsNumber
@@ -76,7 +76,7 @@ func (f *Fmt) printf(gk objects.IGateKeeper, _ int, args ...objects.IObject) (re
 }
 
 // Println writes the given arguments to the standard output with a newline and returns nil and no error.
-func (f *Fmt) println(gk objects.IGateKeeper, _ int, args ...objects.IObject) (ret objects.IObject, err error) {
+func (f *Fmt) println(gk objects.IGateKeeper, _ int, args ...objects.IObject) (objects.IObject, error) {
 	var printArgs []interface{}
 	for _, arg := range args {
 		printArgs = append(printArgs, gk.ToInterface(arg))
@@ -86,7 +86,7 @@ func (f *Fmt) println(gk objects.IGateKeeper, _ int, args ...objects.IObject) (r
 }
 
 // Sprint formats and concatenates the provided arguments into a single string and returns it as a new AsString object.
-func (f *Fmt) sprint(gk objects.IGateKeeper, frame int, args ...objects.IObject) (ret objects.IObject, err error) {
+func (f *Fmt) sprint(gk objects.IGateKeeper, frame int, args ...objects.IObject) (objects.IObject, error) {
 	if len(args) == 0 {
 		return nil, objects.ErrInvalidArgumentsNumber
 	}
@@ -98,7 +98,7 @@ func (f *Fmt) sprint(gk objects.IGateKeeper, frame int, args ...objects.IObject)
 }
 
 // Sprintf formats a string using a format specifier and optional arguments, returning it as a new string object.
-func (f *Fmt) sprintf(gk objects.IGateKeeper, frame int, args ...objects.IObject) (ret objects.IObject, err error) {
+func (f *Fmt) sprintf(gk objects.IGateKeeper, frame int, args ...objects.IObject) (objects.IObject, error) {
 	argsLen := len(args)
 	if argsLen == 0 {
 		return nil, objects.ErrInvalidArgumentsNumber
@@ -118,7 +118,7 @@ func (f *Fmt) sprintf(gk objects.IGateKeeper, frame int, args ...objects.IObject
 }
 
 // Errorf formats an error message using a format string and arguments, returning an IObject error representation.
-func (f *Fmt) errorf(gk objects.IGateKeeper, frame int, args ...objects.IObject) (ret objects.IObject, err error) {
+func (f *Fmt) errorf(gk objects.IGateKeeper, frame int, args ...objects.IObject) (objects.IObject, error) {
 	argsLen := len(args)
 	if argsLen == 0 {
 		return nil, objects.ErrInvalidArgumentsNumber
