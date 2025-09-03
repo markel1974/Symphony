@@ -127,6 +127,11 @@ func (f *GateAllocator) ReleaseObject(obj IObject) {
 	if obj == nil || obj.Frame() == FrameStatic {
 		return
 	}
+	f.releaseObject(obj)
+}
+
+// releaseObject reclaims an object and places it back in the corresponding pool based on its type for reuse.
+func (f *GateAllocator) releaseObject(obj IObject) {
 	obj.SetStatic()
 	switch o := obj.(type) {
 	case *Bool:
@@ -143,7 +148,10 @@ func (f *GateAllocator) ReleaseObject(obj IObject) {
 		o.values = nil
 		f.poolBytes.Put(o)
 	case *ObjectPointer:
-		o.value = nil
+		if valuePtr, valueFrame := o.release(); valueFrame != FrameStatic {
+			f.releaseObject(valuePtr)
+		}
+		o.valuePtr = nil
 		f.poolObjectPointer.Put(o)
 	case *Error:
 		o.value = nil
@@ -281,7 +289,8 @@ func (f *GateAllocator) NewError(frame int, e string) IObject {
 func (f *GateAllocator) NewObjectPointer(frame int, v *IObject) IObject {
 	obj := f.poolObjectPointer.Get().(*ObjectPointer)
 	obj.frame = frame
-	obj.value = v
+	obj.acquire(v)
+	//obj.valuePtr = v
 	return obj
 }
 
