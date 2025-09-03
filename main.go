@@ -9,8 +9,8 @@ import (
 	"strings"
 
 	"github.com/markel1974/c64emu/src"
+	"github.com/markel1974/c64emu/src/compilers/native/stub"
 	"github.com/markel1974/c64emu/src/config"
-	"github.com/markel1974/c64emu/src/kernel/compilers/native/stub"
 	"github.com/markel1974/c64emu/src/kernel/component"
 	"github.com/markel1974/c64emu/src/kernel/frontend"
 	"github.com/markel1974/c64emu/src/kernel/frontend/authenticator"
@@ -130,8 +130,11 @@ func BuildDrives(d string) ([]*config.Drive, error) {
 
 func vmTest() {
 	const sequencerId = "native"
-	const baseDir = "../src/kernel/compilers/native/stub/tests"
-	if err := stub.VMTest(sequencerId, baseDir, "test_", false); err != nil {
+	const baseDir = "../src/compilers/native/stub/sources"
+	const prefix = "rt"
+	//const prefix = "test_"
+	//const baseDir = "../src/compilers/native/stub/tests"
+	if err := stub.VMTest(sequencerId, baseDir, prefix, false); err != nil {
 		log.Fatal(err)
 	}
 	os.Exit(0)

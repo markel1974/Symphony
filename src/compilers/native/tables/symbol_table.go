@@ -94,8 +94,9 @@ func (s *SymbolTable) DefineUnique(name string) (*Symbol, error) {
 
 // Define creates a new Symbol with the given name, assigns it a scope and index, and stores it in the symbol table.
 func (s *SymbolTable) Define(name string) (*Symbol, error) {
-	if _, ok := s.symbols[name]; ok {
-		return nil, fmt.Errorf("symbol '%s' already defined", name)
+	if symbol, ok := s.symbols[name]; ok {
+		return symbol, nil
+		//return nil, fmt.Errorf("symbol '%s' already defined", name)
 	}
 	computedScope := s.computeScope(s.defaultScope)
 	symbol := NewSymbol(name, len(s.definitions), computedScope)

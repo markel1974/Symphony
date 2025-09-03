@@ -19,6 +19,22 @@ func GetIdent(expr *ast.Field) *ast.Ident {
 	return nil
 }
 
+func GetIdentName(expr ast.Expr) string {
+	switch t := expr.(type) {
+	case *ast.Ident:
+		return t.Name
+	case *ast.StarExpr:
+		if ident, ok := t.X.(*ast.Ident); ok {
+			return ident.Name
+		}
+	case *ast.SelectorExpr:
+		if receiverIdent, ok := t.X.(*ast.Ident); ok {
+			return receiverIdent.Name
+		}
+	}
+	return ""
+}
+
 // GetReceivers extracts and returns the list of type names from the given AST FieldList result.
 // It handles both non-pointer and pointer type fields and returns an error for unsupported types.
 func GetReceivers(result *ast.FieldList) ([]string, error) {

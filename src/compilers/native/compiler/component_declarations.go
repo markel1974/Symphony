@@ -223,6 +223,13 @@ func (c *Declarations) BasicLit(node *ast.BasicLit) error {
 	case token.STRING:
 		val, _ := strconv.Unquote(node.Value)
 		obj = c.gk.NewString(objects.FrameStatic, val)
+	case token.CHAR:
+		var val rune
+		for _, v := range node.Value {
+			val = v
+			break
+		}
+		obj = c.gk.NewChar(objects.FrameStatic, val)
 	default:
 		return tables.NewCompilerError(c.fileSet, node, "unhandled literal: %s", node.Kind)
 	}
@@ -288,27 +295,22 @@ func (c *Declarations) AssignStmt(node *ast.AssignStmt) error {
 		if err := c.compile(node.Rhs[0]); err != nil {
 			return err
 		}
-		var targetName string
-		switch funType := rhsType.Fun.(type) {
-		case *ast.Ident:
-			if len(funType.Name) > 0 {
-				targetName = funType.Name
-			}
-		case *ast.SelectorExpr:
-			if receiverIdent, ok := funType.X.(*ast.Ident); ok {
-				targetName = receiverIdent.Name
-			}
-		default:
-			return tables.NewCompilerError(c.fileSet, node, "function type %T not supported", funType)
-		}
+		//var targetName string
+
+		targetName := tables.GetIdentName(rhsType.Fun)
 		if len(targetName) == 0 {
-			return tables.NewCompilerError(c.fileSet, node, "function symbol name not found")
+			return tables.NewCompilerError(c.fileSet, node, "function type not found")
 		}
-		symbol, ok := c.scopes.SymbolResolve(targetName)
-		if !ok {
-			return tables.NewCompilerError(c.fileSet, node, "function symbol not found")
+		var returnTypes []string
+		if symbol, ok := c.scopes.SymbolResolve(targetName); ok {
+			returnTypes = symbol.ReturnTypes()
+		} else if c.imports.HasPackage(targetName) {
+			returnTypes = []string{"interface"}
+		} else if c.imports.HasBuiltin(targetName) {
+			returnTypes = []string{"interface"}
+		} else {
+			return tables.NewCompilerError(c.fileSet, node, "function symbol not found: %s", targetName)
 		}
-		returnTypes := symbol.ReturnTypes()
 		rhsContainer = make([]*rhs, len(returnTypes))
 		for idx := range rhsContainer {
 			rhsContainer[idx] = &rhs{node: node.Rhs[0], returnType: returnTypes[idx]}
