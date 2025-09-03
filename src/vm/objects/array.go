@@ -16,8 +16,7 @@ func init() {
 
 // Array represents a collection of IObject elements, providing methods for manipulation, indexing, and iteration.
 type Array struct {
-	gk     IGateKeeper
-	frame  int
+	Allocator
 	values []IObject
 }
 
@@ -27,15 +26,9 @@ func newArray(gk IGateKeeper, frame int, value []IObject) IObject {
 		value = value[0:maxArrayLen]
 	}
 	return &Array{
-		gk:     gk,
-		frame:  frame,
-		values: value,
+		Allocator: Allocator{gk: gk, frame: frame},
+		values:    value,
 	}
-}
-
-// GateKeeper returns the GateKeeper instance associated with the current Array.
-func (o *Array) GateKeeper() IGateKeeper {
-	return o.gk
 }
 
 // AsBool returns true if the array is not empty, otherwise false.
@@ -75,16 +68,6 @@ func (o *Array) AssignValue(v IObject) error {
 // Nil checks if the object is nil and always returns false.
 func (o *Array) Nil() bool {
 	return false
-}
-
-// SetStatic sets the frame to FrameStatic, marking it with a static execution context.
-func (o *Array) SetStatic() {
-	o.frame = FrameStatic
-}
-
-// Frame retrieves the current execution frame associated with the Array instance.
-func (o *Array) Frame() int {
-	return o.frame
 }
 
 // Call executes the Array instance as a callable object, passing the given arguments, and returns the result or an error.

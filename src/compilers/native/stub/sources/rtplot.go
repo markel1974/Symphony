@@ -25,7 +25,7 @@ func NewRtPlotData(kind int) *RtPlot {
 	plt := &RtPlot{
 		kind:   kind,
 		auto:   true,
-		data:   nil,
+		data:   []float64{},
 		minVal: math.Inf(1),
 		maxVal: math.Inf(-1),
 	}
@@ -74,9 +74,13 @@ type MemoryStats struct {
 
 // timerFn is a timer callback method that reads memory stats, updates min/max values, appends data, and triggers repaint.
 func (plt *RtPlot) onTimer(_ int, _ int) {
-	var m MemoryStats
+	//var m MemoryStats
+	m := MemoryStats{Alloc: 1000}
+	//m.Alloc = 1000
+	//m.Alloc = 1000
 	//var m runtime.MemStats
 	//runtime.ReadMemStats(&m)
+
 	var val float64
 	switch plt.kind {
 	case 0:
@@ -96,10 +100,16 @@ func (plt *RtPlot) onTimer(_ int, _ int) {
 	if val > plt.maxVal {
 		plt.maxVal = val
 	}
+
+	fmt.Println("CURSON", plt.minVal, plt.maxVal, plt.data, m.Alloc)
+
 	plt.data = append(plt.data, val)
+
 	if len(plt.data) > 10 {
 		plt.data = plt.data[1:]
 	}
+
+	fmt.Println("onTimer", plt.minVal, plt.maxVal, plt.data, m)
 	//plt.process.PaintRequest()
 }
 
@@ -119,6 +129,7 @@ func main() {
 	plt := NewRtPlotData(0)
 	plt.Start()
 	plt.onPaint()
+	plt.onTimer(10, 20)
 }
 
 // paintFn renders the current data series onto the provided ISurface, using defined min and max values or auto-scaling.

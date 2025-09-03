@@ -34,5 +34,7 @@ func (op *OpFreeSet) Execute(decoder *core.Decoder) {
 	// Operands Offset 1 (8-bit)
 	freeIndex := decoder.Read(0)
 	o := op.vm.Stack().Pop()
-	op.vm.Frame().FreeVarsIndex(freeIndex).SetValue(o)
+	freeObj := op.vm.Frame().FreeVarsIndex(freeIndex)
+	op.vm.Factory().SetPointer(freeObj, o)
+	//freeObj.SetValue(o)
 }

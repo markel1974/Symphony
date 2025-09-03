@@ -14,23 +14,16 @@ func init() {
 
 // Bool represents a boolean type with frame-specific and gatekeeper-managed value assignments.
 type Bool struct {
-	gk    IGateKeeper
-	frame int
+	Allocator
 	value bool
 }
 
 // newBool creates and returns a new instance of Bool, initializing it with the given frame and boolean value.
 func newBool(factory IGateKeeper, frame int, value bool) IObject {
 	return &Bool{
-		gk:    factory,
-		frame: frame,
-		value: value,
+		Allocator: Allocator{gk: factory, frame: frame},
+		value:     value,
 	}
-}
-
-// GateKeeper returns the IGateKeeper instance associated with the Bool object.
-func (o *Bool) GateKeeper() IGateKeeper {
-	return o.gk
 }
 
 func (o *Bool) AsBool() bool {
@@ -74,16 +67,6 @@ func (o *Bool) AssignValue(v IObject) error {
 // Nil checks if the object is nil and always returns false.
 func (o *Bool) Nil() bool {
 	return false
-}
-
-// SetStatic sets the frame to FrameStatic, marking it with a static execution context.
-func (o *Bool) SetStatic() {
-	o.frame = FrameStatic
-}
-
-// Frame returns the execution frame associated with the Bool object.
-func (o *Bool) Frame() int {
-	return o.frame
 }
 
 // LogicalOp performs a logical operation on the Bool instance using the provided operator and right-hand operand.

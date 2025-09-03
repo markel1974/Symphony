@@ -13,8 +13,7 @@ func init() {
 
 // StringIterator represents an iterator for traversing over the characters of a string, implemented as runes.
 type StringIterator struct {
-	gk     IGateKeeper
-	frame  int
+	Allocator
 	values []rune
 	index  int
 	length int
@@ -23,17 +22,11 @@ type StringIterator struct {
 // NewStringIterator creates and returns a new instance of StringIterator with the given rune slice.
 func newStringIterator(factory IGateKeeper, frame int, v []rune, index int) IIterator {
 	return &StringIterator{
-		gk:     factory,
-		frame:  frame,
-		values: v,
-		length: len(v),
-		index:  index,
+		Allocator: Allocator{gk: factory, frame: frame},
+		values:    v,
+		length:    len(v),
+		index:     index,
 	}
-}
-
-// GateKeeper returns a reference to the GateKeeper associated with the Object.
-func (o *StringIterator) GateKeeper() IGateKeeper {
-	return o.gk
 }
 
 // AsBool returns true if the array is not empty, otherwise false.
@@ -64,16 +57,6 @@ func (o *StringIterator) AssignValue(_ IObject) error {
 // Nil checks if the object is nil and always returns false.
 func (o *StringIterator) Nil() bool {
 	return false
-}
-
-// SetStatic sets the frame to FrameStatic, marking it with a static execution context.
-func (o *StringIterator) SetStatic() {
-	o.frame = FrameStatic
-}
-
-// Frame returns the current frame value of the Object.
-func (o *StringIterator) Frame() int {
-	return o.frame
 }
 
 // LogicalOp performs a logical operation using a specified operator and right-hand operand, but always returns an error.

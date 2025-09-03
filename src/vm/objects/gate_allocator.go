@@ -115,6 +115,13 @@ func (f *GateAllocator) UndefinedValue() IObject {
 	return f.undefinedValue
 }
 
+func (f *GateAllocator) SetPointer(ptr *ObjectPointer, value IObject) {
+	if v, release := ptr.release(); release {
+		f.ReleaseObject(v)
+	}
+	ptr.acquire(&value)
+}
+
 // ReleaseObjects releases a slice of IObject instances back to their respective pools to free resources.
 func (f *GateAllocator) ReleaseObjects(objects []IObject) {
 	for _, o := range objects {
@@ -124,14 +131,9 @@ func (f *GateAllocator) ReleaseObjects(objects []IObject) {
 
 // ReleaseObject releases an object back to the relevant pool, resetting its state and freeing associated resources.
 func (f *GateAllocator) ReleaseObject(obj IObject) {
-	if obj == nil || obj.Frame() == FrameStatic {
+	if obj == nil || obj.Frame() == FrameStatic || obj.RefCount() > 0 {
 		return
 	}
-	f.releaseObject(obj)
-}
-
-// releaseObject reclaims an object and places it back in the corresponding pool based on its type for reuse.
-func (f *GateAllocator) releaseObject(obj IObject) {
 	obj.SetStatic()
 	switch o := obj.(type) {
 	case *Bool:
@@ -148,10 +150,9 @@ func (f *GateAllocator) releaseObject(obj IObject) {
 		o.values = nil
 		f.poolBytes.Put(o)
 	case *ObjectPointer:
-		if valuePtr, valueFrame := o.release(); valueFrame != FrameStatic {
-			f.releaseObject(valuePtr)
+		if valuePtr, release := o.release(); release {
+			f.ReleaseObject(valuePtr)
 		}
-		o.valuePtr = nil
 		f.poolObjectPointer.Put(o)
 	case *Error:
 		o.value = nil
@@ -290,7 +291,6 @@ func (f *GateAllocator) NewObjectPointer(frame int, v *IObject) IObject {
 	obj := f.poolObjectPointer.Get().(*ObjectPointer)
 	obj.frame = frame
 	obj.acquire(v)
-	//obj.valuePtr = v
 	return obj
 }
 

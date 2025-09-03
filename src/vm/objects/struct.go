@@ -12,9 +12,8 @@ func init() {
 
 // Struct is a composite object that implements the IObject interface and stores a collection of key-value pairs.
 type Struct struct {
-	gk       IGateKeeper
+	Allocator
 	typeName string
-	frame    int
 	values   map[string]IObject
 }
 
@@ -31,16 +30,10 @@ func newStruct(factory IGateKeeper, frame int, value map[string]IObject) IObject
 		value = nv
 	}
 	return &Struct{
-		gk:       factory,
-		frame:    frame,
-		typeName: "",
-		values:   value,
+		Allocator: Allocator{gk: factory, frame: frame},
+		typeName:  "",
+		values:    value,
 	}
-}
-
-// GateKeeper returns a reference to the GateKeeper associated with the Object.
-func (o *Struct) GateKeeper() IGateKeeper {
-	return o.gk
 }
 
 // AsBool converts the Struct to a boolean, returning true if the Struct contains at least one key-value pair; otherwise false.
@@ -80,16 +73,6 @@ func (o *Struct) AssignValue(v IObject) error {
 // Nil checks if the object is nil and always returns false.
 func (o *Struct) Nil() bool {
 	return false
-}
-
-// SetStatic sets the frame to FrameStatic, marking it with a static execution context.
-func (o *Struct) SetStatic() {
-	o.frame = FrameStatic
-}
-
-// Frame returns the current frame value of the Object.
-func (o *Struct) Frame() int {
-	return o.frame
 }
 
 // LogicalOp performs a logical operation using the specified operator and operand, returning the result or an error.
@@ -162,25 +145,23 @@ func (o *Struct) Falsy() bool {
 }
 
 // IndexGet retrieves the value associated with the given index within the Struct. Returns an error for invalid index types.
-func (o *Struct) IndexGet(_ int, index IObject) (res IObject, err error) {
+func (o *Struct) IndexGet(_ int, index IObject) (IObject, error) {
 	strIdx, ok := o.GateKeeper().ToString(index)
 	if !ok {
-		err = ErrInvalidIndexType
-		return
+		return nil, ErrInvalidIndexType
 	}
-	res, ok = o.values[strIdx]
+	res, ok := o.values[strIdx]
 	if !ok {
 		res = o.GateKeeper().UndefinedValue()
 	}
-	return
+	return res, nil
 }
 
 // IndexSet updates or assigns a value to the specified index within the Struct. Returns an error for invalid index types.
-func (o *Struct) IndexSet(index, value IObject) (err error) {
+func (o *Struct) IndexSet(index, value IObject) error {
 	strIdx, ok := o.GateKeeper().ToString(index)
 	if !ok {
-		err = ErrInvalidIndexType
-		return
+		return ErrInvalidIndexType
 	}
 	o.values[strIdx] = value
 	return nil

@@ -16,8 +16,7 @@ const (
 // Bytes represents a data type for handling a sequence of bytes.
 // It embeds Object and provides behaviors like indexing, iteration, and binary operations.
 type Bytes struct {
-	gk     IGateKeeper
-	frame  int
+	Allocator
 	values []byte
 }
 
@@ -27,15 +26,9 @@ func newBytes(factory IGateKeeper, frame int, value []byte) IObject {
 		value = value[0:maxBytesLen]
 	}
 	return &Bytes{
-		gk:     factory,
-		frame:  frame,
-		values: value,
+		Allocator: Allocator{gk: factory, frame: frame},
+		values:    value,
 	}
-}
-
-// GateKeeper returns a reference to the GateKeeper associated with the Object.
-func (o *Bytes) GateKeeper() IGateKeeper {
-	return o.gk
 }
 
 // AsBool returns true if the object is not empty, otherwise false.
@@ -71,16 +64,6 @@ func (o *Bytes) AssignValue(v IObject) error {
 // Nil checks if the object is nil and always returns false.
 func (o *Bytes) Nil() bool {
 	return false
-}
-
-// SetStatic sets the frame to FrameStatic, marking it with a static execution context.
-func (o *Bytes) SetStatic() {
-	o.frame = FrameStatic
-}
-
-// Frame returns the current frame value of the Object.
-func (o *Bytes) Frame() int {
-	return o.frame
 }
 
 // IndexSet attempts to assign a value to an index in the object but always returns ErrUnsupportedIndex,

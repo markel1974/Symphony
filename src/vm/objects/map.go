@@ -16,8 +16,7 @@ func init() {
 
 // Map represents a collection of key-values pairs where keys are strings and values implement the IObject interface.
 type Map struct {
-	gk     IGateKeeper
-	frame  int
+	Allocator
 	values map[string]IObject
 }
 
@@ -34,15 +33,9 @@ func newMap(factory IGateKeeper, frame int, value map[string]IObject) IObject {
 		value = nv
 	}
 	return &Map{
-		gk:     factory,
-		frame:  frame,
-		values: value,
+		Allocator: Allocator{gk: factory, frame: frame},
+		values:    value,
 	}
-}
-
-// GateKeeper returns a reference to the GateKeeper associated with the Object.
-func (o *Map) GateKeeper() IGateKeeper {
-	return o.gk
 }
 
 // AsBool converts the String object to a boolean. Returns true if the string has non-zero length, otherwise false.
@@ -79,19 +72,9 @@ func (o *Map) AssignValue(v IObject) error {
 	return nil
 }
 
-// SetStatic sets the frame to FrameStatic, marking it with a static execution context.
-func (o *Map) SetStatic() {
-	o.frame = FrameStatic
-}
-
 // Nil checks if the object is nil and always returns false.
 func (o *Map) Nil() bool {
 	return false
-}
-
-// Frame returns the current frame value of the Object.
-func (o *Map) Frame() int {
-	return o.frame
 }
 
 // LogicalOp performs a logical operation using the given operator and operand, returning an error for unsupported operators.

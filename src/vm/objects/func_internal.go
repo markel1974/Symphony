@@ -84,27 +84,20 @@ func init() {
 
 // FuncInternal is a callable object type that encapsulates a function and provides execution context information.
 type FuncInternal struct {
-	gk    IGateKeeper
-	frame int
-	id    CallId
-	fn    func(frame int, args []IObject) (IObject, error)
+	Allocator
+	id CallId
+	fn func(frame int, args []IObject) (IObject, error)
 }
 
 // NewFuncImport creates a new FuncImport instance with the specified Id and callable function.
 func newFuncInternal(factory IGateKeeper, frame int, id CallId) IObject {
 	fi := &FuncInternal{
-		gk:    factory,
-		frame: frame,
-		id:    id,
-		fn:    nil,
+		Allocator: Allocator{gk: factory, frame: frame},
+		id:        id,
+		fn:        nil,
 	}
 	fi.prepare(id)
 	return fi
-}
-
-// GateKeeper returns a reference to the GateKeeper associated with the Object.
-func (h *FuncInternal) GateKeeper() IGateKeeper {
-	return h.gk
 }
 
 // AsBool returns a boolean representation of the object, always returning false for FuncJit.
@@ -135,16 +128,6 @@ func (h *FuncInternal) AssignValue(_ IObject) error {
 // Nil checks if the object is nil and always returns false.
 func (h *FuncInternal) Nil() bool {
 	return false
-}
-
-// SetStatic sets the frame to FrameStatic, marking it with a static execution context.
-func (h *FuncInternal) SetStatic() {
-	h.frame = FrameStatic
-}
-
-// Frame returns the current frame value of the Object.
-func (h *FuncInternal) Frame() int {
-	return h.frame
 }
 
 // LogicalOp performs a logical operation between the current object and a provided IObject using the specified operator.

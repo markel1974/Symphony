@@ -10,8 +10,7 @@ func init() {
 
 // FuncJit is a callable object type that encapsulates a function and provides execution context information.
 type FuncJit struct {
-	gk    IGateKeeper
-	frame int
+	Allocator
 	name  string
 	value []byte
 }
@@ -19,16 +18,10 @@ type FuncJit struct {
 // NewFuncImport creates a new FuncImport instance with the specified Id and callable function.
 func newFuncJit(factory IGateKeeper, frame int, name string, fn []byte) IObject {
 	return &FuncJit{
-		gk:    factory,
-		frame: frame,
-		name:  name,
-		value: fn,
+		Allocator: Allocator{gk: factory, frame: frame},
+		name:      name,
+		value:     fn,
 	}
-}
-
-// GateKeeper returns a reference to the GateKeeper associated with the Object.
-func (o *FuncJit) GateKeeper() IGateKeeper {
-	return o.gk
 }
 
 // AsBool returns a boolean representation of the object, always returning false for FuncJit.
@@ -59,16 +52,6 @@ func (o *FuncJit) AssignValue(_ IObject) error {
 // Nil checks if the object is nil and always returns false.
 func (o *FuncJit) Nil() bool {
 	return false
-}
-
-// SetStatic sets the frame to FrameStatic, marking it with a static execution context.
-func (o *FuncJit) SetStatic() {
-	o.frame = FrameStatic
-}
-
-// Frame returns the current frame value of the Object.
-func (o *FuncJit) Frame() int {
-	return o.frame
 }
 
 // LogicalOp performs a logical operation between the current object and a provided IObject using the specified operator.

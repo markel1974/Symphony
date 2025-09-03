@@ -15,21 +15,14 @@ func init() {
 
 // UndefinedIterator represents an iterator that is implicitly undefined and cannot traverse any elements.
 type UndefinedIterator struct {
-	factory IGateKeeper
-	frame   int
+	Allocator
 }
 
 // newUndefinedIterator creates a new instance of UndefinedIterator initialized with an undefined object from the GateKeeper.
 func newUndefinedIterator(factory IGateKeeper, frame int) IIterator {
 	return &UndefinedIterator{
-		factory: factory,
-		frame:   frame,
+		Allocator: Allocator{gk: factory, frame: frame},
 	}
-}
-
-// GateKeeper returns a reference to the GateKeeper associated with the Object.
-func (o *UndefinedIterator) GateKeeper() IGateKeeper {
-	return o.factory
 }
 
 // AsBool returns a boolean representation of the object, always returning false.
@@ -55,16 +48,6 @@ func (o *UndefinedIterator) AssignValue(_ IObject) error {
 // Nil checks if the object is nil and always returns false.
 func (o *UndefinedIterator) Nil() bool {
 	return true
-}
-
-// SetStatic sets the frame to FrameStatic, marking it with a static execution context.
-func (o *UndefinedIterator) SetStatic() {
-	o.frame = FrameStatic
-}
-
-// Frame returns the current frame value of the Object.
-func (o *UndefinedIterator) Frame() int {
-	return o.frame
 }
 
 // LogicalOp performs a logical operation using the given operator and right-hand-side operand, returning an error for invalid operations.

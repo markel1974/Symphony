@@ -13,8 +13,7 @@ func init() {
 
 // BytesIterator is an iterator for traversing elements of a byte slice, implementing the IIterator interface.
 type BytesIterator struct {
-	gk     IGateKeeper
-	frame  int
+	Allocator
 	values []byte
 	index  int
 	length int
@@ -23,17 +22,11 @@ type BytesIterator struct {
 // NewBytesIterator creates and returns a new BytesIterator instance with the given slice of bytes.
 func newBytesIterator(factory IGateKeeper, frame int, v []byte, index int) IIterator {
 	return &BytesIterator{
-		gk:     factory,
-		frame:  frame,
-		values: v,
-		length: len(v),
-		index:  index,
+		Allocator: Allocator{gk: factory, frame: frame},
+		values:    v,
+		length:    len(v),
+		index:     index,
 	}
-}
-
-// GateKeeper returns a reference to the GateKeeper associated with the Object.
-func (o *BytesIterator) GateKeeper() IGateKeeper {
-	return o.gk
 }
 
 // AsBool returns true if the object is not empty, otherwise false.
@@ -64,16 +57,6 @@ func (o *BytesIterator) AssignValue(_ IObject) error {
 // Nil checks if the object is nil and always returns false.
 func (o *BytesIterator) Nil() bool {
 	return false
-}
-
-// SetStatic sets the frame to FrameStatic, marking it with a static execution context.
-func (o *BytesIterator) SetStatic() {
-	o.frame = FrameStatic
-}
-
-// Frame returns the current frame value of the Object.
-func (o *BytesIterator) Frame() int {
-	return o.frame
 }
 
 // LogicalOp performs a logical operation on the BytesIterator object, always returning an error for invalid operations.

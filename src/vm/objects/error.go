@@ -19,8 +19,7 @@ func init() {
 
 // Error represents an object that encapsulates an error and implements the IObject interface.
 type Error struct {
-	gk    IGateKeeper
-	frame int
+	Allocator
 	err   string
 	value IObject
 }
@@ -31,16 +30,10 @@ func newError(factory IGateKeeper, frame int, err string) IObject {
 		err = err[:maxErrorLen]
 	}
 	return &Error{
-		gk:    factory,
-		frame: frame,
-		value: factory.NewString(frame, err),
-		err:   err,
+		Allocator: Allocator{gk: factory, frame: frame},
+		value:     factory.NewString(frame, err),
+		err:       err,
 	}
-}
-
-// GateKeeper returns a reference to the GateKeeper associated with the Object.
-func (o *Error) GateKeeper() IGateKeeper {
-	return o.gk
 }
 
 // AsBool returns true if the object is not empty, otherwise false.
@@ -74,16 +67,6 @@ func (o *Error) AssignValue(_ IObject) error {
 // Nil checks if the object is nil and always returns false.
 func (o *Error) Nil() bool {
 	return false
-}
-
-// SetStatic sets the frame to FrameStatic, marking it with a static execution context.
-func (o *Error) SetStatic() {
-	o.frame = FrameStatic
-}
-
-// Frame returns the current frame value of the Object.
-func (o *Error) Frame() int {
-	return o.frame
 }
 
 // LogicalOp performs a logical operation on the Error object with the provided operator and operand, returning an error.

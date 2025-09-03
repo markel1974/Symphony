@@ -65,8 +65,7 @@ func (i *Instructions) Get16(base int) (uint16, error) {
 
 // FuncCompiled represents a compiled function with bytecode instructions, metadata, and associated free variables.
 type FuncCompiled struct {
-	gk            IGateKeeper
-	frame         int
+	Allocator
 	name          string
 	instructions  *Instructions
 	numLocals     int
@@ -82,8 +81,7 @@ func newFuncCompiled(factory IGateKeeper, frame int, name string, instructions [
 		sourceMap = make(map[int]int)
 	}
 	return &FuncCompiled{
-		gk:            factory,
-		frame:         frame,
+		Allocator:     Allocator{gk: factory, frame: frame},
 		name:          name,
 		instructions:  NewInstructions(instructions),
 		numLocals:     numLocals,
@@ -92,11 +90,6 @@ func newFuncCompiled(factory IGateKeeper, frame int, name string, instructions [
 		sourceMap:     sourceMap,
 		free:          free,
 	}
-}
-
-// GateKeeper returns a reference to the GateKeeper associated with the Object.
-func (o *FuncCompiled) GateKeeper() IGateKeeper {
-	return o.gk
 }
 
 // AsBool returns a boolean representation of the FuncCompiled object, always returning false.
@@ -127,16 +120,6 @@ func (o *FuncCompiled) AssignValue(_ IObject) error {
 // Nil checks if the object is nil and always returns false.
 func (o *FuncCompiled) Nil() bool {
 	return false
-}
-
-// SetStatic sets the frame to FrameStatic, marking it with a static execution context.
-func (o *FuncCompiled) SetStatic() {
-	o.frame = FrameStatic
-}
-
-// Frame returns the current frame value of the Object.
-func (o *FuncCompiled) Frame() int {
-	return o.frame
 }
 
 // LogicalOp performs a logical operation on the object using the specified operator and right-hand-side operand.

@@ -4,8 +4,16 @@ import (
 	"time"
 )
 
+type IAllocator interface {
+	GateKeeper() IGateKeeper
+	AddRef() int
+	ReleaseRef() int
+	RefCount() int
+	Frame() int
+	SetStatic()
+}
+
 // IObject defines a polymorphic interface for managing various operations on objects, including conversions and evaluations.
-// GateKeeper returns the associated IGateKeeper instance for object management functions.
 // TypeName provides the name of the object's type as a string.
 // AsBool converts and returns the object as a boolean.
 // AsInt64 converts and returns the object as a 64-bit integer.
@@ -13,8 +21,6 @@ import (
 // AsString converts and returns the object as a string.
 // AssignValue assigns the value of another IObject to the implementing object instance.
 // Nil checks if the object is nil or uninitialized.
-// SetStatic marks the object instance as immutable or static.
-// Frame retrieves the execution frame associated with the object.
 // LogicalOp performs a logical operation with another IObject and returns the result.
 // ArithmeticOp performs an arithmetic operation with another IObject and returns the result.
 // Falsy evaluates the "truthiness" of the object and returns false if it is equivalently falsy.
@@ -28,7 +34,7 @@ import (
 // CanCall checks whether the object can be called as a function.
 // Length retrieves the length of the object, if applicable (e.g., arrays, strings).
 type IObject interface {
-	GateKeeper() IGateKeeper
+	IAllocator
 	TypeName() string
 	AsBool() bool
 	AsInt64() int64
@@ -36,8 +42,6 @@ type IObject interface {
 	AsString() string
 	AssignValue(object IObject) error
 	Nil() bool
-	SetStatic()
-	Frame() int
 	LogicalOp(frame int, op LogicalOperator, rightHandSide IObject) (IObject, error)
 	ArithmeticOp(frame int, op ArithmeticOperator, rightHandSide IObject) (IObject, error)
 	Falsy() bool
@@ -61,6 +65,7 @@ type IGateAllocator interface {
 	UndefinedValue() IObject
 	ReleaseObject(IObject)
 	ReleaseObjects([]IObject)
+	SetPointer(ptr *ObjectPointer, value IObject)
 	NewFuncInternals(frame int) []IObject
 	NewFuncInternal(frame int, id CallId) IObject
 	NewFuncCompiled(frame int, name string, instructions []byte, numLocals int, numParameters int, varArgs bool, sourceMap map[int]int, free []*ObjectPointer) IObject

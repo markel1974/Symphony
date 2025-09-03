@@ -11,8 +11,7 @@ type FuncCallable = func(gk IGateKeeper, frame int, args ...IObject) (ret IObjec
 
 // FuncImport is a callable object type that encapsulates a function and provides execution context information.
 type FuncImport struct {
-	gk    IGateKeeper
-	frame int
+	Allocator
 	name  string
 	value FuncCallable
 }
@@ -20,16 +19,10 @@ type FuncImport struct {
 // NewFuncImport creates a new FuncImport instance with the specified Id and callable function.
 func newFuncImport(factory IGateKeeper, frame int, name string, fn FuncCallable) IObject {
 	return &FuncImport{
-		gk:    factory,
-		frame: frame,
-		name:  name,
-		value: fn,
+		Allocator: Allocator{gk: factory, frame: frame},
+		name:      name,
+		value:     fn,
 	}
-}
-
-// GateKeeper returns a reference to the GateKeeper associated with the Object.
-func (o *FuncImport) GateKeeper() IGateKeeper {
-	return o.gk
 }
 
 // AsBool returns a boolean representation of the object, always returning false.
@@ -55,16 +48,6 @@ func (o *FuncImport) AssignValue(_ IObject) error {
 // Nil checks if the object is nil and always returns false.
 func (o *FuncImport) Nil() bool {
 	return false
-}
-
-// SetStatic sets the frame to FrameStatic, marking it with a static execution context.
-func (o *FuncImport) SetStatic() {
-	o.frame = FrameStatic
-}
-
-// Frame returns the current frame value of the Object.
-func (o *FuncImport) Frame() int {
-	return o.frame
 }
 
 // LogicalOp performs a logical operation between the object and a right-hand operand using the specified operator.

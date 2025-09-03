@@ -16,8 +16,7 @@ func init() {
 // The embedded Object provides default implementations for methods from the IObject interface.
 // The internal state includes the map (values), keys (keys), current position index (index), and total keys length (length).
 type MapIterator struct {
-	gk     IGateKeeper
-	frame  int
+	Allocator
 	values map[string]IObject
 	keys   []string
 	index  int
@@ -31,18 +30,12 @@ func newMapIterator(factory IGateKeeper, frame int, v map[string]IObject, index 
 		keys = append(keys, k)
 	}
 	return &MapIterator{
-		gk:     factory,
-		frame:  frame,
-		values: v,
-		keys:   keys,
-		length: len(keys),
-		index:  index,
+		Allocator: Allocator{gk: factory, frame: frame},
+		values:    v,
+		keys:      keys,
+		length:    len(keys),
+		index:     index,
 	}
-}
-
-// GateKeeper returns a reference to the GateKeeper associated with the Object.
-func (o *MapIterator) GateKeeper() IGateKeeper {
-	return o.gk
 }
 
 // AsBool returns true if the map is not empty, otherwise false.
@@ -73,16 +66,6 @@ func (o *MapIterator) AssignValue(_ IObject) error {
 // Nil checks if the object is nil and always returns false.
 func (o *MapIterator) Nil() bool {
 	return false
-}
-
-// SetStatic sets the frame to FrameStatic, marking it with a static execution context.
-func (o *MapIterator) SetStatic() {
-	o.frame = FrameStatic
-}
-
-// Frame returns the current frame value of the Object.
-func (o *MapIterator) Frame() int {
-	return o.frame
 }
 
 // LogicalOp performs a logical operation on the MapIterator object using the specified operator and operand.

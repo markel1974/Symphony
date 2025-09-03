@@ -15,31 +15,22 @@ func init() {
 // It embeds Object, inheriting default behaviors for the IObject interface methods.
 // The value field holds the actual IObject instance being wrapped.
 type ObjectPointer struct {
-	factory       IGateKeeper
-	frame         int
-	valuePtr      *IObject
-	valuePtrFrame int
+	Allocator
+	valuePtr *IObject
 }
 
 // NewObjectPointer creates a new ObjectPointer instance wrapping the provided IObject pointer.// NewObjectPointer creates a new ObjectPointer instance with the provided IObject values.
 func newObjectPointer(factory IGateKeeper, frame int, value *IObject) IObject {
 	ptr := &ObjectPointer{
-		factory: factory,
-		frame:   frame,
+		Allocator: Allocator{gk: factory, frame: frame},
 	}
-
-	undefined := factory.UndefinedValue()
-	ptr.valuePtr = &undefined
-	ptr.valuePtrFrame = FrameStatic
 	if value != nil {
 		ptr.acquire(value)
+	} else {
+		undefined := factory.UndefinedValue()
+		ptr.valuePtr = &undefined
 	}
 	return ptr
-}
-
-// GateKeeper returns a reference to the GateKeeper associated with the Object.
-func (o *ObjectPointer) GateKeeper() IGateKeeper {
-	return o.factory
 }
 
 // AsBool returns the boolean representation of the ObjectPointer, defaulting to false.
@@ -70,16 +61,6 @@ func (o *ObjectPointer) Nil() bool {
 // AssignValue sets the current object to the provided IObject, returning ErrNotAssignable if the operation is not supported.
 func (o *ObjectPointer) AssignValue(v IObject) error {
 	return (*o.valuePtr).AssignValue(v)
-}
-
-// SetStatic sets the frame to FrameStatic, marking it with a static execution context.
-func (o *ObjectPointer) SetStatic() {
-	o.frame = FrameStatic
-}
-
-// Frame returns the current frame value of the Object.
-func (o *ObjectPointer) Frame() int {
-	return o.frame
 }
 
 // LogicalOp performs a logical operation with the given operator and RHS object, returning the result or an error.
@@ -152,12 +133,6 @@ func (o *ObjectPointer) Value() *IObject {
 	return o.valuePtr
 }
 
-// SetValue sets the internal values field of the ObjectPointer to the provided IObject pointer.
-func (o *ObjectPointer) SetValue(value IObject) {
-	o.release()
-	o.acquire(&value)
-}
-
 // TypeName returns the type name of the ObjectPointer as a string.
 func (o *ObjectPointer) TypeName() string {
 	return (*o.valuePtr).TypeName()
@@ -179,18 +154,21 @@ func (o *ObjectPointer) Equals(x IObject) bool {
 }
 
 // release resets the current value pointer to an undefined value and updates its frame to static, returning the previous value and frame.
-func (o *ObjectPointer) release() (IObject, int) {
-	retPtr := o.valuePtr
-	retFrame := o.valuePtrFrame
+func (o *ObjectPointer) release() (IObject, bool) {
+	retPtr := *o.valuePtr
+	release := false
+	if retPtr.Frame() != FrameStatic {
+		release = retPtr.ReleaseRef() <= 0
+	}
 	undefined := o.GateKeeper().UndefinedValue()
 	o.valuePtr = &undefined
-	o.valuePtrFrame = FrameStatic
-	return *retPtr, retFrame
+	return retPtr, release
 }
 
 // acquire updates the ObjectPointer with a new IObject reference, sets its frame, and marks the object as static.
 func (o *ObjectPointer) acquire(value *IObject) {
 	o.valuePtr = value
-	o.valuePtrFrame = (*o.valuePtr).Frame()
-	(*o.valuePtr).SetStatic()
+	if (*o.valuePtr).Frame() != FrameStatic {
+		(*o.valuePtr).AddRef()
+	}
 }

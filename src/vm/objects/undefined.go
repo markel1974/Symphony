@@ -13,20 +13,13 @@ func init() {
 
 // Undefined represents an undefined values.
 type Undefined struct {
-	gk    IGateKeeper
-	frame int
+	Allocator
 }
 
 func newUndefined(factory IGateKeeper, frame int) IObject {
 	return &Undefined{
-		gk:    factory,
-		frame: frame,
+		Allocator: Allocator{gk: factory, frame: frame},
 	}
-}
-
-// GateKeeper returns a reference to the GateKeeper associated with the Object.
-func (o *Undefined) GateKeeper() IGateKeeper {
-	return o.gk
 }
 
 // AsBool returns the boolean representation of the Undefined object, which is always false.
@@ -52,16 +45,6 @@ func (o *Undefined) AssignValue(_ IObject) error {
 // Nil checks if the object is nil and always returns false.
 func (o *Undefined) Nil() bool {
 	return true
-}
-
-// SetStatic sets the frame to FrameStatic, marking it with a static execution context.
-func (o *Undefined) SetStatic() {
-	o.frame = FrameStatic
-}
-
-// Frame returns the current frame value of the Object.
-func (o *Undefined) Frame() int {
-	return o.frame
 }
 
 // LogicalOp performs a logical operation using the specified operator and right-hand side operand. Always returns an error.

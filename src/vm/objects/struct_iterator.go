@@ -18,8 +18,7 @@ func init() {
 // The keys and values are stored in separate slices to facilitate order-preserving iteration.
 // The index tracks the current position within the iteration, and length is the total number of elements.
 type StructIterator struct {
-	gk     IGateKeeper
-	frame  int
+	Allocator
 	values map[string]IObject
 	keys   []string
 	index  int
@@ -33,12 +32,11 @@ func newStructIterator(factory IGateKeeper, frame int, v map[string]IObject, ind
 		keys = append(keys, k)
 	}
 	return &StructIterator{
-		gk:     factory,
-		frame:  frame,
-		values: v,
-		keys:   keys,
-		length: len(keys),
-		index:  index,
+		Allocator: Allocator{gk: factory, frame: frame},
+		values:    v,
+		keys:      keys,
+		length:    len(keys),
+		index:     index,
 	}
 }
 
@@ -75,16 +73,6 @@ func (o *StructIterator) Nil() bool {
 // AssignValue sets the current object to the provided IObject, returning ErrNotAssignable if the operation is not supported.
 func (o *StructIterator) AssignValue(_ IObject) error {
 	return ErrNotAssignable
-}
-
-// SetStatic sets the frame to FrameStatic, marking it with a static execution context.
-func (o *StructIterator) SetStatic() {
-	o.frame = FrameStatic
-}
-
-// Frame returns the current frame value of the Object.
-func (o *StructIterator) Frame() int {
-	return o.frame
 }
 
 // LogicalOp performs a logical operation between the StructIterator and another object using the specified operator.

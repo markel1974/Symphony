@@ -15,23 +15,16 @@ func init() {
 
 // Time represents a custom object encapsulating a Go time.Time values with extended behaviors and operations.
 type Time struct {
-	gk    IGateKeeper
-	frame int
+	Allocator
 	value time.Time
 }
 
 // NewTime creates a new instance of Time wrapping the provided time.Time values.
 func newTime(factory IGateKeeper, frame int, value time.Time) IObject {
 	return &Time{
-		gk:    factory,
-		frame: frame,
-		value: value,
+		Allocator: Allocator{gk: factory, frame: frame},
+		value:     value,
 	}
-}
-
-// GateKeeper returns a reference to the GateKeeper associated with the Object.
-func (o *Time) GateKeeper() IGateKeeper {
-	return o.gk
 }
 
 // AsBool returns the boolean representation of the Time object, which is true if the value is not zero.
@@ -67,16 +60,6 @@ func (o *Time) AssignValue(v IObject) error {
 // Nil checks if the object is nil and always returns false.
 func (o *Time) Nil() bool {
 	return false
-}
-
-// SetStatic sets the frame to FrameStatic, marking it with a static execution context.
-func (o *Time) SetStatic() {
-	o.frame = FrameStatic
-}
-
-// Frame returns the current frame value of the Object.
-func (o *Time) Frame() int {
-	return o.frame
 }
 
 // IndexGet attempts to retrieve a value at the given index and returns an error if the object is not indexable.

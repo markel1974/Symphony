@@ -16,8 +16,7 @@ func init() {
 // This type embeds Object and supports operations like indexing, iteration, comparison, and copying.
 // It implements IObject and provides a richer functionality for string manipulation within the runtime system.
 type String struct {
-	gk      IGateKeeper
-	frame   int
+	Allocator
 	value   string
 	runeStr []rune
 }
@@ -28,15 +27,9 @@ func newString(factory IGateKeeper, frame int, value string) IObject {
 		value = value[0:MaxStringLen]
 	}
 	return &String{
-		gk:    factory,
-		frame: frame,
-		value: value,
+		Allocator: Allocator{gk: factory, frame: frame},
+		value:     value,
 	}
-}
-
-// GateKeeper returns a reference to the GateKeeper associated with the Object.
-func (o *String) GateKeeper() IGateKeeper {
-	return o.gk
 }
 
 // AsBool converts the String object to a boolean. Returns true if the string has non-zero length, otherwise false.
@@ -72,16 +65,6 @@ func (o *String) AssignValue(v IObject) error {
 	}
 	o.value = target.value
 	return nil
-}
-
-// SetStatic sets the frame to FrameStatic, marking it with a static execution context.
-func (o *String) SetStatic() {
-	o.frame = FrameStatic
-}
-
-// Frame returns the current frame value of the Object.
-func (o *String) Frame() int {
-	return o.frame
 }
 
 // IndexSet attempts to assign a value to an index in the object but always returns ErrUnsupportedIndex,

@@ -18,23 +18,16 @@ func init() {
 // It embeds Object to implement common interface methods and extends behavior where necessary.
 // The value field holds the actual float64 values encapsulated by the Float type.
 type Float struct {
-	gk    IGateKeeper
-	frame int
+	Allocator
 	value float64
 }
 
 // NewFloat creates and returns a pointer to a new Float object initialized with the specified float64 values.
 func newFloat(gk IGateKeeper, frame int, value float64) IObject {
 	return &Float{
-		gk:    gk,
-		frame: frame,
-		value: value,
+		Allocator: Allocator{gk: gk, frame: frame},
+		value:     value,
 	}
-}
-
-// GateKeeper returns a reference to the GateKeeper associated with the Object.
-func (o *Float) GateKeeper() IGateKeeper {
-	return o.gk
 }
 
 // AsBool returns true if the object is not empty, otherwise false.
@@ -70,16 +63,6 @@ func (o *Float) AsString() string {
 // Nil checks if the object is nil and always returns false.
 func (o *Float) Nil() bool {
 	return false
-}
-
-// SetStatic sets the frame to FrameStatic, marking it with a static execution context.
-func (o *Float) SetStatic() {
-	o.frame = FrameStatic
-}
-
-// Frame returns the current frame value of the Object.
-func (o *Float) Frame() int {
-	return o.frame
 }
 
 // IndexGet attempts to retrieve a value at the given index and returns an error if the object is not indexable.

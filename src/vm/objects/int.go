@@ -15,23 +15,16 @@ func init() {
 
 // Int represents an integer type with a 64-bit value and methods for operations, equality, and object behavior.
 type Int struct {
-	gk    IGateKeeper
-	frame int
+	Allocator
 	value int64
 }
 
 // NewInt creates and returns a new instance of the Int struct initialized with the specified int64 value.
 func newInt(factory IGateKeeper, frame int, value int64) IObject {
 	return &Int{
-		gk:    factory,
-		frame: frame,
-		value: value,
+		Allocator: Allocator{gk: factory, frame: frame},
+		value:     value,
 	}
-}
-
-// GateKeeper returns a reference to the GateKeeper associated with the Object.
-func (o *Int) GateKeeper() IGateKeeper {
-	return o.gk
 }
 
 // AsBool converts the integer value to a boolean, returning true if the value is non-zero, otherwise false.
@@ -67,16 +60,6 @@ func (o *Int) AssignValue(v IObject) error {
 // Nil checks if the object is nil and always returns false.
 func (o *Int) Nil() bool {
 	return false
-}
-
-// SetStatic sets the frame to FrameStatic, marking it with a static execution context.
-func (o *Int) SetStatic() {
-	o.frame = FrameStatic
-}
-
-// Frame returns the current frame value of the Object.
-func (o *Int) Frame() int {
-	return o.frame
 }
 
 // IndexGet attempts to retrieve a value at the given index and returns an error if the object is not indexable.

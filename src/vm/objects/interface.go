@@ -7,10 +7,12 @@ func init() {
 	gob.Register(&Interface{})
 }
 
+//*Allocator
+//Allocator: NewAllocator(gk, frame),
+
 // Interface represents an object with contextual execution information and dynamic properties managed within a frame.
 type Interface struct {
-	gk     IGateKeeper
-	frame  int
+	Allocator
 	value  IObject
 	iTable map[string]IObject
 }
@@ -18,16 +20,10 @@ type Interface struct {
 // newInterface creates a new instance of Interface with the provided gk, frame ID, value, and interface table.
 func newInterface(gk IGateKeeper, frame int, value IObject, itable map[string]IObject) IObject {
 	return &Interface{
-		gk:     gk,
-		frame:  frame,
-		value:  value,
-		iTable: itable,
+		Allocator: Allocator{gk: gk, frame: frame},
+		value:     value,
+		iTable:    itable,
 	}
-}
-
-// GateKeeper retrieves the IGateKeeper instance associated with the Interface.
-func (o *Interface) GateKeeper() IGateKeeper {
-	return o.gk
 }
 
 // AsBool converts and returns the Interface's underlying value as a boolean.
@@ -58,16 +54,6 @@ func (o *Interface) AssignValue(v IObject) error {
 // Nil checks if the object is nil and always returns false.
 func (o *Interface) Nil() bool {
 	return false
-}
-
-// SetStatic sets the frame to FrameStatic, marking it with a static execution context.
-func (o *Interface) SetStatic() {
-	o.frame = FrameStatic
-}
-
-// Frame returns the current execution frame associated with the Interface instance.
-func (o *Interface) Frame() int {
-	return o.frame
 }
 
 // TypeName returns the type name of the underlying IObject.

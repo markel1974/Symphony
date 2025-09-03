@@ -14,8 +14,7 @@ func init() {
 // ArrayIterator is an iterator type for traversing elements of an array.
 // It implements the IIterator interface to provide sequential access to array elements.
 type ArrayIterator struct {
-	gk     IGateKeeper
-	frame  int
+	Allocator
 	values []IObject
 	index  int
 	length int
@@ -24,17 +23,11 @@ type ArrayIterator struct {
 // NewArrayIterator creates and returns a new ArrayIterator instance with the given slice of IObject.
 func newArrayIterator(factory IGateKeeper, frame int, v []IObject, index int) IIterator {
 	return &ArrayIterator{
-		gk:     factory,
-		frame:  frame,
-		values: v,
-		length: len(v),
-		index:  index,
+		Allocator: Allocator{gk: factory, frame: frame},
+		values:    v,
+		length:    len(v),
+		index:     index,
 	}
-}
-
-// GateKeeper returns the GateKeeper instance associated with the ArrayIterator.
-func (o *ArrayIterator) GateKeeper() IGateKeeper {
-	return o.gk
 }
 
 // AsBool returns true if the array is not empty, otherwise false.
@@ -65,16 +58,6 @@ func (o *ArrayIterator) AssignValue(_ IObject) error {
 // Nil checks if the object is nil and always returns false.
 func (o *ArrayIterator) Nil() bool {
 	return false
-}
-
-// SetStatic sets the frame to FrameStatic, marking it with a static execution context.
-func (o *ArrayIterator) SetStatic() {
-	o.frame = FrameStatic
-}
-
-// Frame returns the current execution frame associated with the ArrayIterator.
-func (o *ArrayIterator) Frame() int {
-	return o.frame
 }
 
 // Call invokes the ArrayIterator as a callable function with the provided frame and arguments, returning a result or error.

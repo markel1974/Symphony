@@ -38,8 +38,9 @@ func (op *OpLocalSet) Execute(decoder *core.Decoder) {
 	val := op.vm.Stack().Peek()
 	destSlot := op.vm.Frame().BasePointer() + localIndex
 	existingValue := op.vm.Stack().PeekAbsolute(destSlot)
-	if obj, ok := existingValue.(*objects.ObjectPointer); ok {
-		obj.SetValue(val)
+	if freeObj, ok := existingValue.(*objects.ObjectPointer); ok {
+		op.vm.Factory().SetPointer(freeObj, val)
+		//freeObj.SetValue(val)
 	} else {
 		op.vm.Stack().SetAbsolute(destSlot, val)
 	}
