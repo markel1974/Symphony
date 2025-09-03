@@ -5,6 +5,7 @@ import (
 	"math"
 )
 
+// bToMb converts bytes to megabytes by dividing the input value in bytes by 1024 twice.
 func bToMb(b uint64) float64 {
 	return float64(b) / 1024 / 1024
 }
@@ -32,21 +33,6 @@ func NewRtPlotData(kind int) *RtPlot {
 	return plt
 }
 
-/*
-// Setup configures the RtPlot instance with the provided IUserProcess and binds event handlers for read, timer, and paint.
-func (plt *RtPlot) Setup(process interfaces.IUserProcess) {
-	plt.process = process
-	plt.process.SetOnKey(plt.onKey)
-	plt.process.SetOnTimer(plt.onTimer)
-	plt.process.SetOnPaint(plt.onPaint)
-}
-*/
-
-// Start initializes and starts a timer for the plot with a zero delay, a 300ms interval, and infinite occurrences.
-func (plt *RtPlot) Start() {
-	//plt.process.CreateTimer(0, 300, -1)
-}
-
 // onKey handles keyboard input, adjusts plot range dynamically, and toggles auto-scaling based on provided key actions.
 func (plt *RtPlot) onKey(_ int, key rune) {
 	interval := math.Abs(plt.maxVal - plt.minVal)
@@ -65,7 +51,7 @@ func (plt *RtPlot) onKey(_ int, key rune) {
 	}
 }
 
-type MemoryStats struct {
+type Memory struct {
 	Alloc      uint64
 	TotalAlloc uint64
 	Sys        uint64
@@ -74,13 +60,10 @@ type MemoryStats struct {
 
 // timerFn is a timer callback method that reads memory stats, updates min/max values, appends data, and triggers repaint.
 func (plt *RtPlot) onTimer(_ int, _ int) {
-	//var m MemoryStats
-	m := MemoryStats{Alloc: 1000}
-	//m.Alloc = 1000
-	//m.Alloc = 1000
-	//var m runtime.MemStats
-	//runtime.ReadMemStats(&m)
 
+	m := Memory{}
+
+	//runtime.ReadMemStats(&m)
 	var val float64
 	switch plt.kind {
 	case 0:
@@ -100,45 +83,27 @@ func (plt *RtPlot) onTimer(_ int, _ int) {
 	if val > plt.maxVal {
 		plt.maxVal = val
 	}
-
-	fmt.Println("CURSON", plt.minVal, plt.maxVal, plt.data, m.Alloc)
-
 	plt.data = append(plt.data, val)
-
 	if len(plt.data) > 10 {
 		plt.data = plt.data[1:]
 	}
-
-	fmt.Println("onTimer", plt.minVal, plt.maxVal, plt.data, m)
+	fmt.Println("Plotting:", plt.data, plt.minVal, plt.maxVal)
 	//plt.process.PaintRequest()
 }
 
-func (plt *RtPlot) onPaint( /*surface interfaces.ISurface*/ ) {
+// paintFn renders the current data series onto the provided ISurface, using defined min and max values or auto-scaling.
+func (plt *RtPlot) onPaint() {
 	var minPlot float64 = 0
 	var maxPlot float64 = 0
 	if !plt.auto {
 		minPlot = plt.minVal
 		maxPlot = plt.maxVal
 	}
-	fmt.Println("onPaint", minPlot, maxPlot)
-	//fmt.Println("onPaint", 1, 2)
-	//surface.DrawSeries(plt.data, -1, -1, minPlot, maxPlot)
+	fmt.Println("Painting:", minPlot, maxPlot)
 }
 
 func main() {
 	plt := NewRtPlotData(0)
-	plt.Start()
 	plt.onPaint()
-	plt.onTimer(10, 20)
+	plt.onTimer(0, 0)
 }
-
-// paintFn renders the current data series onto the provided ISurface, using defined min and max values or auto-scaling.
-//func (plt *RtPlot) onPaint(surface interfaces.ISurface) {
-//	var minPlot float64 = 0
-//	var maxPlot float64 = 0
-//	if !plt.auto {
-//		minPlot = plt.minVal
-//		maxPlot = plt.maxVal
-//	}
-//	surface.DrawSeries(plt.data, -1, -1, minPlot, maxPlot)
-//}

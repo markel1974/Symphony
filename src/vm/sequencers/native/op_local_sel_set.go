@@ -38,7 +38,8 @@ func (op *OpLocalSelSet) Execute(decoder *core.Decoder) {
 	localIndex := decoder.Read(1)
 	selectors := make([]objects2.IObject, numSelectors)
 	for i := 0; i < numSelectors; i++ {
-		selectors[i] = op.vm.Stack().PeekOffset(-numSelectors + i)
+		target := -numSelectors + i
+		selectors[i] = op.vm.Stack().PeekOffset(target)
 	}
 	val := op.vm.Stack().PeekOffset(-numSelectors - 1)
 	op.vm.Stack().DecrementCount(numSelectors + 1)
