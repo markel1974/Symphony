@@ -154,16 +154,16 @@ func (o *ObjectPointer) Equals(x IObject) bool {
 }
 
 // release resets the current value pointer to an undefined value and updates its frame to static, returning the previous value and frame.
-func (o *ObjectPointer) release() (IObject, bool) {
-	retPtr := *o.valuePtr
-	release := false
-	if retPtr.Frame() != FrameStatic {
-		release = retPtr.ReleaseRef() <= 0
-	}
-	undefined := o.GateKeeper().UndefinedValue()
-	o.valuePtr = &undefined
-	return retPtr, release
-}
+//func (o *ObjectPointer) release2() (IObject, bool) {
+//	retPtr := *o.valuePtr
+//	release := false
+//	if retPtr.Frame() != FrameStatic {
+//		release = retPtr.ReleaseRef() <= 0
+//	}
+//	undefined := o.GateKeeper().UndefinedValue()
+//	o.valuePtr = &undefined
+//	return retPtr, release
+//}
 
 // acquire updates the ObjectPointer with a new IObject reference, sets its frame, and marks the object as static.
 func (o *ObjectPointer) acquire(value *IObject) {

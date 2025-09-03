@@ -115,28 +115,85 @@ func (f *GateAllocator) UndefinedValue() IObject {
 	return f.undefinedValue
 }
 
-func (f *GateAllocator) SetPointer(ptr *ObjectPointer, value IObject) {
-	//TODO BETTER IMPLEMENTATION
-	if v, release := ptr.release(); release {
-		f.ReleaseObject(v.Frame(), v)
+// SetPointer updates the ObjectPointer to a new value, managing reference counting and releasing old objects if necessary.
+func (f *GateAllocator) SetPointer(ptr *ObjectPointer, newValue IObject) {
+	oldValue := *ptr.Value()
+	if oldValue.Equals(newValue) {
+		return
 	}
-	ptr.acquire(&value)
+	ptr.acquire(&newValue)
+	if oldValue.Frame() != FrameStatic {
+		if oldValue.ReleaseRef() <= 0 {
+			f.releaseObject(oldValue.Frame(), oldValue)
+		}
+	}
 }
 
-// ReleaseObjects releases a slice of IObject instances back to their respective pools to free resources.
+// ReleaseObjects removes and deallocates objects associated with a specific frame, handling cyclic references if detected.
+// It ensures that only objects tied to the specified frame are processed for removal to avoid unintentional deallocations.
 func (f *GateAllocator) ReleaseObjects(frame int, objects []IObject) {
-	for _, o := range objects {
-		f.ReleaseObject(frame, o)
+	garbageCandidates := make(map[IObject]bool)
+	for _, obj := range objects {
+		if obj != nil && obj.Frame() != FrameStatic && obj.Frame() == frame {
+			garbageCandidates[obj] = true
+		}
+	}
+	if len(garbageCandidates) == 0 {
+		return
+	}
+	// Simulate the Removal of Internal References within the Group ---
+	for obj := range garbageCandidates {
+		switch o := obj.(type) {
+		case *ObjectPointer:
+			if target := *o.Value(); garbageCandidates[target] {
+				target.ReleaseRef()
+			}
+		case *Array:
+			for _, elem := range o.Values() {
+				if garbageCandidates[elem] {
+					elem.ReleaseRef()
+				}
+			}
+		case *Map:
+			for _, val := range o.Values() {
+				if garbageCandidates[val] {
+					val.ReleaseRef()
+				}
+			}
+		case *Struct:
+			for _, val := range o.Values() {
+				if garbageCandidates[val] {
+					val.ReleaseRef()
+				}
+			}
+		case *Interface:
+			for _, val := range o.iTable {
+				if garbageCandidates[val] {
+					val.ReleaseRef()
+				}
+			}
+		}
+	}
+	for obj := range garbageCandidates {
+		f.releaseObject(frame, obj)
 	}
 }
 
 // ReleaseObject releases an object back to the relevant pool, resetting its state and freeing associated resources.
-func (f *GateAllocator) ReleaseObject(frame int, obj IObject) {
+func (f *GateAllocator) releaseObject(frame int, obj IObject) {
 	if obj == nil || obj.Frame() == FrameStatic || obj.RefCount() > 0 {
 		return
 	}
 	obj.SetStatic()
 	switch o := obj.(type) {
+	case *ObjectPointer:
+		target := *o.valuePtr
+		if target.Frame() != FrameStatic {
+			if target.ReleaseRef() <= 0 {
+				f.releaseObject(target.Frame(), target)
+			}
+		}
+		f.poolObjectPointer.Put(o)
 	case *Bool:
 		f.poolBool.Put(o)
 	case *Char:
@@ -150,11 +207,6 @@ func (f *GateAllocator) ReleaseObject(frame int, obj IObject) {
 	case *Bytes:
 		o.values = nil
 		f.poolBytes.Put(o)
-	case *ObjectPointer:
-		if valuePtr, release := o.release(); release {
-			f.ReleaseObject(frame, valuePtr)
-		}
-		f.poolObjectPointer.Put(o)
 	case *Error:
 		o.value = nil
 		f.poolError.Put(o)
@@ -164,7 +216,7 @@ func (f *GateAllocator) ReleaseObject(frame int, obj IObject) {
 		f.poolArray.Put(o)
 	case *Map:
 		for _, v := range o.values {
-			f.ReleaseObject(frame, v)
+			f.releaseObject(frame, v)
 		}
 		for k := range o.values {
 			delete(o.values, k)
@@ -172,7 +224,7 @@ func (f *GateAllocator) ReleaseObject(frame int, obj IObject) {
 		f.poolMap.Put(o)
 	case *Struct:
 		for _, v := range o.values {
-			f.ReleaseObject(frame, v)
+			f.releaseObject(frame, v)
 		}
 		for k := range o.values {
 			delete(o.values, k)
