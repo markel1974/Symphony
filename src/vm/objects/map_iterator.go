@@ -99,19 +99,14 @@ func (o *MapIterator) Iterate(_ int) IIterator {
 	return nil
 }
 
-// CanIterate determines if the object can be iterated over and returns false for this implementation.
-func (o *MapIterator) CanIterate() bool {
+// Iterable determines if the object can be iterated over and returns false for this implementation.
+func (o *MapIterator) Iterable() bool {
 	return false
 }
 
 // Call invokes the Object with the provided arguments, returning a result object and an error, if any.
 func (o *MapIterator) Call(_ int, _ ...IObject) (ret IObject, err error) {
 	return nil, nil
-}
-
-// CanCall determines if the object can be invoked as a callable. Returns false for non-callable objects.
-func (o *MapIterator) CanCall() bool {
-	return false
 }
 
 // Length returns the length of the Int object.

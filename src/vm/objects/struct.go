@@ -93,11 +93,6 @@ func (o *Struct) Call(_ int, _ ...IObject) (ret IObject, err error) {
 	return nil, nil
 }
 
-// CanCall determines if the object can be invoked as a callable. Returns false for non-callable objects.
-func (o *Struct) CanCall() bool {
-	return false
-}
-
 // Values returns the underlying map of string keys to IObject values contained within the Struct.
 func (o *Struct) Values() map[string]IObject {
 	return o.values
@@ -193,7 +188,7 @@ func (o *Struct) Iterate(frame int) IIterator {
 	return o.GateKeeper().NewStructIterator(frame, o.values, 0)
 }
 
-// CanIterate checks if the object can be iterated over. Always returns true for this implementation.
-func (o *Struct) CanIterate() bool {
+// Iterable checks if the object can be iterated over. Always returns true for this implementation.
+func (o *Struct) Iterable() bool {
 	return true
 }

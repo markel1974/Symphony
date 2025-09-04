@@ -110,8 +110,8 @@ func (o *Error) Iterate(_ int) IIterator {
 	return nil
 }
 
-// CanIterate determines if the object can be iterated over and returns false for this implementation.
-func (o *Error) CanIterate() bool {
+// Iterable determines if the object can be iterated over and returns false for this implementation.
+func (o *Error) Iterable() bool {
 	return false
 }
 
@@ -125,11 +125,6 @@ func (o *Error) Call(_ int, params ...IObject) (ret IObject, err error) {
 		return o.value, nil
 	}
 	return o.gk.UndefinedValue(), fmt.Errorf("invalid param: %s", params[0].AsString())
-}
-
-// CanCall determines if the object can be invoked as a callable. Returns false for non-callable objects.
-func (o *Error) CanCall() bool {
-	return true
 }
 
 // Length returns the length of the Int object.

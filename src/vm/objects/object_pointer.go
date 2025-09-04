@@ -108,19 +108,14 @@ func (o *ObjectPointer) Iterate(frame int) IIterator {
 	return (*o.valuePtr).Iterate(frame)
 }
 
-// CanIterate determines if the object can be iterated over and returns false for this implementation.
-func (o *ObjectPointer) CanIterate() bool {
-	return (*o.valuePtr).CanIterate()
+// Iterable determines if the object can be iterated over and returns false for this implementation.
+func (o *ObjectPointer) Iterable() bool {
+	return (*o.valuePtr).Iterable()
 }
 
 // Call invokes the Object with the provided arguments, returning a result object and an error, if any.
 func (o *ObjectPointer) Call(frame int, v ...IObject) (ret IObject, err error) {
 	return (*o.valuePtr).Call(frame, v...)
-}
-
-// CanCall determines if the object can be invoked as a callable. Returns false for non-callable objects.
-func (o *ObjectPointer) CanCall() bool {
-	return (*o.valuePtr).CanCall()
 }
 
 // Length returns the length of the Int object.

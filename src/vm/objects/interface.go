@@ -106,19 +106,14 @@ func (o *Interface) Iterate(frame int) IIterator {
 	return o.value.Iterate(frame)
 }
 
-// CanIterate determines whether the wrapped IObject supports iteration, returning true if it does, or false otherwise.
-func (o *Interface) CanIterate() bool {
-	return o.value.CanIterate()
+// Iterable determines whether the wrapped IObject supports iteration, returning true if it does, or false otherwise.
+func (o *Interface) Iterable() bool {
+	return o.value.Iterable()
 }
 
 // Call invokes the object with the specified frame and arguments, returning the result or an error if unsupported.
 func (o *Interface) Call(_ int, _ ...IObject) (ret IObject, err error) {
 	return nil, ErrUnsupportedOperation
-}
-
-// CanCall determines whether the object can be invoked as a callable function. Always returns false for this implementation.
-func (o *Interface) CanCall() bool {
-	return false
 }
 
 // Length returns the length of the underlying value represented by the IObject interface.

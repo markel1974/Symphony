@@ -121,19 +121,14 @@ func (o *Bool) Iterate(_ int) IIterator {
 	return nil
 }
 
-// CanIterate indicates whether the Bool object can be iterated. Always returns false.
-func (o *Bool) CanIterate() bool {
+// Iterable indicates whether the Bool object can be iterated. Always returns false.
+func (o *Bool) Iterable() bool {
 	return false
 }
 
 // Call invokes the Bool object as a callable function with the provided arguments, returning nil and no error.
 func (o *Bool) Call(_ int, _ ...IObject) (ret IObject, err error) {
 	return nil, nil
-}
-
-// CanCall determines if the Bool object can be called as a function, always returning false.
-func (o *Bool) CanCall() bool {
-	return false
 }
 
 // Length returns the length of the Bool object, which is always 0.

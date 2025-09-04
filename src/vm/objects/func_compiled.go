@@ -158,8 +158,8 @@ func (o *FuncCompiled) Iterate(_ int) IIterator {
 	return nil
 }
 
-// CanIterate determines if the object can be iterated over and returns false for this implementation.
-func (o *FuncCompiled) CanIterate() bool {
+// Iterable determines if the object can be iterated over and returns false for this implementation.
+func (o *FuncCompiled) Iterable() bool {
 	return false
 }
 
@@ -240,9 +240,4 @@ func (o *FuncCompiled) SourcePos(ip int) int {
 		ip--
 	}
 	return 0
-}
-
-// CanCall determines if the compiled function object can be invoked as a callable, always returning true.
-func (o *FuncCompiled) CanCall() bool {
-	return true
 }

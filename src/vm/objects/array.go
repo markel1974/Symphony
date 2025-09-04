@@ -75,11 +75,6 @@ func (o *Array) Call(_ int, _ ...IObject) (ret IObject, err error) {
 	return nil, nil
 }
 
-// CanCall determines if the Array object supports being called as a function. Always returns false.
-func (o *Array) CanCall() bool {
-	return false
-}
-
 // TypeName returns the string "array", representing the type name of the Array object.
 func (o *Array) TypeName() string {
 	return ArrayType
@@ -229,8 +224,8 @@ func (o *Array) IndexSet(index IObject, value IObject) (err error) {
 	return nil
 }
 
-// CanIterate checks if the Array is iterable and always returns true.
-func (o *Array) CanIterate() bool {
+// Iterable checks if the Array is iterable and always returns true.
+func (o *Array) Iterable() bool {
 	return true
 }
 

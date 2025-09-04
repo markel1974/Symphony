@@ -95,11 +95,6 @@ func (o *Map) Call(_ int, _ ...IObject) (ret IObject, err error) {
 	return nil, nil
 }
 
-// CanCall determines if the object can be invoked as a callable. Returns false for non-callable objects.
-func (o *Map) CanCall() bool {
-	return false
-}
-
 // Get retrieves the values associated with the specified key from the map. If the key is not found, it returns nil.
 func (o *Map) Get(key string) IObject {
 	return o.values[key]
@@ -208,7 +203,7 @@ func (o *Map) Iterate(frame int) IIterator {
 	return o.GateKeeper().NewMapIterator(frame, o.values, 0)
 }
 
-// CanIterate returns true, indicating that the Map object supports iteration over its elements.
-func (o *Map) CanIterate() bool {
+// Iterable returns true, indicating that the Map object supports iteration over its elements.
+func (o *Map) Iterable() bool {
 	return true
 }

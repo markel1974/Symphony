@@ -65,11 +65,6 @@ func (o *ArrayIterator) Call(_ int, _ ...IObject) (ret IObject, err error) {
 	return nil, nil
 }
 
-// CanCall checks whether the ArrayIterator can be called as a function. Always returns false.
-func (o *ArrayIterator) CanCall() bool {
-	return false
-}
-
 // LogicalOp attempts to perform a logical operation, returning an error as this operation is not supported.
 func (o *ArrayIterator) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, error) {
 	if rhsIn.Nil() {
@@ -99,8 +94,8 @@ func (o *ArrayIterator) Iterate(_ int) IIterator {
 	return nil
 }
 
-// CanIterate determines if the object can be iterated over and returns false for this implementation.
-func (o *ArrayIterator) CanIterate() bool {
+// Iterable determines if the object can be iterated over and returns false for this implementation.
+func (o *ArrayIterator) Iterable() bool {
 	return false
 }
 

@@ -186,10 +186,6 @@ func (v *VM) Call(value objects.IObject, spread bool, numArgs int) {
 		v.SetError(fmt.Errorf("invalid number of arguments: %d", numArgs))
 		return
 	}
-	if !value.CanCall() {
-		v.SetError(fmt.Errorf("not callable %s:%s", value.AsString(), value.TypeName()))
-		return
-	}
 
 	if spread {
 		var args []objects.IObject
@@ -226,7 +222,6 @@ func (v *VM) Call(value objects.IObject, spread bool, numArgs int) {
 		}
 		v.callCompiled(ce, numArgs)
 	default:
-		// La chiamata a funzioni native non cambia
 		var args []objects.IObject
 		args = append(args, v.Stack().PeekArrayObject(numArgs)...)
 		v.callNative(value, args, numArgs)

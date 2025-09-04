@@ -35,7 +35,7 @@ func (op *OpIteratorInit) Execute(decoder *core.Decoder) {
 	// Operands Offset 1 (8-bit)
 	localIndex := decoder.Read(0)
 	iterable := op.vm.Stack().Pop()
-	if !iterable.CanIterate() {
+	if !iterable.Iterable() {
 		op.vm.SetError(fmt.Errorf("not iterable: %s", iterable.TypeName()))
 		return
 	}

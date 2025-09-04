@@ -165,8 +165,8 @@ func (h *FuncInternal) Iterate(_ int) IIterator {
 	return nil
 }
 
-// CanIterate determines if the object can be iterated over and returns false for this implementation.
-func (h *FuncInternal) CanIterate() bool {
+// Iterable determines if the object can be iterated over and returns false for this implementation.
+func (h *FuncInternal) Iterable() bool {
 	return false
 }
 
@@ -188,11 +188,6 @@ func (h *FuncInternal) Copy(frame int, _ int) IObject {
 // Equals checks whether the current FuncImport is equal to another object of type IObject. Always returns false.
 func (h *FuncInternal) Equals(_ IObject) bool {
 	return false
-}
-
-// CanCall checks whether the FuncImport instance can be invoked as a callable function. Always returns true.
-func (h *FuncInternal) CanCall() bool {
-	return true
 }
 
 // Call executes the GateCall with the provided GateKeeper, frame, and arguments, returning an IObject or an error.
@@ -229,8 +224,6 @@ func (h *FuncInternal) prepare(id CallId) {
 		h.fn = h.isUndefined
 	case CallIdIsFunction:
 		h.fn = h.isFunction
-	case CallIdIsCallable:
-		h.fn = h.isCallable
 	case CallIdIsIterable:
 		h.fn = h.isIterable
 	case CallIdTypeName:
@@ -385,20 +378,12 @@ func (h *FuncInternal) isFunction(_ int, args []IObject) (IObject, error) {
 	return h.gk.Boolean(ok), nil
 }
 
-// isCallable checks if the provided IObject within arguments can be called, returning a Boolean and error if any.
-func (h *FuncInternal) isCallable(_ int, args []IObject) (IObject, error) {
-	if len(args) != 1 {
-		return nil, ErrInvalidArgumentsNumber
-	}
-	return h.gk.Boolean(args[0].CanCall()), nil
-}
-
 // isIterable determines if the argument is iterable and returns a boolean representation of the result.
 func (h *FuncInternal) isIterable(_ int, args []IObject) (IObject, error) {
 	if len(args) != 1 {
 		return nil, ErrInvalidArgumentsNumber
 	}
-	return h.gk.Boolean(args[0].CanIterate()), nil
+	return h.gk.Boolean(args[0].Iterable()), nil
 }
 
 // callIdTypeName generates a string representation of the type name for the provided argument.

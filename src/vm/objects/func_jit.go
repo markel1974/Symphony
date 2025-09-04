@@ -89,8 +89,8 @@ func (o *FuncJit) Iterate(_ int) IIterator {
 	return nil
 }
 
-// CanIterate determines if the object can be iterated over and returns false for this implementation.
-func (o *FuncJit) CanIterate() bool {
+// Iterable determines if the object can be iterated over and returns false for this implementation.
+func (o *FuncJit) Iterable() bool {
 	return false
 }
 
@@ -122,11 +122,6 @@ func (o *FuncJit) Equals(_ IObject) bool {
 // Call invokes the function encapsulated within the FuncImport with the provided arguments and returns the result or an error.
 func (o *FuncJit) Call(_ int, _ ...IObject) (IObject, error) {
 	return nil, ErrUnimplemented
-}
-
-// CanCall checks whether the FuncImport instance can be invoked as a callable function. Always returns true.
-func (o *FuncJit) CanCall() bool {
-	return true
 }
 
 /*

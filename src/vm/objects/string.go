@@ -78,11 +78,6 @@ func (o *String) Call(_ int, _ ...IObject) (ret IObject, err error) {
 	return nil, nil
 }
 
-// CanCall determines if the object can be invoked as a callable. Returns false for non-callable objects.
-func (o *String) CanCall() bool {
-	return false
-}
-
 // Value returns the string values of the String object.
 func (o *String) Value() string {
 	return o.value
@@ -193,8 +188,8 @@ func (o *String) IndexGet(frame int, index IObject) (IObject, error) {
 	return o.GateKeeper().NewChar(frame, o.runeStr[idxVal]), nil
 }
 
-// CanIterate checks if the String object supports iteration and always returns true.
-func (o *String) CanIterate() bool {
+// Iterable checks if the String object supports iteration and always returns true.
+func (o *String) Iterable() bool {
 	return true
 }
 

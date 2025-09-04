@@ -29,9 +29,9 @@ type IAllocator interface {
 // IndexGet retrieves an element from the object using another IObject as an index.
 // IndexSet assigns a value to an index on the object using another IObject as the key.
 // Iterate provides an iterator over the object if it supports iteration.
-// CanIterate checks whether the object can be iterated.
+// Iterable checks whether the object can be iterated.
 // Call invokes the object as a callable with the provided arguments.
-// CanCall checks whether the object can be called as a function.
+// Callable checks whether the object can be called as a function.
 // Length retrieves the length of the object, if applicable (e.g., arrays, strings).
 type IObject interface {
 	IAllocator
@@ -50,9 +50,8 @@ type IObject interface {
 	IndexGet(frame int, index IObject) (value IObject, err error)
 	IndexSet(index, value IObject) error
 	Iterate(frame int) IIterator
-	CanIterate() bool
+	Iterable() bool
 	Call(frame int, args ...IObject) (ret IObject, err error)
-	CanCall() bool
 	Length() int
 }
 

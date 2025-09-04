@@ -86,11 +86,6 @@ func (o *Undefined) Call(_ int, _ ...IObject) (ret IObject, err error) {
 	return nil, nil
 }
 
-// CanCall determines if the object can be invoked as a callable. Returns false for non-callable objects.
-func (o *Undefined) CanCall() bool {
-	return false
-}
-
 // Length returns the length of the Int object.
 func (o *Undefined) Length() int {
 	return 0
@@ -131,8 +126,8 @@ func (o *Undefined) Iterate(_ int) IIterator {
 	return o
 }
 
-// CanIterate returns whether the IObject can be Iterated.
-func (o *Undefined) CanIterate() bool {
+// Iterable returns whether the IObject can be Iterated.
+func (o *Undefined) Iterable() bool {
 	return true
 }
 

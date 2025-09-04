@@ -77,11 +77,6 @@ func (o *Bytes) Call(_ int, _ ...IObject) (ret IObject, err error) {
 	return nil, nil
 }
 
-// CanCall determines if the object can be invoked as a callable. Returns false for non-callable objects.
-func (o *Bytes) CanCall() bool {
-	return false
-}
-
 // Length returns the length of the Bytes object, which is the number of bytes in the underlying byte slice.
 func (o *Bytes) Length() int {
 	return len(o.values)
@@ -163,8 +158,8 @@ func (o *Bytes) IndexGet(frame int, index IObject) (res IObject, err error) {
 	return
 }
 
-// CanIterate returns true if the object can be iterated over, otherwise false.
-func (o *Bytes) CanIterate() bool {
+// Iterable returns true if the object can be iterated over, otherwise false.
+func (o *Bytes) Iterable() bool {
 	return true
 }
 
