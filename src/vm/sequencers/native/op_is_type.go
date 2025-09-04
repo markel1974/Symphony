@@ -7,7 +7,7 @@ import (
 
 	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/core"
-	objects2 "github.com/markel1974/c64emu/src/vm/objects"
+	"github.com/markel1974/c64emu/src/vm/objects"
 )
 
 // init registers the NewOpIsType operation with the sequencer system using the SequencerRegister function.
@@ -47,13 +47,13 @@ func (op *OpIsType) Execute(decoder *core.Decoder) {
 	interfaceObj := op.vm.Stack().Peek()
 
 	targetTypeObj := op.vm.Constants().Get(uint(typeNameIndex))
-	targetTypeName, ok := targetTypeObj.(*objects2.String)
+	targetTypeName, ok := targetTypeObj.(*objects.String)
 	if !ok {
 		op.vm.SetError(fmt.Errorf("constant for type check is not a string"))
 		return
 	}
 
-	io, isInterface := interfaceObj.(*objects2.Interface)
+	io, isInterface := interfaceObj.(*objects.Interface)
 	if !isInterface {
 		op.vm.Stack().Push(op.vm.Factory().FalseValue())
 		return

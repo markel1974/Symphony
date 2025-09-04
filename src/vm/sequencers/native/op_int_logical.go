@@ -5,7 +5,7 @@ import (
 
 	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/core"
-	objects2 "github.com/markel1974/c64emu/src/vm/objects"
+	"github.com/markel1974/c64emu/src/vm/objects"
 )
 
 // init registers the NewOpIntLogical function with the sequencer system by appending it to the internal registry.
@@ -34,26 +34,16 @@ func NewOpIntLogical(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error
 
 // Execute performs the logical operation between two integers on the stack and stores the result in the destination object.
 func (op *OpIntLogical) Execute(decoder *core.Decoder) {
-	dstObj := op.vm.Stack().PeekAbsolute(decoder.Read(0))
-	binaryOp := objects2.LogicalOperator(decoder.Read(1))
-	dst, ok := dstObj.(*objects2.Int)
+	logicalOp := objects.LogicalOperator(decoder.Read(0))
+	lhsObj := op.vm.Stack().PeekAbsolute(decoder.Read(1))
+	rhsObj := op.vm.Stack().PeekAbsolute(decoder.Read(2))
+	dstObj := op.vm.Stack().PeekAbsolute(decoder.Read(3))
+	dst, ok := dstObj.(*objects.Int)
 	if !ok {
 		op.vm.SetError(fmt.Errorf("dst expected int, got %s", dstObj.TypeName()))
 		return
 	}
-	rhsObj := op.vm.Stack().Pop()
-	rhs, ok := rhsObj.(*objects2.Int)
-	if !ok {
-		op.vm.SetError(fmt.Errorf("rhs expected int, got %s", rhsObj.TypeName()))
-		return
-	}
-	lhsObj := op.vm.Stack().Pop()
-	lhs, ok := lhsObj.(*objects2.Int)
-	if !ok {
-		op.vm.SetError(fmt.Errorf("lhs expected int, got %s", lhsObj.TypeName()))
-		return
-	}
-	result, err := op.vm.Factory().LogicalOpInt64(binaryOp, lhs.Value(), rhs.Value())
+	result, err := op.vm.Factory().LogicalOpInt64(logicalOp, lhsObj.AsInt64(), rhsObj.AsInt64())
 	if err != nil {
 		op.vm.SetError(err)
 	}

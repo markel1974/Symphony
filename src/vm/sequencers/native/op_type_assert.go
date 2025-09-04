@@ -7,7 +7,7 @@ import (
 
 	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/core"
-	objects2 "github.com/markel1974/c64emu/src/vm/objects"
+	"github.com/markel1974/c64emu/src/vm/objects"
 )
 
 // init initializes the system by registering the NewOpTypeAssert operation with the sequencer via SequencerRegister.
@@ -42,16 +42,16 @@ func (op *OpTypeAssert) Execute(decoder *core.Decoder) {
 	typeNameIndex := decoder.Read(0)
 	interfaceObj := op.vm.Stack().Pop()
 	targetTypeObj := op.vm.Constants().Get(uint(typeNameIndex))
-	targetTypeName, ok := targetTypeObj.(*objects2.String)
+	targetTypeName, ok := targetTypeObj.(*objects.String)
 	if !ok {
 		op.vm.SetError(fmt.Errorf("constant for type assertion is not a string"))
 		return
 	}
 	concreteValue := op.vm.Factory().UndefinedValue()
 	switch io := interfaceObj.(type) {
-	case *objects2.Interface:
+	case *objects.Interface:
 		concreteValue = io.Value()
-	case *objects2.Struct:
+	case *objects.Struct:
 		concreteValue = io
 	default:
 		op.vm.Stack().Push(op.vm.Factory().UndefinedValue())

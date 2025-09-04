@@ -5,7 +5,7 @@ import (
 
 	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/core"
-	objects2 "github.com/markel1974/c64emu/src/vm/objects"
+	objects "github.com/markel1974/c64emu/src/vm/objects"
 )
 
 func init() {
@@ -42,13 +42,13 @@ func (op *OpIndexSlice) Execute(_ *core.Decoder) {
 		op.vm.SetError(err)
 		return
 	}
-	var val objects2.IObject = nil
+	var val objects.IObject = nil
 	switch left := leftStack.(type) {
-	case *objects2.Array:
+	case *objects.Array:
 		val = op.vm.Factory().NewArray(op.vm.Frame().Id(), left.Values()[lowIdx:highIdx])
-	case *objects2.String:
+	case *objects.String:
 		val = op.vm.Factory().NewString(op.vm.Frame().Id(), left.Value()[lowIdx:highIdx])
-	case *objects2.Bytes:
+	case *objects.Bytes:
 		val = op.vm.Factory().NewBytes(op.vm.Frame().Id(), left.Value()[lowIdx:highIdx])
 	}
 	if val != nil {

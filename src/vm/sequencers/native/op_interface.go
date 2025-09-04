@@ -5,7 +5,7 @@ import (
 
 	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/core"
-	objects2 "github.com/markel1974/c64emu/src/vm/objects"
+	"github.com/markel1974/c64emu/src/vm/objects"
 )
 
 // init registers the NewOpInterface function with the sequencer using SequencerRegister.
@@ -39,13 +39,13 @@ func (op *OpInterface) Execute(decoder *core.Decoder) {
 	numMethods := decoder.Read(0)
 
 	// 1. Build the iTable by popping method names and functions from the stack.
-	iTable := make(map[string]objects2.IObject, numMethods)
+	iTable := make(map[string]objects.IObject, numMethods)
 	for i := 0; i < numMethods; i++ {
 		// Pop in reverse order: function first, then name.
 		methodFunc := op.vm.Stack().Pop()
 		methodNameObj := op.vm.Stack().Pop()
 
-		methodName, ok := methodNameObj.(*objects2.String)
+		methodName, ok := methodNameObj.(*objects.String)
 		if !ok {
 			op.vm.SetError(fmt.Errorf("interface method name must be a string, got %s", methodNameObj.TypeName()))
 			return

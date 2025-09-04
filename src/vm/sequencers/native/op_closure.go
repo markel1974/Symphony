@@ -5,7 +5,7 @@ import (
 
 	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/core"
-	objects2 "github.com/markel1974/c64emu/src/vm/objects"
+	"github.com/markel1974/c64emu/src/vm/objects"
 )
 
 func init() {
@@ -36,20 +36,20 @@ func (op *OpClosure) Execute(decoder *core.Decoder) {
 	numTotal := decoder.Read(0)
 	closureIndex := decoder.Read(1)
 	closureObj := op.vm.Constants().Get(uint(closureIndex))
-	fn, ok := closureObj.(*objects2.FuncCompiled)
+	fn, ok := closureObj.(*objects.FuncCompiled)
 	if !ok {
 		op.vm.SetError(fmt.Errorf("not a function: %s", fn.TypeName()))
 		return
 	}
 	freeArgs := op.vm.Stack().Pop()
-	freeIndices, ok := freeArgs.(*objects2.Array)
+	freeIndices, ok := freeArgs.(*objects.Array)
 	if !ok {
 		op.vm.SetError(fmt.Errorf("invalid operation: cannot create closure without arguments"))
 		return
 	}
-	free := make([]*objects2.ObjectPointer, freeIndices.Length())
+	free := make([]*objects.ObjectPointer, freeIndices.Length())
 	for idx, freeObjIndex := range freeIndices.Values() {
-		freeIndex, ok := freeObjIndex.(*objects2.Int)
+		freeIndex, ok := freeObjIndex.(*objects.Int)
 		if !ok {
 			op.vm.SetError(fmt.Errorf("invalid operation: cannot create closure without arguments"))
 			return
@@ -57,11 +57,11 @@ func (op *OpClosure) Execute(decoder *core.Decoder) {
 		offset := numTotal - int(freeIndex.Value())
 		objOffset := op.vm.Stack().PeekOffset(-offset - 1)
 		switch objType := objOffset.(type) {
-		case *objects2.ObjectPointer:
+		case *objects.ObjectPointer:
 			free[idx] = objType
 		default:
 			obj := op.vm.Factory().NewObjectPointer(op.vm.Frame().Id(), &objOffset)
-			freeObjPtr, ok := obj.(*objects2.ObjectPointer)
+			freeObjPtr, ok := obj.(*objects.ObjectPointer)
 			if !ok {
 				op.vm.SetError(fmt.Errorf("not a pointer: %s", obj.TypeName()))
 				return

@@ -5,7 +5,7 @@ import (
 
 	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/core"
-	objects2 "github.com/markel1974/c64emu/src/vm/objects"
+	objects "github.com/markel1974/c64emu/src/vm/objects"
 )
 
 func init() {
@@ -42,7 +42,7 @@ func (op *OpCallMethod) Execute(decoder *core.Decoder) {
 
 	// 1. Get method name from constants table.
 	methodNameObj := op.vm.Constants().Get(uint(methodNameIndex))
-	methodName, ok := methodNameObj.(*objects2.String)
+	methodName, ok := methodNameObj.(*objects.String)
 	if !ok {
 		op.vm.SetError(fmt.Errorf("invalid method name constant: not a string"))
 		return
@@ -50,7 +50,7 @@ func (op *OpCallMethod) Execute(decoder *core.Decoder) {
 
 	// 2. Get the interface object from stack. It's located below the arguments.
 	interfaceObj := op.vm.Stack().PeekOffset(-1 - numArgs)
-	io, ok := interfaceObj.(*objects2.Interface)
+	io, ok := interfaceObj.(*objects.Interface)
 	if !ok {
 		// If not an interface object, it could be a direct method call on a struct.
 		// For now, we only handle the interface case. We could extend this.
@@ -65,7 +65,7 @@ func (op *OpCallMethod) Execute(decoder *core.Decoder) {
 		return
 	}
 
-	callee, ok := method.(objects2.IObject)
+	callee, ok := method.(objects.IObject)
 	if !ok {
 		op.vm.SetError(fmt.Errorf("method '%s' is not a callable function", methodName.Value()))
 		return

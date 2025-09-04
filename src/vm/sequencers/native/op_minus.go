@@ -5,7 +5,7 @@ import (
 
 	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/core"
-	objects2 "github.com/markel1974/c64emu/src/vm/objects"
+	"github.com/markel1974/c64emu/src/vm/objects"
 )
 
 func init() {
@@ -37,10 +37,10 @@ func (op *OpMinus) Execute(_ *core.Decoder) {
 	// Operands Offset 0
 	operand := op.vm.Stack().Pop()
 	switch x := operand.(type) {
-	case *objects2.Int:
+	case *objects.Int:
 		res := op.vm.Factory().NewInt(op.vm.Frame().Id(), -x.Value())
 		op.vm.Stack().Push(res)
-	case *objects2.Float:
+	case *objects.Float:
 		res := op.vm.Factory().NewFloat(op.vm.Frame().Id(), -x.Value())
 		op.vm.Stack().Push(res)
 	default:
