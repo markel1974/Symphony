@@ -127,8 +127,8 @@ func (o *Bool) Iterable() bool {
 }
 
 // Call invokes the Bool object as a callable function with the provided arguments, returning nil and no error.
-func (o *Bool) Call(_ int, _ ...IObject) (ret IObject, err error) {
-	return nil, nil
+func (o *Bool) Call(_ int, _ ...IObject) (retCount uint, ret IObject, err error) {
+	return 0, nil, nil
 }
 
 // Length returns the length of the Bool object, which is always 0.

@@ -120,8 +120,8 @@ func (o *FuncJit) Equals(_ IObject) bool {
 }
 
 // Call invokes the function encapsulated within the FuncImport with the provided arguments and returns the result or an error.
-func (o *FuncJit) Call(_ int, _ ...IObject) (IObject, error) {
-	return nil, ErrUnimplemented
+func (o *FuncJit) Call(_ int, _ ...IObject) (uint, IObject, error) {
+	return 0, nil, ErrUnimplemented
 }
 
 /*

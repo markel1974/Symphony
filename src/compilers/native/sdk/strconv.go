@@ -47,62 +47,62 @@ func (s *Strconv) Get(name string) (objects.IObject, bool) {
 }
 
 // FormatBool converts a boolean argument to its string representation ("true" or "false"). Returns an error if the argument is invalid.
-func (s *Strconv) formatBool(gk objects.IGateKeeper, frame int, args ...objects.IObject) (objects.IObject, error) {
+func (s *Strconv) formatBool(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, objects.ErrInvalidArgumentsNumber
+		return 0, nil, objects.ErrInvalidArgumentsNumber
 	}
 	b1, err := gk.ToBoolArg(0, args[0])
 	if err != nil {
-		return nil, err
+		return 0, nil, err
 	}
 	if b1 {
-		return gk.NewString(frame, "true"), nil
+		return 1, gk.NewString(frame, "true"), nil
 	}
-	return gk.NewString(frame, "false"), nil
+	return 1, gk.NewString(frame, "false"), nil
 }
 
 // FormatFloat converts a float64 into a string representation according to the specified format, precision, and bit size.
-func (s *Strconv) formatFloat(gk objects.IGateKeeper, frame int, args ...objects.IObject) (objects.IObject, error) {
+func (s *Strconv) formatFloat(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
 	if len(args) != 4 {
-		return nil, objects.ErrInvalidArgumentsNumber
+		return 0, nil, objects.ErrInvalidArgumentsNumber
 	}
 	f1, err := gk.ToFloat64Arg(0, args[0])
 	if err != nil {
-		return nil, err
+		return 0, nil, err
 	}
 	s2, err := gk.ToStringArg(1, args[1])
 	if err != nil {
-		return nil, err
+		return 0, nil, err
 	}
 	i3, err := gk.ToInt64Arg(2, args[2])
 	if err != nil {
-		return nil, err
+		return 0, nil, err
 	}
 	i4, err := gk.ToInt64Arg(3, args[3])
 	if err != nil {
-		return nil, err
+		return 0, nil, err
 	}
-	return gk.NewString(frame, strconv.FormatFloat(f1, s2[0], int(i3), int(i4))), nil
+	return 1, gk.NewString(frame, strconv.FormatFloat(f1, s2[0], int(i3), int(i4))), nil
 }
 
 // FormatInt formats an int64 number as a string in the specified base, provided by the second argument.
-func (s *Strconv) formatInt(gk objects.IGateKeeper, frame int, args ...objects.IObject) (objects.IObject, error) {
+func (s *Strconv) formatInt(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
 	if len(args) != 2 {
-		return nil, objects.ErrInvalidArgumentsNumber
+		return 0, nil, objects.ErrInvalidArgumentsNumber
 	}
 	i1, err := gk.ToInt64Arg(0, args[0])
 	if err != nil {
-		return nil, err
+		return 0, nil, err
 	}
 	i2, err := gk.ToInt64Arg(1, args[1])
 	if err != nil {
-		return nil, err
+		return 0, nil, err
 	}
-	return gk.NewString(frame, strconv.FormatInt(i1, int(i2))), nil
+	return 1, gk.NewString(frame, strconv.FormatInt(i1, int(i2))), nil
 }
 
 // ParseBool parses a string representation of a boolean value and returns the corresponding boolean object or an error.
-func (s *Strconv) parseBool(gk objects.IGateKeeper, frame int, args ...objects.IObject) (ret objects.IObject, err error) {
+func (s *Strconv) parseBool(gk objects.IGateKeeper, frame int, args ...objects.IObject) (retVal uint, ret objects.IObject, err error) {
 	if len(args) != 1 {
 		err = objects.ErrInvalidArgumentsNumber
 		return
@@ -126,33 +126,33 @@ func (s *Strconv) parseBool(gk objects.IGateKeeper, frame int, args ...objects.I
 }
 
 // ParseFloat parses a string argument as a floating-point number using the specified precision and returns the result.
-func (s *Strconv) parseFloat(gk objects.IGateKeeper, frame int, args ...objects.IObject) (objects.IObject, error) {
+func (s *Strconv) parseFloat(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
 	if len(args) != 2 {
-		return nil, objects.ErrInvalidArgumentsNumber
+		return 0, nil, objects.ErrInvalidArgumentsNumber
 	}
 	s1, err := gk.ToStringArg(0, args[0])
 	if err != nil {
-		return nil, err
+		return 0, nil, err
 	}
 	i2, err := gk.ToInt64Arg(1, args[1])
 	if err != nil {
-		return nil, err
+		return 0, nil, err
 	}
 	parsed, err := strconv.ParseFloat(s1, int(i2))
 	if err != nil {
-		return gk.NewError(frame, err.Error()), nil
+		return 0, gk.NewError(frame, err.Error()), nil
 	}
-	return gk.NewFloat(frame, parsed), nil
+	return 1, gk.NewFloat(frame, parsed), nil
 }
 
 // ParseNumber extracts and parses numeric values from a string, returning a float object or an error if parsing fails.
-func (s *Strconv) parseNumber(gk objects.IGateKeeper, frame int, args ...objects.IObject) (objects.IObject, error) {
+func (s *Strconv) parseNumber(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, objects.ErrInvalidArgumentsNumber
+		return 0, nil, objects.ErrInvalidArgumentsNumber
 	}
 	s1, err := gk.ToStringArg(0, args[0])
 	if err != nil {
-		return nil, err
+		return 0, nil, err
 	}
 	var target []rune
 	for _, p := range s1 {
@@ -162,31 +162,31 @@ func (s *Strconv) parseNumber(gk objects.IGateKeeper, frame int, args ...objects
 	}
 	parsed, err := strconv.ParseFloat(string(target), 64)
 	if err != nil {
-		return nil, err
+		return 0, nil, err
 	}
-	return gk.NewFloat(frame, parsed), nil
+	return 1, gk.NewFloat(frame, parsed), nil
 }
 
 // ParseInt converts a string argument to an integer with the specified base and bit size after validating arguments.
-func (s *Strconv) parseInt(gk objects.IGateKeeper, frame int, args ...objects.IObject) (objects.IObject, error) {
+func (s *Strconv) parseInt(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
 	if len(args) != 3 {
-		return nil, objects.ErrInvalidArgumentsNumber
+		return 0, nil, objects.ErrInvalidArgumentsNumber
 	}
 	s1, err := gk.ToStringArg(0, args[0])
 	if err != nil {
-		return nil, err
+		return 0, nil, err
 	}
 	i2, err := gk.ToInt64Arg(1, args[1])
 	if err != nil {
-		return nil, err
+		return 0, nil, err
 	}
 	i3, err := gk.ToInt64Arg(2, args[2])
 	if err != nil {
-		return nil, err
+		return 0, nil, err
 	}
 	parsed, err := strconv.ParseInt(s1, int(i2), int(i3))
 	if err != nil {
-		return gk.NewError(frame, err.Error()), nil
+		return 0, gk.NewError(frame, err.Error()), nil
 	}
-	return gk.NewInt(frame, parsed), nil
+	return 1, gk.NewInt(frame, parsed), nil
 }

@@ -116,15 +116,15 @@ func (o *Error) Iterable() bool {
 }
 
 // Call invokes the Object with the provided arguments, returning a result object and an error, if any.
-func (o *Error) Call(_ int, params ...IObject) (ret IObject, err error) {
+func (o *Error) Call(_ int, params ...IObject) (retCount uint, ret IObject, err error) {
 	if len(params) != 1 {
-		return o.gk.UndefinedValue(), fmt.Errorf("expected 1 param, got %d", len(params))
+		return 0, o.gk.UndefinedValue(), fmt.Errorf("expected 1 param, got %d", len(params))
 	}
 	switch params[0].AsString() {
 	case "Error":
-		return o.value, nil
+		return 1, o.value, nil
 	}
-	return o.gk.UndefinedValue(), fmt.Errorf("invalid param: %s", params[0].AsString())
+	return 0, o.gk.UndefinedValue(), fmt.Errorf("invalid param: %s", params[0].AsString())
 }
 
 // Length returns the length of the Int object.

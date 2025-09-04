@@ -7,7 +7,7 @@ func init() {
 }
 
 // FuncCallable is a type alias for a function that takes a variadic list of IObject arguments and returns an IObject and an error.
-type FuncCallable = func(gk IGateKeeper, frame int, args ...IObject) (ret IObject, err error)
+type FuncCallable = func(gk IGateKeeper, frame int, args ...IObject) (retCount uint, ret IObject, err error)
 
 // FuncImport is a callable object type that encapsulates a function and provides execution context information.
 type FuncImport struct {
@@ -121,6 +121,6 @@ func (o *FuncImport) Equals(_ IObject) bool {
 }
 
 // Call invokes the function encapsulated within the FuncImport with the provided arguments and returns the result or an error.
-func (o *FuncImport) Call(frame int, args ...IObject) (IObject, error) {
+func (o *FuncImport) Call(frame int, args ...IObject) (uint, IObject, error) {
 	return o.value(o.gk, frame, args...)
 }

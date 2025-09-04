@@ -51,7 +51,7 @@ type IObject interface {
 	IndexSet(index, value IObject) error
 	Iterate(frame int) IIterator
 	Iterable() bool
-	Call(frame int, args ...IObject) (ret IObject, err error)
+	Call(frame int, args ...IObject) (retCount uint, ret IObject, err error)
 	Length() int
 }
 

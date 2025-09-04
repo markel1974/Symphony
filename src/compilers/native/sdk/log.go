@@ -41,67 +41,67 @@ func (f *Log) Get(name string) (objects.IObject, bool) {
 }
 
 // Print writes the string representations of the provided arguments to the standard output without appending a newline.
-func (f *Log) print(gk objects.IGateKeeper, _ int, args ...objects.IObject) (objects.IObject, error) {
+func (f *Log) print(gk objects.IGateKeeper, _ int, args ...objects.IObject) (uint, objects.IObject, error) {
 	var printArgs []interface{}
 	for _, arg := range args {
 		printArgs = append(printArgs, gk.ToInterface(arg))
 	}
 	log.Print(printArgs...)
-	return nil, nil
+	return 0, nil, nil
 }
 
 // Printf formats and outputs a string using the provided format and arguments, implementing similar behavior to fmt.Printf.
 // The first argument must be a format string, with additional arguments used to populate the format specifiers.
 // Returns an error if the number of arguments is insufficient or if the format argument is incompatible.
-func (f *Log) printf(gk objects.IGateKeeper, _ int, args ...objects.IObject) (objects.IObject, error) {
+func (f *Log) printf(gk objects.IGateKeeper, _ int, args ...objects.IObject) (uint, objects.IObject, error) {
 	argsLen := len(args)
 	if argsLen == 0 {
-		return nil, objects.ErrInvalidArgumentsNumber
+		return 0, nil, objects.ErrInvalidArgumentsNumber
 	}
 	s1, err := gk.ToStringArg(0, args[0])
 	if err != nil {
-		return nil, err
+		return 0, nil, err
 	}
 	if argsLen == 1 {
 		log.Printf(s1)
-		return nil, nil
+		return 0, nil, nil
 	}
 	var ar []interface{}
 	for _, v := range args[1:] {
 		ar = append(ar, gk.ToInterface(v))
 	}
 	log.Printf(s1, ar...)
-	return nil, nil
+	return 0, nil, nil
 }
 
 // Println writes the given arguments to the standard output with a newline and returns nil and no error.
-func (f *Log) println(gk objects.IGateKeeper, _ int, args ...objects.IObject) (objects.IObject, error) {
+func (f *Log) println(gk objects.IGateKeeper, _ int, args ...objects.IObject) (uint, objects.IObject, error) {
 	var printArgs []interface{}
 	for _, arg := range args {
 		printArgs = append(printArgs, gk.ToInterface(arg))
 	}
 	log.Println(printArgs...)
-	return nil, nil
+	return 0, nil, nil
 }
 
 // fatalf formats and logs a fatal error message using the provided arguments and terminates execution with an error.
-func (f *Log) fatalf(gk objects.IGateKeeper, _ int, args ...objects.IObject) (objects.IObject, error) {
+func (f *Log) fatalf(gk objects.IGateKeeper, _ int, args ...objects.IObject) (uint, objects.IObject, error) {
 	argsLen := len(args)
 	if argsLen == 0 {
-		return nil, objects.ErrInvalidArgumentsNumber
+		return 0, nil, objects.ErrInvalidArgumentsNumber
 	}
 	s1, err := gk.ToStringArg(0, args[0])
 	if err != nil {
-		return nil, err
+		return 0, nil, err
 	}
 	if argsLen == 1 {
 		log.Printf(s1)
-		return nil, fmt.Errorf("fatal")
+		return 0, nil, fmt.Errorf("fatal")
 	}
 	var ar []interface{}
 	for _, v := range args[1:] {
 		ar = append(ar, gk.ToInterface(v))
 	}
 	log.Printf(s1, ar...)
-	return nil, fmt.Errorf("fatal")
+	return 0, nil, fmt.Errorf("fatal")
 }

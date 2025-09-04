@@ -38,10 +38,10 @@ func (f *Os) Get(name string) (objects.IObject, bool) {
 }
 
 // exit terminates the current process after logging the provided arguments, converting them to native types with IGateKeeper.
-func (f *Os) exit(gk objects.IGateKeeper, _ int, args ...objects.IObject) (objects.IObject, error) {
+func (f *Os) exit(_ objects.IGateKeeper, _ int, args ...objects.IObject) (uint, objects.IObject, error) {
 	ret := int64(0)
 	if len(args) > 0 {
 		ret = args[0].AsInt64()
 	}
-	return nil, fmt.Errorf("exit with code %d", ret)
+	return 0, nil, fmt.Errorf("exit with code %d", ret)
 }

@@ -104,10 +104,10 @@ func (m *Math) Get(name string) (objects.IObject, bool) {
 // funcInOf64 wraps a no-argument function returning float64 into a FuncCallable to integrate with the GateAdapter system.
 // It enforces no arguments and converts the float64 result to an IObject, returning ErrInvalidArgumentsNumber for invalid input.
 func (m *Math) funcInOf64(fn func() float64) objects.FuncCallable {
-	return func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (ret objects.IObject, err error) {
+	return func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (retCount uint, ret objects.IObject, err error) {
 		if len(args) != 0 {
-			return nil, objects.ErrInvalidArgumentsNumber
+			return 0, nil, objects.ErrInvalidArgumentsNumber
 		}
-		return gk.NewFloat(frame, fn()), nil
+		return 1, gk.NewFloat(frame, fn()), nil
 	}
 }

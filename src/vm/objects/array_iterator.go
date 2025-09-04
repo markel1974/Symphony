@@ -61,8 +61,8 @@ func (o *ArrayIterator) Nil() bool {
 }
 
 // Call invokes the ArrayIterator as a callable function with the provided frame and arguments, returning a result or error.
-func (o *ArrayIterator) Call(_ int, _ ...IObject) (ret IObject, err error) {
-	return nil, nil
+func (o *ArrayIterator) Call(_ int, _ ...IObject) (retCount uint, ret IObject, err error) {
+	return 0, nil, nil
 }
 
 // LogicalOp attempts to perform a logical operation, returning an error as this operation is not supported.

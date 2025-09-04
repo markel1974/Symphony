@@ -89,8 +89,8 @@ func (o *Struct) ArithmeticOp(_ int, _ ArithmeticOperator, _ IObject) (IObject, 
 }
 
 // Call invokes the Object with the provided arguments, returning a result object and an error, if any.
-func (o *Struct) Call(_ int, _ ...IObject) (ret IObject, err error) {
-	return nil, nil
+func (o *Struct) Call(_ int, _ ...IObject) (retCount uint, ret IObject, err error) {
+	return 0, nil, nil
 }
 
 // Values returns the underlying map of string keys to IObject values contained within the Struct.

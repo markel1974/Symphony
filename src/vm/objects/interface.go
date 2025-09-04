@@ -112,8 +112,8 @@ func (o *Interface) Iterable() bool {
 }
 
 // Call invokes the object with the specified frame and arguments, returning the result or an error if unsupported.
-func (o *Interface) Call(_ int, _ ...IObject) (ret IObject, err error) {
-	return nil, ErrUnsupportedOperation
+func (o *Interface) Call(_ int, _ ...IObject) (retCount uint, ret IObject, err error) {
+	return 0, nil, nil
 }
 
 // Length returns the length of the underlying value represented by the IObject interface.

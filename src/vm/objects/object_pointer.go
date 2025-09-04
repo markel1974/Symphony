@@ -114,7 +114,7 @@ func (o *ObjectPointer) Iterable() bool {
 }
 
 // Call invokes the Object with the provided arguments, returning a result object and an error, if any.
-func (o *ObjectPointer) Call(frame int, v ...IObject) (ret IObject, err error) {
+func (o *ObjectPointer) Call(frame int, v ...IObject) (retCount uint, ret IObject, err error) {
 	return (*o.valuePtr).Call(frame, v...)
 }
 

@@ -91,8 +91,8 @@ func (o *Map) ArithmeticOp(_ int, _ ArithmeticOperator, _ IObject) (IObject, err
 }
 
 // Call invokes the Object with the provided arguments, returning a result object and an error, if any.
-func (o *Map) Call(_ int, _ ...IObject) (ret IObject, err error) {
-	return nil, nil
+func (o *Map) Call(_ int, _ ...IObject) (retCount uint, ret IObject, err error) {
+	return 0, nil, nil
 }
 
 // Get retrieves the values associated with the specified key from the map. If the key is not found, it returns nil.

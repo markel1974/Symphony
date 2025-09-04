@@ -164,8 +164,8 @@ func (o *FuncCompiled) Iterable() bool {
 }
 
 // Call invokes the Object with the provided arguments, returning a result object and an error, if any.
-func (o *FuncCompiled) Call(_ int, _ ...IObject) (ret IObject, err error) {
-	return nil, nil
+func (o *FuncCompiled) Call(_ int, _ ...IObject) (retCount uint, ret IObject, err error) {
+	return 0, nil, nil
 }
 
 // Length returns the length of the Int object.

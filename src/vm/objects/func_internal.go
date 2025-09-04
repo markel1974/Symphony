@@ -191,8 +191,9 @@ func (h *FuncInternal) Equals(_ IObject) bool {
 }
 
 // Call executes the GateCall with the provided GateKeeper, frame, and arguments, returning an IObject or an error.
-func (h *FuncInternal) Call(frame int, args ...IObject) (IObject, error) {
-	return h.fn(frame, args)
+func (h *FuncInternal) Call(frame int, args ...IObject) (uint, IObject, error) {
+	v, err := h.fn(frame, args)
+	return 1, v, err
 }
 
 // prepare initializes the function pointer `fn` in GateCall based on the provided CallId.

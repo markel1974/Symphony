@@ -74,8 +74,8 @@ func (o *String) IndexSet(_, _ IObject) (err error) {
 }
 
 // Call invokes the Object with the provided arguments, returning a result object and an error, if any.
-func (o *String) Call(_ int, _ ...IObject) (ret IObject, err error) {
-	return nil, nil
+func (o *String) Call(_ int, _ ...IObject) (retCount uint, ret IObject, err error) {
+	return 0, nil, nil
 }
 
 // Value returns the string values of the String object.

@@ -71,8 +71,8 @@ func (o *Array) Nil() bool {
 }
 
 // Call executes the Array instance as a callable object, passing the given arguments, and returns the result or an error.
-func (o *Array) Call(_ int, _ ...IObject) (ret IObject, err error) {
-	return nil, nil
+func (o *Array) Call(_ int, _ ...IObject) (retCount uint, ret IObject, err error) {
+	return 0, nil, nil
 }
 
 // TypeName returns the string "array", representing the type name of the Array object.

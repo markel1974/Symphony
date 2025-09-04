@@ -24,15 +24,15 @@ func NewErrors(factory objects.IGateKeeper) IPackage {
 }
 
 // New creates a new error object from the provided argument, ensuring it is a valid string and returning an error if not.
-func (e *Errors) New(gk objects.IGateKeeper, frame int, args ...objects.IObject) (ret objects.IObject, err error) {
+func (e *Errors) New(gk objects.IGateKeeper, frame int, args ...objects.IObject) (retCount uint, ret objects.IObject, err error) {
 	if len(args) != 1 {
-		return nil, objects.ErrInvalidArgumentsNumber
+		return 0, nil, objects.ErrInvalidArgumentsNumber
 	}
 	s, err := gk.ToStringArg(0, args[0])
 	if err != nil {
-		return nil, err
+		return 0, nil, err
 	}
-	return gk.NewError(frame, s), nil
+	return 1, gk.NewError(frame, s), nil
 }
 
 // Name returns the name identifier of the Errors type.
