@@ -9,8 +9,8 @@ import (
 // operandsMax defines the maximum number of operands, calculated as 2 raised to the power of 4.
 // operandsMask is a bitmask derived from operandsMax, used for extracting operand-related values.
 const (
-	operandsMax  = 1 << 4
-	operandsMask = operandsMax - 1
+// operandsMax  = 1 << 4
+// operandsMask = operandsMax - 1
 )
 
 type DecoderData struct {
@@ -34,18 +34,23 @@ type Decoder struct {
 	fullWidth       int
 	decodedOperands []int
 	operands        []*DecoderData
+	operandsMask    int
 }
 
 // NewDecoder creates a new Decoder instance with the specified execution function and operand widths.
-func NewDecoder(executor IOpExecutor, mask int) (*Decoder, error) {
+func NewDecoder(executor IOpExecutor) (*Decoder, error) {
 	operands := executor.Operands()
+	operandsMask := computeBitmask(len(operands))
+
 	sd := &Decoder{
 		executor:        executor,
 		execute:         executor.Execute,
 		name:            executor.Name(),
+		operandsMask:    operandsMask,
 		fullWidth:       0,
-		decodedOperands: make([]int, mask+1),
+		decodedOperands: make([]int, operandsMask+1),
 	}
+
 	idx := 0
 	for i := len(operands) - 1; i >= 0; i-- {
 		var retrieve func(*Frame, uint) int
@@ -66,8 +71,8 @@ func NewDecoder(executor IOpExecutor, mask int) (*Decoder, error) {
 		sd.fullWidth += width
 		idx++
 	}
-	if len(sd.operands) > mask {
-		return nil, fmt.Errorf("invalid operand mask: %d", mask)
+	if len(sd.operands) > operandsMask {
+		return nil, fmt.Errorf("invalid operand mask: %d", operandsMask)
 	}
 	return sd, nil
 }
@@ -99,7 +104,7 @@ func (d *Decoder) Execute() {
 // IMPORTANT: Due to the decoder's reverse logic, Read(0) accesses the LAST operand
 // of the instruction, Read(1) the second to last, and so on
 func (d *Decoder) Read(x int) int {
-	return d.decodedOperands[x&operandsMask]
+	return d.decodedOperands[x&d.operandsMask]
 }
 
 // get8 retrieves an 8-bit integer from the provided frame at the specified instruction pointer as a signed integer.
@@ -120,4 +125,13 @@ func (d *Decoder) get32(f *Frame, ip uint) int {
 // get64 retrieves a 32-bit integer from the provided frame at the specified instruction pointer and converts it to int.
 func (d *Decoder) get64(f *Frame, ip uint) int {
 	return int(f.Get64(ip))
+}
+
+// computeBitmask calculates and returns a bitmask that can represent all possible operand combinations up to op.maxLen.
+func computeBitmask(l int) int {
+	bits := 0
+	for (1 << bits) <= l {
+		bits++
+	}
+	return (1 << bits) - 1
 }

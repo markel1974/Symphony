@@ -379,12 +379,3 @@ func (op *Opcodes) CompileInstruction(opcode OpcodeId, operands ...int) ([]byte,
 func (op *Opcodes) MaxLen() int {
 	return op.maxLen
 }
-
-// MaxLenMask calculates and returns a bitmask that can represent all possible operand combinations up to op.maxLen.
-func (op *Opcodes) MaxLenMask() int {
-	bits := 0
-	for (1 << bits) <= op.maxLen {
-		bits++
-	}
-	return (1 << bits) - 1
-}
