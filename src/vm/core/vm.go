@@ -69,9 +69,12 @@ func (v *VM) Setup(loader bytecode.ILoader, codes ...*bytecode.Bytecode) (map[st
 	if err != nil {
 		return nil, err
 	}
+
+	mask := v.op.MaxLenMask()
+
 	v.sequencer = make([]*Decoder, len(sequencer))
 	for i, s := range sequencer {
-		if v.sequencer[i], err = NewDecoder(s); err != nil {
+		if v.sequencer[i], err = NewDecoder(s, mask); err != nil {
 			return nil, err
 		}
 	}

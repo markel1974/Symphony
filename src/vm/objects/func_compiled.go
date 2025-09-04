@@ -63,6 +63,41 @@ func (i *Instructions) Get16(base uint) (uint16, error) {
 	return uint16(i.data[base]) | uint16(i.data[high])<<8, nil
 }
 
+// Get32 retrieves a 32-bit unsigned integer composed of four bytes from the instructions at base and the preceding three indices.
+// The base index must be greater than or equal to 3 and within the bounds of the instructions' data.
+// Returns an error if the base index is out of bounds.
+func (i *Instructions) Get32(base uint) (uint32, error) {
+	if base < 3 || base >= uint(len(i.data)) {
+		return 0, fmt.Errorf("invalid instruction index for 32-bit read: base %d is out of bounds", base)
+	}
+	byte1 := i.data[base-3] // MSB (Most Significant Byte)
+	byte2 := i.data[base-2]
+	byte3 := i.data[base-1]
+	byte4 := i.data[base] // LSB (Least Significant Byte)
+	return uint32(byte4) | uint32(byte3)<<8 | uint32(byte2)<<16 | uint32(byte1)<<24, nil
+}
+
+// Get64 retrieves a 64-bit unsigned integer from the instructions at base and the preceding seven indices.
+// The base index must be greater than or equal to 7 and within the bounds of the instructions' data.
+// Returns an error if the base index is out of bounds.
+func (i *Instructions) Get64(base uint) (uint64, error) {
+	if base < 7 || base >= uint(len(i.data)) {
+		return 0, fmt.Errorf("invalid instruction index for 64-bit read: base %d is out of bounds", base)
+	}
+	byte1 := i.data[base-7] // MSB (Most Significant Byte)
+	byte2 := i.data[base-6]
+	byte3 := i.data[base-5]
+	byte4 := i.data[base-4]
+	byte5 := i.data[base-3]
+	byte6 := i.data[base-2]
+	byte7 := i.data[base-1]
+	byte8 := i.data[base] // LSB (Least Significant Byte)
+
+	// Combina i byte in un valore uint64
+	return uint64(byte8) | uint64(byte7)<<8 | uint64(byte6)<<16 | uint64(byte5)<<24 |
+		uint64(byte4)<<32 | uint64(byte3)<<40 | uint64(byte2)<<48 | uint64(byte1)<<56, nil
+}
+
 // FuncCompiled represents a compiled function with bytecode instructions, metadata, and associated free variables.
 type FuncCompiled struct {
 	Allocator

@@ -63,6 +63,27 @@ func (f *Frame) Get16(low uint) uint16 {
 	return v
 }
 
+// Get32 retrieves a 32-bit unsigned integer from the instructions at the specified index in the current frame. It signals an error if the retrieval fails and returns 0.
+func (f *Frame) Get32(low uint) uint32 {
+	v, err := f.instructions.Get32(low)
+	if err != nil {
+		f.errSignal(err)
+		return 0
+	}
+	return v
+}
+
+// Get64 retrieves a 64-bit unsigned integer from instructions at the specified index in the current frame.
+// It signals an error if the retrieval fails and returns 0.
+func (f *Frame) Get64(low uint) uint64 {
+	v, err := f.instructions.Get64(low)
+	if err != nil {
+		f.errSignal(err)
+		return 0
+	}
+	return v
+}
+
 // FreeVarsIndex retrieves the free variable at the specified index from the frame's free variables.
 func (f *Frame) FreeVarsIndex(idx int) *objects.ObjectPointer {
 	if idx < 0 || idx >= len(f.freeVars) {

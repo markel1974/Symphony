@@ -4,20 +4,28 @@ import (
 	"fmt"
 )
 
-// ByteSize defines the size of a byte in memory.
-// Uint16Size defines the size of a uint16 in memory.
-// byteMask is a bitmask used to extract byte-level information.
-// uint16Mask is a bitmask used to extract uint16-level information.
-// OpcodesLen represents the total number of opcodes available.
-// OpcodesMask is a bitmask that is used to extract opcode-level data.
 const (
-	Uint8Size  = 1
+	// Uint8Size defines the size in bytes of a uint8 type, which is commonly used for single-byte operand encoding.
+	Uint8Size = 1
+	// Uint16Size represents the size in bytes of a 16-bit unsigned integer, which is 2 bytes.
 	Uint16Size = 2
-	byteMask   = (Uint8Size << 8) - 1
-	uint16Mask = (1 << 16) - 1
+	// Uint32Size represents the size in bytes of a 32-bit unsigned integer.
+	Uint32Size = 4
+	// Uint64Size represents the size in bytes of a 64-bit unsigned integer, which is 8.
+	Uint64Size = 8
+)
 
-	OpcodesLen  = Uint8Size << 8
-	OpcodesMask = byteMask
+const (
+	// uint8Mask defines the maximum value that can be represented within 1 byte (8 bits), calculated as (1 << 8) - 1.
+	uint8Mask = (1 << (8 * Uint8Size)) - 1
+	// uint16Mask represents the maximum value that can be stored in a 16-bit unsigned integer (65535).
+	uint16Mask = (1 << (8 * Uint16Size)) - 1
+
+	uint32Mask = (1 << (8 * Uint32Size)) - 1 // Aggiunto
+	// OpcodesLen defines the total number of opcodes available in the bytecode system, typically calculated as Uint8Size << 8.
+	OpcodesLen = 1 << (8 * Uint8Size)
+	// OpcodesMask defines the mask applied to OpcodeId values to ensure they fit within the allowable range.
+	OpcodesMask = uint8Mask
 )
 
 // OpcodeId is a type alias for byte, used to represent operation codes in instruction sets.
@@ -232,6 +240,7 @@ func (od *Opcode) Offset() int {
 // Opcodes is a collection that manages and organizes Opcode instances, providing methods to create, retrieve, or compile them.
 type Opcodes struct {
 	container []*Opcode
+	maxLen    int
 }
 
 // NewOpcodes initializes and returns a new Opcodes instance with predefined opcode mappings.
@@ -242,56 +251,56 @@ func NewOpcodes() *Opcodes {
 	for i := range op.container {
 		op.container[i] = NewOpcode(OpUnknown, []int{}, "OpUnknown")
 	}
-	op.createOpcode(OpConstant, []int{2}, "OpConstant")
+	op.createOpcode(OpConstant, []int{Uint16Size}, "OpConstant")
 	op.createOpcode(OpPop, []int{}, "OpPop")
 	op.createOpcode(OpTrue, []int{}, "OpTrue")
 	op.createOpcode(OpFalse, []int{}, "OpFalse")
 	op.createOpcode(OpBitwiseComplement, []int{}, "OpBitwiseComplement")
 	op.createOpcode(OpMinus, []int{}, "OpMinus")
 	op.createOpcode(OpNot, []int{}, "OpNot")
-	op.createOpcode(OpJumpFalsy, []int{2}, "OpJumpFalsy")
-	op.createOpcode(OpJumpAnd, []int{2}, "OpJumpAnd")
-	op.createOpcode(OpJumpOr, []int{2}, "OpJumpOr")
-	op.createOpcode(OpJump, []int{2}, "OpJump")
-	op.createOpcode(OpJumpNotError, []int{2}, "OpJumpNotError")
+	op.createOpcode(OpJumpFalsy, []int{Uint16Size}, "OpJumpFalsy")
+	op.createOpcode(OpJumpAnd, []int{Uint16Size}, "OpJumpAnd")
+	op.createOpcode(OpJumpOr, []int{Uint16Size}, "OpJumpOr")
+	op.createOpcode(OpJump, []int{Uint16Size}, "OpJump")
+	op.createOpcode(OpJumpNotError, []int{Uint16Size}, "OpJumpNotError")
 	op.createOpcode(OpNull, []int{}, "OpNull")
-	op.createOpcode(OpGlobalGet, []int{2}, "OpGlobalGet")
-	op.createOpcode(OpGlobalSet, []int{2}, "OpGlobalSet")
-	op.createOpcode(OpGlobalSelSet, []int{2, 1}, "OpGlobalSelSet")
-	op.createOpcode(OpArray, []int{2}, "OpArray")
-	op.createOpcode(OpMap, []int{2}, "OpMap")
-	op.createOpcode(OpStruct, []int{2}, "OpStruct")
-	op.createOpcode(OpInterface, []int{1}, "OpInterface")
+	op.createOpcode(OpGlobalGet, []int{Uint16Size}, "OpGlobalGet")
+	op.createOpcode(OpGlobalSet, []int{Uint16Size}, "OpGlobalSet")
+	op.createOpcode(OpGlobalSelSet, []int{Uint16Size, 1}, "OpGlobalSelSet")
+	op.createOpcode(OpArray, []int{Uint16Size}, "OpArray")
+	op.createOpcode(OpMap, []int{Uint16Size}, "OpMap")
+	op.createOpcode(OpStruct, []int{Uint16Size}, "OpStruct")
+	op.createOpcode(OpInterface, []int{Uint8Size}, "OpInterface")
 	op.createOpcode(OpIndexGet, []int{}, "OpIndexGet")
 	op.createOpcode(OpIndexSet, []int{}, "OpIndexSet")
 	op.createOpcode(OpIndexSlice, []int{}, "OpIndexSlice")
-	op.createOpcode(OpCall, []int{1, 1}, "OpCall")
-	op.createOpcode(OpCallMethod, []int{2, 1}, "OpCallMethod")
-	op.createOpcode(OpReturn, []int{1}, "OpReturn")
-	op.createOpcode(OpLocalGet, []int{1}, "OpLocalGet")
-	op.createOpcode(OpLocalSet, []int{1}, "OpLocalSet")
-	op.createOpcode(OpLocalDefine, []int{1}, "OpLocalDefine")
-	op.createOpcode(OpLocalPtrGet, []int{1}, "OpLocalPtrGet")
-	op.createOpcode(OpLocalSelSet, []int{1, 1}, "OpLocalSelSet")
-	op.createOpcode(OpClosure, []int{2, 1}, "OpClosure")
-	op.createOpcode(OpFreeGet, []int{1}, "OpFreeGet")
-	op.createOpcode(OpFreeSet, []int{1}, "OpFreeSet")
-	op.createOpcode(OpFreePtrGet, []int{1}, "OpFreePtrGet")
-	op.createOpcode(OpIteratorInit, []int{1}, "OpIteratorInit")
-	op.createOpcode(OpIteratorNext, []int{1}, "OpIteratorNext")
-	op.createOpcode(OpIteratorKey, []int{1}, "OpIteratorKey")
-	op.createOpcode(OpIteratorValue, []int{1}, "OpIteratorValue")
-	op.createOpcode(OpLogical, []int{1}, "OpLogical")
-	op.createOpcode(OpArithmetic, []int{1}, "OpArithmetic")
-	op.createOpcode(OpFuncImport, []int{2}, "OpFuncImport")
-	op.createOpcode(OpFuncInternal, []int{2}, "OpFuncInternal")
-	op.createOpcode(OpIntLogical, []int{2, 2, 2, 1}, "OpIntLogical")
-	op.createOpcode(OpIntArithmetic, []int{2, 2, 2, 1}, "OpIntArithmetic")
+	op.createOpcode(OpCall, []int{Uint8Size, Uint8Size}, "OpCall")
+	op.createOpcode(OpCallMethod, []int{Uint16Size, Uint8Size}, "OpCallMethod")
+	op.createOpcode(OpReturn, []int{Uint8Size}, "OpReturn")
+	op.createOpcode(OpLocalGet, []int{Uint8Size}, "OpLocalGet")
+	op.createOpcode(OpLocalSet, []int{Uint8Size}, "OpLocalSet")
+	op.createOpcode(OpLocalDefine, []int{Uint8Size}, "OpLocalDefine")
+	op.createOpcode(OpLocalPtrGet, []int{Uint8Size}, "OpLocalPtrGet")
+	op.createOpcode(OpLocalSelSet, []int{Uint8Size, Uint8Size}, "OpLocalSelSet")
+	op.createOpcode(OpClosure, []int{Uint16Size, Uint8Size}, "OpClosure")
+	op.createOpcode(OpFreeGet, []int{Uint8Size}, "OpFreeGet")
+	op.createOpcode(OpFreeSet, []int{Uint8Size}, "OpFreeSet")
+	op.createOpcode(OpFreePtrGet, []int{Uint8Size}, "OpFreePtrGet")
+	op.createOpcode(OpIteratorInit, []int{Uint8Size}, "OpIteratorInit")
+	op.createOpcode(OpIteratorNext, []int{Uint8Size}, "OpIteratorNext")
+	op.createOpcode(OpIteratorKey, []int{Uint8Size}, "OpIteratorKey")
+	op.createOpcode(OpIteratorValue, []int{Uint8Size}, "OpIteratorValue")
+	op.createOpcode(OpLogical, []int{Uint8Size}, "OpLogical")
+	op.createOpcode(OpArithmetic, []int{Uint8Size}, "OpArithmetic")
+	op.createOpcode(OpFuncImport, []int{Uint16Size}, "OpFuncImport")
+	op.createOpcode(OpFuncInternal, []int{Uint16Size}, "OpFuncInternal")
+	op.createOpcode(OpIntLogical, []int{Uint16Size, Uint16Size, Uint16Size, 1}, "OpIntLogical")
+	op.createOpcode(OpIntArithmetic, []int{Uint16Size, Uint16Size, Uint16Size, 1}, "OpIntArithmetic")
 	op.createOpcode(OpDerefGet, []int{}, "OpDerefGet")
 	op.createOpcode(OpDerefSet, []int{}, "OpDerefSet")
-	op.createOpcode(OpTypeAssert, []int{2}, "OpTypeAssert")
-	op.createOpcode(OpIsType, []int{2}, "OpIsType")
-	op.createOpcode(OpAsType, []int{2}, "OpAsType")
+	op.createOpcode(OpTypeAssert, []int{Uint16Size}, "OpTypeAssert")
+	op.createOpcode(OpIsType, []int{Uint16Size}, "OpIsType")
+	op.createOpcode(OpAsType, []int{Uint16Size}, "OpAsType")
 	op.createOpcode(OpSuspend, []int{}, "OpSuspend")
 	op.createOpcode(OpError, []int{}, "OpError")
 	return op
@@ -301,6 +310,9 @@ func NewOpcodes() *Opcodes {
 func (op *Opcodes) createOpcode(opcodeId OpcodeId, operands []int, name string) {
 	od := NewOpcode(opcodeId, operands, name)
 	op.container[od.opcodeId&OpcodesMask] = od
+	if len(operands) > op.maxLen {
+		op.maxLen = len(operands)
+	}
 }
 
 // Opcode retrieves the *Opcode instance corresponding to the given OpcodeId from the container, applying a mask.
@@ -324,7 +336,7 @@ func (op *Opcodes) CompileInstruction(opcode OpcodeId, operands ...int) ([]byte,
 		width := numOperands[i]
 		switch width {
 		case Uint8Size:
-			if o < 0 || o > byteMask {
+			if o < 0 || o > uint8Mask {
 				return nil, fmt.Errorf("operand %d value %d out of 1-byte range", i, o)
 			}
 			instruction[offset] = byte(o)
@@ -335,8 +347,44 @@ func (op *Opcodes) CompileInstruction(opcode OpcodeId, operands ...int) ([]byte,
 			n := uint16(o)
 			instruction[offset] = byte(n >> 8) // Most significant byte (Big Endian)
 			instruction[offset+1] = byte(n)    // Least significant byte
+		case Uint32Size:
+			if o < 0 || o > uint32Mask {
+				return nil, fmt.Errorf("operand %d value %d out of 4-byte range", i, o)
+			}
+			n := uint32(o)
+			instruction[offset] = byte(n >> 24)
+			instruction[offset+1] = byte(n >> 16)
+			instruction[offset+2] = byte(n >> 8)
+			instruction[offset+3] = byte(n)
+		case Uint64Size:
+			if o < 0 {
+				return nil, fmt.Errorf("operand %d value %d out of 8-byte range (negative)", i, o)
+			}
+			n := uint64(o)
+			instruction[offset] = byte(n >> 56)
+			instruction[offset+1] = byte(n >> 48)
+			instruction[offset+2] = byte(n >> 40)
+			instruction[offset+3] = byte(n >> 32)
+			instruction[offset+4] = byte(n >> 24)
+			instruction[offset+5] = byte(n >> 16)
+			instruction[offset+6] = byte(n >> 8)
+			instruction[offset+7] = byte(n)
 		}
 		offset += width
 	}
 	return instruction, nil
+}
+
+// MaxLen returns the maximum number of operands encountered across all compiled instructions in the Opcodes instance.
+func (op *Opcodes) MaxLen() int {
+	return op.maxLen
+}
+
+// MaxLenMask calculates and returns a bitmask that can represent all possible operand combinations up to op.maxLen.
+func (op *Opcodes) MaxLenMask() int {
+	bits := 0
+	for (1 << bits) <= op.maxLen {
+		bits++
+	}
+	return (1 << bits) - 1
 }

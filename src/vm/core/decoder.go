@@ -37,33 +37,37 @@ type Decoder struct {
 }
 
 // NewDecoder creates a new Decoder instance with the specified execution function and operand widths.
-func NewDecoder(executor IOpExecutor) (*Decoder, error) {
+func NewDecoder(executor IOpExecutor, mask int) (*Decoder, error) {
 	operands := executor.Operands()
 	sd := &Decoder{
 		executor:        executor,
 		execute:         executor.Execute,
 		name:            executor.Name(),
 		fullWidth:       0,
-		decodedOperands: make([]int, operandsMax),
-	}
-	if len(operands) > operandsMax {
-		return nil, fmt.Errorf("too many operands: %d", len(operands))
+		decodedOperands: make([]int, mask+1),
 	}
 	idx := 0
 	for i := len(operands) - 1; i >= 0; i-- {
-		width := operands[i]
 		var retrieve func(*Frame, uint) int
+		width := operands[i]
 		switch width {
 		case bytecode.Uint8Size:
 			retrieve = sd.get8
 		case bytecode.Uint16Size:
 			retrieve = sd.get16
+		case bytecode.Uint32Size:
+			retrieve = sd.get32
+		case bytecode.Uint64Size:
+			retrieve = sd.get64
 		default:
 			return nil, fmt.Errorf("invalid operand width: %d", width)
 		}
 		sd.operands = append(sd.operands, &DecoderData{offset: uint(sd.fullWidth), retrieve: retrieve})
 		sd.fullWidth += width
 		idx++
+	}
+	if len(sd.operands) > mask {
+		return nil, fmt.Errorf("invalid operand mask: %d", mask)
 	}
 	return sd, nil
 }
@@ -106,4 +110,14 @@ func (d *Decoder) get8(f *Frame, ip uint) int {
 // get16 retrieves a 16-bit integer from the frame's instructions at the specified instruction pointer (ip) position.
 func (d *Decoder) get16(f *Frame, ip uint) int {
 	return int(f.Get16(ip))
+}
+
+// get32 retrieves a 32-bit signed integer from the provided frame at the specified instruction pointer position.
+func (d *Decoder) get32(f *Frame, ip uint) int {
+	return int(f.Get32(ip))
+}
+
+// get64 retrieves a 32-bit integer from the provided frame at the specified instruction pointer and converts it to int.
+func (d *Decoder) get64(f *Frame, ip uint) int {
+	return int(f.Get64(ip))
 }
