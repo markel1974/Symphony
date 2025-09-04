@@ -1,11 +1,18 @@
 package core
 
+import "fmt"
+
 // operandsMax defines the maximum number of operands, calculated as 2 raised to the power of 4.
 // operandsMask is a bitmask derived from operandsMax, used for extracting operand-related values.
 const (
 	operandsMax  = 1 << 4
 	operandsMask = operandsMax - 1
 )
+
+type DecoderData struct {
+	offset   uint
+	retrieve func(*Frame, uint) int
+}
 
 // Decoder represents an instruction decoder used to process bytecode in a virtual machine.
 // It handles decoding operands and executing the associated instruction logic.
@@ -21,37 +28,40 @@ type Decoder struct {
 	name            string
 	execute         func(data *Decoder)
 	fullWidth       int
-	operands        []int
 	decodedOperands []int
-	//fnOperands      []func(*Frame, int) (int, int)
+	operands        []*DecoderData
 }
 
 // NewDecoder creates a new Decoder instance with the specified execution function and operand widths.
-func NewDecoder(executor IOpExecutor) *Decoder {
+func NewDecoder(executor IOpExecutor) (*Decoder, error) {
 	operands := executor.Operands()
 	sd := &Decoder{
 		executor:        executor,
 		execute:         executor.Execute,
 		name:            executor.Name(),
-		operands:        make([]int, len(operands)),
 		fullWidth:       0,
 		decodedOperands: make([]int, operandsMax),
-		//fnOperands:      make([]func(*Frame, int) (int, int), len(operands)),
+	}
+	if len(operands) > operandsMax {
+		return nil, fmt.Errorf("too many operands: %d", len(operands))
 	}
 	idx := 0
 	for i := len(operands) - 1; i >= 0; i-- {
-		sd.operands[idx] = operands[i]
 		width := operands[i]
-		//switch width {
-		//case 1:
-		//	sd.fnOperands[idx] = func(frame *Frame, ip int) (int, int) { return int(frame.Get8(ip)), 1 }
-		//ase 2:
-		//	sd.fnOperands[idx] = func(frame *Frame, ip int) (int, int) { return int(frame.Get16(ip)), 2 }
-		//}
+		var retrieve func(*Frame, uint) int
+		switch width {
+		case 1:
+			retrieve = sd.get8
+		case 2:
+			retrieve = sd.get16
+		default:
+			return nil, fmt.Errorf("invalid operand width: %d", width)
+		}
+		sd.operands = append(sd.operands, &DecoderData{offset: uint(sd.fullWidth), retrieve: retrieve})
 		sd.fullWidth += width
 		idx++
 	}
-	return sd
+	return sd, nil
 }
 
 // Name returns the name of the instruction.
@@ -59,20 +69,14 @@ func (d *Decoder) Name() string {
 	return d.name
 }
 
+// Decode processes and decodes operands from the instruction pointer, updating decodedOperands and returning new ip.
 func (d *Decoder) Decode(frame *Frame, ip int) int {
 	if d.fullWidth == 0 {
 		return ip
 	}
 	ip += d.fullWidth
-	readOffset := ip
-	for idx, width := range d.operands {
-		switch width {
-		case 1:
-			d.decodedOperands[idx] = int(frame.Get8(readOffset))
-		case 2:
-			d.decodedOperands[idx] = int(frame.Get16(readOffset))
-		}
-		readOffset -= width
+	for idx, dd := range d.operands {
+		d.decodedOperands[idx] = dd.retrieve(frame, uint(ip)-dd.offset)
 	}
 	return ip
 }
@@ -90,19 +94,12 @@ func (d *Decoder) Read(x int) int {
 	return d.decodedOperands[x&operandsMask]
 }
 
-/*
-// Decode processes and decodes operands from the instruction pointer, updating decodedOperands and returning new ip.
-func (d *Decoder) Decode2(frame *Frame, ip int) int {
-	if d.fullWidth == 0 {
-		return ip
-	}
-	ip += d.fullWidth
-	readOffset := ip
-	for idx, fn := range d.fnOperands {
-		val, width := fn(frame, readOffset)
-		d.decodedOperands[idx] = val
-		readOffset -= width
-	}
-	return ip
+// get8 retrieves an 8-bit integer from the provided frame at the specified instruction pointer as a signed integer.
+func (d *Decoder) get8(f *Frame, ip uint) int {
+	return int(f.Get8(ip))
 }
-*/
+
+// get16 retrieves a 16-bit integer from the frame's instructions at the specified instruction pointer (ip) position.
+func (d *Decoder) get16(f *Frame, ip uint) int {
+	return int(f.Get16(ip))
+}

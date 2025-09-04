@@ -71,7 +71,9 @@ func (v *VM) Setup(loader bytecode.ILoader, codes ...*bytecode.Bytecode) (map[st
 	}
 	v.sequencer = make([]*Decoder, len(sequencer))
 	for i, s := range sequencer {
-		v.sequencer[i] = NewDecoder(s)
+		if v.sequencer[i], err = NewDecoder(s); err != nil {
+			return nil, err
+		}
 	}
 	switch len(codes) {
 	case 1:
@@ -384,7 +386,7 @@ func (v *VM) loop() {
 	var decoder *Decoder
 	for {
 		v.ip++
-		opcode = v.currFrame.Get8(v.ip)
+		opcode = v.currFrame.Get8(uint(v.ip))
 		decoder = v.sequencer[opcode]
 		v.ip = decoder.Decode(v.currFrame, v.ip)
 		log.Printf("Executing instruction opcode: %d name: %s ip: %d decoded: %v", opcode, decoder.Name(), v.ip, decoder.decodedOperands[:decoder.fullWidth])

@@ -43,7 +43,7 @@ func (f *Frame) Bind(startIp int, compiledFunction *objects.FuncCompiled, basePo
 
 // Get8 retrieves an 8-bit unsigned integer from the instructions at the specified index in the current frame.
 // It signals an error if the retrieval fails and returns 0.
-func (f *Frame) Get8(index int) uint8 {
+func (f *Frame) Get8(index uint) uint8 {
 	v, err := f.instructions.Get8(index)
 	if err != nil {
 		f.errSignal(err)
@@ -54,7 +54,7 @@ func (f *Frame) Get8(index int) uint8 {
 
 // Get16 retrieves a 16-bit unsigned integer from instructions at specified indices x and y in the current frame.
 // If an error occurs during retrieval, it signals the error and returns 0.
-func (f *Frame) Get16(low int) uint16 {
+func (f *Frame) Get16(low uint) uint16 {
 	v, err := f.instructions.Get16(low)
 	if err != nil {
 		f.errSignal(err)

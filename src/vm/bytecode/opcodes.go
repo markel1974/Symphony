@@ -72,16 +72,16 @@ const (
 	// OpInterface represents the opcode used to construct an interface object with required method bindings on the stack.
 	OpInterface
 
-	// OpJumpNotError gestisce il pattern 'if err != nil', saltando il blocco if se l'oggetto in cima allo stack è nullo o non è un errore.
+	// OpJumpNotError handles the 'if err != nil' pattern, skipping the if block if the top stack object is null or not an error.
 	OpJumpNotError
 
-	// OpTypeAssert implementa l'asserzione di tipo 'val, ok := i.(Type)'.
+	// OpTypeAssert implements type assertion 'val, ok := i.(Type)'.
 	OpTypeAssert
 
-	// OpIsType è un helper per il type switch, controlla il tipo e pusha un booleano.
+	// OpIsType is a helper for type switch, checks type and pushes a boolean.
 	OpIsType
 
-	// OpAsType è un helper per il type switch, esegue il cast del valore senza controlli.
+	// OpAsType is a helper for type switch, performs type casting without checks.
 	OpAsType
 
 	// OpIndexGet represents an operation code for indexing operations on arrays, maps, or slices within the virtual machine.
@@ -219,18 +219,22 @@ func (od *Opcode) Name() string {
 	return od.name
 }
 
-// Operands retrieve the list of integer operands associated with the Opcode instance.
+// Operands returns the operand widths for the Opcode as a slice of integers.
 func (od *Opcode) Operands() []int {
 	return od.operands
 }
+
+// Offset returns the byte offset of the opcode within an instruction.
 func (od *Opcode) Offset() int {
 	return od.offset
 }
 
+// Opcodes is a collection that manages and organizes Opcode instances, providing methods to create, retrieve, or compile them.
 type Opcodes struct {
 	container []*Opcode
 }
 
+// NewOpcodes initializes and returns a new Opcodes instance with predefined opcode mappings.
 func NewOpcodes() *Opcodes {
 	op := &Opcodes{
 		container: make([]*Opcode, OpcodesLen),
@@ -293,18 +297,18 @@ func NewOpcodes() *Opcodes {
 	return op
 }
 
-// createOpcode associates opcode with a specific opcodeId, storing it in a globals lookup by applying a mask.
+// createOpcode registers a new Opcode in the Opcodes container with its identifier, operands, and name.
 func (op *Opcodes) createOpcode(opcodeId OpcodeId, operands []int, name string) {
 	od := NewOpcode(opcodeId, operands, name)
 	op.container[od.opcodeId&OpcodesMask] = od
 }
 
-// Opcode retrieves the Opcode corresponding to the given opcodeId by applying the OpcodesMask.
+// Opcode retrieves the *Opcode instance corresponding to the given OpcodeId from the container, applying a mask.
 func (op *Opcodes) Opcode(opcodeId OpcodeId) *Opcode {
 	return op.container[opcodeId&OpcodesMask]
 }
 
-// CompileInstruction generates a byte-encoded instruction using the given opcode and operands, verifying operand widths.
+// CompileInstruction generates bytecode for a given opcode and its operands or returns an error if validation fails.
 func (op *Opcodes) CompileInstruction(opcode OpcodeId, operands ...int) ([]byte, error) {
 	details := op.Opcode(opcode)
 	numOperands := details.Operands()
