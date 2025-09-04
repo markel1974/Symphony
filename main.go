@@ -130,10 +130,11 @@ func BuildDrives(d string) ([]*config.Drive, error) {
 
 func vmTest() {
 	const sequencerId = "native"
-	//const baseDir = "../src/compilers/native/stub/sources"
-	//const prefix = "rt"
-	const prefix = "test_"
-	const baseDir = "../src/compilers/native/stub/tests"
+
+	const prefix = "rt"
+	const baseDir = "../src/compilers/native/stub/sources"
+	//const prefix = "test_"
+	//const baseDir = "../src/compilers/native/stub/tests"
 	if err := stub.VMTest(sequencerId, baseDir, prefix, false); err != nil {
 		log.Fatal(err)
 	}

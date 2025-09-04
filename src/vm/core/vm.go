@@ -344,8 +344,6 @@ func (v *VM) prepare() {
 func (v *VM) exec(mainFn *objects.FuncCompiled, ret bool, args ...interface{}) ([]interface{}, error) {
 	v.prepare()
 	defer func() {
-		// Stack cleanup is performed on the entire used stack (from 0 to final pointer).
-		//v.stack.ReleaseObjects(v.currFrame.Id(), 0, v.stack.StackPointer(), nil)
 		v.stack.ReleaseAll()
 	}()
 	v.currFrame = v.frames.Head()
@@ -395,19 +393,33 @@ func (v *VM) loop() {
 
 // callInternal invokes a callable object with the given arguments and handles stack cleanup and error management.
 func (v *VM) callInternal(value objects.IObject, args []objects.IObject, numArgs int) {
-	_, ret, err := value.Call(v.currFrame.Id(), args...)
-	//TODO retCount
-
-	// Cleans the stack from the function and its arguments
+	retCount, ret, err := value.Call(v.currFrame.Id(), args...)
 	v.stack.DecrementCount(numArgs + 1)
 	if err != nil {
 		v.SetError(objects.ComputeCallError(err, value.TypeName()))
 		return
 	}
-	if ret == nil {
+	switch retCount {
+	case 0:
 		v.stack.Push(v.gk.UndefinedValue())
-	} else {
-		v.stack.Push(ret)
+		return
+	case 1:
+		if ret != nil {
+			v.stack.Push(ret)
+		} else {
+			v.stack.Push(v.gk.UndefinedValue())
+		}
+		return
+	default:
+		container, ok := ret.(*objects.Array)
+		if !ok {
+			v.SetError(fmt.Errorf("invalid return count: %d", retCount))
+			return
+		}
+		for _, item := range container.Values() {
+			v.stack.Push(item)
+		}
+		return
 	}
 }
 
