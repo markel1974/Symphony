@@ -28,7 +28,7 @@ const (
 )
 
 // NewGateKeeper initializes a new GateKeeper instance and sets up default bool and undefined values.
-func NewGateKeeper(maxAllocations int64) IGateKeeper {
+func NewGateKeeper(maxAllocations int) IGateKeeper {
 	f := &GateKeeper{}
 	f.IGateAllocator = NewGateAllocator(f, maxAllocations)
 	f.IGateConverter = NewGateConverter(f)

@@ -209,6 +209,11 @@ func (v *Stack) CopyOffset(start int, count int) {
 	copy(v.stack[start:destinationEnd], v.stack[sourceStart:v.sp])
 }
 
+// ReleaseAll releases all managed resources through the gatekeeper (gk) and ensures proper cleanup.
+func (v *Stack) ReleaseAll() {
+	v.gk.ReleaseAll()
+}
+
 // ReleaseObjects releases objects from the stack within the range [start:end), excluding those in the preserve list.
 // Objects are managed by a gatekeeper (gk) for proper disposal. It handles optimized cases for single-item preservation.
 // The function ensures safe operations with bounds checks and no operation for invalid ranges.

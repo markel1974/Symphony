@@ -350,7 +350,8 @@ func (v *VM) exec(mainFn *objects.FuncCompiled, ret bool, args ...interface{}) (
 	v.prepare()
 	defer func() {
 		// Stack cleanup is performed on the entire used stack (from 0 to final pointer).
-		v.stack.ReleaseObjects(v.currFrame.Id(), 0, v.stack.StackPointer(), nil)
+		//v.stack.ReleaseObjects(v.currFrame.Id(), 0, v.stack.StackPointer(), nil)
+		v.stack.ReleaseAll()
 	}()
 	v.currFrame = v.frames.Head()
 	v.currFrame.Bind(v.ip, mainFn, 0)
