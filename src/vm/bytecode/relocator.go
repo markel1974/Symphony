@@ -4,19 +4,19 @@ import (
 	"fmt"
 	"reflect"
 
-	objects2 "github.com/markel1974/c64emu/src/vm/objects"
+	"github.com/markel1974/c64emu/src/vm/objects"
 )
 
 // Relocator is responsible for processing, fixing, and reconstructing objects, ensuring compatibility with the runtime environment.
 type Relocator struct {
-	gk        objects2.IGateKeeper
+	gk        objects.IGateKeeper
 	opcodes   *Opcodes
 	loader    ILoader
 	preserved map[string]bool
 }
 
 // NewRelocator creates and returns a new instance of Relocator initialized with the provided IGateKeeper, ILoader, and Opcodes.
-func NewRelocator(gk objects2.IGateKeeper, loader ILoader, opcodes *Opcodes, preserve []string) *Relocator {
+func NewRelocator(gk objects.IGateKeeper, loader ILoader, opcodes *Opcodes, preserve []string) *Relocator {
 	p := make(map[string]bool)
 	for _, v := range preserve {
 		p[v] = true
@@ -32,9 +32,9 @@ func NewRelocator(gk objects2.IGateKeeper, loader ILoader, opcodes *Opcodes, pre
 // Relocate processes a slice of Bytecode instances, ensuring each bytecode is fixed and reconstructed correctly.
 // Returns a new Bytecode instance or an error if the fixing process fails.
 func (c *Relocator) Relocate(codes []*Bytecode) (*Bytecode, error) {
-	var constants []objects2.IObject
-	var references []objects2.IObject
-	var globals []objects2.IObject
+	var constants []objects.IObject
+	var references []objects.IObject
+	var globals []objects.IObject
 	var sourceFiles []IFile
 	for _, bc := range codes {
 		references = append(references, bc.Imports()...)
@@ -61,8 +61,8 @@ func (c *Relocator) Relocate(codes []*Bytecode) (*Bytecode, error) {
 
 // Fix processes a slice of IObject instances, ensuring each object is fixed and reconstructed correctly.
 // Returns a slice of fixed IObject instances or an error if the fixing process fails.
-func (c *Relocator) Fix(o []objects2.IObject) ([]objects2.IObject, error) {
-	out := make([]objects2.IObject, len(o))
+func (c *Relocator) Fix(o []objects.IObject) ([]objects.IObject, error) {
+	out := make([]objects.IObject, len(o))
 	for i, v := range o {
 		fv, err := c.fixObject(v)
 		if err != nil {
@@ -76,16 +76,16 @@ func (c *Relocator) Fix(o []objects2.IObject) ([]objects2.IObject, error) {
 // FixObject ensures that a decoded object is properly reconstructed and compatible with the runtime environment.
 // It recursively processes composite objects like arrays and maps, fixing or transforming their elements if necessary.
 // Returns the modified object or an error if reconstruction fails.
-func (c *Relocator) fixObject(o objects2.IObject) (objects2.IObject, error) {
+func (c *Relocator) fixObject(o objects.IObject) (objects.IObject, error) {
 	switch o := o.(type) {
-	case *objects2.Bool:
+	case *objects.Bool:
 		if o.Falsy() {
 			return c.gk.FalseValue(), nil
 		}
 		return c.gk.TrueValue(), nil
-	case *objects2.Undefined:
+	case *objects.Undefined:
 		return c.gk.UndefinedValue(), nil
-	case *objects2.Array:
+	case *objects.Array:
 		for i, v := range o.Values() {
 			fv, err := c.fixObject(v)
 			if err != nil {
@@ -93,7 +93,7 @@ func (c *Relocator) fixObject(o objects2.IObject) (objects2.IObject, error) {
 			}
 			o.SetValue(i, fv)
 		}
-	case *objects2.Map:
+	case *objects.Map:
 		for k, v := range o.Values() {
 			fv, err := c.fixObject(v)
 			if err != nil {
@@ -106,14 +106,14 @@ func (c *Relocator) fixObject(o objects2.IObject) (objects2.IObject, error) {
 }
 
 // RelocateObjects modifies a slice of IObject instances by deduplicating input and updating bytecode constant indexes accordingly.
-func (c *Relocator) RelocateObjects(in []objects2.IObject) ([]objects2.IObject, error) {
+func (c *Relocator) RelocateObjects(in []objects.IObject) ([]objects.IObject, error) {
 	outDeduped, outIndexContainer, err := c.processDuplicates(in)
 	if err != nil {
 		return nil, err
 	}
 	for _, in := range outDeduped {
 		switch obj := in.(type) {
-		case *objects2.FuncCompiled:
+		case *objects.FuncCompiled:
 			if err = c.updateIndexes(obj.Data(), outIndexContainer); err != nil {
 				return nil, err
 			}
@@ -124,18 +124,18 @@ func (c *Relocator) RelocateObjects(in []objects2.IObject) ([]objects2.IObject, 
 
 // processDuplicates processes a container of objects, removing duplicates and mapping old indices to new indices.
 // It returns a deduplicated list of objects, a mapping of old to new indices, and an error if encountered.
-func (c *Relocator) processDuplicates(container []objects2.IObject) ([]objects2.IObject, map[int]int, error) {
-	var deDuped []objects2.IObject
+func (c *Relocator) processDuplicates(container []objects.IObject) ([]objects.IObject, map[int]int, error) {
+	var deDuped []objects.IObject
 	indexContainer := make(map[int]int)
 	ints := make(map[int64]int)
 	strings := make(map[string]int)
 	floats := make(map[float64]int)
 	chars := make(map[rune]int)
-	fns := make(map[*objects2.FuncCompiled]int)
+	fns := make(map[*objects.FuncCompiled]int)
 
 	for curIdx, in := range container {
 		switch obj := in.(type) {
-		case *objects2.FuncCompiled:
+		case *objects.FuncCompiled:
 			newIdx := -1
 			if _, preserve := c.preserved[obj.Name()]; !preserve { //obj.Name() != PreInitFunction && obj.Name() != InitFunction {
 				if v, ok := fns[obj]; ok {
@@ -150,7 +150,7 @@ func (c *Relocator) processDuplicates(container []objects2.IObject) ([]objects2.
 				indexContainer[curIdx] = newIdx
 				deDuped = append(deDuped, obj)
 			}
-		case *objects2.Int:
+		case *objects.Int:
 			if newIdx, ok := ints[obj.Value()]; ok {
 				indexContainer[curIdx] = newIdx
 			} else {
@@ -159,7 +159,7 @@ func (c *Relocator) processDuplicates(container []objects2.IObject) ([]objects2.
 				indexContainer[curIdx] = newIdx
 				deDuped = append(deDuped, obj)
 			}
-		case *objects2.String:
+		case *objects.String:
 			if newIdx, ok := strings[obj.Value()]; ok {
 				indexContainer[curIdx] = newIdx
 			} else {
@@ -168,7 +168,7 @@ func (c *Relocator) processDuplicates(container []objects2.IObject) ([]objects2.
 				indexContainer[curIdx] = newIdx
 				deDuped = append(deDuped, obj)
 			}
-		case *objects2.Float:
+		case *objects.Float:
 			if newIdx, ok := floats[obj.Value()]; ok {
 				indexContainer[curIdx] = newIdx
 			} else {
@@ -177,7 +177,7 @@ func (c *Relocator) processDuplicates(container []objects2.IObject) ([]objects2.
 				indexContainer[curIdx] = newIdx
 				deDuped = append(deDuped, obj)
 			}
-		case *objects2.Char:
+		case *objects.Char:
 			if newIdx, ok := chars[obj.Value()]; ok {
 				indexContainer[curIdx] = newIdx
 			} else {

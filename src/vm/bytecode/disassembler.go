@@ -5,7 +5,7 @@ import (
 	"io"
 	"reflect"
 
-	objects2 "github.com/markel1974/c64emu/src/vm/objects"
+	"github.com/markel1974/c64emu/src/vm/objects"
 )
 
 // Disassembler represents a utility for analyzing and processing bytecode by dissecting its constants and imports.
@@ -66,13 +66,13 @@ func (d *Disassembler) disassembleReferences() []string {
 }
 
 // disassembleObject generates a disassembled representation of a constant object, including detailed instructions for functions.
-func (d *Disassembler) disassembleObject(cIdx int, constant objects2.IObject) []string {
+func (d *Disassembler) disassembleObject(cIdx int, constant objects.IObject) []string {
 	var output []string
 	if constant == nil {
 		return []string{fmt.Sprintf("[% 3d] nil", cIdx)}
 	}
 	switch cn := constant.(type) {
-	case *objects2.FuncCompiled:
+	case *objects.FuncCompiled:
 		output = append(output, fmt.Sprintf("[% 3d] %s (Compiled Function|%p)", cIdx, cn.Name(), &cn))
 		for _, l := range d.disassembleInstructions(cn.Data(), 0) {
 			output = append(output, fmt.Sprintf("\t\t%s", l))
@@ -116,18 +116,18 @@ func (d *Disassembler) CountObjects() int {
 }
 
 // countObjects recursively counts the total number of objects contained in the given IObject, including nested structures.
-func (d *Disassembler) countObjects(in objects2.IObject) int {
+func (d *Disassembler) countObjects(in objects.IObject) int {
 	c := 1
 	switch o := in.(type) {
-	case *objects2.Array:
+	case *objects.Array:
 		for _, v := range o.Values() {
 			c += d.countObjects(v)
 		}
-	case *objects2.Map:
+	case *objects.Map:
 		for _, v := range o.Values() {
 			c += d.countObjects(v)
 		}
-	case *objects2.Error:
+	case *objects.Error:
 		c += d.countObjects(o.Value())
 	}
 	return c
