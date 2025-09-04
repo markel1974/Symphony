@@ -1,6 +1,10 @@
 package core
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/markel1974/c64emu/src/vm/bytecode"
+)
 
 // operandsMax defines the maximum number of operands, calculated as 2 raised to the power of 4.
 // operandsMask is a bitmask derived from operandsMax, used for extracting operand-related values.
@@ -50,9 +54,9 @@ func NewDecoder(executor IOpExecutor) (*Decoder, error) {
 		width := operands[i]
 		var retrieve func(*Frame, uint) int
 		switch width {
-		case 1:
+		case bytecode.Uint8Size:
 			retrieve = sd.get8
-		case 2:
+		case bytecode.Uint16Size:
 			retrieve = sd.get16
 		default:
 			return nil, fmt.Errorf("invalid operand width: %d", width)

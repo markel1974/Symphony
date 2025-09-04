@@ -11,12 +11,12 @@ import (
 // OpcodesLen represents the total number of opcodes available.
 // OpcodesMask is a bitmask that is used to extract opcode-level data.
 const (
-	ByteSize   = 1
+	Uint8Size  = 1
 	Uint16Size = 2
-	byteMask   = (ByteSize << 8) - 1
+	byteMask   = (Uint8Size << 8) - 1
 	uint16Mask = (1 << 16) - 1
 
-	OpcodesLen  = ByteSize << 8
+	OpcodesLen  = Uint8Size << 8
 	OpcodesMask = byteMask
 )
 
@@ -323,7 +323,7 @@ func (op *Opcodes) CompileInstruction(opcode OpcodeId, operands ...int) ([]byte,
 	for i, o := range operands {
 		width := numOperands[i]
 		switch width {
-		case ByteSize:
+		case Uint8Size:
 			if o < 0 || o > byteMask {
 				return nil, fmt.Errorf("operand %d value %d out of 1-byte range", i, o)
 			}

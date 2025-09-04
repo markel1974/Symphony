@@ -9,7 +9,7 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
 	"github.com/markel1974/c64emu/src/kernel/messages"
 	"github.com/markel1974/c64emu/src/vm"
-	bytecode2 "github.com/markel1974/c64emu/src/vm/bytecode"
+	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/core"
 	"github.com/markel1974/c64emu/src/vm/objects"
 )
@@ -32,9 +32,9 @@ type Process struct {
 	executorChan     chan interfaces.IMessage
 	executorWaitChan chan bool
 	timeout          time.Duration
-	loader           bytecode2.ILoader
-	opcodes          *bytecode2.Opcodes
-	compiler         bytecode2.ICompiler
+	loader           bytecode.ILoader
+	opcodes          *bytecode.Opcodes
+	compiler         bytecode.ICompiler
 	vm               *core.VM
 	onError          interfaces.OnError
 	onTimer          interfaces.OnTimer
@@ -545,7 +545,7 @@ func (t *Process) handleMessageProcessStart(msg interfaces.IMessage) {
 			var err error
 			const sequencerId = "native"
 			gk := objects.NewGateKeeper(0)
-			t.opcodes = bytecode2.NewOpcodes()
+			t.opcodes = bytecode.NewOpcodes()
 			t.compiler, t.loader, err = compilers.NewCompiler(gk, t.opcodes, sequencerId)
 			if err != nil {
 				log.Printf("Process [%s]: error creating compiler: %s", t.cmd.Name(), err.Error())
@@ -563,7 +563,7 @@ func (t *Process) handleMessageProcessStart(msg interfaces.IMessage) {
 			log.Printf("Process [%s]: error compiling script: %s", t.cmd.Name(), err.Error())
 			return
 		}
-		bc := bytecode2.NewBytecode(t.opcodes, t.compiler.Constants(), t.compiler.Imports(), t.compiler.Globals(), t.compiler.FileSet())
+		bc := bytecode.NewBytecode(t.compiler.Constants(), t.compiler.Imports(), t.compiler.Globals(), t.compiler.FileSet())
 		entryPoints, err := t.vm.Setup(t.loader, bc)
 		if err != nil {
 			log.Printf("Process [%s]: error setting up VM: %s", t.cmd.Name(), err.Error())

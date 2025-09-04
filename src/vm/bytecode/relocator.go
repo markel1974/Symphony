@@ -52,7 +52,7 @@ func (c *Relocator) Relocate(codes []*Bytecode) (*Bytecode, error) {
 	if globals, err = c.RelocateObjects(globals); err != nil {
 		return nil, err
 	}
-	out := NewBytecode(c.opcodes, constants, references, globals, nil)
+	out := NewBytecode(constants, references, globals, nil)
 	for _, sf := range sourceFiles {
 		out.AddFile(sf)
 	}

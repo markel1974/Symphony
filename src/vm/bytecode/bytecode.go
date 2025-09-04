@@ -20,7 +20,6 @@ func init() {
 // Bytecode represents a construct that encapsulates compiled code, associated constants, and object imports.
 // It aggregates information like source files, constant pool, and referenced objects required for execution.
 type Bytecode struct {
-	opcodes   *Opcodes
 	files     *Files
 	constants []objects.IObject
 	imports   []objects.IObject
@@ -28,9 +27,8 @@ type Bytecode struct {
 }
 
 // NewBytecode creates and returns a new instance of Bytecode with an initialized Files object.
-func NewBytecode(op *Opcodes, constants []objects.IObject, imports []objects.IObject, global []objects.IObject, f IFile) *Bytecode {
+func NewBytecode(constants []objects.IObject, imports []objects.IObject, global []objects.IObject, f IFile) *Bytecode {
 	bc := &Bytecode{
-		opcodes:   op,
 		files:     NewFiles(),
 		constants: constants,
 		imports:   imports,

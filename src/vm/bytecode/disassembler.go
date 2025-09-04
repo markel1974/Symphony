@@ -10,13 +10,15 @@ import (
 
 // Disassembler represents a utility for analyzing and processing bytecode by dissecting its constants and imports.
 type Disassembler struct {
-	bc *Bytecode
+	bc      *Bytecode
+	opcodes *Opcodes
 }
 
 // NewDisassembler creates a new Disassembler instance linked to the provided Bytecode object.
-func NewDisassembler(b *Bytecode) *Disassembler {
+func NewDisassembler(b *Bytecode, opcodes *Opcodes) *Disassembler {
 	return &Disassembler{
-		bc: b,
+		bc:      b,
+		opcodes: opcodes,
 	}
 }
 
@@ -88,7 +90,7 @@ func (d *Disassembler) disassembleObject(cIdx int, constant objects.IObject) []s
 func (d *Disassembler) disassembleInstructions(bc []byte, posOffset int) []string {
 	var out []string
 	for i := 0; i < len(bc); {
-		details := d.bc.opcodes.Opcode(bc[i])
+		details := d.opcodes.Opcode(bc[i])
 		numOperands, operands, read := d.computeOperands(details, bc[i+1:])
 		switch len(numOperands) {
 		case 0:
@@ -127,6 +129,10 @@ func (d *Disassembler) countObjects(in objects.IObject) int {
 		for _, v := range o.Values() {
 			c += d.countObjects(v)
 		}
+	case *objects.Struct:
+		for _, v := range o.Values() {
+			c += d.countObjects(v)
+		}
 	case *objects.Error:
 		c += d.countObjects(o.Value())
 	}
@@ -142,7 +148,7 @@ func (d *Disassembler) computeOperands(details *Opcode, ins []byte) ([]int, []in
 	var offset int
 	for _, width := range details.Operands() {
 		switch width {
-		case ByteSize:
+		case Uint8Size:
 			if offset >= len(ins) {
 				return nil, nil, 0
 			}
