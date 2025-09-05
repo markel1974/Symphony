@@ -56,6 +56,9 @@ const (
 	// OpJumpFalsy represents a conditional jump instruction that redirects execution if the top stack value is falsy.
 	OpJumpFalsy
 
+	// OpJumpTruthy represents a conditional jump instruction that redirects execution if the top stack value is truthy.
+	OpJumpTruthy
+
 	// OpJumpAnd is an opcode used to perform a conditional jump based on the evaluation of a logical AND operation.
 	OpJumpAnd
 
@@ -64,6 +67,8 @@ const (
 
 	// OpJump is a constant representing an unconditional jump operation in the bytecode instruction set.
 	OpJump
+
+	OpJumpIndirect
 
 	// OpNull represents a null operation or a placeholder indicating a null value in the opcode sequence.
 	OpNull
@@ -259,14 +264,16 @@ func NewOpcodes() *Opcodes {
 	op.createOpcode(OpMinus, []int{}, "OpMinus")
 	op.createOpcode(OpNot, []int{}, "OpNot")
 	op.createOpcode(OpJumpFalsy, []int{Uint16Size}, "OpJumpFalsy")
+	op.createOpcode(OpJumpTruthy, []int{Uint16Size}, "OpJumpTruthy")
 	op.createOpcode(OpJumpAnd, []int{Uint16Size}, "OpJumpAnd")
 	op.createOpcode(OpJumpOr, []int{Uint16Size}, "OpJumpOr")
 	op.createOpcode(OpJump, []int{Uint16Size}, "OpJump")
 	op.createOpcode(OpJumpNotError, []int{Uint16Size}, "OpJumpNotError")
+	op.createOpcode(OpJumpIndirect, []int{}, "OpJumpIndirect")
 	op.createOpcode(OpNull, []int{}, "OpNull")
 	op.createOpcode(OpGlobalGet, []int{Uint16Size}, "OpGlobalGet")
 	op.createOpcode(OpGlobalSet, []int{Uint16Size}, "OpGlobalSet")
-	op.createOpcode(OpGlobalSelSet, []int{Uint16Size, 1}, "OpGlobalSelSet")
+	op.createOpcode(OpGlobalSelSet, []int{Uint16Size, Uint8Size}, "OpGlobalSelSet")
 	op.createOpcode(OpArray, []int{Uint16Size}, "OpArray")
 	op.createOpcode(OpMap, []int{Uint16Size}, "OpMap")
 	op.createOpcode(OpStruct, []int{Uint16Size}, "OpStruct")
@@ -294,8 +301,8 @@ func NewOpcodes() *Opcodes {
 	op.createOpcode(OpArithmetic, []int{Uint8Size}, "OpArithmetic")
 	op.createOpcode(OpFuncImport, []int{Uint16Size}, "OpFuncImport")
 	op.createOpcode(OpFuncInternal, []int{Uint16Size}, "OpFuncInternal")
-	op.createOpcode(OpIntLogical, []int{Uint16Size, Uint16Size, Uint16Size, 1}, "OpIntLogical")
-	op.createOpcode(OpIntArithmetic, []int{Uint16Size, Uint16Size, Uint16Size, 1}, "OpIntArithmetic")
+	op.createOpcode(OpIntLogical, []int{Uint16Size, Uint16Size, Uint16Size, Uint8Size}, "OpIntLogical")
+	op.createOpcode(OpIntArithmetic, []int{Uint16Size, Uint16Size, Uint16Size, Uint8Size}, "OpIntArithmetic")
 	op.createOpcode(OpDerefGet, []int{}, "OpDerefGet")
 	op.createOpcode(OpDerefSet, []int{}, "OpDerefSet")
 	op.createOpcode(OpTypeAssert, []int{Uint16Size}, "OpTypeAssert")
