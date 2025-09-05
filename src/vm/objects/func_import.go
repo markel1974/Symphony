@@ -124,5 +124,8 @@ func (o *FuncImport) Equals(_ IObject) bool {
 
 // Call invokes the function encapsulated within the FuncImport with the provided arguments and returns the result or an error.
 func (o *FuncImport) Call(frame int, args ...IObject) (uint, IObject, error) {
-	return o.value(o.gk, frame, args...)
+	if o.args < 0 || len(args) == o.args {
+		return o.value(o.gk, frame, args...)
+	}
+	return 0, o.gk.UndefinedValue(), ErrInvalidArgumentsNumber
 }

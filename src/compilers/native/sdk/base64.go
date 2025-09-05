@@ -6,67 +6,133 @@ import (
 	"github.com/markel1974/c64emu/src/vm/objects"
 )
 
+// init initializes the package by registering the Base64 package using the RegisterPackage function.
 func init() {
 	RegisterPackage(NewBase64)
 }
 
-// Base64 represents a type that provides a module map for Base64-related encoding and decoding operations.
+// Base64 provides methods for working with Base64 encoding and decoding operations within a container of IObject mappings.
 type Base64 struct {
 	container map[string]objects.IObject
 }
 
-// NewBase64 initializes a new Base64 instance with predefined encoding and decoding functions in the module map.
+// NewBase64 initializes and returns a new Base64 package implementing IPackage with predefined encoding/decoding functions.
 func NewBase64(f objects.IGateKeeper) IPackage {
 	b := &Base64{}
 	container := []objects.IObject{
-		f.NewFuncImport(objects.FrameStatic, "EncodeToString", 1, b.funcBytesToString(base64.StdEncoding.EncodeToString)),
-		f.NewFuncImport(objects.FrameStatic, "EncodeToString", 1, b.funcStringToBytesError(base64.StdEncoding.DecodeString)),
-		f.NewFuncImport(objects.FrameStatic, "RawEncode", 1, b.funcBytesToString(base64.RawStdEncoding.EncodeToString)),
-		f.NewFuncImport(objects.FrameStatic, "RawDecode", 1, b.funcStringToBytesError(base64.RawStdEncoding.DecodeString)),
-		f.NewFuncImport(objects.FrameStatic, "UrlEncode", 1, b.funcBytesToString(base64.URLEncoding.EncodeToString)),
-		f.NewFuncImport(objects.FrameStatic, "UrlDecode", 1, b.funcStringToBytesError(base64.URLEncoding.DecodeString)),
-		f.NewFuncImport(objects.FrameStatic, "RawUrlEncode", 1, b.funcBytesToString(base64.RawURLEncoding.EncodeToString)),
-		f.NewFuncImport(objects.FrameStatic, "rawUrlDecode", 1, b.funcStringToBytesError(base64.RawURLEncoding.DecodeString)),
+		f.NewFuncImport(objects.FrameStatic, "EncodeToString", 1, b.stdEncodeToString),
+		f.NewFuncImport(objects.FrameStatic, "EncodeToString", 1, b.stdDecodeString),
+		f.NewFuncImport(objects.FrameStatic, "RawEncode", 1, b.rawEncodeToString),
+		f.NewFuncImport(objects.FrameStatic, "RawDecode", 1, b.rawDecodeString),
+		f.NewFuncImport(objects.FrameStatic, "UrlEncode", 1, b.urlEncodeToString),
+		f.NewFuncImport(objects.FrameStatic, "UrlDecode", 1, b.urlDecodeString),
+		f.NewFuncImport(objects.FrameStatic, "RawUrlEncode", 1, b.rawUrlEncodeToString),
+		f.NewFuncImport(objects.FrameStatic, "rawUrlDecode", 1, b.rawUrlDecodeString),
 	}
 	b.container = BuildContainer(container, nil)
 	return b
 }
 
-// Name returns the name identifier of the Base64 type, which is "base64".
+// Name returns the name of the Base64 instance as a string.
 func (b *Base64) Name() string {
 	return "base64"
 }
 
-// Get retrieves an object associated with the given name from the container. It returns the object and a boolean indicating success.
+// Get retrieves an object from the container by its name, returning the object and a boolean indicating success or failure.
 func (b *Base64) Get(name string) (objects.IObject, bool) {
 	v, ok := b.container[name]
 	return v, ok
 }
 
-// funcBytesToString wraps a given function to process a byte slice argument and returns a callable function for the system.
-func (b *Base64) funcBytesToString(fn func([]byte) string) objects.FuncCallable {
-	return func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
-		bs1, err := gk.ToBytesArg(0, args)
-		if err != nil {
-			return 0, nil, err
-		}
-		v := gk.NewString(frame, fn(bs1))
-		return 1, v, nil
+// stdEncodeToString encodes the first argument to a Base64 string using standard encoding and returns the result as a new string.
+func (b *Base64) stdEncodeToString(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
+	bs1, err := gk.ToBytesArg(0, args)
+	if err != nil {
+		return 0, nil, err
 	}
+	v := gk.NewString(frame, base64.StdEncoding.EncodeToString(bs1))
+	return 1, v, nil
 }
 
-// funcStringToBytesError wraps a function accepting a string and returning []byte and error to conform to the FuncCallable type.
-// It validates the number of arguments, ensures the first argument is a string, and transforms outputs to IObject types.
-func (b *Base64) funcStringToBytesError(fn func(string) ([]byte, error)) objects.FuncCallable {
-	return func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
-		s1, err := gk.ToStringArg(0, args)
-		if err != nil {
-			return 0, nil, err
-		}
-		res, err := fn(s1)
-		if err != nil {
-			return 0, gk.NewError(frame, err.Error()), nil
-		}
-		return 1, gk.NewBytes(frame, res), nil
+// stdDecodeString decodes a Base64-encoded string into its original byte representation using standard Base64 encoding.
+func (b *Base64) stdDecodeString(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
+	s1, err := gk.ToStringArg(0, args)
+	if err != nil {
+		return 0, nil, err
 	}
+	res, err := base64.StdEncoding.DecodeString(s1)
+	if err != nil {
+		return 0, gk.NewError(frame, err.Error()), nil
+	}
+	return 1, gk.NewBytes(frame, res), nil
+}
+
+// rawEncodeToString encodes the first argument as a Base64 raw encoded string and returns the result as an IObject.
+// It utilizes base64.RawStdEncoding without padding and supports multiple arguments for error handling.
+func (b *Base64) rawEncodeToString(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
+	bs1, err := gk.ToBytesArg(0, args)
+	if err != nil {
+		return 0, nil, err
+	}
+	v := gk.NewString(frame, base64.RawStdEncoding.EncodeToString(bs1))
+	return 1, v, nil
+}
+
+// rawDecodeString decodes a raw Base64-encoded string without padding and returns the resulting bytes as an IObject.
+func (b *Base64) rawDecodeString(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
+	s1, err := gk.ToStringArg(0, args)
+	if err != nil {
+		return 0, nil, err
+	}
+	res, err := base64.RawStdEncoding.DecodeString(s1)
+	if err != nil {
+		return 0, gk.NewError(frame, err.Error()), nil
+	}
+	return 1, gk.NewBytes(frame, res), nil
+}
+
+// urlEncodeToString encodes the first argument to a URL-safe Base64 string and returns it as an IObject.
+func (b *Base64) urlEncodeToString(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
+	bs1, err := gk.ToBytesArg(0, args)
+	if err != nil {
+		return 0, nil, err
+	}
+	v := gk.NewString(frame, base64.URLEncoding.EncodeToString(bs1))
+	return 1, v, nil
+}
+
+// urlDecodeString decodes a URL-safe Base64 encoded string and returns the decoded byte array as an IObject.
+func (b *Base64) urlDecodeString(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
+	s1, err := gk.ToStringArg(0, args)
+	if err != nil {
+		return 0, nil, err
+	}
+	res, err := base64.URLEncoding.DecodeString(s1)
+	if err != nil {
+		return 0, gk.NewError(frame, err.Error()), nil
+	}
+	return 1, gk.NewBytes(frame, res), nil
+}
+
+// rawUrlDecodeString decodes a raw URL-safe base64 encoded string and returns the decoded bytes as an IObject.
+func (b *Base64) rawUrlDecodeString(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
+	s1, err := gk.ToStringArg(0, args)
+	if err != nil {
+		return 0, nil, err
+	}
+	res, err := base64.RawURLEncoding.DecodeString(s1)
+	if err != nil {
+		return 0, gk.NewError(frame, err.Error()), nil
+	}
+	return 1, gk.NewBytes(frame, res), nil
+}
+
+// rawUrlEncodeToString encodes the input bytes into a Base64 raw URL encoded string and returns it as an IObject.
+func (b *Base64) rawUrlEncodeToString(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
+	bs1, err := gk.ToBytesArg(0, args)
+	if err != nil {
+		return 0, nil, err
+	}
+	v := gk.NewString(frame, base64.RawURLEncoding.EncodeToString(bs1))
+	return 1, v, nil
 }
