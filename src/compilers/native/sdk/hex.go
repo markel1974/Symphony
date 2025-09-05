@@ -42,10 +42,7 @@ func (f *Hex) Get(name string) (objects.IObject, bool) {
 // encodeToString converts the given IObject into a hexadecimal string representation using the provided IGateKeeper.
 // It requires exactly one argument. Returns an error if argument count is invalid or conversion fails.
 func (f *Hex) encodeToString(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
-	if len(args) != 1 {
-		return 0, nil, objects.ErrInvalidArgumentsNumber
-	}
-	bs1, err := gk.ToBytesArg(0, args[0])
+	bs1, err := gk.ToBytesArg(0, args)
 	if err != nil {
 		return 0, nil, err
 	}
@@ -55,10 +52,7 @@ func (f *Hex) encodeToString(gk objects.IGateKeeper, frame int, args ...objects.
 
 // decodeString decodes a hexadecimal string to its byte representation, returning the result as an IObject or an error.
 func (f *Hex) decodeString(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
-	if len(args) != 1 {
-		return 0, nil, objects.ErrInvalidArgumentsNumber
-	}
-	s1, err := gk.ToStringArg(0, args[0])
+	s1, err := gk.ToStringArg(0, args)
 	if err != nil {
 		return 0, nil, err
 	}

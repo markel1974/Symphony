@@ -55,10 +55,7 @@ func (f *Log) print(gk objects.IGateKeeper, _ int, args ...objects.IObject) (uin
 // Returns an error if the number of arguments is insufficient or if the format argument is incompatible.
 func (f *Log) printf(gk objects.IGateKeeper, _ int, args ...objects.IObject) (uint, objects.IObject, error) {
 	argsLen := len(args)
-	if argsLen == 0 {
-		return 0, nil, objects.ErrInvalidArgumentsNumber
-	}
-	s1, err := gk.ToStringArg(0, args[0])
+	s1, err := gk.ToStringArg(0, args)
 	if err != nil {
 		return 0, nil, err
 	}
@@ -87,10 +84,7 @@ func (f *Log) println(gk objects.IGateKeeper, _ int, args ...objects.IObject) (u
 // fatalf formats and logs a fatal error message using the provided arguments and terminates execution with an error.
 func (f *Log) fatalf(gk objects.IGateKeeper, _ int, args ...objects.IObject) (uint, objects.IObject, error) {
 	argsLen := len(args)
-	if argsLen == 0 {
-		return 0, nil, objects.ErrInvalidArgumentsNumber
-	}
-	s1, err := gk.ToStringArg(0, args[0])
+	s1, err := gk.ToStringArg(0, args)
 	if err != nil {
 		return 0, nil, err
 	}

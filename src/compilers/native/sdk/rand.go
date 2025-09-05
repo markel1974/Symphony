@@ -48,10 +48,7 @@ func (z *Rand) Get(name string) (objects.IObject, bool) {
 
 // read reads random data into the provided byte array argument. Returns the number of bytes read or an error.
 func (z *Rand) read(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
-	if len(args) != 1 {
-		return 0, nil, objects.ErrInvalidArgumentsNumber
-	}
-	bs1, err := gk.ToBytesArg(0, args[0])
+	bs1, err := gk.ToBytesArg(0, args)
 	if err != nil {
 		return 0, nil, err
 	}
@@ -64,10 +61,7 @@ func (z *Rand) read(gk objects.IGateKeeper, frame int, args ...objects.IObject) 
 
 // rand initializes a new random number generator using the provided seed and returns a map of random generator methods.
 func (z *Rand) rand(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
-	if len(args) != 1 {
-		return 0, nil, objects.ErrInvalidArgumentsNumber
-	}
-	i1, err := gk.ToInt64Arg(0, args[0])
+	i1, err := gk.ToInt64Arg(0, args)
 	if err != nil {
 		return 0, nil, err
 	}
@@ -90,10 +84,7 @@ func (z *Rand) rand(gk objects.IGateKeeper, frame int, args ...objects.IObject) 
 
 // randOptionsRead reads random bytes into a byte slice using a specific random number generator and returns the result size.
 func (z *Rand) randOptionsRead(gk objects.IGateKeeper, r *rand.Rand, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
-	if len(args) != 1 {
-		return 0, nil, objects.ErrInvalidArgumentsNumber
-	}
-	bs1, err := gk.ToBytesArg(0, args[0])
+	bs1, err := gk.ToBytesArg(0, args)
 	if err != nil {
 		return 0, nil, err
 	}
@@ -119,10 +110,7 @@ func (z *Rand) int63(fn func() int64) objects.FuncCallable {
 // int63n returns a FuncCallable that applies a provided int64 function to a single int64 argument and returns the result.
 func (z *Rand) int63n(fn func(int64) int64) objects.FuncCallable {
 	return func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
-		if len(args) != 1 {
-			return 0, nil, objects.ErrInvalidArgumentsNumber
-		}
-		i1, err := gk.ToInt64Arg(0, args[0])
+		i1, err := gk.ToInt64Arg(0, args)
 		if err != nil {
 			return 0, nil, err
 		}
@@ -133,10 +121,7 @@ func (z *Rand) int63n(fn func(int64) int64) objects.FuncCallable {
 // seed returns a FuncCallable that sets a seed using the provided function, ensuring the argument is a single int64 value.
 func (z *Rand) seed(fn func(int64)) objects.FuncCallable {
 	return func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
-		if len(args) != 1 {
-			return 0, nil, objects.ErrInvalidArgumentsNumber
-		}
-		i1, err := gk.ToInt64Arg(0, args[0])
+		i1, err := gk.ToInt64Arg(0, args)
 		if err != nil {
 			return 0, nil, err
 		}
@@ -180,10 +165,7 @@ func (z *Rand) normFloat64(fn func() float64) objects.FuncCallable {
 // Returns an error if the input is invalid or the conversion fails.
 func (z *Rand) perm(fn func(int) []int) objects.FuncCallable {
 	return func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
-		if len(args) != 1 {
-			return 0, nil, objects.ErrInvalidArgumentsNumber
-		}
-		i1, err := gk.ToInt64Arg(0, args[0])
+		i1, err := gk.ToInt64Arg(0, args)
 		if err != nil {
 			return 0, nil, err
 		}

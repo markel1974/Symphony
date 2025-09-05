@@ -53,14 +53,11 @@ func (r *Regexp) Get(name string) (objects.IObject, bool) {
 // Match checks whether the second string argument matches the pattern defined by the first string argument.
 // Returns a boolean object indicating match success or failure, and an error if any issues occur.
 func (r *Regexp) match(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
-	if len(args) != 2 {
-		return 0, nil, objects.ErrInvalidArgumentsNumber
-	}
-	s1, err := gk.ToStringArg(0, args[0])
+	s1, err := gk.ToStringArg(0, args)
 	if err != nil {
 		return 0, nil, err
 	}
-	s2, err := gk.ToStringArg(1, args[1])
+	s2, err := gk.ToStringArg(1, args)
 	if err != nil {
 		return 0, nil, err
 	}
@@ -79,14 +76,11 @@ func (r *Regexp) match(gk objects.IGateKeeper, frame int, args ...objects.IObjec
 // Returns an error if the number of arguments is incorrect or conversion fails for any argument.
 func (r *Regexp) find(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
 	numArgs := len(args)
-	if numArgs != 2 && numArgs != 3 {
-		return 0, nil, objects.ErrInvalidArgumentsNumber
-	}
-	s1, err := gk.ToStringArg(0, args[0])
+	s1, err := gk.ToStringArg(0, args)
 	if err != nil {
 		return 0, nil, err
 	}
-	s2, err := gk.ToStringArg(1, args[1])
+	s2, err := gk.ToStringArg(1, args)
 	if err != nil {
 		return 0, nil, err
 	}
@@ -113,7 +107,7 @@ func (r *Regexp) find(gk objects.IGateKeeper, frame int, args ...objects.IObject
 		}
 		return 1, gk.NewArray(frame, []objects.IObject{arr}), nil
 	}
-	i3, err := gk.ToInt64Arg(2, args[2])
+	i3, err := gk.ToInt64Arg(2, args)
 	if err != nil {
 		return 0, nil, err
 	}
@@ -147,20 +141,17 @@ func (r *Regexp) find(gk objects.IGateKeeper, frame int, args ...objects.IObject
 // Split divides a string into substrings based on the regular expression pattern and returns them as an array.
 func (r *Regexp) split(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
 	numArgs := len(args)
-	if numArgs != 2 && numArgs != 3 {
-		return 0, nil, objects.ErrInvalidArgumentsNumber
-	}
-	s1, err := gk.ToStringArg(0, args[0])
+	s1, err := gk.ToStringArg(0, args)
 	if err != nil {
 		return 0, nil, err
 	}
-	s2, err := gk.ToStringArg(1, args[1])
+	s2, err := gk.ToStringArg(1, args)
 	if err != nil {
 		return 0, nil, err
 	}
 	var i3 = int64(-1)
 	if numArgs > 2 {
-		i3, err = gk.ToInt64Arg(2, args[2])
+		i3, err = gk.ToInt64Arg(2, args)
 		if err != nil {
 			return 0, nil, err
 		}
@@ -221,18 +212,15 @@ func (r *Regexp) compile(gk objects.IGateKeeper, frame int, args ...objects.IObj
 
 // Replace performs a regex-based replacement on the input string with the specified replacement string and returns the result.
 func (r *Regexp) replace(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
-	if len(args) != 3 {
-		return 0, nil, objects.ErrInvalidArgumentsNumber
-	}
-	s1, err := gk.ToStringArg(0, args[0])
+	s1, err := gk.ToStringArg(0, args)
 	if err != nil {
 		return 0, nil, err
 	}
-	s2, err := gk.ToStringArg(1, args[1])
+	s2, err := gk.ToStringArg(1, args)
 	if err != nil {
 		return 0, nil, err
 	}
-	s3, err := gk.ToStringArg(2, args[2])
+	s3, err := gk.ToStringArg(2, args)
 	if err != nil {
 		return 0, nil, err
 	}
@@ -247,10 +235,7 @@ func (r *Regexp) replace(gk objects.IGateKeeper, frame int, args ...objects.IObj
 
 // CompileOptionMatch checks if the given regular expression matches the provided string argument and returns a boolean result.
 func (r *Regexp) compileOptionMatch(gk objects.IGateKeeper, _ int, re *regexp.Regexp, args ...objects.IObject) (uint, objects.IObject, error) {
-	if len(args) != 1 {
-		return 0, nil, objects.ErrInvalidArgumentsNumber
-	}
-	s1, err := gk.ToStringArg(0, args[0])
+	s1, err := gk.ToStringArg(0, args)
 	if err != nil {
 		return 0, nil, err
 	}
@@ -266,10 +251,7 @@ func (r *Regexp) compileOptionMatch(gk objects.IGateKeeper, _ int, re *regexp.Re
 // Returns an error if arguments are invalid or if type conversion fails.
 func (r *Regexp) compileOptionFind(gk objects.IGateKeeper, frame int, re *regexp.Regexp, args ...objects.IObject) (uint, objects.IObject, error) {
 	numArgs := len(args)
-	if numArgs != 1 && numArgs != 2 {
-		return 0, nil, objects.ErrInvalidArgumentsNumber
-	}
-	s1, err := gk.ToStringArg(0, args[0])
+	s1, err := gk.ToStringArg(0, args)
 	if err != nil {
 		return 0, nil, err
 	}
@@ -293,7 +275,7 @@ func (r *Regexp) compileOptionFind(gk objects.IGateKeeper, frame int, re *regexp
 		}
 		return 1, gk.NewArray(frame, []objects.IObject{arr}), nil
 	}
-	i2, err := gk.ToInt64Arg(1, args[1])
+	i2, err := gk.ToInt64Arg(1, args)
 	if err != nil {
 		return 0, nil, err
 	}
@@ -327,14 +309,11 @@ func (r *Regexp) compileOptionFind(gk objects.IGateKeeper, frame int, re *regexp
 
 // CompileOptionReplace replaces occurrences in the input string matching the regular expression with the replacement string.
 func (r *Regexp) compileOptionReplace(gk objects.IGateKeeper, frame int, re *regexp.Regexp, args ...objects.IObject) (uint, objects.IObject, error) {
-	if len(args) != 2 {
-		return 0, nil, objects.ErrInvalidArgumentsNumber
-	}
-	s1, err := gk.ToStringArg(0, args[0])
+	s1, err := gk.ToStringArg(0, args)
 	if err != nil {
 		return 0, nil, err
 	}
-	s2, err := gk.ToStringArg(1, args[1])
+	s2, err := gk.ToStringArg(1, args)
 	if err != nil {
 		return 0, nil, err
 	}
@@ -345,16 +324,13 @@ func (r *Regexp) compileOptionReplace(gk objects.IGateKeeper, frame int, re *reg
 // CompileOptionSplit splits the input string using the given compiled regular expression and optional max split count.
 func (r *Regexp) compileOptionSplit(gk objects.IGateKeeper, frame int, re *regexp.Regexp, args ...objects.IObject) (uint, objects.IObject, error) {
 	numArgs := len(args)
-	if numArgs != 1 && numArgs != 2 {
-		return 0, nil, objects.ErrInvalidArgumentsNumber
-	}
-	s1, err := gk.ToStringArg(0, args[0])
+	s1, err := gk.ToStringArg(0, args)
 	if err != nil {
 		return 0, nil, err
 	}
 	var i2 = int64(-1)
 	if numArgs > 1 {
-		i2, err = gk.ToInt64Arg(1, args[1])
+		i2, err = gk.ToInt64Arg(1, args)
 		if err != nil {
 			return 0, nil, err
 		}

@@ -46,10 +46,7 @@ func (b *Base64) Get(name string) (objects.IObject, bool) {
 // funcBytesToString wraps a given function to process a byte slice argument and returns a callable function for the system.
 func (b *Base64) funcBytesToString(fn func([]byte) string) objects.FuncCallable {
 	return func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
-		if len(args) != 1 {
-			return 0, nil, objects.ErrInvalidArgumentsNumber
-		}
-		bs1, err := gk.ToBytesArg(0, args[0])
+		bs1, err := gk.ToBytesArg(0, args)
 		if err != nil {
 			return 0, nil, err
 		}
@@ -62,10 +59,7 @@ func (b *Base64) funcBytesToString(fn func([]byte) string) objects.FuncCallable 
 // It validates the number of arguments, ensures the first argument is a string, and transforms outputs to IObject types.
 func (b *Base64) funcStringToBytesError(fn func(string) ([]byte, error)) objects.FuncCallable {
 	return func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
-		if len(args) != 1 {
-			return 0, nil, objects.ErrInvalidArgumentsNumber
-		}
-		s1, err := gk.ToStringArg(0, args[0])
+		s1, err := gk.ToStringArg(0, args)
 		if err != nil {
 			return 0, nil, err
 		}

@@ -49,10 +49,7 @@ func (s *Strconv) Get(name string) (objects.IObject, bool) {
 
 // formatBool converts a boolean argument to its string representation ("true" or "false") and returns it as an object.
 func (s *Strconv) formatBool(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
-	if len(args) != 1 {
-		return 0, nil, objects.ErrInvalidArgumentsNumber
-	}
-	b1, err := gk.ToBoolArg(0, args[0])
+	b1, err := gk.ToBoolArg(0, args)
 	if err != nil {
 		return 0, nil, err
 	}
@@ -65,22 +62,19 @@ func (s *Strconv) formatBool(gk objects.IGateKeeper, frame int, args ...objects.
 // formatFloat formats a floating-point number according to the specified format, precision, and bit size.
 // It takes 4 arguments: float64, format string, integer precision, and integer bit size, returning a string result.
 func (s *Strconv) formatFloat(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
-	if len(args) != 4 {
-		return 0, nil, objects.ErrInvalidArgumentsNumber
-	}
-	f1, err := gk.ToFloat64Arg(0, args[0])
+	f1, err := gk.ToFloat64Arg(0, args)
 	if err != nil {
 		return 0, nil, err
 	}
-	s2, err := gk.ToStringArg(1, args[1])
+	s2, err := gk.ToStringArg(1, args)
 	if err != nil {
 		return 0, nil, err
 	}
-	i3, err := gk.ToInt64Arg(2, args[2])
+	i3, err := gk.ToInt64Arg(2, args)
 	if err != nil {
 		return 0, nil, err
 	}
-	i4, err := gk.ToInt64Arg(3, args[3])
+	i4, err := gk.ToInt64Arg(3, args)
 	if err != nil {
 		return 0, nil, err
 	}
@@ -89,14 +83,11 @@ func (s *Strconv) formatFloat(gk objects.IGateKeeper, frame int, args ...objects
 
 // formatInt formats an integer as a string in a specified base using strconv.FormatInt. Accepts base and integer arguments.
 func (s *Strconv) formatInt(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
-	if len(args) != 2 {
-		return 0, nil, objects.ErrInvalidArgumentsNumber
-	}
-	i1, err := gk.ToInt64Arg(0, args[0])
+	i1, err := gk.ToInt64Arg(0, args)
 	if err != nil {
 		return 0, nil, err
 	}
-	i2, err := gk.ToInt64Arg(1, args[1])
+	i2, err := gk.ToInt64Arg(1, args)
 	if err != nil {
 		return 0, nil, err
 	}
@@ -130,14 +121,11 @@ func (s *Strconv) parseBool(gk objects.IGateKeeper, frame int, args ...objects.I
 
 // parseFloat parses a given string into a floating-point number based on the specified precision.
 func (s *Strconv) parseFloat(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
-	if len(args) != 2 {
-		return 0, nil, objects.ErrInvalidArgumentsNumber
-	}
-	s1, err := gk.ToStringArg(0, args[0])
+	s1, err := gk.ToStringArg(0, args)
 	if err != nil {
 		return 0, nil, err
 	}
-	i2, err := gk.ToInt64Arg(1, args[1])
+	i2, err := gk.ToInt64Arg(1, args)
 	if err != nil {
 		return 0, nil, err
 	}
@@ -150,10 +138,7 @@ func (s *Strconv) parseFloat(gk objects.IGateKeeper, frame int, args ...objects.
 
 // parseNumber parses a numeric value from the input argument and returns it as a float object or an error if invalid.
 func (s *Strconv) parseNumber(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
-	if len(args) != 1 {
-		return 0, nil, objects.ErrInvalidArgumentsNumber
-	}
-	s1, err := gk.ToStringArg(0, args[0])
+	s1, err := gk.ToStringArg(0, args)
 	if err != nil {
 		return 0, nil, err
 	}
@@ -172,18 +157,15 @@ func (s *Strconv) parseNumber(gk objects.IGateKeeper, frame int, args ...objects
 
 // parseInt parses a string into an integer based on the supplied base and bit size; returns parsed value or error.
 func (s *Strconv) parseInt(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
-	if len(args) != 3 {
-		return 0, nil, objects.ErrInvalidArgumentsNumber
-	}
-	s1, err := gk.ToStringArg(0, args[0])
+	s1, err := gk.ToStringArg(0, args)
 	if err != nil {
 		return 0, nil, err
 	}
-	i2, err := gk.ToInt64Arg(1, args[1])
+	i2, err := gk.ToInt64Arg(1, args)
 	if err != nil {
 		return 0, nil, err
 	}
-	i3, err := gk.ToInt64Arg(2, args[2])
+	i3, err := gk.ToInt64Arg(2, args)
 	if err != nil {
 		return 0, nil, err
 	}
@@ -196,10 +178,7 @@ func (s *Strconv) parseInt(gk objects.IGateKeeper, frame int, args ...objects.IO
 
 // quote converts the given string argument into a double-quoted string literal and returns it as a new string object.
 func (s *Strconv) quote(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
-	if len(args) != 1 {
-		return 0, nil, objects.ErrInvalidArgumentsNumber
-	}
-	s1, err := gk.ToStringArg(0, args[0])
+	s1, err := gk.ToStringArg(0, args)
 	if err != nil {
 		return 0, nil, err
 	}
@@ -208,11 +187,8 @@ func (s *Strconv) quote(gk objects.IGateKeeper, frame int, args ...objects.IObje
 }
 
 // atoi converts a string argument to an integer if the argument is a valid numeric string, returning the result or an error.
-func (s *Strconv) atoi(gk objects.IGateKeeper, frame int, args ...objects.IObject) (retCount uint, ret objects.IObject, err error) {
-	if len(args) != 1 {
-		return 0, nil, objects.ErrInvalidArgumentsNumber
-	}
-	s1, err := gk.ToStringArg(0, args[0])
+func (s *Strconv) atoi(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
+	s1, err := gk.ToStringArg(0, args)
 	if err != nil {
 		return 0, nil, err
 	}
@@ -224,11 +200,8 @@ func (s *Strconv) atoi(gk objects.IGateKeeper, frame int, args ...objects.IObjec
 }
 
 // unquote removes surrounding quotes from a string if present and interprets escape sequences. Returns the unquoted string.
-func (s *Strconv) unquote(gk objects.IGateKeeper, frame int, args ...objects.IObject) (retCount uint, ret objects.IObject, err error) {
-	if len(args) != 1 {
-		return 0, nil, objects.ErrInvalidArgumentsNumber
-	}
-	s1, err := gk.ToStringArg(0, args[0])
+func (s *Strconv) unquote(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
+	s1, err := gk.ToStringArg(0, args)
 	if err != nil {
 		return 0, nil, err
 	}
@@ -240,11 +213,8 @@ func (s *Strconv) unquote(gk objects.IGateKeeper, frame int, args ...objects.IOb
 }
 
 // itoa converts an integer to its decimal string representation and returns it as an IObject.
-func (s *Strconv) itoa(gk objects.IGateKeeper, frame int, args ...objects.IObject) (retCount uint, ret objects.IObject, err error) {
-	if len(args) != 1 {
-		return 0, nil, objects.ErrInvalidArgumentsNumber
-	}
-	i1, err := gk.ToInt64Arg(0, args[0])
+func (s *Strconv) itoa(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
+	i1, err := gk.ToInt64Arg(0, args)
 	if err != nil {
 		return 0, nil, err
 	}

@@ -2,7 +2,6 @@ package objects
 
 import (
 	"errors"
-	"fmt"
 	"strconv"
 	"time"
 )
@@ -173,7 +172,11 @@ func (gc *GateConverter) ToInt64(o IObject) (int64, bool) {
 }
 
 // ToInt64Arg converts an IObject to an int64, returning an error if the conversion is not possible or the type is invalid.
-func (gc *GateConverter) ToInt64Arg(index int, o IObject) (int64, error) {
+func (gc *GateConverter) ToInt64Arg(index int, in []IObject) (int64, error) {
+	if index < 0 || index >= len(in) {
+		return 0, ErrInvalidArgumentsNumber
+	}
+	o := in[index]
 	v, ok := gc.ToInt64(o)
 	if !ok {
 		return 0, NewInvalidArgumentError(index, "int", o.TypeName())
@@ -209,25 +212,16 @@ func (gc *GateConverter) ToString(o IObject) (string, bool) {
 }
 
 // ToStringArg attempts to convert an IObject to a string. Returns an error if conversion fails or type is incompatible.
-func (gc *GateConverter) ToStringArg(index int, o IObject) (string, error) {
+func (gc *GateConverter) ToStringArg(index int, in []IObject) (string, error) {
+	if index < 0 || index >= len(in) {
+		return "", ErrInvalidArgumentsNumber
+	}
+	o := in[index]
 	v, ok := gc.ToString(o)
 	if !ok {
 		return "", NewInvalidArgumentError(index, "string", o.TypeName())
 	}
 	return v, nil
-}
-
-// ToStringArrayArg attempts to convert an array of IObjects to a slice of strings.
-func (gc *GateConverter) ToStringArrayArg(index int, arr []IObject) ([]string, error) {
-	var sArr []string
-	for idx, elem := range arr {
-		str, ok := gc.ToString(elem)
-		if !ok {
-			return nil, NewInvalidArgumentError(index, fmt.Sprintf("%d - string array", idx), elem.TypeName())
-		}
-		sArr = append(sArr, str)
-	}
-	return sArr, nil
 }
 
 // ToBytes converts an IObject to a byte slice if the object is of type *Bytes or *String.
@@ -244,7 +238,11 @@ func (gc *GateConverter) ToBytes(o IObject) ([]byte, bool) {
 }
 
 // ToBytesArg attempts to convert an IObject to a byte slice. Returns an error if the conversion fails or the type is incompatible.
-func (gc *GateConverter) ToBytesArg(index int, o IObject) ([]byte, error) {
+func (gc *GateConverter) ToBytesArg(index int, in []IObject) ([]byte, error) {
+	if index < 0 || index >= len(in) {
+		return nil, ErrInvalidArgumentsNumber
+	}
+	o := in[index]
 	b, ok := gc.ToBytes(o)
 	if !ok {
 		return nil, NewInvalidArgumentError(index, "bytes", o.TypeName())
@@ -278,7 +276,11 @@ func (gc *GateConverter) ToFloat64(o IObject) (float64, bool) {
 }
 
 // ToFloat64Arg converts an IObject to a float64 and returns an error if the conversion fails or the type is incompatible.
-func (gc *GateConverter) ToFloat64Arg(index int, o IObject) (float64, error) {
+func (gc *GateConverter) ToFloat64Arg(index int, in []IObject) (float64, error) {
+	if index < 0 || index >= len(in) {
+		return 0, ErrInvalidArgumentsNumber
+	}
+	o := in[index]
 	v, ok := gc.ToFloat64(o)
 	if !ok {
 		return 0, NewInvalidArgumentError(index, "float64", o.TypeName())
@@ -297,8 +299,11 @@ func (gc *GateConverter) ToTime(o IObject) (time.Time, bool) {
 	return time.Time{}, false
 }
 
-// ToTimeArg attempts to convert an IObject to a time.Time. Returns an error if the conversion fails or the type is incompatible.
-func (gc *GateConverter) ToTimeArg(index int, o IObject) (time.Time, error) {
+func (gc *GateConverter) ToTimeArg(index int, in []IObject) (time.Time, error) {
+	if index < 0 || index >= len(in) {
+		return time.Time{}, ErrInvalidArgumentsNumber
+	}
+	o := in[index]
 	v, ok := gc.ToTime(o)
 	if !ok {
 		return time.Time{}, NewInvalidArgumentError(index, "time", o.TypeName())
@@ -322,7 +327,11 @@ func (gc *GateConverter) FromBool(v bool) IObject {
 }
 
 // ToBoolArg converts the given IObject to a boolean if possible or returns an error indicating an invalid argument type.
-func (gc *GateConverter) ToBoolArg(index int, o IObject) (bool, error) {
+func (gc *GateConverter) ToBoolArg(index int, in []IObject) (bool, error) {
+	if index < 0 || index >= len(in) {
+		return false, ErrInvalidArgumentsNumber
+	}
+	o := in[index]
 	b1, ok := o.(*Bool)
 	if !ok {
 		return false, NewInvalidArgumentError(index, "bool", o.TypeName())

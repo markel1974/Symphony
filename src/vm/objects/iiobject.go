@@ -103,13 +103,12 @@ type IGateConverter interface {
 	ToInterface(in IObject) (res interface{})
 	ToMap(o IObject) (res map[string]interface{})
 
-	ToBoolArg(index int, o IObject) (bool, error)
-	ToInt64Arg(index int, o IObject) (int64, error)
-	ToFloat64Arg(index int, o IObject) (float64, error)
-	ToTimeArg(index int, o IObject) (time.Time, error)
-	ToStringArg(index int, o IObject) (string, error)
-	ToStringArrayArg(index int, arr []IObject) ([]string, error)
-	ToBytesArg(index int, o IObject) ([]byte, error)
+	ToBoolArg(index int, in []IObject) (bool, error)
+	ToInt64Arg(index int, in []IObject) (int64, error)
+	ToFloat64Arg(index int, in []IObject) (float64, error)
+	ToTimeArg(index int, in []IObject) (time.Time, error)
+	ToStringArg(index int, in []IObject) (string, error)
+	ToBytesArg(index int, in []IObject) ([]byte, error)
 
 	FromInterface(frame int, in interface{}) IObject
 	FromMap(frame int, v map[string]interface{}) map[string]IObject

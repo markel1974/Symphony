@@ -72,22 +72,19 @@ func (s *Strings) Get(name string) (objects.IObject, bool) {
 
 // Replace replaces occurrences of a substring within a string with the specified replacement string up to a given limit.
 func (s *Strings) replace(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
-	if len(args) != 4 {
-		return 0, nil, objects.ErrInvalidArgumentsNumber
-	}
-	s1, err := gk.ToStringArg(0, args[0])
+	s1, err := gk.ToStringArg(0, args)
 	if err != nil {
 		return 0, nil, err
 	}
-	s2, err := gk.ToStringArg(1, args[1])
+	s2, err := gk.ToStringArg(1, args)
 	if err != nil {
 		return 0, nil, err
 	}
-	s3, err := gk.ToStringArg(2, args[2])
+	s3, err := gk.ToStringArg(2, args)
 	if err != nil {
 		return 0, nil, err
 	}
-	i4, err := gk.ToInt64Arg(3, args[3])
+	i4, err := gk.ToInt64Arg(3, args)
 	if err != nil {
 		return 0, nil, err
 	}
@@ -98,20 +95,17 @@ func (s *Strings) replace(gk objects.IGateKeeper, frame int, args ...objects.IOb
 // Substring extracts a portion of a string based on the starting and ending indices provided as arguments.
 func (s *Strings) substring(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
 	argsLen := len(args)
-	if argsLen != 2 && argsLen != 3 {
-		return 0, nil, objects.ErrInvalidArgumentsNumber
-	}
-	src, err := gk.ToStringArg(0, args[0])
+	src, err := gk.ToStringArg(0, args)
 	if err != nil {
 		return 0, nil, err
 	}
-	start, err := gk.ToInt64Arg(1, args[1])
+	start, err := gk.ToInt64Arg(1, args)
 	if err != nil {
 		return 0, nil, err
 	}
 	end := int64(len(src))
 	if argsLen == 3 {
-		end, err = gk.ToInt64Arg(2, args[2])
+		end, err = gk.ToInt64Arg(2, args)
 		if err != nil {
 			return 0, nil, err
 		}
@@ -138,14 +132,11 @@ func (s *Strings) substring(gk objects.IGateKeeper, frame int, args ...objects.I
 // The padding string can be optionally provided; otherwise, a space is used.
 func (s *Strings) padLeft(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
 	argsLen := len(args)
-	if argsLen != 2 && argsLen != 3 {
-		return 0, nil, objects.ErrInvalidArgumentsNumber
-	}
-	s1, err := gk.ToStringArg(0, args[0])
+	s1, err := gk.ToStringArg(0, args)
 	if err != nil {
 		return 0, nil, err
 	}
-	i2, err := gk.ToInt64Arg(1, args[1])
+	i2, err := gk.ToInt64Arg(1, args)
 	if err != nil {
 		return 0, nil, err
 	}
@@ -155,7 +146,7 @@ func (s *Strings) padLeft(gk objects.IGateKeeper, frame int, args ...objects.IOb
 	}
 	s3 := " "
 	if argsLen == 3 {
-		s3, err = gk.ToStringArg(2, args[2])
+		s3, err = gk.ToStringArg(2, args)
 		if err != nil {
 			return 0, nil, err
 		}
@@ -172,14 +163,11 @@ func (s *Strings) padLeft(gk objects.IGateKeeper, frame int, args ...objects.IOb
 // PadRight pads the input string on the right with a specified string or space until it reaches the desired length.
 func (s *Strings) padRight(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
 	argsLen := len(args)
-	if argsLen != 2 && argsLen != 3 {
-		return 0, nil, objects.ErrInvalidArgumentsNumber
-	}
-	s1, err := gk.ToStringArg(0, args[0])
+	s1, err := gk.ToStringArg(0, args)
 	if err != nil {
 		return 0, nil, err
 	}
-	i2, err := gk.ToInt64Arg(1, args[1])
+	i2, err := gk.ToInt64Arg(1, args)
 	if err != nil {
 		return 0, nil, err
 	}
@@ -189,7 +177,7 @@ func (s *Strings) padRight(gk objects.IGateKeeper, frame int, args ...objects.IO
 	}
 	s3 := " "
 	if argsLen == 3 {
-		s3, err = gk.ToStringArg(2, args[2])
+		s3, err = gk.ToStringArg(2, args)
 		if err != nil {
 			return 0, nil, err
 		}
@@ -205,14 +193,11 @@ func (s *Strings) padRight(gk objects.IGateKeeper, frame int, args ...objects.IO
 
 // Repeat repeats the input string a specified number of times and returns the concatenated result.
 func (s *Strings) repeat(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
-	if len(args) != 2 {
-		return 0, nil, objects.ErrInvalidArgumentsNumber
-	}
-	s1, err := gk.ToStringArg(0, args[0])
+	s1, err := gk.ToStringArg(0, args)
 	if err != nil {
 		return 0, nil, err
 	}
-	i2, err := gk.ToInt64Arg(1, args[1])
+	i2, err := gk.ToInt64Arg(1, args)
 	if err != nil {
 		return 0, nil, err
 	}
@@ -221,22 +206,15 @@ func (s *Strings) repeat(gk objects.IGateKeeper, frame int, args ...objects.IObj
 
 // Join concatenates elements of an array into a single string, using a specified separator string.
 func (s *Strings) join(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
-	if len(args) != 2 {
-		return 0, nil, objects.ErrInvalidArgumentsNumber
-	}
-	sep, err := gk.ToStringArg(1, args[1])
+	sep, err := gk.ToStringArg(1, args)
 	if err != nil {
 		return 0, nil, err
 	}
 	var elems []string
 	switch arg0 := args[0].(type) {
 	case *objects.Array:
-		for idx, a := range arg0.Values() {
-			as, err := gk.ToStringArg(idx, a)
-			if err != nil {
-				return 0, nil, err
-			}
-			elems = append(elems, as)
+		for _, a := range arg0.Values() {
+			elems = append(elems, a.AsString())
 		}
 	default:
 		return 0, nil, objects.NewInvalidArgumentError(0, "array", args[0].TypeName())
@@ -248,10 +226,7 @@ func (s *Strings) join(gk objects.IGateKeeper, frame int, args ...objects.IObjec
 // Returns a function that takes a frame and varargs, validates the input, applies the transformation, and returns the result.
 func (s *Strings) funcStringToString(fn func(string) string) objects.FuncCallable {
 	return func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
-		if len(args) != 1 {
-			return 0, nil, objects.ErrInvalidArgumentsNumber
-		}
-		s1, err := gk.ToStringArg(0, args[0])
+		s1, err := gk.ToStringArg(0, args)
 		if err != nil {
 			return 0, nil, err
 		}
@@ -263,10 +238,7 @@ func (s *Strings) funcStringToString(fn func(string) string) objects.FuncCallabl
 // funcStringToStrings transforms a string-to-string-slice function into a FuncCallable that operates on an IObject and returns an array.
 func (s *Strings) funcStringToStrings(fn func(string) []string) objects.FuncCallable {
 	return func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
-		if len(args) != 1 {
-			return 0, nil, objects.ErrInvalidArgumentsNumber
-		}
-		s1, err := gk.ToStringArg(0, args[0])
+		s1, err := gk.ToStringArg(0, args)
 		if err != nil {
 			return 0, nil, err
 		}
@@ -288,10 +260,7 @@ func (s *Strings) funcStringToStrings(fn func(string) []string) objects.FuncCall
 // It validates arguments, converts inputs/outputs to/from IObject, and handles errors gracefully.
 func (s *Strings) funcStringToStringError(fn func(string) (string, error)) objects.FuncCallable {
 	return func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
-		if len(args) != 1 {
-			return 0, nil, objects.ErrInvalidArgumentsNumber
-		}
-		s1, err := gk.ToStringArg(0, args[0])
+		s1, err := gk.ToStringArg(0, args)
 		if err != nil {
 			return 0, nil, err
 		}
@@ -307,14 +276,11 @@ func (s *Strings) funcStringToStringError(fn func(string) (string, error)) objec
 // funcStringStringToStrings creates a callable function wrapping a string-transforming function and returns results as an array object.
 func (s *Strings) funcStringStringToStrings(fn func(string, string) []string) objects.FuncCallable {
 	return func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
-		if len(args) != 2 {
-			return 0, nil, objects.ErrInvalidArgumentsNumber
-		}
-		s1, err := gk.ToStringArg(0, args[0])
+		s1, err := gk.ToStringArg(0, args)
 		if err != nil {
 			return 0, nil, err
 		}
-		s2, err := gk.ToStringArg(1, args[1])
+		s2, err := gk.ToStringArg(1, args)
 		if err != nil {
 			return 0, nil, err
 		}
@@ -334,18 +300,15 @@ func (s *Strings) funcStringStringToStrings(fn func(string, string) []string) ob
 // funcStringStringIntToStrings wraps a function of type func(string, string, int) []string into a FuncCallable compatible function.
 func (s *Strings) funcStringStringIntToStrings(fn func(string, string, int) []string) objects.FuncCallable {
 	return func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
-		if len(args) != 3 {
-			return 0, nil, objects.ErrInvalidArgumentsNumber
-		}
-		s1, err := gk.ToStringArg(0, args[0])
+		s1, err := gk.ToStringArg(0, args)
 		if err != nil {
 			return 0, nil, err
 		}
-		s2, err := gk.ToStringArg(1, args[1])
+		s2, err := gk.ToStringArg(1, args)
 		if err != nil {
 			return 0, nil, err
 		}
-		i3, err := gk.ToInt64Arg(2, args[2])
+		i3, err := gk.ToInt64Arg(2, args)
 		if err != nil {
 			return 0, nil, err
 		}
@@ -365,14 +328,11 @@ func (s *Strings) funcStringStringIntToStrings(fn func(string, string, int) []st
 // funcStringStringToInt wraps a function accepting two string arguments and returning an int, into a FuncCallable type function.
 func (s *Strings) funcStringStringToInt(fn func(string, string) int) objects.FuncCallable {
 	return func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
-		if len(args) != 2 {
-			return 0, nil, objects.ErrInvalidArgumentsNumber
-		}
-		s1, err := gk.ToStringArg(0, args[0])
+		s1, err := gk.ToStringArg(0, args)
 		if err != nil {
 			return 0, nil, err
 		}
-		s2, err := gk.ToStringArg(1, args[1])
+		s2, err := gk.ToStringArg(1, args)
 		if err != nil {
 			return 0, nil, err
 		}
@@ -383,14 +343,11 @@ func (s *Strings) funcStringStringToInt(fn func(string, string) int) objects.Fun
 // funcStringStringToString wraps a function that takes two strings and returns a string, converting it into a FuncCallable handler.
 func (s *Strings) funcStringStringToString(fn func(string, string) string) objects.FuncCallable {
 	return func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
-		if len(args) != 2 {
-			return 0, nil, objects.ErrInvalidArgumentsNumber
-		}
-		s1, err := gk.ToStringArg(0, args[0])
+		s1, err := gk.ToStringArg(0, args)
 		if err != nil {
 			return 0, nil, err
 		}
-		s2, err := gk.ToStringArg(1, args[1])
+		s2, err := gk.ToStringArg(1, args)
 		if err != nil {
 			return 0, nil, err
 		}
@@ -403,14 +360,11 @@ func (s *Strings) funcStringStringToString(fn func(string, string) string) objec
 // It returns an IObject representing true or false based on the function's result or an error if arguments are invalid.
 func (s *Strings) funcStringStringToBool(fn func(string, string) bool) objects.FuncCallable {
 	return func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
-		if len(args) != 2 {
-			return 0, nil, objects.ErrInvalidArgumentsNumber
-		}
-		s1, err := gk.ToStringArg(0, args[0])
+		s1, err := gk.ToStringArg(0, args)
 		if err != nil {
 			return 0, nil, err
 		}
-		s2, err := gk.ToStringArg(1, args[1])
+		s2, err := gk.ToStringArg(1, args)
 		if err != nil {
 			return 0, nil, err
 		}
@@ -426,10 +380,7 @@ func (s *Strings) funcStringStringToBool(fn func(string, string) bool) objects.F
 // If an error occurs during argument conversion or function execution, it returns appropriate error objects or messages.
 func (s *Strings) funcIntToIntError(fn func(string) (int, error)) objects.FuncCallable {
 	return func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (retCount uint, ret objects.IObject, err error) {
-		if len(args) != 1 {
-			return 0, nil, objects.ErrInvalidArgumentsNumber
-		}
-		s1, err := gk.ToStringArg(0, args[0])
+		s1, err := gk.ToStringArg(0, args)
 		if err != nil {
 			return 0, nil, err
 		}
@@ -444,10 +395,7 @@ func (s *Strings) funcIntToIntError(fn func(string) (int, error)) objects.FuncCa
 // funcIntToString wraps a function from int to string into a FuncCallable, ensuring compatibility with the IObject interface.
 func (s *Strings) funcIntToString(fn func(int) string) objects.FuncCallable {
 	return func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (retCount uint, ret objects.IObject, err error) {
-		if len(args) != 1 {
-			return 0, nil, objects.ErrInvalidArgumentsNumber
-		}
-		i1, err := gk.ToInt64Arg(0, args[0])
+		i1, err := gk.ToInt64Arg(0, args)
 		if err != nil {
 			return 0, nil, err
 		}

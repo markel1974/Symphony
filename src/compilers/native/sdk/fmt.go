@@ -56,10 +56,7 @@ func (f *Fmt) print(gk objects.IGateKeeper, _ int, args ...objects.IObject) (uin
 // Returns an error if the number of arguments is insufficient or if the format argument is incompatible.
 func (f *Fmt) printf(gk objects.IGateKeeper, _ int, args ...objects.IObject) (uint, objects.IObject, error) {
 	argsLen := len(args)
-	if argsLen == 0 {
-		return 0, nil, objects.ErrInvalidArgumentsNumber
-	}
-	s1, err := gk.ToStringArg(0, args[0])
+	s1, err := gk.ToStringArg(0, args)
 	if err != nil {
 		return 0, nil, err
 	}
@@ -99,11 +96,7 @@ func (f *Fmt) sprint(gk objects.IGateKeeper, frame int, args ...objects.IObject)
 
 // Sprintf formats a string using a format specifier and optional arguments, returning it as a new string object.
 func (f *Fmt) sprintf(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
-	argsLen := len(args)
-	if argsLen == 0 {
-		return 0, nil, objects.ErrInvalidArgumentsNumber
-	}
-	s1, err := gk.ToStringArg(0, args[0])
+	s1, err := gk.ToStringArg(0, args)
 	if err != nil {
 		return 0, nil, err
 	}
@@ -119,11 +112,7 @@ func (f *Fmt) sprintf(gk objects.IGateKeeper, frame int, args ...objects.IObject
 
 // Errorf formats an error message using a format string and arguments, returning an IObject error representation.
 func (f *Fmt) errorf(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
-	argsLen := len(args)
-	if argsLen == 0 {
-		return 0, nil, objects.ErrInvalidArgumentsNumber
-	}
-	s1, err := gk.ToStringArg(0, args[0])
+	s1, err := gk.ToStringArg(0, args)
 	if err != nil {
 		return 0, nil, err
 	}

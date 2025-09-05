@@ -77,14 +77,11 @@ func (j *Json) marshal(gk objects.IGateKeeper, frame int, args ...objects.IObjec
 
 // Indent takes a JSON object (bytes or string), a prefix, and an indent string, and returns the indented JSON.
 func (j *Json) indent(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
-	if len(args) != 3 {
-		return 0, nil, objects.ErrInvalidArgumentsNumber
-	}
-	prefix, err := gk.ToStringArg(1, args[1])
+	prefix, err := gk.ToStringArg(1, args)
 	if err != nil {
 		return 0, nil, err
 	}
-	indent, err := gk.ToStringArg(2, args[2])
+	indent, err := gk.ToStringArg(2, args)
 	if err != nil {
 		return 0, nil, err
 	}
