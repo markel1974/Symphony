@@ -218,7 +218,7 @@ func (s *Strings) repeat(gk objects.IGateKeeper, frame int, args ...objects.IObj
 }
 
 // Join concatenates elements of an array into a single string, using a specified separator string.
-func (s *Strings) join(gk objects.IGateKeeper, frame int, args ...objects.IObject) (retCount uint, ret objects.IObject, err error) {
+func (s *Strings) join(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
 	if len(args) != 2 {
 		return 0, nil, objects.ErrInvalidArgumentsNumber
 	}

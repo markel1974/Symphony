@@ -105,7 +105,7 @@ func (z *Rand) randOptionsRead(gk objects.IGateKeeper, r *rand.Rand, frame int, 
 // int63 is a method that returns a callable function producing a random int64 via the provided generator function (fn).
 // The callable function accepts zero arguments and raises an error if arguments are provided.
 func (z *Rand) int63(fn func() int64) objects.FuncCallable {
-	return func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (retCount uint, ret objects.IObject, err error) {
+	return func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
 		if len(args) != 0 {
 			return 0, nil, objects.ErrInvalidArgumentsNumber
 		}
@@ -117,7 +117,7 @@ func (z *Rand) int63(fn func() int64) objects.FuncCallable {
 // The function takes a single int64 argument, applies the provided function to it, and returns the result as an IObject.
 // An error is returned if the number of arguments is different from one.
 func (z *Rand) int63n(fn func(int64) int64) objects.FuncCallable {
-	return func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (retCount uint, ret objects.IObject, err error) {
+	return func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
 		if len(args) != 1 {
 			return 0, nil, objects.ErrInvalidArgumentsNumber
 		}
@@ -132,7 +132,7 @@ func (z *Rand) int63n(fn func(int64) int64) objects.FuncCallable {
 // funcInOf64 wraps a no-argument function returning float64 into a FuncCallable to integrate with the GateAdapter system.
 // It enforces no arguments and converts the float64 result to an IObject, returning ErrInvalidArgumentsNumber for invalid input.
 func (z *Rand) funcInOf64(fn func() float64) objects.FuncCallable {
-	return func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (retCount uint, ret objects.IObject, err error) {
+	return func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
 		if len(args) != 0 {
 			return 0, nil, objects.ErrInvalidArgumentsNumber
 		}

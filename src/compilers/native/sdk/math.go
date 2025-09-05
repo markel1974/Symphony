@@ -13,11 +13,13 @@ func init() {
 // Math serves as a container for mathematical operations and modules, mapping module names to their respective objects.
 type Math struct {
 	container map[string]objects.IObject
+	nanObj    objects.IObject
 }
 
 // NewMath initializes and returns a new instance of Math with predefined mathematical constants and function modules.
 func NewMath(factory objects.IGateKeeper) IPackage {
 	m := &Math{}
+	m.nanObj = factory.NewFloat(objects.FrameStatic, math.NaN())
 	constants := map[string]objects.IObject{
 		"E":       factory.NewFloat(objects.FrameStatic, math.E),
 		"Pi":      factory.NewFloat(objects.FrameStatic, math.Pi),
@@ -32,8 +34,9 @@ func NewMath(factory objects.IGateKeeper) IPackage {
 		"Log10E":  factory.NewFloat(objects.FrameStatic, math.Log10E),
 	}
 	container := []objects.IObject{
-		factory.NewFuncImport(objects.FrameStatic, "Abs", factory.FuncIf64Of64(math.Abs)),
-		factory.NewFuncImport(objects.FrameStatic, "Acos", factory.FuncIf64Of64(math.Acos)),
+		factory.NewFuncImport(objects.FrameStatic, "NaN", m.nan),
+		factory.NewFuncImport(objects.FrameStatic, "Abs", m.abs),
+		factory.NewFuncImport(objects.FrameStatic, "Acos", m.acos),
 		factory.NewFuncImport(objects.FrameStatic, "Acosh", factory.FuncIf64Of64(math.Acosh)),
 		factory.NewFuncImport(objects.FrameStatic, "Asin", factory.FuncIf64Of64(math.Asin)),
 		factory.NewFuncImport(objects.FrameStatic, "Asinh", factory.FuncIf64Of64(math.Asinh)),
@@ -70,7 +73,6 @@ func NewMath(factory objects.IGateKeeper) IPackage {
 		factory.NewFuncImport(objects.FrameStatic, "Max", factory.FuncIf64f64Of64(math.Max)),
 		factory.NewFuncImport(objects.FrameStatic, "Min", factory.FuncIf64f64Of64(math.Min)),
 		factory.NewFuncImport(objects.FrameStatic, "Mod", factory.FuncIf64f64Of64(math.Mod)),
-		factory.NewFuncImport(objects.FrameStatic, "NaN", m.funcInOf64(math.NaN)),
 		factory.NewFuncImport(objects.FrameStatic, "Nextafter", factory.FuncIf64f64Of64(math.Nextafter)),
 		factory.NewFuncImport(objects.FrameStatic, "Pow", factory.FuncIf64f64Of64(math.Pow)),
 		factory.NewFuncImport(objects.FrameStatic, "Pow10", factory.FuncIiOf64(math.Pow10)),
@@ -101,13 +103,37 @@ func (m *Math) Get(name string) (objects.IObject, bool) {
 	return v, ok
 }
 
-// funcInOf64 wraps a no-argument function returning float64 into a FuncCallable to integrate with the GateAdapter system.
-// It enforces no arguments and converts the float64 result to an IObject, returning ErrInvalidArgumentsNumber for invalid input.
-func (m *Math) funcInOf64(fn func() float64) objects.FuncCallable {
-	return func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (retCount uint, ret objects.IObject, err error) {
-		if len(args) != 0 {
-			return 0, nil, objects.ErrInvalidArgumentsNumber
-		}
-		return 1, gk.NewFloat(frame, fn()), nil
+// nan returns the Not-A-Number value as a float64.
+func (m *Math) nan(gk objects.IGateKeeper, _ int, args ...objects.IObject) (uint, objects.IObject, error) {
+	ret := gk.UndefinedValue()
+	err := objects.ErrInvalidArgumentsNumber
+	if len(args) == 0 {
+		ret = m.nanObj
+		err = nil
 	}
+	return 1, ret, err
+}
+
+func (m *Math) abs(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
+	ret := gk.UndefinedValue()
+	err := objects.ErrInvalidArgumentsNumber
+	if len(args) == 1 {
+		var f1 float64
+		if f1, err = gk.ToFloat64Arg(0, args[0]); err == nil {
+			ret = gk.NewFloat(frame, math.Abs(f1))
+		}
+	}
+	return 1, ret, err
+}
+
+func (m *Math) acos(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
+	ret := gk.UndefinedValue()
+	err := objects.ErrInvalidArgumentsNumber
+	if len(args) == 1 {
+		var f1 float64
+		if f1, err = gk.ToFloat64Arg(0, args[0]); err == nil {
+			ret = gk.NewFloat(frame, math.Acos(f1))
+		}
+	}
+	return 1, ret, err
 }
