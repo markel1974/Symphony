@@ -1,7 +1,6 @@
 package process
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
@@ -22,40 +21,40 @@ func NewLibrary(factory objects.IGateKeeper, process *Process) *Library {
 		pkg:     make(map[string]objects.IObject),
 	}
 	container := []objects.IObject{
-		factory.NewFuncImport(objects.FrameStatic, "Printf", l.doPrintf),
-		factory.NewFuncImport(objects.FrameStatic, "CreateTimer", l.doCreateTimer),
-		factory.NewFuncImport(objects.FrameStatic, "IsActive", l.doIsActive),
-		factory.NewFuncImport(objects.FrameStatic, "Kill", l.doKill),
-		factory.NewFuncImport(objects.FrameStatic, "KillForeground", l.doKillForeground),
-		factory.NewFuncImport(objects.FrameStatic, "KillAll", l.doKillAll),
-		factory.NewFuncImport(objects.FrameStatic, "CWDSet", l.doCWDSet),
-		factory.NewFuncImport(objects.FrameStatic, "CWDName", l.doCWDName),
-		factory.NewFuncImport(objects.FrameStatic, "CWDPath", l.doCWDPath),
-		factory.NewFuncImport(objects.FrameStatic, "CWDDirectoryListing", l.doCWDDirectoryListing),
-		factory.NewFuncImport(objects.FrameStatic, "GetScreenSize", l.doGetScreenSize),
-		factory.NewFuncImport(objects.FrameStatic, "PaintRequest", l.doPaintRequest),
-		factory.NewFuncImport(objects.FrameStatic, "ProcessExec", l.doProcessExec),
-		factory.NewFuncImport(objects.FrameStatic, "WindowsSelectionBegin", l.doWindowsSelectionBegin),
-		factory.NewFuncImport(objects.FrameStatic, "CWDSet", l.doWindowsSelectionEnd),
-		factory.NewFuncImport(objects.FrameStatic, "WindowsSelectionOptions", l.doWindowsSelectionOptions),
-		factory.NewFuncImport(objects.FrameStatic, "WindowsSelectionNext", l.doWindowsSelectionNext),
-		factory.NewFuncImport(objects.FrameStatic, "WindowsSelectionPrevious", l.doWindowsSelectionPrevious),
-		factory.NewFuncImport(objects.FrameStatic, "ProcessList", l.doProcessList),
-		factory.NewFuncImport(objects.FrameStatic, "ProcessSetForeground", l.doProcessSetForeground),
-		factory.NewFuncImport(objects.FrameStatic, "ProcessSetSelfForeground", l.doProcessSetSelfForeground),
-		factory.NewFuncImport(objects.FrameStatic, "Write", l.doWrite),
-		factory.NewFuncImport(objects.FrameStatic, "WritePromptEOL", l.doWritePromptEOL),
-		factory.NewFuncImport(objects.FrameStatic, "WritePromptLine", l.doWritePromptLine),
-		factory.NewFuncImport(objects.FrameStatic, "WriteColor", l.doWriteColor),
-		factory.NewFuncImport(objects.FrameStatic, "WriteForeground", l.doWriteForeground),
-		factory.NewFuncImport(objects.FrameStatic, "MoveCursorLeft", l.doMoveCursorLeft),
-		factory.NewFuncImport(objects.FrameStatic, "MoveCursorRight", l.doMoveCursorRight),
-		factory.NewFuncImport(objects.FrameStatic, "SaveCursor", l.doSaveCursor),
-		factory.NewFuncImport(objects.FrameStatic, "RestoreCursor", l.doRestoreCursor),
-		factory.NewFuncImport(objects.FrameStatic, "ClearScreen", l.doClearScreen),
-		factory.NewFuncImport(objects.FrameStatic, "SetExit", l.doSetExit),
-		factory.NewFuncImport(objects.FrameStatic, "Suggestion", l.doSuggestion),
-		factory.NewFuncImport(objects.FrameStatic, "Help", l.doHelp),
+		factory.NewFuncImport(objects.FrameStatic, "Printf", -1, l.doPrintf),
+		factory.NewFuncImport(objects.FrameStatic, "CreateTimer", 3, l.doCreateTimer),
+		factory.NewFuncImport(objects.FrameStatic, "IsActive", 1, l.doIsActive),
+		factory.NewFuncImport(objects.FrameStatic, "Kill", 1, l.doKill),
+		factory.NewFuncImport(objects.FrameStatic, "KillForeground", 0, l.doKillForeground),
+		factory.NewFuncImport(objects.FrameStatic, "KillAll", 1, l.doKillAll),
+		factory.NewFuncImport(objects.FrameStatic, "CWDSet", 1, l.doCWDSet),
+		factory.NewFuncImport(objects.FrameStatic, "CWDName", 0, l.doCWDName),
+		factory.NewFuncImport(objects.FrameStatic, "CWDPath", 0, l.doCWDPath),
+		factory.NewFuncImport(objects.FrameStatic, "CWDDirectoryListing", 0, l.doCWDDirectoryListing),
+		factory.NewFuncImport(objects.FrameStatic, "GetScreenSize", 0, l.doGetScreenSize),
+		factory.NewFuncImport(objects.FrameStatic, "PaintRequest", 0, l.doPaintRequest),
+		factory.NewFuncImport(objects.FrameStatic, "ProcessExec", 1, l.doProcessExec),
+		factory.NewFuncImport(objects.FrameStatic, "WindowsSelectionBegin", 0, l.doWindowsSelectionBegin),
+		factory.NewFuncImport(objects.FrameStatic, "CWDSet", 0, l.doWindowsSelectionEnd),
+		factory.NewFuncImport(objects.FrameStatic, "WindowsSelectionOptions", 2, l.doWindowsSelectionOptions),
+		factory.NewFuncImport(objects.FrameStatic, "WindowsSelectionNext", 0, l.doWindowsSelectionNext),
+		factory.NewFuncImport(objects.FrameStatic, "WindowsSelectionPrevious", 0, l.doWindowsSelectionPrevious),
+		factory.NewFuncImport(objects.FrameStatic, "ProcessList", 0, l.doProcessList),
+		factory.NewFuncImport(objects.FrameStatic, "ProcessSetForeground", 1, l.doProcessSetForeground),
+		factory.NewFuncImport(objects.FrameStatic, "ProcessSetSelfForeground", 0, l.doProcessSetSelfForeground),
+		factory.NewFuncImport(objects.FrameStatic, "Write", 2, l.doWrite),
+		factory.NewFuncImport(objects.FrameStatic, "WritePromptEOL", 2, l.doWritePromptEOL),
+		factory.NewFuncImport(objects.FrameStatic, "WritePromptLine", 2, l.doWritePromptLine),
+		factory.NewFuncImport(objects.FrameStatic, "WriteColor", 5, l.doWriteColor),
+		factory.NewFuncImport(objects.FrameStatic, "WriteForeground", 3, l.doWriteForeground),
+		factory.NewFuncImport(objects.FrameStatic, "MoveCursorLeft", 0, l.doMoveCursorLeft),
+		factory.NewFuncImport(objects.FrameStatic, "MoveCursorRight", 0, l.doMoveCursorRight),
+		factory.NewFuncImport(objects.FrameStatic, "SaveCursor", 0, l.doSaveCursor),
+		factory.NewFuncImport(objects.FrameStatic, "RestoreCursor", 0, l.doRestoreCursor),
+		factory.NewFuncImport(objects.FrameStatic, "ClearScreen", 0, l.doClearScreen),
+		factory.NewFuncImport(objects.FrameStatic, "SetExit", 0, l.doSetExit),
+		factory.NewFuncImport(objects.FrameStatic, "Suggestion", 2, l.doSuggestion),
+		factory.NewFuncImport(objects.FrameStatic, "Help", 1, l.doHelp),
 	}
 	for _, obj := range container {
 		if fn, ok := obj.(*objects.FuncImport); ok {
@@ -129,9 +128,6 @@ func (l *Library) doKill(gk objects.IGateKeeper, _ int, args ...objects.IObject)
 
 // doKillForeground terminates the foreground process if no arguments are provided, returning nil or an error.
 func (l *Library) doKillForeground(_ objects.IGateKeeper, _ int, args ...objects.IObject) (uint, objects.IObject, error) {
-	if len(args) != 0 {
-		return 0, nil, errors.New("invalid number of arguments")
-	}
 	l.process.KillForeground()
 	return 0, nil, nil
 }
@@ -149,9 +145,6 @@ func (l *Library) doKillAll(gk objects.IGateKeeper, _ int, args ...objects.IObje
 
 // doWindowsSelectionEnd finalizes a windows selection operation, ensuring no arguments are passed and invoking WindowsSelectionEnd.
 func (l *Library) doWindowsSelectionEnd(_ objects.IGateKeeper, _ int, args ...objects.IObject) (uint, objects.IObject, error) {
-	if len(args) != 0 {
-		return 0, nil, errors.New("invalid number of arguments")
-	}
 	l.process.WindowsSelectionEnd()
 	return 0, nil, nil
 }
@@ -159,9 +152,6 @@ func (l *Library) doWindowsSelectionEnd(_ objects.IGateKeeper, _ int, args ...ob
 // doWindowsSelectionBegin initializes the window selection process in the current library context.
 // Returns an error if invalid arguments are passed.
 func (l *Library) doWindowsSelectionBegin(_ objects.IGateKeeper, _ int, args ...objects.IObject) (uint, objects.IObject, error) {
-	if len(args) != 0 {
-		return 0, nil, errors.New("invalid number of arguments")
-	}
 	l.process.WindowsSelectionBegin()
 	return 0, nil, nil
 }
@@ -180,18 +170,12 @@ func (l *Library) doProcessExec(gk objects.IGateKeeper, _ int, args ...objects.I
 // It validates that no arguments are passed; otherwise, it returns an error.
 // Returns nil if the operation succeeds or an error if the argument validation fails.
 func (l *Library) doPaintRequest(_ objects.IGateKeeper, _ int, args ...objects.IObject) (uint, objects.IObject, error) {
-	if len(args) != 0 {
-		return 0, nil, errors.New("invalid number of arguments")
-	}
 	l.process.PaintRequest()
 	return 0, nil, nil
 }
 
 // doGetScreenSize retrieves the screen dimensions as a map containing "width" and "height" with their respective values.
 func (l *Library) doGetScreenSize(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
-	if len(args) != 0 {
-		return 0, nil, errors.New("invalid number of arguments")
-	}
 	w, h := l.process.GetScreenSize()
 	return 1, gk.NewMap(frame, map[string]objects.IObject{
 		"width":  gk.NewInt(frame, int64(w)),
@@ -202,9 +186,6 @@ func (l *Library) doGetScreenSize(gk objects.IGateKeeper, frame int, args ...obj
 // doCWDDirectoryListing returns the directory listing of the current working directory as an IObject array.
 // It expects no arguments and raises an error if arguments are provided.
 func (l *Library) doCWDDirectoryListing(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
-	if len(args) != 0 {
-		return 0, nil, errors.New("invalid number of arguments")
-	}
 	v := l.process.CWDDirectoryListing()
 	obj, err := gk.FromStringArray(frame, v)
 	if err != nil {
@@ -225,18 +206,12 @@ func (l *Library) doCWDSet(gk objects.IGateKeeper, _ int, args ...objects.IObjec
 
 // doCWDPath returns the current working directory's path as a string object or an error if arguments are provided.
 func (l *Library) doCWDPath(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
-	if len(args) != 0 {
-		return 0, nil, errors.New("invalid number of arguments")
-	}
 	v := l.process.CWDPath()
 	return 1, gk.NewString(frame, v), nil
 }
 
 // doCWDName retrieves the current working directory name, returns it as a string object, and validates argument count.
 func (l *Library) doCWDName(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
-	if len(args) != 0 {
-		return 0, nil, errors.New("invalid number of arguments")
-	}
 	v := l.process.CWDName()
 	return 1, gk.NewString(frame, v), nil
 }
@@ -272,56 +247,36 @@ func (l *Library) doSuggestion(gk objects.IGateKeeper, _ int, args ...objects.IO
 // doSetExit sets the exit condition for the associated process and returns nil if successful or an error otherwise.
 // Accepts no arguments; an error is returned if arguments are provided.
 func (l *Library) doSetExit(_ objects.IGateKeeper, _ int, args ...objects.IObject) (uint, objects.IObject, error) {
-	if len(args) != 0 {
-		return 0, nil, errors.New("invalid number of arguments")
-	}
-
 	l.process.SetExit()
 	return 0, nil, nil
 }
 
 // doClearScreen clears the terminal screen and returns nil if successful or an error if invalid arguments are passed.
 func (l *Library) doClearScreen(_ objects.IGateKeeper, _ int, args ...objects.IObject) (uint, objects.IObject, error) {
-	if len(args) != 0 {
-		return 0, nil, errors.New("invalid number of arguments")
-	}
 	l.process.ClearScreen()
 	return 0, nil, nil
 }
 
 // doRestoreCursor restores the cursor to its previously saved position, returning an error for invalid arguments.
 func (l *Library) doRestoreCursor(_ objects.IGateKeeper, _ int, args ...objects.IObject) (uint, objects.IObject, error) {
-	if len(args) != 0 {
-		return 0, nil, errors.New("invalid number of arguments")
-	}
 	l.process.RestoreCursor()
 	return 0, nil, nil
 }
 
 // doSaveCursor saves the current cursor position. Returns an error for invalid argument count.
 func (l *Library) doSaveCursor(_ objects.IGateKeeper, _ int, args ...objects.IObject) (uint, objects.IObject, error) {
-	if len(args) != 0 {
-		return 0, nil, errors.New("invalid number of arguments")
-	}
-
 	l.process.SaveCursor()
 	return 0, nil, nil
 }
 
 // doMoveCursorRight moves the cursor to the right and accepts no arguments, returning an error if any are provided.
 func (l *Library) doMoveCursorRight(_ objects.IGateKeeper, _ int, args ...objects.IObject) (uint, objects.IObject, error) {
-	if len(args) != 0 {
-		return 0, nil, errors.New("invalid number of arguments")
-	}
 	l.process.MoveCursorRight()
 	return 0, nil, nil
 }
 
 // doMoveCursorLeft moves the cursor one position to the left if the number of arguments is zero, otherwise returns an error.
 func (l *Library) doMoveCursorLeft(_ objects.IGateKeeper, _ int, args ...objects.IObject) (uint, objects.IObject, error) {
-	if len(args) != 0 {
-		return 0, nil, errors.New("invalid number of arguments")
-	}
 	l.process.MoveCursorLeft()
 	return 0, nil, nil
 }
@@ -416,9 +371,6 @@ func (l *Library) doWrite(gk objects.IGateKeeper, _ int, args ...objects.IObject
 
 // doProcessSetSelfForeground sets the current process as the foreground and ensures no arguments are passed during invocation.
 func (l *Library) doProcessSetSelfForeground(_ objects.IGateKeeper, _ int, args ...objects.IObject) (uint, objects.IObject, error) {
-	if len(args) != 0 {
-		return 0, nil, errors.New("invalid number of arguments")
-	}
 	l.process.ProcessSetSelfForeground()
 	return 0, nil, nil
 }

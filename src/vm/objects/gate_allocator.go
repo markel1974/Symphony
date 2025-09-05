@@ -139,8 +139,8 @@ func (f *GateAllocator) NewFuncInternal(frame int, id CallId) IObject {
 
 // NewFuncImport creates a new function import object with the given frame, name, and callable function.
 // Returns an IObject instance or a default undefined value if object acquisition fails.
-func (f *GateAllocator) NewFuncImport(frame int, name string, fn FuncCallable) IObject {
-	return newFuncImport(f.gk, frame, name, fn)
+func (f *GateAllocator) NewFuncImport(frame int, name string, args int, fn FuncCallable) IObject {
+	return newFuncImport(f.gk, frame, name, args, fn)
 }
 
 // NewFuncJit creates and returns a new instance of a function-based IObject with the specified frame, name, and data.

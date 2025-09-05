@@ -20,10 +20,10 @@ type Json struct {
 func NewJson(factory objects.IGateKeeper) IPackage {
 	j := &Json{}
 	container := []objects.IObject{
-		factory.NewFuncImport(objects.FrameStatic, "Unmarshal", j.unmarshal),
-		factory.NewFuncImport(objects.FrameStatic, "Marshal", j.marshal),
-		factory.NewFuncImport(objects.FrameStatic, "Indent", j.indent),
-		factory.NewFuncImport(objects.FrameStatic, "HTMLEscape", j.htmlEscape),
+		factory.NewFuncImport(objects.FrameStatic, "Unmarshal", 1, j.unmarshal),
+		factory.NewFuncImport(objects.FrameStatic, "Marshal", 1, j.marshal),
+		factory.NewFuncImport(objects.FrameStatic, "Indent", 3, j.indent),
+		factory.NewFuncImport(objects.FrameStatic, "HTMLEscape", 1, j.htmlEscape),
 	}
 	j.container = BuildContainer(container, nil)
 	return j

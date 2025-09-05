@@ -19,12 +19,12 @@ type Fmt struct {
 func NewFmt(factory objects.IGateKeeper) IPackage {
 	f := &Fmt{}
 	container := []objects.IObject{
-		factory.NewFuncImport(objects.FrameStatic, "Print", f.print),
-		factory.NewFuncImport(objects.FrameStatic, "Printf", f.printf),
-		factory.NewFuncImport(objects.FrameStatic, "Println", f.println),
-		factory.NewFuncImport(objects.FrameStatic, "Sprintf", f.sprint),
-		factory.NewFuncImport(objects.FrameStatic, "Sprintf", f.sprintf),
-		factory.NewFuncImport(objects.FrameStatic, "Errorf", f.errorf),
+		factory.NewFuncImport(objects.FrameStatic, "Print", -1, f.print),
+		factory.NewFuncImport(objects.FrameStatic, "Printf", -1, f.printf),
+		factory.NewFuncImport(objects.FrameStatic, "Println", -1, f.println),
+		factory.NewFuncImport(objects.FrameStatic, "Sprintf", -1, f.sprint),
+		factory.NewFuncImport(objects.FrameStatic, "Sprintf", -1, f.sprintf),
+		factory.NewFuncImport(objects.FrameStatic, "Errorf", -1, f.errorf),
 	}
 	f.container = BuildContainer(container, nil)
 	return f

@@ -119,7 +119,7 @@ func (gc *GateConverter) FromInterface(frame int, in interface{}) IObject {
 	case IObject:
 		return v
 	case FuncCallable:
-		return gc.gk.NewFuncImport(FrameStatic, "FuncCallable", v)
+		return gc.gk.NewFuncImport(FrameStatic, "FuncCallable", 0, v)
 	}
 	return gc.gk.UndefinedValue()
 }

@@ -20,7 +20,7 @@ type Os struct {
 func NewOs(factory objects.IGateKeeper) IPackage {
 	f := &Os{}
 	container := []objects.IObject{
-		factory.NewFuncImport(objects.FrameStatic, "Exit", f.exit),
+		factory.NewFuncImport(objects.FrameStatic, "Exit", 1, f.exit),
 	}
 	f.container = BuildContainer(container, nil)
 	return f
@@ -38,10 +38,10 @@ func (f *Os) Get(name string) (objects.IObject, bool) {
 }
 
 // exit terminates the current process after logging the provided arguments, converting them to native types with IGateKeeper.
-func (f *Os) exit(_ objects.IGateKeeper, _ int, args ...objects.IObject) (uint, objects.IObject, error) {
-	ret := int64(0)
-	if len(args) > 0 {
-		ret = args[0].AsInt64()
+func (f *Os) exit(gk objects.IGateKeeper, _ int, args ...objects.IObject) (uint, objects.IObject, error) {
+	ret, err := gk.ToInt64Arg(0, args)
+	if err != nil {
+		return 0, nil, err
 	}
 	return 0, nil, fmt.Errorf("exit with code %d", ret)
 }

@@ -13,14 +13,16 @@ type FuncCallable = func(gk IGateKeeper, frame int, args ...IObject) (retCount u
 type FuncImport struct {
 	Allocator
 	name  string
+	args  int
 	value FuncCallable
 }
 
 // NewFuncImport creates a new FuncImport instance with the specified Id and callable function.
-func newFuncImport(factory IGateKeeper, frame int, name string, fn FuncCallable) IObject {
+func newFuncImport(factory IGateKeeper, frame int, name string, args int, fn FuncCallable) IObject {
 	return &FuncImport{
 		Allocator: Allocator{gk: factory, frame: frame},
 		name:      name,
+		args:      args,
 		value:     fn,
 	}
 }
@@ -112,7 +114,7 @@ func (o *FuncImport) AsString() string {
 
 // Copy creates and returns a new FuncImport instance with the same Value field as the original object.
 func (o *FuncImport) Copy(frame int, _ int) IObject {
-	return o.GateKeeper().NewFuncImport(frame, o.name, o.value)
+	return o.GateKeeper().NewFuncImport(frame, o.name, o.args, o.value)
 }
 
 // Equals checks whether the current FuncImport is equal to another object of type IObject. Always returns false.

@@ -21,8 +21,8 @@ type Hex struct {
 func NewHex(gk objects.IGateKeeper) IPackage {
 	h := &Hex{}
 	container := []objects.IObject{
-		gk.NewFuncImport(objects.FrameStatic, "EncodeToString", h.encodeToString),
-		gk.NewFuncImport(objects.FrameStatic, "DecodeString", h.decodeString),
+		gk.NewFuncImport(objects.FrameStatic, "EncodeToString", 1, h.encodeToString),
+		gk.NewFuncImport(objects.FrameStatic, "DecodeString", 1, h.decodeString),
 	}
 	h.container = BuildContainer(container, nil)
 	return h

@@ -20,17 +20,17 @@ type Strconv struct {
 func NewStrconv(factory objects.IGateKeeper) IPackage {
 	s := &Strconv{}
 	container := []objects.IObject{
-		factory.NewFuncImport(objects.FrameStatic, "Atoi", s.atoi),
-		factory.NewFuncImport(objects.FrameStatic, "FormatBool", s.formatBool),
-		factory.NewFuncImport(objects.FrameStatic, "FormatFloat", s.formatFloat),
-		factory.NewFuncImport(objects.FrameStatic, "FormatInt", s.formatInt),
-		factory.NewFuncImport(objects.FrameStatic, "Itoa", s.itoa),
-		factory.NewFuncImport(objects.FrameStatic, "ParseBool", s.parseBool),
-		factory.NewFuncImport(objects.FrameStatic, "ParseFloat", s.parseFloat),
-		factory.NewFuncImport(objects.FrameStatic, "ParseNumber", s.parseNumber),
-		factory.NewFuncImport(objects.FrameStatic, "ParseInt", s.parseInt),
-		factory.NewFuncImport(objects.FrameStatic, "Quote", s.quote),
-		factory.NewFuncImport(objects.FrameStatic, "Unquote", s.unquote),
+		factory.NewFuncImport(objects.FrameStatic, "Atoi", 1, s.atoi),
+		factory.NewFuncImport(objects.FrameStatic, "FormatBool", 1, s.formatBool),
+		factory.NewFuncImport(objects.FrameStatic, "FormatFloat", 3, s.formatFloat),
+		factory.NewFuncImport(objects.FrameStatic, "FormatInt", 2, s.formatInt),
+		factory.NewFuncImport(objects.FrameStatic, "Itoa", 1, s.itoa),
+		factory.NewFuncImport(objects.FrameStatic, "ParseBool", 1, s.parseBool),
+		factory.NewFuncImport(objects.FrameStatic, "ParseFloat", 2, s.parseFloat),
+		factory.NewFuncImport(objects.FrameStatic, "ParseNumber", 1, s.parseNumber),
+		factory.NewFuncImport(objects.FrameStatic, "ParseInt", 3, s.parseInt),
+		factory.NewFuncImport(objects.FrameStatic, "Quote", 1, s.quote),
+		factory.NewFuncImport(objects.FrameStatic, "Unquote", 1, s.unquote),
 	}
 	s.container = BuildContainer(container, nil)
 	return s
@@ -96,27 +96,19 @@ func (s *Strconv) formatInt(gk objects.IGateKeeper, frame int, args ...objects.I
 
 // parseBool parses a single string argument into a boolean value and returns associated objects and error if any.
 // It expects exactly one string argument and returns an error for invalid argument types or number of arguments.
-func (s *Strconv) parseBool(gk objects.IGateKeeper, frame int, args ...objects.IObject) (retVal uint, ret objects.IObject, err error) {
-	if len(args) != 1 {
-		err = objects.ErrInvalidArgumentsNumber
-		return
-	}
-	s1, ok := args[0].(*objects.String)
-	if !ok {
-		err = objects.NewInvalidArgumentError(0, "string", args[0].TypeName())
-		return
-	}
-	parsed, err := strconv.ParseBool(s1.Value())
+func (s *Strconv) parseBool(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
+	s1, err := gk.ToStringArg(0, args)
 	if err != nil {
-		ret = gk.NewError(frame, err.Error())
-		return
+		return 0, nil, err
+	}
+	parsed, err := strconv.ParseBool(s1)
+	if err != nil {
+		return 0, nil, err
 	}
 	if parsed {
-		ret = gk.TrueValue()
-	} else {
-		ret = gk.FalseValue()
+		return 1, gk.TrueValue(), nil
 	}
-	return
+	return 1, gk.FalseValue(), nil
 }
 
 // parseFloat parses a given string into a floating-point number based on the specified precision.

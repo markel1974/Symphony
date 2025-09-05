@@ -21,15 +21,15 @@ type Rand struct {
 func NewRand(gk objects.IGateKeeper) IPackage {
 	z := &Rand{}
 	container := []objects.IObject{
-		gk.NewFuncImport(objects.FrameStatic, "Int63", z.int63(rand.Int63)),
-		gk.NewFuncImport(objects.FrameStatic, "Float64", z.float64(rand.Float64)),
-		gk.NewFuncImport(objects.FrameStatic, "Int63n", z.int63n(rand.Int63n)),
-		gk.NewFuncImport(objects.FrameStatic, "ExpFloat64", z.expFloat64(rand.ExpFloat64)),
-		gk.NewFuncImport(objects.FrameStatic, "NormFloat64", z.normFloat64(rand.NormFloat64)),
-		gk.NewFuncImport(objects.FrameStatic, "Perm", z.perm(rand.Perm)),
-		gk.NewFuncImport(objects.FrameStatic, "Seed", z.seed(rand.Seed)),
-		gk.NewFuncImport(objects.FrameStatic, "Read", z.read),
-		gk.NewFuncImport(objects.FrameStatic, "Rand", z.rand),
+		gk.NewFuncImport(objects.FrameStatic, "Int63", 0, z.int63(rand.Int63)),
+		gk.NewFuncImport(objects.FrameStatic, "Float64", 0, z.float64(rand.Float64)),
+		gk.NewFuncImport(objects.FrameStatic, "Int63n", 1, z.int63n(rand.Int63n)),
+		gk.NewFuncImport(objects.FrameStatic, "ExpFloat64", 0, z.float64(rand.ExpFloat64)),
+		gk.NewFuncImport(objects.FrameStatic, "NormFloat64", 0, z.float64(rand.NormFloat64)),
+		gk.NewFuncImport(objects.FrameStatic, "Perm", 1, z.perm(rand.Perm)),
+		gk.NewFuncImport(objects.FrameStatic, "Seed", 1, z.seed(rand.Seed)),
+		gk.NewFuncImport(objects.FrameStatic, "Read", 1, z.read),
+		gk.NewFuncImport(objects.FrameStatic, "Rand", 1, z.rand),
 	}
 	z.container = BuildContainer(container, nil)
 	return z
@@ -69,14 +69,14 @@ func (z *Rand) rand(gk objects.IGateKeeper, frame int, args ...objects.IObject) 
 	r := rand.New(src)
 	return 1, gk.NewMap(frame,
 		map[string]objects.IObject{
-			"Int63":       gk.NewFuncImport(frame, "Int63", z.int63(r.Int63)),
-			"Float64":     gk.NewFuncImport(frame, "Float64", z.float64(r.Float64)),
-			"Int63n":      gk.NewFuncImport(frame, "Int63n", z.int63n(r.Int63n)),
-			"ExpFloat64":  gk.NewFuncImport(frame, "ExpFloat64", z.float64(r.ExpFloat64)),
-			"NormFloat64": gk.NewFuncImport(frame, "NormFloat64", z.float64(r.NormFloat64)),
-			"Perm":        gk.NewFuncImport(frame, "Perm", z.perm(r.Perm)),
-			"Seed":        gk.NewFuncImport(frame, "Seed", z.seed(r.Seed)),
-			"Read": gk.NewFuncImport(frame, "Read", func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
+			"Int63":       gk.NewFuncImport(frame, "Int63", 0, z.int63(r.Int63)),
+			"Float64":     gk.NewFuncImport(frame, "Float64", 0, z.float64(r.Float64)),
+			"Int63n":      gk.NewFuncImport(frame, "Int63n", 1, z.int63n(r.Int63n)),
+			"ExpFloat64":  gk.NewFuncImport(frame, "ExpFloat64", 0, z.float64(r.ExpFloat64)),
+			"NormFloat64": gk.NewFuncImport(frame, "NormFloat64", 0, z.float64(r.NormFloat64)),
+			"Perm":        gk.NewFuncImport(frame, "Perm", 1, z.perm(r.Perm)),
+			"Seed":        gk.NewFuncImport(frame, "Seed", 1, z.seed(r.Seed)),
+			"Read": gk.NewFuncImport(frame, "Read", 1, func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
 				return z.randOptionsRead(gk, r, frame, args...)
 			}),
 		}), nil
@@ -100,9 +100,6 @@ func (z *Rand) randOptionsRead(gk objects.IGateKeeper, r *rand.Rand, frame int, 
 // Returns an error if any arguments are provided.
 func (z *Rand) int63(fn func() int64) objects.FuncCallable {
 	return func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
-		if len(args) != 0 {
-			return 0, nil, objects.ErrInvalidArgumentsNumber
-		}
 		return 1, gk.NewInt(frame, fn()), nil
 	}
 }
@@ -133,29 +130,6 @@ func (z *Rand) seed(fn func(int64)) objects.FuncCallable {
 // float64 generates a FuncCallable that produces a float64 value using the provided function and returns it as an IObject.
 func (z *Rand) float64(fn func() float64) objects.FuncCallable {
 	return func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
-		if len(args) != 0 {
-			return 0, nil, objects.ErrInvalidArgumentsNumber
-		}
-		return 1, gk.NewFloat(frame, fn()), nil
-	}
-}
-
-// expFloat64 returns a callable function that computes and returns a random float64 value based on the provided generator function.
-func (z *Rand) expFloat64(fn func() float64) objects.FuncCallable {
-	return func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
-		if len(args) != 0 {
-			return 0, nil, objects.ErrInvalidArgumentsNumber
-		}
-		return 1, gk.NewFloat(frame, fn()), nil
-	}
-}
-
-// normFloat64 creates a callable function that returns a normally distributed float64 value using the provided generator function.
-func (z *Rand) normFloat64(fn func() float64) objects.FuncCallable {
-	return func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
-		if len(args) != 0 {
-			return 0, nil, objects.ErrInvalidArgumentsNumber
-		}
 		return 1, gk.NewFloat(frame, fn()), nil
 	}
 }

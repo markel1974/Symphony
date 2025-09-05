@@ -20,10 +20,10 @@ type Log struct {
 func NewLog(factory objects.IGateKeeper) IPackage {
 	f := &Log{}
 	container := []objects.IObject{
-		factory.NewFuncImport(objects.FrameStatic, "Print", f.print),
-		factory.NewFuncImport(objects.FrameStatic, "Printf", f.printf),
-		factory.NewFuncImport(objects.FrameStatic, "Println", f.println),
-		factory.NewFuncImport(objects.FrameStatic, "Fatalf", f.fatalf),
+		factory.NewFuncImport(objects.FrameStatic, "Print", -1, f.print),
+		factory.NewFuncImport(objects.FrameStatic, "Printf", -1, f.printf),
+		factory.NewFuncImport(objects.FrameStatic, "Println", -1, f.println),
+		factory.NewFuncImport(objects.FrameStatic, "Fatalf", -1, f.fatalf),
 	}
 	f.container = BuildContainer(container, nil)
 	return f

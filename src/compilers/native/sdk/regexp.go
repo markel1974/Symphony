@@ -29,11 +29,11 @@ type Regexp struct {
 func NewRegexp(factory objects.IGateKeeper) IPackage {
 	r := &Regexp{}
 	container := []objects.IObject{
-		factory.NewFuncImport(objects.FrameStatic, "Match", r.match),
-		factory.NewFuncImport(objects.FrameStatic, "Find", r.find),
-		factory.NewFuncImport(objects.FrameStatic, "Replace", r.replace),
-		factory.NewFuncImport(objects.FrameStatic, "Split", r.split),
-		factory.NewFuncImport(objects.FrameStatic, "Compile", r.compile),
+		factory.NewFuncImport(objects.FrameStatic, "Match", 2, r.match),
+		factory.NewFuncImport(objects.FrameStatic, "Find", -1, r.find),
+		factory.NewFuncImport(objects.FrameStatic, "Replace", 3, r.replace),
+		factory.NewFuncImport(objects.FrameStatic, "Split", -1, r.split),
+		factory.NewFuncImport(objects.FrameStatic, "Compile", 1, r.compile),
 	}
 	r.container = BuildContainer(container, nil)
 	return r
@@ -174,12 +174,9 @@ func (r *Regexp) split(gk objects.IGateKeeper, frame int, args ...objects.IObjec
 
 // Compile compiles a single string argument into a regular expression and returns an object encapsulating its options.
 func (r *Regexp) compile(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
-	if len(args) != 1 {
-		return 0, nil, objects.ErrInvalidArgumentsNumber
-	}
-	s1, ok := gk.ToString(args[0])
-	if !ok {
-		return 0, nil, objects.NewInvalidArgumentError(0, "string(compatible)", args[0].TypeName())
+	s1, err := gk.ToStringArg(0, args)
+	if err != nil {
+		return 0, nil, err
 	}
 	re, err := regexp.Compile(s1)
 	if err != nil {
@@ -189,16 +186,16 @@ func (r *Regexp) compile(gk objects.IGateKeeper, frame int, args ...objects.IObj
 	obj := gk.NewMap(frame,
 		map[string]objects.IObject{
 			// match(text) => bool
-			"Match": gk.NewFuncImport(frame, "Match", func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
+			"Match": gk.NewFuncImport(frame, "Match", 1, func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
 				return r.compileOptionMatch(gk, frame, re, args...)
 			}),
-			"Find": gk.NewFuncImport(frame, "Find", func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
+			"Find": gk.NewFuncImport(frame, "Find", -1, func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
 				return r.compileOptionFind(gk, frame, re, args...)
 			}),
-			"Replace": gk.NewFuncImport(frame, "Replace", func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
+			"Replace": gk.NewFuncImport(frame, "Replace", 2, func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
 				return r.compileOptionReplace(gk, frame, re, args...)
 			}),
-			"Split": gk.NewFuncImport(frame, "Split", func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
+			"Split": gk.NewFuncImport(frame, "Split", -1, func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
 				return r.compileOptionSplit(gk, frame, re, args...)
 			}),
 		},

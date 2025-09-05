@@ -19,14 +19,14 @@ type Base64 struct {
 func NewBase64(f objects.IGateKeeper) IPackage {
 	b := &Base64{}
 	container := []objects.IObject{
-		f.NewFuncImport(objects.FrameStatic, "EncodeToString", b.funcBytesToString(base64.StdEncoding.EncodeToString)),
-		f.NewFuncImport(objects.FrameStatic, "EncodeToString", b.funcStringToBytesError(base64.StdEncoding.DecodeString)),
-		f.NewFuncImport(objects.FrameStatic, "RawEncode", b.funcBytesToString(base64.RawStdEncoding.EncodeToString)),
-		f.NewFuncImport(objects.FrameStatic, "RawDecode", b.funcStringToBytesError(base64.RawStdEncoding.DecodeString)),
-		f.NewFuncImport(objects.FrameStatic, "UrlEncode", b.funcBytesToString(base64.URLEncoding.EncodeToString)),
-		f.NewFuncImport(objects.FrameStatic, "UrlDecode", b.funcStringToBytesError(base64.URLEncoding.DecodeString)),
-		f.NewFuncImport(objects.FrameStatic, "RawUrlEncode", b.funcBytesToString(base64.RawURLEncoding.EncodeToString)),
-		f.NewFuncImport(objects.FrameStatic, "rawUrlDecode", b.funcStringToBytesError(base64.RawURLEncoding.DecodeString)),
+		f.NewFuncImport(objects.FrameStatic, "EncodeToString", 1, b.funcBytesToString(base64.StdEncoding.EncodeToString)),
+		f.NewFuncImport(objects.FrameStatic, "EncodeToString", 1, b.funcStringToBytesError(base64.StdEncoding.DecodeString)),
+		f.NewFuncImport(objects.FrameStatic, "RawEncode", 1, b.funcBytesToString(base64.RawStdEncoding.EncodeToString)),
+		f.NewFuncImport(objects.FrameStatic, "RawDecode", 1, b.funcStringToBytesError(base64.RawStdEncoding.DecodeString)),
+		f.NewFuncImport(objects.FrameStatic, "UrlEncode", 1, b.funcBytesToString(base64.URLEncoding.EncodeToString)),
+		f.NewFuncImport(objects.FrameStatic, "UrlDecode", 1, b.funcStringToBytesError(base64.URLEncoding.DecodeString)),
+		f.NewFuncImport(objects.FrameStatic, "RawUrlEncode", 1, b.funcBytesToString(base64.RawURLEncoding.EncodeToString)),
+		f.NewFuncImport(objects.FrameStatic, "rawUrlDecode", 1, b.funcStringToBytesError(base64.RawURLEncoding.DecodeString)),
 	}
 	b.container = BuildContainer(container, nil)
 	return b

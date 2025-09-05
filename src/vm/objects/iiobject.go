@@ -69,7 +69,7 @@ type IGateAllocator interface {
 	NewFuncInternals(frame int) []IObject
 	NewFuncInternal(frame int, id CallId) IObject
 	NewFuncCompiled(frame int, name string, instructions []byte, numLocals int, numParameters int, varArgs bool, sourceMap map[int]int, free []*ObjectPointer) IObject
-	NewFuncImport(frame int, name string, fn FuncCallable) IObject
+	NewFuncImport(frame int, name string, args int, fn FuncCallable) IObject
 	NewFuncJit(frame int, name string, data []byte) IObject
 	NewArray(frame int, values []IObject) IObject
 	NewBool(frame int, value bool) IObject
