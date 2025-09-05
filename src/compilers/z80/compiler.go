@@ -94,6 +94,14 @@ func (c *Compiler) defineZ80State() error {
 	return nil
 }
 
+/*
+Esempio Concreto: da "Molti a 1" a "1 a 1"
+Istruzione Z80	Approccio Iniziale (Molti-a-1)	Obiettivo Finale (1:1)
+LD B, C	OpGlobalGet C<br>OpGlobalSet B	OpLdRegToReg B, C
+ADD A, B	OpGlobalGet A<br>OpGlobalGet B<br>OpArithmetic ADD<br>OpGlobalSet A<br>(...e 10+ istruzioni per i flag)	OpAluReg ADD, B
+JP Z, nn	OpGlobalGet F<br>OpArithmetic AND<br>OpConstant FlagZ<br>OpJumpTruthy nn	OpJumpConditional Z_SET, nn
+*/
+
 // compileInstruction processes a single CPU instruction based on its opcode and operands, updating the program counter.
 // It emits corresponding bytecode depending on the instruction type and manages registers, constants, and jumps.
 func (c *Compiler) compileInstruction(pc int, opcode byte, operands []byte) (int, error) {
@@ -105,9 +113,13 @@ func (c *Compiler) compileInstruction(pc int, opcode byte, operands []byte) (int
 		if opcode == 0x76 { // HALT
 			break
 		}
-		srcReg := c.z80.GetRegisterNameFromIndex(int(opcode & 0x07))
-		destReg := c.z80.GetRegisterNameFromIndex(int((opcode >> 3) & 0x07))
-		if err := c.helper.EmitLdRegToReg(destReg, srcReg); err != nil {
+		// Abbiamo sostituito la vecchia logica con una singola istruzione specializzata.
+		srcRegName := c.z80.GetRegisterNameFromIndex(int(opcode & 0x07))
+		destRegName := c.z80.GetRegisterNameFromIndex(int((opcode >> 3) & 0x07))
+
+		// Emettiamo la nuova istruzione 'OpGlobalCopy' con due operandi: destinazione e sorgente.
+		// Questo raggiunge l'obiettivo 1:1.
+		if _, err := c.scopes.Emit(bytecode.OpGlobalCopy, c.z80.Register(destRegName), c.z80.Register(srcRegName)); err != nil {
 			return 0, err
 		}
 

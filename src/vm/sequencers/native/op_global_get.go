@@ -8,7 +8,7 @@ import (
 )
 
 func init() {
-	SequencerRegister(NewOpGetGlobal)
+	SequencerRegister(NewOpGlobalGet)
 }
 
 // OpGlobalGet represents an operation to retrieve a global variable in the virtual machine.
@@ -18,8 +18,8 @@ type OpGlobalGet struct {
 	vm core.IVMFullAccess
 }
 
-// NewOpGetGlobal creates a new instance of OpGlobalGet with its associated opcode details.
-func NewOpGetGlobal(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
+// NewOpGlobalGet creates a new instance of OpGlobalGet with its associated opcode details.
+func NewOpGlobalGet(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
 	vmT, ok := vm.(core.IVMFullAccess)
 	if !ok {
 		return nil, fmt.Errorf("vm does not implement IVMFullAccess")

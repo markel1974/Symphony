@@ -124,6 +124,9 @@ const (
 	// OpGlobalSelSet represents an operation for setting a value in a globally selected field or property.
 	OpGlobalSelSet
 
+	// OpGlobalCopy is an opcode used to copy a value from one global variable to another.
+	OpGlobalCopy
+
 	// OpLocalGet is an opcode used to retrieve the value of a local variable from the current scope by its index.
 	OpLocalGet
 
@@ -274,6 +277,7 @@ func NewOpcodes() *Opcodes {
 	op.createOpcode(OpGlobalGet, []int{Uint16Size}, "OpGlobalGet")
 	op.createOpcode(OpGlobalSet, []int{Uint16Size}, "OpGlobalSet")
 	op.createOpcode(OpGlobalSelSet, []int{Uint16Size, Uint8Size}, "OpGlobalSelSet")
+	op.createOpcode(OpGlobalCopy, []int{Uint16Size, Uint16Size}, "OpGlobalCopy")
 	op.createOpcode(OpArray, []int{Uint16Size}, "OpArray")
 	op.createOpcode(OpMap, []int{Uint16Size}, "OpMap")
 	op.createOpcode(OpStruct, []int{Uint16Size}, "OpStruct")

@@ -26,15 +26,8 @@ func NewHelper(gk objects.IGateKeeper, z80 *Z80, constants *tables.Constants, sc
 
 // EmitLdRegToReg copies the value from the source register to the destination register and emits the respective bytecode.
 func (h *Helper) EmitLdRegToReg(dest string, src string) error {
-	// 1. Prendi il valore dal registro sorgente
-	if _, err := h.scopes.Emit(bytecode.OpGlobalGet, h.z80.Register(src)); err != nil {
-		return err
-	}
-	// 2. Salva il valore nel registro destinazione
-	if _, err := h.scopes.Emit(bytecode.OpGlobalSet, h.z80.Register(dest)); err != nil {
-		return err
-	}
-	return nil
+	_, err := h.scopes.Emit(bytecode.OpGlobalCopy, h.z80.Register(dest), h.z80.Register(src))
+	return err
 }
 
 // EmitAluRegToReg performs an arithmetic operation between the accumulator and the specified register, updating the flags.
