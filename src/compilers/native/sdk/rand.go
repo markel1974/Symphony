@@ -1,31 +1,33 @@
 package sdk
 
 import (
+	"fmt"
 	"math/rand"
 
 	"github.com/markel1974/c64emu/src/vm/objects"
 )
 
+// init initializes the package by registering the NewRand package using the RegisterPackage function.
 func init() {
 	RegisterPackage(NewRand)
 }
 
-// Rand is a struct that encapsulates a module mapping of string keys to objects implementing the IObject interface.
+// Rand is a type that provides a container for random-related functionalities and operations.
 type Rand struct {
 	container map[string]objects.IObject
 }
 
-// NewRand creates a new instance of Rand with a pre-defined set of random number generation functions.
+// NewRand creates and initializes a new instance of the Rand package, registering its functions with the provided IGateKeeper.
 func NewRand(gk objects.IGateKeeper) IPackage {
 	z := &Rand{}
 	container := []objects.IObject{
 		gk.NewFuncImport(objects.FrameStatic, "Int63", z.int63(rand.Int63)),
-		gk.NewFuncImport(objects.FrameStatic, "Float64", z.funcInOf64(rand.Float64)),
+		gk.NewFuncImport(objects.FrameStatic, "Float64", z.float64(rand.Float64)),
 		gk.NewFuncImport(objects.FrameStatic, "Int63n", z.int63n(rand.Int63n)),
-		gk.NewFuncImport(objects.FrameStatic, "ExpFloat64", z.funcInOf64(rand.ExpFloat64)),
-		gk.NewFuncImport(objects.FrameStatic, "NormFloat64", z.funcInOf64(rand.NormFloat64)),
-		gk.NewFuncImport(objects.FrameStatic, "Perm", gk.FuncIiOiS(rand.Perm)),
-		gk.NewFuncImport(objects.FrameStatic, "Seed", gk.FuncIi64On(rand.Seed)),
+		gk.NewFuncImport(objects.FrameStatic, "ExpFloat64", z.expFloat64(rand.ExpFloat64)),
+		gk.NewFuncImport(objects.FrameStatic, "NormFloat64", z.normFloat64(rand.NormFloat64)),
+		gk.NewFuncImport(objects.FrameStatic, "Perm", z.perm(rand.Perm)),
+		gk.NewFuncImport(objects.FrameStatic, "Seed", z.seed(rand.Seed)),
 		gk.NewFuncImport(objects.FrameStatic, "Read", z.read),
 		gk.NewFuncImport(objects.FrameStatic, "Rand", z.rand),
 	}
@@ -33,18 +35,18 @@ func NewRand(gk objects.IGateKeeper) IPackage {
 	return z
 }
 
-// Name returns the name of the Rand module as a string.
+// Name returns the name of the Rand type as a string, which is "rand".
 func (z *Rand) Name() string {
 	return "rand"
 }
 
-// Get retrieves an object associated with the given name from the container. It returns the object and a boolean indicating success.
+// Get retrieves an object from the container using the provided name as a key and indicates if the object was found.
 func (z *Rand) Get(name string) (objects.IObject, bool) {
 	v, ok := z.container[name]
 	return v, ok
 }
 
-// Read reads random data into a byte slice and returns the number of bytes written as an integer or an error if it occurs.
+// read reads random data into the provided byte array argument. Returns the number of bytes read or an error.
 func (z *Rand) read(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
 	if len(args) != 1 {
 		return 0, nil, objects.ErrInvalidArgumentsNumber
@@ -60,7 +62,7 @@ func (z *Rand) read(gk objects.IGateKeeper, frame int, args ...objects.IObject) 
 	return 1, gk.NewInt(frame, int64(res)), nil
 }
 
-// Rand generates a new random number generator using the provided seed argument and returns its options as a map.
+// rand initializes a new random number generator using the provided seed and returns a map of random generator methods.
 func (z *Rand) rand(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
 	if len(args) != 1 {
 		return 0, nil, objects.ErrInvalidArgumentsNumber
@@ -74,19 +76,19 @@ func (z *Rand) rand(gk objects.IGateKeeper, frame int, args ...objects.IObject) 
 	return 1, gk.NewMap(frame,
 		map[string]objects.IObject{
 			"Int63":       gk.NewFuncImport(frame, "Int63", z.int63(r.Int63)),
-			"Float64":     gk.NewFuncImport(frame, "Float64", z.funcInOf64(r.Float64)),
+			"Float64":     gk.NewFuncImport(frame, "Float64", z.float64(r.Float64)),
 			"Int63n":      gk.NewFuncImport(frame, "Int63n", z.int63n(r.Int63n)),
-			"ExpFloat64":  gk.NewFuncImport(frame, "ExpFloat64", z.funcInOf64(r.ExpFloat64)),
-			"NormFloat64": gk.NewFuncImport(frame, "NormFloat64", z.funcInOf64(r.NormFloat64)),
-			"Perm":        gk.NewFuncImport(frame, "Perm", gk.FuncIiOiS(r.Perm)),
-			"Seed":        gk.NewFuncImport(frame, "Seed", gk.FuncIi64On(r.Seed)),
+			"ExpFloat64":  gk.NewFuncImport(frame, "ExpFloat64", z.float64(r.ExpFloat64)),
+			"NormFloat64": gk.NewFuncImport(frame, "NormFloat64", z.float64(r.NormFloat64)),
+			"Perm":        gk.NewFuncImport(frame, "Perm", z.perm(r.Perm)),
+			"Seed":        gk.NewFuncImport(frame, "Seed", z.seed(r.Seed)),
 			"Read": gk.NewFuncImport(frame, "Read", func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
 				return z.randOptionsRead(gk, r, frame, args...)
 			}),
 		}), nil
 }
 
-// RandOptionsRead reads random data into a provided byte slice, returning the number of bytes read or an error.
+// randOptionsRead reads random bytes into a byte slice using a specific random number generator and returns the result size.
 func (z *Rand) randOptionsRead(gk objects.IGateKeeper, r *rand.Rand, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
 	if len(args) != 1 {
 		return 0, nil, objects.ErrInvalidArgumentsNumber
@@ -102,8 +104,9 @@ func (z *Rand) randOptionsRead(gk objects.IGateKeeper, r *rand.Rand, frame int, 
 	return 1, gk.NewInt(frame, int64(res)), nil
 }
 
-// int63 is a method that returns a callable function producing a random int64 via the provided generator function (fn).
-// The callable function accepts zero arguments and raises an error if arguments are provided.
+// int63 returns a FuncCallable that generates a 63-bit non-negative integer using the provided function.
+// It accepts no arguments and returns the generated integer as an IObject.
+// Returns an error if any arguments are provided.
 func (z *Rand) int63(fn func() int64) objects.FuncCallable {
 	return func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
 		if len(args) != 0 {
@@ -113,9 +116,7 @@ func (z *Rand) int63(fn func() int64) objects.FuncCallable {
 	}
 }
 
-// int63n returns a function that applies a provided transformation to a 63-bit signed integer argument.
-// The function takes a single int64 argument, applies the provided function to it, and returns the result as an IObject.
-// An error is returned if the number of arguments is different from one.
+// int63n returns a FuncCallable that applies a provided int64 function to a single int64 argument and returns the result.
 func (z *Rand) int63n(fn func(int64) int64) objects.FuncCallable {
 	return func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
 		if len(args) != 1 {
@@ -129,13 +130,72 @@ func (z *Rand) int63n(fn func(int64) int64) objects.FuncCallable {
 	}
 }
 
-// funcInOf64 wraps a no-argument function returning float64 into a FuncCallable to integrate with the GateAdapter system.
-// It enforces no arguments and converts the float64 result to an IObject, returning ErrInvalidArgumentsNumber for invalid input.
-func (z *Rand) funcInOf64(fn func() float64) objects.FuncCallable {
+// seed returns a FuncCallable that sets a seed using the provided function, ensuring the argument is a single int64 value.
+func (z *Rand) seed(fn func(int64)) objects.FuncCallable {
+	return func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
+		if len(args) != 1 {
+			return 0, nil, objects.ErrInvalidArgumentsNumber
+		}
+		i1, err := gk.ToInt64Arg(0, args[0])
+		if err != nil {
+			return 0, nil, err
+		}
+		fn(i1)
+		return 0, gk.UndefinedValue(), nil
+	}
+}
+
+// float64 generates a FuncCallable that produces a float64 value using the provided function and returns it as an IObject.
+func (z *Rand) float64(fn func() float64) objects.FuncCallable {
 	return func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
 		if len(args) != 0 {
 			return 0, nil, objects.ErrInvalidArgumentsNumber
 		}
 		return 1, gk.NewFloat(frame, fn()), nil
+	}
+}
+
+// expFloat64 returns a callable function that computes and returns a random float64 value based on the provided generator function.
+func (z *Rand) expFloat64(fn func() float64) objects.FuncCallable {
+	return func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
+		if len(args) != 0 {
+			return 0, nil, objects.ErrInvalidArgumentsNumber
+		}
+		return 1, gk.NewFloat(frame, fn()), nil
+	}
+}
+
+// normFloat64 creates a callable function that returns a normally distributed float64 value using the provided generator function.
+func (z *Rand) normFloat64(fn func() float64) objects.FuncCallable {
+	return func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
+		if len(args) != 0 {
+			return 0, nil, objects.ErrInvalidArgumentsNumber
+		}
+		return 1, gk.NewFloat(frame, fn()), nil
+	}
+}
+
+// perm generates a FuncCallable that calculates permutations of size n using the provided function.
+// The input is a single integer argument, and the result is an Array containing the permutation sequence.
+// Returns an error if the input is invalid or the conversion fails.
+func (z *Rand) perm(fn func(int) []int) objects.FuncCallable {
+	return func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
+		if len(args) != 1 {
+			return 0, nil, objects.ErrInvalidArgumentsNumber
+		}
+		i1, err := gk.ToInt64Arg(0, args[0])
+		if err != nil {
+			return 0, nil, err
+		}
+		res := fn(int(i1))
+		obj := gk.NewArray(frame, nil)
+		arr, ok := obj.(*objects.Array)
+		if !ok {
+			return 0, nil, fmt.Errorf("expected Array, got %T", obj)
+		}
+		for _, v := range res {
+			arr.Append(gk.NewInt(frame, int64(v)))
+		}
+		return 1, arr, nil
 	}
 }
