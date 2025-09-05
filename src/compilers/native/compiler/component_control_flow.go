@@ -16,12 +16,12 @@ type ControlFlow struct {
 	fileSet     *token.FileSet
 	scopes      *tables.Scopes
 	structTable *tables.StructTable
-	constants   *Constants
+	constants   *tables.Constants
 	compile     func(node ast.Node) error
 }
 
 // NewControlFlow creates and returns a new instance of ControlFlow with the specified gatekeeper and scope parameters.
-func NewControlFlow(gk objects.IGateKeeper, constants *Constants, scopes *tables.Scopes, structTable *tables.StructTable) *ControlFlow {
+func NewControlFlow(gk objects.IGateKeeper, constants *tables.Constants, scopes *tables.Scopes, structTable *tables.StructTable) *ControlFlow {
 	return &ControlFlow{
 		gk:          gk,
 		constants:   constants,

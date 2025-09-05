@@ -18,8 +18,8 @@ import (
 // The fileSet tracks source file information, and the compile function is used for compiling AST nodes.
 type Declarations struct {
 	gk             objects.IGateKeeper
-	references     *Constants
-	constants      *Constants
+	references     *tables.Constants
+	constants      *tables.Constants
 	scopes         *tables.Scopes
 	fileSet        *token.FileSet
 	imports        *Imports
@@ -30,7 +30,7 @@ type Declarations struct {
 }
 
 // NewDeclarations creates and initializes a new Declarations instance with gatekeeper, constants, scopes, and structs table.
-func NewDeclarations(gk objects.IGateKeeper, references *Constants, constants *Constants, scopes *tables.Scopes, imports *Imports, structsTable *tables.StructTable, functionTables *tables.FunctionTable, interfaceTable *tables.InterfaceTable) *Declarations {
+func NewDeclarations(gk objects.IGateKeeper, references *tables.Constants, constants *tables.Constants, scopes *tables.Scopes, imports *Imports, structsTable *tables.StructTable, functionTables *tables.FunctionTable, interfaceTable *tables.InterfaceTable) *Declarations {
 	return &Declarations{
 		gk: gk, references: references, constants: constants, scopes: scopes,
 		compile:        nil,

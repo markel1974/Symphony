@@ -12,13 +12,13 @@ import (
 type Expression struct {
 	gk        objects.IGateKeeper
 	fileSet   *token.FileSet
-	constants *Constants
+	constants *tables.Constants
 	scopes    *tables.Scopes
 	imports   *Imports
 	compile   func(node ast.Node) error
 }
 
-func NewExpression(gk objects.IGateKeeper, constants *Constants, scopes *tables.Scopes, imports *Imports) *Expression {
+func NewExpression(gk objects.IGateKeeper, constants *tables.Constants, scopes *tables.Scopes, imports *Imports) *Expression {
 	return &Expression{
 		gk:        gk,
 		constants: constants,

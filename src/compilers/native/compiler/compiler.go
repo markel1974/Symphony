@@ -19,8 +19,8 @@ type Compiler struct {
 	fileSet           *token.FileSet
 	loader            bytecode.ILoader
 	scopes            *tables.Scopes
-	constants         *Constants
-	importConstants   *Constants
+	constants         *tables.Constants
+	importConstants   *tables.Constants
 	imports           *Imports
 	functions         *Functions
 	types             *Types
@@ -43,8 +43,8 @@ func New(gk objects.IGateKeeper, loader bytecode.ILoader, opcodes *bytecode.Opco
 	structTable := tables.NewStructTable(gk, scopes)
 	interfaceTable := tables.NewInterfaceTable(gk, scopes)
 	functionTable := tables.NewFunctionTable(gk, scopes, structTable, interfaceTable)
-	constants := NewConstants()
-	importConstants := NewConstants()
+	constants := tables.NewConstants()
+	importConstants := tables.NewConstants()
 	imports := NewImports(gk, loader, importConstants, scopes)
 	components = append(components, imports)
 	declarations := NewDeclarations(gk, importConstants, constants, scopes, imports, structTable, functionTable, interfaceTable)

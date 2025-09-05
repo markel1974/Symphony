@@ -13,7 +13,7 @@ import (
 // Functions is a collection that manages a list of function descriptions.
 type Functions struct {
 	gk             objects.IGateKeeper
-	constants      *Constants
+	constants      *tables.Constants
 	scopes         *tables.Scopes
 	imports        *Imports
 	declarations   *Declarations
@@ -26,7 +26,7 @@ type Functions struct {
 }
 
 // NewFunctions initializes and returns a new Functions instance.
-func NewFunctions(gk objects.IGateKeeper, constants *Constants, scopes *tables.Scopes, imports *Imports, declarations *Declarations, structTable *tables.StructTable, functionTable *tables.FunctionTable, interfaceTable *tables.InterfaceTable) *Functions {
+func NewFunctions(gk objects.IGateKeeper, constants *tables.Constants, scopes *tables.Scopes, imports *Imports, declarations *Declarations, structTable *tables.StructTable, functionTable *tables.FunctionTable, interfaceTable *tables.InterfaceTable) *Functions {
 	return &Functions{
 		gk:             gk,
 		constants:      constants,

@@ -14,7 +14,7 @@ import (
 type Imports struct {
 	gk         objects.IGateKeeper
 	loader     bytecode.ILoader
-	references *Constants
+	references *tables.Constants
 	scopes     *tables.Scopes
 	imports    map[string]bool
 	builtin    map[string]objects.CallId
@@ -24,7 +24,7 @@ type Imports struct {
 }
 
 // NewImports creates and initializes a new Imports instance with provided GateKeeper, Constants, and Scopes references.
-func NewImports(gk objects.IGateKeeper, loader bytecode.ILoader, references *Constants, scopes *tables.Scopes) *Imports {
+func NewImports(gk objects.IGateKeeper, loader bytecode.ILoader, references *tables.Constants, scopes *tables.Scopes) *Imports {
 	i := &Imports{
 		gk:         gk,
 		loader:     loader,
