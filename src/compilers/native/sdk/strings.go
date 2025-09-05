@@ -1,8 +1,9 @@
 package sdk
 
 import (
+	"fmt"
 	"strings"
-	"unicode/utf8"
+	//"unicode/utf8"
 
 	"github.com/markel1974/c64emu/src/vm/objects"
 )
@@ -21,38 +22,38 @@ type Strings struct {
 func NewStrings(factory objects.IGateKeeper) IPackage {
 	s := &Strings{}
 	container := []objects.IObject{
-		factory.NewFuncImport(objects.FrameStatic, "Compare", factory.FuncIssOi(strings.Compare)),
-		factory.NewFuncImport(objects.FrameStatic, "Contains", factory.FuncIssOb(strings.Contains)),
-		factory.NewFuncImport(objects.FrameStatic, "ContainsAny", factory.FuncIssOb(strings.ContainsAny)),
-		factory.NewFuncImport(objects.FrameStatic, "Count", factory.FuncIssOi(strings.Count)),
-		factory.NewFuncImport(objects.FrameStatic, "EqualFold", factory.FuncIssOb(strings.EqualFold)),
-		factory.NewFuncImport(objects.FrameStatic, "Fields", factory.FuncIsOsS(strings.Fields)),
-		factory.NewFuncImport(objects.FrameStatic, "HasPrefix", factory.FuncIssOb(strings.HasPrefix)),
-		factory.NewFuncImport(objects.FrameStatic, "HasSuffix", factory.FuncIssOb(strings.HasSuffix)),
-		factory.NewFuncImport(objects.FrameStatic, "Index", factory.FuncIssOi(strings.Index)),
-		factory.NewFuncImport(objects.FrameStatic, "IndexAny", factory.FuncIssOi(strings.IndexAny)),
 		factory.NewFuncImport(objects.FrameStatic, "Join", s.join),
-		factory.NewFuncImport(objects.FrameStatic, "LastIndex", factory.FuncIssOi(strings.LastIndex)),
-		factory.NewFuncImport(objects.FrameStatic, "LastIndexAny", factory.FuncIssOi(strings.LastIndexAny)),
 		factory.NewFuncImport(objects.FrameStatic, "Repeat", s.repeat),
 		factory.NewFuncImport(objects.FrameStatic, "Replace", s.replace),
 		factory.NewFuncImport(objects.FrameStatic, "Substring", s.substring),
-		factory.NewFuncImport(objects.FrameStatic, "Split", factory.FuncIssOsS(strings.Split)),
-		factory.NewFuncImport(objects.FrameStatic, "SplitAfter", factory.FuncIssOsS(strings.SplitAfter)),
-		factory.NewFuncImport(objects.FrameStatic, "SplitAfterN", factory.FuncIssiOsS(strings.SplitAfterN)),
-		factory.NewFuncImport(objects.FrameStatic, "SplitN", factory.FuncIssiOsS(strings.SplitN)),
-		factory.NewFuncImport(objects.FrameStatic, "Title", factory.FuncIsOs(strings.Title)),
-		factory.NewFuncImport(objects.FrameStatic, "ToLower", factory.FuncIsOs(strings.ToLower)),
-		factory.NewFuncImport(objects.FrameStatic, "ToTitle", factory.FuncIsOs(strings.ToTitle)),
-		factory.NewFuncImport(objects.FrameStatic, "ToUpper", factory.FuncIsOs(strings.ToUpper)),
 		factory.NewFuncImport(objects.FrameStatic, "PadLeft", s.padLeft),
 		factory.NewFuncImport(objects.FrameStatic, "PadRight", s.padRight),
-		factory.NewFuncImport(objects.FrameStatic, "Trim", factory.FuncIssOs(strings.Trim)),
-		factory.NewFuncImport(objects.FrameStatic, "TrimLeft", factory.FuncIssOs(strings.TrimLeft)),
-		factory.NewFuncImport(objects.FrameStatic, "TrimPrefix", factory.FuncIssOs(strings.TrimPrefix)),
-		factory.NewFuncImport(objects.FrameStatic, "TrimRight", factory.FuncIssOs(strings.TrimRight)),
-		factory.NewFuncImport(objects.FrameStatic, "TrimSpace", factory.FuncIsOs(strings.TrimSpace)),
-		factory.NewFuncImport(objects.FrameStatic, "TrimSuffix", factory.FuncIssOs(strings.TrimSuffix)),
+		factory.NewFuncImport(objects.FrameStatic, "Compare", s.funcStringStringToInt(strings.Compare)),
+		factory.NewFuncImport(objects.FrameStatic, "Contains", s.funcStringStringToBool(strings.Contains)),
+		factory.NewFuncImport(objects.FrameStatic, "ContainsAny", s.funcStringStringToBool(strings.ContainsAny)),
+		factory.NewFuncImport(objects.FrameStatic, "Count", s.funcStringStringToInt(strings.Count)),
+		factory.NewFuncImport(objects.FrameStatic, "EqualFold", s.funcStringStringToBool(strings.EqualFold)),
+		factory.NewFuncImport(objects.FrameStatic, "Fields", s.funcStringToStrings(strings.Fields)),
+		factory.NewFuncImport(objects.FrameStatic, "HasPrefix", s.funcStringStringToBool(strings.HasPrefix)),
+		factory.NewFuncImport(objects.FrameStatic, "HasSuffix", s.funcStringStringToBool(strings.HasSuffix)),
+		factory.NewFuncImport(objects.FrameStatic, "Index", s.funcStringStringToInt(strings.Index)),
+		factory.NewFuncImport(objects.FrameStatic, "IndexAny", s.funcStringStringToInt(strings.IndexAny)),
+		factory.NewFuncImport(objects.FrameStatic, "LastIndex", s.funcStringStringToInt(strings.LastIndex)),
+		factory.NewFuncImport(objects.FrameStatic, "LastIndexAny", s.funcStringStringToInt(strings.LastIndexAny)),
+		factory.NewFuncImport(objects.FrameStatic, "Split", s.funcStringStringToStrings(strings.Split)),
+		factory.NewFuncImport(objects.FrameStatic, "SplitAfter", s.funcStringStringToStrings(strings.SplitAfter)),
+		factory.NewFuncImport(objects.FrameStatic, "SplitAfterN", s.funcStringStringIntToStrings(strings.SplitAfterN)),
+		factory.NewFuncImport(objects.FrameStatic, "SplitN", s.funcStringStringIntToStrings(strings.SplitN)),
+		factory.NewFuncImport(objects.FrameStatic, "Title", s.funcStringToString(strings.Title)),
+		factory.NewFuncImport(objects.FrameStatic, "ToLower", s.funcStringToString(strings.ToLower)),
+		factory.NewFuncImport(objects.FrameStatic, "ToTitle", s.funcStringToString(strings.ToTitle)),
+		factory.NewFuncImport(objects.FrameStatic, "ToUpper", s.funcStringToString(strings.ToUpper)),
+		factory.NewFuncImport(objects.FrameStatic, "Trim", s.funcStringStringToString(strings.Trim)),
+		factory.NewFuncImport(objects.FrameStatic, "TrimLeft", s.funcStringStringToString(strings.TrimLeft)),
+		factory.NewFuncImport(objects.FrameStatic, "TrimPrefix", s.funcStringStringToString(strings.TrimPrefix)),
+		factory.NewFuncImport(objects.FrameStatic, "TrimRight", s.funcStringStringToString(strings.TrimRight)),
+		factory.NewFuncImport(objects.FrameStatic, "TrimSpace", s.funcStringToString(strings.TrimSpace)),
+		factory.NewFuncImport(objects.FrameStatic, "TrimSuffix", s.funcStringStringToString(strings.TrimSuffix)),
 	}
 	s.container = BuildContainer(container, nil)
 	return s
@@ -90,7 +91,7 @@ func (s *Strings) replace(gk objects.IGateKeeper, frame int, args ...objects.IOb
 	if err != nil {
 		return 0, nil, err
 	}
-	ret := s.stringsReplace(gk, frame, s1, s2, s3, int(i4))
+	ret := strings.Replace(s1, s2, s3, int(i4))
 	return 1, gk.NewString(frame, ret), nil
 }
 
@@ -100,36 +101,37 @@ func (s *Strings) substring(gk objects.IGateKeeper, frame int, args ...objects.I
 	if argsLen != 2 && argsLen != 3 {
 		return 0, nil, objects.ErrInvalidArgumentsNumber
 	}
-	s1, err := gk.ToStringArg(0, args[0])
+	src, err := gk.ToStringArg(0, args[0])
 	if err != nil {
 		return 0, nil, err
 	}
-	i2, err := gk.ToInt64Arg(1, args[1])
+	start, err := gk.ToInt64Arg(1, args[1])
 	if err != nil {
 		return 0, nil, err
 	}
-	strlen := int64(len(s1))
-	i3 := strlen
+	end := int64(len(src))
 	if argsLen == 3 {
-		i3, err = gk.ToInt64Arg(2, args[2])
+		end, err = gk.ToInt64Arg(2, args[2])
 		if err != nil {
 			return 0, nil, err
 		}
 	}
-	if i2 > i3 {
-		return 0, nil, objects.ErrInvalidIndexType
+	if len(src) == 0 {
+		return 1, gk.NewString(frame, ""), nil
 	}
-	if i2 < 0 {
-		i2 = 0
-	} else if i2 > strlen {
-		i2 = strlen
+	if end < 0 {
+		end = 0
 	}
-	if i3 < 0 {
-		i3 = 0
-	} else if i3 > strlen {
-		i3 = strlen
+	if end > int64(len(src)) {
+		end = int64(len(src))
 	}
-	return 1, gk.NewString(frame, s1[i2:i3]), nil
+	if start < 0 {
+		start = 0
+	}
+	if start > end {
+		return 1, gk.NewString(frame, ""), nil
+	}
+	return 1, gk.NewString(frame, src[start:end]), nil
 }
 
 // PadLeft adds padding to the left of a string to ensure its total length is at least the specified value.
@@ -222,8 +224,11 @@ func (s *Strings) join(gk objects.IGateKeeper, frame int, args ...objects.IObjec
 	if len(args) != 2 {
 		return 0, nil, objects.ErrInvalidArgumentsNumber
 	}
-	var sLen int
-	var ss1 []string
+	sep, err := gk.ToStringArg(1, args[1])
+	if err != nil {
+		return 0, nil, err
+	}
+	var elems []string
 	switch arg0 := args[0].(type) {
 	case *objects.Array:
 		for idx, a := range arg0.Values() {
@@ -231,49 +236,223 @@ func (s *Strings) join(gk objects.IGateKeeper, frame int, args ...objects.IObjec
 			if err != nil {
 				return 0, nil, err
 			}
-			sLen += len(as)
-			ss1 = append(ss1, as)
+			elems = append(elems, as)
 		}
 	default:
 		return 0, nil, objects.NewInvalidArgumentError(0, "array", args[0].TypeName())
 	}
-	s2, err := gk.ToStringArg(1, args[1])
-	if err != nil {
-		return 0, nil, err
-	}
-	return 1, gk.NewString(frame, strings.Join(ss1, s2)), nil
+	return 1, gk.NewString(frame, strings.Join(elems, sep)), nil
 }
 
-// stringsReplace replaces up to n occurrences of the substring old with the substring new in the input string str.
-// Returns the modified string and a boolean indicating success. Returns the original string if no replacement is needed.
-func (s *Strings) stringsReplace(_ objects.IGateKeeper, _ int, str string, old string, new string, n int) string {
-	if old == new || n == 0 {
-		return str
-	}
-	if m := strings.Count(str, old); m == 0 {
-		return str
-	} else if n < 0 || m < n {
-		n = m
-	}
-	t := make([]byte, len(str)+n*(len(new)-len(old)))
-	w := 0
-	start := 0
-	for i := 0; i < n; i++ {
-		j := start
-		if len(old) == 0 {
-			if i > 0 {
-				_, wid := utf8.DecodeRuneInString(str[start:])
-				j += wid
-			}
-		} else {
-			j += strings.Index(str[start:], old)
+// FuncIsOs creates a callable function using the provided transformation function that operates on string arguments.
+// Returns a function that takes a frame and varargs, validates the input, applies the transformation, and returns the result.
+func (s *Strings) funcStringToString(fn func(string) string) objects.FuncCallable {
+	return func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
+		if len(args) != 1 {
+			return 0, nil, objects.ErrInvalidArgumentsNumber
 		}
-		ssj := str[start:j]
-		w += copy(t[w:], ssj)
-		w += copy(t[w:], new)
-		start = j + len(old)
+		s1, err := gk.ToStringArg(0, args[0])
+		if err != nil {
+			return 0, nil, err
+		}
+		v := gk.NewString(frame, fn(s1))
+		return 1, v, nil
 	}
-	ss := str[start:]
-	w += copy(t[w:], ss)
-	return string(t[0:w])
+}
+
+// funcStringToStrings transforms a string-to-string-slice function into a FuncCallable that operates on an IObject and returns an array.
+func (s *Strings) funcStringToStrings(fn func(string) []string) objects.FuncCallable {
+	return func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
+		if len(args) != 1 {
+			return 0, nil, objects.ErrInvalidArgumentsNumber
+		}
+		s1, err := gk.ToStringArg(0, args[0])
+		if err != nil {
+			return 0, nil, err
+		}
+		res := fn(s1)
+		obj := gk.NewArray(frame, nil)
+		arr, ok := obj.(*objects.Array)
+		if !ok {
+			return 0, nil, fmt.Errorf("expected Array, got %T", obj)
+		}
+		for _, elem := range res {
+			v := gk.NewString(frame, elem)
+			arr.Append(v)
+		}
+		return 1, arr, nil
+	}
+}
+
+// funcStringToStringError converts a function with a string input and output into a FuncCallable for use in the current framework.
+// It validates arguments, converts inputs/outputs to/from IObject, and handles errors gracefully.
+func (s *Strings) funcStringToStringError(fn func(string) (string, error)) objects.FuncCallable {
+	return func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
+		if len(args) != 1 {
+			return 0, nil, objects.ErrInvalidArgumentsNumber
+		}
+		s1, err := gk.ToStringArg(0, args[0])
+		if err != nil {
+			return 0, nil, err
+		}
+		res, err := fn(s1)
+		if err != nil {
+			return 0, gk.NewError(frame, err.Error()), nil
+		}
+		v := gk.NewString(frame, res)
+		return 1, v, nil
+	}
+}
+
+// funcStringStringToStrings creates a callable function wrapping a string-transforming function and returns results as an array object.
+func (s *Strings) funcStringStringToStrings(fn func(string, string) []string) objects.FuncCallable {
+	return func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
+		if len(args) != 2 {
+			return 0, nil, objects.ErrInvalidArgumentsNumber
+		}
+		s1, err := gk.ToStringArg(0, args[0])
+		if err != nil {
+			return 0, nil, err
+		}
+		s2, err := gk.ToStringArg(1, args[1])
+		if err != nil {
+			return 0, nil, err
+		}
+		obj := gk.NewArray(frame, nil)
+		arr, ok := obj.(*objects.Array)
+		if !ok {
+			return 0, nil, fmt.Errorf("expected Array, got %T", obj)
+		}
+		for _, res := range fn(s1, s2) {
+			v := gk.NewString(frame, res)
+			arr.Append(v)
+		}
+		return 1, arr, nil
+	}
+}
+
+// funcStringStringIntToStrings wraps a function of type func(string, string, int) []string into a FuncCallable compatible function.
+func (s *Strings) funcStringStringIntToStrings(fn func(string, string, int) []string) objects.FuncCallable {
+	return func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
+		if len(args) != 3 {
+			return 0, nil, objects.ErrInvalidArgumentsNumber
+		}
+		s1, err := gk.ToStringArg(0, args[0])
+		if err != nil {
+			return 0, nil, err
+		}
+		s2, err := gk.ToStringArg(1, args[1])
+		if err != nil {
+			return 0, nil, err
+		}
+		i3, err := gk.ToInt64Arg(2, args[2])
+		if err != nil {
+			return 0, nil, err
+		}
+		obj := gk.NewArray(frame, nil)
+		arr, ok := obj.(*objects.Array)
+		if !ok {
+			return 0, nil, fmt.Errorf("expected Array, got %T", obj)
+		}
+		for _, res := range fn(s1, s2, int(i3)) {
+			v := gk.NewString(frame, res)
+			arr.Append(v)
+		}
+		return 1, arr, nil
+	}
+}
+
+// funcStringStringToInt wraps a function accepting two string arguments and returning an int, into a FuncCallable type function.
+func (s *Strings) funcStringStringToInt(fn func(string, string) int) objects.FuncCallable {
+	return func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
+		if len(args) != 2 {
+			return 0, nil, objects.ErrInvalidArgumentsNumber
+		}
+		s1, err := gk.ToStringArg(0, args[0])
+		if err != nil {
+			return 0, nil, err
+		}
+		s2, err := gk.ToStringArg(1, args[1])
+		if err != nil {
+			return 0, nil, err
+		}
+		return 1, gk.NewInt(frame, int64(fn(s1, s2))), nil
+	}
+}
+
+// funcStringStringToString wraps a function that takes two strings and returns a string, converting it into a FuncCallable handler.
+func (s *Strings) funcStringStringToString(fn func(string, string) string) objects.FuncCallable {
+	return func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
+		if len(args) != 2 {
+			return 0, nil, objects.ErrInvalidArgumentsNumber
+		}
+		s1, err := gk.ToStringArg(0, args[0])
+		if err != nil {
+			return 0, nil, err
+		}
+		s2, err := gk.ToStringArg(1, args[1])
+		if err != nil {
+			return 0, nil, err
+		}
+		v := gk.NewString(frame, fn(s1, s2))
+		return 1, v, nil
+	}
+}
+
+// funcStringStringToBool creates a FuncCallable that evaluates a function on two string arguments extracted from IObject inputs.
+// It returns an IObject representing true or false based on the function's result or an error if arguments are invalid.
+func (s *Strings) funcStringStringToBool(fn func(string, string) bool) objects.FuncCallable {
+	return func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
+		if len(args) != 2 {
+			return 0, nil, objects.ErrInvalidArgumentsNumber
+		}
+		s1, err := gk.ToStringArg(0, args[0])
+		if err != nil {
+			return 0, nil, err
+		}
+		s2, err := gk.ToStringArg(1, args[1])
+		if err != nil {
+			return 0, nil, err
+		}
+		if fn(s1, s2) {
+			return 1, gk.TrueValue(), nil
+		}
+		return 1, gk.FalseValue(), nil
+	}
+}
+
+// funcIntToIntError wraps a function matching func(string) (int, error) into a FuncCallable, enabling its usage with IObject arguments.
+// It validates the argument count, converts the first argument to a string, applies the given function, and returns the result.
+// If an error occurs during argument conversion or function execution, it returns appropriate error objects or messages.
+func (s *Strings) funcIntToIntError(fn func(string) (int, error)) objects.FuncCallable {
+	return func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (retCount uint, ret objects.IObject, err error) {
+		if len(args) != 1 {
+			return 0, nil, objects.ErrInvalidArgumentsNumber
+		}
+		s1, err := gk.ToStringArg(0, args[0])
+		if err != nil {
+			return 0, nil, err
+		}
+		res, err := fn(s1)
+		if err != nil {
+			return 0, gk.NewError(frame, err.Error()), nil
+		}
+		return 1, gk.NewInt(frame, int64(res)), nil
+	}
+}
+
+// funcIntToString wraps a function from int to string into a FuncCallable, ensuring compatibility with the IObject interface.
+func (s *Strings) funcIntToString(fn func(int) string) objects.FuncCallable {
+	return func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (retCount uint, ret objects.IObject, err error) {
+		if len(args) != 1 {
+			return 0, nil, objects.ErrInvalidArgumentsNumber
+		}
+		i1, err := gk.ToInt64Arg(0, args[0])
+		if err != nil {
+			return 0, nil, err
+		}
+		s := fn(int(i1))
+		v := gk.NewString(frame, s)
+		return 1, v, nil
+	}
 }

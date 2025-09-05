@@ -6,47 +6,48 @@ import (
 	"github.com/markel1974/c64emu/src/vm/objects"
 )
 
+// init registers the strconv package by appending its registration function to the internal package list.
 func init() {
 	RegisterPackage(NewStrconv)
 }
 
-// Strconv is a type that provides a module containing string conversion functions implemented using strconv.
+// Strconv represents a container for storing string conversion-related functions in a map-like structure.
 type Strconv struct {
 	container map[string]objects.IObject
 }
 
-// NewStrconv initializes and returns a pointer to a new Strconv instance containing predefined module functions.
+// NewStrconv creates a new Strconv package using the provided IGateKeeper factory and initializes its container with functions.
 func NewStrconv(factory objects.IGateKeeper) IPackage {
 	s := &Strconv{}
 	container := []objects.IObject{
-		factory.NewFuncImport(objects.FrameStatic, "Atoi", factory.FuncIsOie(strconv.Atoi)),
+		factory.NewFuncImport(objects.FrameStatic, "Atoi", s.atoi),
 		factory.NewFuncImport(objects.FrameStatic, "FormatBool", s.formatBool),
 		factory.NewFuncImport(objects.FrameStatic, "FormatFloat", s.formatFloat),
 		factory.NewFuncImport(objects.FrameStatic, "FormatInt", s.formatInt),
-		factory.NewFuncImport(objects.FrameStatic, "Itoa", factory.FuncIiOs(strconv.Itoa)),
+		factory.NewFuncImport(objects.FrameStatic, "Itoa", s.itoa),
 		factory.NewFuncImport(objects.FrameStatic, "ParseBool", s.parseBool),
 		factory.NewFuncImport(objects.FrameStatic, "ParseFloat", s.parseFloat),
 		factory.NewFuncImport(objects.FrameStatic, "ParseNumber", s.parseNumber),
 		factory.NewFuncImport(objects.FrameStatic, "ParseInt", s.parseInt),
-		factory.NewFuncImport(objects.FrameStatic, "Quote", factory.FuncIsOs(strconv.Quote)),
-		factory.NewFuncImport(objects.FrameStatic, "Unquote", factory.FuncIsOse(strconv.Unquote)),
+		factory.NewFuncImport(objects.FrameStatic, "Quote", s.quote),
+		factory.NewFuncImport(objects.FrameStatic, "Unquote", s.unquote),
 	}
 	s.container = BuildContainer(container, nil)
 	return s
 }
 
-// Name returns the name of the Strconv module as a string.
+// Name returns the name of the Strconv struct, which is "strconv".
 func (s *Strconv) Name() string {
 	return "strconv"
 }
 
-// Get retrieves an object associated with the given name from the container. It returns the object and a boolean indicating success.
+// Get retrieves the object associated with the given name from the container and returns it along with a boolean status.
 func (s *Strconv) Get(name string) (objects.IObject, bool) {
 	v, ok := s.container[name]
 	return v, ok
 }
 
-// FormatBool converts a boolean argument to its string representation ("true" or "false"). Returns an error if the argument is invalid.
+// formatBool converts a boolean argument to its string representation ("true" or "false") and returns it as an object.
 func (s *Strconv) formatBool(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
 	if len(args) != 1 {
 		return 0, nil, objects.ErrInvalidArgumentsNumber
@@ -61,7 +62,8 @@ func (s *Strconv) formatBool(gk objects.IGateKeeper, frame int, args ...objects.
 	return 1, gk.NewString(frame, "false"), nil
 }
 
-// FormatFloat converts a float64 into a string representation according to the specified format, precision, and bit size.
+// formatFloat formats a floating-point number according to the specified format, precision, and bit size.
+// It takes 4 arguments: float64, format string, integer precision, and integer bit size, returning a string result.
 func (s *Strconv) formatFloat(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
 	if len(args) != 4 {
 		return 0, nil, objects.ErrInvalidArgumentsNumber
@@ -85,7 +87,7 @@ func (s *Strconv) formatFloat(gk objects.IGateKeeper, frame int, args ...objects
 	return 1, gk.NewString(frame, strconv.FormatFloat(f1, s2[0], int(i3), int(i4))), nil
 }
 
-// FormatInt formats an int64 number as a string in the specified base, provided by the second argument.
+// formatInt formats an integer as a string in a specified base using strconv.FormatInt. Accepts base and integer arguments.
 func (s *Strconv) formatInt(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
 	if len(args) != 2 {
 		return 0, nil, objects.ErrInvalidArgumentsNumber
@@ -101,7 +103,8 @@ func (s *Strconv) formatInt(gk objects.IGateKeeper, frame int, args ...objects.I
 	return 1, gk.NewString(frame, strconv.FormatInt(i1, int(i2))), nil
 }
 
-// ParseBool parses a string representation of a boolean value and returns the corresponding boolean object or an error.
+// parseBool parses a single string argument into a boolean value and returns associated objects and error if any.
+// It expects exactly one string argument and returns an error for invalid argument types or number of arguments.
 func (s *Strconv) parseBool(gk objects.IGateKeeper, frame int, args ...objects.IObject) (retVal uint, ret objects.IObject, err error) {
 	if len(args) != 1 {
 		err = objects.ErrInvalidArgumentsNumber
@@ -125,7 +128,7 @@ func (s *Strconv) parseBool(gk objects.IGateKeeper, frame int, args ...objects.I
 	return
 }
 
-// ParseFloat parses a string argument as a floating-point number using the specified precision and returns the result.
+// parseFloat parses a given string into a floating-point number based on the specified precision.
 func (s *Strconv) parseFloat(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
 	if len(args) != 2 {
 		return 0, nil, objects.ErrInvalidArgumentsNumber
@@ -145,7 +148,7 @@ func (s *Strconv) parseFloat(gk objects.IGateKeeper, frame int, args ...objects.
 	return 1, gk.NewFloat(frame, parsed), nil
 }
 
-// ParseNumber extracts and parses numeric values from a string, returning a float object or an error if parsing fails.
+// parseNumber parses a numeric value from the input argument and returns it as a float object or an error if invalid.
 func (s *Strconv) parseNumber(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
 	if len(args) != 1 {
 		return 0, nil, objects.ErrInvalidArgumentsNumber
@@ -167,7 +170,7 @@ func (s *Strconv) parseNumber(gk objects.IGateKeeper, frame int, args ...objects
 	return 1, gk.NewFloat(frame, parsed), nil
 }
 
-// ParseInt converts a string argument to an integer with the specified base and bit size after validating arguments.
+// parseInt parses a string into an integer based on the supplied base and bit size; returns parsed value or error.
 func (s *Strconv) parseInt(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
 	if len(args) != 3 {
 		return 0, nil, objects.ErrInvalidArgumentsNumber
@@ -189,4 +192,61 @@ func (s *Strconv) parseInt(gk objects.IGateKeeper, frame int, args ...objects.IO
 		return 0, gk.NewError(frame, err.Error()), nil
 	}
 	return 1, gk.NewInt(frame, parsed), nil
+}
+
+// quote converts the given string argument into a double-quoted string literal and returns it as a new string object.
+func (s *Strconv) quote(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
+	if len(args) != 1 {
+		return 0, nil, objects.ErrInvalidArgumentsNumber
+	}
+	s1, err := gk.ToStringArg(0, args[0])
+	if err != nil {
+		return 0, nil, err
+	}
+	v := gk.NewString(frame, strconv.Quote(s1))
+	return 1, v, nil
+}
+
+// atoi converts a string argument to an integer if the argument is a valid numeric string, returning the result or an error.
+func (s *Strconv) atoi(gk objects.IGateKeeper, frame int, args ...objects.IObject) (retCount uint, ret objects.IObject, err error) {
+	if len(args) != 1 {
+		return 0, nil, objects.ErrInvalidArgumentsNumber
+	}
+	s1, err := gk.ToStringArg(0, args[0])
+	if err != nil {
+		return 0, nil, err
+	}
+	res, err := strconv.Atoi(s1)
+	if err != nil {
+		return 0, gk.NewError(frame, err.Error()), nil
+	}
+	return 1, gk.NewInt(frame, int64(res)), nil
+}
+
+// unquote removes surrounding quotes from a string if present and interprets escape sequences. Returns the unquoted string.
+func (s *Strconv) unquote(gk objects.IGateKeeper, frame int, args ...objects.IObject) (retCount uint, ret objects.IObject, err error) {
+	if len(args) != 1 {
+		return 0, nil, objects.ErrInvalidArgumentsNumber
+	}
+	s1, err := gk.ToStringArg(0, args[0])
+	if err != nil {
+		return 0, nil, err
+	}
+	res, err := strconv.Unquote(s1)
+	if err != nil {
+		return 0, gk.NewError(frame, err.Error()), nil
+	}
+	return 1, gk.NewString(frame, res), nil
+}
+
+// itoa converts an integer to its decimal string representation and returns it as an IObject.
+func (s *Strconv) itoa(gk objects.IGateKeeper, frame int, args ...objects.IObject) (retCount uint, ret objects.IObject, err error) {
+	if len(args) != 1 {
+		return 0, nil, objects.ErrInvalidArgumentsNumber
+	}
+	i1, err := gk.ToInt64Arg(0, args[0])
+	if err != nil {
+		return 0, nil, err
+	}
+	return 1, gk.NewString(frame, strconv.Itoa(int(i1))), nil
 }

@@ -4,6 +4,7 @@ import (
 	"time"
 )
 
+// IAllocator defines methods for memory management and object lifecycle, including reference counting and frame tracking.
 type IAllocator interface {
 	GateKeeper() IGateKeeper
 	AddRef() int
@@ -31,7 +32,6 @@ type IAllocator interface {
 // Iterate provides an iterator over the object if it supports iteration.
 // Iterable checks whether the object can be iterated.
 // Call invokes the object as a callable with the provided arguments.
-// Callable checks whether the object can be called as a function.
 // Length retrieves the length of the object, if applicable (e.g., arrays, strings).
 type IObject interface {
 	IAllocator
@@ -119,19 +119,6 @@ type IGateConverter interface {
 
 // IGateAdapter defines an interface for adapting various function signatures into FuncCallable instances.
 type IGateAdapter interface {
-	FuncIsOs(fn func(string) string) FuncCallable
-	FuncIsOsS(fn func(string) []string) FuncCallable
-	FuncIsOse(fn func(string) (string, error)) FuncCallable
-	FuncIsOie(fn func(string) (int, error)) FuncCallable
-	FuncIsObSe(fn func(string) ([]byte, error)) FuncCallable
-	FuncIbSOs(fn func([]byte) string) FuncCallable
-	FuncIssOsS(fn func(string, string) []string) FuncCallable
-	FuncIssiOsS(fn func(string, string, int) []string) FuncCallable
-	FuncIssOi(fn func(string, string) int) FuncCallable
-	FuncIssOs(fn func(string, string) string) FuncCallable
-	FuncIssOb(fn func(string, string) bool) FuncCallable
-	FuncIiOs(fn func(int) string) FuncCallable
-
 	LogicalOpInt64(op LogicalOperator, lhs int64, rhs int64) (bool, error)
 	ArithmeticOpInt64(op ArithmeticOperator, lhs int64, rhs int64) (int64, error)
 	BoundsCheck(lowStack IObject, highStack IObject, numElements int64) (int64, int64, error)
