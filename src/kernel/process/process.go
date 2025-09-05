@@ -544,7 +544,7 @@ func (t *Process) handleMessageProcessStart(msg interfaces.IMessage) {
 		if !t.vmInitialized {
 			var err error
 			const sequencerId = "native"
-			gk := objects.NewGateKeeper(0)
+			gk := objects.NewGateKeeper()
 			t.opcodes = bytecode.NewOpcodes()
 			t.compiler, t.loader, err = compilers.NewCompiler(gk, t.opcodes, sequencerId)
 			if err != nil {

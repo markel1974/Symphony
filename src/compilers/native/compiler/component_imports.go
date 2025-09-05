@@ -93,7 +93,7 @@ func (i *Imports) Setup(fileSet *token.FileSet, compile func(node ast.Node) erro
 			if bi == nil {
 				return fmt.Errorf("builtin %d not found", idx)
 			}
-			builtinId := i.references.Add(bi.Name(), bi)
+			builtinId := i.references.add(bi.Name(), bi)
 			i.builtin[bi.Name()] = builtinId
 		}
 

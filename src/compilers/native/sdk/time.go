@@ -68,7 +68,7 @@ func NewTime(factory objects.IGateKeeper) IPackage {
 		factory.NewFuncImport(objects.FrameStatic, "Now", t.now),
 		factory.NewFuncImport(objects.FrameStatic, "Parse", t.parse),
 		factory.NewFuncImport(objects.FrameStatic, "Unix", t.unix),
-		factory.NewFuncImport(objects.FrameStatic, "Add", t.add),
+		factory.NewFuncImport(objects.FrameStatic, "add", t.add),
 		factory.NewFuncImport(objects.FrameStatic, "AddDate", t.addDate),
 		factory.NewFuncImport(objects.FrameStatic, "Sub", t.sub),
 		factory.NewFuncImport(objects.FrameStatic, "After", t.after),
@@ -320,7 +320,7 @@ func (t *Time) unix(gk objects.IGateKeeper, frame int, args ...objects.IObject) 
 	return 1, gk.NewTime(frame, time.Unix(i1, i2)), nil
 }
 
-// Add adds a duration (int64) to a Time object and returns a new Time object or an error if the inputs are invalid.
+// add adds a duration (int64) to a Time object and returns a new Time object or an error if the inputs are invalid.
 func (t *Time) add(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
 	if len(args) != 2 {
 		return 0, nil, objects.ErrInvalidArgumentsNumber

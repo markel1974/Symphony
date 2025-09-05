@@ -129,7 +129,7 @@ func (c *ControlFlow) BranchStmt(node *ast.BranchStmt) error {
 		if err != nil {
 			return err
 		}
-		// Add the position of this 'continue' to the loop context
+		// add the position of this 'continue' to the loop context
 		if err := scope.AddContinue(continueJumpPos); err != nil {
 			return tables.NewCompilerError(c.fileSet, node, err.Error())
 		}
@@ -212,7 +212,7 @@ func (c *ControlFlow) SwitchStmt(node *ast.SwitchStmt) error {
 				return err
 			}
 		}
-		// 6. Add jump to end of switch (Go has no fall-through)
+		// 6. add jump to end of switch (Go has no fall-through)
 		endJumpPos, err := c.scopes.Emit(bytecode.OpJump, 9999)
 		if err != nil {
 			return err
@@ -321,7 +321,7 @@ func (c *ControlFlow) TypeSwitchStmt(node *ast.TypeSwitchStmt) error {
 			return err
 		}
 
-		// 3. Add case bytecode to outer scope.
+		// 3. add case bytecode to outer scope.
 		if _, err := c.scopes.InstructionsAdd(caseBytecode); err != nil {
 			return err
 		}

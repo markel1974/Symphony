@@ -3,6 +3,7 @@ package core
 import (
 	"fmt"
 	"io"
+	"time"
 
 	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/objects"
@@ -24,22 +25,24 @@ const (
 
 // VM represents a virtual machine that executes bytecode instructions, handles stack, and manages execution frames.
 type VM struct {
-	gk        objects.IGateKeeper
-	op        *bytecode.Opcodes
-	bc        *bytecode.Bytecode
-	stack     *Stack
-	frames    *Frames
-	currFrame *Frame
-	ip        int
-	shutdown  bool
-	err       error
-	sequencer []*Decoder
-	internals *Internals
-	imports   *Imports
-	constants *Constants
-	globals   *Globals
-	seq       ISequencer
-	retValues bool
+	gk                objects.IGateKeeper
+	op                *bytecode.Opcodes
+	bc                *bytecode.Bytecode
+	stack             *Stack
+	frames            *Frames
+	currFrame         *Frame
+	ip                int
+	shutdown          bool
+	err               error
+	sequencer         []*Decoder
+	internals         *Internals
+	imports           *Imports
+	constants         *Constants
+	globals           *Globals
+	seq               ISequencer
+	counterStart      uint64
+	counterIterations uint64
+	retValues         bool
 }
 
 // New initializes and returns a new virtual machine instance configured with the provided components and settings.
@@ -118,6 +121,11 @@ func (v *VM) Setup(loader bytecode.ILoader, codes ...*bytecode.Bytecode) (map[st
 // Version returns the version of the virtual machine.
 func (v *VM) Version() string {
 	return Version
+}
+
+// Statistics returns three uint64 values: start, allocated objects, and a counter from the VM instance.
+func (v *VM) Statistics() (uint64, uint64, uint64, uint64) {
+	return v.counterStart, v.gk.AllocatedObjects(), v.counterIterations, uint64(v.frames.Index())
 }
 
 // EnableRetValues sets the flag to enable or disable returning multiple values from the virtual machine's execution.
@@ -248,7 +256,7 @@ func (v *VM) Return(returnValues []objects.IObject) {
 				objectsToPreserve = append(objectsToPreserve, obj)
 			}
 		}
-		// Add arguments which are located at the start of the current frame
+		// add arguments which are located at the start of the current frame
 		for i := 0; i < numArgs; i++ {
 			obj := v.stack.PeekAbsolute(leavingFrameBasePointer + i)
 			if obj.Frame() != objects.FrameStatic {
@@ -378,7 +386,10 @@ func (v *VM) exec(mainFn *objects.FuncCompiled, ret bool, args ...interface{}) (
 func (v *VM) loop() {
 	var opcode byte
 	var decoder *Decoder
+	v.counterIterations = 0
+	v.counterStart = uint64(time.Now().UnixMilli())
 	for {
+		v.counterIterations++
 		v.ip++
 		opcode = v.currFrame.Get8(uint(v.ip))
 		decoder = v.sequencer[opcode]

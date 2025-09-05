@@ -53,7 +53,7 @@ func (tc *TypeCompatibility) Prepare() error {
 			}
 		}
 	}
-	// Add found implementations to StructTable for centralized access
+	// add found implementations to StructTable for centralized access
 	tc.structTable.SetImplementations(tc.implementations)
 	return nil
 }

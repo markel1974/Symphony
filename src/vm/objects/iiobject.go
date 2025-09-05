@@ -64,6 +64,7 @@ type IGateAllocator interface {
 	UndefinedValue() IObject
 	ReleaseObjects(int, []IObject)
 	ReleaseAll()
+	AllocatedObjects() uint64
 	SetPointer(ptr *ObjectPointer, value IObject)
 	NewFuncInternals(frame int) []IObject
 	NewFuncInternal(frame int, id CallId) IObject

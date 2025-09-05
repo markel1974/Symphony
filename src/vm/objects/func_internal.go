@@ -44,7 +44,7 @@ const (
 	CallIdMake
 )
 
-var callIdContainer = []CallId{
+var _callIdContainer = []CallId{
 	CallIdLen,
 	CallIdCopy,
 	CallIdAppend,

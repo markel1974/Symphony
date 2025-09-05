@@ -12,7 +12,6 @@ type GateAllocator struct {
 	trueValue         IObject
 	falseValue        IObject
 	undefinedValue    IObject
-	maxAllocations    int
 	undefinedIterator IIterator
 
 	// Pools for primitive and common types
@@ -39,17 +38,15 @@ type GateAllocator struct {
 	poolMapIterator    sync.Pool
 	poolStructIterator sync.Pool
 
-	allocatedObjects map[IObject]bool
+	allocatedObjects *AllocatedObjects
 }
 
 // NewGateAllocator initializes a new GateAllocator instance using the provided GateKeeper and maximum allocations limit.
-func NewGateAllocator(gk *GateKeeper, maxAllocations int) *GateAllocator {
+func NewGateAllocator(gk *GateKeeper) *GateAllocator {
 	ga := &GateAllocator{
-		gk:               gk,
-		allocatedObjects: make(map[IObject]bool),
-		maxAllocations:   maxAllocations,
+		gk: gk,
 	}
-
+	ga.allocatedObjects = NewAllocatedObjects(gk)
 	// Initialization of static values
 	ga.trueValue = newBool(gk, FrameStatic, true)
 	ga.falseValue = newBool(gk, FrameStatic, false)
@@ -57,28 +54,28 @@ func NewGateAllocator(gk *GateKeeper, maxAllocations int) *GateAllocator {
 	ga.undefinedIterator = newUndefinedIterator(gk, FrameStatic)
 
 	// Primitive types
-	ga.poolBool.New = ga.newBool
-	ga.poolChar.New = ga.newChar
-	ga.poolInt.New = ga.newInt
-	ga.poolFloat.New = ga.newFloat
-	ga.poolString.New = ga.newString
-	ga.poolTime.New = ga.newTime
-	ga.poolObjectPointer.New = ga.newObjectPointer
-	ga.poolInterface.New = ga.newInterface
-	ga.poolError.New = ga.newError
+	ga.poolBool.New = ga.allocatedObjects.NewBool
+	ga.poolChar.New = ga.allocatedObjects.NewChar
+	ga.poolInt.New = ga.allocatedObjects.NewInt
+	ga.poolFloat.New = ga.allocatedObjects.NewFloat
+	ga.poolString.New = ga.allocatedObjects.NewString
+	ga.poolTime.New = ga.allocatedObjects.NewTime
+	ga.poolObjectPointer.New = ga.allocatedObjects.NewObjectPointer
+	ga.poolInterface.New = ga.allocatedObjects.NewInterface
+	ga.poolError.New = ga.allocatedObjects.NewError
 
 	// Containers
-	ga.poolBytes.New = ga.newBytes
-	ga.poolArray.New = ga.newArray
-	ga.poolMap.New = ga.newMap
-	ga.poolStruct.New = ga.newStruct
+	ga.poolBytes.New = ga.allocatedObjects.NewBytes
+	ga.poolArray.New = ga.allocatedObjects.NewArray
+	ga.poolMap.New = ga.allocatedObjects.NewMap
+	ga.poolStruct.New = ga.allocatedObjects.NewStruct
 
 	// Iterators
-	ga.poolArrayIterator.New = ga.newArrayIterator
-	ga.poolBytesIterator.New = ga.newBytesIterator
-	ga.poolStringIterator.New = ga.newStringIterator
-	ga.poolMapIterator.New = ga.newMapIterator
-	ga.poolStructIterator.New = ga.newStructIterator
+	ga.poolArrayIterator.New = ga.allocatedObjects.NewArrayIterator
+	ga.poolBytesIterator.New = ga.allocatedObjects.NewBytesIterator
+	ga.poolStringIterator.New = ga.allocatedObjects.NewStringIterator
+	ga.poolMapIterator.New = ga.allocatedObjects.NewMapIterator
+	ga.poolStructIterator.New = ga.allocatedObjects.NewStructIterator
 
 	return ga
 }
@@ -86,6 +83,11 @@ func NewGateAllocator(gk *GateKeeper, maxAllocations int) *GateAllocator {
 // Reset resets the internal counter of the GateAllocator to its initial state, 0.
 func (f *GateAllocator) Reset() {
 	f.ReleaseAll()
+}
+
+// AllocatedObjects returns the current count of allocated objects managed by the GateAllocator.
+func (f *GateAllocator) AllocatedObjects() uint64 {
+	return uint64(f.allocatedObjects.Counter())
 }
 
 // FalseValue retrieves the internally maintained "false" IObject for this GateAllocator instance.
@@ -113,8 +115,8 @@ func (f *GateAllocator) UndefinedValue() IObject {
 
 // NewFuncInternals creates a slice of IObject by invoking NewFuncInternal for each CallId in callIdContainer.
 func (f *GateAllocator) NewFuncInternals(frame int) []IObject {
-	out := make([]IObject, len(callIdContainer))
-	for idx, v := range callIdContainer {
+	out := make([]IObject, len(_callIdContainer))
+	for idx, v := range _callIdContainer {
 		newObj := f.NewFuncInternal(frame, v)
 		out[idx] = newObj
 	}
@@ -144,87 +146,6 @@ func (f *GateAllocator) NewFuncImport(frame int, name string, fn FuncCallable) I
 // NewFuncJit creates and returns a new instance of a function-based IObject with the specified frame, name, and data.
 func (f *GateAllocator) NewFuncJit(frame int, name string, data []byte) IObject {
 	return newFuncJit(f.gk, frame, name, data)
-}
-
-// SetPointer updates the ObjectPointer to reference a new IObject and manages reference counting and object lifecycle.
-func (f *GateAllocator) SetPointer(ptr *ObjectPointer, newValue IObject) {
-	oldValue := *ptr.Value()
-	if oldValue.Equals(newValue) {
-		return
-	}
-	ptr.acquire(&newValue)
-	if oldValue.Frame() != FrameStatic {
-		if oldValue.ReleaseRef() <= 0 {
-			f.releaseObject(oldValue.Frame(), oldValue)
-		}
-	}
-}
-
-// ReleaseAll releases all allocated objects managed by the GateAllocator and resets the allocatedObjects map.
-func (f *GateAllocator) ReleaseAll() {
-	if len(f.allocatedObjects) == 0 {
-		return
-	}
-	objectsToRelease := make([]IObject, 0, len(f.allocatedObjects))
-	for obj := range f.allocatedObjects {
-		objectsToRelease = append(objectsToRelease, obj)
-	}
-	for _, obj := range objectsToRelease {
-		for obj.RefCount() > 0 {
-			obj.ReleaseRef()
-		}
-		f.releaseObject(obj.Frame(), obj)
-	}
-	f.allocatedObjects = make(map[IObject]bool)
-}
-
-// ReleaseObjects cleans up and removes the provided objects associated with a specific frame from memory allocation.
-func (f *GateAllocator) ReleaseObjects(frame int, objects []IObject) {
-	garbageCandidates := make(map[IObject]bool)
-	for _, obj := range objects {
-		if obj != nil && obj.Frame() != FrameStatic && obj.Frame() == frame {
-			garbageCandidates[obj] = true
-		}
-	}
-	if len(garbageCandidates) == 0 {
-		return
-	}
-	// Simulate the Removal of Internal References within the Group ---
-	for obj := range garbageCandidates {
-		switch o := obj.(type) {
-		case *ObjectPointer:
-			if target := *o.Value(); garbageCandidates[target] {
-				target.ReleaseRef()
-			}
-		case *Array:
-			for _, elem := range o.Values() {
-				if garbageCandidates[elem] {
-					elem.ReleaseRef()
-				}
-			}
-		case *Map:
-			for _, val := range o.Values() {
-				if garbageCandidates[val] {
-					val.ReleaseRef()
-				}
-			}
-		case *Struct:
-			for _, val := range o.Values() {
-				if garbageCandidates[val] {
-					val.ReleaseRef()
-				}
-			}
-		case *Interface:
-			for _, val := range o.iTable {
-				if garbageCandidates[val] {
-					val.ReleaseRef()
-				}
-			}
-		}
-	}
-	for obj := range garbageCandidates {
-		f.releaseObject(frame, obj)
-	}
 }
 
 // NewBool creates a new boolean object wrapped in the IObject interface, based on the provided boolean value.
@@ -393,165 +314,82 @@ func (f *GateAllocator) NewStructIterator(frame int, v map[string]IObject, index
 	return obj
 }
 
-// tryAcquireObject checks whether the object allocation limit has been reached and returns an error if the limit is exceeded.
-func (f *GateAllocator) tryAcquireObject() error {
-	if f.maxAllocations > 0 && len(f.allocatedObjects) > f.maxAllocations {
-		return ErrAllocationLimit
+// SetPointer updates the ObjectPointer to reference a new IObject and manages reference counting and object lifecycle.
+func (f *GateAllocator) SetPointer(ptr *ObjectPointer, newValue IObject) {
+	oldValue := *ptr.Value()
+	if oldValue.Equals(newValue) {
+		return
 	}
-	return nil
+	ptr.acquire(&newValue)
+	if oldValue.Frame() != FrameStatic {
+		if oldValue.ReleaseRef() <= 0 {
+			f.releaseObject(oldValue.Frame(), oldValue)
+		}
+	}
 }
 
-// acquireObject increments the allocation counter and tracks objects not in FrameStatic within allocatedObjects map.
-func (f *GateAllocator) acquireObject(obj IObject) IObject {
-	if obj.Frame() != FrameStatic {
-		f.allocatedObjects[obj] = true
+// ReleaseAll releases all allocated objects managed by the GateAllocator and resets the allocatedObjects map.
+func (f *GateAllocator) ReleaseAll() {
+	if f.allocatedObjects.Counter() == 0 {
+		return
 	}
-	return obj
+	objectsToRelease := f.allocatedObjects.ReleaseCandidates()
+	for _, obj := range objectsToRelease {
+		for obj.RefCount() > 0 {
+			obj.ReleaseRef()
+		}
+		f.releaseObject(obj.Frame(), obj)
+	}
+	f.allocatedObjects.Reset()
 }
 
-// newBool creates a new Bool instance with a static frame and a default value of false, handling object acquisition logic.
-func (f *GateAllocator) newBool() any {
-	if err := f.tryAcquireObject(); err != nil {
-		return f.undefinedValue
+// ReleaseObjects cleans up and removes the provided objects associated with a specific frame from memory allocation.
+func (f *GateAllocator) ReleaseObjects(frame int, objects []IObject) {
+	garbageCandidates := make(map[IObject]bool)
+	for _, obj := range objects {
+		if obj != nil && obj.Frame() != FrameStatic && obj.Frame() == frame {
+			garbageCandidates[obj] = true
+		}
 	}
-	return f.acquireObject(newBool(f.gk, FrameStatic, false))
-}
-
-// newChar creates or retrieves a Char object from the pool, initializing it with the specified gatekeeper and frame values.
-func (f *GateAllocator) newChar() any {
-	if err := f.tryAcquireObject(); err != nil {
-		return f.undefinedValue
+	if len(garbageCandidates) == 0 {
+		return
 	}
-	return f.acquireObject(newChar(f.gk, FrameStatic, 0))
-}
-
-// newInt creates a new integer object or returns an undefined value if object acquisition fails.
-func (f *GateAllocator) newInt() any {
-	if err := f.tryAcquireObject(); err != nil {
-		return f.undefinedValue
+	// Simulate the Removal of Internal References within the Group ---
+	for obj := range garbageCandidates {
+		switch o := obj.(type) {
+		case *ObjectPointer:
+			if target := *o.Value(); garbageCandidates[target] {
+				target.ReleaseRef()
+			}
+		case *Array:
+			for _, elem := range o.Values() {
+				if garbageCandidates[elem] {
+					elem.ReleaseRef()
+				}
+			}
+		case *Map:
+			for _, val := range o.Values() {
+				if garbageCandidates[val] {
+					val.ReleaseRef()
+				}
+			}
+		case *Struct:
+			for _, val := range o.Values() {
+				if garbageCandidates[val] {
+					val.ReleaseRef()
+				}
+			}
+		case *Interface:
+			for _, val := range o.iTable {
+				if garbageCandidates[val] {
+					val.ReleaseRef()
+				}
+			}
+		}
 	}
-	return f.acquireObject(newInt(f.gk, FrameStatic, 0))
-}
-
-// newFloat creates and retrieves a reusable floating-point object from the pool, or returns a default value if unavailable.
-func (f *GateAllocator) newFloat() any {
-	if err := f.tryAcquireObject(); err != nil {
-		return f.undefinedValue
+	for obj := range garbageCandidates {
+		f.releaseObject(frame, obj)
 	}
-	return f.acquireObject(newFloat(f.gk, FrameStatic, 0))
-}
-
-// newString creates a new String object using the IGateKeeper instance, static frame identifier, and an empty value.
-func (f *GateAllocator) newString() any {
-	if err := f.tryAcquireObject(); err != nil {
-		return f.undefinedValue
-	}
-	return f.acquireObject(newString(f.gk, FrameStatic, ""))
-}
-
-// newTime attempts to acquire a new reusable time object or returns an undefined value upon failure.
-func (f *GateAllocator) newTime() any {
-	if err := f.tryAcquireObject(); err != nil {
-		return f.undefinedValue
-	}
-	return f.acquireObject(newTime(f.gk, FrameStatic, time.Now()))
-}
-
-// newObjectPointer creates a new object pointer using the gatekeeper and returns it or undefined value on error.
-func (f *GateAllocator) newObjectPointer() any {
-	if err := f.tryAcquireObject(); err != nil {
-		return f.undefinedValue
-	}
-	return f.acquireObject(newObjectPointer(f.gk, FrameStatic, nil))
-}
-
-// newError attempts to acquire and return a new error object; if unavailable, it falls back to the undefined value.
-func (f *GateAllocator) newError() any {
-	if err := f.tryAcquireObject(); err != nil {
-		return f.undefinedValue
-	}
-	return f.acquireObject(newError(f.gk, FrameStatic, ""))
-}
-
-// newBytes creates and returns a new Bytes object, ensuring the byte slice length does not exceed the maximum allowed size.
-func (f *GateAllocator) newBytes() any {
-	if err := f.tryAcquireObject(); err != nil {
-		return f.undefinedValue
-	}
-	return f.acquireObject(newBytes(f.gk, FrameStatic, []byte{}))
-}
-
-// newArray allocates and returns a new array object, using the internal GateKeeper and predefined configuration.
-func (f *GateAllocator) newArray() any {
-	if err := f.tryAcquireObject(); err != nil {
-		return f.undefinedValue
-	}
-	return f.acquireObject(newArray(f.gk, FrameStatic, []IObject{}))
-}
-
-// newMap initializes and returns a pooled Map instance or the undefined value if the acquisition fails.
-func (f *GateAllocator) newMap() any {
-	if err := f.tryAcquireObject(); err != nil {
-		return f.undefinedValue
-	}
-	return f.acquireObject(newMap(f.gk, FrameStatic, make(map[string]IObject)))
-}
-
-// newStruct acquires and returns a new struct instance from the object pool or an undefined value if allocation fails.
-func (f *GateAllocator) newStruct() any {
-	if err := f.tryAcquireObject(); err != nil {
-		return f.undefinedValue
-	}
-	return f.acquireObject(newStruct(f.gk, FrameStatic, make(map[string]IObject)))
-}
-
-// newInterface attempts to allocate a new object; defaults to undefinedValue if allocation fails.
-func (f *GateAllocator) newInterface() any {
-	if err := f.tryAcquireObject(); err != nil {
-		return f.undefinedValue
-	}
-	return f.acquireObject(newInterface(f.gk, FrameStatic, f.undefinedValue, make(map[string]IObject)))
-}
-
-// newArrayIterator initializes and returns a new ArrayIterator for iterating over a given slice of IObject elements.
-func (f *GateAllocator) newArrayIterator() any {
-	if err := f.tryAcquireObject(); err != nil {
-		return f.undefinedValue
-	}
-	return f.acquireObject(newArrayIterator(f.gk, FrameStatic, []IObject{}, 0))
-}
-
-// newBytesIterator creates a new instance of a BytesIterator with a static frame and an empty byte slice.
-// It acquires the instance if resources are available; otherwise, returns the undefined value.
-func (f *GateAllocator) newBytesIterator() any {
-	if err := f.tryAcquireObject(); err != nil {
-		return f.undefinedValue
-	}
-	return f.acquireObject(newBytesIterator(f.gk, FrameStatic, []byte{}, 0))
-}
-
-// newStringIterator initializes and returns a new StringIterator object for traversing over characters of a string.
-func (f *GateAllocator) newStringIterator() any {
-	if err := f.tryAcquireObject(); err != nil {
-		return f.undefinedValue
-	}
-	return f.acquireObject(newStringIterator(f.gk, FrameStatic, []rune{}, 0))
-}
-
-// newMapIterator initializes and returns a new map iterator, acquiring necessary resources or returning undefined if unavailable.
-func (f *GateAllocator) newMapIterator() any {
-	if err := f.tryAcquireObject(); err != nil {
-		return f.undefinedValue
-	}
-	return f.acquireObject(newMapIterator(f.gk, FrameStatic, make(map[string]IObject), 0))
-}
-
-// newStructIterator creates and returns an iterator for a structure if allocation is successful; returns an undefined value otherwise.
-func (f *GateAllocator) newStructIterator() any {
-	if err := f.tryAcquireObject(); err != nil {
-		return f.undefinedValue
-	}
-	return f.acquireObject(newMapIterator(f.gk, FrameStatic, make(map[string]IObject), 0))
 }
 
 // releaseObject reclaims memory for an object and returns it to the appropriate pool when no references remain.
@@ -559,7 +397,9 @@ func (f *GateAllocator) releaseObject(frame int, obj IObject) {
 	if obj == nil || obj.Frame() == FrameStatic || obj.RefCount() > 0 {
 		return
 	}
-	delete(f.allocatedObjects, obj)
+	f.allocatedObjects.Remove(obj)
+
+	//Set static before release
 	obj.SetStatic()
 	switch o := obj.(type) {
 	case *ObjectPointer:

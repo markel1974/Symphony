@@ -12,7 +12,7 @@ import (
 )
 
 func VMTest(sequencerId string, baseDir string, prefix string, debug bool) error {
-	gk := objects.NewGateKeeper(0)
+	gk := objects.NewGateKeeper()
 	op := bytecode2.NewOpcodes()
 	for _, fileName := range Prepare(baseDir, prefix) {
 		fmt.Printf("\n\n------------------ %s ------------------\n", fileName)
