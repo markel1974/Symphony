@@ -2,6 +2,7 @@ package sdk
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/markel1974/c64emu/src/compilers/native/tables"
 	"github.com/markel1974/c64emu/src/vm/objects"
@@ -20,34 +21,22 @@ func RegisterPackage(f registerPackageFn) {
 
 // Loader represents a mechanism to manage and load packages and built-in objects in the system.
 type Loader struct {
-	gk             objects.IGateKeeper
-	packagesByName map[string]IPackage
-	packagesByID   map[uint32]map[uint32]IPackage
+	gk       objects.IGateKeeper
+	packages map[string]IPackage
 }
 
 // NewLoader initializes and returns a new Loader instance with predefined standard packages and built-in functions.
 func NewLoader(gk objects.IGateKeeper) (*Loader, error) {
-	packages := make([]IPackage, len(_registerPackage))
+	container := make([]IPackage, len(_registerPackage))
 	for i, fn := range _registerPackage {
-		packages[i] = fn(gk)
+		container[i] = fn(gk)
 	}
 	loader := &Loader{
-		gk:             gk,
-		packagesByName: make(map[string]IPackage),
-		packagesByID:   make(map[uint32]map[uint32]IPackage),
+		gk:       gk,
+		packages: make(map[string]IPackage),
 	}
-	for _, p := range packages {
-		pId := PackageIDFromString(p.Name())
-		if _, exists := loader.packagesByID[pId]; exists {
-			return nil, fmt.Errorf("hash collision detected for package ID %d", pId)
-		}
-		loader.packagesByName[p.Name()] = p
-		z := make(map[uint32]IPackage)
-		loader.packagesByID[pId] = z
-		//for k, v := range p {
-		//	z[k] = v
-		//}
-		//loader.packagesByID[pId] = p
+	for _, p := range container {
+		loader.packages[p.Name()] = p
 	}
 	return loader, nil
 }
@@ -59,7 +48,7 @@ func (l *Loader) Id() string {
 
 // AddPackage adds a package with the given Id and attributes to the Loader's packages map.
 func (l *Loader) AddPackage(id string, functions []objects.IObject, constants map[string]objects.IObject) {
-	l.packagesByName[id] = NewExternalPackage(id, functions, constants)
+	l.packages[id] = NewExternalPackage(id, functions, constants)
 }
 
 // Resolve resolves a list of symbol references into concrete objects within the loader's context.
@@ -67,47 +56,19 @@ func (l *Loader) AddPackage(id string, functions []objects.IObject, constants ma
 func (l *Loader) Resolve(symbols []objects.IObject) ([]objects.IObject, error) {
 	references := make([]objects.IObject, len(symbols))
 	for i, ref := range symbols {
-		if ref == nil {
-			return nil, fmt.Errorf("can't load symbols, invalid reference %d", i)
-		}
-		switch ref.(type) {
-		default:
-			symbol, ok := l.resolveReference(ref)
+		references[i] = l.gk.UndefinedValue()
+		values := strings.Split(ref.AsString(), ".")
+		if len(values) >= 2 {
+			module, ok := l.packages[values[0]]
 			if !ok {
-				return nil, fmt.Errorf("can't load symbols, invalid reference %d", i)
+				return nil, fmt.Errorf("can't load symbols, invalid package %s", values[0])
+			}
+			symbol, ok := module.Get(values[1])
+			if !ok {
+				return nil, fmt.Errorf("can't load symbols, invalid symbol %s", values[1])
 			}
 			references[i] = symbol
 		}
 	}
 	return references, nil
-}
-
-// resolveReference retrieves a symbol from a package by decoding its reference array and returns the associated object if found.
-func (l *Loader) resolveReference(in objects.IObject) (objects.IObject, bool) {
-	definition, ok := in.(*objects.Array)
-	if !ok {
-		return nil, false
-	}
-	pName, err := definition.Index(0)
-	if err != nil {
-		return nil, false
-	}
-	sName, err := definition.Index(1)
-	if err != nil {
-		return nil, false
-	}
-	packageName, ok := pName.(*objects.String)
-	if !ok {
-		return nil, false
-	}
-	symbolName, ok := sName.(*objects.String)
-	if !ok {
-		return nil, false
-	}
-	module, ok := l.packagesByName[packageName.Value()]
-	if !ok {
-		return nil, false
-	}
-	v, ok := module.Get(symbolName.Value())
-	return v, ok
 }

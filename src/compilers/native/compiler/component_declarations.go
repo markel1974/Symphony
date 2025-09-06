@@ -304,12 +304,8 @@ func (c *Declarations) AssignStmt(node *ast.AssignStmt) error {
 		var returnTypes []string
 		if symbol, ok := c.scopes.SymbolResolve(targetName); ok {
 			returnTypes = symbol.ReturnTypes()
-		} else if c.imports.HasPackage(targetName) {
-			returnTypes = []string{"interface"}
-		} else if c.imports.HasBuiltin(targetName) {
-			returnTypes = []string{"interface"}
 		} else {
-			return tables.NewCompilerError(c.fileSet, node, "function symbol not found: %s", targetName)
+			returnTypes = []string{"interface"}
 		}
 		rhsContainer = make([]*rhs, len(returnTypes))
 		for idx := range rhsContainer {

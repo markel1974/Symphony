@@ -44,42 +44,59 @@ const (
 	CallIdMake
 )
 
-var _callIdContainer = []CallId{
-	CallIdLen,
-	CallIdCopy,
-	CallIdAppend,
-	CallIdDelete,
-	CallIdSplice,
-	CallIdPanic,
-	CallIdRecover,
-	CallIdInt,
-	CallIdBool,
-	CallIdFloat,
-	CallIdChar,
-	CallIdString,
-	CallIdTime,
-	CallIdTypeName,
-	CallIdIsInt,
-	CallIdIsFloat,
-	CallIdIsString,
-	CallIdIsBool,
-	CallIdIsChar,
-	CallIdIsBytes,
-	CallIdIsArray,
-	CallIdIsMap,
-	CallIdIsIterable,
-	CallIdIsTime,
-	CallIdIsError,
-	CallIdIsUndefined,
-	CallIdIsFunction,
-	CallIdIsCallable,
-	CallIdPrintf,
-	CallIdSprintf,
-	CallIdMake,
+var _callIdContainer = map[string]CallId{
+	"len":         CallIdLen,
+	"copy":        CallIdCopy,
+	"append":      CallIdAppend,
+	"delete":      CallIdDelete,
+	"splice":      CallIdSplice,
+	"panic":       CallIdPanic,
+	"recover":     CallIdRecover,
+	"int":         CallIdInt,
+	"int8":        CallIdInt,
+	"int32":       CallIdInt,
+	"int64":       CallIdInt,
+	"uint8":       CallIdInt,
+	"uint32":      CallIdInt,
+	"uint64":      CallIdInt,
+	"bool":        CallIdBool,
+	"float":       CallIdFloat,
+	"float32":     CallIdFloat,
+	"float64":     CallIdFloat,
+	"char":        CallIdChar,
+	"byte":        CallIdChar,
+	"string":      CallIdString,
+	"time":        CallIdTime,
+	"typeName":    CallIdTypeName,
+	"isInt":       CallIdIsInt,
+	"isFloat":     CallIdIsFloat,
+	"isString":    CallIdIsString,
+	"isBool":      CallIdIsBool,
+	"isChar":      CallIdIsChar,
+	"isBytes":     CallIdIsBytes,
+	"isArray":     CallIdIsArray,
+	"isMap":       CallIdIsMap,
+	"isIterable":  CallIdIsIterable,
+	"isTime":      CallIdIsTime,
+	"isError":     CallIdIsError,
+	"isUndefined": CallIdIsUndefined,
+	"isFunction":  CallIdIsFunction,
+	"isCallable":  CallIdIsCallable,
+	"printf":      CallIdPrintf,
+	"sprintf":     CallIdSprintf,
+	"make":        CallIdMake,
 }
 
 func init() {
 	gob.Register(&FuncInternal{})
+}
+
+func CallIdFromString(in string) (CallId, bool) {
+	v, ok := _callIdContainer[in]
+	if !ok {
+		return 0, false
+	}
+	return v, true
 }
 
 // FuncInternal is a callable object type that encapsulates a function and provides execution context information.
@@ -117,7 +134,7 @@ func (h *FuncInternal) AsFloat64() float64 {
 
 // AsString returns the string representation of a FuncImport object.
 func (h *FuncInternal) AsString() string {
-	return "<FuncJit>"
+	return "<FuncInternal>"
 }
 
 // AssignValue sets the current object to the provided IObject, returning ErrNotAssignable if the operation is not supported.

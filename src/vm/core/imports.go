@@ -30,6 +30,21 @@ func (g *Imports) Setup(loader bytecode.ILoader, references []objects.IObject) e
 	if err != nil {
 		return err
 	}
+	if len(g.container) != len(references) {
+		return fmt.Errorf("invalid number of imports: %d", len(references))
+	}
+	//internals
+	for idx, val := range g.container {
+		switch val.(type) {
+		case *objects.Undefined:
+			internal := references[idx].AsString()
+			callId, ok := objects.CallIdFromString(references[idx].AsString())
+			if !ok {
+				return fmt.Errorf("invalid internal reference: %s", internal)
+			}
+			g.container[idx] = g.gk.NewFuncInternal(objects.FrameStatic, callId)
+		}
+	}
 	return err
 }
 

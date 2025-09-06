@@ -66,7 +66,6 @@ type IGateAllocator interface {
 	ReleaseAll()
 	AllocatedObjects() uint64
 	SetPointer(ptr *ObjectPointer, value IObject)
-	NewFuncInternals(frame int) []IObject
 	NewFuncInternal(frame int, id CallId) IObject
 	NewFuncCompiled(frame int, name string, instructions []byte, numLocals int, numParameters int, varArgs bool, sourceMap map[int]int, free []*ObjectPointer) IObject
 	NewFuncImport(frame int, name string, args int, fn FuncCallable) IObject

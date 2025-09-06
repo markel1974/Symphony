@@ -1,8 +1,6 @@
 package sdk
 
 import (
-	"hash/fnv"
-
 	"github.com/markel1974/c64emu/src/vm/objects"
 )
 
@@ -20,8 +18,11 @@ func BuildContainer2(functions []objects.IObject, constants map[string]objects.I
 	return container
 }
 
+/*
 func PackageIDFromString(name string) uint32 {
 	hash := fnv.New32a()
 	_, _ = hash.Write([]byte(name))
 	return hash.Sum32()
 }
+
+*/

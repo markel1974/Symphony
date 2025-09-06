@@ -113,16 +113,6 @@ func (f *GateAllocator) UndefinedValue() IObject {
 	return f.undefinedValue
 }
 
-// NewFuncInternals creates a slice of IObject by invoking NewFuncInternal for each CallId in callIdContainer.
-func (f *GateAllocator) NewFuncInternals(frame int) []IObject {
-	out := make([]IObject, len(_callIdContainer))
-	for idx, v := range _callIdContainer {
-		newObj := f.NewFuncInternal(frame, v)
-		out[idx] = newObj
-	}
-	return out
-}
-
 // --- Methods for Non-Poolable objects ---
 
 // NewFuncCompiled creates a new compiled function object with the given frame, name, instructions, locals, parameters, and settings.

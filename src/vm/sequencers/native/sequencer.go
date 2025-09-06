@@ -78,7 +78,7 @@ func (ds *Sequencer) createStatic(vmIn *core.VM) ([]core.IOpExecutor, error) {
 	z = append(z, NewOpLogical)
 	z = append(z, NewOpArithmetic)
 	z = append(z, NewOpFuncImport)
-	z = append(z, NewOpFuncInternal)
+	//z = append(z, NewOpFuncInternal)
 	z = append(z, NewOpPop)
 	z = append(z, NewOpTrue)
 	z = append(z, NewOpFalse)

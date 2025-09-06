@@ -1,5 +1,6 @@
 package native
 
+/*
 import (
 	"fmt"
 
@@ -39,3 +40,6 @@ func (op *OpFuncInternal) Execute(decoder *core.Decoder) {
 	symbol := op.vm.Internals().Get(uint(nameIndex))
 	op.vm.Stack().Push(symbol)
 }
+
+
+*/

@@ -179,7 +179,7 @@ const (
 	OpFuncImport
 
 	// OpFuncInternal represents an opcode for internal operations within the virtual machine.
-	OpFuncInternal
+	//OpFuncInternal
 
 	// OpIntLogical performs integer-specific logical operations such as AND, OR, or XOR for the appropriate operands.
 	OpIntLogical
@@ -308,7 +308,7 @@ func NewOpcodes() *Opcodes {
 	op.createOpcode(OpLogical, []int{Uint8Size}, "OpLogical")
 	op.createOpcode(OpArithmetic, []int{Uint8Size}, "OpArithmetic")
 	op.createOpcode(OpFuncImport, []int{Uint16Size}, "OpFuncImport")
-	op.createOpcode(OpFuncInternal, []int{Uint16Size}, "OpFuncInternal")
+	//op.createOpcode(OpFuncInternal, []int{Uint16Size}, "OpFuncInternal")
 	op.createOpcode(OpIntLogical, []int{Uint16Size, Uint16Size, Uint16Size, Uint8Size}, "OpIntLogical")
 	op.createOpcode(OpIntArithmetic, []int{Uint16Size, Uint16Size, Uint16Size, Uint8Size}, "OpIntArithmetic")
 	op.createOpcode(OpDerefGet, []int{}, "OpDerefGet")

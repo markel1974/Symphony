@@ -35,7 +35,6 @@ type VM struct {
 	shutdown          bool
 	err               error
 	sequencer         []*Decoder
-	internals         *Internals
 	imports           *Imports
 	constants         *Constants
 	globals           *Globals
@@ -52,12 +51,10 @@ func New(gk objects.IGateKeeper, seq ISequencer, op *bytecode.Opcodes) *VM {
 		op:        op,
 		ip:        resetIp,
 		imports:   nil,
-		internals: nil,
 		retValues: false,
 	}
 	v.constants = NewConstants(gk, v.SetError)
 	v.imports = NewImports(gk, v.SetError)
-	v.internals = NewInternals(gk, v.SetError)
 	v.globals = NewGlobals(gk, v.SetError)
 	v.stack = NewStack(gk, stackSize, v.SetError)
 	v.frames = NewFrames(gk, maxFrames, v.SetError)
@@ -93,9 +90,6 @@ func (v *VM) Setup(loader bytecode.ILoader, codes ...*bytecode.Bytecode) (map[st
 	}
 
 	if err = v.imports.Setup(loader, v.bc.Imports()); err != nil {
-		return nil, err
-	}
-	if err = v.internals.Setup(); err != nil {
 		return nil, err
 	}
 	if err = v.constants.Setup(v.bc.Constants()); err != nil {
@@ -161,11 +155,6 @@ func (v *VM) Globals() *Globals {
 // Imports return a pointer to the Imports object associated with the VM instance.
 func (v *VM) Imports() *Imports {
 	return v.imports
-}
-
-// Internals returns a pointer to the Internals struct associated with the VM instance.
-func (v *VM) Internals() *Internals {
-	return v.internals
 }
 
 // Factory returns the IGateKeeper instance associated with the VM.

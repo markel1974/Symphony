@@ -25,7 +25,6 @@ type IVMReadOnly interface {
 	Constants() *Constants
 	Globals() *Globals
 	Imports() *Imports
-	Internals() *Internals
 	Frame() *Frame
 }
 

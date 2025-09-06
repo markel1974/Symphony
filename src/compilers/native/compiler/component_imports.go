@@ -12,27 +12,27 @@ import (
 
 // Imports is a structure that manages a set of imported items, built-in functions, and related compilation resources.
 type Imports struct {
-	gk         objects.IGateKeeper
-	loader     bytecode.ILoader
-	references *tables.Constants
-	scopes     *tables.Scopes
-	imports    map[string]bool
-	builtin    map[string]objects.CallId
-	container  []ast.Decl
-	fileSet    *token.FileSet
-	compile    func(node ast.Node) error
+	gk        objects.IGateKeeper
+	loader    bytecode.ILoader
+	imports   *tables.Constants
+	scopes    *tables.Scopes
+	modules   map[string]bool
+	helper    map[string]int
+	container []ast.Decl
+	fileSet   *token.FileSet
+	compile   func(node ast.Node) error
 }
 
 // NewImports creates and initializes a new Imports instance with provided GateKeeper, Constants, and Scopes references.
-func NewImports(gk objects.IGateKeeper, loader bytecode.ILoader, references *tables.Constants, scopes *tables.Scopes) *Imports {
+func NewImports(gk objects.IGateKeeper, loader bytecode.ILoader, imports *tables.Constants, scopes *tables.Scopes) *Imports {
 	i := &Imports{
-		gk:         gk,
-		loader:     loader,
-		references: references,
-		scopes:     scopes,
-		imports:    make(map[string]bool),
-		builtin:    make(map[string]objects.CallId),
-		compile:    nil,
+		gk:      gk,
+		loader:  loader,
+		imports: imports,
+		scopes:  scopes,
+		modules: make(map[string]bool),
+		helper:  make(map[string]int),
+		compile: nil,
 	}
 	return i
 }
@@ -41,49 +41,6 @@ func NewImports(gk objects.IGateKeeper, loader bytecode.ILoader, references *tab
 func (i *Imports) Setup(fileSet *token.FileSet, compile func(node ast.Node) error) error {
 	i.fileSet = fileSet
 	i.compile = compile
-
-	i.builtin = map[string]objects.CallId{
-		"len":         objects.CallIdLen,
-		"copy":        objects.CallIdCopy,
-		"append":      objects.CallIdAppend,
-		"delete":      objects.CallIdDelete,
-		"splice":      objects.CallIdSplice,
-		"panic":       objects.CallIdPanic,
-		"recover":     objects.CallIdRecover,
-		"int":         objects.CallIdInt,
-		"int8":        objects.CallIdInt,
-		"int32":       objects.CallIdInt,
-		"int64":       objects.CallIdInt,
-		"uint8":       objects.CallIdInt,
-		"uint32":      objects.CallIdInt,
-		"uint64":      objects.CallIdInt,
-		"bool":        objects.CallIdBool,
-		"float":       objects.CallIdFloat,
-		"float32":     objects.CallIdFloat,
-		"float64":     objects.CallIdFloat,
-		"char":        objects.CallIdChar,
-		"byte":        objects.CallIdChar,
-		"string":      objects.CallIdString,
-		"time":        objects.CallIdTime,
-		"typeName":    objects.CallIdTypeName,
-		"isInt":       objects.CallIdIsInt,
-		"isFloat":     objects.CallIdIsFloat,
-		"isString":    objects.CallIdIsString,
-		"isBool":      objects.CallIdIsBool,
-		"isChar":      objects.CallIdIsChar,
-		"isBytes":     objects.CallIdIsBytes,
-		"isArray":     objects.CallIdIsArray,
-		"isMap":       objects.CallIdIsMap,
-		"isIterable":  objects.CallIdIsIterable,
-		"isTime":      objects.CallIdIsTime,
-		"isError":     objects.CallIdIsError,
-		"isUndefined": objects.CallIdIsUndefined,
-		"isFunction":  objects.CallIdIsFunction,
-		"isCallable":  objects.CallIdIsCallable,
-		"printf":      objects.CallIdPrintf,
-		"sprintf":     objects.CallIdSprintf,
-		"make":        objects.CallIdMake,
-	}
 	return nil
 }
 
@@ -107,75 +64,32 @@ func (i *Imports) Declare(decls ast.Decl) {
 	i.container = append(i.container, decls)
 }
 
-// HasPackage checks if the specified package name exists in the imports map and returns true if it exists, otherwise false.
-func (i *Imports) HasPackage(name string) bool {
-	return i.imports[name]
-}
-
-// HasBuiltin checks if the given name exists in the builtin map and returns true if found, otherwise false.
-func (i *Imports) HasBuiltin(name string) bool {
-	_, ok := i.builtin[name]
-	return ok
-}
-
 // Emit attempts to attach a function reference or emit a builtin reference, returning true if successful.
 func (i *Imports) Emit(name string, selName string) bool {
+	if len(name) == 0 {
+		return false
+	}
+	var target string
 	if len(selName) > 0 {
-		_, ok := i.imports[name]
+		_, ok := i.modules[name]
 		if !ok {
 			return false
 		}
-		_, nameIndex, err := i.packageFunctionAttach(name, selName)
-		if err != nil {
-			return false
-		}
-		if _, err = i.scopes.Emit(bytecode.OpFuncImport, nameIndex); err != nil {
-			return false
-		}
-		return true
+		target = tables.GetMangledName(name, selName)
+	} else {
+		target = name
 	}
-	id, ok := i.builtin[name]
-	if !ok {
-		return false
+	var index int
+	if v, ok := i.helper[target]; ok {
+		index = v
+	} else {
+		index = i.imports.Add(target, i.gk.NewString(objects.FrameStatic, target))
+		i.helper[target] = index
 	}
-	if _, err := i.scopes.Emit(bytecode.OpFuncInternal, int(id)); err != nil {
+	if _, err := i.scopes.Emit(bytecode.OpFuncImport, index); err != nil {
 		return false
 	}
 	return true
-}
-
-// Attach attempts to resolve a name and optional selector from imports or built-in references, returning details if found.
-func (i *Imports) Attach(name string, selName string) (string, int, bool) {
-	if len(selName) > 0 {
-		_, ok := i.imports[name]
-		if !ok {
-			return "", -1, false
-		}
-		mangledName, nameIndex, err := i.packageFunctionAttach(name, selName)
-		if err != nil {
-			return "", 0, false
-		}
-		return mangledName, nameIndex, true
-	}
-	id, ok := i.builtin[name]
-	if !ok {
-		return "", 0, false
-	}
-	return name, int(id), true
-}
-
-// PackageFunctionAttach registers and attaches a function from a given package, returning its mangled name, index, and any error.
-func (i *Imports) packageFunctionAttach(pkgName string, fnName string) (string, int, error) {
-	mangledName := tables.GetMangledName(pkgName, fnName)
-	nameIndex, found := i.references.Get(mangledName)
-	if !found {
-		attrArray := i.gk.NewArray(objects.FrameStatic, []objects.IObject{
-			i.gk.NewString(objects.FrameStatic, pkgName),
-			i.gk.NewString(objects.FrameStatic, fnName)},
-		)
-		nameIndex = i.references.Add(mangledName, attrArray)
-	}
-	return mangledName, nameIndex, nil
 }
 
 // doGenDecl processes a generic declaration node, compiling each specification it contains. Returns an error if compilation fails.
@@ -192,6 +106,6 @@ func (i *Imports) doGenDecl(node *ast.GenDecl) error {
 func (i *Imports) ImportSpec(node *ast.ImportSpec) error {
 	moduleName := node.Path.Value
 	moduleName = strings.Trim(moduleName, "\"'")
-	i.imports[moduleName] = true
+	i.modules[moduleName] = true
 	return nil
 }
