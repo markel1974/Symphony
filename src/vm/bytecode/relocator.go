@@ -137,7 +137,7 @@ func (c *Relocator) processDuplicates(container []objects.IObject) ([]objects.IO
 		switch obj := in.(type) {
 		case *objects.FuncCompiled:
 			newIdx := -1
-			if _, preserve := c.preserved[obj.Name()]; !preserve { //obj.Name() != PreInitFunction && obj.Name() != InitFunction {
+			if _, preserve := c.preserved[obj.Name()]; !preserve {
 				if v, ok := fns[obj]; ok {
 					newIdx = v
 				}
@@ -202,9 +202,12 @@ func (c *Relocator) updateFuncIndexes(fc *objects.FuncCompiled, indexContainer m
 		opcode := data[i]
 		details := c.opcodes.Opcode(opcode)
 		offset := details.Offset()
-		switch opcode {
-		case OpConstant, OpFuncImport, OpCallImportGlobal:
-			curIdx := int(data[i+2]) | int(data[i+1])<<8
+		switch details.Relocatable() {
+		case OpRelocatable:
+			curIdx, ok := get16(data, uint(i), 1)
+			if !ok {
+				return fmt.Errorf("index not found: %d", curIdx)
+			}
 			newIdx, ok := indexContainer[curIdx]
 			if !ok {
 				return fmt.Errorf("index not found: %d", curIdx)
@@ -214,9 +217,15 @@ func (c *Relocator) updateFuncIndexes(fc *objects.FuncCompiled, indexContainer m
 				return err
 			}
 			copy(data[i:], code)
-		case OpClosure:
-			curIdx := int(data[i+2]) | int(data[i+1])<<8
-			numFree := int(data[i+3])
+		case OpRelocatableFree:
+			curIdx, ok := get16(data, uint(i), 1)
+			if !ok {
+				return fmt.Errorf("index not found: %d", curIdx)
+			}
+			numFree, ok := get8(data, uint(i), 3)
+			if !ok {
+				return fmt.Errorf("index not found: %d", curIdx)
+			}
 			newIdx, ok := indexContainer[curIdx]
 			if !ok {
 				return fmt.Errorf("index not found: %d", curIdx)
@@ -227,9 +236,32 @@ func (c *Relocator) updateFuncIndexes(fc *objects.FuncCompiled, indexContainer m
 			}
 			copy(data[i:], code)
 		default:
-			return fmt.Errorf("unsupported opcode: %s", details.Name())
+			//nothing to do
 		}
 		i += 1 + offset
 	}
 	return nil
+}
+
+// get16 extracts a 16-bit integer from the provided byte slice using the given base and offset positions.
+// Returns the integer and a boolean indicating success or failure due to an out-of-bounds read.
+func get16(data []byte, base uint, offset uint) (int, bool) {
+	p1 := base + offset
+	p2 := p1 + 1
+	if p2 >= uint(len(data)) {
+		return 0, false
+	}
+	res := int(data[p2]) | int(data[p1])<<8
+	return res, true
+}
+
+// get8 retrieves an 8-bit value from the provided data slice at the calculated position (base + offset).
+// Returns the value as an int and a boolean indicating success or failure.
+// If the position exceeds the data slice boundary, it returns 0 and false.
+func get8(data []byte, base uint, offset uint) (int, bool) {
+	p1 := base + offset
+	if p1 >= uint(len(data)) {
+		return 0, false
+	}
+	return int(data[p1]), true
 }
