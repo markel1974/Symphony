@@ -308,7 +308,6 @@ func NewOpcodes() *Opcodes {
 	op.createOpcode(OpLogical, []int{Uint8Size}, "OpLogical")
 	op.createOpcode(OpArithmetic, []int{Uint8Size}, "OpArithmetic")
 	op.createOpcode(OpFuncImport, []int{Uint16Size}, "OpFuncImport")
-	//op.createOpcode(OpFuncInternal, []int{Uint16Size}, "OpFuncInternal")
 	op.createOpcode(OpIntLogical, []int{Uint16Size, Uint16Size, Uint16Size, Uint8Size}, "OpIntLogical")
 	op.createOpcode(OpIntArithmetic, []int{Uint16Size, Uint16Size, Uint16Size, Uint8Size}, "OpIntArithmetic")
 	op.createOpcode(OpDerefGet, []int{}, "OpDerefGet")
