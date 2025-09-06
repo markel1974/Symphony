@@ -32,9 +32,9 @@ func NewOpClosure(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
 
 // Execute performs the operation associated with the OpClosure opcode, creating a closure and pushing it onto the stack.
 func (op *OpClosure) Execute(decoder *core.Decoder) {
-	// Operands Offset 3 (8-bit|16-bit)
-	numTotal := decoder.Read(0)
-	closureIndex := decoder.Read(1)
+	// Operands Offset 3 (16-bit|8-bit)
+	closureIndex := decoder.Read(0)
+	numTotal := decoder.Read(1)
 	closureObj := op.vm.Constants().Get(uint(closureIndex))
 	fn, ok := closureObj.(*objects.FuncCompiled)
 	if !ok {

@@ -185,7 +185,7 @@ func (c *Functions) funcBodyCompile(fd *tables.FunctionDescription) error {
 	fnSymbol.SetReturnTypes(fd.ReturnTypes)
 
 	if node.Recv == nil && !c.scopes.IsRootScope() {
-		if _, err = c.scopes.Emit(bytecode.OpClosure, fnSymbol.Index(), freeNum); err != nil {
+		if _, err = c.scopes.Emit(bytecode.OpClosure, freeNum, fnSymbol.Index()); err != nil {
 			return err
 		}
 		symbol, _ := c.scopes.SymbolResolve(node.Name.Name)
@@ -423,7 +423,8 @@ func (c *Functions) FuncLit(node *ast.FuncLit) error {
 	}
 	compiledFn := c.gk.NewFuncCompiled(objects.FrameStatic, "", code, nLocals, nParams, false, nil, freeObj)
 	constIndex := c.constants.Add("", compiledFn)
-	if _, err = c.scopes.Emit(bytecode.OpClosure, constIndex, c.scopes.SymbolCount()); err != nil {
+	freeNum := c.scopes.SymbolCount()
+	if _, err = c.scopes.Emit(bytecode.OpClosure, freeNum, constIndex); err != nil {
 		return err
 	}
 	return nil

@@ -8,29 +8,29 @@ import (
 )
 
 func init() {
-	SequencerRegister(NewOpFuncImport)
+	SequencerRegister(NewOpImport)
 }
 
-// OpFuncImport extends Opcode to represent operations specifically related to reference handling in the bytecode.
-type OpFuncImport struct {
+// OpImport extends Opcode to represent operations specifically related to reference handling in the bytecode.
+type OpImport struct {
 	*bytecode.Opcode
 	vm core.IVMFullAccess
 }
 
-// NewOpFuncImport initializes a new OpFuncImport instance with corresponding Opcode from the bytecode package.
-func NewOpFuncImport(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
+// NewOpImport initializes a new OpImport instance with corresponding Opcode from the bytecode package.
+func NewOpImport(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
 	vmT, ok := vm.(core.IVMFullAccess)
 	if !ok {
 		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
 	}
-	return &OpFuncImport{
-		Opcode: op.Opcode(bytecode.OpFuncImport),
+	return &OpImport{
+		Opcode: op.Opcode(bytecode.OpImport),
 		vm:     vmT,
 	}, nil
 }
 
 // Execute processes the specified VM instruction, adjusts the instruction pointer, and pushes a reference onto the stack.
-func (op *OpFuncImport) Execute(decoder *core.Decoder) {
+func (op *OpImport) Execute(decoder *core.Decoder) {
 	// Operands Offset 2 (16-bit)
 	nameIndex := decoder.Read(0)
 	symbol := op.vm.Imports().Get(uint(nameIndex))

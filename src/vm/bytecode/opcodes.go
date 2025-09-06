@@ -178,8 +178,8 @@ const (
 	// OpLogical represents an opcode for performing logical operations within the instruction set.
 	OpLogical
 
-	// OpFuncImport represents an opcode for handling imports, typically operating with two associated operands.
-	OpFuncImport
+	// OpImport represents an opcode for handling imports, typically operating with two associated operands.
+	OpImport
 
 	// OpFuncInternal represents an opcode for internal operations within the virtual machine.
 	//OpFuncInternal
@@ -209,14 +209,6 @@ const (
 	OpUnknown
 )
 
-type Relocatable int
-
-const (
-	OpRelocatableNone Relocatable = iota
-	OpRelocatable     Relocatable = iota
-	OpRelocatableFree Relocatable = iota
-)
-
 // Opcode represents the details of an opcode, including its identifier, its operands, and its name.
 type Opcode struct {
 	opcodeId    OpcodeId
@@ -227,11 +219,11 @@ type Opcode struct {
 }
 
 // NewOpcode creates a new Opcode instance, initializing its opcode, operands, and name fields.
-func NewOpcode(opcodeId OpcodeId, relocatable Relocatable, operands []int, name string) *Opcode {
+func NewOpcode(opcodeId OpcodeId, operands []int, name string, relocatable Relocatable) *Opcode {
 	od := &Opcode{
 		opcodeId:    opcodeId,
-		relocatable: relocatable,
 		operands:    operands,
+		relocatable: relocatable,
 		name:        name,
 		offset:      0,
 	}
@@ -272,74 +264,84 @@ type Opcodes struct {
 	maxLen    int
 }
 
+type Relocatable int
+
+const (
+	OpRelocatableNone Relocatable = iota
+	OpRelocatable                 // first operand relocatableId(16bit)
+	//OpRelocatableFree             // first operand relocatableId(16bit) second operand numFree(8bit)
+)
+
+var noOperands []int
+
 // NewOpcodes initializes and returns a new Opcodes instance with predefined opcode mappings.
 func NewOpcodes() *Opcodes {
 	op := &Opcodes{
 		container: make([]*Opcode, OpcodesLen),
 	}
 	for i := range op.container {
-		op.container[i] = NewOpcode(OpUnknown, OpRelocatableNone, []int{}, "OpUnknown")
+		op.container[i] = NewOpcode(OpUnknown, noOperands, "OpUnknown", OpRelocatableNone)
 	}
-	op.createOpcode(OpConstant, OpRelocatable, []int{Uint16Size}, "OpConstant")
-	op.createOpcode(OpFuncImport, OpRelocatable, []int{Uint16Size}, "OpFuncImport")
-	op.createOpcode(OpClosure, OpRelocatableFree, []int{Uint16Size, Uint8Size}, "OpClosure")
-	op.createOpcode(OpPop, OpRelocatableNone, []int{}, "OpPop")
-	op.createOpcode(OpTrue, OpRelocatableNone, []int{}, "OpTrue")
-	op.createOpcode(OpFalse, OpRelocatableNone, []int{}, "OpFalse")
-	op.createOpcode(OpBitwiseComplement, OpRelocatableNone, []int{}, "OpBitwiseComplement")
-	op.createOpcode(OpMinus, OpRelocatableNone, []int{}, "OpMinus")
-	op.createOpcode(OpNot, OpRelocatableNone, []int{}, "OpNot")
-	op.createOpcode(OpJumpFalsy, OpRelocatableNone, []int{Uint16Size}, "OpJumpFalsy")
-	op.createOpcode(OpJumpTruthy, OpRelocatableNone, []int{Uint16Size}, "OpJumpTruthy")
-	op.createOpcode(OpJumpAnd, OpRelocatableNone, []int{Uint16Size}, "OpJumpAnd")
-	op.createOpcode(OpJumpOr, OpRelocatableNone, []int{Uint16Size}, "OpJumpOr")
-	op.createOpcode(OpJump, OpRelocatableNone, []int{Uint16Size}, "OpJump")
-	op.createOpcode(OpJumpNotError, OpRelocatableNone, []int{Uint16Size}, "OpJumpNotError")
-	op.createOpcode(OpJumpIndirect, OpRelocatableNone, []int{}, "OpJumpIndirect")
-	op.createOpcode(OpNull, OpRelocatableNone, []int{}, "OpNull")
-	op.createOpcode(OpGlobalGet, OpRelocatableNone, []int{Uint16Size}, "OpGlobalGet")
-	op.createOpcode(OpGlobalSet, OpRelocatableNone, []int{Uint16Size}, "OpGlobalSet")
-	op.createOpcode(OpGlobalSelSet, OpRelocatableNone, []int{Uint16Size, Uint8Size}, "OpGlobalSelSet")
-	op.createOpcode(OpGlobalCopy, OpRelocatableNone, []int{Uint16Size, Uint16Size}, "OpGlobalCopy")
-	op.createOpcode(OpArray, OpRelocatableNone, []int{Uint16Size}, "OpArray")
-	op.createOpcode(OpMap, OpRelocatableNone, []int{Uint16Size}, "OpMap")
-	op.createOpcode(OpStruct, OpRelocatableNone, []int{Uint16Size}, "OpStruct")
-	op.createOpcode(OpInterface, OpRelocatableNone, []int{Uint8Size}, "OpInterface")
-	op.createOpcode(OpIndexGet, OpRelocatableNone, []int{}, "OpIndexGet")
-	op.createOpcode(OpIndexSet, OpRelocatableNone, []int{}, "OpIndexSet")
-	op.createOpcode(OpIndexSlice, OpRelocatableNone, []int{}, "OpIndexSlice")
-	op.createOpcode(OpCall, OpRelocatableNone, []int{Uint8Size, Uint8Size}, "OpCall")
-	op.createOpcode(OpCallMethod, OpRelocatableNone, []int{Uint16Size, Uint8Size}, "OpCallMethod")
-	op.createOpcodeRepeated(OpCallImportGlobal, OpRelocatableNone, 16, Uint16Size, "OpCallImportGlobal")
-	op.createOpcode(OpReturn, OpRelocatableNone, []int{Uint8Size}, "OpReturn")
-	op.createOpcode(OpLocalGet, OpRelocatableNone, []int{Uint8Size}, "OpLocalGet")
-	op.createOpcode(OpLocalSet, OpRelocatableNone, []int{Uint8Size}, "OpLocalSet")
-	op.createOpcode(OpLocalDefine, OpRelocatableNone, []int{Uint8Size}, "OpLocalDefine")
-	op.createOpcode(OpLocalPtrGet, OpRelocatableNone, []int{Uint8Size}, "OpLocalPtrGet")
-	op.createOpcode(OpLocalSelSet, OpRelocatableNone, []int{Uint8Size, Uint8Size}, "OpLocalSelSet")
-	op.createOpcode(OpFreeGet, OpRelocatableNone, []int{Uint8Size}, "OpFreeGet")
-	op.createOpcode(OpFreeSet, OpRelocatableNone, []int{Uint8Size}, "OpFreeSet")
-	op.createOpcode(OpFreePtrGet, OpRelocatableNone, []int{Uint8Size}, "OpFreePtrGet")
-	op.createOpcode(OpIteratorInit, OpRelocatableNone, []int{Uint8Size}, "OpIteratorInit")
-	op.createOpcode(OpIteratorNext, OpRelocatableNone, []int{Uint8Size}, "OpIteratorNext")
-	op.createOpcode(OpIteratorKey, OpRelocatableNone, []int{Uint8Size}, "OpIteratorKey")
-	op.createOpcode(OpIteratorValue, OpRelocatableNone, []int{Uint8Size}, "OpIteratorValue")
-	op.createOpcode(OpLogical, OpRelocatableNone, []int{Uint8Size}, "OpLogical")
-	op.createOpcode(OpArithmetic, OpRelocatableNone, []int{Uint8Size}, "OpArithmetic")
-	op.createOpcode(OpIntLogical, OpRelocatableNone, []int{Uint16Size, Uint16Size, Uint16Size, Uint8Size}, "OpIntLogical")
-	op.createOpcode(OpIntArithmetic, OpRelocatableNone, []int{Uint16Size, Uint16Size, Uint16Size, Uint8Size}, "OpIntArithmetic")
-	op.createOpcode(OpDerefGet, OpRelocatableNone, []int{}, "OpDerefGet")
-	op.createOpcode(OpDerefSet, OpRelocatableNone, []int{}, "OpDerefSet")
-	op.createOpcode(OpTypeAssert, OpRelocatableNone, []int{Uint16Size}, "OpTypeAssert")
-	op.createOpcode(OpIsType, OpRelocatableNone, []int{Uint16Size}, "OpIsType")
-	op.createOpcode(OpAsType, OpRelocatableNone, []int{Uint16Size}, "OpAsType")
-	op.createOpcode(OpSuspend, OpRelocatableNone, []int{}, "OpSuspend")
-	op.createOpcode(OpError, OpRelocatableNone, []int{}, "OpError")
+	op.createOpcode(OpConstant, []int{Uint16Size}, "OpConstant", OpRelocatable)
+	op.createOpcode(OpImport, []int{Uint16Size}, "OpImport", OpRelocatable)
+	op.createOpcode(OpClosure, []int{Uint8Size, Uint16Size}, "OpClosure", OpRelocatable) //OpRelocatableFree)
+	op.createOpcodeRepeated(OpCallImportGlobal, 16, Uint16Size, "OpCallImportGlobal", OpRelocatable)
+	op.createOpcode(OpPop, noOperands, "OpPop", OpRelocatableNone)
+	op.createOpcode(OpTrue, noOperands, "OpTrue", OpRelocatableNone)
+	op.createOpcode(OpFalse, noOperands, "OpFalse", OpRelocatableNone)
+	op.createOpcode(OpBitwiseComplement, noOperands, "OpBitwiseComplement", OpRelocatableNone)
+	op.createOpcode(OpMinus, noOperands, "OpMinus", OpRelocatableNone)
+	op.createOpcode(OpNot, noOperands, "OpNot", OpRelocatableNone)
+	op.createOpcode(OpJumpFalsy, []int{Uint16Size}, "OpJumpFalsy", OpRelocatableNone)
+	op.createOpcode(OpJumpTruthy, []int{Uint16Size}, "OpJumpTruthy", OpRelocatableNone)
+	op.createOpcode(OpJumpAnd, []int{Uint16Size}, "OpJumpAnd", OpRelocatableNone)
+	op.createOpcode(OpJumpOr, []int{Uint16Size}, "OpJumpOr", OpRelocatableNone)
+	op.createOpcode(OpJump, []int{Uint16Size}, "OpJump", OpRelocatableNone)
+	op.createOpcode(OpJumpNotError, []int{Uint16Size}, "OpJumpNotError", OpRelocatableNone)
+	op.createOpcode(OpJumpIndirect, noOperands, "OpJumpIndirect", OpRelocatableNone)
+	op.createOpcode(OpNull, noOperands, "OpNull", OpRelocatableNone)
+	op.createOpcode(OpGlobalGet, []int{Uint16Size}, "OpGlobalGet", OpRelocatableNone)
+	op.createOpcode(OpGlobalSet, []int{Uint16Size}, "OpGlobalSet", OpRelocatableNone)
+	op.createOpcode(OpGlobalSelSet, []int{Uint16Size, Uint8Size}, "OpGlobalSelSet", OpRelocatableNone)
+	op.createOpcode(OpGlobalCopy, []int{Uint16Size, Uint16Size}, "OpGlobalCopy", OpRelocatableNone)
+	op.createOpcode(OpArray, []int{Uint16Size}, "OpArray", OpRelocatableNone)
+	op.createOpcode(OpMap, []int{Uint16Size}, "OpMap", OpRelocatableNone)
+	op.createOpcode(OpStruct, []int{Uint16Size}, "OpStruct", OpRelocatableNone)
+	op.createOpcode(OpInterface, []int{Uint8Size}, "OpInterface", OpRelocatableNone)
+	op.createOpcode(OpIndexGet, noOperands, "OpIndexGet", OpRelocatableNone)
+	op.createOpcode(OpIndexSet, noOperands, "OpIndexSet", OpRelocatableNone)
+	op.createOpcode(OpIndexSlice, noOperands, "OpIndexSlice", OpRelocatableNone)
+	op.createOpcode(OpCall, []int{Uint8Size, Uint8Size}, "OpCall", OpRelocatableNone)
+	op.createOpcode(OpCallMethod, []int{Uint16Size, Uint8Size}, "OpCallMethod", OpRelocatableNone)
+	op.createOpcode(OpReturn, []int{Uint8Size}, "OpReturn", OpRelocatableNone)
+	op.createOpcode(OpLocalGet, []int{Uint8Size}, "OpLocalGet", OpRelocatableNone)
+	op.createOpcode(OpLocalSet, []int{Uint8Size}, "OpLocalSet", OpRelocatableNone)
+	op.createOpcode(OpLocalDefine, []int{Uint8Size}, "OpLocalDefine", OpRelocatableNone)
+	op.createOpcode(OpLocalPtrGet, []int{Uint8Size}, "OpLocalPtrGet", OpRelocatableNone)
+	op.createOpcode(OpLocalSelSet, []int{Uint8Size, Uint8Size}, "OpLocalSelSet", OpRelocatableNone)
+	op.createOpcode(OpFreeGet, []int{Uint8Size}, "OpFreeGet", OpRelocatableNone)
+	op.createOpcode(OpFreeSet, []int{Uint8Size}, "OpFreeSet", OpRelocatableNone)
+	op.createOpcode(OpFreePtrGet, []int{Uint8Size}, "OpFreePtrGet", OpRelocatableNone)
+	op.createOpcode(OpIteratorInit, []int{Uint8Size}, "OpIteratorInit", OpRelocatableNone)
+	op.createOpcode(OpIteratorNext, []int{Uint8Size}, "OpIteratorNext", OpRelocatableNone)
+	op.createOpcode(OpIteratorKey, []int{Uint8Size}, "OpIteratorKey", OpRelocatableNone)
+	op.createOpcode(OpIteratorValue, []int{Uint8Size}, "OpIteratorValue", OpRelocatableNone)
+	op.createOpcode(OpLogical, []int{Uint8Size}, "OpLogical", OpRelocatableNone)
+	op.createOpcode(OpArithmetic, []int{Uint8Size}, "OpArithmetic", OpRelocatableNone)
+	op.createOpcode(OpIntLogical, []int{Uint16Size, Uint16Size, Uint16Size, Uint8Size}, "OpIntLogical", OpRelocatableNone)
+	op.createOpcode(OpIntArithmetic, []int{Uint16Size, Uint16Size, Uint16Size, Uint8Size}, "OpIntArithmetic", OpRelocatableNone)
+	op.createOpcode(OpDerefGet, noOperands, "OpDerefGet", OpRelocatableNone)
+	op.createOpcode(OpDerefSet, noOperands, "OpDerefSet", OpRelocatableNone)
+	op.createOpcode(OpTypeAssert, []int{Uint16Size}, "OpTypeAssert", OpRelocatableNone)
+	op.createOpcode(OpIsType, []int{Uint16Size}, "OpIsType", OpRelocatableNone)
+	op.createOpcode(OpAsType, []int{Uint16Size}, "OpAsType", OpRelocatableNone)
+	op.createOpcode(OpSuspend, noOperands, "OpSuspend", OpRelocatableNone)
+	op.createOpcode(OpError, noOperands, "OpError", OpRelocatableNone)
 	return op
 }
 
 // createOpcodeRepeated initializes and registers an opcode with a repeated operand pattern and a specified name.
-func (op *Opcodes) createOpcodeRepeated(opcodeId OpcodeId, kind Relocatable, count int, operand int, name string) {
+func (op *Opcodes) createOpcodeRepeated(opcodeId OpcodeId, count int, operand int, name string, relocatable Relocatable) {
 	var container []int
 	if count > 0 {
 		container = make([]int, count)
@@ -347,12 +349,12 @@ func (op *Opcodes) createOpcodeRepeated(opcodeId OpcodeId, kind Relocatable, cou
 			container[i] = operand
 		}
 	}
-	op.createOpcode(opcodeId, kind, container, name)
+	op.createOpcode(opcodeId, container, name, relocatable)
 }
 
 // createOpcode registers a new Opcode in the Opcodes container with its identifier, operands, and name.
-func (op *Opcodes) createOpcode(opcodeId OpcodeId, kind Relocatable, operands []int, name string) {
-	od := NewOpcode(opcodeId, kind, operands, name)
+func (op *Opcodes) createOpcode(opcodeId OpcodeId, operands []int, name string, relocatable Relocatable) {
+	od := NewOpcode(opcodeId, operands, name, relocatable)
 	op.container[od.opcodeId&OpcodesMask] = od
 	if len(operands) > op.maxLen {
 		op.maxLen = len(operands)

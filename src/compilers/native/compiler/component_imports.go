@@ -86,7 +86,7 @@ func (i *Imports) Emit(name string, selName string) bool {
 		index = i.imports.Add(target, i.gk.NewString(objects.FrameStatic, target))
 		i.helper[target] = index
 	}
-	if _, err := i.scopes.Emit(bytecode.OpFuncImport, index); err != nil {
+	if _, err := i.scopes.Emit(bytecode.OpImport, index); err != nil {
 		return false
 	}
 	return true

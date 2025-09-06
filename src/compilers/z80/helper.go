@@ -484,8 +484,8 @@ func (h *Helper) EmitAluRegToReg(op objects.ArithmeticOperator, srcReg string) e
 		return err
 	}
 
-	// Emettiamo OpFuncImport per caricare la funzione SDK
-	if _, err = h.scopes.Emit(bytecode.OpFuncImport, nameIndex); err != nil {
+	// Emettiamo OpImport per caricare la funzione SDK
+	if _, err = h.scopes.Emit(bytecode.OpImport, nameIndex); err != nil {
 		return err
 	}
 
