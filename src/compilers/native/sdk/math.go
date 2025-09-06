@@ -12,8 +12,8 @@ func init() {
 
 // Math serves as a container for mathematical operations and modules, mapping module names to their respective objects.
 type Math struct {
-	container map[string]objects.IObject
-	nanObj    objects.IObject
+	*Package
+	nanObj objects.IObject
 }
 
 // NewMath initializes and returns a new instance of Math with predefined mathematical constants and function modules.
@@ -88,19 +88,8 @@ func NewMath(factory objects.IGateKeeper) IPackage {
 		factory.NewFuncImport(objects.FrameStatic, "Y1", 1, m.funcF64ToF64(math.Y1)),
 		factory.NewFuncImport(objects.FrameStatic, "Yn", 2, m.funcIntF64ToF64(math.Yn)),
 	}
-	m.container = BuildContainer(container, constants)
+	m.Package = NewExternalPackage("math", container, constants)
 	return m
-}
-
-// Name returns the name of the Math module as a string.
-func (m *Math) Name() string {
-	return "math"
-}
-
-// Get retrieves an object associated with the given name from the container. It returns the object and a boolean indicating success.
-func (m *Math) Get(name string) (objects.IObject, bool) {
-	v, ok := m.container[name]
-	return v, ok
 }
 
 // nan returns the Not-A-Number value as a float64.

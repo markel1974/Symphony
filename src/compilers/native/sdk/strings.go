@@ -15,7 +15,7 @@ func init() {
 // Strings provides a collection of string operations and functionality wrapped in a module.
 // It includes functions for manipulation, comparison, trimming, padding, splitting, and other string-related utilities.
 type Strings struct {
-	container map[string]objects.IObject
+	*Package
 }
 
 // NewStrings creates and returns a new instance of Strings with a preconfigured map of string utility functions.
@@ -55,19 +55,8 @@ func NewStrings(factory objects.IGateKeeper) IPackage {
 		factory.NewFuncImport(objects.FrameStatic, "TrimSpace", 1, s.funcStringToString(strings.TrimSpace)),
 		factory.NewFuncImport(objects.FrameStatic, "TrimSuffix", 2, s.funcStringStringToString(strings.TrimSuffix)),
 	}
-	s.container = BuildContainer(container, nil)
+	s.Package = NewExternalPackage("strings", container, nil)
 	return s
-}
-
-// Name returns the name of the Strings structure as a string.
-func (s *Strings) Name() string {
-	return "strings"
-}
-
-// Get retrieves an object associated with the given name from the container. It returns the object and a boolean indicating success.
-func (s *Strings) Get(name string) (objects.IObject, bool) {
-	v, ok := s.container[name]
-	return v, ok
 }
 
 // Replace replaces occurrences of a substring within a string with the specified replacement string up to a given limit.

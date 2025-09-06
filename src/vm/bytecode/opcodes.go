@@ -112,6 +112,9 @@ const (
 	// OpCallMethod represents an opcode for invoking a method directly on an object with specified arguments.
 	OpCallMethod
 
+	// OpCallImportGlobal represents an opcode for invoking a global function imported from another module.
+	OpCallImportGlobal
+
 	// OpReturn represents the opcode for returning from a function or operation, potentially with a value.
 	OpReturn
 
@@ -287,6 +290,7 @@ func NewOpcodes() *Opcodes {
 	op.createOpcode(OpIndexSlice, []int{}, "OpIndexSlice")
 	op.createOpcode(OpCall, []int{Uint8Size, Uint8Size}, "OpCall")
 	op.createOpcode(OpCallMethod, []int{Uint16Size, Uint8Size}, "OpCallMethod")
+	op.createOpcode(OpCallImportGlobal, []int{Uint16Size, Uint16Size, Uint16Size, Uint16Size, Uint16Size, Uint16Size, Uint16Size, Uint16Size}, "OpCallImportGlobal")
 	op.createOpcode(OpReturn, []int{Uint8Size}, "OpReturn")
 	op.createOpcode(OpLocalGet, []int{Uint8Size}, "OpLocalGet")
 	op.createOpcode(OpLocalSet, []int{Uint8Size}, "OpLocalSet")

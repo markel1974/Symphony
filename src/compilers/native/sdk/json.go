@@ -13,7 +13,7 @@ func init() {
 
 // Json represents a module containing JSON-related operations and utilities.
 type Json struct {
-	container map[string]objects.IObject
+	*Package
 }
 
 // NewJson creates and returns a new instance of Json containing predefined JSON operation modules.
@@ -25,19 +25,8 @@ func NewJson(factory objects.IGateKeeper) IPackage {
 		factory.NewFuncImport(objects.FrameStatic, "Indent", 3, j.indent),
 		factory.NewFuncImport(objects.FrameStatic, "HTMLEscape", 1, j.htmlEscape),
 	}
-	j.container = BuildContainer(container, nil)
+	j.Package = NewExternalPackage("json", container, nil)
 	return j
-}
-
-// Name returns the string identifier "json" for the Json module.
-func (j *Json) Name() string {
-	return "json"
-}
-
-// Get retrieves an object associated with the given name from the container. It returns the object and a boolean indicating success.
-func (j *Json) Get(name string) (objects.IObject, bool) {
-	v, ok := j.container[name]
-	return v, ok
 }
 
 // Unmarshal parses a JSON-encoded string or byte slice into a Map object and returns it as IObject.

@@ -12,7 +12,7 @@ func init() {
 
 // Fmt represents a struct that provides formatted output methods using a map of predefined functions.
 type Fmt struct {
-	container map[string]objects.IObject
+	*Package
 }
 
 // NewFmt initializes and returns a new Fmt instance with predefined formatting functions as module properties.
@@ -26,19 +26,8 @@ func NewFmt(factory objects.IGateKeeper) IPackage {
 		factory.NewFuncImport(objects.FrameStatic, "Sprintf", -1, f.sprintf),
 		factory.NewFuncImport(objects.FrameStatic, "Errorf", -1, f.errorf),
 	}
-	f.container = BuildContainer(container, nil)
+	f.Package = NewExternalPackage("fmt", container, nil)
 	return f
-}
-
-// Name returns the name of the Fmt struct as a string.
-func (f *Fmt) Name() string {
-	return "fmt"
-}
-
-// Get retrieves an object associated with the given name from the container. It returns the object and a boolean indicating success.
-func (f *Fmt) Get(name string) (objects.IObject, bool) {
-	v, ok := f.container[name]
-	return v, ok
 }
 
 // Print writes the string representations of the provided arguments to the standard output without appending a newline.

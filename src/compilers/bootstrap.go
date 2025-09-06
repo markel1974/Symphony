@@ -25,7 +25,10 @@ func NewCompiler(gk objects.IGateKeeper, opcodes *bytecode.Opcodes, id string) (
 func NewLoader(gk objects.IGateKeeper, id string) (bytecode.ILoader, error) {
 	switch id {
 	default:
-		loader := _nativeLoader.NewLoader(gk)
+		loader, err := _nativeLoader.NewLoader(gk)
+		if err != nil {
+			return nil, err
+		}
 		return loader, nil
 	}
 }

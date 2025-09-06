@@ -12,7 +12,7 @@ func init() {
 
 // Time represents a structure that manages a collection of modules implementing the IObject interface.
 type Time struct {
-	container map[string]objects.IObject
+	*Package
 }
 
 // NewTime initializes and returns a new instance of Time with predefined constants and functions mapped to the module.
@@ -90,19 +90,8 @@ func NewTime(factory objects.IGateKeeper) IPackage {
 		factory.NewFuncImport(objects.FrameStatic, "ToLocal", 1, t.toLocal),
 		factory.NewFuncImport(objects.FrameStatic, "ToUTC", 1, t.toUTC),
 	}
-	t.container = BuildContainer(container, constants)
+	t.Package = NewExternalPackage("time", container, constants)
 	return t
-}
-
-// Name returns the name of the Math module as a string.
-func (t *Time) Name() string {
-	return "time"
-}
-
-// Get retrieves an object associated with the given name from the container. It returns the object and a boolean indicating success.
-func (t *Time) Get(name string) (objects.IObject, bool) {
-	v, ok := t.container[name]
-	return v, ok
 }
 
 // sleep pauses the execution for a specified duration provided as an argument in nanoseconds.

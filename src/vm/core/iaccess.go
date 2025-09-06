@@ -49,6 +49,7 @@ type IVMFullAccess interface {
 	IVMReadWrite
 	IVMControlFlow
 	Call(value objects.IObject, spread bool, numArgs int)
+	CallInternal(value objects.IObject, numArgs int, args ...objects.IObject)
 	Return(returnValues []objects.IObject)
 	Shutdown()
 }

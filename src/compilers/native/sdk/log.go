@@ -13,7 +13,7 @@ func init() {
 
 // Log represents a struct that provides formatted output methods using a map of predefined functions.
 type Log struct {
-	container map[string]objects.IObject
+	*Package
 }
 
 // NewLog initializes and returns a new Log instance with predefined formatting functions as module properties.
@@ -25,19 +25,8 @@ func NewLog(factory objects.IGateKeeper) IPackage {
 		factory.NewFuncImport(objects.FrameStatic, "Println", -1, f.println),
 		factory.NewFuncImport(objects.FrameStatic, "Fatalf", -1, f.fatalf),
 	}
-	f.container = BuildContainer(container, nil)
+	f.Package = NewExternalPackage("log", container, nil)
 	return f
-}
-
-// Name returns the name of the Fmt struct as a string.
-func (f *Log) Name() string {
-	return "log"
-}
-
-// Get retrieves an object associated with the given name from the container. It returns the object and a boolean indicating success.
-func (f *Log) Get(name string) (objects.IObject, bool) {
-	v, ok := f.container[name]
-	return v, ok
 }
 
 // Print writes the string representations of the provided arguments to the standard output without appending a newline.

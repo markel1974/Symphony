@@ -551,7 +551,7 @@ func (t *Process) handleMessageProcessStart(msg interfaces.IMessage) {
 				log.Printf("Process [%s]: error creating compiler: %s", t.cmd.Name(), err.Error())
 				return
 			}
-			t.loader.AddPackage("kernel", NewLibrary(gk, t).Package())
+			t.loader.AddPackage("kernel", NewLibrary(gk, t).Functions(), nil)
 			t.vm, err = vm.NewVM(gk, t.opcodes, sequencerId)
 			if err != nil {
 				log.Printf("Process [%s]: error creating VM: %s", t.cmd.Name(), err.Error())

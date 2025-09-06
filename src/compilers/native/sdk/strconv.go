@@ -13,7 +13,7 @@ func init() {
 
 // Strconv represents a container for storing string conversion-related functions in a map-like structure.
 type Strconv struct {
-	container map[string]objects.IObject
+	*Package
 }
 
 // NewStrconv creates a new Strconv package using the provided IGateKeeper factory and initializes its container with functions.
@@ -32,19 +32,8 @@ func NewStrconv(factory objects.IGateKeeper) IPackage {
 		factory.NewFuncImport(objects.FrameStatic, "Quote", 1, s.quote),
 		factory.NewFuncImport(objects.FrameStatic, "Unquote", 1, s.unquote),
 	}
-	s.container = BuildContainer(container, nil)
+	s.Package = NewExternalPackage("strconv", container, nil)
 	return s
-}
-
-// Name returns the name of the Strconv struct, which is "strconv".
-func (s *Strconv) Name() string {
-	return "strconv"
-}
-
-// Get retrieves the object associated with the given name from the container and returns it along with a boolean status.
-func (s *Strconv) Get(name string) (objects.IObject, bool) {
-	v, ok := s.container[name]
-	return v, ok
 }
 
 // formatBool converts a boolean argument to its string representation ("true" or "false") and returns it as an object.

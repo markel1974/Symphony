@@ -13,7 +13,7 @@ import (
 type ILoader interface {
 	Id() string
 
-	AddPackage(id string, attr map[string]objects.IObject)
+	AddPackage(id string, functions []objects.IObject, constants map[string]objects.IObject)
 
 	Resolve([]objects.IObject) ([]objects.IObject, error)
 }

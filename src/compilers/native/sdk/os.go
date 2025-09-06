@@ -13,7 +13,7 @@ func init() {
 
 // Os represents a package that provides access to a container of IObject instances, allowing retrieval by name.
 type Os struct {
-	container map[string]objects.IObject
+	*Package
 }
 
 // NewOs initializes a new instance of the Os package with provided gatekeeper functionalities and returns it as IPackage.
@@ -22,19 +22,8 @@ func NewOs(factory objects.IGateKeeper) IPackage {
 	container := []objects.IObject{
 		factory.NewFuncImport(objects.FrameStatic, "Exit", 1, f.exit),
 	}
-	f.container = BuildContainer(container, nil)
+	f.Package = NewExternalPackage("os", container, nil)
 	return f
-}
-
-// Name returns the name of the operating system as a string.
-func (f *Os) Name() string {
-	return "os"
-}
-
-// Get retrieves the IObject associated with the specified name from the container and returns it along with a boolean indicating its presence.
-func (f *Os) Get(name string) (objects.IObject, bool) {
-	v, ok := f.container[name]
-	return v, ok
 }
 
 // exit terminates the current process after logging the provided arguments, converting them to native types with IGateKeeper.

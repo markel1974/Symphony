@@ -13,7 +13,7 @@ func init() {
 
 // Base64 provides methods for working with Base64 encoding and decoding operations within a container of IObject mappings.
 type Base64 struct {
-	container map[string]objects.IObject
+	*Package
 }
 
 // NewBase64 initializes and returns a new Base64 package implementing IPackage with predefined encoding/decoding functions.
@@ -29,19 +29,8 @@ func NewBase64(f objects.IGateKeeper) IPackage {
 		f.NewFuncImport(objects.FrameStatic, "RawUrlEncode", 1, b.rawUrlEncodeToString),
 		f.NewFuncImport(objects.FrameStatic, "rawUrlDecode", 1, b.rawUrlDecodeString),
 	}
-	b.container = BuildContainer(container, nil)
+	b.Package = NewExternalPackage("base64", container, nil)
 	return b
-}
-
-// Name returns the name of the Base64 instance as a string.
-func (b *Base64) Name() string {
-	return "base64"
-}
-
-// Get retrieves an object from the container by its name, returning the object and a boolean indicating success or failure.
-func (b *Base64) Get(name string) (objects.IObject, bool) {
-	v, ok := b.container[name]
-	return v, ok
 }
 
 // stdEncodeToString encodes the first argument to a Base64 string using standard encoding and returns the result as a new string.

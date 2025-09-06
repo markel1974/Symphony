@@ -454,3 +454,63 @@ func (h *Helper) EmitRst(targetAddress int, returnAddress int) error {
 
 	return nil
 }
+
+/*
+
+// EmitAluRegToReg emette una chiamata alla funzione SDK 'z80.alu' per
+// eseguire un'operazione aritmetica e aggiornare i flag in modo efficiente.
+func (h *Helper) EmitAluRegToReg(op objects.ArithmeticOperator, srcReg string) error {
+	// 1. Metti l'operatore sullo stack come primo argomento
+	opConst := h.constants.AddOrGet("", h.gk.NewInt(objects.FrameStatic, int64(op)))
+	if _, err := h.scopes.Emit(bytecode.OpConstant, opConst); err != nil {
+		return err
+	}
+
+	// 2. Metti i registri necessari sullo stack come argomenti
+	if _, err := h.scopes.Emit(bytecode.OpGlobalGet, h.z80.Register("A")); err != nil {
+		return err
+	}
+	if _, err := h.scopes.Emit(bytecode.OpGlobalGet, h.z80.Register("F")); err != nil {
+		return err
+	}
+	if _, err := h.scopes.Emit(bytecode.OpGlobalGet, h.z80.Register(srcReg)); err != nil {
+		return err
+	}
+
+	// 3. Emetti la chiamata alla funzione della libreria 'z80.alu'
+	//    Il loader risolverà "z80" e "alu"
+	mangledName, nameIndex, err := h.imports.packageFunctionAttach("z80", "alu")
+	if err != nil {
+		return err
+	}
+
+	// Emettiamo OpFuncImport per caricare la funzione SDK
+	if _, err = h.scopes.Emit(bytecode.OpFuncImport, nameIndex); err != nil {
+		return err
+	}
+
+	// Emettiamo OpCall con 4 argomenti
+	if _, err = h.scopes.Emit(bytecode.OpCall, 4, 0); err != nil {
+		return err
+	}
+
+	// La funzione SDK non restituisce nulla, ma la VM lascerebbe 'undefined' sullo stack.
+	// Lo rimuoviamo per mantenere lo stack pulito.
+	if _, err = h.scopes.Emit(bytecode.OpPop); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+
+// EmitCpReg è ora una variante di EmitAluRegToReg
+func (h *Helper) EmitCpReg(srcReg string) error {
+	// La logica è identica a una sottrazione, ma il transpiler
+	// non salverà il risultato in 'A'. La funzione SDK lo gestirà.
+	// Potremmo passare un simbolo temporaneo per A per indicare a 'alu'
+	// di non modificare il registro A, ma per ora lo gestiamo implicitamente.
+	return h.EmitAluRegToReg(objects.OperatorSub, srcReg)
+}
+
+*/

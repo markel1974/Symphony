@@ -20,24 +20,36 @@ func RegisterPackage(f registerPackageFn) {
 
 // Loader represents a mechanism to manage and load packages and built-in objects in the system.
 type Loader struct {
-	gk       objects.IGateKeeper
-	packages map[string]IPackage
+	gk             objects.IGateKeeper
+	packagesByName map[string]IPackage
+	packagesByID   map[uint32]map[uint32]IPackage
 }
 
 // NewLoader initializes and returns a new Loader instance with predefined standard packages and built-in functions.
-func NewLoader(gk objects.IGateKeeper) *Loader {
+func NewLoader(gk objects.IGateKeeper) (*Loader, error) {
 	packages := make([]IPackage, len(_registerPackage))
 	for i, fn := range _registerPackage {
 		packages[i] = fn(gk)
 	}
 	loader := &Loader{
-		gk:       gk,
-		packages: make(map[string]IPackage),
+		gk:             gk,
+		packagesByName: make(map[string]IPackage),
+		packagesByID:   make(map[uint32]map[uint32]IPackage),
 	}
 	for _, p := range packages {
-		loader.packages[p.Name()] = p
+		pId := PackageIDFromString(p.Name())
+		if _, exists := loader.packagesByID[pId]; exists {
+			return nil, fmt.Errorf("hash collision detected for package ID %d", pId)
+		}
+		loader.packagesByName[p.Name()] = p
+		z := make(map[uint32]IPackage)
+		loader.packagesByID[pId] = z
+		//for k, v := range p {
+		//	z[k] = v
+		//}
+		//loader.packagesByID[pId] = p
 	}
-	return loader
+	return loader, nil
 }
 
 // Id returns the unique identifier of the loader as defined in the common package.
@@ -46,8 +58,8 @@ func (l *Loader) Id() string {
 }
 
 // AddPackage adds a package with the given Id and attributes to the Loader's packages map.
-func (l *Loader) AddPackage(id string, attr map[string]objects.IObject) {
-	l.packages[id] = NewExternalPackage(id, attr)
+func (l *Loader) AddPackage(id string, functions []objects.IObject, constants map[string]objects.IObject) {
+	l.packagesByName[id] = NewExternalPackage(id, functions, constants)
 }
 
 // Resolve resolves a list of symbol references into concrete objects within the loader's context.
@@ -92,7 +104,7 @@ func (l *Loader) resolveReference(in objects.IObject) (objects.IObject, bool) {
 	if !ok {
 		return nil, false
 	}
-	module, ok := l.packages[packageName.Value()]
+	module, ok := l.packagesByName[packageName.Value()]
 	if !ok {
 		return nil, false
 	}

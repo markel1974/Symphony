@@ -10,17 +10,17 @@ import (
 // Library represents a collection of modules that interact with system processes and provide various functionalities.
 // It contains a reference to a Process and a map of module names to their respective objects.
 type Library struct {
-	process *Process
-	pkg     map[string]objects.IObject
+	process   *Process
+	functions []objects.IObject
 }
 
 // NewLibrary creates and initializes a new Library instance with the provided Process.
 func NewLibrary(factory objects.IGateKeeper, process *Process) *Library {
 	l := &Library{
-		process: process,
-		pkg:     make(map[string]objects.IObject),
+		process:   process,
+		functions: []objects.IObject{},
 	}
-	container := []objects.IObject{
+	l.functions = []objects.IObject{
 		factory.NewFuncImport(objects.FrameStatic, "Printf", -1, l.doPrintf),
 		factory.NewFuncImport(objects.FrameStatic, "CreateTimer", 3, l.doCreateTimer),
 		factory.NewFuncImport(objects.FrameStatic, "IsActive", 1, l.doIsActive),
@@ -56,17 +56,13 @@ func NewLibrary(factory objects.IGateKeeper, process *Process) *Library {
 		factory.NewFuncImport(objects.FrameStatic, "Suggestion", 2, l.doSuggestion),
 		factory.NewFuncImport(objects.FrameStatic, "Help", 1, l.doHelp),
 	}
-	for _, obj := range container {
-		if fn, ok := obj.(*objects.FuncImport); ok {
-			l.pkg[fn.Name()] = fn
-		}
-	}
+
 	return l
 }
 
-// Package returns a map where keys are strings and values implement the IObject interface, representing the library's package.
-func (l *Library) Package() map[string]objects.IObject {
-	return l.pkg
+// Functions returns a slice of IObject representing the functions available in the Library.
+func (l *Library) Functions() []objects.IObject {
+	return l.functions
 }
 
 // doCreateTimer validates and extracts three integer arguments, then creates a timer using these arguments. Returns nil or an error.

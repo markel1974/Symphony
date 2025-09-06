@@ -84,20 +84,6 @@ func (i *Imports) Setup(fileSet *token.FileSet, compile func(node ast.Node) erro
 		"sprintf":     objects.CallIdSprintf,
 		"make":        objects.CallIdMake,
 	}
-
-	/*
-
-
-		for idx := 0; idx < i.loader.BuiltinLen(); idx++ {
-			bi := i.loader.Builtin(idx)
-			if bi == nil {
-				return fmt.Errorf("builtin %d not found", idx)
-			}
-			builtinId := i.references.add(bi.Name(), bi)
-			i.builtin[bi.Name()] = builtinId
-		}
-
-	*/
 	return nil
 }
 

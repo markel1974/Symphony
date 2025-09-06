@@ -232,7 +232,7 @@ func (v *VM) Call(value objects.IObject, spread bool, numArgs int) {
 	default:
 		var args []objects.IObject
 		args = append(args, v.Stack().PeekArrayObject(numArgs)...)
-		v.callInternal(value, args, numArgs)
+		v.CallInternal(value, numArgs, args...)
 	}
 }
 
@@ -402,8 +402,8 @@ func (v *VM) loop() {
 	}
 }
 
-// callInternal invokes a callable object with the given arguments and handles stack cleanup and error management.
-func (v *VM) callInternal(value objects.IObject, args []objects.IObject, numArgs int) {
+// CallInternal invokes a callable object with the given arguments and handles stack cleanup and error management.
+func (v *VM) CallInternal(value objects.IObject, numArgs int, args ...objects.IObject) {
 	retCount, ret, err := value.Call(v.currFrame.Id(), args...)
 	v.stack.DecrementCount(numArgs + 1)
 	if err != nil {

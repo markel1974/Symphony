@@ -14,7 +14,7 @@ func init() {
 
 // Rand is a type that provides a container for random-related functionalities and operations.
 type Rand struct {
-	container map[string]objects.IObject
+	*Package
 }
 
 // NewRand creates and initializes a new instance of the Rand package, registering its functions with the provided IGateKeeper.
@@ -31,19 +31,8 @@ func NewRand(gk objects.IGateKeeper) IPackage {
 		gk.NewFuncImport(objects.FrameStatic, "Read", 1, z.read),
 		gk.NewFuncImport(objects.FrameStatic, "Rand", 1, z.rand),
 	}
-	z.container = BuildContainer(container, nil)
+	z.Package = NewExternalPackage("rand", container, nil)
 	return z
-}
-
-// Name returns the name of the Rand type as a string, which is "rand".
-func (z *Rand) Name() string {
-	return "rand"
-}
-
-// Get retrieves an object from the container using the provided name as a key and indicates if the object was found.
-func (z *Rand) Get(name string) (objects.IObject, bool) {
-	v, ok := z.container[name]
-	return v, ok
 }
 
 // read reads random data into the provided byte array argument. Returns the number of bytes read or an error.

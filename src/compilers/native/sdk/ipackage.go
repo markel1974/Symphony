@@ -16,14 +16,18 @@ type IPackage interface {
 // Package represents a module with a name and a collection of named objects.
 type Package struct {
 	name      string
+	functions []objects.IObject
+	constants map[string]objects.IObject
 	container map[string]objects.IObject
 }
 
 // NewExternalPackage creates and returns a new Package instance with the specified name and attribute mapping.
-func NewExternalPackage(name string, attr map[string]objects.IObject) *Package {
+func NewExternalPackage(name string, functions []objects.IObject, constants map[string]objects.IObject) *Package {
 	return &Package{
 		name:      name,
-		container: attr,
+		functions: functions,
+		constants: constants,
+		container: BuildContainer2(functions, constants),
 	}
 }
 

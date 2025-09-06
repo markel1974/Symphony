@@ -22,7 +22,7 @@ func init() {
 
 // Regexp represents a structure providing regular expression functionality through associated operations and methods.
 type Regexp struct {
-	container map[string]objects.IObject
+	*Package
 }
 
 // NewRegexp creates and returns a new instance of the Regexp struct with initialized module functions.
@@ -35,19 +35,8 @@ func NewRegexp(factory objects.IGateKeeper) IPackage {
 		factory.NewFuncImport(objects.FrameStatic, "Split", -1, r.split),
 		factory.NewFuncImport(objects.FrameStatic, "Compile", 1, r.compile),
 	}
-	r.container = BuildContainer(container, nil)
+	r.Package = NewExternalPackage("regexp", container, nil)
 	return r
-}
-
-// Name returns the name of the Regexp module as a string.
-func (r *Regexp) Name() string {
-	return "regexp"
-}
-
-// Get retrieves an object associated with the given name from the container. It returns the object and a boolean indicating success.
-func (r *Regexp) Get(name string) (objects.IObject, bool) {
-	v, ok := r.container[name]
-	return v, ok
 }
 
 // Match checks whether the second string argument matches the pattern defined by the first string argument.
