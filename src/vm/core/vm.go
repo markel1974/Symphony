@@ -119,7 +119,7 @@ func (v *VM) Version() string {
 
 // Statistics returns three uint64 values: start, allocated objects, and a counter from the VM instance.
 func (v *VM) Statistics() (uint64, uint64, uint64, uint64) {
-	return v.counterStart, v.gk.AllocatedObjects(), v.counterIterations, uint64(v.frames.Index())
+	return v.counterStart, v.gk.AllocatedObjects(), v.counterIterations, uint64(v.frames.Max())
 }
 
 // EnableRetValues sets the flag to enable or disable returning multiple values from the virtual machine's execution.
@@ -256,9 +256,9 @@ func (v *VM) Return(returnValues []objects.IObject) {
 
 	v.stack.ReleaseObjects(leavingFrameId, leavingFrameBasePointer, v.stack.StackPointer(), objectsToPreserve)
 
-	if v.frames.Index() > 1 {
-		v.frames.Previous()
-		v.currFrame = v.frames.GetPrev()
+	if v.frames.CanMovePrevious() {
+		v.frames.MovePrevious()
+		v.currFrame = v.frames.Previous()
 		v.SetIp(prevIp)
 	} else {
 		shutdown = true
@@ -434,8 +434,8 @@ func (v *VM) callCompiled(callee *objects.FuncCompiled, numArgs int) {
 	v.stack.CopyOffset(bp, numArgs)
 
 	// 3. Advance to the next frame
-	v.currFrame = v.frames.Get()
-	v.frames.Next()
+	v.currFrame = v.frames.Current()
+	v.frames.MoveNext()
 
 	// 4. Bind the new frame to function and correct basePointer
 	v.currFrame.Bind(v.GetIp(), callee, bp)

@@ -4,12 +4,17 @@ import (
 	"github.com/markel1974/c64emu/src/vm/objects"
 )
 
+const (
+	RootFrame = 1
+)
+
 // Frames is a structure that manages function call frames in a virtual machine execution context.
 // It maintains a stack of frames and tracks the current frame index for managing execution state.
 type Frames struct {
 	gk          objects.IGateKeeper
 	frames      []*Frame
 	framesIndex uint
+	frameMax    uint
 	errSignal   func(err error)
 }
 
@@ -18,8 +23,9 @@ func NewFrames(gk objects.IGateKeeper, maxFrames int, errSignal func(err error))
 	f := &Frames{
 		gk:          gk,
 		frames:      make([]*Frame, maxFrames),
-		framesIndex: 1,
+		framesIndex: RootFrame,
 		errSignal:   errSignal,
+		frameMax:    0,
 	}
 	for i := range f.frames {
 		f.frames[i] = NewFrame(gk, i, errSignal)
@@ -29,12 +35,12 @@ func NewFrames(gk objects.IGateKeeper, maxFrames int, errSignal func(err error))
 
 // Reset resets the frame index to its initial position, effectively clearing the current frame context.
 func (f *Frames) Reset() {
-	f.framesIndex = 1
+	f.framesIndex = RootFrame
 }
 
-// Index returns the current index of the frame stack.
-func (f *Frames) Index() uint {
-	return f.framesIndex
+// Max returns the maximum frame index accessed during execution. It is updated as new frames are added to the stack.
+func (f *Frames) Max() uint {
+	return f.frameMax
 }
 
 // Head returns the first frame in the frames slice.
@@ -42,38 +48,46 @@ func (f *Frames) Head() *Frame {
 	return f.frames[0]
 }
 
-// Get retrieves the current frame from the `frames` slice based on the `framesIndex`.
-func (f *Frames) Get() *Frame {
+// Current retrieves the current frame from the `frames` slice based on the `framesIndex`.
+func (f *Frames) Current() *Frame {
 	return f.frames[f.framesIndex]
 }
 
-// GetPrev returns the frame at the position immediately before the current frame based on the framesIndex.
-func (f *Frames) GetPrev() *Frame {
+// Previous returns the frame at the position immediately before the current frame based on the framesIndex.
+func (f *Frames) Previous() *Frame {
 	return f.frames[f.framesIndex-1]
 }
 
-// Next advances the frame index by one. Returns ErrStackOverflow if the index exceeds the bounds of the frames.
-func (f *Frames) Next() {
+// MoveNext advances the frame index by one. Returns ErrStackOverflow if the index exceeds the bounds of the frames.
+func (f *Frames) MoveNext() {
 	f.framesIndex++
 	if f.framesIndex >= uint(len(f.frames)) {
 		f.errSignal(objects.ErrStackOverflow)
 		return
 	}
+	if f.framesIndex > f.frameMax {
+		f.frameMax = f.framesIndex
+	}
 }
 
-// Previous decrements the framesIndex and returns an error if it goes below zero, indicating a stack underflow.
-func (f *Frames) Previous() {
-	if f.framesIndex <= 1 {
+// MovePrevious decrements the framesIndex and returns an error if it goes below zero, indicating a stack underflow.
+func (f *Frames) MovePrevious() {
+	if f.framesIndex <= RootFrame {
 		f.errSignal(objects.ErrStackOverflow)
 		return
 	}
 	f.framesIndex--
 }
 
+// CanMovePrevious checks if the frame index can be decremented without going below the root frame index.
+func (f *Frames) CanMovePrevious() bool {
+	return f.framesIndex > RootFrame
+}
+
 // Unroll iterates through the frames in reverse order, appending each one to a slice, and decreases the frame index.
 func (f *Frames) Unroll() []*Frame {
 	var currFrame []*Frame
-	for f.framesIndex > 1 {
+	for f.framesIndex > RootFrame {
 		f.framesIndex--
 		currFrame = append(currFrame, f.frames[f.framesIndex-1])
 	}

@@ -34,6 +34,10 @@ func NewOpFreeGetPtr(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error
 func (op *OpFreePtrGet) Execute(decoder *core.Decoder) {
 	// Operands Offset 1 (8-bit)
 	freeIndex := decoder.Read(0)
-	val := op.vm.Frame().FreeVarsIndex(freeIndex)
+	val := op.vm.Frame().FreeVarsIndex(uint(freeIndex))
+	if val == nil {
+		op.vm.SetError(fmt.Errorf("free variable %d not found", freeIndex))
+		return
+	}
 	op.vm.Stack().Push(val)
 }

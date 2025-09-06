@@ -34,7 +34,11 @@ func (op *OpFreeSet) Execute(decoder *core.Decoder) {
 	// Operands Offset 1 (8-bit)
 	freeIndex := decoder.Read(0)
 	o := op.vm.Stack().Pop()
-	freeObj := op.vm.Frame().FreeVarsIndex(freeIndex)
+	freeObj := op.vm.Frame().FreeVarsIndex(uint(freeIndex))
+	if freeObj == nil {
+		op.vm.SetError(fmt.Errorf("free variable %d not found", freeIndex))
+		return
+	}
 	op.vm.Factory().SetPointer(freeObj, o)
 	//freeObj.SetValue(o)
 }

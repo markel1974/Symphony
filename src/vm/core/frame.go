@@ -85,8 +85,8 @@ func (f *Frame) Get64(low uint) uint64 {
 }
 
 // FreeVarsIndex retrieves the free variable at the specified index from the frame's free variables.
-func (f *Frame) FreeVarsIndex(idx int) *objects.ObjectPointer {
-	if idx < 0 || idx >= len(f.freeVars) {
+func (f *Frame) FreeVarsIndex(idx uint) *objects.ObjectPointer {
+	if idx >= uint(len(f.freeVars)) {
 		return nil
 	}
 	return f.freeVars[idx]
