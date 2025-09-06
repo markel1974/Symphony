@@ -33,11 +33,11 @@ func NewRelocator(gk objects.IGateKeeper, loader ILoader, opcodes *Opcodes, pres
 // Returns a new Bytecode instance or an error if the fixing process fails.
 func (c *Relocator) Relocate(codes []*Bytecode) (*Bytecode, error) {
 	var constants []objects.IObject
-	var references []objects.IObject
+	var imports []objects.IObject
 	var globals []objects.IObject
 	var sourceFiles []IFile
 	for _, bc := range codes {
-		references = append(references, bc.Imports()...)
+		imports = append(imports, bc.Imports()...)
 		constants = append(constants, bc.Constants()...)
 		globals = append(globals, bc.Globals()...)
 		sourceFiles = append(sourceFiles, bc.SourceFiles().files...)
@@ -46,13 +46,13 @@ func (c *Relocator) Relocate(codes []*Bytecode) (*Bytecode, error) {
 	if constants, err = c.RelocateObjects(constants); err != nil {
 		return nil, err
 	}
-	if references, err = c.RelocateObjects(references); err != nil {
+	if imports, err = c.RelocateObjects(imports); err != nil {
 		return nil, err
 	}
 	if globals, err = c.RelocateObjects(globals); err != nil {
 		return nil, err
 	}
-	out := NewBytecode(constants, references, globals, nil)
+	out := NewBytecode(constants, imports, globals, nil)
 	for _, sf := range sourceFiles {
 		out.AddFile(sf)
 	}
@@ -114,7 +114,7 @@ func (c *Relocator) RelocateObjects(in []objects.IObject) ([]objects.IObject, er
 	for _, in := range outDeduped {
 		switch obj := in.(type) {
 		case *objects.FuncCompiled:
-			if err = c.updateIndexes(obj.Data(), outIndexContainer); err != nil {
+			if err = c.updateFuncIndexes(obj, outIndexContainer); err != nil {
 				return nil, err
 			}
 		}
@@ -195,35 +195,37 @@ func (c *Relocator) processDuplicates(container []objects.IObject) ([]objects.IO
 
 // updateConstIndexes modifies bytecode instructions to remap constant indexes based on the provided index map.
 // It updates OpConstant and OpClosure instructions with new constant indexes or returns an error if mapping fails.
-func (c *Relocator) updateIndexes(instances []byte, indexContainer map[int]int) error {
+func (c *Relocator) updateFuncIndexes(fc *objects.FuncCompiled, indexContainer map[int]int) error {
+	data := fc.Data()
 	i := 0
-	for i < len(instances) {
-		op := instances[i]
-		details := c.opcodes.Opcode(op)
+	for i < len(data) {
+		opcode := data[i]
+		details := c.opcodes.Opcode(opcode)
 		offset := details.Offset()
-		switch op {
-		case OpConstant:
-			curIdx := int(instances[i+2]) | int(instances[i+1])<<8
+		switch opcode {
+		case OpConstant, OpFuncImport, OpCallImportGlobal:
+			curIdx := int(data[i+2]) | int(data[i+1])<<8
 			newIdx, ok := indexContainer[curIdx]
 			if !ok {
-				return fmt.Errorf("constant index not found: %d", curIdx)
+				return fmt.Errorf("index not found: %d", curIdx)
 			}
-			code, err := c.opcodes.CompileInstruction(op, newIdx)
-			if err != nil {
-			}
-			copy(instances[i:], code)
-		case OpClosure:
-			curIdx := int(instances[i+2]) | int(instances[i+1])<<8
-			numFree := int(instances[i+3])
-			newIdx, ok := indexContainer[curIdx]
-			if !ok {
-				return fmt.Errorf("constant index not found: %d", curIdx)
-			}
-			code, err := c.opcodes.CompileInstruction(op, newIdx, numFree)
+			code, err := c.opcodes.CompileInstruction(opcode, newIdx)
 			if err != nil {
 				return err
 			}
-			copy(instances[i:], code)
+			copy(data[i:], code)
+		case OpClosure:
+			curIdx := int(data[i+2]) | int(data[i+1])<<8
+			numFree := int(data[i+3])
+			newIdx, ok := indexContainer[curIdx]
+			if !ok {
+				return fmt.Errorf("index not found: %d", curIdx)
+			}
+			code, err := c.opcodes.CompileInstruction(opcode, newIdx, numFree)
+			if err != nil {
+				return err
+			}
+			copy(data[i:], code)
 		default:
 			return fmt.Errorf("unsupported opcode: %s", details.Name())
 		}

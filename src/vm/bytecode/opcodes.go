@@ -20,12 +20,15 @@ const (
 	uint8Mask = (1 << (8 * Uint8Size)) - 1
 	// uint16Mask represents the maximum value that can be stored in a 16-bit unsigned integer (65535).
 	uint16Mask = (1 << (8 * Uint16Size)) - 1
-
+	// uint32Mask represents the maximum value that can be stored in a 32-bit unsigned integer (4294967295).
 	uint32Mask = (1 << (8 * Uint32Size)) - 1 // Aggiunto
+)
+
+const (
 	// OpcodesLen defines the total number of opcodes available in the bytecode system, typically calculated as Uint8Size << 8.
-	OpcodesLen = 1 << (8 * Uint8Size)
+	OpcodesLen = 1 << (8)
 	// OpcodesMask defines the mask applied to OpcodeId values to ensure they fit within the allowable range.
-	OpcodesMask = uint8Mask
+	OpcodesMask = OpcodesLen - 1
 )
 
 // OpcodeId is a type alias for byte, used to represent operation codes in instruction sets.
