@@ -4,6 +4,9 @@ import (
 	"fmt"
 )
 
+type OperandFeature int
+
+// TODO use OperandFeature
 const (
 	// Uint8Size defines the size in bytes of a uint8 type, which is commonly used for single-byte operand encoding.
 	Uint8Size = 1
@@ -13,6 +16,28 @@ const (
 	Uint32Size = 4
 	// Uint64Size represents the size in bytes of a 64-bit unsigned integer, which is 8.
 	Uint64Size = 8
+)
+
+const (
+	SizeMask OperandFeature = 0x0F
+	Size1    OperandFeature = 1
+	Size2    OperandFeature = 2
+	Size4    OperandFeature = 4
+	Size8    OperandFeature = 8
+
+	IsRelocatable  OperandFeature = 1 << 4
+	IsSigned       OperandFeature = 1 << 5
+	IsPointer      OperandFeature = 1 << 6
+	HintForGC      OperandFeature = 1 << 7
+	HintForJIT     OperandFeature = 1 << 8
+	IsRegisterHint OperandFeature = 1 << 9
+)
+
+const (
+	ImmediateUint8  = Size1
+	ImmediateInt16  = Size2 | IsSigned
+	ConstantIndex16 = Size2 | IsRelocatable
+	PointerToLocal  = Size1 | IsPointer | HintForGC
 )
 
 const (

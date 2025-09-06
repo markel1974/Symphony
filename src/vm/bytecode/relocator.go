@@ -203,10 +203,11 @@ func (c *Relocator) updateFuncIndexes(fc *objects.FuncCompiled, indexContainer m
 		details := c.opcodes.Opcode(opcode)
 		offset := details.Offset()
 		relocatable := details.Relocatable()
-		relocatableIdx := i + offset
 
 		switch relocatable {
 		case OpRelocatable:
+			//relocationIndex is the last operand of the instruction (for the moment)
+			relocatableIdx := i + offset
 			curIdx, ok := get16(data, uint(relocatableIdx))
 			if !ok {
 				return fmt.Errorf("index not found: %d", curIdx)
@@ -217,7 +218,7 @@ func (c *Relocator) updateFuncIndexes(fc *objects.FuncCompiled, indexContainer m
 			}
 			position := i + offset
 			data[position] = byte(newIdx)
-			data[position-1] = byte(newIdx >> 8) // Byte più significativo (Big Endian)
+			data[position-1] = byte(newIdx >> 8) // MSB (Big Endian)
 		default:
 			//nothing to do
 		}
