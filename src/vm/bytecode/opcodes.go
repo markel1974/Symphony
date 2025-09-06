@@ -290,7 +290,7 @@ func NewOpcodes() *Opcodes {
 	op.createOpcode(OpIndexSlice, []int{}, "OpIndexSlice")
 	op.createOpcode(OpCall, []int{Uint8Size, Uint8Size}, "OpCall")
 	op.createOpcode(OpCallMethod, []int{Uint16Size, Uint8Size}, "OpCallMethod")
-	op.createOpcode(OpCallImportGlobal, []int{Uint16Size, Uint16Size, Uint16Size, Uint16Size, Uint16Size, Uint16Size, Uint16Size, Uint16Size}, "OpCallImportGlobal")
+	op.createOpcodeRepeated(OpCallImportGlobal, 16, Uint16Size, "OpCallImportGlobal")
 	op.createOpcode(OpReturn, []int{Uint8Size}, "OpReturn")
 	op.createOpcode(OpLocalGet, []int{Uint8Size}, "OpLocalGet")
 	op.createOpcode(OpLocalSet, []int{Uint8Size}, "OpLocalSet")
@@ -318,6 +318,18 @@ func NewOpcodes() *Opcodes {
 	op.createOpcode(OpSuspend, []int{}, "OpSuspend")
 	op.createOpcode(OpError, []int{}, "OpError")
 	return op
+}
+
+// createOpcodeRepeated initializes and registers an opcode with a repeated operand pattern and a specified name.
+func (op *Opcodes) createOpcodeRepeated(opcodeId OpcodeId, count int, kind int, name string) {
+	var container []int
+	if count > 0 {
+		container = make([]int, count)
+		for i := 0; i < count; i++ {
+			container[i] = kind
+		}
+	}
+	op.createOpcode(opcodeId, container, name)
 }
 
 // createOpcode registers a new Opcode in the Opcodes container with its identifier, operands, and name.
