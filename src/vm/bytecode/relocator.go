@@ -59,52 +59,6 @@ func (c *Relocator) Relocate(codes []*Bytecode) (*Bytecode, error) {
 	return out, nil
 }
 
-// Fix processes a slice of IObject instances, ensuring each object is fixed and reconstructed correctly.
-// Returns a slice of fixed IObject instances or an error if the fixing process fails.
-func (c *Relocator) Fix(o []objects.IObject) ([]objects.IObject, error) {
-	out := make([]objects.IObject, len(o))
-	for i, v := range o {
-		fv, err := c.fixObject(v)
-		if err != nil {
-			return nil, err
-		}
-		out[i] = fv
-	}
-	return out, nil
-}
-
-// FixObject ensures that a decoded object is properly reconstructed and compatible with the runtime environment.
-// It recursively processes composite objects like arrays and maps, fixing or transforming their elements if necessary.
-// Returns the modified object or an error if reconstruction fails.
-func (c *Relocator) fixObject(o objects.IObject) (objects.IObject, error) {
-	switch o := o.(type) {
-	case *objects.Bool:
-		if o.Falsy() {
-			return c.gk.FalseValue(), nil
-		}
-		return c.gk.TrueValue(), nil
-	case *objects.Undefined:
-		return c.gk.UndefinedValue(), nil
-	case *objects.Array:
-		for i, v := range o.Values() {
-			fv, err := c.fixObject(v)
-			if err != nil {
-				return nil, err
-			}
-			o.SetValue(i, fv)
-		}
-	case *objects.Map:
-		for k, v := range o.Values() {
-			fv, err := c.fixObject(v)
-			if err != nil {
-				return nil, err
-			}
-			o.Set(k, fv)
-		}
-	}
-	return o, nil
-}
-
 // RelocateObjects modifies a slice of IObject instances by deduplicating input and updating bytecode constant indexes accordingly.
 func (c *Relocator) RelocateObjects(in []objects.IObject) ([]objects.IObject, error) {
 	outDeduped, outIndexContainer, err := c.processDuplicates(in)
@@ -128,9 +82,9 @@ func (c *Relocator) processDuplicates(container []objects.IObject) ([]objects.IO
 	var deDuped []objects.IObject
 	indexContainer := make(map[int]int)
 	ints := make(map[int64]int)
-	strings := make(map[string]int)
 	floats := make(map[float64]int)
 	chars := make(map[rune]int)
+	strings := make(map[string]int)
 	fns := make(map[*objects.FuncCompiled]int)
 
 	for curIdx, in := range container {
@@ -159,15 +113,6 @@ func (c *Relocator) processDuplicates(container []objects.IObject) ([]objects.IO
 				indexContainer[curIdx] = newIdx
 				deDuped = append(deDuped, obj)
 			}
-		case *objects.String:
-			if newIdx, ok := strings[obj.Value()]; ok {
-				indexContainer[curIdx] = newIdx
-			} else {
-				newIdx = len(deDuped)
-				strings[obj.Value()] = newIdx
-				indexContainer[curIdx] = newIdx
-				deDuped = append(deDuped, obj)
-			}
 		case *objects.Float:
 			if newIdx, ok := floats[obj.Value()]; ok {
 				indexContainer[curIdx] = newIdx
@@ -183,6 +128,15 @@ func (c *Relocator) processDuplicates(container []objects.IObject) ([]objects.IO
 			} else {
 				newIdx = len(deDuped)
 				chars[obj.Value()] = newIdx
+				indexContainer[curIdx] = newIdx
+				deDuped = append(deDuped, obj)
+			}
+		case *objects.String:
+			if newIdx, ok := strings[obj.Value()]; ok {
+				indexContainer[curIdx] = newIdx
+			} else {
+				newIdx = len(deDuped)
+				strings[obj.Value()] = newIdx
 				indexContainer[curIdx] = newIdx
 				deDuped = append(deDuped, obj)
 			}
