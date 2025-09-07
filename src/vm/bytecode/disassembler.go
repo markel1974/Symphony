@@ -92,12 +92,22 @@ func (d *Disassembler) disassembleObject(cIdx int, constant objects.IObject) ([]
 // disassembleInstructions parses a sequence of bytecode instructions and generates a human-readable representation of the instructions.
 func (d *Disassembler) disassembleInstructions(bc []byte, posOffset int) ([]string, error) {
 	var out []string
-	for i := 0; i < len(bc); {
-		//TODO Wrong!!!
-		opcodeId := bc[i]
+	unknownOpcode := d.opcodes.Opcode(OpUnknown)
 
-		opcode := d.opcodes.Opcode(opcodeId)
-		end := i + opcode.FullWidth()
+	for i := 0; i < len(bc); {
+		end := i + OpcodeWidth
+		if end > len(bc) {
+			return nil, fmt.Errorf("invalid range %d-%d", i, end)
+		}
+		unk, err := unknownOpcode.Decompile(bc[i:end])
+		if err != nil {
+			return nil, err
+		}
+		if len(unk) == 0 {
+			return nil, fmt.Errorf("invalid instruction length: %d", len(unk))
+		}
+		opcode := d.opcodes.Opcode(OpcodeId(unk[0]))
+		end = i + opcode.FullWidth()
 		if end > len(bc) {
 			return nil, fmt.Errorf("invalid range %d-%d", i, end)
 		}
