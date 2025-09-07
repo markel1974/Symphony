@@ -12,17 +12,13 @@ const (
 	SzMask   OperandFeature = (1 << 4) - 1
 
 	IsRelocatable OperandFeature = 1 << 4
-	//IsSigned       OperandFeature = 1 << 5
-	//IsPointer      OperandFeature = 1 << 6
-	//HintForGC      OperandFeature = 1 << 7
-	//HintForJIT     OperandFeature = 1 << 8
-	//IsRegisterHint OperandFeature = 1 << 9
+	//HintForGC      OperandFeature = 1 << 5
+	//HintForJIT     OperandFeature = 1 << 6
+	//IsRegisterHint OperandFeature = 1 << 7
 )
 
 const (
 	Relocatable = SzUint16 | IsRelocatable
-	// Int16  = Size2 | IsSigned
-	// PointerToLocal  = Size1 | IsPointer | HintForGC
 )
 
 // OpcodeId is a type alias for byte, used to represent operation codes in instruction sets.
