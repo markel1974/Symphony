@@ -93,22 +93,21 @@ func (d *Disassembler) disassembleObject(cIdx int, constant objects.IObject) ([]
 func (d *Disassembler) disassembleInstructions(bc []byte, posOffset int) ([]string, error) {
 	var out []string
 	unknownOpcode := d.opcodes.Opcode(OpUnknown)
-
+	var end int
 	for i := 0; i < len(bc); {
-		end := i + OpcodeWidth
-		if end > len(bc) {
+		if end = i + OpcodeWidth; end > len(bc) {
 			return nil, fmt.Errorf("invalid range %d-%d", i, end)
 		}
-		unk, err := unknownOpcode.Decompile(bc[i:end])
-		if err != nil {
+		var targetOpcode OpcodeId
+		if unk, err := unknownOpcode.Decompile(bc[i:end]); err != nil {
 			return nil, err
-		}
-		if len(unk) == 0 {
+		} else if len(unk) == 0 {
 			return nil, fmt.Errorf("invalid instruction length: %d", len(unk))
+		} else {
+			targetOpcode = OpcodeId(unk[0])
 		}
-		opcode := d.opcodes.Opcode(OpcodeId(unk[0]))
-		end = i + opcode.FullWidth()
-		if end > len(bc) {
+		opcode := d.opcodes.Opcode(targetOpcode)
+		if end = i + opcode.FullWidth(); end > len(bc) {
 			return nil, fmt.Errorf("invalid range %d-%d", i, end)
 		}
 		instructions, err := opcode.Decompile(bc[i:end])

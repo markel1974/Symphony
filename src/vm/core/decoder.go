@@ -32,9 +32,9 @@ type Decoder struct {
 
 // NewDecoder creates a new Decoder instance with the specified execution function and operand widths.
 func NewDecoder(executor IOpExecutor) (*Decoder, error) {
-	operands := executor.Operands()
+	features := executor.Operands()
 	operandsBits := 0
-	for (1 << operandsBits) <= len(operands) {
+	for (1 << operandsBits) <= len(features) {
 		operandsBits++
 	}
 	operandsMask := (1 << operandsBits) - 1
@@ -49,18 +49,17 @@ func NewDecoder(executor IOpExecutor) (*Decoder, error) {
 	}
 
 	idx := 0
-	for i := len(operands) - 1; i >= 0; i-- {
+	for i := len(features) - 1; i >= 0; i-- {
 		var retrieve func(*Frame, uint) int
-		of := operands[i]
-		width := of & bytecode.SizeMask
+		width := features[i] & bytecode.SzMask
 		switch width {
-		case bytecode.Size1:
+		case bytecode.SzUint8:
 			retrieve = sd.get8
-		case bytecode.Size2:
+		case bytecode.SzUint16:
 			retrieve = sd.get16
-		case bytecode.Size4:
+		case bytecode.SzUint32:
 			retrieve = sd.get32
-		case bytecode.Size8:
+		case bytecode.SzUint64:
 			retrieve = sd.get64
 		default:
 			return nil, fmt.Errorf("invalid operand width: %d", width)

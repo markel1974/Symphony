@@ -5,11 +5,11 @@ const OpcodeWidth = 1
 type OperandFeature int
 
 const (
-	SizeMask OperandFeature = 0x0F
-	Size1    OperandFeature = 1
-	Size2    OperandFeature = 2
-	Size4    OperandFeature = 4
-	Size8    OperandFeature = 8
+	SzUint8  OperandFeature = 1 << 0
+	SzUint16 OperandFeature = 1 << 1
+	SzUint32 OperandFeature = 1 << 2
+	SzUint64 OperandFeature = 1 << 3
+	SzMask   OperandFeature = (1 << 4) - 1
 
 	IsRelocatable OperandFeature = 1 << 4
 	//IsSigned       OperandFeature = 1 << 5
@@ -20,18 +20,9 @@ const (
 )
 
 const (
-// ImmediateUint8  = Size1
-// ImmediateInt16  = Size2 | IsSigned
-// ConstantIndex16 = Size2 | IsRelocatable
-// PointerToLocal  = Size1 | IsPointer | HintForGC
-)
-
-type Relocatable int
-
-const (
-	OpRelocatableNone Relocatable = iota
-	OpRelocatable                 // first operand relocatableId(16bit)
-	//OpRelocatableFree             // first operand relocatableId(16bit) second operand numFree(8bit)
+	Relocatable = SzUint16 | IsRelocatable
+	// Int16  = Size2 | IsSigned
+	// PointerToLocal  = Size1 | IsPointer | HintForGC
 )
 
 // OpcodeId is a type alias for byte, used to represent operation codes in instruction sets.
@@ -74,6 +65,7 @@ const (
 	// OpJump is a constant representing an unconditional jump operation in the bytecode instruction set.
 	OpJump
 
+	// OpJumpIndirect is a constant representing an opcode for performing an indirect jump. It does not require operands.
 	OpJumpIndirect
 
 	// OpNull represents a null operation or a placeholder indicating a null value in the opcode sequence.
@@ -212,7 +204,7 @@ const (
 // Opcode represents the opcode of an opcode, including its identifier, its operand, and its name.
 type Opcode struct {
 	opcodeId      OpcodeId
-	relocatable   Relocatable
+	relocate      []int
 	operands      []OperandFeature
 	name          string
 	operandsWidth int
@@ -220,17 +212,20 @@ type Opcode struct {
 }
 
 // NewOpcode creates a new Opcode instance, initializing its opcode, operands, and name fields.
-func NewOpcode(opcodeId OpcodeId, operands []OperandFeature, name string, relocatable Relocatable) *Opcode {
+func NewOpcode(opcodeId OpcodeId, operands []OperandFeature, name string) *Opcode {
 	od := &Opcode{
 		opcodeId:      opcodeId,
 		operands:      operands,
-		relocatable:   relocatable,
+		relocate:      []int{},
 		name:          name,
 		operandsWidth: 0,
 	}
-	for _, of := range od.operands {
-		size := of & SizeMask
+	for idx, of := range od.operands {
+		size := of & SzMask
 		od.operandsWidth += int(size)
+		if of&IsRelocatable != 0 {
+			od.relocate = append(od.relocate, idx)
+		}
 	}
 	od.compiler = NewCompiler(od)
 	return od
@@ -261,9 +256,14 @@ func (od *Opcode) FullWidth() int {
 	return OpcodeWidth + od.OperandsWidth()
 }
 
-// Relocatable returns the relocatable value associated with the Opcode instance.
-func (od *Opcode) Relocatable() Relocatable {
-	return od.relocatable
+// IsRelocatable returns the relocatable value associated with the Opcode instance.
+func (od *Opcode) IsRelocatable() bool {
+	return len(od.relocate) > 0
+}
+
+// Relocate returns the slice of integers representing relocation information for the Opcode.
+func (od *Opcode) Relocate() []int {
+	return od.relocate
 }
 
 // Compile compiles the opcode into a sequence of bytes.

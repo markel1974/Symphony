@@ -196,46 +196,48 @@ func (c *Relocator) processDuplicates(container []objects.IObject) ([]objects.IO
 // updateConstIndexes modifies bytecode instructions to remap constant indexes based on the provided index map.
 // It updates OpConstant and OpClosure instructions with new constant indexes or returns an error if mapping fails.
 func (c *Relocator) updateFuncIndexes(fc *objects.FuncCompiled, indexContainer map[int]int) error {
-	//TODO FULLCHECK
-	data := fc.Data()
-	i := 0
-	for i < len(data) {
-		opcode := data[i]
-		details := c.opcodes.Opcode(opcode)
-		offset := details.OperandsWidth()
-		relocatable := details.Relocatable()
-
-		switch relocatable {
-		case OpRelocatable:
-			//relocationIndex is the last operand of the instruction (for the moment)
-			relocatableIdx := i + offset
-			curIdx, ok := get16(data, uint(relocatableIdx))
-			if !ok {
-				return fmt.Errorf("index not found: %d", curIdx)
-			}
-			newIdx, ok := indexContainer[curIdx]
-			if !ok {
-				return fmt.Errorf("index not found: %d", curIdx)
-			}
-			position := i + offset
-			data[position] = byte(newIdx)
-			data[position-1] = byte(newIdx >> 8) // MSB (Big Endian)
-		default:
-			//nothing to do
+	bc := fc.Data()
+	unknownOpcode := c.opcodes.Opcode(OpUnknown)
+	var end int
+	for i := 0; i < len(bc); {
+		if end = i + OpcodeWidth; end > len(bc) {
+			return fmt.Errorf("invalid range %d-%d", i, end)
 		}
-		i += details.FullWidth()
+		var targetOpcode OpcodeId
+		if unk, err := unknownOpcode.Decompile(bc[i:end]); err != nil {
+			return err
+		} else if len(unk) == 0 {
+			return fmt.Errorf("invalid instruction length: %d", len(unk))
+		} else {
+			targetOpcode = OpcodeId(unk[0])
+		}
+		opcode := c.opcodes.Opcode(targetOpcode)
+		if end = i + opcode.FullWidth(); end > len(bc) {
+			return fmt.Errorf("invalid range %d-%d", i, end)
+		}
+		if opcode.IsRelocatable() {
+			decompiled, err := opcode.Decompile(bc[i:end])
+			if err != nil {
+				return err
+			}
+			for _, rel := range opcode.Relocate() {
+				if rel >= len(decompiled) {
+					return fmt.Errorf("invalid relocation: %d", rel)
+				}
+				curr := decompiled[rel]
+				newIdx, ok := indexContainer[curr]
+				if !ok {
+					return fmt.Errorf("index not found: %d", curr)
+				}
+				decompiled[rel] = newIdx
+			}
+			compiled, err := opcode.Compile(decompiled)
+			if err != nil {
+				return err
+			}
+			copy(bc[i:end], compiled)
+		}
+		i = end
 	}
 	return nil
-}
-
-// get16 extracts a 16-bit integer from the provided byte slice using the given base and offset positions.
-// Returns the integer and a boolean indicating success or failure due to an out-of-bounds read.
-func get16(data []byte, base uint) (int, bool) {
-	p1 := base
-	p2 := p1 - 1
-	if p2 >= uint(len(data)) {
-		return 0, false
-	}
-	res := int(data[p2])<<8 | int(data[p1])
-	return res, true
 }
