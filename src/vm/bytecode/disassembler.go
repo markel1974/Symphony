@@ -92,9 +92,8 @@ func (d *Disassembler) disassembleObject(cIdx int, constant objects.IObject) ([]
 // disassembleInstructions parses a sequence of bytecode instructions and generates a human-readable representation of the instructions.
 func (d *Disassembler) disassembleInstructions(bc []byte, posOffset int) ([]string, error) {
 	var out []string
-	comp
 	for i := 0; i < len(bc); {
-		//TODO Wrong assertion!
+		//TODO Wrong!!!
 		opcodeId := bc[i]
 
 		opcode := d.opcodes.Opcode(opcodeId)
