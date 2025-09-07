@@ -379,7 +379,7 @@ func (v *VM) loop() {
 	v.counterStart = uint64(time.Now().UnixMilli())
 	for {
 		v.counterIterations++
-		v.ip++
+		v.ip += bytecode.OpcodeWidth
 		opcode = v.currFrame.Get8(uint(v.ip))
 		decoder = v.sequencer[opcode]
 		v.ip = decoder.Decode(v.currFrame, v.ip)

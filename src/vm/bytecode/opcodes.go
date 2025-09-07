@@ -301,11 +301,11 @@ var noOperands []int
 
 // NewOpcodes initializes and returns a new Opcodes instance with predefined opcode mappings.
 func NewOpcodes() *Opcodes {
-	bits := 0
-	for (1 << bits) <= int(OpUnknown) {
-		bits++
+	maskBits := 0
+	for (1 << maskBits) <= int(OpUnknown) {
+		maskBits++
 	}
-	mask := (1 << bits) - 1
+	mask := (1 << maskBits) - 1
 
 	op := &Opcodes{
 		container: make([]*Opcode, mask+1),
@@ -395,6 +395,8 @@ func (op *Opcodes) Opcode(opcodeId OpcodeId) *Opcode {
 	return op.container[int(opcodeId)&op.mask]
 }
 
+const OpcodeWidth = 1
+
 // CompileInstruction generates bytecode for a given opcode and its operands or returns an error if validation fails.
 func (op *Opcodes) CompileInstruction(opcode OpcodeId, operands ...int) ([]byte, error) {
 	details := op.Opcode(opcode)
@@ -406,7 +408,7 @@ func (op *Opcodes) CompileInstruction(opcode OpcodeId, operands ...int) ([]byte,
 	totalLen += details.Offset()
 	instruction := make([]byte, totalLen)
 	instruction[0] = opcode
-	offset := 1
+	offset := OpcodeWidth
 	for i, o := range operands {
 		width := numOperands[i]
 		switch width {
@@ -458,4 +460,15 @@ func (op *Opcodes) Mask() int {
 // Len returns the number of elements in the Opcodes container.
 func (op *Opcodes) Len() int {
 	return len(op.container)
+}
+
+func (op *Opcodes) set8(o OpcodeId, instruction []byte, offset uint) error {
+	if o < 0 || o > uint8Mask {
+		return fmt.Errorf("operand %d value out of 1-byte range", o)
+	}
+	if offset >= uint(len(instruction)) {
+		return fmt.Errorf("offset %d out of range", offset)
+	}
+	instruction[offset] = o
+	return nil
 }
