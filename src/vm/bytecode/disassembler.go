@@ -92,18 +92,30 @@ func (d *Disassembler) disassembleObject(cIdx int, constant objects.IObject) ([]
 // disassembleInstructions parses a sequence of bytecode instructions and generates a human-readable representation of the instructions.
 func (d *Disassembler) disassembleInstructions(bc []byte, posOffset int) ([]string, error) {
 	var out []string
+	comp
 	for i := 0; i < len(bc); {
-		details := d.opcodes.Opcode(bc[i])
-		numOperands, operands, read := d.computeOperands(details, bc[i+1:])
-		switch len(numOperands) {
-		case 0:
-			out = append(out, fmt.Sprintf("%04d %-7s", posOffset+i, details.Name()))
-		case 1:
-			out = append(out, fmt.Sprintf("%04d %-7s %-5d", posOffset+i, details.Name(), operands[0]))
-		case 2:
-			out = append(out, fmt.Sprintf("%04d %-7s %-5d %-5d", posOffset+i, details.Name(), operands[0], operands[1]))
+		//TODO Wrong assertion!
+		opcodeId := bc[i]
+
+		opcode := d.opcodes.Opcode(opcodeId)
+		end := i + opcode.FullWidth()
+		if end > len(bc) {
+			return nil, fmt.Errorf("invalid range %d-%d", i, end)
 		}
-		i += 1 + read
+		instructions, err := opcode.Decompile(bc[i:end])
+		if err != nil {
+			return nil, err
+		}
+		if len(instructions) == 0 {
+			return nil, fmt.Errorf("invalid instruction length: %d", len(instructions))
+		}
+		operands := instructions[1:]
+		k := fmt.Sprintf("%04d %-16s", posOffset+i, opcode.Name())
+		for _, v := range operands {
+			k += fmt.Sprintf(" %-5d", v)
+		}
+		out = append(out, k)
+		i = end
 	}
 	return out, nil
 }
@@ -140,29 +152,4 @@ func (d *Disassembler) countObjects(in objects.IObject) int {
 		c += d.countObjects(o.Value())
 	}
 	return c
-}
-
-// computeOperands extracts operand opcode from a given opcode and instruction sequence, returning operand widths, values, and bytes read.
-func (d *Disassembler) computeOperands(details *Opcode, ins []byte) ([]int, []int, int) {
-	if len(details.Operands()) == 0 {
-		return nil, nil, 0
-	}
-	var retOperands []int
-	var offset int
-	for _, width := range details.Operands() {
-		switch width {
-		case Uint8Size:
-			if offset >= len(ins) {
-				return nil, nil, 0
-			}
-			retOperands = append(retOperands, int(ins[offset]))
-		case Uint16Size:
-			if offset+1 >= len(ins) {
-				return nil, nil, 0
-			}
-			retOperands = append(retOperands, int(ins[offset+1])|int(ins[offset])<<8)
-		}
-		offset += width
-	}
-	return details.Operands(), retOperands, offset
 }

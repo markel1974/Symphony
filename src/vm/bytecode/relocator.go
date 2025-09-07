@@ -202,7 +202,7 @@ func (c *Relocator) updateFuncIndexes(fc *objects.FuncCompiled, indexContainer m
 	for i < len(data) {
 		opcode := data[i]
 		details := c.opcodes.Opcode(opcode)
-		offset := details.Offset()
+		offset := details.OperandsWidth()
 		relocatable := details.Relocatable()
 
 		switch relocatable {
@@ -223,7 +223,7 @@ func (c *Relocator) updateFuncIndexes(fc *objects.FuncCompiled, indexContainer m
 		default:
 			//nothing to do
 		}
-		i += OpcodeWidth + offset
+		i += details.FullWidth()
 	}
 	return nil
 }

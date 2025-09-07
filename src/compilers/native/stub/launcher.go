@@ -30,7 +30,7 @@ func VMTest(sequencerId string, baseDir string, prefix string, debug bool) error
 		bc := bytecode2.NewBytecode(comp.Constants(), comp.Imports(), comp.Globals(), comp.FileSet())
 		if debug {
 			d := bytecode2.NewDisassembler(bc, op)
-			d.Disassemble(log.Writer())
+			_ = d.Disassemble(log.Writer())
 		}
 		machine, err := vm.NewVM(gk, op, sequencerId)
 		if err != nil {

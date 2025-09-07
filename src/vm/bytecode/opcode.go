@@ -242,27 +242,27 @@ const (
 
 // Opcode represents the opcode of an opcode, including its identifier, its operand, and its name.
 type Opcode struct {
-	opcodeId    OpcodeId
-	relocatable Relocatable
-	operands    []int
-	name        string
-	offset      int
-	compiler    *Compiler
+	opcodeId      OpcodeId
+	relocatable   Relocatable
+	operands      []int
+	name          string
+	operandsWidth int
+	compiler      *Compiler
 }
 
 // NewOpcode creates a new Opcode instance, initializing its opcode, operands, and name fields.
 func NewOpcode(opcodeId OpcodeId, operands []int, name string, relocatable Relocatable) *Opcode {
 	od := &Opcode{
-		opcodeId:    opcodeId,
-		operands:    operands,
-		relocatable: relocatable,
-		name:        name,
-		offset:      0,
+		opcodeId:      opcodeId,
+		operands:      operands,
+		relocatable:   relocatable,
+		name:          name,
+		operandsWidth: 0,
 	}
 	for _, w := range od.operands {
-		od.offset += w
+		od.operandsWidth += w
 	}
-	od.compiler = NewCompiler(od, nil)
+	od.compiler = NewCompiler(od)
 	return od
 }
 
@@ -281,9 +281,14 @@ func (od *Opcode) Operands() []int {
 	return od.operands
 }
 
-// Offset returns the byte offset of the opcode within an instruction.
-func (od *Opcode) Offset() int {
-	return od.offset
+// OperandsWidth returns the total width of the operands for the Opcode instance.
+func (od *Opcode) OperandsWidth() int {
+	return od.operandsWidth
+}
+
+// FullWidth returns the total width of the Opcode instance, including the opcode and operands.
+func (od *Opcode) FullWidth() int {
+	return OpcodeWidth + od.OperandsWidth()
 }
 
 // Relocatable returns the relocatable value associated with the Opcode instance.
@@ -300,6 +305,7 @@ func (od *Opcode) Compile(operands []int) ([]byte, error) {
 }
 
 // Decompile decompiles the opcode into a sequence of integers.
-func (od *Opcode) Decompile() ([]int, error) {
+func (od *Opcode) Decompile(bytecode []byte) ([]int, error) {
+	od.compiler.SetInstructions(bytecode)
 	return od.compiler.Decompile()
 }

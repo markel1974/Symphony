@@ -9,10 +9,9 @@ type Compiler struct {
 }
 
 // NewCompiler initializes a new Compiler with the given Opcode. It prepares the Compiler for assembling bytecode.
-func NewCompiler(opcode *Opcode, instructions []byte) *Compiler {
+func NewCompiler(opcode *Opcode) *Compiler {
 	return &Compiler{
-		opcode:       opcode,
-		instructions: instructions,
+		opcode: opcode,
 	}
 }
 
@@ -28,15 +27,14 @@ func (c *Compiler) Compile(operands []int) error {
 	if len(operands) != len(operandsWidth) {
 		return fmt.Errorf("wrong number of operands for %s: want %d, got %d", c.opcode.Name(), len(operandsWidth), len(operands))
 	}
-	totalLen := OpcodeWidth
-	totalLen += c.opcode.Offset()
+	totalLen := c.opcode.FullWidth()
 	c.instructions = make([]byte, totalLen)
 
 	offset := uint(0)
-	if err := c.set(uint(c.opcode.OpcodeId()), OpcodeWidth, offset); err != nil {
+	if err := c.set(uint(c.opcode.OpcodeId()), uint(OpcodeWidth), offset); err != nil {
 		return fmt.Errorf("failed to set opcode: %w", err)
 	}
-	offset += OpcodeWidth
+	offset += uint(OpcodeWidth)
 	for idx, operand := range operands {
 		width := uint(operandsWidth[idx])
 		if err := c.set(uint(operand), width, offset); err != nil {
@@ -47,6 +45,16 @@ func (c *Compiler) Compile(operands []int) error {
 	return nil
 }
 
+// SetInstructions sets the compiler's instructions to a new byte slice. If input is empty, it sets instructions to an empty slice.
+func (c *Compiler) SetInstructions(v []byte) {
+	if len(v) == 0 {
+		c.instructions = []byte{}
+		return
+	}
+	c.instructions = make([]byte, len(v))
+	copy(c.instructions, v)
+}
+
 // Decompile parses the instructions in the compiler and returns a slice of integers representing the opcode and operands.
 func (c *Compiler) Decompile() ([]int, error) {
 	var out []int
@@ -55,8 +63,8 @@ func (c *Compiler) Decompile() ([]int, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to set opcode: %w", err)
 	}
-	offset += OpcodeWidth
 	out = append(out, v)
+	offset += uint(OpcodeWidth)
 	operandsWidth := c.opcode.Operands()
 	for _, width := range operandsWidth {
 		v, err = c.get(uint(width), offset)

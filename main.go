@@ -135,7 +135,7 @@ func vmTest() {
 	//const baseDir = "../src/compilers/native/stub/sources"
 	const prefix = "test_"
 	const baseDir = "../src/compilers/native/stub/tests"
-	if err := stub.VMTest(sequencerId, baseDir, prefix, false); err != nil {
+	if err := stub.VMTest(sequencerId, baseDir, prefix, true); err != nil {
 		log.Fatal(err)
 	}
 	os.Exit(0)
