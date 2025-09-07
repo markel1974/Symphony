@@ -14,7 +14,7 @@ type IOpExecutor interface {
 
 	Name() string
 
-	Operands() []int
+	Operands() []bytecode.OperandFeature
 
 	Execute(decoder *Decoder)
 }

@@ -2,18 +2,6 @@ package bytecode
 
 const OpcodeWidth = 1
 
-// TODO use OperandFeature
-const (
-	// Uint8Size defines the size in bytes of a uint8 type, which is commonly used for single-byte operand encoding.
-	Uint8Size = 1
-	// Uint16Size represents the size in bytes of a 16-bit unsigned integer, which is 2 bytes.
-	Uint16Size = 2
-	// Uint32Size represents the size in bytes of a 32-bit unsigned integer.
-	Uint32Size = 4
-	// Uint64Size represents the size in bytes of a 64-bit unsigned integer, which is 8.
-	Uint64Size = 8
-)
-
 type OperandFeature int
 
 const (
@@ -23,28 +11,19 @@ const (
 	Size4    OperandFeature = 4
 	Size8    OperandFeature = 8
 
-	IsRelocatable  OperandFeature = 1 << 4
-	IsSigned       OperandFeature = 1 << 5
-	IsPointer      OperandFeature = 1 << 6
-	HintForGC      OperandFeature = 1 << 7
-	HintForJIT     OperandFeature = 1 << 8
-	IsRegisterHint OperandFeature = 1 << 9
+	IsRelocatable OperandFeature = 1 << 4
+	//IsSigned       OperandFeature = 1 << 5
+	//IsPointer      OperandFeature = 1 << 6
+	//HintForGC      OperandFeature = 1 << 7
+	//HintForJIT     OperandFeature = 1 << 8
+	//IsRegisterHint OperandFeature = 1 << 9
 )
 
 const (
-	ImmediateUint8  = Size1
-	ImmediateInt16  = Size2 | IsSigned
-	ConstantIndex16 = Size2 | IsRelocatable
-	PointerToLocal  = Size1 | IsPointer | HintForGC
-)
-
-const (
-	// uint8Mask defines the maximum value that can be represented within 1 byte (8 bits), calculated as (1 << 8) - 1.
-	uint8Mask = (1 << (8 * Uint8Size)) - 1
-	// uint16Mask represents the maximum value that can be stored in a 16-bit unsigned integer (65535).
-	uint16Mask = (1 << (8 * Uint16Size)) - 1
-	// uint32Mask represents the maximum value that can be stored in a 32-bit unsigned integer (4294967295).
-	uint32Mask = (1 << (8 * Uint32Size)) - 1 // Aggiunto
+// ImmediateUint8  = Size1
+// ImmediateInt16  = Size2 | IsSigned
+// ConstantIndex16 = Size2 | IsRelocatable
+// PointerToLocal  = Size1 | IsPointer | HintForGC
 )
 
 type Relocatable int
@@ -53,13 +32,6 @@ const (
 	OpRelocatableNone Relocatable = iota
 	OpRelocatable                 // first operand relocatableId(16bit)
 	//OpRelocatableFree             // first operand relocatableId(16bit) second operand numFree(8bit)
-)
-
-const (
-// OpcodesLen defines the total number of opcodes available in the bytecode system, typically calculated as Uint8Size << 8.
-// OpcodesLen = 1 << (8)
-// OpcodesMask defines the mask applied to OpcodeId values to ensure they fit within the allowable range.
-// OpcodesMask = OpcodesLen - 1
 )
 
 // OpcodeId is a type alias for byte, used to represent operation codes in instruction sets.
@@ -212,9 +184,6 @@ const (
 	// OpImport represents an opcode for handling imports, typically operating with two associated operands.
 	OpImport
 
-	// OpFuncInternal represents an opcode for internal operations within the virtual machine.
-	//OpFuncInternal
-
 	// OpIntLogical performs integer-specific logical operations such as AND, OR, or XOR for the appropriate operands.
 	OpIntLogical
 
@@ -244,14 +213,14 @@ const (
 type Opcode struct {
 	opcodeId      OpcodeId
 	relocatable   Relocatable
-	operands      []int
+	operands      []OperandFeature
 	name          string
 	operandsWidth int
 	compiler      *Compiler
 }
 
 // NewOpcode creates a new Opcode instance, initializing its opcode, operands, and name fields.
-func NewOpcode(opcodeId OpcodeId, operands []int, name string, relocatable Relocatable) *Opcode {
+func NewOpcode(opcodeId OpcodeId, operands []OperandFeature, name string, relocatable Relocatable) *Opcode {
 	od := &Opcode{
 		opcodeId:      opcodeId,
 		operands:      operands,
@@ -259,8 +228,9 @@ func NewOpcode(opcodeId OpcodeId, operands []int, name string, relocatable Reloc
 		name:          name,
 		operandsWidth: 0,
 	}
-	for _, w := range od.operands {
-		od.operandsWidth += w
+	for _, of := range od.operands {
+		size := of & SizeMask
+		od.operandsWidth += int(size)
 	}
 	od.compiler = NewCompiler(od)
 	return od
@@ -277,7 +247,7 @@ func (od *Opcode) Name() string {
 }
 
 // Operands returns the operand widths for the Opcode as a slice of integers.
-func (od *Opcode) Operands() []int {
+func (od *Opcode) Operands() []OperandFeature {
 	return od.operands
 }
 

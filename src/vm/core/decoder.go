@@ -6,13 +6,6 @@ import (
 	"github.com/markel1974/c64emu/src/vm/bytecode"
 )
 
-// operandsMax defines the maximum number of operands, calculated as 2 raised to the power of 4.
-// operandsMask is a bitmask derived from operandsMax, used for extracting operand-related values.
-const (
-// operandsMax  = 1 << 4
-// operandsMask = operandsMax - 1
-)
-
 type DecoderData struct {
 	offset   uint
 	retrieve func(*Frame, uint) int
@@ -40,7 +33,11 @@ type Decoder struct {
 // NewDecoder creates a new Decoder instance with the specified execution function and operand widths.
 func NewDecoder(executor IOpExecutor) (*Decoder, error) {
 	operands := executor.Operands()
-	operandsMask := computeBitmask(len(operands))
+	operandsBits := 0
+	for (1 << operandsBits) <= len(operands) {
+		operandsBits++
+	}
+	operandsMask := (1 << operandsBits) - 1
 
 	sd := &Decoder{
 		executor:        executor,
@@ -54,21 +51,22 @@ func NewDecoder(executor IOpExecutor) (*Decoder, error) {
 	idx := 0
 	for i := len(operands) - 1; i >= 0; i-- {
 		var retrieve func(*Frame, uint) int
-		width := operands[i]
+		of := operands[i]
+		width := of & bytecode.SizeMask
 		switch width {
-		case bytecode.Uint8Size:
+		case bytecode.Size1:
 			retrieve = sd.get8
-		case bytecode.Uint16Size:
+		case bytecode.Size2:
 			retrieve = sd.get16
-		case bytecode.Uint32Size:
+		case bytecode.Size4:
 			retrieve = sd.get32
-		case bytecode.Uint64Size:
+		case bytecode.Size8:
 			retrieve = sd.get64
 		default:
 			return nil, fmt.Errorf("invalid operand width: %d", width)
 		}
 		sd.operands = append(sd.operands, &DecoderData{offset: uint(sd.fullWidth), retrieve: retrieve})
-		sd.fullWidth += width
+		sd.fullWidth += int(width)
 		idx++
 	}
 	if len(sd.operands) > operandsMask {
@@ -125,13 +123,4 @@ func (d *Decoder) get32(f *Frame, ip uint) int {
 // get64 retrieves a 32-bit integer from the provided frame at the specified instruction pointer and converts it to int.
 func (d *Decoder) get64(f *Frame, ip uint) int {
 	return int(f.Get64(ip))
-}
-
-// computeBitmask calculates and returns a bitmask that can represent all possible operand combinations up to op.maxLen.
-func computeBitmask(l int) int {
-	bits := 0
-	for (1 << bits) <= l {
-		bits++
-	}
-	return (1 << bits) - 1
 }

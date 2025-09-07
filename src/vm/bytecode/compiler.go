@@ -83,13 +83,13 @@ func (c *Compiler) get(width uint, offset uint) (int, error) {
 		return 0, fmt.Errorf("offset %d is out of bounds for instruction length %d", offset, len(c.instructions))
 	}
 	switch width {
-	case Uint8Size:
+	case uint(Size1):
 		return c.get8(offset)
-	case Uint16Size:
+	case uint(Size2):
 		return c.get16(offset)
-	case Uint32Size:
+	case uint(Size4):
 		return c.get32(offset)
-	case Uint64Size:
+	case uint(Size8):
 		return c.get64(offset)
 	default:
 		return 0, fmt.Errorf("unsupported operand width: %d", width)
@@ -99,19 +99,19 @@ func (c *Compiler) get(width uint, offset uint) (int, error) {
 // set writes an operand value to the instructions buffer at a specified offset using a specified width in bytes.
 func (c *Compiler) set(operand uint, width uint, offset uint) error {
 	switch width {
-	case Uint8Size:
+	case uint(Size1):
 		if err := c.set8(operand, offset); err != nil {
 			return err
 		}
-	case Uint16Size:
+	case uint(Size2):
 		if err := c.set16(operand, offset); err != nil {
 			return err
 		}
-	case Uint32Size:
+	case uint(Size4):
 		if err := c.set32(operand, offset); err != nil {
 			return err
 		}
-	case Uint64Size:
+	case uint(Size8):
 		if err := c.set64(operand, offset); err != nil {
 			return err
 		}
@@ -123,6 +123,7 @@ func (c *Compiler) set(operand uint, width uint, offset uint) error {
 
 // set8 sets a 1-byte operand value into the instructions slice at the specified offset, ensuring boundaries are respected.
 func (c *Compiler) set8(operand uint, offset uint) error {
+	const uint8Mask = (1 << (8 * Size1)) - 1
 	if operand > uint8Mask {
 		return fmt.Errorf("operand value %d out of 1-byte range", operand)
 	}
@@ -135,6 +136,7 @@ func (c *Compiler) set8(operand uint, offset uint) error {
 
 // set16 writes a 2-byte unsigned integer operand at the specified offset in the instructions slice in big-endian format.
 func (c *Compiler) set16(operand uint, offset uint) error {
+	const uint16Mask = (1 << (8 * Size2)) - 1
 	if operand > uint16Mask {
 		return fmt.Errorf("operand value %d out of 2-byte range", operand)
 	}
@@ -150,6 +152,7 @@ func (c *Compiler) set16(operand uint, offset uint) error {
 // set32 writes a 32-bit unsigned integer operand to the instructions at the specified offset in Big Endian order.
 // Returns an error if the operand exceeds the 32-bit range or if the offset is out of bounds.
 func (c *Compiler) set32(operand uint, offset uint) error {
+	const uint32Mask = (1 << (8 * Size4)) - 1
 	if operand > uint32Mask {
 		return fmt.Errorf("operand value %d out of 4-byte range", operand)
 	}
