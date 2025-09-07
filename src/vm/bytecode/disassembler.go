@@ -22,7 +22,7 @@ func NewDisassembler(b *Bytecode, opcodes *Opcodes) *Disassembler {
 	}
 }
 
-// Disassemble parses and logs details of objects, constants, and imports within the associated bytecode.
+// Disassemble parses and logs opcode of objects, constants, and imports within the associated bytecode.
 func (d *Disassembler) Disassemble(writer io.Writer) error {
 	_, _ = fmt.Fprintf(writer, "--- Object Count ---\n")
 	_, _ = fmt.Fprintf(writer, "%d\n", d.CountObjects())
@@ -142,7 +142,7 @@ func (d *Disassembler) countObjects(in objects.IObject) int {
 	return c
 }
 
-// computeOperands extracts operand details from a given opcode and instruction sequence, returning operand widths, values, and bytes read.
+// computeOperands extracts operand opcode from a given opcode and instruction sequence, returning operand widths, values, and bytes read.
 func (d *Disassembler) computeOperands(details *Opcode, ins []byte) ([]int, []int, int) {
 	if len(details.Operands()) == 0 {
 		return nil, nil, 0
