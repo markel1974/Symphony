@@ -88,11 +88,11 @@ func (op *Opcodes) Opcode(opcodeId OpcodeId) *Opcode {
 // CompileInstruction generates bytecode for a given opcode and its operands or returns an error if validation fails.
 func (op *Opcodes) CompileInstruction(opcodeId OpcodeId, operands ...int) ([]byte, error) {
 	opcode := op.Opcode(opcodeId)
-	compiler := NewCompiler()
-	if err := compiler.Compile(opcode, operands); err != nil {
+	inst, err := opcode.Compile(operands)
+	if err != nil {
 		return nil, err
 	}
-	return compiler.Instructions(), nil
+	return inst, nil
 }
 
 // Mask returns the opcode mask used to determine the valid range or format of opcodes in the Opcodes collection.

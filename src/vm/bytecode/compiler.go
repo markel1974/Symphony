@@ -2,34 +2,38 @@ package bytecode
 
 import "fmt"
 
-// Compiler is responsible for compiling OpCodes into a sequence of byte instructions.
+// Compiler is responsible for constructing binary instructions based on the provided opcodes and operands.
 type Compiler struct {
+	opcode       *Opcode
 	instructions []byte
 }
 
-// NewCompiler initializes and returns a new instance of Compiler for generating and managing bytecode instructions.
-func NewCompiler() *Compiler {
-	return &Compiler{}
+// NewCompiler initializes a new Compiler with the given Opcode. It prepares the Compiler for assembling bytecode.
+func NewCompiler(opcode *Opcode, instructions []byte) *Compiler {
+	return &Compiler{
+		opcode:       opcode,
+		instructions: instructions,
+	}
 }
 
-// Instructions returns the current set of compiled bytecode instructions from the Compiler instance.
+// Instructions returns the compiled bytecode as a slice of bytes from the compiler instance.
 func (c *Compiler) Instructions() []byte {
 	return c.instructions
 }
 
-// Compile generates an instruction byte sequence based on the opcode and provided operands, ensuring correct widths and offsets.
-// Returns an error if the number or values of operands are invalid or if encoding fails.
-func (c *Compiler) Compile(opcode *Opcode, operands []int) error {
-	operandsWidth := opcode.Operands()
+// Compile converts a list of operands into bytecode based on the opcode and writes the result to the instructions buffer.
+// An error is returned if the number or size of operands does not match the expectations of the opcode.
+func (c *Compiler) Compile(operands []int) error {
+	operandsWidth := c.opcode.Operands()
 	if len(operands) != len(operandsWidth) {
-		return fmt.Errorf("wrong number of operands for %s: want %d, got %d", opcode.Name(), len(operandsWidth), len(operands))
+		return fmt.Errorf("wrong number of operands for %s: want %d, got %d", c.opcode.Name(), len(operandsWidth), len(operands))
 	}
 	totalLen := OpcodeWidth
-	totalLen += opcode.Offset()
+	totalLen += c.opcode.Offset()
 	c.instructions = make([]byte, totalLen)
 
 	offset := uint(0)
-	if err := c.set(uint(opcode.OpcodeId()), OpcodeWidth, offset); err != nil {
+	if err := c.set(uint(c.opcode.OpcodeId()), OpcodeWidth, offset); err != nil {
 		return fmt.Errorf("failed to set opcode: %w", err)
 	}
 	offset += OpcodeWidth
@@ -43,8 +47,48 @@ func (c *Compiler) Compile(opcode *Opcode, operands []int) error {
 	return nil
 }
 
-// set writes the given operand into the instruction byte slice at the specified offset with the defined width.
-// Returns an error if the width is invalid or if the operand or offset values are out of bounds.
+// Decompile parses the instructions in the compiler and returns a slice of integers representing the opcode and operands.
+func (c *Compiler) Decompile() ([]int, error) {
+	var out []int
+	offset := uint(0)
+	v, err := c.get(uint(OpcodeWidth), offset)
+	if err != nil {
+		return nil, fmt.Errorf("failed to set opcode: %w", err)
+	}
+	offset += OpcodeWidth
+	out = append(out, v)
+	operandsWidth := c.opcode.Operands()
+	for _, width := range operandsWidth {
+		v, err = c.get(uint(width), offset)
+		if err != nil {
+			return nil, fmt.Errorf("failed to set operand: %w", err)
+		}
+		out = append(out, v)
+		offset += uint(width)
+	}
+	return out, nil
+}
+
+// get retrieves an operand of the specified width from the instructions at the given offset. Returns an error on failure.
+func (c *Compiler) get(width uint, offset uint) (int, error) {
+	if offset >= uint(len(c.instructions)) {
+		return 0, fmt.Errorf("offset %d is out of bounds for instruction length %d", offset, len(c.instructions))
+	}
+	switch width {
+	case Uint8Size:
+		return c.get8(offset)
+	case Uint16Size:
+		return c.get16(offset)
+	case Uint32Size:
+		return c.get32(offset)
+	case Uint64Size:
+		return c.get64(offset)
+	default:
+		return 0, fmt.Errorf("unsupported operand width: %d", width)
+	}
+}
+
+// set writes an operand value to the instructions buffer at a specified offset using a specified width in bytes.
 func (c *Compiler) set(operand uint, width uint, offset uint) error {
 	switch width {
 	case Uint8Size:
@@ -69,9 +113,7 @@ func (c *Compiler) set(operand uint, width uint, offset uint) error {
 	return nil
 }
 
-// set8 sets a 1-byte operand value at the specified offset in the instruction slice of the Compiler.
-// The operand must fit within 1 byte, and the offset must be within the bounds of the instructions slice.
-// Returns an error if the operand is out of range or the offset exceeds the slice boundary.
+// set8 sets a 1-byte operand value into the instructions slice at the specified offset, ensuring boundaries are respected.
 func (c *Compiler) set8(operand uint, offset uint) error {
 	if operand > uint8Mask {
 		return fmt.Errorf("operand value %d out of 1-byte range", operand)
@@ -83,8 +125,7 @@ func (c *Compiler) set8(operand uint, offset uint) error {
 	return nil
 }
 
-// set16 writes a 16-bit operand at a specific offset in the instructions slice in Big Endian format.
-// Returns an error if the operand exceeds the 16-bit limit or if the offset is out of range.
+// set16 writes a 2-byte unsigned integer operand at the specified offset in the instructions slice in big-endian format.
 func (c *Compiler) set16(operand uint, offset uint) error {
 	if operand > uint16Mask {
 		return fmt.Errorf("operand value %d out of 2-byte range", operand)
@@ -98,8 +139,8 @@ func (c *Compiler) set16(operand uint, offset uint) error {
 	return nil
 }
 
-// set32 encodes a 32-bit operand into the instructions slice at the specified offset in Big Endian order.
-// Returns an error if the operand value exceeds 32-bit range or if the offset is out of bounds.
+// set32 writes a 32-bit unsigned integer operand to the instructions at the specified offset in Big Endian order.
+// Returns an error if the operand exceeds the 32-bit range or if the offset is out of bounds.
 func (c *Compiler) set32(operand uint, offset uint) error {
 	if operand > uint32Mask {
 		return fmt.Errorf("operand value %d out of 4-byte range", operand)
@@ -115,8 +156,8 @@ func (c *Compiler) set32(operand uint, offset uint) error {
 	return nil
 }
 
-// set64 encodes a 64-bit unsigned integer into the instructions at the specified offset in big-endian order.
-// Returns an error if the offset plus the operand size exceeds the length of the instructions slice.
+// set64 writes an 8-byte (64-bit) unsigned integer operand at the specified offset in the instructions slice in big-endian order.
+// Returns an error if the offset is out of bounds.
 func (c *Compiler) set64(operand uint, offset uint) error {
 	if offset+7 >= uint(len(c.instructions)) {
 		return fmt.Errorf("offset %d out of range", offset)
@@ -131,4 +172,52 @@ func (c *Compiler) set64(operand uint, offset uint) error {
 	c.instructions[offset+6] = byte(n >> 8)
 	c.instructions[offset+7] = byte(n)
 	return nil
+}
+
+// get8 retrieves the 8-bit integer value at the specified offset from the instructions slice.
+// Returns an error if the offset is out of bounds.
+func (c *Compiler) get8(offset uint) (int, error) {
+	if offset >= uint(len(c.instructions)) {
+		return 0, fmt.Errorf("offset %d is out of bounds for instruction length %d", offset, len(c.instructions))
+	}
+	return int(c.instructions[offset]), nil
+}
+
+// get16 retrieves a 16-bit integer (Big Endian) from the instructions slice at the specified offset.
+// Returns an error if the offset exceeds the bounds of the instructions slice.
+func (c *Compiler) get16(offset uint) (int, error) {
+	if offset+1 >= uint(len(c.instructions)) {
+		return 0, fmt.Errorf("unexpected end of bytecode, expected 2 bytes for 16-bit operand at offset %d", offset)
+	}
+	val := int(c.instructions[offset])<<8 | int(c.instructions[offset+1])
+	return val, nil
+}
+
+// get32 retrieves a 32-bit integer from the instructions starting at the specified offset. It returns an error if out of bounds.
+func (c *Compiler) get32(offset uint) (int, error) {
+	if offset+3 >= uint(len(c.instructions)) {
+		return 0, fmt.Errorf("unexpected end of bytecode, expected 4 bytes for 32-bit operand at offset %d", offset)
+	}
+	val := int(c.instructions[offset])<<24 |
+		int(c.instructions[offset+1])<<16 |
+		int(c.instructions[offset+2])<<8 |
+		int(c.instructions[offset+3])
+	return val, nil
+}
+
+// get64 retrieves a 64-bit integer from the instruction byte array starting at the specified offset.
+// Returns an error if the offset is out of bounds or insufficient bytes are available.
+func (c *Compiler) get64(offset uint) (int, error) {
+	if offset+7 >= uint(len(c.instructions)) {
+		return 0, fmt.Errorf("unexpected end of bytecode, expected 8 bytes for 64-bit operand at offset %d", offset)
+	}
+	val := uint64(c.instructions[offset])<<56 |
+		uint64(c.instructions[offset+1])<<48 |
+		uint64(c.instructions[offset+2])<<40 |
+		uint64(c.instructions[offset+3])<<32 |
+		uint64(c.instructions[offset+4])<<24 |
+		uint64(c.instructions[offset+5])<<16 |
+		uint64(c.instructions[offset+6])<<8 |
+		uint64(c.instructions[offset+7])
+	return int(val), nil
 }

@@ -247,6 +247,7 @@ type Opcode struct {
 	operands    []int
 	name        string
 	offset      int
+	compiler    *Compiler
 }
 
 // NewOpcode creates a new Opcode instance, initializing its opcode, operands, and name fields.
@@ -261,6 +262,7 @@ func NewOpcode(opcodeId OpcodeId, operands []int, name string, relocatable Reloc
 	for _, w := range od.operands {
 		od.offset += w
 	}
+	od.compiler = NewCompiler(od, nil)
 	return od
 }
 
@@ -287,4 +289,17 @@ func (od *Opcode) Offset() int {
 // Relocatable returns the relocatable value associated with the Opcode instance.
 func (od *Opcode) Relocatable() Relocatable {
 	return od.relocatable
+}
+
+// Compile compiles the opcode into a sequence of bytes.
+func (od *Opcode) Compile(operands []int) ([]byte, error) {
+	if err := od.compiler.Compile(operands); err != nil {
+		return nil, err
+	}
+	return od.compiler.Instructions(), nil
+}
+
+// Decompile decompiles the opcode into a sequence of integers.
+func (od *Opcode) Decompile() ([]int, error) {
+	return od.compiler.Decompile()
 }
