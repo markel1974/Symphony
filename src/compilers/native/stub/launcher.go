@@ -7,13 +7,13 @@ import (
 
 	"github.com/markel1974/c64emu/src/compilers"
 	"github.com/markel1974/c64emu/src/vm"
-	bytecode2 "github.com/markel1974/c64emu/src/vm/bytecode"
+	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/objects"
 )
 
 func VMTest(sequencerId string, baseDir string, prefix string, debug bool) error {
 	gk := objects.NewGateKeeper()
-	op := bytecode2.NewOpcodes()
+	op := bytecode.NewOpcodes()
 	for _, fileName := range Prepare(baseDir, prefix) {
 		fmt.Printf("\n\n------------------ %s ------------------\n", fileName)
 		comp, loader, err := compilers.NewCompiler(gk, op, sequencerId)
@@ -27,11 +27,15 @@ func VMTest(sequencerId string, baseDir string, prefix string, debug bool) error
 			return fmt.Errorf("compiler error: %s", err)
 		}
 		dataFile.Close()
-		bc := bytecode2.NewBytecode(comp.Constants(), comp.Imports(), comp.Globals(), comp.FileSet())
+		bc := bytecode.NewBytecode(comp.Constants(), comp.Imports(), comp.Globals(), comp.FileSet())
 		if debug {
-			d := bytecode2.NewDisassembler(bc, op)
+			d := bytecode.NewDisassembler(bc, op)
 			_ = d.Disassemble(log.Writer())
 		}
+
+		//rel := bytecode.NewRelocator(gk, loader, op, nil)
+		//_, _ = rel.Relocate([]*bytecode.Bytecode{bc, bc})
+
 		machine, err := vm.NewVM(gk, op, sequencerId)
 		if err != nil {
 			return fmt.Errorf("vm initialize error: %s", err)

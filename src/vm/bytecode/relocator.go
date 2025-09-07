@@ -43,13 +43,13 @@ func (c *Relocator) Relocate(codes []*Bytecode) (*Bytecode, error) {
 		sourceFiles = append(sourceFiles, bc.SourceFiles().files...)
 	}
 	var err error
-	if constants, err = c.RelocateObjects(constants); err != nil {
+	if imports, err = c.relocateObjects(imports); err != nil {
 		return nil, err
 	}
-	if imports, err = c.RelocateObjects(imports); err != nil {
+	if constants, err = c.relocateObjects(constants); err != nil {
 		return nil, err
 	}
-	if globals, err = c.RelocateObjects(globals); err != nil {
+	if globals, err = c.relocateObjects(globals); err != nil {
 		return nil, err
 	}
 	out := NewBytecode(constants, imports, globals, nil)
@@ -60,8 +60,8 @@ func (c *Relocator) Relocate(codes []*Bytecode) (*Bytecode, error) {
 }
 
 // RelocateObjects modifies a slice of IObject instances by deduplicating input and updating bytecode constant indexes accordingly.
-func (c *Relocator) RelocateObjects(in []objects.IObject) ([]objects.IObject, error) {
-	outDeduped, outIndexContainer, err := c.processDuplicates(in)
+func (c *Relocator) relocateObjects(inObj []objects.IObject) ([]objects.IObject, error) {
+	outDeduped, outIndexContainer, err := c.processDuplicates(inObj)
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +79,7 @@ func (c *Relocator) RelocateObjects(in []objects.IObject) ([]objects.IObject, er
 // processDuplicates processes a container of objects, removing duplicates and mapping old indices to new indices.
 // It returns a deduplicated list of objects, a mapping of old to new indices, and an error if encountered.
 func (c *Relocator) processDuplicates(container []objects.IObject) ([]objects.IObject, map[int]int, error) {
-	var deDuped []objects.IObject
+	var outDuped []objects.IObject
 	indexContainer := make(map[int]int)
 	ints := make(map[int64]int)
 	floats := make(map[float64]int)
@@ -99,52 +99,52 @@ func (c *Relocator) processDuplicates(container []objects.IObject) ([]objects.IO
 			if newIdx >= 0 {
 				indexContainer[curIdx] = newIdx
 			} else {
-				newIdx = len(deDuped)
+				newIdx = len(outDuped)
 				fns[obj] = newIdx
 				indexContainer[curIdx] = newIdx
-				deDuped = append(deDuped, obj)
+				outDuped = append(outDuped, obj)
 			}
 		case *objects.Int:
 			if newIdx, ok := ints[obj.Value()]; ok {
 				indexContainer[curIdx] = newIdx
 			} else {
-				newIdx = len(deDuped)
+				newIdx = len(outDuped)
 				ints[obj.Value()] = newIdx
 				indexContainer[curIdx] = newIdx
-				deDuped = append(deDuped, obj)
+				outDuped = append(outDuped, obj)
 			}
 		case *objects.Float:
 			if newIdx, ok := floats[obj.Value()]; ok {
 				indexContainer[curIdx] = newIdx
 			} else {
-				newIdx = len(deDuped)
+				newIdx = len(outDuped)
 				floats[obj.Value()] = newIdx
 				indexContainer[curIdx] = newIdx
-				deDuped = append(deDuped, obj)
+				outDuped = append(outDuped, obj)
 			}
 		case *objects.Char:
 			if newIdx, ok := chars[obj.Value()]; ok {
 				indexContainer[curIdx] = newIdx
 			} else {
-				newIdx = len(deDuped)
+				newIdx = len(outDuped)
 				chars[obj.Value()] = newIdx
 				indexContainer[curIdx] = newIdx
-				deDuped = append(deDuped, obj)
+				outDuped = append(outDuped, obj)
 			}
 		case *objects.String:
 			if newIdx, ok := strings[obj.Value()]; ok {
 				indexContainer[curIdx] = newIdx
 			} else {
-				newIdx = len(deDuped)
+				newIdx = len(outDuped)
 				strings[obj.Value()] = newIdx
 				indexContainer[curIdx] = newIdx
-				deDuped = append(deDuped, obj)
+				outDuped = append(outDuped, obj)
 			}
 		default:
 			return nil, nil, fmt.Errorf("unsupported top-level object type: %s", reflect.TypeOf(c).Elem().Name())
 		}
 	}
-	return deDuped, indexContainer, nil
+	return outDuped, indexContainer, nil
 }
 
 // updateConstIndexes modifies bytecode instructions to remap constant indexes based on the provided index map.
@@ -174,22 +174,32 @@ func (c *Relocator) updateFuncIndexes(fc *objects.FuncCompiled, indexContainer m
 			if err != nil {
 				return err
 			}
+			if len(decompiled) < OpcodeWidth {
+				return fmt.Errorf("invalid instruction length: %d", len(decompiled))
+			}
+			operands := decompiled[OpcodeWidth:]
+			modified := false
 			for _, rel := range opcode.Relocate() {
-				if rel >= len(decompiled) {
+				if rel >= len(operands) {
 					return fmt.Errorf("invalid relocation: %d", rel)
 				}
-				curr := decompiled[rel]
+				curr := operands[rel]
 				newIdx, ok := indexContainer[curr]
 				if !ok {
 					return fmt.Errorf("index not found: %d", curr)
 				}
-				decompiled[rel] = newIdx
+				if newIdx != curr {
+					operands[rel] = newIdx
+					modified = true
+				}
 			}
-			compiled, err := opcode.Compile(decompiled)
-			if err != nil {
-				return err
+			if modified {
+				compiled, err := opcode.Compile(operands)
+				if err != nil {
+					return err
+				}
+				copy(bc[i:end], compiled)
 			}
-			copy(bc[i:end], compiled)
 		}
 		i = end
 	}
