@@ -23,71 +23,74 @@ func NewDisassembler(b *Bytecode, opcodes *Opcodes) *Disassembler {
 }
 
 // Disassemble parses and logs details of objects, constants, and imports within the associated bytecode.
-func (d *Disassembler) Disassemble(writer io.Writer) {
+func (d *Disassembler) Disassemble(writer io.Writer) error {
 	_, _ = fmt.Fprintf(writer, "--- Object Count ---\n")
 	_, _ = fmt.Fprintf(writer, "%d\n", d.CountObjects())
 	_, _ = fmt.Fprintf(writer, "--- Constants ---\n")
-	for idx, v := range d.disassembleConstants() {
+	constants, err := d.disassembleObjects(d.bc.Constants())
+	if err != nil {
+		return err
+	}
+	for idx, v := range constants {
 		_, _ = fmt.Fprintf(writer, "%04d => %s\n", idx, v)
 	}
+	imports, err := d.disassembleObjects(d.bc.Imports())
+	if err != nil {
+		return err
+	}
 	_, _ = fmt.Fprintf(writer, "--- Imports ---\n")
-	for idx, v := range d.disassembleReferences() {
+	for idx, v := range imports {
 		_, _ = fmt.Fprintf(writer, "%04d => %s\n", idx, v)
 	}
 	_, _ = fmt.Fprintf(writer, "--- Globals ---\n")
-	for idx, v := range d.disassembleGlobal() {
+	globals, err := d.disassembleObjects(d.bc.Globals())
+	if err != nil {
+		return err
+	}
+	for idx, v := range globals {
 		_, _ = fmt.Fprintf(writer, "%04d => %s\n", idx, v)
 	}
+	return nil
 }
 
 // disassembleConstants iterates through bytecode constants, disassembles each, and returns the results as a slice of strings.
-func (d *Disassembler) disassembleConstants() []string {
+func (d *Disassembler) disassembleObjects(e []objects.IObject) ([]string, error) {
 	var output []string
-	for cIdx, constant := range d.bc.Constants() {
-		output = append(output, d.disassembleObject(cIdx, constant)...)
+	for cIdx, constant := range e {
+		data, err := d.disassembleObject(cIdx, constant)
+		if err != nil {
+			return nil, err
+		}
+		output = append(output, data...)
 	}
-	return output
-}
-
-// disassembleConstants iterates through bytecode constants, disassembles each, and returns the results as a slice of strings.
-func (d *Disassembler) disassembleGlobal() []string {
-	var output []string
-	for cIdx, constant := range d.bc.Globals() {
-		output = append(output, d.disassembleObject(cIdx, constant)...)
-	}
-	return output
-}
-
-// disassembleReferences disassembles and formats the imports section of the bytecode into a slice of string representations.
-func (d *Disassembler) disassembleReferences() []string {
-	var output []string
-	for cIdx, constant := range d.bc.Imports() {
-		output = append(output, d.disassembleObject(cIdx, constant)...)
-	}
-	return output
+	return output, nil
 }
 
 // disassembleObject generates a disassembled representation of a constant object, including detailed instructions for functions.
-func (d *Disassembler) disassembleObject(cIdx int, constant objects.IObject) []string {
+func (d *Disassembler) disassembleObject(cIdx int, constant objects.IObject) ([]string, error) {
 	var output []string
 	if constant == nil {
-		return []string{fmt.Sprintf("[% 3d] nil", cIdx)}
+		return []string{fmt.Sprintf("[% 3d] nil", cIdx)}, nil
 	}
 	switch cn := constant.(type) {
 	case *objects.FuncCompiled:
 		output = append(output, fmt.Sprintf("[% 3d] %s (Compiled Function|%p)", cIdx, cn.Name(), &cn))
-		for _, l := range d.disassembleInstructions(cn.Data(), 0) {
+		data, err := d.disassembleInstructions(cn.Data(), 0)
+		if err != nil {
+			return nil, err
+		}
+		for _, l := range data {
 			output = append(output, fmt.Sprintf("\t\t%s", l))
 		}
 	default:
 		z := reflect.TypeOf(cn)
 		output = append(output, fmt.Sprintf("[% 3d] %s -> '%s' (%s|%p)", cIdx, cn.TypeName(), cn.AsString(), z.Elem().Name(), &cn))
 	}
-	return output
+	return output, nil
 }
 
 // disassembleInstructions parses a sequence of bytecode instructions and generates a human-readable representation of the instructions.
-func (d *Disassembler) disassembleInstructions(bc []byte, posOffset int) []string {
+func (d *Disassembler) disassembleInstructions(bc []byte, posOffset int) ([]string, error) {
 	var out []string
 	for i := 0; i < len(bc); {
 		details := d.opcodes.Opcode(bc[i])
@@ -102,7 +105,7 @@ func (d *Disassembler) disassembleInstructions(bc []byte, posOffset int) []strin
 		}
 		i += 1 + read
 	}
-	return out
+	return out, nil
 }
 
 // CountObjects computes the total number of objects in the Bytecode's constants and imports, including nested objects.

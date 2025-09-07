@@ -50,10 +50,10 @@ const (
 )
 
 const (
-	// OpcodesLen defines the total number of opcodes available in the bytecode system, typically calculated as Uint8Size << 8.
-	OpcodesLen = 1 << (8)
-	// OpcodesMask defines the mask applied to OpcodeId values to ensure they fit within the allowable range.
-	OpcodesMask = OpcodesLen - 1
+// OpcodesLen defines the total number of opcodes available in the bytecode system, typically calculated as Uint8Size << 8.
+// OpcodesLen = 1 << (8)
+// OpcodesMask defines the mask applied to OpcodeId values to ensure they fit within the allowable range.
+// OpcodesMask = OpcodesLen - 1
 )
 
 // OpcodeId is a type alias for byte, used to represent operation codes in instruction sets.
@@ -119,7 +119,7 @@ const (
 	// OpTypeAssert implements type assertion 'val, ok := i.(Type)'.
 	OpTypeAssert
 
-	// OpIsType is a helper for type switch, checks type and pushes a boolean.
+	// OpIsType is a helper for type switch, checks type, and pushes a boolean.
 	OpIsType
 
 	// OpAsType is a helper for type switch, performs type casting without checks.
@@ -230,11 +230,11 @@ const (
 	// OpNoOp represents a no-operation opcode, often used as a placeholder or for instruction alignment.
 	OpNoOp
 
-	// OpUnknown represents an undefined or placeholder opcode in the instruction set, typically used as a default value.
+	// OpUnknown represents an undefined and latest opcode in the instruction set
 	OpUnknown
 )
 
-// Opcode represents the details of an opcode, including its identifier, its operands, and its name.
+// Opcode represents the details of an opcode, including its identifier, its operand, and its name.
 type Opcode struct {
 	opcodeId    OpcodeId
 	relocatable Relocatable
@@ -286,7 +286,7 @@ func (od *Opcode) Offset() int {
 // Opcodes is a collection that manages and organizes Opcode instances, providing methods to create, retrieve, or compile them.
 type Opcodes struct {
 	container []*Opcode
-	maxLen    int
+	mask      int
 }
 
 type Relocatable int
@@ -301,8 +301,15 @@ var noOperands []int
 
 // NewOpcodes initializes and returns a new Opcodes instance with predefined opcode mappings.
 func NewOpcodes() *Opcodes {
+	bits := 0
+	for (1 << bits) <= int(OpUnknown) {
+		bits++
+	}
+	mask := (1 << bits) - 1
+
 	op := &Opcodes{
-		container: make([]*Opcode, OpcodesLen),
+		container: make([]*Opcode, mask+1),
+		mask:      mask,
 	}
 	for i := range op.container {
 		op.container[i] = NewOpcode(OpUnknown, noOperands, "OpUnknown", OpRelocatableNone)
@@ -380,15 +387,12 @@ func (op *Opcodes) createOpcodeRepeated(opcodeId OpcodeId, count int, operand in
 // createOpcode registers a new Opcode in the Opcodes container with its identifier, operands, and name.
 func (op *Opcodes) createOpcode(opcodeId OpcodeId, operands []int, name string, relocatable Relocatable) {
 	od := NewOpcode(opcodeId, operands, name, relocatable)
-	op.container[od.opcodeId&OpcodesMask] = od
-	if len(operands) > op.maxLen {
-		op.maxLen = len(operands)
-	}
+	op.container[od.opcodeId] = od
 }
 
-// Opcode retrieves the *Opcode instance corresponding to the given OpcodeId from the container, applying a mask.
+// Opcode retrieves the Opcode associated with the given OpcodeId and returns it along with a boolean indicating success.
 func (op *Opcodes) Opcode(opcodeId OpcodeId) *Opcode {
-	return op.container[opcodeId&OpcodesMask]
+	return op.container[int(opcodeId)&op.mask]
 }
 
 // CompileInstruction generates bytecode for a given opcode and its operands or returns an error if validation fails.
@@ -446,7 +450,12 @@ func (op *Opcodes) CompileInstruction(opcode OpcodeId, operands ...int) ([]byte,
 	return instruction, nil
 }
 
-// MaxLen returns the maximum number of operands encountered across all compiled instructions in the Opcodes instance.
-func (op *Opcodes) MaxLen() int {
-	return op.maxLen
+// Mask returns the opcode mask used to determine the valid range or format of opcodes in the Opcodes collection.
+func (op *Opcodes) Mask() int {
+	return op.mask
+}
+
+// Len returns the number of elements in the Opcodes container.
+func (op *Opcodes) Len() int {
+	return len(op.container)
 }

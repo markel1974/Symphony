@@ -39,7 +39,7 @@ func (ds *Sequencer) Create(vm *core.VM) ([]core.IOpExecutor, error) {
 // createRegistered constructs and registers custom IOpExecutors using functions from _registerContainer and updates the sequence.
 func (ds *Sequencer) createRegistered(vmIn *core.VM) ([]core.IOpExecutor, error) {
 	fullAccess := core.IVMFullAccess(vmIn)
-	container := make([]core.IOpExecutor, bytecode.OpcodesLen)
+	container := make([]core.IOpExecutor, ds.op.Len())
 	for idx := range container {
 		var err error
 		if container[idx], err = NewOpUnknown(fullAccess, ds.op); err != nil {
@@ -51,11 +51,14 @@ func (ds *Sequencer) createRegistered(vmIn *core.VM) ([]core.IOpExecutor, error)
 		if err != nil {
 			return nil, err
 		}
-		data := container[seq.OpcodeId()&bytecode.OpcodesMask]
-		if data.OpcodeId() != bytecode.OpUnknown {
-			return nil, fmt.Errorf("opcode %d already registered: %s", seq.OpcodeId(), data.Name())
+		opId := seq.OpcodeId()
+		if opId < 0 || int(opId) >= len(container) {
+			return nil, fmt.Errorf("opcode %d out of range", opId)
 		}
-		container[seq.OpcodeId()&bytecode.OpcodesMask] = seq
+		if registered := container[opId]; registered.OpcodeId() != bytecode.OpUnknown {
+			return nil, fmt.Errorf("opcode %d already registered: %s", opId, registered.Name())
+		}
+		container[opId] = seq
 	}
 	return container, nil
 }
@@ -63,7 +66,7 @@ func (ds *Sequencer) createRegistered(vmIn *core.VM) ([]core.IOpExecutor, error)
 // createStatic initializes and assigns specific op executors to the sequencer's container in a pre-defined sequence.
 func (ds *Sequencer) createStatic(vmIn *core.VM) ([]core.IOpExecutor, error) {
 	fullAccess := core.IVMFullAccess(vmIn)
-	container := make([]core.IOpExecutor, bytecode.OpcodesLen)
+	container := make([]core.IOpExecutor, ds.op.Len())
 	for idx := range container {
 		var err error
 		if container[idx], err = NewOpUnknown(fullAccess, ds.op); err != nil {
@@ -128,7 +131,11 @@ func (ds *Sequencer) createStatic(vmIn *core.VM) ([]core.IOpExecutor, error) {
 		if err != nil {
 			return nil, err
 		}
-		container[seq.OpcodeId()&bytecode.OpcodesMask] = seq
+		opId := seq.OpcodeId()
+		if opId < 0 || int(opId) >= len(container) {
+			return nil, fmt.Errorf("opcode %d out of range", opId)
+		}
+		container[opId] = seq
 	}
 	return container, nil
 }
