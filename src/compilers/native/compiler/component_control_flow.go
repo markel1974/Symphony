@@ -292,7 +292,7 @@ func (c *ControlFlow) TypeSwitchStmt(node *ast.TypeSwitchStmt) error {
 			return err
 		}
 		variableName := assignStmt.Lhs[0].(*ast.Ident).Name
-		caseVarSymbol, err := c.scopes.SymbolDefine(-1, variableName)
+		caseVarSymbol, err := c.scopes.SymbolDefine(variableName)
 		if err != nil {
 			return err
 		}

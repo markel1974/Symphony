@@ -109,7 +109,7 @@ func (f *FunctionTable) SymbolsFromParameters(fieldList *ast.FieldList) ([]*Symb
 			isStruct := f.structTable.Has(typeName)
 			isInterface := f.interfaceTable.Has(typeName)
 			for _, name := range p.Names {
-				symbol, err := f.scopes.SymbolDefine(-1, name.Name)
+				symbol, err := f.scopes.SymbolDefine(name.Name)
 				if err != nil {
 					return nil, err
 				}
@@ -117,7 +117,7 @@ func (f *FunctionTable) SymbolsFromParameters(fieldList *ast.FieldList) ([]*Symb
 				symbol.SetReturnTypes([]string{typeName})
 				if isStruct {
 					f.structTable.BindSymbol(symbol, typeName)
-					//symbol.SetObject(f.gk.NewString(objects2.FrameStatic, typeName+":"+symbol.Name()))
+					symbol.SetObject(f.gk.NewString(objects2.FrameStatic, typeName+":"+symbol.Name()))
 				} else if isInterface {
 					symbol.SetInterface(typeName)
 					symbol.SetObject(f.gk.NewString(objects2.FrameStatic, "interface:"+symbol.Name()))
@@ -133,7 +133,7 @@ func (f *FunctionTable) SymbolsFromParameters(fieldList *ast.FieldList) ([]*Symb
 func (f *FunctionTable) RangeKey(node *ast.RangeStmt) (*Symbol, error) {
 	if node.Key != nil {
 		if ident, ok := node.Key.(*ast.Ident); ok && ident.Name != UndefinedSymbol {
-			keySymbol, err := f.scopes.SymbolDefine(-1, ident.Name)
+			keySymbol, err := f.scopes.SymbolDefine(ident.Name)
 			if err != nil {
 				return nil, err
 			}
@@ -147,7 +147,7 @@ func (f *FunctionTable) RangeKey(node *ast.RangeStmt) (*Symbol, error) {
 func (f *FunctionTable) RangeValue(node *ast.RangeStmt, typeName string) (*Symbol, error) {
 	if node.Value != nil {
 		if ident, ok := node.Value.(*ast.Ident); ok && ident.Name != UndefinedSymbol {
-			valueSymbol, err := f.scopes.SymbolDefine(-1, ident.Name)
+			valueSymbol, err := f.scopes.SymbolDefine(ident.Name)
 			if err != nil {
 				return nil, err
 			}

@@ -6,7 +6,7 @@ import (
 	"io"
 
 	"github.com/markel1974/c64emu/src/vm/bytecode"
-	"github.com/markel1974/c64emu/src/vm/objects"
+	objects2 "github.com/markel1974/c64emu/src/vm/objects"
 )
 
 // maxScope defines the maximum allowable depth for compilation scopes to prevent excessive recursion or memory use.
@@ -16,7 +16,7 @@ const (
 
 // Scopes manages a collection of compilation scopes and the associated symbol table for nested compilation contexts.
 type Scopes struct {
-	gk                   objects.IGateKeeper
+	gk                   objects2.IGateKeeper
 	op                   *bytecode.Opcodes
 	symbolTable          *SymbolTable
 	initSymbolTable      *SymbolTable
@@ -26,7 +26,7 @@ type Scopes struct {
 }
 
 // NewScopes initializes and returns a Scopes structure with a new symbol table, main compilation scope, and scope index set to 0.
-func NewScopes(gk objects.IGateKeeper, op *bytecode.Opcodes) *Scopes {
+func NewScopes(gk objects2.IGateKeeper, op *bytecode.Opcodes) *Scopes {
 	c := &Scopes{
 		gk:                   gk,
 		op:                   op,
@@ -41,14 +41,14 @@ func NewScopes(gk objects.IGateKeeper, op *bytecode.Opcodes) *Scopes {
 	return c
 }
 
-func (c *Scopes) CreateGlobals() []objects.IObject {
-	ret := make([]objects.IObject, len(c.initSymbolTable.definitions))
+func (c *Scopes) CreateGlobals() []objects2.IObject {
+	ret := make([]objects2.IObject, len(c.initSymbolTable.symbols))
 	for _, obj := range c.initSymbolTable.definitions {
 		target := obj.GetObject()
 		if target != nil {
 			ret[obj.index] = target
 		} else {
-			ret[obj.index] = c.gk.NewString(objects.FrameStatic, obj.Name()+"_placeHolder")
+			ret[obj.index] = c.gk.NewString(objects2.FrameStatic, obj.Name()+"_placeHolder")
 			//ret[obj.index] = c.factory.UndefinedValue()
 		}
 	}
@@ -72,16 +72,16 @@ func (c *Scopes) SymbolDefineUnique(symbol string) (*Symbol, error) {
 
 // SymbolDefine defines a new symbol in the current symbol table with the specified name, scope, and struct flag.
 // It returns the created symbol or an error if the operation fails.
-func (c *Scopes) SymbolDefine(constantIdx int, name string) (*Symbol, error) {
+func (c *Scopes) SymbolDefine(symbol string) (*Symbol, error) {
 	//if symbol == "rect" {
 	//	fmt.Println("symbol taskT found!!!!")
 	//}
-	return c.symbolTable.Define(constantIdx, name)
+	return c.symbolTable.Define(symbol)
 }
 
 // SymbolRebuildScope rebuilds and updates the specified symbol with a new scope in the symbol table, returning the updated symbol.
-func (c *Scopes) SymbolRebuildScope(name string, scope SymbolScope) (*Symbol, bool) {
-	return c.symbolTable.RebuildScope(name, scope)
+func (c *Scopes) SymbolRebuildScope(symbol string, scope SymbolScope) (*Symbol, bool) {
+	return c.symbolTable.RebuildScope(symbol, scope)
 }
 
 // SymbolResolve attempts to find a symbol in the current scope and returns it along with a boolean indicating success.
@@ -299,19 +299,15 @@ func (c *Scopes) EmitSymbolSet(s *Symbol) error {
 // EmitSymbolGet generates bytecode instructions to retrieve a symbol's value based on its scope and index.
 func (c *Scopes) EmitSymbolGet(s *Symbol) error {
 	var op bytecode.OpcodeId
-	if s.constantIdx >= 0 {
-		op = bytecode.OpConstant
-	} else {
-		switch s.Scope() {
-		case GlobalScope:
-			op = bytecode.OpGlobalGet
-		case LocalScope:
-			op = bytecode.OpLocalGet
-		case FreeScope:
-			op = bytecode.OpFreeGet
-		default:
-			return fmt.Errorf("unsupported symbol scope: %v", s.Scope())
-		}
+	switch s.Scope() {
+	case GlobalScope:
+		op = bytecode.OpGlobalGet
+	case LocalScope:
+		op = bytecode.OpLocalGet
+	case FreeScope:
+		op = bytecode.OpFreeGet
+	default:
+		return fmt.Errorf("unsupported symbol scope: %v", s.Scope())
 	}
 	if _, err := c.Emit(op, s.Index()); err != nil {
 		return err

@@ -197,12 +197,12 @@ func (st *StructTable) FieldsFromLiteral(structName string, eltS []ast.Expr) ([]
 	symbol, ok := st.scopes.SymbolResolve(structName)
 	if !ok {
 		var err error
-		if symbol, err = st.scopes.SymbolDefine(-1, structName); err != nil {
+		if symbol, err = st.scopes.SymbolDefine(structName); err != nil {
 			return nil, err
 		}
 	}
 	symbol.SetReturnTypes([]string{structName})
-	//symbol.SetObject(st.gk.NewString(objects2.FrameStatic, structName+":"+symbol.Name()))
+	symbol.SetObject(st.gk.NewString(objects2.FrameStatic, structName+":"+symbol.Name()))
 	st.BindSymbol(symbol, structName)
 
 	isKeyed := false

@@ -3,7 +3,6 @@ package core
 import (
 	"fmt"
 	"io"
-	"log"
 	"time"
 
 	"github.com/markel1974/c64emu/src/vm/bytecode"
@@ -93,11 +92,10 @@ func (v *VM) Setup(loader bytecode.ILoader, codes ...*bytecode.Bytecode) (map[st
 	if err = v.imports.Setup(loader, v.bc.Imports()); err != nil {
 		return nil, err
 	}
-	entryPoints, err := v.constants.Setup(v.bc.Constants(), bytecode.PreInitFunction, bytecode.InitFunction)
-	if err != nil {
+	if err = v.constants.Setup(v.bc.Constants()); err != nil {
 		return nil, err
 	}
-	_, err = v.globals.Setup(v.bc.Globals(), bytecode.PreInitFunction, bytecode.InitFunction)
+	entryPoints, err := v.globals.Setup(v.bc.Globals(), bytecode.PreInitFunction, bytecode.InitFunction)
 	if err != nil {
 		return nil, err
 	}
@@ -131,7 +129,7 @@ func (v *VM) EnableRetValues(retValues bool) {
 
 // Run executes the main function identified by mainId with the provided arguments in the virtual machine context.
 func (v *VM) Run(mainId uint, args ...interface{}) ([]interface{}, error) {
-	obj := v.constants.Get(mainId)
+	obj := v.globals.Get(mainId)
 	mainFn, ok := obj.(*objects.FuncCompiled)
 	if !ok {
 		return nil, fmt.Errorf("entry point not found: %d", mainId)
@@ -385,7 +383,7 @@ func (v *VM) loop() {
 		opcode = v.currFrame.Get8(uint(v.ip))
 		decoder = v.sequencer[opcode]
 		v.ip = decoder.Decode(v.currFrame, v.ip)
-		log.Printf("Executing instruction opcode: %d name: %s ip: %d decoded: %v", opcode, decoder.Name(), v.ip, decoder.decodedOperands[:decoder.fullWidth])
+		//log.Printf("Executing instruction opcode: %d name: %s ip: %d decoded: %v", opcode, decoder.Name(), v.ip, decoder.decodedOperands[:decoder.fullWidth])
 		decoder.Execute()
 		if v.shutdown {
 			break

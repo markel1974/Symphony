@@ -99,23 +99,23 @@ func (c *Declarations) TypeSpec(node *ast.TypeSpec) error {
 				}
 			}
 		}
-		constantIdx := c.constants.Add(typeName, c.gk.NewString(objects.FrameStatic, typeName))
-		symbol, err := c.scopes.SymbolDefine(constantIdx, typeName)
+		//TODO VERIFCARE SE NECESSARIO (VIENE INSERITO NELLA TABELLA DI STRUTTURE)
+		symbol, err := c.scopes.SymbolDefine(typeName)
 		if err != nil {
 			return err
 		}
 		symbol.SetStruct(typeName, nil)
 	case *ast.InterfaceType:
-		// Add the interface definition to our new table
+		// Aggiungi la definizione dell'interfaccia alla nostra nuova tabella
 		if err := c.interfaceTable.Add(typeName, t); err != nil {
 			return tables.NewCompilerError(c.fileSet, node, err.Error())
 		}
-		constantIdx := c.constants.Add(typeName, c.gk.NewString(objects.FrameStatic, "interface:"+typeName))
-		// Add a symbol for the interface type
-		symbol, err := c.scopes.SymbolDefine(constantIdx, typeName)
+		// Aggiungi un simbolo per il tipo interfaccia
+		symbol, err := c.scopes.SymbolDefine(typeName)
 		if err != nil {
 			return err
 		}
+		// Passa il nome del tipo
 		symbol.SetInterface(typeName)
 		symbol.SetObject(c.gk.NewString(objects.FrameStatic, "interface:"+symbol.Name()))
 	}
@@ -134,7 +134,7 @@ func (c *Declarations) ValueSpec(node *ast.ValueSpec) error {
 			if err := c.compile(node.Values[i]); err != nil {
 				return err
 			}
-			symbol, err := c.scopes.SymbolDefine(-1, name.Name)
+			symbol, err := c.scopes.SymbolDefine(name.Name)
 			if err != nil {
 				return err
 			}
@@ -179,7 +179,7 @@ func (c *Declarations) ValueSpec(node *ast.ValueSpec) error {
 
 	// CASE 2: Declaration has NO value (e.g. var p1 Printer)
 	for _, name := range node.Names {
-		symbol, err := c.scopes.SymbolDefine(-1, name.Name)
+		symbol, err := c.scopes.SymbolDefine(name.Name)
 		if err != nil {
 			return err
 		}
@@ -531,7 +531,7 @@ func (c *Declarations) handleVariableDeclaration(tok token.Token, rhsIn ast.Expr
 		}
 		if tok == token.DEFINE {
 			// Specific case for ':='
-			symbol, err := c.scopes.SymbolDefine(-1, lhs.Name)
+			symbol, err := c.scopes.SymbolDefine(lhs.Name)
 			if err != nil {
 				return err
 			}

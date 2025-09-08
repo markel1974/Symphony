@@ -119,15 +119,14 @@ func (c *Functions) funcBodyPrepare(fd *tables.FunctionDescription) error {
 		fd.StructName = ""
 	}
 	//function symbol placeholder (this is not the real function, it's just a placeholder to be able to compile the body)
-	placeHolder, err := c.scopes.SymbolDefine(9999, fd.Name)
+	placeHolder, err := c.scopes.SymbolDefine(fd.Name)
 	if err != nil {
 		return err
 	}
 	placeHolder.SetInputTypes(fd.InputNames, fd.InputTypes)
 	placeHolder.SetReturnTypes(fd.ReturnTypes)
 	if len(fd.StructName) > 0 {
-		//c.constants.Add(placeHolder.Name(), c.gk.NewString(objects.FrameStatic, fd.StructName))
-		//placeHolder.SetObject(c.gk.NewString(objects.FrameStatic, fd.StructName+":"+placeHolder.Name()))
+		placeHolder.SetObject(c.gk.NewString(objects.FrameStatic, fd.StructName+":"+placeHolder.Name()))
 		c.structTable.BindSymbol(placeHolder, fd.StructName)
 		c.structTable.Add(fd.StructName, node.Name.Name, "", "func", node)
 	}
@@ -182,13 +181,11 @@ func (c *Functions) funcBodyCompile(fd *tables.FunctionDescription) error {
 		return tables.NewCompilerError(c.fileSet, node, "undefined function: %s", fd.Name)
 	}
 	compiledFn := c.gk.NewFuncCompiled(objects.FrameStatic, fd.Name, code, nLocals, nParams, false, nil, freeObj)
-	//fnSymbol.SetObject(compiledFn)
-	constantIdx := c.constants.Add(fd.Name, compiledFn)
-	fnSymbol.SetConstant(constantIdx)
+	fnSymbol.SetObject(compiledFn)
 	fnSymbol.SetReturnTypes(fd.ReturnTypes)
 
 	if node.Recv == nil && !c.scopes.IsRootScope() {
-		if _, err = c.scopes.Emit(bytecode.OpClosure, freeNum, constantIdx /* fnSymbol.Index()*/); err != nil {
+		if _, err = c.scopes.Emit(bytecode.OpClosure, freeNum, fnSymbol.Index()); err != nil {
 			return err
 		}
 		symbol, _ := c.scopes.SymbolResolve(node.Name.Name)

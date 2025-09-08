@@ -282,14 +282,11 @@ func (c *Compiler) createInit() error {
 	}
 	initFuncCode := scope.Instructions()
 	numLocals := c.scopes.SymbolCount()
-
-	compiledInitFn := c.gk.NewFuncCompiled(objects.FrameStatic, bytecode.PreInitFunction, initFuncCode, numLocals, 0, false, nil, nil)
-	constantIdx := c.constants.Add(bytecode.PreInitFunction, compiledInitFn)
-	_, err = c.scopes.SymbolDefine(constantIdx, bytecode.PreInitFunction)
+	initSymbols, err := c.scopes.SymbolDefine(bytecode.PreInitFunction)
 	if err != nil {
 		return err
 	}
-	//compiledInitFn := c.gk.NewFuncCompiled(objects.FrameStatic, initSymbols.Name(), initFuncCode, numLocals, 0, false, nil, nil)
-	//initSymbols.SetObject(compiledInitFn)
+	compiledInitFn := c.gk.NewFuncCompiled(objects.FrameStatic, initSymbols.Name(), initFuncCode, numLocals, 0, false, nil, nil)
+	initSymbols.SetObject(compiledInitFn)
 	return nil
 }

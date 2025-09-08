@@ -15,17 +15,15 @@ type Symbol struct {
 	inputType     []string
 	inputName     []string
 	returnTypes   []string
-	constantIdx   int
 	object        objects.IObject
 }
 
 // NewSymbol creates a new Symbol instance with the provided name, index, scope, and associated object.
-func NewSymbol(constantIdx int, name string, index int, scope SymbolScope) *Symbol {
+func NewSymbol(name string, index int, scope SymbolScope) *Symbol {
 	symbol := &Symbol{
 		name:          name,
 		index:         index,
 		scope:         scope,
-		constantIdx:   constantIdx,
 		interfaceName: "",
 		object:        nil,
 		structFields:  []string{},
@@ -39,7 +37,6 @@ func (s *Symbol) Clone() *Symbol {
 		name:          s.name,
 		scope:         s.scope,
 		index:         s.index,
-		constantIdx:   s.constantIdx,
 		interfaceName: s.interfaceName,
 		structName:    s.structName,
 		structFields:  s.structFields,
@@ -99,10 +96,6 @@ func (s *Symbol) IsStruct() bool {
 func (s *Symbol) SetInterface(name string) {
 	s.interfaceName = name
 	s.structName = "" // Non può essere uno struct
-}
-
-func (s *Symbol) SetConstant(constantIdx int) {
-	s.constantIdx = constantIdx
 }
 
 func (s *Symbol) IsInterface() bool {
