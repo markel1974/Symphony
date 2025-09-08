@@ -1,6 +1,7 @@
 package core
 
 import (
+	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/objects"
 )
 
@@ -39,6 +40,19 @@ func (f *Frame) Bind(startIp int, compiledFunction *objects.FuncCompiled, basePo
 	f.compiledFunction = compiledFunction
 	f.instructions = f.compiledFunction.Instructions()
 	f.freeVars = f.compiledFunction.Free()
+}
+
+//func (f *Frame) Fetch(ip int) (int, bytecode.OpcodeId) {
+//	headerSize := f.Get8(uint(ip))
+//	opcode := f.Get32(uint(ip) + 1)
+//	ip = int(ip) + 1 + int(headerSize)
+//	return ip, bytecode.OpcodeId(opcode)
+//}
+
+func (f *Frame) Fetch(ip int) (int, bytecode.OpcodeId) {
+	ip += bytecode.OpcodeWidth
+	opcode := f.Get8(uint(ip))
+	return ip, opcode
 }
 
 // Get8 retrieves an 8-bit unsigned integer from the instructions at the specified index in the current frame.

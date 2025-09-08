@@ -35,6 +35,7 @@ type VM struct {
 	shutdown          bool
 	err               error
 	sequencer         []*Decoder
+	sequencerMask     int
 	imports           *Imports
 	constants         *Constants
 	globals           *Globals
@@ -68,7 +69,7 @@ func (v *VM) Setup(loader bytecode.ILoader, codes ...*bytecode.Bytecode) (map[st
 	if err != nil {
 		return nil, err
 	}
-
+	v.sequencerMask = len(sequencer) - 1
 	v.sequencer = make([]*Decoder, len(sequencer))
 	for i, s := range sequencer {
 		if v.sequencer[i], err = NewDecoder(s); err != nil {
@@ -373,15 +374,14 @@ func (v *VM) exec(mainFn *objects.FuncCompiled, ret bool, args ...interface{}) (
 
 // loop executes the main instruction loop for the virtual machine, updating the instruction pointer and processing opcodes.
 func (v *VM) loop() {
-	var opcode byte
+	var opcode bytecode.OpcodeId
 	var decoder *Decoder
 	v.counterIterations = 0
 	v.counterStart = uint64(time.Now().UnixMilli())
 	for {
 		v.counterIterations++
-		v.ip += bytecode.OpcodeWidth
-		opcode = v.currFrame.Get8(uint(v.ip))
-		decoder = v.sequencer[opcode]
+		v.ip, opcode = v.currFrame.Fetch(v.ip)
+		decoder = v.sequencer[int(opcode)&v.sequencerMask]
 		v.ip = decoder.Decode(v.currFrame, v.ip)
 		//log.Printf("Executing instruction opcode: %d name: %s ip: %d decoded: %v", opcode, decoder.Name(), v.ip, decoder.decodedOperands[:decoder.fullWidth])
 		decoder.Execute()
