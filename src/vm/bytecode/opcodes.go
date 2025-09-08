@@ -39,6 +39,7 @@ func NewOpcodes() *Opcodes {
 	op.create(OpJumpNotError, []OperandFeature{SzUint16}, "OpJumpNotError")
 	op.create(OpJumpIndirect, noOperands, "OpJumpIndirect")
 	op.create(OpNull, noOperands, "OpNull")
+	op.create(OpGlobalDefine, []OperandFeature{SzUint16}, "OpGlobalDefine")
 	op.create(OpGlobalGet, []OperandFeature{SzUint16}, "OpGlobalGet")
 	op.create(OpGlobalSet, []OperandFeature{SzUint16}, "OpGlobalSet")
 	op.create(OpGlobalSelSet, []OperandFeature{SzUint16, SzUint8}, "OpGlobalSelSet")

@@ -6,7 +6,7 @@ import (
 	"io"
 
 	"github.com/markel1974/c64emu/src/vm/bytecode"
-	objects2 "github.com/markel1974/c64emu/src/vm/objects"
+	"github.com/markel1974/c64emu/src/vm/objects"
 )
 
 // maxScope defines the maximum allowable depth for compilation scopes to prevent excessive recursion or memory use.
@@ -16,7 +16,7 @@ const (
 
 // Scopes manages a collection of compilation scopes and the associated symbol table for nested compilation contexts.
 type Scopes struct {
-	gk                   objects2.IGateKeeper
+	gk                   objects.IGateKeeper
 	op                   *bytecode.Opcodes
 	symbolTable          *SymbolTable
 	initSymbolTable      *SymbolTable
@@ -26,7 +26,7 @@ type Scopes struct {
 }
 
 // NewScopes initializes and returns a Scopes structure with a new symbol table, main compilation scope, and scope index set to 0.
-func NewScopes(gk objects2.IGateKeeper, op *bytecode.Opcodes) *Scopes {
+func NewScopes(gk objects.IGateKeeper, op *bytecode.Opcodes) *Scopes {
 	c := &Scopes{
 		gk:                   gk,
 		op:                   op,
@@ -41,14 +41,14 @@ func NewScopes(gk objects2.IGateKeeper, op *bytecode.Opcodes) *Scopes {
 	return c
 }
 
-func (c *Scopes) CreateGlobals() []objects2.IObject {
-	ret := make([]objects2.IObject, len(c.initSymbolTable.symbols))
+func (c *Scopes) CreateGlobals() []objects.IObject {
+	ret := make([]objects.IObject, len(c.initSymbolTable.symbols))
 	for _, obj := range c.initSymbolTable.definitions {
 		target := obj.GetObject()
 		if target != nil {
 			ret[obj.index] = target
 		} else {
-			ret[obj.index] = c.gk.NewString(objects2.FrameStatic, obj.Name()+"_placeHolder")
+			ret[obj.index] = c.gk.NewString(objects.FrameStatic, obj.Name()+"_placeHolder")
 			//ret[obj.index] = c.factory.UndefinedValue()
 		}
 	}
@@ -265,7 +265,7 @@ func (c *Scopes) EmitSymbolDefine(s *Symbol) error {
 	var op bytecode.OpcodeId
 	switch s.Scope() {
 	case GlobalScope:
-		op = bytecode.OpGlobalSet
+		op = bytecode.OpGlobalDefine
 	case LocalScope:
 		op = bytecode.OpLocalDefine // Use new opcode for local variables
 	default:

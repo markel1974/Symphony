@@ -112,6 +112,9 @@ const (
 	// OpReturn represents the opcode for returning from a function or operation, potentially with a value.
 	OpReturn
 
+	// OpGlobalDefine represents an opcode for defining a new global variable in the globals scope.
+	OpGlobalDefine
+
 	// OpGlobalGet retrieves a value from the globals scope by its index in the constants pool.
 	OpGlobalGet
 

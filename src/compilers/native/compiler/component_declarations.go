@@ -167,7 +167,7 @@ func (c *Declarations) ValueSpec(node *ast.ValueSpec) error {
 					symbol.SetObject(c.gk.NewString(objects.FrameStatic, inferredTypeName+":"+symbol.Name()))
 					c.structTable.BindSymbol(symbol, inferredTypeName)
 				} else {
-					symbol.SetObject(c.gk.NewString(objects.FrameStatic, "unknown:"+symbol.Name()))
+					symbol.SetObject(c.gk.NewString(objects.FrameStatic, symbol.Name()))
 				}
 			}
 			if err = c.scopes.EmitSymbolDefineAndPop(symbol); err != nil {
