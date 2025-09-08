@@ -92,7 +92,7 @@ func (o *Interface) ArithmeticOp(frame int, op ArithmeticOperator, rightHandSide
 }
 
 // IndexGet retrieves the value at the specified index from the object, using the provided execution frame and index.
-func (o *Interface) IndexGet(frame int, index IObject) (value IObject, err error) {
+func (o *Interface) IndexGet(frame int, index IObject) (IObject, error) {
 	return o.value.IndexGet(frame, index)
 }
 

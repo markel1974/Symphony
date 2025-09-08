@@ -193,19 +193,16 @@ func (o *Array) Equals(in IObject) bool {
 }
 
 // IndexGet retrieves the element at the given index from the Array. Returns an error if the index type is invalid or out of bounds.
-func (o *Array) IndexGet(_ int, index IObject) (res IObject, err error) {
+func (o *Array) IndexGet(_ int, index IObject) (IObject, error) {
 	intIdx, ok := index.(*Int)
 	if !ok {
-		err = ErrInvalidIndexType
-		return
+		return o.gk.UndefinedValue(), ErrInvalidIndexType
 	}
 	idxVal := int(intIdx.value)
 	if idxVal < 0 || idxVal >= len(o.values) {
-		res = o.GateKeeper().UndefinedValue()
-		return
+		return o.gk.UndefinedValue(), nil
 	}
-	res = o.values[idxVal]
-	return
+	return o.values[idxVal], nil
 }
 
 // IndexSet assigns a given value to the specified index in the array, returning an error if the operation is invalid.

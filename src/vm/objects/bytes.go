@@ -143,19 +143,16 @@ func (o *Bytes) Equals(x IObject) bool {
 }
 
 // IndexGet retrieves the values at the specified index from the Bytes object and returns an error if the index is invalid.
-func (o *Bytes) IndexGet(frame int, index IObject) (res IObject, err error) {
+func (o *Bytes) IndexGet(frame int, index IObject) (IObject, error) {
 	intIdx, ok := index.(*Int)
 	if !ok {
-		err = ErrInvalidIndexType
-		return
+		return nil, ErrInvalidIndexType
 	}
 	idxVal := int(intIdx.value)
 	if idxVal < 0 || idxVal >= len(o.values) {
-		res = o.GateKeeper().UndefinedValue()
-		return
+		return o.gk.UndefinedValue(), nil
 	}
-	res = o.GateKeeper().NewInt(frame, int64(o.values[idxVal]))
-	return
+	return o.gk.NewInt(frame, int64(o.values[idxVal])), nil
 }
 
 // Iterable returns true if the object can be iterated over, otherwise false.

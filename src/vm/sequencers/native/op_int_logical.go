@@ -46,6 +46,7 @@ func (op *OpIntLogical) Execute(decoder *core.Decoder) {
 	result, err := op.vm.Factory().LogicalOpInt64(logicalOp, lhsObj.AsInt64(), rhsObj.AsInt64())
 	if err != nil {
 		op.vm.SetError(err)
+		return
 	}
 	if result {
 		dst.SetValue(1)

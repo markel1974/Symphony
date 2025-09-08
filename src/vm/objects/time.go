@@ -63,13 +63,13 @@ func (o *Time) Nil() bool {
 }
 
 // IndexGet attempts to retrieve a value at the given index and returns an error if the object is not indexable.
-func (o *Time) IndexGet(_ int, _ IObject) (res IObject, err error) {
-	return nil, ErrNotIndexable
+func (o *Time) IndexGet(_ int, _ IObject) (IObject, error) {
+	return o.gk.UndefinedValue(), ErrNotIndexable
 }
 
 // IndexSet attempts to assign a value to an index in the object but always returns ErrUnsupportedIndex,
 // as this operation is unsupported.
-func (o *Time) IndexSet(_, _ IObject) (err error) {
+func (o *Time) IndexSet(_, _ IObject) error {
 	return ErrUnsupportedIndex
 }
 

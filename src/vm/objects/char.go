@@ -60,8 +60,8 @@ func (o *Char) Nil() bool {
 }
 
 // IndexGet attempts to retrieve a value at the given index and returns an error if the object is not indexable.
-func (o *Char) IndexGet(_ int, _ IObject) (res IObject, err error) {
-	return nil, ErrNotIndexable
+func (o *Char) IndexGet(_ int, _ IObject) (IObject, error) {
+	return o.gk.UndefinedValue(), ErrNotIndexable
 }
 
 // IndexSet attempts to assign a value to an index in the object but always returns ErrUnsupportedIndex,

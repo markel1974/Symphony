@@ -121,8 +121,8 @@ const (
 	// OpGlobalSet is an opcode used to assign a value to a globals variable within a globals scope.
 	OpGlobalSet
 
-	// OpGlobalSelSet represents an operation for setting a value in a globally selected field or property.
-	OpGlobalSelSet
+	// OpGlobalIndex represents an operation for setting a value in a globally selected field or property.
+	OpGlobalIndex
 
 	// OpGlobalCopy is an opcode used to copy a value from one global variable to another.
 	OpGlobalCopy
@@ -136,8 +136,8 @@ const (
 	// OpLocalDefine is an opcode used to define a new local variable within the local scope of the current function.
 	OpLocalDefine
 
-	// OpLocalSelSet represents the opcode for setting a value in a local variable with a selector (e.g., struct field or map key).
-	OpLocalSelSet
+	// OpLocalIndex represents the opcode for setting a value in a local variable with a selector (e.g., struct field or map key).
+	OpLocalIndex
 
 	// OpLocalPtrGet represents an opcode used to retrieve a pointer to a local variable in the current execution scope.
 	OpLocalPtrGet

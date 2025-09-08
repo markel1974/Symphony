@@ -7,17 +7,21 @@ import (
 	"github.com/markel1974/c64emu/src/vm/core"
 )
 
+// init initializes the sequencer by registering the NewOpGlobalDefine operation with the SequencerRegister function.
 func init() {
 	SequencerRegister(NewOpGlobalDefine)
 }
 
-// OpGlobalDefine represents the opcode for defining a new local variable within the current frame's scope.
+// OpGlobalDefine represents an operation to define a global variable in the VM environment.
+// It binds a value from the stack to a global index specified by the decoder.
+// Embeds `bytecode.Opcode` for opcode-related operations and uses `core.IVMFullAccess` for VM interactions.
 type OpGlobalDefine struct {
 	*bytecode.Opcode
 	vm core.IVMFullAccess
 }
 
-// NewOpGlobalDefine creates a new instance of OpGlobalDefine with its associated opcode details.
+// NewOpGlobalDefine creates a new OpGlobalDefine executor for the given virtual machine and opcode configuration.
+// Returns an IOpExecutor instance or an error if the VM does not implement IVMFullAccess.
 func NewOpGlobalDefine(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
 	vmT, ok := vm.(core.IVMFullAccess)
 	if !ok {
@@ -29,10 +33,10 @@ func NewOpGlobalDefine(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, err
 	}, nil
 }
 
-// Execute increments the instruction pointer, retrieves a local index, and assigns a stack value to a designated slot.
+// Execute sets a value from the stack into the global variables using the operand index from the decoder.
 func (op *OpGlobalDefine) Execute(decoder *core.Decoder) {
 	// Operands Offset 2 (16-bit)
-	glIndex := decoder.Read(0)
+	index := decoder.Read(0)
 	val := op.vm.Stack().Peek()
-	op.vm.Globals().Set(uint(glIndex), val)
+	op.vm.Globals().Set(uint(index), val)
 }

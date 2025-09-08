@@ -5,7 +5,6 @@ import (
 
 	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/core"
-	"github.com/markel1974/c64emu/src/vm/objects"
 )
 
 func init() {
@@ -35,11 +34,7 @@ func (op *OpStruct) Execute(decoder *core.Decoder) {
 	// Operands Offset 2 (16-bit)
 	numElements := decoder.Read(0)
 	typeNameObj := op.vm.Stack().Pop()
-	typeName, ok := typeNameObj.(*objects.String)
-	if !ok {
-		op.vm.SetError(fmt.Errorf("expected string type for struct name, but got %s", typeNameObj.TypeName()))
-		return
-	}
 	mElem := op.vm.Stack().PopMapElements(numElements)
-	op.vm.Stack().Push(op.vm.Factory().NewStruct(op.vm.Frame().Id(), typeName.Value(), mElem))
+	structObj := op.vm.Factory().NewStruct(op.vm.Frame().Id(), typeNameObj.AsString(), mElem)
+	op.vm.Stack().Push(structObj)
 }

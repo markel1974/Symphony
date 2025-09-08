@@ -118,7 +118,7 @@ func (o *Undefined) Equals(x IObject) bool {
 
 // IndexGet returns an element at a given index.
 func (o *Undefined) IndexGet(_ int, _ IObject) (IObject, error) {
-	return o.GateKeeper().UndefinedValue(), nil
+	return o.gk.UndefinedValue(), nil
 }
 
 // Iterate creates a map iterator.

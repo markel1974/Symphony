@@ -627,9 +627,9 @@ func (c *Declarations) handleVariableDeclaration(tok token.Token, rhsIn ast.Expr
 				}
 				// Stack is now: [..., value, "fieldName"]
 				const numSelectors = 1
-				op := bytecode.OpLocalSelSet
+				op := bytecode.OpLocalIndex
 				if symbol.Scope() == tables.GlobalScope {
-					op = bytecode.OpGlobalSelSet
+					op = bytecode.OpGlobalIndex
 				}
 				if _, err := c.scopes.Emit(op, symbol.Index(), numSelectors); err != nil {
 					return err

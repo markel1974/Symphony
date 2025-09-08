@@ -107,8 +107,8 @@ func (o *Bool) ArithmeticOp(_ int, op ArithmeticOperator, rhsIn IObject) (IObjec
 }
 
 // IndexGet retrieves the value at a given index from the Bool object, but always returns an error as Bool is not indexable.
-func (o *Bool) IndexGet(_ int, _ IObject) (res IObject, err error) {
-	return nil, ErrNotIndexable
+func (o *Bool) IndexGet(_ int, _ IObject) (IObject, error) {
+	return o.gk.UndefinedValue(), ErrNotIndexable
 }
 
 // IndexSet attempts to set an index on the Bool object but always returns ErrUnsupportedIndex as Bool is not indexable.

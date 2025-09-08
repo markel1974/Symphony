@@ -36,12 +36,11 @@ func (op *OpLocalSet) Execute(decoder *core.Decoder) {
 	// Operands Offset 1 (8-bit)
 	localIndex := decoder.Read(0)
 	val := op.vm.Stack().Peek()
-	destSlot := op.vm.Frame().BasePointer() + localIndex
-	existingValue := op.vm.Stack().PeekAbsolute(destSlot)
-	if freeObj, ok := existingValue.(*objects.ObjectPointer); ok {
+	dstSlot := op.vm.Frame().BasePointer() + localIndex
+	obj := op.vm.Stack().PeekAbsolute(dstSlot)
+	if freeObj, ok := obj.(*objects.ObjectPointer); ok {
 		op.vm.Factory().SetPointer(freeObj, val)
-		//freeObj.SetValue(val)
 	} else {
-		op.vm.Stack().SetAbsolute(destSlot, val)
+		op.vm.Stack().SetAbsolute(dstSlot, val)
 	}
 }

@@ -44,7 +44,6 @@ func (op *OpInterface) Execute(decoder *core.Decoder) {
 		// Pop in reverse order: function first, then name.
 		methodFunc := op.vm.Stack().Pop()
 		methodNameObj := op.vm.Stack().Pop()
-
 		methodName, ok := methodNameObj.(*objects.String)
 		if !ok {
 			op.vm.SetError(fmt.Errorf("interface method name must be a string, got %s", methodNameObj.TypeName()))

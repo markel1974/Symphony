@@ -158,11 +158,9 @@ func (o *Error) Equals(x IObject) bool {
 }
 
 // IndexGet retrieves the values associated with the "values" index in an Error object or returns an error for invalid indices.
-func (o *Error) IndexGet(_ int, index IObject) (res IObject, err error) {
+func (o *Error) IndexGet(_ int, index IObject) (IObject, error) {
 	if strIdx, _ := o.GateKeeper().ToString(index); strIdx != "values" {
-		err = ErrInvalidIndexValueType
-		return
+		return nil, ErrInvalidIndexValueType
 	}
-	res = o.value
-	return
+	return o.value, nil
 }

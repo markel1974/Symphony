@@ -93,13 +93,13 @@ func (o *ObjectPointer) ArithmeticOp(frame int, obj ArithmeticOperator, rhs IObj
 }
 
 // IndexGet attempts to retrieve a value at the given index and returns an error if the object is not indexable.
-func (o *ObjectPointer) IndexGet(frame int, obj IObject) (res IObject, err error) {
+func (o *ObjectPointer) IndexGet(frame int, obj IObject) (IObject, error) {
 	return (*o.valuePtr).IndexGet(frame, obj)
 }
 
 // IndexSet attempts to assign a value to an index in the object but always returns ErrUnsupportedIndex,
 // as this operation is unsupported.
-func (o *ObjectPointer) IndexSet(frame, obj IObject) (err error) {
+func (o *ObjectPointer) IndexSet(frame, obj IObject) error {
 	return (*o.valuePtr).IndexSet(frame, obj)
 }
 

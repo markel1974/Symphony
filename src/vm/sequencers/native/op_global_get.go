@@ -33,11 +33,7 @@ func NewOpGlobalGet(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error)
 // Execute retrieves a global object using its index, pushes it onto the stack, and advances the instruction pointer.
 func (op *OpGlobalGet) Execute(decoder *core.Decoder) {
 	// Operands Offset 2 (16-bit)
-	glIndex := decoder.Read(0)
-	glObj := op.vm.Globals().Get(uint(glIndex))
-	if glObj == nil {
-		op.vm.SetError(fmt.Errorf("undefined global: %d", glIndex))
-		return
-	}
-	op.vm.Stack().Push(glObj)
+	index := decoder.Read(0)
+	obj := op.vm.Globals().Get(uint(index))
+	op.vm.Stack().Push(obj)
 }

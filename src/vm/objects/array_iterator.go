@@ -79,8 +79,8 @@ func (o *ArrayIterator) ArithmeticOp(_ int, _ ArithmeticOperator, _ IObject) (IO
 }
 
 // IndexGet retrieves an element at a specific index from the array but always returns ErrNotIndexable for this implementation.
-func (o *ArrayIterator) IndexGet(_ int, _ IObject) (res IObject, err error) {
-	return nil, ErrNotIndexable
+func (o *ArrayIterator) IndexGet(_ int, _ IObject) (IObject, error) {
+	return o.gk.UndefinedValue(), ErrNotIndexable
 }
 
 // IndexSet attempts to assign a value to an index in the object but always returns ErrUnsupportedIndex,

@@ -32,7 +32,7 @@ func NewOpGlobalSet(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error)
 // Execute updates the instruction pointer, calculates a global variable position, and sets its value from the stack.
 func (op *OpGlobalSet) Execute(decoder *core.Decoder) {
 	// Operands Offset 2 (16-bit)
-	pos := decoder.Read(0)
+	index := decoder.Read(0)
 	val := op.vm.Stack().Peek()
-	op.vm.Globals().Set(uint(pos), val)
+	op.vm.Globals().Set(uint(index), val)
 }
