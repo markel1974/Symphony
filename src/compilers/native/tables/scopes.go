@@ -18,6 +18,7 @@ const (
 type Scopes struct {
 	gk                   objects.IGateKeeper
 	op                   *bytecode.Opcodes
+	constants            *Constants
 	symbolTable          *SymbolTable
 	initSymbolTable      *SymbolTable
 	scopeIndex           int
@@ -26,10 +27,11 @@ type Scopes struct {
 }
 
 // NewScopes initializes and returns a Scopes structure with a new symbol table, main compilation scope, and scope index set to 0.
-func NewScopes(gk objects.IGateKeeper, op *bytecode.Opcodes) *Scopes {
+func NewScopes(gk objects.IGateKeeper, op *bytecode.Opcodes, constants *Constants) *Scopes {
 	c := &Scopes{
 		gk:                   gk,
 		op:                   op,
+		constants:            constants,
 		initSymbolTable:      NewSymbolTable(UnknownScope),
 		symbolTable:          nil,
 		scopeIndex:           0,
@@ -42,7 +44,7 @@ func NewScopes(gk objects.IGateKeeper, op *bytecode.Opcodes) *Scopes {
 }
 
 func (c *Scopes) CreateGlobals() []objects.IObject {
-	ret := make([]objects.IObject, len(c.initSymbolTable.symbols))
+	ret := make([]objects.IObject, len(c.initSymbolTable.definitions))
 	for _, obj := range c.initSymbolTable.definitions {
 		target := obj.GetObject()
 		if target != nil {
@@ -65,18 +67,24 @@ func (c *Scopes) IsRootScope() bool {
 	return c.scopeIndex == 0
 }
 
-// SymbolDefineUnique defines a unique symbol in the current symbol table with the specified scope and object type.
-func (c *Scopes) SymbolDefineUnique(symbol string) (*Symbol, error) {
-	return c.symbolTable.DefineUnique(symbol)
+// SymbolDefineUnique ensures the given symbol is uniquely defined and returns it or an error if the operation fails.
+func (c *Scopes) SymbolDefineUnique(name string) (*Symbol, error) {
+	return c.symbolTable.DefineUnique(name)
 }
 
-// SymbolDefine defines a new symbol in the current symbol table with the specified name, scope, and struct flag.
-// It returns the created symbol or an error if the operation fails.
-func (c *Scopes) SymbolDefine(symbol string) (*Symbol, error) {
-	//if symbol == "rect" {
-	//	fmt.Println("symbol taskT found!!!!")
-	//}
-	return c.symbolTable.Define(symbol)
+// SymbolDefine defines a new symbol within the symbol table and returns the created symbol or an error if it fails.
+func (c *Scopes) SymbolDefine(name string) (*Symbol, error) {
+	return c.symbolTable.Define(name)
+}
+
+func (c *Scopes) SymbolDefineType(name string) (*Symbol, error) {
+	return c.symbolTable.DefineType(name)
+}
+
+// SymbolDefineConst defines a constant in the symbol table with the given index and symbol name. Returns the defined symbol or an error.
+func (c *Scopes) SymbolDefineConst(name string, object objects.IObject) (*Symbol, error) {
+	constIdx := c.constants.Add(name, object)
+	return c.symbolTable.DefineConst(constIdx, name)
 }
 
 // SymbolRebuildScope rebuilds and updates the specified symbol with a new scope in the symbol table, returning the updated symbol.
@@ -262,6 +270,9 @@ func (c *Scopes) EmitSymbolDefineAndPop(s *Symbol) error {
 
 // EmitSymbolDefine emits the opcode for *defining* a variable.
 func (c *Scopes) EmitSymbolDefine(s *Symbol) error {
+	if s.ConstIndex() >= 0 {
+		return fmt.Errorf("cannot define constant symbol: %s", s.Name())
+	}
 	var op bytecode.OpcodeId
 	switch s.Scope() {
 	case GlobalScope:
@@ -279,6 +290,9 @@ func (c *Scopes) EmitSymbolDefine(s *Symbol) error {
 
 // EmitSymbolSet generates bytecode instructions to set the value of a symbol in its appropriate scope (global, local, or free).
 func (c *Scopes) EmitSymbolSet(s *Symbol) error {
+	if s.ConstIndex() >= 0 {
+		return fmt.Errorf("cannot set constant symbol: %s", s.Name())
+	}
 	var op bytecode.OpcodeId
 	switch s.Scope() {
 	case GlobalScope:
@@ -298,6 +312,10 @@ func (c *Scopes) EmitSymbolSet(s *Symbol) error {
 
 // EmitSymbolGet generates bytecode instructions to retrieve a symbol's value based on its scope and index.
 func (c *Scopes) EmitSymbolGet(s *Symbol) error {
+	if s.ConstIndex() >= 0 {
+		_, err := c.Emit(bytecode.OpConstant, s.ConstIndex())
+		return err
+	}
 	var op bytecode.OpcodeId
 	switch s.Scope() {
 	case GlobalScope:

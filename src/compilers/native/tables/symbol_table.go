@@ -96,11 +96,32 @@ func (s *SymbolTable) DefineUnique(name string) (*Symbol, error) {
 func (s *SymbolTable) Define(name string) (*Symbol, error) {
 	if symbol, ok := s.symbols[name]; ok {
 		return symbol, nil
-		//return nil, fmt.Errorf("symbol '%s' already defined", name)
 	}
 	computedScope := s.computeScope(s.defaultScope)
-	symbol := NewSymbol(name, len(s.definitions), computedScope)
+	index := len(s.definitions)
+	symbol := NewSymbol(-1, name, index, computedScope)
 	s.definitions = append(s.definitions, symbol)
+	s.symbols[name] = symbol
+	return symbol, nil
+}
+
+// DefineConst adds a constant symbol to the SymbolTable with a specified index and name. Returns the symbol or an error.
+func (s *SymbolTable) DefineConst(constIndex int, name string) (*Symbol, error) {
+	if symbol, ok := s.symbols[name]; ok {
+		return symbol, nil
+	}
+	symbol := NewSymbol(constIndex, name, -1, GlobalScope)
+	s.symbols[name] = symbol
+	return symbol, nil
+}
+
+// DefineType adds a type definition symbol// DefineType defines to a the new type with the given symbol table name if in it the doesn't Symbol alreadyTable, assigning it a exist scope and and index, and stores it. returns it.
+func (s *SymbolTable) DefineType(name string) (*Symbol, error) {
+	if symbol, ok := s.symbols[name]; ok {
+		return symbol, nil
+	}
+	computedScope := s.computeScope(s.defaultScope)
+	symbol := NewSymbol(-1, name, -1, computedScope)
 	s.symbols[name] = symbol
 	return symbol, nil
 }

@@ -8,24 +8,51 @@ import (
 
 // Constants is a structure that manages global objects and handles error signaling through a callback function.
 type Constants struct {
-	gk        objects.IGateKeeper
-	container []objects.IObject
-	errSignal func(err error)
+	gk           objects.IGateKeeper
+	container    []objects.IObject
+	preInitFuncs []*objects.FuncCompiled
+	init         []*objects.FuncCompiled
+	errSignal    func(err error)
 }
 
 // NewConstants initializes and returns a new Constants instance with provided global objects and error signaling function.
 func NewConstants(gk objects.IGateKeeper, errSignal func(err error)) *Constants {
 	return &Constants{
-		gk:        gk,
-		container: nil,
-		errSignal: errSignal,
+		gk:           gk,
+		container:    nil,
+		preInitFuncs: []*objects.FuncCompiled{},
+		init:         []*objects.FuncCompiled{},
+		errSignal:    errSignal,
 	}
 }
 
 // Setup updates the constant pool with the provided values.
-func (g *Constants) Setup(constants []objects.IObject) error {
+func (g *Constants) Setup(constants []objects.IObject, preInit string, init string) (map[string]uint, error) {
 	g.container = constants
-	return nil
+	entryPoints := make(map[string]uint)
+	for idx, global := range g.container {
+		switch c := global.(type) {
+		case *objects.FuncCompiled:
+			if c.Name() == preInit {
+				g.preInitFuncs = append(g.preInitFuncs, c)
+			} else if c.Name() == init {
+				g.init = append(g.init, c)
+			} else {
+				entryPoints[c.Name()] = uint(idx)
+			}
+		}
+	}
+	return entryPoints, nil
+}
+
+// PreInitFuncs returns a slice of pre-initialization compiled functions associated with the Globals instance.
+func (g *Constants) PreInitFuncs() []*objects.FuncCompiled {
+	return g.preInitFuncs
+}
+
+// InitFuncs returns the slice of compiled functions designated to run during the initialization phase.
+func (g *Constants) InitFuncs() []*objects.FuncCompiled {
+	return g.init
 }
 
 // Get retrieves the object from the constants pool at the specified index. Returns UndefinedValue if the index is invalid.

@@ -99,8 +99,7 @@ func (c *Declarations) TypeSpec(node *ast.TypeSpec) error {
 				}
 			}
 		}
-		//TODO VERIFCARE SE NECESSARIO (VIENE INSERITO NELLA TABELLA DI STRUTTURE)
-		symbol, err := c.scopes.SymbolDefine(typeName)
+		symbol, err := c.scopes.SymbolDefineType(typeName)
 		if err != nil {
 			return err
 		}
@@ -111,7 +110,7 @@ func (c *Declarations) TypeSpec(node *ast.TypeSpec) error {
 			return tables.NewCompilerError(c.fileSet, node, err.Error())
 		}
 		// Aggiungi un simbolo per il tipo interfaccia
-		symbol, err := c.scopes.SymbolDefine(typeName)
+		symbol, err := c.scopes.SymbolDefineType(typeName)
 		if err != nil {
 			return err
 		}

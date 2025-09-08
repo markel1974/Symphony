@@ -92,19 +92,19 @@ func (v *VM) Setup(loader bytecode.ILoader, codes ...*bytecode.Bytecode) (map[st
 	if err = v.imports.Setup(loader, v.bc.Imports()); err != nil {
 		return nil, err
 	}
-	if err = v.constants.Setup(v.bc.Constants()); err != nil {
+	if err = v.globals.Setup(v.bc.Globals()); err != nil {
 		return nil, err
 	}
-	entryPoints, err := v.globals.Setup(v.bc.Globals(), bytecode.PreInitFunction, bytecode.InitFunction)
+	entryPoints, err := v.constants.Setup(v.bc.Constants(), bytecode.PreInitFunction, bytecode.InitFunction)
 	if err != nil {
 		return nil, err
 	}
-	for _, fn := range v.globals.PreInitFuncs() {
+	for _, fn := range v.constants.PreInitFuncs() {
 		if _, err = v.exec(fn, false); err != nil {
 			return nil, err
 		}
 	}
-	for _, fn := range v.globals.InitFuncs() {
+	for _, fn := range v.constants.InitFuncs() {
 		if _, err = v.exec(fn, false); err != nil {
 			return nil, err
 		}
@@ -129,7 +129,7 @@ func (v *VM) EnableRetValues(retValues bool) {
 
 // Run executes the main function identified by mainId with the provided arguments in the virtual machine context.
 func (v *VM) Run(mainId uint, args ...interface{}) ([]interface{}, error) {
-	obj := v.globals.Get(mainId)
+	obj := v.constants.Get(mainId)
 	mainFn, ok := obj.(*objects.FuncCompiled)
 	if !ok {
 		return nil, fmt.Errorf("entry point not found: %d", mainId)

@@ -119,7 +119,7 @@ func (c *Functions) funcBodyPrepare(fd *tables.FunctionDescription) error {
 		fd.StructName = ""
 	}
 	//function symbol placeholder (this is not the real function, it's just a placeholder to be able to compile the body)
-	placeHolder, err := c.scopes.SymbolDefine(fd.Name)
+	placeHolder, err := c.scopes.SymbolDefineConst(fd.Name, c.gk.UndefinedValue())
 	if err != nil {
 		return err
 	}
@@ -181,11 +181,16 @@ func (c *Functions) funcBodyCompile(fd *tables.FunctionDescription) error {
 		return tables.NewCompilerError(c.fileSet, node, "undefined function: %s", fd.Name)
 	}
 	compiledFn := c.gk.NewFuncCompiled(objects.FrameStatic, fd.Name, code, nLocals, nParams, false, nil, freeObj)
-	fnSymbol.SetObject(compiledFn)
+	//fnSymbol.SetObject(compiledFn)
+	if err = c.constants.SetIndex(fnSymbol.ConstIndex(), compiledFn); err != nil {
+		return tables.NewCompilerError(c.fileSet, node, err.Error())
+	}
+
+	constIndex := c.constants.Add(fd.Name, compiledFn)
 	fnSymbol.SetReturnTypes(fd.ReturnTypes)
 
 	if node.Recv == nil && !c.scopes.IsRootScope() {
-		if _, err = c.scopes.Emit(bytecode.OpClosure, freeNum, fnSymbol.Index()); err != nil {
+		if _, err = c.scopes.Emit(bytecode.OpClosure, freeNum, constIndex); err != nil {
 			return err
 		}
 		symbol, _ := c.scopes.SymbolResolve(node.Name.Name)
@@ -286,6 +291,8 @@ func (c *Functions) CallExpr(node *ast.CallExpr) error {
 			methodName := fun.Sel.Name
 			methodNameConstIndex := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, methodName))
 			numArgs := len(node.Args)
+
+			// TODO 2
 			if _, err := c.scopes.Emit(bytecode.OpCallMethod, methodNameConstIndex, numArgs); err != nil {
 				return err
 			}

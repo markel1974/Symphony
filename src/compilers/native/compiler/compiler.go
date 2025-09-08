@@ -39,11 +39,11 @@ type Compiler struct {
 // New creates and returns a new instance of Compiler with initialized scopes using a standard library loader.
 func New(gk objects.IGateKeeper, loader bytecode.ILoader, opcodes *bytecode.Opcodes) *Compiler {
 	var components []IComponent
-	scopes := tables.NewScopes(gk, opcodes)
+	constants := tables.NewConstants()
+	scopes := tables.NewScopes(gk, opcodes, constants)
 	structTable := tables.NewStructTable(gk, scopes)
 	interfaceTable := tables.NewInterfaceTable(gk, scopes)
 	functionTable := tables.NewFunctionTable(gk, scopes, structTable, interfaceTable)
-	constants := tables.NewConstants()
 	importConstants := tables.NewConstants()
 	imports := NewImports(gk, loader, importConstants, scopes)
 	components = append(components, imports)
@@ -282,11 +282,11 @@ func (c *Compiler) createInit() error {
 	}
 	initFuncCode := scope.Instructions()
 	numLocals := c.scopes.SymbolCount()
-	initSymbols, err := c.scopes.SymbolDefine(bytecode.PreInitFunction)
+	compiledInitFn := c.gk.NewFuncCompiled(objects.FrameStatic, bytecode.PreInitFunction, initFuncCode, numLocals, 0, false, nil, nil)
+	_, err = c.scopes.SymbolDefineConst(bytecode.PreInitFunction, compiledInitFn)
 	if err != nil {
 		return err
 	}
-	compiledInitFn := c.gk.NewFuncCompiled(objects.FrameStatic, initSymbols.Name(), initFuncCode, numLocals, 0, false, nil, nil)
-	initSymbols.SetObject(compiledInitFn)
+	//	initSymbols.SetObject(compiledInitFn)
 	return nil
 }
