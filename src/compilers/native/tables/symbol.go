@@ -6,7 +6,7 @@ import (
 
 // Symbol represents a named entity with a defined scope, associated with specific attributes and metadata.
 type Symbol struct {
-	constIndex    int
+	constant      bool
 	name          string
 	scope         SymbolScope
 	index         int
@@ -20,9 +20,9 @@ type Symbol struct {
 }
 
 // NewSymbol creates a new Symbol instance with the specified constant index, name, index, and scope.
-func NewSymbol(constIndex int, name string, index int, scope SymbolScope) *Symbol {
+func NewSymbol(constant bool, name string, index int, scope SymbolScope) *Symbol {
 	symbol := &Symbol{
-		constIndex:    constIndex,
+		constant:      constant,
 		name:          name,
 		index:         index,
 		scope:         scope,
@@ -37,7 +37,7 @@ func NewSymbol(constIndex int, name string, index int, scope SymbolScope) *Symbo
 // Clone creates and returns a deep copy of the current Symbol, ensuring all fields are duplicated.
 func (s *Symbol) Clone() *Symbol {
 	return &Symbol{
-		constIndex:    s.constIndex,
+		constant:      s.constant,
 		name:          s.name,
 		scope:         s.scope,
 		index:         s.index,
@@ -54,14 +54,14 @@ func (s *Symbol) Name() string {
 	return s.name
 }
 
+// Constant checks if the Symbol represents a constant value and returns true if it does.
+func (s *Symbol) Constant() bool {
+	return s.constant
+}
+
 // Index returns the unique index of the symbol within its scope. It is used to reference the symbol in bytecode.
 func (s *Symbol) Index() int {
 	return s.index
-}
-
-// ConstIndex returns the constant index associated with the symbol. The value is non-negative if the symbol is a constant.
-func (s *Symbol) ConstIndex() int {
-	return s.constIndex
 }
 
 // SetObject assigns the provided object to the Symbol instance.

@@ -3,7 +3,6 @@ package tables
 import (
 	"fmt"
 	"io"
-	"strconv"
 )
 
 // SymbolScope represents the scope of a symbol in a program, such as global, local, free, builtin, or type-specific.
@@ -24,21 +23,19 @@ const (
 // It supports adding, resolving, and managing symbols across nested and global scopes.
 // The structure tracks variable and function definitions and handles free symbols for closures.
 type SymbolTable struct {
-	outer         *SymbolTable
-	symbols       map[string]*Symbol
-	definitions   []*Symbol
-	freeSymbols   []*Symbol
-	uniqueCounter int
-	funcName      string
-	defaultScope  SymbolScope
+	outer        *SymbolTable
+	symbols      map[string]*Symbol
+	definitions  []*Symbol
+	freeSymbols  []*Symbol
+	funcName     string
+	defaultScope SymbolScope
 }
 
 // NewSymbolTable initializes and returns a new instance of SymbolTable with an empty container and counter set to zero.
 func NewSymbolTable(defaultScope SymbolScope) *SymbolTable {
 	s := &SymbolTable{
-		symbols:       make(map[string]*Symbol),
-		uniqueCounter: 0,
-		defaultScope:  defaultScope,
+		symbols:      make(map[string]*Symbol),
+		defaultScope: defaultScope,
 	}
 	return s
 }
@@ -85,13 +82,6 @@ func (s *SymbolTable) FreeSymbols() []int {
 	return ret
 }
 
-// DefineUnique generates a unique symbol name using a provided base name and counter, then defines and returns the symbol.
-func (s *SymbolTable) DefineUnique(name string) (*Symbol, error) {
-	uniqueName := name + strconv.Itoa(s.uniqueCounter)
-	s.uniqueCounter++
-	return s.Define(uniqueName)
-}
-
 // Define creates a new Symbol with the given name, assigns it a scope and index, and stores it in the symbol table.
 func (s *SymbolTable) Define(name string) (*Symbol, error) {
 	if symbol, ok := s.symbols[name]; ok {
@@ -99,7 +89,7 @@ func (s *SymbolTable) Define(name string) (*Symbol, error) {
 	}
 	computedScope := s.computeScope(s.defaultScope)
 	index := len(s.definitions)
-	symbol := NewSymbol(-1, name, index, computedScope)
+	symbol := NewSymbol(false, name, index, computedScope)
 	s.definitions = append(s.definitions, symbol)
 	s.symbols[name] = symbol
 	return symbol, nil
@@ -110,18 +100,18 @@ func (s *SymbolTable) DefineConst(constIndex int, name string) (*Symbol, error) 
 	if symbol, ok := s.symbols[name]; ok {
 		return symbol, nil
 	}
-	symbol := NewSymbol(constIndex, name, -1, GlobalScope)
+	symbol := NewSymbol(true, name, constIndex, UnknownScope)
 	s.symbols[name] = symbol
 	return symbol, nil
 }
 
-// DefineType adds a type definition symbol// DefineType defines to a the new type with the given symbol table name if in it the doesn't Symbol alreadyTable, assigning it a exist scope and and index, and stores it. returns it.
+// DefineType defines to a the new type with the given symbol table name if in it the doesn't Symbol alreadyTable, assigning it a exist scope and and index, and stores it. returns it.
 func (s *SymbolTable) DefineType(name string) (*Symbol, error) {
 	if symbol, ok := s.symbols[name]; ok {
 		return symbol, nil
 	}
 	computedScope := s.computeScope(s.defaultScope)
-	symbol := NewSymbol(-1, name, -1, computedScope)
+	symbol := NewSymbol(false, name, -1, computedScope)
 	s.symbols[name] = symbol
 	return symbol, nil
 }

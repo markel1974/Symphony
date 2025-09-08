@@ -182,7 +182,7 @@ func (c *Functions) funcBodyCompile(fd *tables.FunctionDescription) error {
 	}
 	compiledFn := c.gk.NewFuncCompiled(objects.FrameStatic, fd.Name, code, nLocals, nParams, false, nil, freeObj)
 	//fnSymbol.SetObject(compiledFn)
-	if err = c.constants.SetIndex(fnSymbol.ConstIndex(), compiledFn); err != nil {
+	if err = c.constants.SetIndex(fnSymbol.Index(), compiledFn); err != nil {
 		return tables.NewCompilerError(c.fileSet, node, err.Error())
 	}
 

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strconv"
 
 	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/objects"
@@ -24,6 +25,7 @@ type Scopes struct {
 	scopeIndex           int
 	compilations         []*CompilationScope
 	initCompilationScope *CompilationScope
+	uniqueCounter        int
 }
 
 // NewScopes initializes and returns a Scopes structure with a new symbol table, main compilation scope, and scope index set to 0.
@@ -37,6 +39,7 @@ func NewScopes(gk objects.IGateKeeper, op *bytecode.Opcodes, constants *Constant
 		scopeIndex:           0,
 		compilations:         []*CompilationScope{},
 		initCompilationScope: NewCompilationScope(),
+		uniqueCounter:        0,
 	}
 	c.compilations = append(c.compilations, c.initCompilationScope)
 	c.symbolTable = c.initSymbolTable
@@ -67,16 +70,19 @@ func (c *Scopes) IsRootScope() bool {
 	return c.scopeIndex == 0
 }
 
-// SymbolDefineUnique ensures the given symbol is uniquely defined and returns it or an error if the operation fails.
-func (c *Scopes) SymbolDefineUnique(name string) (*Symbol, error) {
-	return c.symbolTable.DefineUnique(name)
-}
-
 // SymbolDefine defines a new symbol within the symbol table and returns the created symbol or an error if it fails.
 func (c *Scopes) SymbolDefine(name string) (*Symbol, error) {
 	return c.symbolTable.Define(name)
 }
 
+// SymbolDefineUnique ensures the given symbol is uniquely defined and returns it or an error if the operation fails.
+func (c *Scopes) SymbolDefineUnique(name string) (*Symbol, error) {
+	uniqueName := name + strconv.Itoa(c.uniqueCounter)
+	c.uniqueCounter++
+	return c.symbolTable.Define(uniqueName)
+}
+
+// SymbolDefineType defines a new type symbol with the given name in the symbol table and returns the created symbol or an error.
 func (c *Scopes) SymbolDefineType(name string) (*Symbol, error) {
 	return c.symbolTable.DefineType(name)
 }
@@ -270,7 +276,7 @@ func (c *Scopes) EmitSymbolDefineAndPop(s *Symbol) error {
 
 // EmitSymbolDefine emits the opcode for *defining* a variable.
 func (c *Scopes) EmitSymbolDefine(s *Symbol) error {
-	if s.ConstIndex() >= 0 {
+	if s.Constant() {
 		return fmt.Errorf("cannot define constant symbol: %s", s.Name())
 	}
 	var op bytecode.OpcodeId
@@ -290,7 +296,7 @@ func (c *Scopes) EmitSymbolDefine(s *Symbol) error {
 
 // EmitSymbolSet generates bytecode instructions to set the value of a symbol in its appropriate scope (global, local, or free).
 func (c *Scopes) EmitSymbolSet(s *Symbol) error {
-	if s.ConstIndex() >= 0 {
+	if s.Constant() {
 		return fmt.Errorf("cannot set constant symbol: %s", s.Name())
 	}
 	var op bytecode.OpcodeId
@@ -312,8 +318,8 @@ func (c *Scopes) EmitSymbolSet(s *Symbol) error {
 
 // EmitSymbolGet generates bytecode instructions to retrieve a symbol's value based on its scope and index.
 func (c *Scopes) EmitSymbolGet(s *Symbol) error {
-	if s.ConstIndex() >= 0 {
-		_, err := c.Emit(bytecode.OpConstant, s.ConstIndex())
+	if s.Constant() {
+		_, err := c.Emit(bytecode.OpConstant, s.Index())
 		return err
 	}
 	var op bytecode.OpcodeId
