@@ -36,22 +36,24 @@ func (op *OpIndexSlice) Execute(_ *core.Decoder) {
 	// Operands Offset  0
 	highStack := op.vm.Stack().Pop()
 	lowStack := op.vm.Stack().Pop()
-	leftStack := op.vm.Stack().Pop()
-	lowIdx, highIdx, err := op.vm.Factory().BoundsCheck(lowStack, highStack, int64(leftStack.Length()))
+	leftObj := op.vm.Stack().Pop()
+	lowIdx, highIdx, err := op.vm.Factory().BoundsCheck(lowStack, highStack, int64(leftObj.Length()))
 	if err != nil {
 		op.vm.SetError(err)
 		return
 	}
-	var val objects.IObject = nil
-	switch left := leftStack.(type) {
+	switch left := leftObj.(type) {
 	case *objects.Array:
-		val = op.vm.Factory().NewArray(op.vm.Frame().Id(), left.Values()[lowIdx:highIdx])
-	case *objects.String:
-		val = op.vm.Factory().NewString(op.vm.Frame().Id(), left.Value()[lowIdx:highIdx])
-	case *objects.Bytes:
-		val = op.vm.Factory().NewBytes(op.vm.Frame().Id(), left.Value()[lowIdx:highIdx])
-	}
-	if val != nil {
+		val := op.vm.Factory().NewArray(op.vm.Frame().Id(), left.Values()[lowIdx:highIdx])
 		op.vm.Stack().Push(val)
+	case *objects.String:
+		val := op.vm.Factory().NewString(op.vm.Frame().Id(), left.Value()[lowIdx:highIdx])
+		op.vm.Stack().Push(val)
+	case *objects.Bytes:
+		val := op.vm.Factory().NewBytes(op.vm.Frame().Id(), left.Value()[lowIdx:highIdx])
+		op.vm.Stack().Push(val)
+	default:
+		op.vm.SetError(fmt.Errorf("invalid operation: %s[%d:%d]", left.TypeName(), lowIdx, highIdx))
+		return
 	}
 }

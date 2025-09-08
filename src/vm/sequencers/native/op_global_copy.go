@@ -35,8 +35,6 @@ func NewOpGlobalCopy(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error
 func (op *OpGlobalCopy) Execute(decoder *core.Decoder) {
 	sourceIndex := decoder.Read(1)
 	destIndex := decoder.Read(0)
-
-	// Bypass totale dello stack della VM!
 	value := op.vm.Globals().Get(uint(sourceIndex))
 	op.vm.Globals().Set(uint(destIndex), value)
 }
