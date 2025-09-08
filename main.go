@@ -133,7 +133,7 @@ func vmTest() {
 
 	//const prefix = "rt"
 	//const baseDir = "../src/compilers/native/stub/sources"
-	const prefix = "test_"
+	const prefix = "test_02"
 	const baseDir = "../src/compilers/native/stub/tests"
 	if err := stub.VMTest(sequencerId, baseDir, prefix, true); err != nil {
 		log.Fatal(err)

@@ -8,24 +8,46 @@ import (
 
 // Constants is a structure that manages global objects and handles error signaling through a callback function.
 type Constants struct {
-	gk        objects.IGateKeeper
-	container []objects.IObject
-	errSignal func(err error)
+	gk           objects.IGateKeeper
+	container    []objects.IObject
+	errSignal    func(err error)
+	preInitFuncs []*objects.FuncCompiled
+	init         []*objects.FuncCompiled
 }
 
 // NewConstants initializes and returns a new Constants instance with provided global objects and error signaling function.
 func NewConstants(gk objects.IGateKeeper, errSignal func(err error)) *Constants {
 	return &Constants{
-		gk:        gk,
-		container: nil,
-		errSignal: errSignal,
+		gk:           gk,
+		container:    nil,
+		preInitFuncs: []*objects.FuncCompiled{},
+		init:         []*objects.FuncCompiled{},
+		errSignal:    errSignal,
 	}
 }
 
 // Setup updates the constant pool with the provided values.
-func (g *Constants) Setup(constants []objects.IObject) error {
+//func (g *Constants) Setup(constants []objects.IObject) error {
+//	g.container = constants
+//	return nil
+//}
+
+func (g *Constants) Setup(constants []objects.IObject, preInit string, init string) (map[string]uint, error) {
 	g.container = constants
-	return nil
+	entryPoints := make(map[string]uint)
+	for idx, global := range g.container {
+		switch c := global.(type) {
+		case *objects.FuncCompiled:
+			if c.Name() == preInit {
+				g.preInitFuncs = append(g.preInitFuncs, c)
+			} else if c.Name() == init {
+				g.init = append(g.init, c)
+			} else {
+				entryPoints[c.Name()] = uint(idx)
+			}
+		}
+	}
+	return entryPoints, nil
 }
 
 // Get retrieves the object from the constants pool at the specified index. Returns UndefinedValue if the index is invalid.

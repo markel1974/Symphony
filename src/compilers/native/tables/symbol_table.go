@@ -89,17 +89,22 @@ func (s *SymbolTable) FreeSymbols() []int {
 func (s *SymbolTable) DefineUnique(name string) (*Symbol, error) {
 	uniqueName := name + strconv.Itoa(s.uniqueCounter)
 	s.uniqueCounter++
-	return s.Define(uniqueName)
+	return s.Define(-1, uniqueName)
 }
 
 // Define creates a new Symbol with the given name, assigns it a scope and index, and stores it in the symbol table.
-func (s *SymbolTable) Define(name string) (*Symbol, error) {
+func (s *SymbolTable) Define(constantIdx int, name string) (*Symbol, error) {
 	if symbol, ok := s.symbols[name]; ok {
 		return symbol, nil
 		//return nil, fmt.Errorf("symbol '%s' already defined", name)
 	}
+	if constantIdx >= 0 {
+		symbol := NewSymbol(constantIdx, name, len(s.definitions), GlobalScope)
+		s.symbols[name] = symbol
+		return symbol, nil
+	}
 	computedScope := s.computeScope(s.defaultScope)
-	symbol := NewSymbol(name, len(s.definitions), computedScope)
+	symbol := NewSymbol(constantIdx, name, len(s.definitions), computedScope)
 	s.definitions = append(s.definitions, symbol)
 	s.symbols[name] = symbol
 	return symbol, nil
