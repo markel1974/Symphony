@@ -16,6 +16,8 @@ func test2() int {
 	return 30
 }
 func main() {
+	defer fmt.Println("Hello, world!")
+	defer fmt.Println("Hello 2")
 	//a := global
 	b := test2()
 

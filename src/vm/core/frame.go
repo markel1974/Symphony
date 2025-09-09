@@ -1,6 +1,8 @@
 package core
 
 import (
+	"fmt"
+
 	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/objects"
 )
@@ -15,16 +17,18 @@ type Frame struct {
 	savedIp          int
 	basePointer      int
 	instructions     *objects.Instructions
+	deferredCalls    []objects.IObject
 	errSignal        func(err error)
 }
 
 // NewFrame creates and returns a new Frame instance with its instruction pointer initialized to -1.
 func NewFrame(gk objects.IGateKeeper, id int, errSignal func(err error)) *Frame {
 	return &Frame{
-		gk:        gk,
-		id:        id,
-		savedIp:   resetIp,
-		errSignal: errSignal,
+		gk:            gk,
+		id:            id,
+		savedIp:       resetIp,
+		errSignal:     errSignal,
+		deferredCalls: []objects.IObject{},
 	}
 }
 
@@ -134,4 +138,27 @@ func (f *Frame) NumLocals() int {
 // NumParameters returns the total number of parameters required by the compiled function of the current frame.
 func (f *Frame) NumParameters() int {
 	return f.compiledFunction.NumParameters()
+}
+
+// DeferredAdd appends a deferred call object to the frame's deferred calls queue for later execution.
+func (f *Frame) DeferredAdd(call objects.IObject) {
+	f.deferredCalls = append(f.deferredCalls, call)
+}
+
+// DeferredPop removes and returns the last deferred call object from the frame's deferred calls queue.
+func (f *Frame) DeferredPop() objects.IObject {
+	numDeferred := len(f.deferredCalls)
+	if numDeferred == 0 {
+		f.errSignal(fmt.Errorf("no deferred calls in frame %d", f.id))
+		return f.gk.UndefinedValue()
+	}
+	target := numDeferred - 1
+	lastCall := f.deferredCalls[target]
+	f.deferredCalls = f.deferredCalls[:target]
+	return lastCall
+}
+
+// HasDeferredCalls returns true if there are any deferred calls queued in the frame; otherwise, it returns false.
+func (f *Frame) HasDeferredCalls() bool {
+	return len(f.deferredCalls) > 0
 }

@@ -229,6 +229,12 @@ func (v *VM) Call(value objects.IObject, spread bool, numArgs int) {
 
 // Return handles the return operation by unwinding the current call frame, restoring the previous frame, and managing the stack.
 func (v *VM) Return(returnValues []objects.IObject) {
+	if v.currFrame.HasDeferredCalls() {
+		deferredCall := v.currFrame.DeferredPop()
+		v.Call(deferredCall, false, 0)
+		return
+	}
+
 	shutdown := false
 	prevIp := v.currFrame.SavedIP()
 	leavingFrameBasePointer := v.currFrame.BasePointer()

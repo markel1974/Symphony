@@ -198,6 +198,8 @@ func (c *Compiler) compile(in ast.Node) error {
 		err = c.functions.CallExpr(node)
 	case *ast.ReturnStmt:
 		err = c.functions.ReturnStmt(node)
+	case *ast.DeferStmt:
+		err = c.functions.DeferStmt(node)
 	case *ast.IfStmt:
 		err = c.controlFlow.IfStmt(node)
 	case *ast.BranchStmt:

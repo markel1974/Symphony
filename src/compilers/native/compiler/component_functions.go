@@ -437,6 +437,27 @@ func (c *Functions) FuncLit(node *ast.FuncLit) error {
 	return nil
 }
 
+// DeferStmt processes a defer statement by wrapping the deferred call in an anonymous function and emitting a defer opcode.
+func (c *Functions) DeferStmt(node *ast.DeferStmt) error {
+	// 1. Crea una funzione anonima sintetica (una closure) al volo.
+	closure := &ast.FuncLit{
+		// La closure non ha parametri propri
+		Type: &ast.FuncType{Params: &ast.FieldList{}},
+		Body: &ast.BlockStmt{
+			// Il corpo della closure contiene solo la chiamata differita
+			List: []ast.Stmt{&ast.ExprStmt{X: node.Call}},
+		},
+	}
+	// 2. Compila questo FuncLit sintetico.
+	if err := c.FuncLit(closure); err != nil {
+		return err
+	}
+	if _, err := c.scopes.Emit(bytecode.OpDefer); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (c *Functions) handleInternalInterface(receiverSymbol *tables.Symbol, methodName string, args []ast.Expr) error {
 	if err := c.scopes.EmitSymbolGet(receiverSymbol); err != nil {
 		return err

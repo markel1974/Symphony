@@ -96,6 +96,9 @@ const (
 	// OpReturn represents the opcode for returning from a function or operation, potentially with a value.
 	OpReturn
 
+	// OpDefer represents an opcode for deferring the execution of a function call until the surrounding function returns.
+	OpDefer
+
 	// OpGlobalDefine represents an opcode for defining a new global variable in the globals scope.
 	OpGlobalDefine
 
@@ -243,6 +246,7 @@ func NewOpcodes() *Opcodes {
 	op.create(OpCall, []OperandFeature{SzUint8, SzUint8}, "OpCall")
 	op.create(OpCallMethod, []OperandFeature{SzUint16, SzUint8}, "OpCallMethod")
 	op.create(OpReturn, []OperandFeature{SzUint8}, "OpReturn")
+	op.create(OpDefer, noOperands, "OpDefer")
 	op.create(OpLocalGet, []OperandFeature{SzUint16}, "OpLocalGet")
 	op.create(OpLocalSet, []OperandFeature{SzUint16}, "OpLocalSet")
 	op.create(OpLocalDefine, []OperandFeature{SzUint16}, "OpLocalDefine")
