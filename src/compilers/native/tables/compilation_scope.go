@@ -82,9 +82,6 @@ func (c *CompilationScope) InstructionsSet(pos int, instruction byte) error {
 // InstructionsGet retrieves the instruction at the specified position in the instructions slice of the compilation scope.
 // Returns the instruction as a byte or an error if the position is invalid (e.g., out of bounds).
 func (c *CompilationScope) InstructionsGet(pos int) (bytecode.OpcodeId, error) {
-	if pos < 0 || pos >= len(c.instructions) {
-		return 0, fmt.Errorf("invalid instruction position: %d", pos)
-	}
 	opcodeId, _, err := bytecode.DecompileHeader(uint(pos), c.instructions)
 	if err != nil {
 		return 0, err
