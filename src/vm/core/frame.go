@@ -50,17 +50,13 @@ func (f *Frame) Bind(startIp int, compiledFunction *objects.FuncCompiled, basePo
 	f.freeVars = f.compiledFunction.Free()
 }
 
-//func (f *Frame) Fetch(ip int) (int, bytecode.OpcodeId) {
-//	headerSize := f.Get8(uint(ip))
-//	opcode := f.Get32(uint(ip) + 1)
-//	ip = int(ip) + 1 + int(headerSize)
-//	return ip, bytecode.OpcodeId(opcode)
-//}
-
 func (f *Frame) Fetch(ip int) (int, bytecode.OpcodeId) {
-	ip += bytecode.OpcodeWidth
-	opcode := f.Get8(uint(ip))
-	return ip, opcode
+	offset := uint(ip + bytecode.HeaderSizeBytes)
+	headerBytes := f.Get8(offset)
+	offset += bytecode.HeaderOpcodeIdBytes
+	opcode := f.Get32(offset)
+	ip += int(headerBytes)
+	return ip, bytecode.OpcodeId(opcode)
 }
 
 // Get8 retrieves an 8-bit unsigned integer from the instructions at the specified index in the current frame.

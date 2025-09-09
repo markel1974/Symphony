@@ -1,6 +1,11 @@
 package bytecode
 
-const OpcodeWidth = 1
+//const OpcodeWidth = 1
+
+const (
+	HeaderSizeBytes     = 1
+	HeaderOpcodeIdBytes = 4
+)
 
 type OperandFeature int
 
@@ -27,7 +32,7 @@ type Opcode struct {
 	relocate      []int
 	operands      []OperandFeature
 	name          string
-	operandsWidth int
+	operandsBytes int
 	compiler      *Compiler
 }
 
@@ -38,11 +43,11 @@ func NewOpcode(opcodeId OpcodeId, operands []OperandFeature, name string) *Opcod
 		operands:      operands,
 		relocate:      []int{},
 		name:          name,
-		operandsWidth: 0,
+		operandsBytes: 0,
 	}
 	for idx, of := range od.operands {
 		size := of & SzMask
-		od.operandsWidth += int(size)
+		od.operandsBytes += int(size)
 		if of&IsRelocatable != 0 {
 			od.relocate = append(od.relocate, idx)
 		}
@@ -66,14 +71,14 @@ func (od *Opcode) Operands() []OperandFeature {
 	return od.operands
 }
 
-// OperandsWidth returns the total width of the operands for the Opcode instance.
-func (od *Opcode) OperandsWidth() int {
-	return od.operandsWidth
+// OperandsLen returns the length of the operands for the Opcode instance.
+func (od *Opcode) OperandsLen() int {
+	return len(od.operands)
 }
 
-// FullWidth returns the total width of the Opcode instance, including the opcode and operands.
-func (od *Opcode) FullWidth() int {
-	return OpcodeWidth + od.OperandsWidth()
+// OperandsBytes returns the total width of the operands for the Opcode instance.
+func (od *Opcode) OperandsBytes() int {
+	return od.operandsBytes
 }
 
 // IsRelocatable returns the relocatable value associated with the Opcode instance.
@@ -88,14 +93,14 @@ func (od *Opcode) Relocate() []int {
 
 // Compile compiles the opcode into a sequence of bytes.
 func (od *Opcode) Compile(operands []int) ([]byte, error) {
-	if err := od.compiler.Compile(operands); err != nil {
+	if err := od.compiler.Compile(nil, operands); err != nil {
 		return nil, err
 	}
 	return od.compiler.Instructions(), nil
 }
 
-// Decompile decompiles the opcode into a sequence of integers.
-func (od *Opcode) Decompile(bytecode []byte) ([]int, error) {
+// DecompileOperands extracts operands from the provided bytecode and returns them as a slice of integers or an error.
+func (od *Opcode) DecompileOperands(headerBytes uint8, bytecode []byte) ([]int, error) {
 	od.compiler.SetInstructions(bytecode)
-	return od.compiler.Decompile()
+	return od.compiler.DecompileOperands(headerBytes)
 }

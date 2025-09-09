@@ -180,7 +180,7 @@ func (c *Scopes) InstructionSet(pos int, instruction byte) error {
 }
 
 // InstructionGet retrieves an instruction from the current scope at the specified position. Returns the instruction or an error.
-func (c *Scopes) InstructionGet(pos int) (byte, error) {
+func (c *Scopes) InstructionGet(pos int) (bytecode.OpcodeId, error) {
 	scope, err := c.Current()
 	if err != nil {
 		return 0, err

@@ -22,19 +22,34 @@ func (c *Compiler) Instructions() []byte {
 
 // Compile converts a list of operands into bytecode based on the opcode and writes the result to the instructions buffer.
 // An error is returned if the number or size of operands does not match the expectations of the opcode.
-func (c *Compiler) Compile(operands []int) error {
+func (c *Compiler) Compile(meta []uint8, operands []int) error {
 	features := c.opcode.Operands()
 	if len(operands) != len(features) {
 		return fmt.Errorf("wrong number of operands for %s: want %d, got %d", c.opcode.Name(), len(features), len(operands))
 	}
-	totalLen := c.opcode.FullWidth()
-	c.instructions = make([]byte, totalLen)
+	headerBytes := HeaderSizeBytes + HeaderOpcodeIdBytes + len(meta)
+	totalBytes := headerBytes + c.opcode.OperandsBytes()
 
+	c.instructions = make([]byte, totalBytes)
+	//Header Start
 	offset := uint(0)
-	if err := c.set(uint(c.opcode.OpcodeId()), uint(OpcodeWidth), offset); err != nil {
+	if err := c.set(uint(headerBytes), HeaderSizeBytes, offset); err != nil {
 		return fmt.Errorf("failed to set opcode: %w", err)
 	}
-	offset += uint(OpcodeWidth)
+	offset += HeaderSizeBytes
+	if err := c.set(uint(c.opcode.OpcodeId()), HeaderOpcodeIdBytes, offset); err != nil {
+		return fmt.Errorf("failed to set opcode: %w", err)
+	}
+	offset += HeaderOpcodeIdBytes
+	if len(meta) > 0 {
+		for _, v := range meta {
+			if err := c.set(uint(v), 1, offset); err != nil {
+				return fmt.Errorf("failed to set metadata: %w", err)
+			}
+		}
+		offset += uint(len(meta))
+	}
+	//Header End
 	for idx, operand := range operands {
 		size := uint(features[idx] & SzMask)
 		if err := c.set(uint(operand), size, offset); err != nil {
@@ -55,20 +70,17 @@ func (c *Compiler) SetInstructions(v []byte) {
 	copy(c.instructions, v)
 }
 
-// Decompile parses the instructions in the compiler and returns a slice of integers representing the opcode and operands.
-func (c *Compiler) Decompile() ([]int, error) {
+func (c *Compiler) DecompileHeader() (OpcodeId, uint8, error) {
+	return DecompileHeader(0, c.instructions)
+}
+
+func (c *Compiler) DecompileOperands(headerBytes uint8) ([]int, error) {
 	var out []int
-	offset := uint(0)
-	v, err := c.get(uint(OpcodeWidth), offset)
-	if err != nil {
-		return nil, fmt.Errorf("failed to set opcode: %w", err)
-	}
-	out = append(out, v)
-	offset += uint(OpcodeWidth)
+	offset := uint(headerBytes)
 	features := c.opcode.Operands()
 	for _, feature := range features {
 		size := uint(feature & SzMask)
-		v, err = c.get(size, offset)
+		v, err := Get(size, offset, c.instructions)
 		if err != nil {
 			return nil, fmt.Errorf("failed to set operand: %w", err)
 		}
@@ -76,25 +88,6 @@ func (c *Compiler) Decompile() ([]int, error) {
 		offset += size
 	}
 	return out, nil
-}
-
-// get retrieves an operand of the specified width from the instructions at the given offset. Returns an error on failure.
-func (c *Compiler) get(width uint, offset uint) (int, error) {
-	if offset >= uint(len(c.instructions)) {
-		return 0, fmt.Errorf("offset %d is out of bounds for instruction length %d", offset, len(c.instructions))
-	}
-	switch width {
-	case uint(SzUint8):
-		return c.get8(offset)
-	case uint(SzUint16):
-		return c.get16(offset)
-	case uint(SzUint32):
-		return c.get32(offset)
-	case uint(SzUint64):
-		return c.get64(offset)
-	default:
-		return 0, fmt.Errorf("unsupported operand width: %d", width)
-	}
 }
 
 // set writes an operand value to the instructions buffer at a specified offset using a specified width in bytes.
@@ -186,50 +179,85 @@ func (c *Compiler) set64(operand uint, offset uint) error {
 	return nil
 }
 
-// get8 retrieves the 8-bit integer value at the specified offset from the instructions slice.
-// Returns an error if the offset is out of bounds.
-func (c *Compiler) get8(offset uint) (int, error) {
-	if offset >= uint(len(c.instructions)) {
-		return 0, fmt.Errorf("offset %d is out of bounds for instruction length %d", offset, len(c.instructions))
+// DecompileHeader parses a bytecode instruction, extracting the operation code and header metadata at the given instruction pointer.
+// It returns the OpcodeId, header metadata as a uint8, and an error if extraction or decoding fails.
+func DecompileHeader(offset uint, data []byte) (OpcodeId, uint8, error) {
+	headerBytes, err := Get(HeaderSizeBytes, offset, data)
+	if err != nil {
+		return OpUnknown, 0, err
 	}
-	return int(c.instructions[offset]), nil
+	opcodeId, err := Get(HeaderOpcodeIdBytes, offset+HeaderSizeBytes, data)
+	if err != nil {
+		return OpUnknown, 0, err
+	}
+	return OpcodeId(opcodeId), uint8(headerBytes), nil
 }
 
-// get16 retrieves a 16-bit integer (Big Endian) from the instructions slice at the specified offset.
-// Returns an error if the offset exceeds the bounds of the instructions slice.
-func (c *Compiler) get16(offset uint) (int, error) {
-	if offset+1 >= uint(len(c.instructions)) {
+// Get retrieves a value of a specified width from the data slice at the provided offset and returns it as an integer.
+// The width specifies the size of the operand (e.g., 8, 16, 32, or 64 bits). Returns an error if the offset is out of bounds.
+func Get(width uint, offset uint, data []uint8) (int, error) {
+	if offset >= uint(len(data)) {
+		return 0, fmt.Errorf("offset %d is out of bounds for instruction length %d", offset, len(data))
+	}
+	switch width {
+	case uint(SzUint8):
+		return get8(offset, data)
+	case uint(SzUint16):
+		return get16(offset, data)
+	case uint(SzUint32):
+		return get32(offset, data)
+	case uint(SzUint64):
+		return get64(offset, data)
+	default:
+		return 0, fmt.Errorf("unsupported operand width: %d", width)
+	}
+}
+
+// get8 retrieves an 8-bit unsigned integer from the data slice at the specified offset and returns it as an int.
+// If the offset is out of bounds, an error is returned.
+func get8(offset uint, data []uint8) (int, error) {
+	if offset >= uint(len(data)) {
+		return 0, fmt.Errorf("offset %d is out of bounds for instruction length %d", offset, len(data))
+	}
+	return int(data[offset]), nil
+}
+
+// get16 retrieves a 16-bit integer from the given byte slice at the specified offset.
+// Returns an error if the offset exceeds the data length or if two bytes can't be safely read.
+func get16(offset uint, data []uint8) (int, error) {
+	if offset+1 >= uint(len(data)) {
 		return 0, fmt.Errorf("unexpected end of bytecode, expected 2 bytes for 16-bit operand at offset %d", offset)
 	}
-	val := int(c.instructions[offset])<<8 | int(c.instructions[offset+1])
-	return val, nil
+	val := uint16(data[offset])<<8 | uint16(data[offset+1])
+	return int(val), nil
 }
 
-// get32 retrieves a 32-bit integer from the instructions starting at the specified offset. It returns an error if out of bounds.
-func (c *Compiler) get32(offset uint) (int, error) {
-	if offset+3 >= uint(len(c.instructions)) {
+// get32 retrieves a 32-bit integer from the provided byte slice at the specified offset.
+// Returns an error if there are not enough bytes available to read.
+func get32(offset uint, data []uint8) (int, error) {
+	if offset+3 >= uint(len(data)) {
 		return 0, fmt.Errorf("unexpected end of bytecode, expected 4 bytes for 32-bit operand at offset %d", offset)
 	}
-	val := int(c.instructions[offset])<<24 |
-		int(c.instructions[offset+1])<<16 |
-		int(c.instructions[offset+2])<<8 |
-		int(c.instructions[offset+3])
-	return val, nil
+	val := uint32(data[offset])<<24 |
+		uint32(data[offset+1])<<16 |
+		uint32(data[offset+2])<<8 |
+		uint32(data[offset+3])
+	return int(val), nil
 }
 
-// get64 retrieves a 64-bit integer from the instruction byte array starting at the specified offset.
-// Returns an error if the offset is out of bounds or insufficient bytes are available.
-func (c *Compiler) get64(offset uint) (int, error) {
-	if offset+7 >= uint(len(c.instructions)) {
+// get64 extracts a 64-bit integer from the given byte slice starting at the specified offset.
+// Returns an error if there are not enough bytes available in the slice.
+func get64(offset uint, data []uint8) (int, error) {
+	if offset+7 >= uint(len(data)) {
 		return 0, fmt.Errorf("unexpected end of bytecode, expected 8 bytes for 64-bit operand at offset %d", offset)
 	}
-	val := uint64(c.instructions[offset])<<56 |
-		uint64(c.instructions[offset+1])<<48 |
-		uint64(c.instructions[offset+2])<<40 |
-		uint64(c.instructions[offset+3])<<32 |
-		uint64(c.instructions[offset+4])<<24 |
-		uint64(c.instructions[offset+5])<<16 |
-		uint64(c.instructions[offset+6])<<8 |
-		uint64(c.instructions[offset+7])
+	val := uint64(data[offset])<<56 |
+		uint64(data[offset+1])<<48 |
+		uint64(data[offset+2])<<40 |
+		uint64(data[offset+3])<<32 |
+		uint64(data[offset+4])<<24 |
+		uint64(data[offset+5])<<16 |
+		uint64(data[offset+6])<<8 |
+		uint64(data[offset+7])
 	return int(val), nil
 }

@@ -92,32 +92,25 @@ func (d *Disassembler) disassembleObject(cIdx int, constant objects.IObject) ([]
 // disassembleInstructions parses a sequence of bytecode instructions and generates a human-readable representation of the instructions.
 func (d *Disassembler) disassembleInstructions(bc []byte, posOffset int) ([]string, error) {
 	var out []string
-	unknownOpcode := d.opcodes.Opcode(OpUnknown)
 	var end int
 	for i := 0; i < len(bc); {
-		if end = i + OpcodeWidth; end > len(bc) {
-			return nil, fmt.Errorf("invalid range %d-%d", i, end)
-		}
-		var targetOpcode OpcodeId
-		if unk, err := unknownOpcode.Decompile(bc[i:end]); err != nil {
-			return nil, err
-		} else if len(unk) == 0 {
-			return nil, fmt.Errorf("invalid instruction length: %d", len(unk))
-		} else {
-			targetOpcode = OpcodeId(unk[0])
-		}
-		opcode := d.opcodes.Opcode(targetOpcode)
-		if end = i + opcode.FullWidth(); end > len(bc) {
-			return nil, fmt.Errorf("invalid range %d-%d", i, end)
-		}
-		instructions, err := opcode.Decompile(bc[i:end])
+		targetOpcode, headerBytes, err := DecompileHeader(uint(i), bc)
 		if err != nil {
 			return nil, err
 		}
-		if len(instructions) == 0 {
-			return nil, fmt.Errorf("invalid instruction length: %d", len(instructions))
+		opcode := d.opcodes.Opcode(targetOpcode)
+		totalBytes := int(headerBytes) + opcode.OperandsBytes()
+		if end = i + totalBytes; end > len(bc) {
+			return nil, fmt.Errorf("invalid range %d-%d", i, end)
 		}
-		operands := instructions[1:]
+		instructions := bc[i:end]
+		operands, err := opcode.DecompileOperands(headerBytes, instructions)
+		if err != nil {
+			return nil, err
+		}
+		if len(operands) != opcode.OperandsLen() {
+			return nil, fmt.Errorf("invalid operand count: %d", len(operands))
+		}
 		k := fmt.Sprintf("%04d %-16s", posOffset+i, opcode.Name())
 		for _, v := range operands {
 			k += fmt.Sprintf(" %-5d", v)
@@ -126,6 +119,7 @@ func (d *Disassembler) disassembleInstructions(bc []byte, posOffset int) ([]stri
 		i = end
 	}
 	return out, nil
+
 }
 
 // CountObjects computes the total number of objects in the Bytecode's constants and imports, including nested objects.

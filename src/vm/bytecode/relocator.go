@@ -151,33 +151,26 @@ func (c *Relocator) processDuplicates(container []objects.IObject) ([]objects.IO
 // It updates OpConstant and OpCreateClosure instructions with new constant indexes or returns an error if mapping fails.
 func (c *Relocator) updateFuncIndexes(fc *objects.FuncCompiled, indexContainer map[int]int) error {
 	bc := fc.Data()
-	unknownOpcode := c.opcodes.Opcode(OpUnknown)
 	var end int
 	for i := 0; i < len(bc); {
-		if end = i + OpcodeWidth; end > len(bc) {
-			return fmt.Errorf("invalid range %d-%d", i, end)
-		}
-		var targetOpcode OpcodeId
-		if unk, err := unknownOpcode.Decompile(bc[i:end]); err != nil {
+		targetOpcode, headerSize, err := DecompileHeader(uint(i), bc)
+		if err != nil {
 			return err
-		} else if len(unk) == 0 {
-			return fmt.Errorf("invalid instruction length: %d", len(unk))
-		} else {
-			targetOpcode = OpcodeId(unk[0])
 		}
 		opcode := c.opcodes.Opcode(targetOpcode)
-		if end = i + opcode.FullWidth(); end > len(bc) {
+		totalBytes := int(headerSize) + opcode.OperandsBytes()
+		if end = i + totalBytes; end > len(bc) {
 			return fmt.Errorf("invalid range %d-%d", i, end)
 		}
 		if opcode.IsRelocatable() {
-			decompiled, err := opcode.Decompile(bc[i:end])
+			instructions := bc[i:end]
+			operands, err := opcode.DecompileOperands(headerSize, instructions)
 			if err != nil {
 				return err
 			}
-			if len(decompiled) < OpcodeWidth {
-				return fmt.Errorf("invalid instruction length: %d", len(decompiled))
+			if len(operands) != opcode.OperandsLen() {
+				return fmt.Errorf("invalid operand count: %d", len(operands))
 			}
-			operands := decompiled[OpcodeWidth:]
 			modified := false
 			for _, rel := range opcode.Relocate() {
 				if rel >= len(operands) {
@@ -203,5 +196,6 @@ func (c *Relocator) updateFuncIndexes(fc *objects.FuncCompiled, indexContainer m
 		}
 		i = end
 	}
+
 	return nil
 }
