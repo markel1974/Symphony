@@ -9,23 +9,23 @@ import (
 
 // Relocator is responsible for processing, fixing, and reconstructing objects, ensuring compatibility with the runtime environment.
 type Relocator struct {
-	gk        objects.IGateKeeper
-	opcodes   *Opcodes
-	loader    ILoader
-	preserved map[string]bool
+	gk           objects.IGateKeeper
+	opcodes      *Opcodes
+	loader       ILoader
+	preserveFunc map[string]bool
 }
 
 // NewRelocator creates and returns a new instance of Relocator initialized with the provided IGateKeeper, ILoader, and Opcodes.
-func NewRelocator(gk objects.IGateKeeper, loader ILoader, opcodes *Opcodes, preserve []string) *Relocator {
+func NewRelocator(gk objects.IGateKeeper, loader ILoader, opcodes *Opcodes, preserve ...string) *Relocator {
 	p := make(map[string]bool)
 	for _, v := range preserve {
 		p[v] = true
 	}
 	return &Relocator{
-		gk:        gk,
-		loader:    loader,
-		opcodes:   opcodes,
-		preserved: p,
+		gk:           gk,
+		loader:       loader,
+		opcodes:      opcodes,
+		preserveFunc: p,
 	}
 }
 
@@ -91,7 +91,7 @@ func (c *Relocator) processDuplicates(container []objects.IObject) ([]objects.IO
 		switch obj := in.(type) {
 		case *objects.FuncCompiled:
 			newIdx := -1
-			if _, preserve := c.preserved[obj.Name()]; !preserve {
+			if _, preserve := c.preserveFunc[obj.Name()]; !preserve {
 				if v, ok := fns[obj]; ok {
 					newIdx = v
 				}
