@@ -81,7 +81,6 @@ func (v *VM) Setup(loader bytecode.ILoader, codes ...*bytecode.Bytecode) (map[st
 	case 1:
 		v.bc = codes[0]
 	default:
-		var err error
 		relocator := bytecode.NewRelocator(v.gk, loader, v.op, bytecode.PreInitFunction, bytecode.InitFunction)
 		if v.bc, err = relocator.Relocate(codes); err != nil {
 			return nil, err
