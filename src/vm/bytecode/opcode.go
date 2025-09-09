@@ -127,6 +127,9 @@ const (
 	// OpGlobalCopy is an opcode used to copy a value from one global variable to another.
 	OpGlobalCopy
 
+	// OpGlobalPtrGet retrieves a pointer to a global variable from the globals scope.
+	OpGlobalPtrGet
+
 	// OpLocalGet is an opcode used to retrieve the value of a local variable from the current scope by its index.
 	OpLocalGet
 

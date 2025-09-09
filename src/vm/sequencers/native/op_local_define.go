@@ -31,7 +31,7 @@ func NewOpLocalDefine(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, erro
 
 // Execute increments the instruction pointer, retrieves a local index, and assigns a stack value to a designated slot.
 func (op *OpLocalDefine) Execute(decoder *core.Decoder) {
-	// Operands Offset 1 (8-bit)
+	// Operands Offset 2 (16-bit)
 	localIndex := decoder.Read(0)
 	val := op.vm.Stack().Peek()
 	destSlot := op.vm.Frame().BasePointer() + localIndex

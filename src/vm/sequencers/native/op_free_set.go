@@ -31,7 +31,7 @@ func NewOpFreeSet(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
 
 // Execute increments the instruction pointer, retrieves a free variable index, and sets its value from the stack.
 func (op *OpFreeSet) Execute(decoder *core.Decoder) {
-	// Operands Offset 1 (8-bit)
+	// Operands Offset 2 (16-bit)
 	freeIndex := decoder.Read(0)
 	o := op.vm.Stack().Pop()
 	freeObj := op.vm.Frame().FreeVarsIndex(uint(freeIndex))

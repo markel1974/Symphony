@@ -33,7 +33,7 @@ func NewOpLocalSet(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) 
 
 // Execute updates a local variable in the current frame using the stack's top value and the local index from instructions.
 func (op *OpLocalSet) Execute(decoder *core.Decoder) {
-	// Operands Offset 1 (8-bit)
+	// Operands Offset 2 (16-bit)
 	localIndex := decoder.Read(0)
 	val := op.vm.Stack().Peek()
 	dstSlot := op.vm.Frame().BasePointer() + localIndex

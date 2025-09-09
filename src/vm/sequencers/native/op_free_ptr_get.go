@@ -32,7 +32,7 @@ func NewOpFreeGetPtr(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error
 
 // Execute executes the OpFreePtrGet operation, pushing a free variable onto the stack based on the current instruction pointer.
 func (op *OpFreePtrGet) Execute(decoder *core.Decoder) {
-	// Operands Offset 1 (8-bit)
+	// Operands Offset 2 (16-bit)
 	freeIndex := decoder.Read(0)
 	val := op.vm.Frame().FreeVarsIndex(uint(freeIndex))
 	if val == nil {

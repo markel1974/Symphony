@@ -32,7 +32,7 @@ func NewOpLocalPtrGet(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, erro
 
 // Execute advances the instruction pointer, retrieves a local variable, and pushes an ObjectPointer to the stack.
 func (op *OpLocalPtrGet) Execute(decoder *core.Decoder) {
-	// Operands Offset 1 (8-bit)
+	// Operands Offset 2 (16-bit)
 	localIndex := decoder.Read(0)
 	sp := op.vm.Frame().BasePointer() + localIndex
 	val := op.vm.Stack().PeekAbsolute(sp)

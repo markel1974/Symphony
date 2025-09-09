@@ -31,7 +31,7 @@ func NewOpFreeGet(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
 
 // Execute increments the instruction pointer, retrieves a value using free variable index, and pushes it onto the stack.
 func (op *OpFreeGet) Execute(decoder *core.Decoder) {
-	// Operands Offset 1 (8-bit)
+	// Operands Offset 2 (16-bit)
 	freeIndex := decoder.Read(0)
 	freeVar := op.vm.Frame().FreeVarsIndex(uint(freeIndex))
 	if freeVar == nil {

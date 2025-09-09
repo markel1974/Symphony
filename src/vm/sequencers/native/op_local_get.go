@@ -31,7 +31,7 @@ func NewOpLocalGet(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) 
 
 // Execute retrieves a local variable from the current frame's base pointer and pushes it onto the stack.
 func (op *OpLocalGet) Execute(decoder *core.Decoder) {
-	// Operands Offset 1 (8-bit)
+	// Operands Offset 2 (16-bit)
 	localIndex := decoder.Read(0)
 	val := op.vm.Stack().PeekAbsolute(op.vm.Frame().BasePointer() + localIndex)
 	op.vm.Stack().Push(val)

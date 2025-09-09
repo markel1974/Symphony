@@ -56,17 +56,19 @@ func (c *Expression) UnaryExpr(node *ast.UnaryExpr) error {
 			if !ok {
 				return tables.NewCompilerError(c.fileSet, node, "undefined variable: %s", operand.Name)
 			}
+			opcodeId := bytecode.OpNull
 			switch symbol.Scope() {
 			case tables.LocalScope:
-				if _, err := c.scopes.Emit(bytecode.OpLocalPtrGet, symbol.Index()); err != nil {
-					return err
-				}
+				opcodeId = bytecode.OpLocalPtrGet
 			case tables.FreeScope:
-				if _, err := c.scopes.Emit(bytecode.OpFreePtrGet, symbol.Index()); err != nil {
-					return err
-				}
+				opcodeId = bytecode.OpFreePtrGet
+			case tables.GlobalScope:
+				opcodeId = bytecode.OpGlobalPtrGet
 			default:
-				return tables.NewCompilerError(c.fileSet, node, "cannot take the address of a global variable")
+				return tables.NewCompilerError(c.fileSet, node, "cannot take the address of a unknown scope")
+			}
+			if _, err := c.scopes.Emit(opcodeId, symbol.Index()); err != nil {
+				return err
 			}
 		case *ast.CompositeLit:
 			// literal (es. '&Home{...}').
@@ -77,11 +79,22 @@ func (c *Expression) UnaryExpr(node *ast.UnaryExpr) error {
 			if err != nil {
 				return err
 			}
-			tempSymbol.SetScope(tables.LocalScope)
+			//tempSymbol.SetScope(tables.LocalScope)
 			if err = c.scopes.EmitSymbolDefine(tempSymbol); err != nil {
 				return err
 			}
-			if _, err = c.scopes.Emit(bytecode.OpLocalPtrGet, tempSymbol.Index()); err != nil {
+			opcodeId := bytecode.OpNull
+			switch tempSymbol.Scope() {
+			case tables.LocalScope:
+				opcodeId = bytecode.OpLocalPtrGet
+			case tables.FreeScope:
+				opcodeId = bytecode.OpFreePtrGet
+			case tables.GlobalScope:
+				opcodeId = bytecode.OpGlobalPtrGet
+			default:
+				return tables.NewCompilerError(c.fileSet, node, "cannot take the address of a unknown scope")
+			}
+			if _, err = c.scopes.Emit(opcodeId, tempSymbol.Index()); err != nil {
 				return err
 			}
 		default:
