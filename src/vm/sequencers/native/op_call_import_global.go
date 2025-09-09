@@ -14,7 +14,7 @@ func init() {
 }
 
 // OpCallImportGlobal represents an operation to call a function from the global import table within the virtual machine.
-// It utilizes a VM with full access permissions and an associated opcode for execution configuration.
+// It uses a VM with full access permissions and an associated opcode for execution configuration.
 type OpCallImportGlobal struct {
 	*bytecode.Opcode
 	vm core.IVMFullAccess

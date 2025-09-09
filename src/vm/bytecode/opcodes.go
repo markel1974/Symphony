@@ -278,11 +278,11 @@ func (op *Opcodes) Opcode(opcodeId OpcodeId) *Opcode {
 	return op.container[int(opcodeId)&op.mask]
 }
 
-// CompileInstruction generates bytecode for a given opcode and its operands or returns an error if validation fails.
-func (op *Opcodes) CompileInstruction(opcodeId OpcodeId, operands ...int) ([]byte, error) {
+// Compile generates bytecode for a given opcode and its operands or returns an error if validation fails.
+func (op *Opcodes) Compile(opcodeId OpcodeId, operands ...int) ([]byte, error) {
 	opcode := op.Opcode(opcodeId)
 	if opcode.OpcodeId() == OpUnknown {
-		return nil, fmt.Errorf("CompileInstruction: Unknown opcode: %d", opcodeId)
+		return nil, fmt.Errorf("compile: Unknown opcode: %d", opcodeId)
 	}
 	inst, err := opcode.Compile(operands)
 	if err != nil {

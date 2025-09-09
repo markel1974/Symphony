@@ -36,18 +36,14 @@ func (op *OpCallMethod) Execute(decoder *core.Decoder) {
 	// Decoder Logic (Reversed):
 	// - decoder.Read(0) reads the LAST operand (numArgs, 1 byte)
 	// - decoder.Read(1) reads the FIRST operand (methodNameIndex, 2 bytes)
-
 	numArgs := decoder.Read(0)
 	methodNameIndex := decoder.Read(1)
-
-	// 1. Get method name from constants table.
 	methodNameObj := op.vm.Constants().Get(uint(methodNameIndex))
 	methodName, ok := methodNameObj.(*objects.String)
 	if !ok {
 		op.vm.SetError(fmt.Errorf("invalid method name constant: not a string"))
 		return
 	}
-
 	// 2. Get the interface object from stack. It's located below the arguments.
 	interfaceObj := op.vm.Stack().PeekOffset(-1 - numArgs)
 	io, ok := interfaceObj.(*objects.Interface)
@@ -57,25 +53,21 @@ func (op *OpCallMethod) Execute(decoder *core.Decoder) {
 		op.vm.SetError(fmt.Errorf("method call on non-interface object type: %s", interfaceObj.TypeName()))
 		return
 	}
-
 	// 3. Perform Dynamic Dispatch: lookup method in 'ITable'.
 	method, found := io.ITable()[methodName.Value()]
 	if !found {
 		op.vm.SetError(fmt.Errorf("undefined method '%s' for type '%s'", methodName.Value(), io.Value().TypeName()))
 		return
 	}
-
 	callee, ok := method.(objects.IObject)
 	if !ok {
 		op.vm.SetError(fmt.Errorf("method '%s' is not a callable function", methodName.Value()))
 		return
 	}
-
 	// 4. Prepare stack for call.
 	// Replace the interface object with its concrete value (the receiver).
 	// Stack will now contain: [receiver, arg1, arg2, ..., Top of stack]
 	op.vm.Stack().SetAbsolute(op.vm.Stack().StackPointer()-1-numArgs, io.Value())
-
 	// 5. Delegate call logic to VM.
 	// VM will handle creating new frame, etc.
 	// Number of arguments for VM includes the receiver.
