@@ -9,30 +9,30 @@ import (
 )
 
 func init() {
-	SequencerRegister(NewOpBitwiseComplement)
+	SequencerRegister(NewOpUnaryBitwiseComplement)
 }
 
-// OpBitwiseComplement represents an operation for performing a bitwise complement on an operand.
+// OpUnaryBitwiseComplement represents an operation for performing a bitwise complement on an operand.
 // It extends Opcode, inheriting its metadata and behaviors.
-type OpBitwiseComplement struct {
+type OpUnaryBitwiseComplement struct {
 	*bytecode.Opcode
 	vm core.IVMFullAccess
 }
 
-// NewOpBitwiseComplement initializes and returns an OpBitwiseComplement instance with the corresponding Opcode configuration.
-func NewOpBitwiseComplement(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
+// NewOpUnaryBitwiseComplement initializes and returns an OpUnaryBitwiseComplement instance with the corresponding Opcode configuration.
+func NewOpUnaryBitwiseComplement(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
 	vmT, ok := vm.(core.IVMFullAccess)
 	if !ok {
 		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
 	}
-	return &OpBitwiseComplement{
-		Opcode: op.Opcode(bytecode.OpBitwiseComplement),
+	return &OpUnaryBitwiseComplement{
+		Opcode: op.Opcode(bytecode.OpUnaryBitwiseComplement),
 		vm:     vmT,
 	}, nil
 }
 
 // Execute performs the bitwise complement operation on the top stack value. Sets an error if the value is not an integer.
-func (op *OpBitwiseComplement) Execute(_ *core.Decoder) {
+func (op *OpUnaryBitwiseComplement) Execute(_ *core.Decoder) {
 	// Operands Offset 0
 	operand := op.vm.Stack().Pop()
 	switch x := operand.(type) {

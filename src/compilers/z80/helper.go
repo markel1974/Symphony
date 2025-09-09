@@ -218,7 +218,7 @@ func (h *Helper) emitCheckFlag(flag byte, condition bool) error {
 	// Se la condizione è "false" (es. per NZ - Jump if Not Zero),
 	// dobbiamo negare il risultato.
 	if !condition {
-		if _, err := h.scopes.Emit(bytecode.OpNot); err != nil {
+		if _, err := h.scopes.Emit(bytecode.OpUnaryNot); err != nil {
 			return err
 		}
 	}

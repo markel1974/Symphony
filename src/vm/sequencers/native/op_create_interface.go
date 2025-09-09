@@ -8,33 +8,33 @@ import (
 	"github.com/markel1974/c64emu/src/vm/objects"
 )
 
-// init registers the NewOpInterface function with the sequencer using SequencerRegister.
+// init registers the NewOpCreateInterface function with the sequencer using SequencerRegister.
 func init() {
-	SequencerRegister(NewOpInterface)
+	SequencerRegister(NewOpCreateInterface)
 }
 
-// OpInterface represents an executor for handling interface-related bytecode operations in a virtual machine.
+// OpCreateInterface represents an executor for handling interface-related bytecode operations in a virtual machine.
 // It extends the bytecode.Opcode structure to access opcode details like id, operands, and name.
-type OpInterface struct {
+type OpCreateInterface struct {
 	*bytecode.Opcode
 	vm core.IVMFullAccess
 }
 
-// NewOpInterface creates a new instance of OpInterface using the provided Opcodes instance.
+// NewOpCreateInterface creates a new instance of OpCreateInterface using the provided Opcodes instance.
 // It returns an implementation of the core.IOpExecutor interface for bytecode execution.
-func NewOpInterface(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
+func NewOpCreateInterface(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
 	vmT, ok := vm.(core.IVMFullAccess)
 	if !ok {
 		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
 	}
-	return &OpInterface{
-		Opcode: op.Opcode(bytecode.OpInterface),
+	return &OpCreateInterface{
+		Opcode: op.Opcode(bytecode.OpCreateInterface),
 		vm:     vmT,
 	}, nil
 }
 
-// Execute processes an `OpInterface` operation, constructing an interface by combining methods and a concrete value.
-func (op *OpInterface) Execute(decoder *core.Decoder) {
+// Execute processes an `OpCreateInterface` operation, constructing an interface by combining methods and a concrete value.
+func (op *OpCreateInterface) Execute(decoder *core.Decoder) {
 	// Operands: Number of methods (8-bit)
 	numMethods := decoder.Read(0)
 

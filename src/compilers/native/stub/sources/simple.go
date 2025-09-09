@@ -19,5 +19,7 @@ func main() {
 	//a := global
 	b := test2()
 
+	b = +b
+
 	fmt.Println(global, b, *ptr, ptr2.Name) //, //, b)
 }

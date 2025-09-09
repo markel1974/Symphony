@@ -49,9 +49,10 @@ var _binaryAdapter = map[token.Token]*TokenAdapter{
 
 // _unaryAdapter maps unary token types to their corresponding TokenAdapter configurations for bytecode operations.
 var _unaryAdapter = map[token.Token]*TokenAdapter{
-	token.SUB: NewTokenAdapter(bytecode.OpMinus, nil),
-	token.NOT: NewTokenAdapter(bytecode.OpNot, nil),
-	token.XOR: NewTokenAdapter(bytecode.OpBitwiseComplement, nil),
+	token.ADD: NewTokenAdapter(bytecode.OpUnaryAdd, nil),
+	token.SUB: NewTokenAdapter(bytecode.OpUnarySub, nil),
+	token.NOT: NewTokenAdapter(bytecode.OpUnaryNot, nil),
+	token.XOR: NewTokenAdapter(bytecode.OpUnaryBitwiseComplement, nil),
 }
 
 // BinaryAdapterFor retrieves the TokenAdapter for the given token operator and indicates if it exists in the mapping.

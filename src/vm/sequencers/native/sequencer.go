@@ -85,9 +85,9 @@ func (ds *Sequencer) createStatic(vmIn *core.VM) ([]core.IOpExecutor, error) {
 	z = append(z, NewOpPop)
 	z = append(z, NewOpTrue)
 	z = append(z, NewOpFalse)
-	z = append(z, NewOpNot)
-	z = append(z, NewOpBitwiseComplement)
-	z = append(z, NewOpMinus)
+	z = append(z, NewOpUnaryNot)
+	z = append(z, NewOpUnaryBitwiseComplement)
+	z = append(z, NewOpUnarySub)
 	z = append(z, NewOpJumpFalsy)
 	z = append(z, NewOpJumpTruthy)
 	z = append(z, NewOpJumpAnd)
@@ -98,10 +98,10 @@ func (ds *Sequencer) createStatic(vmIn *core.VM) ([]core.IOpExecutor, error) {
 	z = append(z, NewOpGlobalIndex)
 	z = append(z, NewOpGlobalGet)
 	z = append(z, NewOpGlobalCopy)
-	z = append(z, NewOpArray)
-	z = append(z, NewOpMap)
-	z = append(z, NewOpStruct)
-	z = append(z, NewOpError)
+	z = append(z, NewOpCreateArray)
+	z = append(z, NewOpCreateMap)
+	z = append(z, NewOpCreateStruct)
+	z = append(z, NewOpCreateError)
 	z = append(z, NewOpIndexGet)
 	z = append(z, NewOpIndexSet)
 	z = append(z, NewOpIndexSlice)
@@ -111,7 +111,7 @@ func (ds *Sequencer) createStatic(vmIn *core.VM) ([]core.IOpExecutor, error) {
 	z = append(z, NewOpLocalSet)
 	z = append(z, NewOpLocalIndex)
 	z = append(z, NewOpLocalGet)
-	z = append(z, NewOpClosure)
+	z = append(z, NewOpCreateClosure)
 	z = append(z, NewOpFreeGetPtr)
 	z = append(z, NewOpFreeGet)
 	z = append(z, NewOpFreeSet)
@@ -150,11 +150,11 @@ func (ds *Sequencer) facadeForOpcode(opcodeId bytecode.OpcodeId, vm *core.VM) in
 	case bytecode.OpJump, bytecode.OpJumpFalsy, bytecode.OpJumpAnd, bytecode.OpJumpOr:
 		return core.IVMControlFlow(vm)
 	// Category: Simple Stack
-	case bytecode.OpPop, bytecode.OpTrue, bytecode.OpFalse, bytecode.OpNull, bytecode.OpNot, bytecode.OpMinus:
+	case bytecode.OpPop, bytecode.OpTrue, bytecode.OpFalse, bytecode.OpNull, bytecode.OpUnaryNot, bytecode.OpUnarySub:
 		// These instructions only manipulate the top of the stack.
 		return core.IVMStackOnly(vm)
 	// Category: Full Access (use with caution)
-	case bytecode.OpCall, bytecode.OpReturn, bytecode.OpCallMethod, bytecode.OpClosure:
+	case bytecode.OpCall, bytecode.OpReturn, bytecode.OpCallMethod, bytecode.OpCreateClosure:
 		// These complex operations need wider access.
 		return core.IVMFullAccess(vm)
 	// Default Case

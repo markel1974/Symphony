@@ -369,7 +369,7 @@ func (c *Declarations) CompositeLit(node *ast.CompositeLit) error {
 				return err
 			}
 		}
-		if _, err := c.scopes.Emit(bytecode.OpArray, len(node.Elts)); err != nil {
+		if _, err := c.scopes.Emit(bytecode.OpCreateArray, len(node.Elts)); err != nil {
 			return err
 		}
 		return nil
@@ -407,7 +407,7 @@ func (c *Declarations) CompositeLit(node *ast.CompositeLit) error {
 			return tables.NewCompilerError(c.fileSet, node, err.Error())
 		}
 		structLen := len(structFields) * 2
-		if _, err = c.scopes.Emit(bytecode.OpStruct, structLen); err != nil {
+		if _, err = c.scopes.Emit(bytecode.OpCreateStruct, structLen); err != nil {
 			return err
 		}
 		return nil
@@ -417,7 +417,7 @@ func (c *Declarations) CompositeLit(node *ast.CompositeLit) error {
 				return err
 			}
 		}
-		if _, err := c.scopes.Emit(bytecode.OpArray, len(node.Elts)); err != nil {
+		if _, err := c.scopes.Emit(bytecode.OpCreateArray, len(node.Elts)); err != nil {
 			return err
 		}
 		return nil
@@ -431,7 +431,7 @@ func (c *Declarations) CompositeLit(node *ast.CompositeLit) error {
 				return err
 			}
 		}
-		if _, err := c.scopes.Emit(bytecode.OpMap, len(node.Elts)*2); err != nil {
+		if _, err := c.scopes.Emit(bytecode.OpCreateMap, len(node.Elts)*2); err != nil {
 			return err
 		}
 		return nil
@@ -508,8 +508,8 @@ func (c *Declarations) handleInterfaceAssignment(variableSymbol *tables.Symbol, 
 			return err
 		}
 	}
-	// Emit OpInterface opcode to create the object
-	if _, err := c.scopes.Emit(bytecode.OpInterface, len(interfaceDesc.Methods)); err != nil {
+	// Emit OpCreateInterface opcode to create the object
+	if _, err := c.scopes.Emit(bytecode.OpCreateInterface, len(interfaceDesc.Methods)); err != nil {
 		return err
 	}
 	return nil

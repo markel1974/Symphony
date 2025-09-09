@@ -148,7 +148,7 @@ func (c *Relocator) processDuplicates(container []objects.IObject) ([]objects.IO
 }
 
 // updateConstIndexes modifies bytecode instructions to remap constant indexes based on the provided index map.
-// It updates OpConstant and OpClosure instructions with new constant indexes or returns an error if mapping fails.
+// It updates OpConstant and OpCreateClosure instructions with new constant indexes or returns an error if mapping fails.
 func (c *Relocator) updateFuncIndexes(fc *objects.FuncCompiled, indexContainer map[int]int) error {
 	bc := fc.Data()
 	unknownOpcode := c.opcodes.Opcode(OpUnknown)

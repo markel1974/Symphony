@@ -9,29 +9,29 @@ import (
 )
 
 func init() {
-	SequencerRegister(NewOpClosure)
+	SequencerRegister(NewOpCreateClosure)
 }
 
-// OpClosure represents a closure operation that creates a new closure in the virtual machine.
-type OpClosure struct {
+// OpCreateClosure represents a closure operation that creates a new closure in the virtual machine.
+type OpCreateClosure struct {
 	*bytecode.Opcode
 	vm core.IVMFullAccess
 }
 
-// NewOpClosure returns a new instance of OpClosure initialized with the details of the OpClosure opcode.
-func NewOpClosure(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
+// NewOpCreateClosure returns a new instance of OpCreateClosure initialized with the details of the OpCreateClosure opcode.
+func NewOpCreateClosure(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
 	vmT, ok := vm.(core.IVMFullAccess)
 	if !ok {
 		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
 	}
-	return &OpClosure{
-		Opcode: op.Opcode(bytecode.OpClosure),
+	return &OpCreateClosure{
+		Opcode: op.Opcode(bytecode.OpCreateClosure),
 		vm:     vmT,
 	}, nil
 }
 
-// Execute performs the operation associated with the OpClosure opcode, creating a closure and pushing it onto the stack.
-func (op *OpClosure) Execute(decoder *core.Decoder) {
+// Execute performs the operation associated with the OpCreateClosure opcode, creating a closure and pushing it onto the stack.
+func (op *OpCreateClosure) Execute(decoder *core.Decoder) {
 	// Operands Offset 3 (16-bit|8-bit)
 	closureIndex := decoder.Read(0)
 	numTotal := decoder.Read(1)

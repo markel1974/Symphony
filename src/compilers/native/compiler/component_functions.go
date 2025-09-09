@@ -190,7 +190,7 @@ func (c *Functions) funcBodyCompile(fd *tables.FunctionDescription) error {
 	fnSymbol.SetReturnTypes(fd.ReturnTypes)
 
 	if node.Recv == nil && !c.scopes.IsRootScope() {
-		if _, err = c.scopes.Emit(bytecode.OpClosure, freeNum, constIndex); err != nil {
+		if _, err = c.scopes.Emit(bytecode.OpCreateClosure, freeNum, constIndex); err != nil {
 			return err
 		}
 		symbol, _ := c.scopes.SymbolResolve(node.Name.Name)
@@ -383,7 +383,7 @@ func (c *Functions) FuncDecl(_ *ast.FuncDecl) error {
 }
 
 // FuncLit compiles an anonymous function literal.
-// It creates a new scope, compiles the function body, and emits an OpClosure
+// It creates a new scope, compiles the function body, and emits an OpCreateClosure
 // instruction to create the closure object at runtime.
 func (c *Functions) FuncLit(node *ast.FuncLit) error {
 	// 1. Enter a new scope for the anonymous function.
@@ -431,7 +431,7 @@ func (c *Functions) FuncLit(node *ast.FuncLit) error {
 	compiledFn := c.gk.NewFuncCompiled(objects.FrameStatic, "", code, nLocals, nParams, false, nil, freeObj)
 	constIndex := c.constants.Add("", compiledFn)
 	freeNum := c.scopes.SymbolCount()
-	if _, err = c.scopes.Emit(bytecode.OpClosure, freeNum, constIndex); err != nil {
+	if _, err = c.scopes.Emit(bytecode.OpCreateClosure, freeNum, constIndex); err != nil {
 		return err
 	}
 	return nil

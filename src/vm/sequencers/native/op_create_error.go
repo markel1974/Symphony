@@ -8,29 +8,29 @@ import (
 )
 
 func init() {
-	SequencerRegister(NewOpError)
+	SequencerRegister(NewOpCreateError)
 }
 
-// OpError represents an operation that creates and assigns an error object in a virtual machine's runtime environment.
-type OpError struct {
+// OpCreateError represents an operation that creates and assigns an error object in a virtual machine's runtime environment.
+type OpCreateError struct {
 	*bytecode.Opcode
 	vm core.IVMFullAccess
 }
 
-// NewOpError creates and returns a new instance of OpError with associated Opcode for the OpError opcode.
-func NewOpError(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
+// NewOpCreateError creates and returns a new instance of OpCreateError with associated Opcode for the OpCreateError opcode.
+func NewOpCreateError(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
 	vmT, ok := vm.(core.IVMFullAccess)
 	if !ok {
 		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
 	}
-	return &OpError{
-		Opcode: op.Opcode(bytecode.OpError),
+	return &OpCreateError{
+		Opcode: op.Opcode(bytecode.OpCreateError),
 		vm:     vmT,
 	}, nil
 }
 
 // Execute converts the top value on the VM stack into an error object and replaces it on the stack.
-func (op *OpError) Execute(_ *core.Decoder) {
+func (op *OpCreateError) Execute(_ *core.Decoder) {
 	// Operands Offset  0
 	value := op.vm.Stack().Peek()
 	e := op.vm.Factory().NewError(op.vm.Frame().Id(), value.AsString())
