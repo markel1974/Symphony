@@ -227,6 +227,38 @@ func (v *VM) Call(value objects.IObject, spread bool, numArgs int) {
 	}
 }
 
+// CallObject invokes a callable object with the given arguments and handles stack cleanup and error management.
+func (v *VM) CallObject(value objects.IObject, numArgs int, args ...objects.IObject) {
+	retCount, ret, err := value.Call(v.currFrame.Id(), args...)
+	v.stack.DecrementCount(numArgs + 1)
+	if err != nil {
+		v.SetError(objects.ComputeCallError(err, value.TypeName()))
+		return
+	}
+	switch retCount {
+	case 0:
+		v.stack.Push(v.gk.UndefinedValue())
+		return
+	case 1:
+		if ret != nil {
+			v.stack.Push(ret)
+		} else {
+			v.stack.Push(v.gk.UndefinedValue())
+		}
+		return
+	default:
+		container, ok := ret.(*objects.Array)
+		if !ok {
+			v.SetError(fmt.Errorf("invalid return count: %d", retCount))
+			return
+		}
+		for _, item := range container.Values() {
+			v.stack.Push(item)
+		}
+		return
+	}
+}
+
 // Return concludes the execution of the current frame and handles return values, including handling deferred calls.
 // If deferred calls are present, prepares the frame for execution of the first deferred call without immediate execution.
 // Saves return values in the parent frame during 'defer' execution chains and recursively processes parent returns.
@@ -257,36 +289,6 @@ func (v *VM) Return(returnValues []objects.IObject) {
 		v.returnApply(returnValues)
 	}
 }
-
-/*
-// Return handles the return operation by unwinding the current call frame, restoring the previous frame, and managing the stack.
-func (v *VM) Return(returnValues []objects.IObject) {
-	if v.currFrame.HasDeferredCalls() {
-		deferredCall := v.currFrame.DeferredPop()
-		if deferredCall != nil {
-			deferredFrame := v.prepareForCall(deferredCall, 0)
-			deferredFrame.SaveParentReturnValues(returnValues)
-			return
-		}
-	}
-	if v.currFrame.HasParentReturnValues() {
-		savedReturnValues := v.currFrame.PopParentReturnValues()
-		v.returnApply(returnValues)
-		if v.currFrame.HasDeferredCalls() {
-			deferredCall := v.currFrame.DeferredPop()
-			if deferredCall != nil {
-				deferredFrame := v.prepareForCall(deferredCall, 0)
-				deferredFrame.SaveParentReturnValues(savedReturnValues)
-			}
-			return
-		}
-		v.returnApply(savedReturnValues)
-	} else {
-		v.returnApply(returnValues)
-	}
-}
-
-*/
 
 func (v *VM) returnApply(returnValues []objects.IObject) {
 	shutdown := false
@@ -450,38 +452,6 @@ func (v *VM) loop() {
 		if v.shutdown {
 			break
 		}
-	}
-}
-
-// CallObject invokes a callable object with the given arguments and handles stack cleanup and error management.
-func (v *VM) CallObject(value objects.IObject, numArgs int, args ...objects.IObject) {
-	retCount, ret, err := value.Call(v.currFrame.Id(), args...)
-	v.stack.DecrementCount(numArgs + 1)
-	if err != nil {
-		v.SetError(objects.ComputeCallError(err, value.TypeName()))
-		return
-	}
-	switch retCount {
-	case 0:
-		v.stack.Push(v.gk.UndefinedValue())
-		return
-	case 1:
-		if ret != nil {
-			v.stack.Push(ret)
-		} else {
-			v.stack.Push(v.gk.UndefinedValue())
-		}
-		return
-	default:
-		container, ok := ret.(*objects.Array)
-		if !ok {
-			v.SetError(fmt.Errorf("invalid return count: %d", retCount))
-			return
-		}
-		for _, item := range container.Values() {
-			v.stack.Push(item)
-		}
-		return
 	}
 }
 
