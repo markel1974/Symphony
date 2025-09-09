@@ -631,7 +631,7 @@ func (c *Declarations) handleVariableDeclaration(tok token.Token, rhsIn ast.Expr
 				if symbol.Scope() == tables.GlobalScope {
 					op = bytecode.OpGlobalIndex
 				}
-				if _, err := c.scopes.Emit(op, symbol.Index(), numSelectors); err != nil {
+				if _, err := c.scopes.Emit(op, numSelectors, symbol.Index()); err != nil {
 					return err
 				}
 				return nil

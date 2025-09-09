@@ -34,8 +34,8 @@ func NewOpLocalIndex(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error
 // Execute performs the operation of retrieving, modifying, and reassigning a value using selectors in the local scope.
 func (op *OpLocalIndex) Execute(decoder *core.Decoder) {
 	// Operands Offset 2 (8-bit|8-bit)
-	selCount := decoder.Read(0)
-	localIndex := decoder.Read(1)
+	localIndex := decoder.Read(0)
+	selCount := decoder.Read(1)
 	dstObj := op.vm.Stack().PeekAbsolute(op.vm.Frame().BasePointer() + localIndex)
 	//if obj, ok := dstObj.(*objects.ObjectPointer); ok {
 	//	dstObj = *obj.Value()

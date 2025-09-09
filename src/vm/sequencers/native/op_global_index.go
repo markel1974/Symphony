@@ -33,9 +33,9 @@ func NewOpGlobalIndex(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, erro
 // Execute performs the operation defined by OpGlobalIndex, updating the VM state and handling global index assignment.
 func (op *OpGlobalIndex) Execute(decoder *core.Decoder) {
 	// Operands Offset 3 (8-bit | 16bit)
-	selCount := decoder.Read(0)
-	index := decoder.Read(1)
-	dstObj := op.vm.Globals().Get(uint(index))
+	globalIndex := decoder.Read(0)
+	selCount := decoder.Read(1)
+	dstObj := op.vm.Globals().Get(uint(globalIndex))
 	//if obj, ok := dstObj.(*objects.ObjectPointer); ok {
 	//	dstObj = *obj.Value()
 	//}
