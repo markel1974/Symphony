@@ -219,22 +219,76 @@ func (v *VM) Call(value objects.IObject, spread bool, numArgs int) {
 				return
 			}
 		}
-		v.callCompiled(ce, numArgs)
+		v.prepareForCall(ce, numArgs)
 	default:
 		var args []objects.IObject
 		args = append(args, v.Stack().PeekArrayObject(numArgs)...)
-		v.CallInternal(value, numArgs, args...)
+		v.CallObject(value, numArgs, args...)
 	}
 }
 
+// Return concludes the execution of the current frame and handles return values, including handling deferred calls.
+// If deferred calls are present, prepares the frame for execution of the first deferred call without immediate execution.
+// Saves return values in the parent frame during 'defer' execution chains and recursively processes parent returns.
+// Defaults to standard frame return if no deferred calls or chaining is present.
+func (v *VM) Return(returnValues []objects.IObject) {
+	// CASE 1: We are in a frame that is ending AND has pending 'defer' calls.
+	if v.currFrame.HasDeferredCalls() {
+		if deferredCall := v.currFrame.DeferredPop(); deferredCall != nil {
+			// Prepare a frame for 'defer' call but don't execute it yet.
+			deferredFrame := v.prepareForCall(deferredCall, 0)
+			// Save return values of the current frame (parent) in a new 'defer' call frame. This creates the chain link.
+			deferredFrame.SaveParentReturnValues(returnValues)
+			// Break function. VM will execute the 'defer' call in the next cycle.
+			return
+		}
+	}
+
+	// CASE 2: We are in a frame that just finished (e.g. 'defer' closure) and must restore its parent's return flow.
+	if v.currFrame.HasParentReturnValues() {
+		savedReturnValues := v.currFrame.PopParentReturnValues()
+		// A. Finalize the return of the current frame ('defer' frame).
+		v.returnApply(returnValues)
+		// B. Now that we're back in the parent frame, continue its return process.
+		//	This creates recursion: calling 'Return' with parent values.
+		v.Return(savedReturnValues)
+	} else {
+		// CASE 3: Standard return. No, pending 'defer' calls, and we're not inside a 'defer' chain.
+		v.returnApply(returnValues)
+	}
+}
+
+/*
 // Return handles the return operation by unwinding the current call frame, restoring the previous frame, and managing the stack.
 func (v *VM) Return(returnValues []objects.IObject) {
 	if v.currFrame.HasDeferredCalls() {
 		deferredCall := v.currFrame.DeferredPop()
-		v.Call(deferredCall, false, 0)
-		return
+		if deferredCall != nil {
+			deferredFrame := v.prepareForCall(deferredCall, 0)
+			deferredFrame.SaveParentReturnValues(returnValues)
+			return
+		}
 	}
+	if v.currFrame.HasParentReturnValues() {
+		savedReturnValues := v.currFrame.PopParentReturnValues()
+		v.returnApply(returnValues)
+		if v.currFrame.HasDeferredCalls() {
+			deferredCall := v.currFrame.DeferredPop()
+			if deferredCall != nil {
+				deferredFrame := v.prepareForCall(deferredCall, 0)
+				deferredFrame.SaveParentReturnValues(savedReturnValues)
+			}
+			return
+		}
+		v.returnApply(savedReturnValues)
+	} else {
+		v.returnApply(returnValues)
+	}
+}
 
+*/
+
+func (v *VM) returnApply(returnValues []objects.IObject) {
 	shutdown := false
 	prevIp := v.currFrame.SavedIP()
 	leavingFrameBasePointer := v.currFrame.BasePointer()
@@ -399,8 +453,8 @@ func (v *VM) loop() {
 	}
 }
 
-// CallInternal invokes a callable object with the given arguments and handles stack cleanup and error management.
-func (v *VM) CallInternal(value objects.IObject, numArgs int, args ...objects.IObject) {
+// CallObject invokes a callable object with the given arguments and handles stack cleanup and error management.
+func (v *VM) CallObject(value objects.IObject, numArgs int, args ...objects.IObject) {
 	retCount, ret, err := value.Call(v.currFrame.Id(), args...)
 	v.stack.DecrementCount(numArgs + 1)
 	if err != nil {
@@ -434,7 +488,7 @@ func (v *VM) CallInternal(value objects.IObject, numArgs int, args ...objects.IO
 // callCompiled sets up a new execution frame for a compiled function and manages stack allocation for local variables.
 // Callee specifies the compiled function to be executed, and numArgs determines the number of arguments passed.
 // It reserves stack space for all local variables and adjusts the instruction pointer accordingly.
-func (v *VM) callCompiled(callee *objects.FuncCompiled, numArgs int) {
+func (v *VM) prepareForCall(callee *objects.FuncCompiled, numArgs int) *Frame {
 	// 1. Calculate the new basePointer safely, anchoring it to the caller's frame.
 	//	The new "floor" begins exactly where the caller's local variable space ends.
 	bp := v.currFrame.BasePointer() + v.currFrame.NumLocals()
@@ -451,4 +505,6 @@ func (v *VM) callCompiled(callee *objects.FuncCompiled, numArgs int) {
 	// 5. Set stack pointer to include arguments and space for new locals
 	v.stack.SetStackPointer(bp + numArgs + callee.NumLocals())
 	v.ReseIp()
+
+	return v.currFrame
 }

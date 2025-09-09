@@ -10,25 +10,29 @@ import (
 // Frame represents a structure used for maintaining function call frames in a virtual machine execution context.
 // It encapsulates the execution state, free variables, instruction pointer, and base pointer of a function call.
 type Frame struct {
-	gk               objects.IGateKeeper
-	id               int
-	compiledFunction *objects.FuncCompiled
-	freeVars         []*objects.ObjectPointer
-	savedIp          int
-	basePointer      int
-	instructions     *objects.Instructions
-	deferredCalls    []objects.IObject
-	errSignal        func(err error)
+	gk                   objects.IGateKeeper
+	id                   int
+	compiledFunction     *objects.FuncCompiled
+	freeVars             []*objects.ObjectPointer
+	savedIp              int
+	basePointer          int
+	instructions         *objects.Instructions
+	deferredCalls        []*objects.FuncCompiled
+	savedReturnValues    []objects.IObject
+	hasSavedReturnValues bool
+	errSignal            func(err error)
 }
 
 // NewFrame creates and returns a new Frame instance with its instruction pointer initialized to -1.
 func NewFrame(gk objects.IGateKeeper, id int, errSignal func(err error)) *Frame {
 	return &Frame{
-		gk:            gk,
-		id:            id,
-		savedIp:       resetIp,
-		errSignal:     errSignal,
-		deferredCalls: []objects.IObject{},
+		gk:                   gk,
+		id:                   id,
+		savedIp:              resetIp,
+		errSignal:            errSignal,
+		savedReturnValues:    []objects.IObject{},
+		hasSavedReturnValues: false,
+		deferredCalls:        []*objects.FuncCompiled{},
 	}
 }
 
@@ -141,16 +145,16 @@ func (f *Frame) NumParameters() int {
 }
 
 // DeferredAdd appends a deferred call object to the frame's deferred calls queue for later execution.
-func (f *Frame) DeferredAdd(call objects.IObject) {
+func (f *Frame) DeferredAdd(call *objects.FuncCompiled) {
 	f.deferredCalls = append(f.deferredCalls, call)
 }
 
 // DeferredPop removes and returns the last deferred call object from the frame's deferred calls queue.
-func (f *Frame) DeferredPop() objects.IObject {
+func (f *Frame) DeferredPop() *objects.FuncCompiled {
 	numDeferred := len(f.deferredCalls)
 	if numDeferred == 0 {
 		f.errSignal(fmt.Errorf("no deferred calls in frame %d", f.id))
-		return f.gk.UndefinedValue()
+		return nil
 	}
 	target := numDeferred - 1
 	lastCall := f.deferredCalls[target]
@@ -161,4 +165,20 @@ func (f *Frame) DeferredPop() objects.IObject {
 // HasDeferredCalls returns true if there are any deferred calls queued in the frame; otherwise, it returns false.
 func (f *Frame) HasDeferredCalls() bool {
 	return len(f.deferredCalls) > 0
+}
+
+func (f *Frame) SaveParentReturnValues(returnValues []objects.IObject) {
+	f.savedReturnValues = returnValues
+	f.hasSavedReturnValues = true
+}
+
+func (f *Frame) HasParentReturnValues() bool {
+	return f.hasSavedReturnValues
+}
+
+func (f *Frame) PopParentReturnValues() []objects.IObject {
+	ret := f.savedReturnValues
+	f.savedReturnValues = []objects.IObject{}
+	f.hasSavedReturnValues = false
+	return ret
 }

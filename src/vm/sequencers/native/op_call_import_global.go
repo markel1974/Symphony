@@ -40,25 +40,25 @@ func (op *OpCallImportGlobal) Execute(decoder *core.Decoder) {
 	callee := op.vm.Imports().Get(uint(funcImportIndex))
 	switch numArgs {
 	case 0:
-		op.vm.CallInternal(callee, 0)
+		op.vm.CallObject(callee, 0)
 	case 1:
 		i2 := op.vm.Globals().Get(uint(decoder.Read(2)))
-		op.vm.CallInternal(callee, numArgs, i2)
+		op.vm.CallObject(callee, numArgs, i2)
 	case 2:
 		i2 := op.vm.Globals().Get(uint(decoder.Read(2)))
 		i3 := op.vm.Globals().Get(uint(decoder.Read(3)))
-		op.vm.CallInternal(callee, numArgs, i2, i3)
+		op.vm.CallObject(callee, numArgs, i2, i3)
 	case 3:
 		i2 := op.vm.Globals().Get(uint(decoder.Read(2)))
 		i3 := op.vm.Globals().Get(uint(decoder.Read(3)))
 		i4 := op.vm.Globals().Get(uint(decoder.Read(4)))
-		op.vm.CallInternal(callee, numArgs, i2, i3, i4)
+		op.vm.CallObject(callee, numArgs, i2, i3, i4)
 	default:
 		args := make([]objects.IObject, numArgs)
 		for i := 0; i < numArgs; i++ {
 			globalIndex := uint(decoder.Read(2 + i))
 			args[i] = op.vm.Globals().Get(globalIndex)
 		}
-		op.vm.CallInternal(callee, len(args), args...)
+		op.vm.CallObject(callee, len(args), args...)
 	}
 }
