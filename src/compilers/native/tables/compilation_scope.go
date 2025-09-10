@@ -22,6 +22,7 @@ type LoopScope struct {
 // loop and switch constructs. It facilitates tracking compilation progress and managing break/continue semantics.
 type CompilationScope struct {
 	instructions        []byte
+	instructionsHelper  *opcodes.Instructions
 	lastInstruction     *EmittedInstruction
 	previousInstruction *EmittedInstruction
 	loopScopes          []*LoopScope
@@ -31,6 +32,7 @@ type CompilationScope struct {
 // NewCompilationScope initializes and returns a new instance of CompilationScope with default values.
 func NewCompilationScope() *CompilationScope {
 	return &CompilationScope{
+		instructionsHelper:  opcodes.NewInstructions([]byte{}),
 		instructions:        []byte{},
 		lastInstruction:     nil,
 		previousInstruction: nil,
@@ -82,9 +84,10 @@ func (c *CompilationScope) InstructionsSet(pos int, instruction byte) error {
 // InstructionsGet retrieves the instruction at the specified position in the instructions slice of the compilation scope.
 // Returns the instruction as a byte or an error if the position is invalid (e.g., out of bounds).
 func (c *CompilationScope) InstructionsGet(pos int) (opcodes.OpcodeId, error) {
-	opcodeId, _, err := opcodes.DecompileHeader(uint(pos), c.instructions)
-	if err != nil {
-		return 0, err
+	c.instructionsHelper.Assign(c.instructions)
+	opcodeId, _, ok := c.instructionsHelper.Header(uint(pos))
+	if !ok {
+		return 0, fmt.Errorf("invalid instruction position: %d", pos)
 	}
 	return opcodeId, nil
 }

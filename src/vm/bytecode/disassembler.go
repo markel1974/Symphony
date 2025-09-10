@@ -11,15 +11,17 @@ import (
 
 // Disassembler represents a utility for analyzing and processing bytecode by dissecting its constants and imports.
 type Disassembler struct {
-	bc      *Bytecode
-	opcodes *opcodes.Opcodes
+	bc           *Bytecode
+	opcodes      *opcodes.Opcodes
+	instructions *opcodes.Instructions
 }
 
 // NewDisassembler creates a new Disassembler instance linked to the provided Bytecode object.
-func NewDisassembler(b *Bytecode, opcodes *opcodes.Opcodes) *Disassembler {
+func NewDisassembler(b *Bytecode, op *opcodes.Opcodes) *Disassembler {
 	return &Disassembler{
-		bc:      b,
-		opcodes: opcodes,
+		bc:           b,
+		opcodes:      op,
+		instructions: opcodes.NewInstructions(nil),
 	}
 }
 
@@ -95,9 +97,10 @@ func (d *Disassembler) disassembleInstructions(bc []byte, posOffset int) ([]stri
 	var out []string
 	var end int
 	for i := 0; i < len(bc); {
-		targetOpcode, headerBytes, err := opcodes.DecompileHeader(uint(i), bc)
-		if err != nil {
-			return nil, err
+		d.instructions.Assign(bc)
+		targetOpcode, headerBytes, ok := d.instructions.Header(uint(i))
+		if !ok {
+			return nil, fmt.Errorf("invalid instruction at offset %d", i)
 		}
 		opcode := d.opcodes.Opcode(targetOpcode)
 		totalBytes := int(headerBytes) + opcode.OperandsBytes()

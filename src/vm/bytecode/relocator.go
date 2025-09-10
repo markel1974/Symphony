@@ -12,12 +12,13 @@ import (
 type Relocator struct {
 	gk           objects.IGateKeeper
 	opcodes      *opcodes.Opcodes
+	instructions *opcodes.Instructions
 	loader       ILoader
 	preserveFunc map[string]bool
 }
 
 // NewRelocator creates and returns a new instance of Relocator initialized with the provided IGateKeeper, ILoader, and Opcodes.
-func NewRelocator(gk objects.IGateKeeper, loader ILoader, opcodes *opcodes.Opcodes, preserve ...string) *Relocator {
+func NewRelocator(gk objects.IGateKeeper, loader ILoader, op *opcodes.Opcodes, preserve ...string) *Relocator {
 	p := make(map[string]bool)
 	for _, v := range preserve {
 		p[v] = true
@@ -25,7 +26,8 @@ func NewRelocator(gk objects.IGateKeeper, loader ILoader, opcodes *opcodes.Opcod
 	return &Relocator{
 		gk:           gk,
 		loader:       loader,
-		opcodes:      opcodes,
+		opcodes:      op,
+		instructions: opcodes.NewInstructions(nil),
 		preserveFunc: p,
 	}
 }
@@ -154,9 +156,10 @@ func (c *Relocator) updateFuncIndexes(fc *objects.FuncCompiled, indexContainer m
 	bc := fc.Data()
 	var end int
 	for i := 0; i < len(bc); {
-		targetOpcode, headerSize, err := opcodes.DecompileHeader(uint(i), bc)
-		if err != nil {
-			return err
+		c.instructions.Assign(bc)
+		targetOpcode, headerSize, ok := c.instructions.Header(uint(i))
+		if !ok {
+			return fmt.Errorf("invalid instruction at offset %d", i)
 		}
 		opcode := c.opcodes.Opcode(targetOpcode)
 		totalBytes := int(headerSize) + opcode.OperandsBytes()
