@@ -3,8 +3,8 @@ package native
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/core"
+	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
 
 func init() {
@@ -13,18 +13,18 @@ func init() {
 
 // OpJumpAnd represents a logical AND operation followed by a conditional jump in the bytecode execution process.
 type OpJumpAnd struct {
-	*bytecode.Opcode
+	*opcodes.Opcode
 	vm core.IVMFullAccess
 }
 
 // NewOpJumpAnd creates and returns a new instance of OpJumpAnd, initializing it with details for the OpJumpAnd opcode.
-func NewOpJumpAnd(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
+func NewOpJumpAnd(vm core.IVM, op *opcodes.Opcodes) (core.IOpExecutor, error) {
 	vmT, ok := vm.(core.IVMFullAccess)
 	if !ok {
 		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
 	}
 	return &OpJumpAnd{
-		Opcode: op.Opcode(bytecode.OpJumpAnd),
+		Opcode: op.Opcode(opcodes.OpJumpAnd),
 		vm:     vmT,
 	}, nil
 }

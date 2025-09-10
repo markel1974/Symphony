@@ -3,9 +3,9 @@ package native
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/core"
 	"github.com/markel1974/c64emu/src/vm/objects"
+	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
 
 func init() {
@@ -15,18 +15,18 @@ func init() {
 // OpUnarySub represents an operation for negating a numeric value.
 // It embeds Opcode, providing details such as the opcode, operands, and name.
 type OpUnarySub struct {
-	*bytecode.Opcode
+	*opcodes.Opcode
 	vm core.IVMFullAccess
 }
 
 // NewOpUnarySub creates and returns a new OpMinus instance, initializing it with the details of the OpMinus bytecode.
-func NewOpUnarySub(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
+func NewOpUnarySub(vm core.IVM, op *opcodes.Opcodes) (core.IOpExecutor, error) {
 	vmT, ok := vm.(core.IVMFullAccess)
 	if !ok {
 		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
 	}
 	return &OpUnarySub{
-		Opcode: op.Opcode(bytecode.OpUnarySub),
+		Opcode: op.Opcode(opcodes.OpUnarySub),
 		vm:     vmT,
 	}, nil
 }

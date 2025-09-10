@@ -5,9 +5,9 @@ package native
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/core"
 	"github.com/markel1974/c64emu/src/vm/objects"
+	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
 
 // init registers the NewOpJumpNotError operation with the sequencer system, enabling its functionality in the virtual machine.
@@ -18,19 +18,19 @@ func init() {
 // OpJumpNotError represents an operation that conditionally jumps if the top stack value is not a valid error.
 // It uses VM control flow and stack operations to determine execution flow based on error type validity.
 type OpJumpNotError struct {
-	*bytecode.Opcode
+	*opcodes.Opcode
 	vm core.IVMFullAccess
 }
 
 // NewOpJumpNotError creates a new OpJumpNotError executor, verifying that the provided VM implements IVMFullAccess.
 // It returns an instance of IOpExecutor or an error if the VM does not support full access functionality.
-func NewOpJumpNotError(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
+func NewOpJumpNotError(vm core.IVM, op *opcodes.Opcodes) (core.IOpExecutor, error) {
 	vmT, ok := vm.(core.IVMFullAccess)
 	if !ok {
 		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
 	}
 	return &OpJumpNotError{
-		Opcode: op.Opcode(bytecode.OpJumpNotError),
+		Opcode: op.Opcode(opcodes.OpJumpNotError),
 		vm:     vmT,
 	}, nil
 }

@@ -1,4 +1,4 @@
-package bytecode
+package opcodes
 
 //const OpcodeWidth = 1
 

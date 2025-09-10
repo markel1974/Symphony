@@ -3,12 +3,12 @@ package native
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/core"
+	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
 
 // registerFunc is a function type that registers an operation with the provided bytecode.Opcodes and returns a core.IOpExecutor.
-type registerFunc = func(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error)
+type registerFunc = func(vm core.IVM, op *opcodes.Opcodes) (core.IOpExecutor, error)
 
 // _registerContainer holds a list of functions that register operational executors for bytecode instructions.
 var _registerContainer []registerFunc
@@ -20,11 +20,11 @@ func SequencerRegister(fn registerFunc) {
 
 // Sequencer defines a container for managing and initializing opcode executors for a virtual machine's instruction set.
 type Sequencer struct {
-	op *bytecode.Opcodes
+	op *opcodes.Opcodes
 }
 
 // NewSequencer initializes and returns a new Sequencer instance with the provided Opcodes configuration.
-func NewSequencer(op *bytecode.Opcodes) core.ISequencer {
+func NewSequencer(op *opcodes.Opcodes) core.ISequencer {
 	return &Sequencer{
 		op: op,
 	}
@@ -55,7 +55,7 @@ func (ds *Sequencer) createRegistered(vmIn *core.VM) ([]core.IOpExecutor, error)
 		if opId < 0 || int(opId) >= len(container) {
 			return nil, fmt.Errorf("opcode %d out of range", opId)
 		}
-		if registered := container[opId]; registered.OpcodeId() != bytecode.OpUnknown {
+		if registered := container[opId]; registered.OpcodeId() != opcodes.OpUnknown {
 			return nil, fmt.Errorf("opcode %d already registered: %s", opId, registered.Name())
 		}
 		container[opId] = seq
@@ -141,20 +141,20 @@ func (ds *Sequencer) createStatic(vmIn *core.VM) ([]core.IOpExecutor, error) {
 }
 
 // facadeForOpcode returns a facade for the provided opcodeId.
-func (ds *Sequencer) facadeForOpcode(opcodeId bytecode.OpcodeId, vm *core.VM) interface{} {
+func (ds *Sequencer) facadeForOpcode(opcodeId opcodes.OpcodeId, vm *core.VM) interface{} {
 	switch opcodeId {
 	// Category: Stack & Constants (Read-Only)
-	case bytecode.OpConstant, bytecode.OpGlobalGet, bytecode.OpImport, bytecode.OpFreeGet, bytecode.OpLocalGet:
+	case opcodes.OpConstant, opcodes.OpGlobalGet, opcodes.OpImport, opcodes.OpFreeGet, opcodes.OpLocalGet:
 		return core.IVMReadOnly(vm)
 	// Category: Control Flow
-	case bytecode.OpJump, bytecode.OpJumpFalsy, bytecode.OpJumpAnd, bytecode.OpJumpOr:
+	case opcodes.OpJump, opcodes.OpJumpFalsy, opcodes.OpJumpAnd, opcodes.OpJumpOr:
 		return core.IVMControlFlow(vm)
 	// Category: Simple Stack
-	case bytecode.OpPop, bytecode.OpTrue, bytecode.OpFalse, bytecode.OpNull, bytecode.OpUnaryNot, bytecode.OpUnarySub:
+	case opcodes.OpPop, opcodes.OpTrue, opcodes.OpFalse, opcodes.OpNull, opcodes.OpUnaryNot, opcodes.OpUnarySub:
 		// These instructions only manipulate the top of the stack.
 		return core.IVMStackOnly(vm)
 	// Category: Full Access (use with caution)
-	case bytecode.OpCall, bytecode.OpReturn, bytecode.OpCallMethod, bytecode.OpCreateClosure:
+	case opcodes.OpCall, opcodes.OpReturn, opcodes.OpCallMethod, opcodes.OpCreateClosure:
 		// These complex operations need wider access.
 		return core.IVMFullAccess(vm)
 	// Default Case

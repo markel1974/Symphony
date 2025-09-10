@@ -1,7 +1,7 @@
 package core
 
 import (
-	"github.com/markel1974/c64emu/src/vm/bytecode"
+	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
 
 // IOpExecutor defines an interface for executing specific bytecode instructions within a virtual machine context.
@@ -10,11 +10,11 @@ import (
 // Operands retrieves the operands required for the operation's execution.
 // Execute performs the operation within the provided virtual machine instance.
 type IOpExecutor interface {
-	OpcodeId() bytecode.OpcodeId
+	OpcodeId() opcodes.OpcodeId
 
 	Name() string
 
-	Operands() []bytecode.OperandFeature
+	Operands() []opcodes.OperandFeature
 
 	Execute(decoder *Decoder)
 }

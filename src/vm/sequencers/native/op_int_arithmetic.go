@@ -3,9 +3,9 @@ package native
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/core"
 	"github.com/markel1974/c64emu/src/vm/objects"
+	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
 
 // init registers the OpIntLogical operation with the Sequencer system during package initialization.
@@ -16,20 +16,20 @@ func init() {
 // OpIntArithmetic represents an arithmetic operation executor for integer-based operations within the virtual machine.
 // It embeds bytecode.Opcode and utilizes the full access interface provided by core.IVMFullAccess.
 type OpIntArithmetic struct {
-	*bytecode.Opcode
+	*opcodes.Opcode
 	vm core.IVMFullAccess
 }
 
 // NewOpIntArithmetic creates a new OpIntArithmetic executor for integer arithmetic operations in the virtual machine context.
 // It requires a virtual machine implementing core.IVMFullAccess and associates the operation with the provided opcode.
 // Returns an instance of core.IOpExecutor or an error if the virtual machine type assertion fails.
-func NewOpIntArithmetic(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
+func NewOpIntArithmetic(vm core.IVM, op *opcodes.Opcodes) (core.IOpExecutor, error) {
 	vmT, ok := vm.(core.IVMFullAccess)
 	if !ok {
 		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
 	}
 	return &OpIntArithmetic{
-		Opcode: op.Opcode(bytecode.OpIntArithmetic),
+		Opcode: op.Opcode(opcodes.OpIntArithmetic),
 		vm:     vmT,
 	}, nil
 }

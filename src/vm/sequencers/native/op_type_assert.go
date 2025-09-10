@@ -5,9 +5,9 @@ package native
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/core"
 	"github.com/markel1974/c64emu/src/vm/objects"
+	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
 
 // init initializes the system by registering the NewOpTypeAssert operation with the sequencer via SequencerRegister.
@@ -18,18 +18,18 @@ func init() {
 // OpTypeAssert represents a bytecode operation for performing type assertions in a virtual machine.
 // It embeds bytecode.Opcode to utilize opcode-related functionalities and operates on a core.IVMFullAccess instance.
 type OpTypeAssert struct {
-	*bytecode.Opcode
+	*opcodes.Opcode
 	vm core.IVMFullAccess
 }
 
 // NewOpTypeAssert creates a new instance of OpTypeAssert, ensuring the provided IVM implements IVMFullAccess.
-func NewOpTypeAssert(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
+func NewOpTypeAssert(vm core.IVM, op *opcodes.Opcodes) (core.IOpExecutor, error) {
 	vmT, ok := vm.(core.IVMFullAccess)
 	if !ok {
 		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
 	}
 	return &OpTypeAssert{
-		Opcode: op.Opcode(bytecode.OpTypeAssert),
+		Opcode: op.Opcode(opcodes.OpTypeAssert),
 		vm:     vmT,
 	}, nil
 }

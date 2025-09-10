@@ -3,8 +3,8 @@ package native
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/core"
+	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
 
 func init() {
@@ -13,18 +13,18 @@ func init() {
 
 // OpUnknown represents an unknown or unsupported operation in the bytecode execution context.
 type OpUnknown struct {
-	*bytecode.Opcode
+	*opcodes.Opcode
 	vm core.IVMFullAccess
 }
 
 // NewOpUnknown creates a new instance of OpUnknown with its corresponding Opcode configuration set.
-func NewOpUnknown(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
+func NewOpUnknown(vm core.IVM, op *opcodes.Opcodes) (core.IOpExecutor, error) {
 	vmT, ok := vm.(core.IVMFullAccess)
 	if !ok {
 		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
 	}
 	return &OpUnknown{
-		Opcode: op.Opcode(bytecode.OpUnknown),
+		Opcode: op.Opcode(opcodes.OpUnknown),
 		vm:     vmT,
 	}, nil
 }

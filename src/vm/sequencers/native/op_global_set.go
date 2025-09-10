@@ -3,8 +3,8 @@ package native
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/core"
+	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
 
 func init() {
@@ -13,18 +13,18 @@ func init() {
 
 // OpGlobalSet represents a bytecode operation for setting a global variable's value in the virtual machine.
 type OpGlobalSet struct {
-	*bytecode.Opcode
+	*opcodes.Opcode
 	vm core.IVMFullAccess
 }
 
 // NewOpGlobalSet creates and returns a new instance of OpGlobalSet with initialized Opcode.
-func NewOpGlobalSet(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
+func NewOpGlobalSet(vm core.IVM, op *opcodes.Opcodes) (core.IOpExecutor, error) {
 	vmT, ok := vm.(core.IVMFullAccess)
 	if !ok {
 		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
 	}
 	return &OpGlobalSet{
-		Opcode: op.Opcode(bytecode.OpGlobalSet),
+		Opcode: op.Opcode(opcodes.OpGlobalSet),
 		vm:     vmT,
 	}, nil
 }

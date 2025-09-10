@@ -3,9 +3,9 @@ package native
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/core"
 	"github.com/markel1974/c64emu/src/vm/objects"
+	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
 
 // init registers the NewOpIndexSet operation with the sequencer system by adding it to the internal register container.
@@ -16,19 +16,19 @@ func init() {
 // OpIndexSet represents an operation for setting a value at a specified index in a container within a virtual machine.
 // It holds a reference to the Opcode and the IVMFullAccess interfaces needed for execution.
 type OpIndexSet struct {
-	*bytecode.Opcode
+	*opcodes.Opcode
 	vm core.IVMFullAccess
 }
 
 // NewOpIndexSet creates a new instance of OpIndexGet, binding it to the virtual machine and initializing with the given opcode.
 // Returns an implementation of core.IOpExecutor or an error if the VM does not support IVMFullAccess.
-func NewOpIndexSet(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
+func NewOpIndexSet(vm core.IVM, op *opcodes.Opcodes) (core.IOpExecutor, error) {
 	vmT, ok := vm.(core.IVMFullAccess)
 	if !ok {
 		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
 	}
 	return &OpIndexSet{
-		Opcode: op.Opcode(bytecode.OpIndexSet),
+		Opcode: op.Opcode(opcodes.OpIndexSet),
 		vm:     vmT,
 	}, nil
 }

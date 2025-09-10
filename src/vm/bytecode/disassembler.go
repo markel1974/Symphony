@@ -6,16 +6,17 @@ import (
 	"reflect"
 
 	"github.com/markel1974/c64emu/src/vm/objects"
+	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
 
 // Disassembler represents a utility for analyzing and processing bytecode by dissecting its constants and imports.
 type Disassembler struct {
 	bc      *Bytecode
-	opcodes *Opcodes
+	opcodes *opcodes.Opcodes
 }
 
 // NewDisassembler creates a new Disassembler instance linked to the provided Bytecode object.
-func NewDisassembler(b *Bytecode, opcodes *Opcodes) *Disassembler {
+func NewDisassembler(b *Bytecode, opcodes *opcodes.Opcodes) *Disassembler {
 	return &Disassembler{
 		bc:      b,
 		opcodes: opcodes,
@@ -94,7 +95,7 @@ func (d *Disassembler) disassembleInstructions(bc []byte, posOffset int) ([]stri
 	var out []string
 	var end int
 	for i := 0; i < len(bc); {
-		targetOpcode, headerBytes, err := DecompileHeader(uint(i), bc)
+		targetOpcode, headerBytes, err := opcodes.DecompileHeader(uint(i), bc)
 		if err != nil {
 			return nil, err
 		}

@@ -3,8 +3,8 @@ package native
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/core"
+	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
 
 func init() {
@@ -13,18 +13,18 @@ func init() {
 
 // OpFreeSet represents an operation to set the value of a free variable within a closure's environment.
 type OpFreeSet struct {
-	*bytecode.Opcode
+	*opcodes.Opcode
 	vm core.IVMFullAccess
 }
 
 // NewOpFreeSet creates and returns a new instance of OpFreeSet initialized with its corresponding Opcode.
-func NewOpFreeSet(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
+func NewOpFreeSet(vm core.IVM, op *opcodes.Opcodes) (core.IOpExecutor, error) {
 	vmT, ok := vm.(core.IVMFullAccess)
 	if !ok {
 		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
 	}
 	return &OpFreeSet{
-		Opcode: op.Opcode(bytecode.OpFreeSet),
+		Opcode: op.Opcode(opcodes.OpFreeSet),
 		vm:     vmT,
 	}, nil
 }

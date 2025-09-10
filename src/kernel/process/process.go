@@ -12,6 +12,7 @@ import (
 	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/core"
 	"github.com/markel1974/c64emu/src/vm/objects"
+	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
 
 const (
@@ -33,7 +34,7 @@ type Process struct {
 	executorWaitChan chan bool
 	timeout          time.Duration
 	loader           bytecode.ILoader
-	opcodes          *bytecode.Opcodes
+	opcodes          *opcodes.Opcodes
 	compiler         bytecode.ICompiler
 	vm               *core.VM
 	onError          interfaces.OnError
@@ -545,7 +546,7 @@ func (t *Process) handleMessageProcessStart(msg interfaces.IMessage) {
 			var err error
 			const sequencerId = "native"
 			gk := objects.NewGateKeeper()
-			t.opcodes = bytecode.NewOpcodes()
+			t.opcodes = opcodes.NewOpcodes()
 			t.compiler, t.loader, err = compilers.NewCompiler(gk, t.opcodes, sequencerId)
 			if err != nil {
 				log.Printf("Process [%s]: error creating compiler: %s", t.cmd.Name(), err.Error())

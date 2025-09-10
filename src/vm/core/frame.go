@@ -3,8 +3,8 @@ package core
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/objects"
+	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
 
 // Frame represents a structure used for maintaining function call frames in a virtual machine execution context.
@@ -16,7 +16,7 @@ type Frame struct {
 	freeVars             []*objects.ObjectPointer
 	savedIp              int
 	basePointer          int
-	instructions         *objects.Instructions
+	instructions         *opcodes.Instructions
 	deferredCalls        []*objects.FuncCompiled
 	savedReturnValues    []objects.IObject
 	hasSavedReturnValues bool
@@ -51,13 +51,13 @@ func (f *Frame) Bind(startIp int, compiledFunction *objects.FuncCompiled, basePo
 }
 
 // Fetch retrieves the next instruction pointer and its corresponding OpcodeId from the frame's instructions.
-func (f *Frame) Fetch(ip int) (int, bytecode.OpcodeId) {
-	offset := uint(ip + bytecode.HeaderSizeBytes)
+func (f *Frame) Fetch(ip int) (int, opcodes.OpcodeId) {
+	offset := uint(ip + opcodes.HeaderSizeBytes)
 	headerBytes := f.Get8Reverse(offset)
-	offset += bytecode.HeaderOpcodeIdBytes
+	offset += opcodes.HeaderOpcodeIdBytes
 	opcode := f.Get16Reverse(offset)
 	ip += int(headerBytes)
-	return ip, bytecode.OpcodeId(opcode)
+	return ip, opcodes.OpcodeId(opcode)
 }
 
 // Get8Reverse retrieves an 8-bit unsigned integer from the instructions at the specified index in the current frame.

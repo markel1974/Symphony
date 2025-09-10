@@ -3,8 +3,8 @@ package native
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/core"
+	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
 
 // init initializes the necessary operation for the sequencer by registering NewOpJumpTruthy with the SequencerRegister function.
@@ -14,18 +14,18 @@ func init() {
 
 // OpJumpTruthy defines a structure for executing a truthy-check jump operation in a virtual machine context.
 type OpJumpTruthy struct {
-	*bytecode.Opcode
+	*opcodes.Opcode
 	vm core.IVMFullAccess
 }
 
 // NewOpJumpTruthy creates a new OpJumpTruthy executor, validating the provided virtual machine for required full access capabilities.
-func NewOpJumpTruthy(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
+func NewOpJumpTruthy(vm core.IVM, op *opcodes.Opcodes) (core.IOpExecutor, error) {
 	vmT, ok := vm.(core.IVMFullAccess)
 	if !ok {
 		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
 	}
 	return &OpJumpTruthy{
-		Opcode: op.Opcode(bytecode.OpJumpTruthy),
+		Opcode: op.Opcode(opcodes.OpJumpTruthy),
 		vm:     vmT,
 	}, nil
 }

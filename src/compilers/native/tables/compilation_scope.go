@@ -3,7 +3,7 @@ package tables
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/vm/bytecode"
+	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
 
 // SwitchScope represents the scope of a switch statement during compilation, storing positions for end jump instructions.
@@ -81,8 +81,8 @@ func (c *CompilationScope) InstructionsSet(pos int, instruction byte) error {
 
 // InstructionsGet retrieves the instruction at the specified position in the instructions slice of the compilation scope.
 // Returns the instruction as a byte or an error if the position is invalid (e.g., out of bounds).
-func (c *CompilationScope) InstructionsGet(pos int) (bytecode.OpcodeId, error) {
-	opcodeId, _, err := bytecode.DecompileHeader(uint(pos), c.instructions)
+func (c *CompilationScope) InstructionsGet(pos int) (opcodes.OpcodeId, error) {
+	opcodeId, _, err := opcodes.DecompileHeader(uint(pos), c.instructions)
 	if err != nil {
 		return 0, err
 	}

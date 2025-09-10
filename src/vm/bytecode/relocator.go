@@ -5,18 +5,19 @@ import (
 	"reflect"
 
 	"github.com/markel1974/c64emu/src/vm/objects"
+	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
 
 // Relocator is responsible for processing, fixing, and reconstructing objects, ensuring compatibility with the runtime environment.
 type Relocator struct {
 	gk           objects.IGateKeeper
-	opcodes      *Opcodes
+	opcodes      *opcodes.Opcodes
 	loader       ILoader
 	preserveFunc map[string]bool
 }
 
 // NewRelocator creates and returns a new instance of Relocator initialized with the provided IGateKeeper, ILoader, and Opcodes.
-func NewRelocator(gk objects.IGateKeeper, loader ILoader, opcodes *Opcodes, preserve ...string) *Relocator {
+func NewRelocator(gk objects.IGateKeeper, loader ILoader, opcodes *opcodes.Opcodes, preserve ...string) *Relocator {
 	p := make(map[string]bool)
 	for _, v := range preserve {
 		p[v] = true
@@ -153,7 +154,7 @@ func (c *Relocator) updateFuncIndexes(fc *objects.FuncCompiled, indexContainer m
 	bc := fc.Data()
 	var end int
 	for i := 0; i < len(bc); {
-		targetOpcode, headerSize, err := DecompileHeader(uint(i), bc)
+		targetOpcode, headerSize, err := opcodes.DecompileHeader(uint(i), bc)
 		if err != nil {
 			return err
 		}

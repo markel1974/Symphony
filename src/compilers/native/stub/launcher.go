@@ -9,11 +9,12 @@ import (
 	"github.com/markel1974/c64emu/src/vm"
 	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/objects"
+	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
 
 func VMTest(sequencerId string, baseDir string, prefix string, debug bool) error {
 	gk := objects.NewGateKeeper()
-	op := bytecode.NewOpcodes()
+	op := opcodes.NewOpcodes()
 	for _, fileName := range Prepare(baseDir, prefix) {
 		fmt.Printf("\n\n------------------ %s ------------------\n", fileName)
 		comp, loader, err := compilers.NewCompiler(gk, op, sequencerId)

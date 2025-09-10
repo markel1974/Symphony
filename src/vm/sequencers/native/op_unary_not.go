@@ -3,9 +3,9 @@ package native
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/core"
 	"github.com/markel1974/c64emu/src/vm/objects"
+	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
 
 func init() {
@@ -14,18 +14,18 @@ func init() {
 
 // OpUnaryNot represents the logical NOT (!) operation opcode in the virtual machine's instruction set.
 type OpUnaryNot struct {
-	*bytecode.Opcode
+	*opcodes.Opcode
 	vm core.IVMFullAccess
 }
 
 // NewOpUnaryNot creates a new instance of OpUnaryNot, representing a logical NOT operation (!).
-func NewOpUnaryNot(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
+func NewOpUnaryNot(vm core.IVM, op *opcodes.Opcodes) (core.IOpExecutor, error) {
 	vmT, ok := vm.(core.IVMFullAccess)
 	if !ok {
 		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
 	}
 	return &OpUnaryNot{
-		Opcode: op.Opcode(bytecode.OpUnaryNot),
+		Opcode: op.Opcode(opcodes.OpUnaryNot),
 		vm:     vmT,
 	}, nil
 }

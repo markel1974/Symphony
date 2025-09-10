@@ -3,9 +3,9 @@ package native
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/core"
 	"github.com/markel1974/c64emu/src/vm/objects"
+	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
 
 func init() {
@@ -14,18 +14,18 @@ func init() {
 
 // OpReturn represents a specialized operation that extends the behavior of bytecode.Opcode.
 type OpReturn struct {
-	*bytecode.Opcode
+	*opcodes.Opcode
 	vm core.IVMFullAccess
 }
 
 // NewOpReturn creates a new instance of OpReturn with its Opcode initialized for the OpReturn operation.
-func NewOpReturn(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
+func NewOpReturn(vm core.IVM, op *opcodes.Opcodes) (core.IOpExecutor, error) {
 	vmT, ok := vm.(core.IVMFullAccess)
 	if !ok {
 		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
 	}
 	return &OpReturn{
-		Opcode: op.Opcode(bytecode.OpReturn),
+		Opcode: op.Opcode(opcodes.OpReturn),
 		vm:     vmT,
 	}, nil
 }

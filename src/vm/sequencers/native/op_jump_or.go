@@ -3,8 +3,8 @@ package native
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/core"
+	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
 
 func init() {
@@ -13,18 +13,18 @@ func init() {
 
 // OpJumpOr represents an operation that performs a logical OR and jumps based on the result.
 type OpJumpOr struct {
-	*bytecode.Opcode
+	*opcodes.Opcode
 	vm core.IVMFullAccess
 }
 
 // NewOpJumpOr creates and returns a new instance of OpJumpOr, associated with the OpJumpOr opcode and its details.
-func NewOpJumpOr(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
+func NewOpJumpOr(vm core.IVM, op *opcodes.Opcodes) (core.IOpExecutor, error) {
 	vmT, ok := vm.(core.IVMFullAccess)
 	if !ok {
 		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
 	}
 	return &OpJumpOr{
-		Opcode: op.Opcode(bytecode.OpJumpOr),
+		Opcode: op.Opcode(opcodes.OpJumpOr),
 		vm:     vmT,
 	}, nil
 }

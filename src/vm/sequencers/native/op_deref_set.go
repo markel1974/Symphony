@@ -3,9 +3,9 @@ package native
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/core"
 	"github.com/markel1974/c64emu/src/vm/objects"
+	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
 
 // init registers the NewOpDerefSet operation with the sequencer system.
@@ -15,18 +15,18 @@ func init() {
 
 // OpDerefSet represents an operation for dereferencing a pointer and setting its value in the virtual machine.
 type OpDerefSet struct {
-	*bytecode.Opcode
+	*opcodes.Opcode
 	vm core.IVMFullAccess
 }
 
 // NewOpDerefSet creates a new OpDerefSet instance with the specified opcode for the dereference and set operation.
-func NewOpDerefSet(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
+func NewOpDerefSet(vm core.IVM, op *opcodes.Opcodes) (core.IOpExecutor, error) {
 	vmT, ok := vm.(core.IVMFullAccess)
 	if !ok {
 		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
 	}
 	return &OpDerefSet{
-		Opcode: op.Opcode(bytecode.OpDerefSet),
+		Opcode: op.Opcode(opcodes.OpDerefSet),
 		vm:     vmT,
 	}, nil
 }

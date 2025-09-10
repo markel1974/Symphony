@@ -3,8 +3,8 @@ package native
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/core"
+	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
 
 func init() {
@@ -13,18 +13,18 @@ func init() {
 
 // OpNoOp represents a no-operation opcode, typically used as a placeholder or for alignment purposes.
 type OpNoOp struct {
-	*bytecode.Opcode
+	*opcodes.Opcode
 	vm core.IVMFullAccess
 }
 
 // NewOpNoOp initializes and returns a new OpNoOp instance using the given Opcodes configuration.
-func NewOpNoOp(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
+func NewOpNoOp(vm core.IVM, op *opcodes.Opcodes) (core.IOpExecutor, error) {
 	vmT, ok := vm.(core.IVMFullAccess)
 	if !ok {
 		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
 	}
 	return &OpNoOp{
-		Opcode: op.Opcode(bytecode.OpNoOp),
+		Opcode: op.Opcode(opcodes.OpNoOp),
 		vm:     vmT,
 	}, nil
 }

@@ -10,6 +10,7 @@ import (
 	"github.com/markel1974/c64emu/src/compilers/native/tables"
 	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/objects"
+	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
 
 // Compiler represents a structure to manage the compilation process, including scopes and associated token file sets.
@@ -37,7 +38,7 @@ type Compiler struct {
 }
 
 // New creates and returns a new instance of Compiler with initialized scopes using a standard library loader.
-func New(gk objects.IGateKeeper, loader bytecode.ILoader, opcodes *bytecode.Opcodes) *Compiler {
+func New(gk objects.IGateKeeper, loader bytecode.ILoader, opcodes *opcodes.Opcodes) *Compiler {
 	var components []IComponent
 	constants := tables.NewConstants()
 	scopes := tables.NewScopes(gk, opcodes, constants)
@@ -279,7 +280,7 @@ func (c *Compiler) createInit() error {
 	if scope.InstructionsLen() == 0 {
 		return nil
 	}
-	if _, err = c.scopes.Emit(bytecode.OpReturn, 0); err != nil {
+	if _, err = c.scopes.Emit(opcodes.OpReturn, 0); err != nil {
 		return err
 	}
 	initFuncCode := scope.Instructions()

@@ -3,9 +3,9 @@ package native
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/core"
 	"github.com/markel1974/c64emu/src/vm/objects"
+	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
 
 func init() {
@@ -15,18 +15,18 @@ func init() {
 // OpUnaryBitwiseComplement represents an operation for performing a bitwise complement on an operand.
 // It extends Opcode, inheriting its metadata and behaviors.
 type OpUnaryBitwiseComplement struct {
-	*bytecode.Opcode
+	*opcodes.Opcode
 	vm core.IVMFullAccess
 }
 
 // NewOpUnaryBitwiseComplement initializes and returns an OpUnaryBitwiseComplement instance with the corresponding Opcode configuration.
-func NewOpUnaryBitwiseComplement(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
+func NewOpUnaryBitwiseComplement(vm core.IVM, op *opcodes.Opcodes) (core.IOpExecutor, error) {
 	vmT, ok := vm.(core.IVMFullAccess)
 	if !ok {
 		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
 	}
 	return &OpUnaryBitwiseComplement{
-		Opcode: op.Opcode(bytecode.OpUnaryBitwiseComplement),
+		Opcode: op.Opcode(opcodes.OpUnaryBitwiseComplement),
 		vm:     vmT,
 	}, nil
 }

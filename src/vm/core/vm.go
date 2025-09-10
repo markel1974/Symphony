@@ -7,6 +7,7 @@ import (
 
 	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/objects"
+	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
 
 const Version = "0.1"
@@ -26,7 +27,7 @@ const (
 // VM represents a virtual machine that executes bytecode instructions, handles stack, and manages execution frames.
 type VM struct {
 	gk                objects.IGateKeeper
-	op                *bytecode.Opcodes
+	op                *opcodes.Opcodes
 	bc                *bytecode.Bytecode
 	stack             *Stack
 	frames            *Frames
@@ -46,7 +47,7 @@ type VM struct {
 }
 
 // New initializes and returns a new virtual machine instance configured with the provided components and settings.
-func New(gk objects.IGateKeeper, seq ISequencer, op *bytecode.Opcodes) *VM {
+func New(gk objects.IGateKeeper, seq ISequencer, op *opcodes.Opcodes) *VM {
 	v := &VM{
 		gk:        gk,
 		op:        op,
@@ -436,7 +437,7 @@ func (v *VM) exec(mainFn *objects.FuncCompiled, ret bool, args ...interface{}) (
 // loop executes the main instruction loop for the virtual machine, updating the instruction pointer and processing opcodes.
 func (v *VM) loop() {
 	//log.Printf("starting......")
-	var opcode bytecode.OpcodeId
+	var opcode opcodes.OpcodeId
 	var decoder *Decoder
 	v.counterIterations = 0
 	v.counterStart = uint64(time.Now().UnixMilli())

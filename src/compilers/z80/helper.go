@@ -2,8 +2,8 @@ package compiler
 
 import (
 	"github.com/markel1974/c64emu/src/compilers/native/tables"
-	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/objects"
+	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
 
 // Helper provides utilities for managing CPU emulation, constants, and scope operations within the system.
@@ -26,7 +26,7 @@ func NewHelper(gk objects.IGateKeeper, z80 *Z80, constants *tables.Constants, sc
 
 // EmitLdRegToReg copies the value from the source register to the destination register and emits the respective bytecode.
 func (h *Helper) EmitLdRegToReg(dest string, src string) error {
-	_, err := h.scopes.Emit(bytecode.OpGlobalCopy, h.z80.Register(dest), h.z80.Register(src))
+	_, err := h.scopes.Emit(opcodes.OpGlobalCopy, h.z80.Register(dest), h.z80.Register(src))
 	return err
 }
 
@@ -43,13 +43,13 @@ func (h *Helper) EmitAluRegToReg(op objects.ArithmeticOperator, srcReg string) e
 	}
 
 	// Salva gli operandi
-	if _, err = h.scopes.Emit(bytecode.OpGlobalGet, h.z80.Register("A")); err != nil {
+	if _, err = h.scopes.Emit(opcodes.OpGlobalGet, h.z80.Register("A")); err != nil {
 		return err
 	}
 	if err = h.scopes.EmitSymbolSetAndPop(opA); err != nil {
 		return err
 	}
-	if _, err = h.scopes.Emit(bytecode.OpGlobalGet, h.z80.Register(srcReg)); err != nil {
+	if _, err = h.scopes.Emit(opcodes.OpGlobalGet, h.z80.Register(srcReg)); err != nil {
 		return err
 	}
 	if err = h.scopes.EmitSymbolSetAndPop(opB); err != nil {
@@ -63,7 +63,7 @@ func (h *Helper) EmitAluRegToReg(op objects.ArithmeticOperator, srcReg string) e
 	if err = h.scopes.EmitSymbolGet(opA); err != nil {
 		return err
 	}
-	if _, err = h.scopes.Emit(bytecode.OpArithmetic, int(op)); err != nil {
+	if _, err = h.scopes.Emit(opcodes.OpArithmetic, int(op)); err != nil {
 		return err
 	}
 
@@ -79,7 +79,7 @@ func (h *Helper) EmitAluRegToReg(op objects.ArithmeticOperator, srcReg string) e
 	if err = h.scopes.EmitSymbolGet(tempResultSymbol); err != nil {
 		return err
 	}
-	if _, err = h.scopes.Emit(bytecode.OpGlobalSet, h.z80.Register("A")); err != nil {
+	if _, err = h.scopes.Emit(opcodes.OpGlobalSet, h.z80.Register("A")); err != nil {
 		return err
 	}
 
@@ -106,11 +106,11 @@ func (h *Helper) emitUpdateFlags(opA, opB, resultSymbol *tables.Symbol, op objec
 	// Calcolo Z: (risultato == 0) ? FlagZ : 0
 	const0 := h.constants.AddOrGet("", h.gk.NewInt(objects.FrameStatic, 0))
 	//constZ := h.constants.AddOrGet("", h.gk.NewInt(objects.FrameStatic, FlagZ))
-	if _, err := h.scopes.Emit(bytecode.OpConstant, const0); err != nil {
+	if _, err := h.scopes.Emit(opcodes.OpConstant, const0); err != nil {
 		return err
 	}
 	// Stack: [is_zero_bool]
-	if _, err := h.scopes.Emit(bytecode.OpLogical, int(objects.OperatorLogicalEq)); err != nil {
+	if _, err := h.scopes.Emit(opcodes.OpLogical, int(objects.OperatorLogicalEq)); err != nil {
 		return err
 	}
 
@@ -120,11 +120,11 @@ func (h *Helper) emitUpdateFlags(opA, opB, resultSymbol *tables.Symbol, op objec
 	}
 	const128 := h.constants.AddOrGet("", h.gk.NewInt(objects.FrameStatic, 128))
 	//constS := h.constants.AddOrGet("", h.gk.NewInt(objects.FrameStatic, FlagS))
-	if _, err := h.scopes.Emit(bytecode.OpConstant, const128); err != nil {
+	if _, err := h.scopes.Emit(opcodes.OpConstant, const128); err != nil {
 		return err
 	}
 	// Stack: [is_zero_bool, sign_bit]
-	if _, err := h.scopes.Emit(bytecode.OpArithmetic, int(objects.OperatorAnd)); err != nil {
+	if _, err := h.scopes.Emit(opcodes.OpArithmetic, int(objects.OperatorAnd)); err != nil {
 		return err
 	}
 
@@ -146,10 +146,10 @@ func (h *Helper) emitUpdateFlags(opA, opB, resultSymbol *tables.Symbol, op objec
 	}
 
 	constFlags := h.constants.AddOrGet("", h.gk.NewInt(objects.FrameStatic, finalFlags))
-	if _, err := h.scopes.Emit(bytecode.OpConstant, constFlags); err != nil {
+	if _, err := h.scopes.Emit(opcodes.OpConstant, constFlags); err != nil {
 		return err
 	}
-	if _, err := h.scopes.Emit(bytecode.OpGlobalSet, h.z80.Register("F")); err != nil {
+	if _, err := h.scopes.Emit(opcodes.OpGlobalSet, h.z80.Register("F")); err != nil {
 		return err
 	}
 
@@ -164,13 +164,13 @@ func (h *Helper) EmitCpReg(srcReg string) error {
 	opB, _ := h.scopes.SymbolDefineUnique("__opB")
 
 	// Salva operandi
-	if _, err := h.scopes.Emit(bytecode.OpGlobalGet, h.z80.Register("A")); err != nil {
+	if _, err := h.scopes.Emit(opcodes.OpGlobalGet, h.z80.Register("A")); err != nil {
 		return err
 	}
 	if err := h.scopes.EmitSymbolSetAndPop(opA); err != nil {
 		return err
 	}
-	if _, err := h.scopes.Emit(bytecode.OpGlobalGet, h.z80.Register(srcReg)); err != nil {
+	if _, err := h.scopes.Emit(opcodes.OpGlobalGet, h.z80.Register(srcReg)); err != nil {
 		return err
 	}
 	if err := h.scopes.EmitSymbolSetAndPop(opB); err != nil {
@@ -184,7 +184,7 @@ func (h *Helper) EmitCpReg(srcReg string) error {
 	if err := h.scopes.EmitSymbolGet(opA); err != nil {
 		return err
 	}
-	if _, err := h.scopes.Emit(bytecode.OpArithmetic, int(objects.OperatorSub)); err != nil {
+	if _, err := h.scopes.Emit(opcodes.OpArithmetic, int(objects.OperatorSub)); err != nil {
 		return err
 	}
 
@@ -200,15 +200,15 @@ func (h *Helper) EmitCpReg(srcReg string) error {
 // emitCheckFlag generates code to check a specific flag in the Z80 F register and pushes the result based on the given condition.
 func (h *Helper) emitCheckFlag(flag byte, condition bool) error {
 	// 1. Prendi il registro F
-	if _, err := h.scopes.Emit(bytecode.OpGlobalGet, h.z80.Register("F")); err != nil {
+	if _, err := h.scopes.Emit(opcodes.OpGlobalGet, h.z80.Register("F")); err != nil {
 		return err
 	}
 	// 2. Isola il bit del flag che ci interessa
 	constFlag := h.constants.AddOrGet("", h.gk.NewInt(objects.FrameStatic, int64(flag)))
-	if _, err := h.scopes.Emit(bytecode.OpConstant, constFlag); err != nil {
+	if _, err := h.scopes.Emit(opcodes.OpConstant, constFlag); err != nil {
 		return err
 	}
-	if _, err := h.scopes.Emit(bytecode.OpArithmetic, int(objects.OperatorAnd)); err != nil {
+	if _, err := h.scopes.Emit(opcodes.OpArithmetic, int(objects.OperatorAnd)); err != nil {
 		return err
 	}
 
@@ -218,7 +218,7 @@ func (h *Helper) emitCheckFlag(flag byte, condition bool) error {
 	// Se la condizione è "false" (es. per NZ - Jump if Not Zero),
 	// dobbiamo negare il risultato.
 	if !condition {
-		if _, err := h.scopes.Emit(bytecode.OpUnaryNot); err != nil {
+		if _, err := h.scopes.Emit(opcodes.OpUnaryNot); err != nil {
 			return err
 		}
 	}
@@ -228,7 +228,7 @@ func (h *Helper) emitCheckFlag(flag byte, condition bool) error {
 
 // EmitJumpUnconditional emits an unconditional jump bytecode to the specified target address. Returns an error if it fails.
 func (h *Helper) EmitJumpUnconditional(targetAddress int) error {
-	if _, err := h.scopes.Emit(bytecode.OpJump, targetAddress); err != nil {
+	if _, err := h.scopes.Emit(opcodes.OpJump, targetAddress); err != nil {
 		return err
 	}
 	return nil
@@ -246,7 +246,7 @@ func (h *Helper) EmitJumpConditional(flag byte, condition bool, targetAddress in
 	// 2. Emetti il salto condizionale della VM.
 	// Vogliamo saltare se il valore sulla stack è 'true'.
 	// OpJumpTruthy fa esattamente questo.
-	if _, err := h.scopes.Emit(bytecode.OpJumpTruthy, targetAddress); err != nil {
+	if _, err := h.scopes.Emit(opcodes.OpJumpTruthy, targetAddress); err != nil {
 		return err
 	}
 
@@ -268,33 +268,33 @@ func (h *Helper) emitPush16(valueSymbol *tables.Symbol) error {
 
 	// --- PUSH HI Byte ---
 	// SP = SP - 1
-	h.scopes.Emit(bytecode.OpGlobalGet, h.z80.Register("SP"))
-	h.scopes.Emit(bytecode.OpConstant, h.constants.AddOrGet("", h.gk.NewInt(objects.FrameStatic, 1)))
-	h.scopes.Emit(bytecode.OpArithmetic, int(objects.OperatorSub))
-	h.scopes.Emit(bytecode.OpGlobalSet, h.z80.Register("SP"))
+	h.scopes.Emit(opcodes.OpGlobalGet, h.z80.Register("SP"))
+	h.scopes.Emit(opcodes.OpConstant, h.constants.AddOrGet("", h.gk.NewInt(objects.FrameStatic, 1)))
+	h.scopes.Emit(opcodes.OpArithmetic, int(objects.OperatorSub))
+	h.scopes.Emit(opcodes.OpGlobalSet, h.z80.Register("SP"))
 
 	// Scrivi MEMORY[SP] = HI(value)
-	h.scopes.Emit(bytecode.OpGlobalGet, h.z80.Register("MEMORY")) // Prendi l'array della memoria
-	h.scopes.Emit(bytecode.OpGlobalGet, h.z80.Register("SP"))     // Prendi l'indirizzo (indice)
-	h.scopes.EmitSymbolGet(tempValue)                             // Prendi il valore da scrivere
-	h.scopes.Emit(bytecode.OpConstant, h.constants.AddOrGet("", h.gk.NewInt(objects.FrameStatic, 8)))
-	h.scopes.Emit(bytecode.OpArithmetic, int(objects.OperatorShr)) // Estrai HI byte
-	h.scopes.Emit(bytecode.OpIndexSet)                             // Scrivi in memoria
+	h.scopes.Emit(opcodes.OpGlobalGet, h.z80.Register("MEMORY")) // Prendi l'array della memoria
+	h.scopes.Emit(opcodes.OpGlobalGet, h.z80.Register("SP"))     // Prendi l'indirizzo (indice)
+	h.scopes.EmitSymbolGet(tempValue)                            // Prendi il valore da scrivere
+	h.scopes.Emit(opcodes.OpConstant, h.constants.AddOrGet("", h.gk.NewInt(objects.FrameStatic, 8)))
+	h.scopes.Emit(opcodes.OpArithmetic, int(objects.OperatorShr)) // Estrai HI byte
+	h.scopes.Emit(opcodes.OpIndexSet)                             // Scrivi in memoria
 
 	// --- PUSH LO Byte ---
 	// SP = SP - 1
-	h.scopes.Emit(bytecode.OpGlobalGet, h.z80.Register("SP"))
-	h.scopes.Emit(bytecode.OpConstant, h.constants.AddOrGet("", h.gk.NewInt(objects.FrameStatic, 1)))
-	h.scopes.Emit(bytecode.OpArithmetic, int(objects.OperatorSub))
-	h.scopes.Emit(bytecode.OpGlobalSet, h.z80.Register("SP"))
+	h.scopes.Emit(opcodes.OpGlobalGet, h.z80.Register("SP"))
+	h.scopes.Emit(opcodes.OpConstant, h.constants.AddOrGet("", h.gk.NewInt(objects.FrameStatic, 1)))
+	h.scopes.Emit(opcodes.OpArithmetic, int(objects.OperatorSub))
+	h.scopes.Emit(opcodes.OpGlobalSet, h.z80.Register("SP"))
 
 	// Scrivi MEMORY[SP] = LO(value)
-	h.scopes.Emit(bytecode.OpGlobalGet, h.z80.Register("MEMORY"))
-	h.scopes.Emit(bytecode.OpGlobalGet, h.z80.Register("SP"))
+	h.scopes.Emit(opcodes.OpGlobalGet, h.z80.Register("MEMORY"))
+	h.scopes.Emit(opcodes.OpGlobalGet, h.z80.Register("SP"))
 	h.scopes.EmitSymbolGet(tempValue)
-	h.scopes.Emit(bytecode.OpConstant, h.constants.AddOrGet("", h.gk.NewInt(objects.FrameStatic, 0xFF)))
-	h.scopes.Emit(bytecode.OpArithmetic, int(objects.OperatorAnd)) // Estrai LO byte
-	h.scopes.Emit(bytecode.OpIndexSet)
+	h.scopes.Emit(opcodes.OpConstant, h.constants.AddOrGet("", h.gk.NewInt(objects.FrameStatic, 0xFF)))
+	h.scopes.Emit(opcodes.OpArithmetic, int(objects.OperatorAnd)) // Estrai LO byte
+	h.scopes.Emit(opcodes.OpIndexSet)
 
 	return nil
 }
@@ -303,37 +303,37 @@ func (h *Helper) emitPush16(valueSymbol *tables.Symbol) error {
 func (h *Helper) emitPop16(destSymbol *tables.Symbol) error {
 	// --- POP LO Byte ---
 	tempLO, _ := h.scopes.SymbolDefineUnique("__pop_lo")
-	h.scopes.Emit(bytecode.OpGlobalGet, h.z80.Register("MEMORY"))
-	h.scopes.Emit(bytecode.OpGlobalGet, h.z80.Register("SP"))
-	h.scopes.Emit(bytecode.OpIndexGet)
+	h.scopes.Emit(opcodes.OpGlobalGet, h.z80.Register("MEMORY"))
+	h.scopes.Emit(opcodes.OpGlobalGet, h.z80.Register("SP"))
+	h.scopes.Emit(opcodes.OpIndexGet)
 	h.scopes.EmitSymbolSetAndPop(tempLO)
 
 	// SP = SP + 1
-	h.scopes.Emit(bytecode.OpGlobalGet, h.z80.Register("SP"))
-	h.scopes.Emit(bytecode.OpConstant, h.constants.AddOrGet("", h.gk.NewInt(objects.FrameStatic, 1)))
-	h.scopes.Emit(bytecode.OpArithmetic, int(objects.OperatorAdd))
-	h.scopes.Emit(bytecode.OpGlobalSet, h.z80.Register("SP"))
+	h.scopes.Emit(opcodes.OpGlobalGet, h.z80.Register("SP"))
+	h.scopes.Emit(opcodes.OpConstant, h.constants.AddOrGet("", h.gk.NewInt(objects.FrameStatic, 1)))
+	h.scopes.Emit(opcodes.OpArithmetic, int(objects.OperatorAdd))
+	h.scopes.Emit(opcodes.OpGlobalSet, h.z80.Register("SP"))
 
 	// --- POP HI Byte ---
 	tempHI, _ := h.scopes.SymbolDefineUnique("__pop_hi")
-	h.scopes.Emit(bytecode.OpGlobalGet, h.z80.Register("MEMORY"))
-	h.scopes.Emit(bytecode.OpGlobalGet, h.z80.Register("SP"))
-	h.scopes.Emit(bytecode.OpIndexGet)
+	h.scopes.Emit(opcodes.OpGlobalGet, h.z80.Register("MEMORY"))
+	h.scopes.Emit(opcodes.OpGlobalGet, h.z80.Register("SP"))
+	h.scopes.Emit(opcodes.OpIndexGet)
 	h.scopes.EmitSymbolSetAndPop(tempHI)
 
 	// SP = SP + 1
-	h.scopes.Emit(bytecode.OpGlobalGet, h.z80.Register("SP"))
-	h.scopes.Emit(bytecode.OpConstant, h.constants.AddOrGet("", h.gk.NewInt(objects.FrameStatic, 1)))
-	h.scopes.Emit(bytecode.OpArithmetic, int(objects.OperatorAdd))
-	h.scopes.Emit(bytecode.OpGlobalSet, h.z80.Register("SP"))
+	h.scopes.Emit(opcodes.OpGlobalGet, h.z80.Register("SP"))
+	h.scopes.Emit(opcodes.OpConstant, h.constants.AddOrGet("", h.gk.NewInt(objects.FrameStatic, 1)))
+	h.scopes.Emit(opcodes.OpArithmetic, int(objects.OperatorAdd))
+	h.scopes.Emit(opcodes.OpGlobalSet, h.z80.Register("SP"))
 
 	// --- Ricombina HI e LO ---
 	// valore = (HI << 8) | LO
 	h.scopes.EmitSymbolGet(tempHI)
-	h.scopes.Emit(bytecode.OpConstant, h.constants.AddOrGet("", h.gk.NewInt(objects.FrameStatic, 8)))
-	h.scopes.Emit(bytecode.OpArithmetic, int(objects.OperatorShl))
+	h.scopes.Emit(opcodes.OpConstant, h.constants.AddOrGet("", h.gk.NewInt(objects.FrameStatic, 8)))
+	h.scopes.Emit(opcodes.OpArithmetic, int(objects.OperatorShl))
 	h.scopes.EmitSymbolGet(tempLO)
-	h.scopes.Emit(bytecode.OpArithmetic, int(objects.OperatorOr))
+	h.scopes.Emit(opcodes.OpArithmetic, int(objects.OperatorOr))
 	h.scopes.EmitSymbolSetAndPop(destSymbol)
 
 	return nil
@@ -349,7 +349,7 @@ func (h *Helper) EmitCallConditional(flag byte, condition bool, targetAddress in
 
 	// 2. Se la condizione è 'false', salta oltre tutta la logica della CALL.
 	// Emettiamo un OpJumpFalsy con un indirizzo fittizio che correggeremo dopo.
-	jumpIfNotMet, err := h.scopes.Emit(bytecode.OpJumpFalsy, 9999)
+	jumpIfNotMet, err := h.scopes.Emit(opcodes.OpJumpFalsy, 9999)
 	if err != nil {
 		return err
 	}
@@ -359,7 +359,7 @@ func (h *Helper) EmitCallConditional(flag byte, condition bool, targetAddress in
 	// 3. Salva l'indirizzo di ritorno sullo stack Z80 emulato.
 	retAddrSymbol, _ := h.scopes.SymbolDefineUnique("__ret_addr_cond")
 	constRetAddr := h.constants.AddOrGet("", h.gk.NewInt(objects.FrameStatic, int64(returnAddress)))
-	h.scopes.Emit(bytecode.OpConstant, constRetAddr)
+	h.scopes.Emit(opcodes.OpConstant, constRetAddr)
 	h.scopes.EmitSymbolSetAndPop(retAddrSymbol)
 	if err := h.emitPush16(retAddrSymbol); err != nil {
 		return err
@@ -395,7 +395,7 @@ func (h *Helper) EmitRetConditional(flag byte, condition bool) error {
 	}
 
 	// 2. Se la condizione è 'false', salta oltre la logica del RET.
-	jumpIfNotMet, err := h.scopes.Emit(bytecode.OpJumpFalsy, 9999)
+	jumpIfNotMet, err := h.scopes.Emit(opcodes.OpJumpFalsy, 9999)
 	if err != nil {
 		return err
 	}
@@ -412,7 +412,7 @@ func (h *Helper) EmitRetConditional(flag byte, condition bool) error {
 	if err := h.scopes.EmitSymbolGet(retAddrSymbol); err != nil {
 		return err
 	}
-	if _, err := h.scopes.Emit(bytecode.OpJumpIndirect); err != nil {
+	if _, err := h.scopes.Emit(opcodes.OpJumpIndirect); err != nil {
 		return err
 	}
 
@@ -437,7 +437,7 @@ func (h *Helper) EmitRst(targetAddress int, returnAddress int) error {
 	retAddrSymbol, _ := h.scopes.SymbolDefineUnique("__rst_ret_addr")
 	constRetAddr := h.constants.AddOrGet("", h.gk.NewInt(objects.FrameStatic, int64(returnAddress)))
 
-	if _, err := h.scopes.Emit(bytecode.OpConstant, constRetAddr); err != nil {
+	if _, err := h.scopes.Emit(opcodes.OpConstant, constRetAddr); err != nil {
 		return err
 	}
 	if err := h.scopes.EmitSymbolSetAndPop(retAddrSymbol); err != nil {

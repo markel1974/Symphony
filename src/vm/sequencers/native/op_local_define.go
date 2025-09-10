@@ -3,8 +3,8 @@ package native
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/core"
+	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
 
 func init() {
@@ -13,18 +13,18 @@ func init() {
 
 // OpLocalDefine represents the opcode for defining a new local variable within the current frame's scope.
 type OpLocalDefine struct {
-	*bytecode.Opcode
+	*opcodes.Opcode
 	vm core.IVMFullAccess
 }
 
 // NewOpLocalDefine creates a new instance of OpLocalDefine with its associated opcode details.
-func NewOpLocalDefine(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
+func NewOpLocalDefine(vm core.IVM, op *opcodes.Opcodes) (core.IOpExecutor, error) {
 	vmT, ok := vm.(core.IVMFullAccess)
 	if !ok {
 		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
 	}
 	return &OpLocalDefine{
-		Opcode: op.Opcode(bytecode.OpLocalDefine),
+		Opcode: op.Opcode(opcodes.OpLocalDefine),
 		vm:     vmT,
 	}, nil
 }

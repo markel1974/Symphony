@@ -5,8 +5,8 @@ import (
 	"go/token"
 
 	"github.com/markel1974/c64emu/src/compilers/native/tables"
-	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/objects"
+	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
 
 type Expression struct {
@@ -56,14 +56,14 @@ func (c *Expression) UnaryExpr(node *ast.UnaryExpr) error {
 			if !ok {
 				return tables.NewCompilerError(c.fileSet, node, "undefined variable: %s", operand.Name)
 			}
-			opcodeId := bytecode.OpNull
+			opcodeId := opcodes.OpNull
 			switch symbol.Scope() {
 			case tables.LocalScope:
-				opcodeId = bytecode.OpLocalPtrGet
+				opcodeId = opcodes.OpLocalPtrGet
 			case tables.FreeScope:
-				opcodeId = bytecode.OpFreePtrGet
+				opcodeId = opcodes.OpFreePtrGet
 			case tables.GlobalScope:
-				opcodeId = bytecode.OpGlobalPtrGet
+				opcodeId = opcodes.OpGlobalPtrGet
 			default:
 				return tables.NewCompilerError(c.fileSet, node, "cannot take the address of a unknown scope")
 			}
@@ -83,14 +83,14 @@ func (c *Expression) UnaryExpr(node *ast.UnaryExpr) error {
 			if err = c.scopes.EmitSymbolDefine(tempSymbol); err != nil {
 				return err
 			}
-			opcodeId := bytecode.OpNull
+			opcodeId := opcodes.OpNull
 			switch tempSymbol.Scope() {
 			case tables.LocalScope:
-				opcodeId = bytecode.OpLocalPtrGet
+				opcodeId = opcodes.OpLocalPtrGet
 			case tables.FreeScope:
-				opcodeId = bytecode.OpFreePtrGet
+				opcodeId = opcodes.OpFreePtrGet
 			case tables.GlobalScope:
-				opcodeId = bytecode.OpGlobalPtrGet
+				opcodeId = opcodes.OpGlobalPtrGet
 			default:
 				return tables.NewCompilerError(c.fileSet, node, "cannot take the address of a unknown scope")
 			}
@@ -177,10 +177,10 @@ func (c *Expression) SelectorExpr(node *ast.SelectorExpr) error {
 		}
 		fieldName := node.Sel.Name
 		keyConst := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, fieldName))
-		if _, err := c.scopes.Emit(bytecode.OpConstant, keyConst); err != nil {
+		if _, err := c.scopes.Emit(opcodes.OpConstant, keyConst); err != nil {
 			return err
 		}
-		if _, err := c.scopes.Emit(bytecode.OpIndexGet); err != nil {
+		if _, err := c.scopes.Emit(opcodes.OpIndexGet); err != nil {
 			return err
 		}
 		return nil
@@ -203,15 +203,15 @@ func (c *Expression) IncDecStmt(node *ast.IncDecStmt) error {
 	}
 	// adds constant '1' to the stack
 	constIndex := c.constants.Add("", c.gk.NewInt(objects.FrameStatic, 1))
-	if _, err := c.scopes.Emit(bytecode.OpConstant, constIndex); err != nil {
+	if _, err := c.scopes.Emit(opcodes.OpConstant, constIndex); err != nil {
 		return err
 	}
 	if node.Tok == token.INC {
-		if _, err := c.scopes.Emit(bytecode.OpArithmetic, int(objects.OperatorAdd)); err != nil {
+		if _, err := c.scopes.Emit(opcodes.OpArithmetic, int(objects.OperatorAdd)); err != nil {
 			return err
 		}
 	} else if node.Tok == token.DEC {
-		if _, err := c.scopes.Emit(bytecode.OpArithmetic, int(objects.OperatorSub)); err != nil {
+		if _, err := c.scopes.Emit(opcodes.OpArithmetic, int(objects.OperatorSub)); err != nil {
 			return err
 		}
 	} else {
@@ -242,7 +242,7 @@ func (c *Expression) SliceExpr(node *ast.SliceExpr) error {
 		}
 	} else {
 		// If 'low' index is omitted, push 'undefined' (OpNull)
-		if _, err := c.scopes.Emit(bytecode.OpNull); err != nil {
+		if _, err := c.scopes.Emit(opcodes.OpNull); err != nil {
 			return err
 		}
 	}
@@ -253,11 +253,11 @@ func (c *Expression) SliceExpr(node *ast.SliceExpr) error {
 		}
 	} else {
 		// If 'high' index is omitted, push 'undefined' (OpNull)
-		if _, err := c.scopes.Emit(bytecode.OpNull); err != nil {
+		if _, err := c.scopes.Emit(opcodes.OpNull); err != nil {
 			return err
 		}
 	}
-	if _, err := c.scopes.Emit(bytecode.OpIndexSlice); err != nil {
+	if _, err := c.scopes.Emit(opcodes.OpIndexSlice); err != nil {
 		return err
 	}
 	return nil

@@ -3,9 +3,9 @@ package native
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/core"
 	"github.com/markel1974/c64emu/src/vm/objects"
+	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
 
 func init() {
@@ -14,18 +14,18 @@ func init() {
 
 // OpIteratorNext represents an operation code for advancing an iterator to the next element in the virtual machine.
 type OpIteratorNext struct {
-	*bytecode.Opcode
+	*opcodes.Opcode
 	vm core.IVMFullAccess
 }
 
 // NewOpIteratorNext creates a new instance of OpIteratorNext with associated opcode details.
-func NewOpIteratorNext(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
+func NewOpIteratorNext(vm core.IVM, op *opcodes.Opcodes) (core.IOpExecutor, error) {
 	vmT, ok := vm.(core.IVMFullAccess)
 	if !ok {
 		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
 	}
 	return &OpIteratorNext{
-		Opcode: op.Opcode(bytecode.OpIteratorNext),
+		Opcode: op.Opcode(opcodes.OpIteratorNext),
 		vm:     vmT,
 	}, nil
 }

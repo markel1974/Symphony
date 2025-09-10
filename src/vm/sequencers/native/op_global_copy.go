@@ -3,8 +3,8 @@ package native
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/core"
+	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
 
 // init registers the NewOpGlobalCopy function as a sequencer operation during package initialization.
@@ -15,18 +15,18 @@ func init() {
 // OpGlobalCopy represents an operation that copies a value from one global variable index to another in the VM's global state.
 // It embeds the bytecode.Opcode for opcode-related metadata and uses core.IVMFullAccess for VM interactions.
 type OpGlobalCopy struct {
-	*bytecode.Opcode
+	*opcodes.Opcode
 	vm core.IVMFullAccess
 }
 
 // NewOpGlobalCopy initializes an OpGlobalCopy executor with the provided VM and Opcodes instance or returns an error.
-func NewOpGlobalCopy(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
+func NewOpGlobalCopy(vm core.IVM, op *opcodes.Opcodes) (core.IOpExecutor, error) {
 	vmT, ok := vm.(core.IVMFullAccess)
 	if !ok {
 		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
 	}
 	return &OpGlobalCopy{
-		Opcode: op.Opcode(bytecode.OpGlobalCopy),
+		Opcode: op.Opcode(opcodes.OpGlobalCopy),
 		vm:     vmT,
 	}, nil
 }

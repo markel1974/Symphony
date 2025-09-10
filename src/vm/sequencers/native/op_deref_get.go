@@ -3,9 +3,9 @@ package native
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/core"
 	"github.com/markel1974/c64emu/src/vm/objects"
+	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
 
 func init() {
@@ -14,18 +14,18 @@ func init() {
 
 // OpDerefGet represents an operation for dereferencing a pointer.
 type OpDerefGet struct {
-	*bytecode.Opcode
+	*opcodes.Opcode
 	vm core.IVMFullAccess
 }
 
 // NewOpDerefGet creates a new OpDerefGet instance.
-func NewOpDerefGet(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
+func NewOpDerefGet(vm core.IVM, op *opcodes.Opcodes) (core.IOpExecutor, error) {
 	vmT, ok := vm.(core.IVMFullAccess)
 	if !ok {
 		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
 	}
 	return &OpDerefGet{
-		Opcode: op.Opcode(bytecode.OpDerefGet),
+		Opcode: op.Opcode(opcodes.OpDerefGet),
 		vm:     vmT,
 	}, nil
 }

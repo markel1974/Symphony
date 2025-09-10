@@ -3,8 +3,8 @@ package native
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/core"
+	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
 
 func init() {
@@ -13,18 +13,18 @@ func init() {
 
 // OpCreateStruct is a wrapper around bytecode.Opcode, representing a struct creation operation in bytecode execution.
 type OpCreateStruct struct {
-	*bytecode.Opcode
+	*opcodes.Opcode
 	vm core.IVMFullAccess
 }
 
 // NewOpCreateStruct initializes and returns a new instance of OpCreateStruct with its Opcode set to OpCreateMap details.
-func NewOpCreateStruct(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
+func NewOpCreateStruct(vm core.IVM, op *opcodes.Opcodes) (core.IOpExecutor, error) {
 	vmT, ok := vm.(core.IVMFullAccess)
 	if !ok {
 		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
 	}
 	return &OpCreateStruct{
-		Opcode: op.Opcode(bytecode.OpCreateStruct),
+		Opcode: op.Opcode(opcodes.OpCreateStruct),
 		vm:     vmT,
 	}, nil
 }

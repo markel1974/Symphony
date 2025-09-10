@@ -1,6 +1,8 @@
-package bytecode
+package opcodes
 
-import "fmt"
+import (
+	"fmt"
+)
 
 // Compiler is responsible for constructing binary instructions based on the provided opcodes and operands.
 type Compiler struct {
@@ -23,9 +25,9 @@ func (c *Compiler) Instructions() []byte {
 // Compile converts a list of operands into bytecode based on the opcode and writes the result to the instructions buffer.
 // An error is returned if the number or size of operands does not match the expectations of the opcode.
 func (c *Compiler) Compile(meta []uint8, operands []int) error {
-	features := c.opcode.Operands()
-	if len(operands) != len(features) {
-		return fmt.Errorf("wrong number of operands for %s: want %d, got %d", c.opcode.Name(), len(features), len(operands))
+	operandsFeatures := c.opcode.Operands()
+	if len(operands) != len(operandsFeatures) {
+		return fmt.Errorf("wrong number of operands for %s: want %d, got %d", c.opcode.Name(), len(operandsFeatures), len(operands))
 	}
 	headerBytes := HeaderSizeBytes + HeaderOpcodeIdBytes + len(meta)
 	totalBytes := headerBytes + c.opcode.OperandsBytes()
@@ -51,7 +53,7 @@ func (c *Compiler) Compile(meta []uint8, operands []int) error {
 	}
 	//Header End
 	for idx, operand := range operands {
-		size := uint(features[idx] & SzMask)
+		size := uint(operandsFeatures[idx] & SzMask)
 		if err := c.set(uint(operand), size, offset); err != nil {
 			return fmt.Errorf("failed to set operand %d: %w", idx, err)
 		}

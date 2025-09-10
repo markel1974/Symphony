@@ -3,9 +3,9 @@ package native
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/core"
 	"github.com/markel1974/c64emu/src/vm/objects"
+	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
 
 // init registers the NewOpIntLogical function with the sequencer system by appending it to the internal registry.
@@ -16,18 +16,18 @@ func init() {
 // OpIntLogical represents an executor for performing logical operations on integer operands within a virtual machine.
 // It extends bytecode.Opcode to utilize its opcode properties and depends on the IVMFullAccess interface for VM interactions.
 type OpIntLogical struct {
-	*bytecode.Opcode
+	*opcodes.Opcode
 	vm core.IVMFullAccess
 }
 
 // NewOpIntLogical creates a new instance of OpIntLogical, validating the provided virtual machine and opcode inputs.
-func NewOpIntLogical(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
+func NewOpIntLogical(vm core.IVM, op *opcodes.Opcodes) (core.IOpExecutor, error) {
 	vmT, ok := vm.(core.IVMFullAccess)
 	if !ok {
 		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
 	}
 	return &OpIntLogical{
-		Opcode: op.Opcode(bytecode.OpIntLogical),
+		Opcode: op.Opcode(opcodes.OpIntLogical),
 		vm:     vmT,
 	}, nil
 }

@@ -6,8 +6,8 @@ import (
 	"io"
 	"strconv"
 
-	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/objects"
+	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
 
 // maxScope defines the maximum allowable depth for compilation scopes to prevent excessive recursion or memory use.
@@ -18,7 +18,7 @@ const (
 // Scopes manages a collection of compilation scopes and the associated symbol table for nested compilation contexts.
 type Scopes struct {
 	gk                   objects.IGateKeeper
-	op                   *bytecode.Opcodes
+	op                   *opcodes.Opcodes
 	constants            *Constants
 	symbolTable          *SymbolTable
 	initSymbolTable      *SymbolTable
@@ -29,7 +29,7 @@ type Scopes struct {
 }
 
 // NewScopes initializes and returns a Scopes structure with a new symbol table, main compilation scope, and scope index set to 0.
-func NewScopes(gk objects.IGateKeeper, op *bytecode.Opcodes, constants *Constants) *Scopes {
+func NewScopes(gk objects.IGateKeeper, op *opcodes.Opcodes, constants *Constants) *Scopes {
 	c := &Scopes{
 		gk:                   gk,
 		op:                   op,
@@ -143,7 +143,7 @@ func (c *Scopes) InstructionsAdd(ins []byte) (int, error) {
 
 // InstructionSetLast updates the last emitted instruction for the current scope and tracks the previous one.
 // It returns an error if the current scope cannot be retrieved.
-func (c *Scopes) InstructionSetLast(op bytecode.OpcodeId, pos int) error {
+func (c *Scopes) InstructionSetLast(op opcodes.OpcodeId, pos int) error {
 	scope, err := c.Current()
 	if err != nil {
 		return err
@@ -180,7 +180,7 @@ func (c *Scopes) InstructionSet(pos int, instruction byte) error {
 }
 
 // InstructionGet retrieves an instruction from the current scope at the specified position. Returns the instruction or an error.
-func (c *Scopes) InstructionGet(pos int) (bytecode.OpcodeId, error) {
+func (c *Scopes) InstructionGet(pos int) (opcodes.OpcodeId, error) {
 	scope, err := c.Current()
 	if err != nil {
 		return 0, err
@@ -237,7 +237,7 @@ func (c *Scopes) ChangeOperand(opPos int, operand int) error {
 }
 
 // Emit generates and adds a new instruction to the current scope and updates the last emitted instruction info.
-func (c *Scopes) Emit(op bytecode.OpcodeId, operands ...int) (int, error) {
+func (c *Scopes) Emit(op opcodes.OpcodeId, operands ...int) (int, error) {
 	ins, err := c.op.Compile(op, operands...)
 	if err != nil {
 		return 0, err
@@ -253,11 +253,11 @@ func (c *Scopes) Emit(op bytecode.OpcodeId, operands ...int) (int, error) {
 }
 
 // EmitAndPop emits the given opcode with operands, followed by a pop operation, and returns an error if either fails.
-func (c *Scopes) EmitAndPop(op bytecode.OpcodeId, operands ...int) error {
+func (c *Scopes) EmitAndPop(op opcodes.OpcodeId, operands ...int) error {
 	if _, err := c.Emit(op, operands...); err != nil {
 		return err
 	}
-	if _, err := c.Emit(bytecode.OpPop); err != nil {
+	if _, err := c.Emit(opcodes.OpPop); err != nil {
 		return err
 	}
 	return nil
@@ -268,7 +268,7 @@ func (c *Scopes) EmitSymbolDefineAndPop(s *Symbol) error {
 	if err := c.EmitSymbolDefine(s); err != nil {
 		return err
 	}
-	if _, err := c.Emit(bytecode.OpPop); err != nil {
+	if _, err := c.Emit(opcodes.OpPop); err != nil {
 		return err
 	}
 	return nil
@@ -279,12 +279,12 @@ func (c *Scopes) EmitSymbolDefine(s *Symbol) error {
 	if s.Constant() {
 		return fmt.Errorf("cannot define constant symbol: %s", s.Name())
 	}
-	var op bytecode.OpcodeId
+	var op opcodes.OpcodeId
 	switch s.Scope() {
 	case GlobalScope:
-		op = bytecode.OpGlobalDefine
+		op = opcodes.OpGlobalDefine
 	case LocalScope:
-		op = bytecode.OpLocalDefine // Use new opcode for local variables
+		op = opcodes.OpLocalDefine // Use new opcode for local variables
 	default:
 		return fmt.Errorf("unsupported symbol scope: %v", s.Scope())
 	}
@@ -299,14 +299,14 @@ func (c *Scopes) EmitSymbolSet(s *Symbol) error {
 	if s.Constant() {
 		return fmt.Errorf("cannot set constant symbol: %s", s.Name())
 	}
-	var op bytecode.OpcodeId
+	var op opcodes.OpcodeId
 	switch s.Scope() {
 	case GlobalScope:
-		op = bytecode.OpGlobalSet
+		op = opcodes.OpGlobalSet
 	case LocalScope:
-		op = bytecode.OpLocalSet
+		op = opcodes.OpLocalSet
 	case FreeScope:
-		op = bytecode.OpFreeSet
+		op = opcodes.OpFreeSet
 	default:
 		return fmt.Errorf("unsupported symbol scope: %v", s.Scope())
 	}
@@ -319,17 +319,17 @@ func (c *Scopes) EmitSymbolSet(s *Symbol) error {
 // EmitSymbolGet generates bytecode instructions to retrieve a symbol's value based on its scope and index.
 func (c *Scopes) EmitSymbolGet(s *Symbol) error {
 	if s.Constant() {
-		_, err := c.Emit(bytecode.OpConstant, s.Index())
+		_, err := c.Emit(opcodes.OpConstant, s.Index())
 		return err
 	}
-	var op bytecode.OpcodeId
+	var op opcodes.OpcodeId
 	switch s.Scope() {
 	case GlobalScope:
-		op = bytecode.OpGlobalGet
+		op = opcodes.OpGlobalGet
 	case LocalScope:
-		op = bytecode.OpLocalGet
+		op = opcodes.OpLocalGet
 	case FreeScope:
-		op = bytecode.OpFreeGet
+		op = opcodes.OpFreeGet
 	default:
 		return fmt.Errorf("unsupported symbol scope: %v", s.Scope())
 	}
@@ -344,7 +344,7 @@ func (c *Scopes) EmitSymbolSetAndPop(s *Symbol) error {
 	if err := c.EmitSymbolSet(s); err != nil {
 		return err
 	}
-	if _, err := c.Emit(bytecode.OpPop); err != nil {
+	if _, err := c.Emit(opcodes.OpPop); err != nil {
 		return err
 	}
 	return nil

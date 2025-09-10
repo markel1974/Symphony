@@ -3,8 +3,8 @@ package native
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/core"
+	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
 
 func init() {
@@ -13,18 +13,18 @@ func init() {
 
 // OpTrue represents the opcode for pushing the boolean value true onto the stack.
 type OpTrue struct {
-	*bytecode.Opcode
+	*opcodes.Opcode
 	vm core.IVMFullAccess
 }
 
 // NewOpTrue initializes a new instance of OpTrue, representing the opcode that pushes the boolean value true onto the stack.
-func NewOpTrue(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
+func NewOpTrue(vm core.IVM, op *opcodes.Opcodes) (core.IOpExecutor, error) {
 	vmT, ok := vm.(core.IVMFullAccess)
 	if !ok {
 		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
 	}
 	return &OpTrue{
-		Opcode: op.Opcode(bytecode.OpTrue),
+		Opcode: op.Opcode(opcodes.OpTrue),
 		vm:     vmT,
 	}, nil
 }

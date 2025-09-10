@@ -3,9 +3,9 @@ package native
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/core"
 	"github.com/markel1974/c64emu/src/vm/objects"
+	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
 
 func init() {
@@ -14,18 +14,18 @@ func init() {
 
 // OpIteratorKey wraps bytecode.Opcode to represent the iterator key retrieval operation in a virtual machine.
 type OpIteratorKey struct {
-	*bytecode.Opcode
+	*opcodes.Opcode
 	vm core.IVMFullAccess
 }
 
 // NewOpIteratorKey creates a new instance of OpIteratorKey with associated opcode details.
-func NewOpIteratorKey(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
+func NewOpIteratorKey(vm core.IVM, op *opcodes.Opcodes) (core.IOpExecutor, error) {
 	vmT, ok := vm.(core.IVMFullAccess)
 	if !ok {
 		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
 	}
 	return &OpIteratorKey{
-		Opcode: op.Opcode(bytecode.OpIteratorKey),
+		Opcode: op.Opcode(opcodes.OpIteratorKey),
 		vm:     vmT,
 	}, nil
 }

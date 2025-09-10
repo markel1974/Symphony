@@ -1,6 +1,8 @@
-package bytecode
+package opcodes
 
-import "fmt"
+import (
+	"fmt"
+)
 
 // OpcodeId is a type alias for byte, used to represent operation codes in instruction sets.
 type OpcodeId = byte

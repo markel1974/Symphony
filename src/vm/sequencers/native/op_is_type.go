@@ -5,9 +5,9 @@ package native
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/core"
 	"github.com/markel1974/c64emu/src/vm/objects"
+	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
 
 // init registers the NewOpIsType operation with the sequencer system using the SequencerRegister function.
@@ -20,20 +20,20 @@ func init() {
 // The Opcode field provides details about the operation from the bytecode perspective.
 // The vm field is used to interact with the virtual machine environment, providing complete execution control.
 type OpIsType struct {
-	*bytecode.Opcode
+	*opcodes.Opcode
 	vm core.IVMFullAccess
 }
 
 // NewOpIsType creates a new instance of OpIsType executor if the provided VM implements IVMFullAccess.
 // It associates the executor with the OpIsType opcode.
 // Returns an error when the vm does not support the IVMFullAccess interface.
-func NewOpIsType(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
+func NewOpIsType(vm core.IVM, op *opcodes.Opcodes) (core.IOpExecutor, error) {
 	vmT, ok := vm.(core.IVMFullAccess)
 	if !ok {
 		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
 	}
 	return &OpIsType{
-		Opcode: op.Opcode(bytecode.OpIsType),
+		Opcode: op.Opcode(opcodes.OpIsType),
 		vm:     vmT,
 	}, nil
 }

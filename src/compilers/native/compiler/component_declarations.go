@@ -9,8 +9,8 @@ import (
 	"strconv"
 
 	"github.com/markel1974/c64emu/src/compilers/native/tables"
-	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/objects"
+	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
 
 // Declarations is a structure responsible for managing compiler declarations and scope-related components.
@@ -198,7 +198,7 @@ func (c *Declarations) ValueSpec(node *ast.ValueSpec) error {
 		}
 		// Emit zero value for the type. For interfaces, pointers, slices and maps, the zero value is 'nil'
 		// OpNull opcode does exactly this
-		if _, err = c.scopes.Emit(bytecode.OpNull); err != nil {
+		if _, err = c.scopes.Emit(opcodes.OpNull); err != nil {
 			return err
 		}
 		// Define the variable and initialize it with 'nil'
@@ -233,7 +233,7 @@ func (c *Declarations) BasicLit(node *ast.BasicLit) error {
 		return tables.NewCompilerError(c.fileSet, node, "unhandled literal: %s", node.Kind)
 	}
 	id := c.constants.Add("", obj)
-	if _, err := c.scopes.Emit(bytecode.OpConstant, id); err != nil {
+	if _, err := c.scopes.Emit(opcodes.OpConstant, id); err != nil {
 		return err
 	}
 	return nil
@@ -243,17 +243,17 @@ func (c *Declarations) BasicLit(node *ast.BasicLit) error {
 func (c *Declarations) Ident(node *ast.Ident) error {
 	switch node.Name {
 	case "true":
-		if _, err := c.scopes.Emit(bytecode.OpTrue); err != nil {
+		if _, err := c.scopes.Emit(opcodes.OpTrue); err != nil {
 			return err
 		}
 		return nil
 	case "false":
-		if _, err := c.scopes.Emit(bytecode.OpFalse); err != nil {
+		if _, err := c.scopes.Emit(opcodes.OpFalse); err != nil {
 			return err
 		}
 		return nil
 	case "nil":
-		if _, err := c.scopes.Emit(bytecode.OpNull); err != nil {
+		if _, err := c.scopes.Emit(opcodes.OpNull); err != nil {
 			return err
 		}
 	}
@@ -323,7 +323,7 @@ func (c *Declarations) AssignStmt(node *ast.AssignStmt) error {
 		// Extract the target type name (e.g. "User")
 		targetTypeName := rhsType.Type.(*ast.Ident).Name
 		constIndex := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, targetTypeName))
-		if _, err := c.scopes.Emit(bytecode.OpTypeAssert, constIndex); err != nil {
+		if _, err := c.scopes.Emit(opcodes.OpTypeAssert, constIndex); err != nil {
 			return tables.NewCompilerError(c.fileSet, node, err.Error())
 		}
 		rhsContainer = make([]*rhs, len(node.Lhs))
@@ -369,7 +369,7 @@ func (c *Declarations) CompositeLit(node *ast.CompositeLit) error {
 				return err
 			}
 		}
-		if _, err := c.scopes.Emit(bytecode.OpCreateArray, len(node.Elts)); err != nil {
+		if _, err := c.scopes.Emit(opcodes.OpCreateArray, len(node.Elts)); err != nil {
 			return err
 		}
 		return nil
@@ -389,7 +389,7 @@ func (c *Declarations) CompositeLit(node *ast.CompositeLit) error {
 		}
 		for _, field := range structFields {
 			keyConst := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, field.Name()))
-			if _, err = c.scopes.Emit(bytecode.OpConstant, keyConst); err != nil {
+			if _, err = c.scopes.Emit(opcodes.OpConstant, keyConst); err != nil {
 				return err
 			}
 			if field.Node() != nil {
@@ -397,17 +397,17 @@ func (c *Declarations) CompositeLit(node *ast.CompositeLit) error {
 					return err
 				}
 			} else {
-				if _, err = c.scopes.Emit(bytecode.OpNull); err != nil {
+				if _, err = c.scopes.Emit(opcodes.OpNull); err != nil {
 					return err
 				}
 			}
 		}
 		structNameIdx := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, structName))
-		if _, err = c.scopes.Emit(bytecode.OpConstant, structNameIdx); err != nil {
+		if _, err = c.scopes.Emit(opcodes.OpConstant, structNameIdx); err != nil {
 			return tables.NewCompilerError(c.fileSet, node, err.Error())
 		}
 		structLen := len(structFields) * 2
-		if _, err = c.scopes.Emit(bytecode.OpCreateStruct, structLen); err != nil {
+		if _, err = c.scopes.Emit(opcodes.OpCreateStruct, structLen); err != nil {
 			return err
 		}
 		return nil
@@ -417,7 +417,7 @@ func (c *Declarations) CompositeLit(node *ast.CompositeLit) error {
 				return err
 			}
 		}
-		if _, err := c.scopes.Emit(bytecode.OpCreateArray, len(node.Elts)); err != nil {
+		if _, err := c.scopes.Emit(opcodes.OpCreateArray, len(node.Elts)); err != nil {
 			return err
 		}
 		return nil
@@ -431,7 +431,7 @@ func (c *Declarations) CompositeLit(node *ast.CompositeLit) error {
 				return err
 			}
 		}
-		if _, err := c.scopes.Emit(bytecode.OpCreateMap, len(node.Elts)*2); err != nil {
+		if _, err := c.scopes.Emit(opcodes.OpCreateMap, len(node.Elts)*2); err != nil {
 			return err
 		}
 		return nil
@@ -456,7 +456,7 @@ func (c *Declarations) StarExpr(node *ast.StarExpr) error {
 	if err := c.compile(node.X); err != nil {
 		return err
 	}
-	_, err := c.scopes.Emit(bytecode.OpDerefGet)
+	_, err := c.scopes.Emit(opcodes.OpDerefGet)
 	return err
 }
 
@@ -471,7 +471,7 @@ func (c *Declarations) IndexExpr(node *ast.IndexExpr) error {
 		return err
 	}
 	// Emit OpIndexGet instruction. The VM will take the index and container from the stack and perform the access.
-	_, err := c.scopes.Emit(bytecode.OpIndexGet)
+	_, err := c.scopes.Emit(opcodes.OpIndexGet)
 	return err
 }
 
@@ -495,7 +495,7 @@ func (c *Declarations) handleInterfaceAssignment(variableSymbol *tables.Symbol, 
 	for _, requiredMethod := range interfaceDesc.Methods {
 		// Push method name as string constant
 		methodNameConst := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, requiredMethod.Name))
-		if _, err := c.scopes.Emit(bytecode.OpConstant, methodNameConst); err != nil {
+		if _, err := c.scopes.Emit(opcodes.OpConstant, methodNameConst); err != nil {
 			return err
 		}
 		// Push method function
@@ -509,7 +509,7 @@ func (c *Declarations) handleInterfaceAssignment(variableSymbol *tables.Symbol, 
 		}
 	}
 	// Emit OpCreateInterface opcode to create the object
-	if _, err := c.scopes.Emit(bytecode.OpCreateInterface, len(interfaceDesc.Methods)); err != nil {
+	if _, err := c.scopes.Emit(opcodes.OpCreateInterface, len(interfaceDesc.Methods)); err != nil {
 		return err
 	}
 	return nil
@@ -523,7 +523,7 @@ func (c *Declarations) handleVariableDeclaration(tok token.Token, rhsIn ast.Expr
 	case *ast.Ident:
 		if lhs.Name == tables.UndefinedSymbol {
 			// if is '_', we don't create a symbol, simply discard the corresponding value from the top of the stack.
-			if _, err := c.scopes.Emit(bytecode.OpPop); err != nil {
+			if _, err := c.scopes.Emit(opcodes.OpPop); err != nil {
 				return err
 			}
 			return nil
@@ -606,7 +606,7 @@ func (c *Declarations) handleVariableDeclaration(tok token.Token, rhsIn ast.Expr
 		if err = c.scopes.EmitSymbolGet(tempSymbol); err != nil {
 			return err
 		}
-		if _, err = c.scopes.Emit(bytecode.OpIndexSet); err != nil {
+		if _, err = c.scopes.Emit(opcodes.OpIndexSet); err != nil {
 			return err
 		}
 		return nil
@@ -622,14 +622,14 @@ func (c *Declarations) handleVariableDeclaration(tok token.Token, rhsIn ast.Expr
 				// Push the field name as key.
 				fieldName := lhs.Sel.Name
 				keyConst := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, fieldName))
-				if _, err := c.scopes.Emit(bytecode.OpConstant, keyConst); err != nil {
+				if _, err := c.scopes.Emit(opcodes.OpConstant, keyConst); err != nil {
 					return err
 				}
 				// Stack is now: [..., value, "fieldName"]
 				const numSelectors = 1
-				op := bytecode.OpLocalIndex
+				op := opcodes.OpLocalIndex
 				if symbol.Scope() == tables.GlobalScope {
-					op = bytecode.OpGlobalIndex
+					op = opcodes.OpGlobalIndex
 				}
 				if _, err := c.scopes.Emit(op, numSelectors, symbol.Index()); err != nil {
 					return err
@@ -650,13 +650,13 @@ func (c *Declarations) handleVariableDeclaration(tok token.Token, rhsIn ast.Expr
 		}
 		fieldName := lhs.Sel.Name
 		keyConst := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, fieldName))
-		if _, err = c.scopes.Emit(bytecode.OpConstant, keyConst); err != nil {
+		if _, err = c.scopes.Emit(opcodes.OpConstant, keyConst); err != nil {
 			return err
 		}
 		if err = c.scopes.EmitSymbolGet(tempSymbol); err != nil {
 			return err
 		}
-		if err = c.scopes.EmitAndPop(bytecode.OpIndexSet); err != nil {
+		if err = c.scopes.EmitAndPop(opcodes.OpIndexSet); err != nil {
 			return err
 		}
 		return nil
@@ -668,7 +668,7 @@ func (c *Declarations) handleVariableDeclaration(tok token.Token, rhsIn ast.Expr
 		if err := c.compile(lhs.X); err != nil {
 			return err
 		}
-		if err := c.scopes.EmitAndPop(bytecode.OpDerefSet); err != nil {
+		if err := c.scopes.EmitAndPop(opcodes.OpDerefSet); err != nil {
 			return err
 		}
 		return nil

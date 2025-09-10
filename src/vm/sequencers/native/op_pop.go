@@ -3,8 +3,8 @@ package native
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/core"
+	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
 
 func init() {
@@ -13,18 +13,18 @@ func init() {
 
 // OpPop represents an operation that removes the top value from the virtual machine stack.
 type OpPop struct {
-	*bytecode.Opcode
+	*opcodes.Opcode
 	vm core.IVMFullAccess
 }
 
 // NewOpPop creates and returns a new instance of OpPop, initializing it with details corresponding to the OpPop opcode.
-func NewOpPop(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
+func NewOpPop(vm core.IVM, op *opcodes.Opcodes) (core.IOpExecutor, error) {
 	vmT, ok := vm.(core.IVMFullAccess)
 	if !ok {
 		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
 	}
 	return &OpPop{
-		Opcode: op.Opcode(bytecode.OpPop),
+		Opcode: op.Opcode(opcodes.OpPop),
 		vm:     vmT,
 	}, nil
 }

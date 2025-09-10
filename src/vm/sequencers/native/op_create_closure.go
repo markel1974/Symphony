@@ -3,9 +3,9 @@ package native
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/core"
 	"github.com/markel1974/c64emu/src/vm/objects"
+	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
 
 func init() {
@@ -14,18 +14,18 @@ func init() {
 
 // OpCreateClosure represents a closure operation that creates a new closure in the virtual machine.
 type OpCreateClosure struct {
-	*bytecode.Opcode
+	*opcodes.Opcode
 	vm core.IVMFullAccess
 }
 
 // NewOpCreateClosure returns a new instance of OpCreateClosure initialized with the details of the OpCreateClosure opcode.
-func NewOpCreateClosure(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
+func NewOpCreateClosure(vm core.IVM, op *opcodes.Opcodes) (core.IOpExecutor, error) {
 	vmT, ok := vm.(core.IVMFullAccess)
 	if !ok {
 		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
 	}
 	return &OpCreateClosure{
-		Opcode: op.Opcode(bytecode.OpCreateClosure),
+		Opcode: op.Opcode(opcodes.OpCreateClosure),
 		vm:     vmT,
 	}, nil
 }

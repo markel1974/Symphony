@@ -3,8 +3,8 @@ package native
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/core"
+	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
 
 func init() {
@@ -13,18 +13,18 @@ func init() {
 
 // OpCreateError represents an operation that creates and assigns an error object in a virtual machine's runtime environment.
 type OpCreateError struct {
-	*bytecode.Opcode
+	*opcodes.Opcode
 	vm core.IVMFullAccess
 }
 
 // NewOpCreateError creates and returns a new instance of OpCreateError with associated Opcode for the OpCreateError opcode.
-func NewOpCreateError(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
+func NewOpCreateError(vm core.IVM, op *opcodes.Opcodes) (core.IOpExecutor, error) {
 	vmT, ok := vm.(core.IVMFullAccess)
 	if !ok {
 		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
 	}
 	return &OpCreateError{
-		Opcode: op.Opcode(bytecode.OpCreateError),
+		Opcode: op.Opcode(opcodes.OpCreateError),
 		vm:     vmT,
 	}, nil
 }

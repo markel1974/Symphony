@@ -3,7 +3,7 @@ package core
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/vm/bytecode"
+	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
 
 type OperandsDecoderData struct {
@@ -51,15 +51,15 @@ func NewDecoder(executor IOpExecutor) (*Decoder, error) {
 	idx := 0
 	for i := len(features) - 1; i >= 0; i-- {
 		var retrieve func(*Frame, uint) int
-		width := features[i] & bytecode.SzMask
+		width := features[i] & opcodes.SzMask
 		switch width {
-		case bytecode.SzUint8:
+		case opcodes.SzUint8:
 			retrieve = sd.get8Reverse
-		case bytecode.SzUint16:
+		case opcodes.SzUint16:
 			retrieve = sd.get16Reverse
-		case bytecode.SzUint32:
+		case opcodes.SzUint32:
 			retrieve = sd.get32Reverse
-		case bytecode.SzUint64:
+		case opcodes.SzUint64:
 			retrieve = sd.get64Reverse
 		default:
 			return nil, fmt.Errorf("invalid operand width: %d", width)

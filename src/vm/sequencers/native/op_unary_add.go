@@ -3,9 +3,9 @@ package native
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/core"
 	"github.com/markel1974/c64emu/src/vm/objects"
+	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
 
 // init registers the unary addition operation with the sequencer system by appending NewOpUnaryAdd to the internal registry.
@@ -16,18 +16,18 @@ func init() {
 // OpUnaryAdd represents an opcode that performs a unary addition operation in the virtual machine.
 // It embeds the bytecode.Opcode type for opcode execution and uses core.IVMFullAccess for VM interaction.
 type OpUnaryAdd struct {
-	*bytecode.Opcode
+	*opcodes.Opcode
 	vm core.IVMFullAccess
 }
 
 // NewOpUnaryAdd initializes and returns an OpUnaryAdd executor, ensuring the provided VM supports full-access operations.
-func NewOpUnaryAdd(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
+func NewOpUnaryAdd(vm core.IVM, op *opcodes.Opcodes) (core.IOpExecutor, error) {
 	vmT, ok := vm.(core.IVMFullAccess)
 	if !ok {
 		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
 	}
 	return &OpUnaryAdd{
-		Opcode: op.Opcode(bytecode.OpUnaryAdd),
+		Opcode: op.Opcode(opcodes.OpUnaryAdd),
 		vm:     vmT,
 	}, nil
 }

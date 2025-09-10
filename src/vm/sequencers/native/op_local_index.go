@@ -3,9 +3,9 @@ package native
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/core"
 	"github.com/markel1974/c64emu/src/vm/objects"
+	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
 
 func init() {
@@ -15,18 +15,18 @@ func init() {
 // OpLocalIndex represents an operation for setting a local variable using selectors in the virtual machine.
 // It embeds Opcode to utilize its properties like opcode, name, and operands.
 type OpLocalIndex struct {
-	*bytecode.Opcode
+	*opcodes.Opcode
 	vm core.IVMFullAccess
 }
 
 // NewOpLocalIndex creates and returns a new instance of the OpLocalIndex operation executor.
-func NewOpLocalIndex(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
+func NewOpLocalIndex(vm core.IVM, op *opcodes.Opcodes) (core.IOpExecutor, error) {
 	vmT, ok := vm.(core.IVMFullAccess)
 	if !ok {
 		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
 	}
 	return &OpLocalIndex{
-		Opcode: op.Opcode(bytecode.OpLocalIndex),
+		Opcode: op.Opcode(opcodes.OpLocalIndex),
 		vm:     vmT,
 	}, nil
 }

@@ -5,9 +5,9 @@ package native
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/core"
 	"github.com/markel1974/c64emu/src/vm/objects"
+	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
 
 // init initializes the package by registering the NewOpAsType operation with the sequencer system.
@@ -18,19 +18,19 @@ func init() {
 // OpAsType represents an executor linked to the bytecode opcode OpAsType for handling unchecked casts in the VM.
 // It embeds a bytecode.Opcode and uses core.IVMFullAccess for full VM functionality.
 type OpAsType struct {
-	*bytecode.Opcode
+	*opcodes.Opcode
 	vm core.IVMFullAccess
 }
 
 // NewOpAsType creates a new instance of OpAsType executor for the given virtual machine and opcode.
 // Returns an error if the provided VM does not implement IVMFullAccess.
-func NewOpAsType(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
+func NewOpAsType(vm core.IVM, op *opcodes.Opcodes) (core.IOpExecutor, error) {
 	vmT, ok := vm.(core.IVMFullAccess)
 	if !ok {
 		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
 	}
 	return &OpAsType{
-		Opcode: op.Opcode(bytecode.OpAsType),
+		Opcode: op.Opcode(opcodes.OpAsType),
 		vm:     vmT,
 	}, nil
 }

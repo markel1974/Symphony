@@ -5,11 +5,12 @@ import (
 	_nativeLoader "github.com/markel1974/c64emu/src/compilers/native/sdk"
 	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/objects"
+	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
 
 // NewCompiler creates a new compiler and loader based on the provided IGateKeeper, Opcodes, and identifier string.
 // It returns an ICompiler, an ILoader, and an error if the creation fails.
-func NewCompiler(gk objects.IGateKeeper, opcodes *bytecode.Opcodes, id string) (bytecode.ICompiler, bytecode.ILoader, error) {
+func NewCompiler(gk objects.IGateKeeper, opcodes *opcodes.Opcodes, id string) (bytecode.ICompiler, bytecode.ILoader, error) {
 	switch id {
 	default:
 		loader, err := NewLoader(gk, id)

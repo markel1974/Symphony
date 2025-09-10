@@ -3,9 +3,9 @@ package native
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/core"
 	"github.com/markel1974/c64emu/src/vm/objects"
+	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
 
 // init registers the NewOpCreateInterface function with the sequencer using SequencerRegister.
@@ -16,19 +16,19 @@ func init() {
 // OpCreateInterface represents an executor for handling interface-related bytecode operations in a virtual machine.
 // It extends the bytecode.Opcode structure to access opcode details like id, operands, and name.
 type OpCreateInterface struct {
-	*bytecode.Opcode
+	*opcodes.Opcode
 	vm core.IVMFullAccess
 }
 
 // NewOpCreateInterface creates a new instance of OpCreateInterface using the provided Opcodes instance.
 // It returns an implementation of the core.IOpExecutor interface for bytecode execution.
-func NewOpCreateInterface(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
+func NewOpCreateInterface(vm core.IVM, op *opcodes.Opcodes) (core.IOpExecutor, error) {
 	vmT, ok := vm.(core.IVMFullAccess)
 	if !ok {
 		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
 	}
 	return &OpCreateInterface{
-		Opcode: op.Opcode(bytecode.OpCreateInterface),
+		Opcode: op.Opcode(opcodes.OpCreateInterface),
 		vm:     vmT,
 	}, nil
 }

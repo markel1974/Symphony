@@ -3,9 +3,9 @@ package native
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/core"
 	"github.com/markel1974/c64emu/src/vm/objects"
+	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
 
 // init initializes and registers the NewOpBinary operation with the sequencer system during package initialization.
@@ -15,19 +15,19 @@ func init() {
 
 // OpLogical represents a logical operation bytecode execution handler within the virtual machine context.
 type OpLogical struct {
-	*bytecode.Opcode
+	*opcodes.Opcode
 	vm core.IVMFullAccess
 }
 
 // NewOpLogical creates a new instance of OpLogical executor for logical bytecode operations using the provided VM and opcode.
 // It returns an IOpExecutor implementation or an error if the VM does not support IVMFullAccess.
-func NewOpLogical(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
+func NewOpLogical(vm core.IVM, op *opcodes.Opcodes) (core.IOpExecutor, error) {
 	vmT, ok := vm.(core.IVMFullAccess)
 	if !ok {
 		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
 	}
 	return &OpLogical{
-		Opcode: op.Opcode(bytecode.OpLogical),
+		Opcode: op.Opcode(opcodes.OpLogical),
 		vm:     vmT,
 	}, nil
 }

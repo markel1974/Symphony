@@ -3,9 +3,9 @@ package native
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/core"
 	"github.com/markel1974/c64emu/src/vm/objects"
+	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
 
 // init registers the NewOpCallImportGlobal function into the sequencing system using SequencerRegister.
@@ -16,19 +16,19 @@ func init() {
 // OpCallImportGlobal represents an operation to call a function from the global import table within the virtual machine.
 // It uses a VM with full access permissions and an associated opcode for execution configuration.
 type OpCallImportGlobal struct {
-	*bytecode.Opcode
+	*opcodes.Opcode
 	vm core.IVMFullAccess
 }
 
 // NewOpCallImportGlobal creates a new instance of OpCallImportGlobal, ensuring the VM implements IVMFullAccess.
 // Returns the new OpCallImportGlobal instance or an error if VM type assertion fails.
-func NewOpCallImportGlobal(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
+func NewOpCallImportGlobal(vm core.IVM, op *opcodes.Opcodes) (core.IOpExecutor, error) {
 	vmT, ok := vm.(core.IVMFullAccess)
 	if !ok {
 		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
 	}
 	return &OpCallImportGlobal{
-		Opcode: op.Opcode(bytecode.OpCallImportGlobal),
+		Opcode: op.Opcode(opcodes.OpCallImportGlobal),
 		vm:     vmT,
 	}, nil
 }

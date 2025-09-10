@@ -8,6 +8,7 @@ import (
 	"github.com/markel1974/c64emu/src/compilers/native/tables"
 	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/objects"
+	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
 
 // Imports is a structure that manages a set of imported items, built-in functions, and related compilation resources.
@@ -86,7 +87,7 @@ func (i *Imports) Emit(name string, selName string) bool {
 		index = i.imports.Add(target, i.gk.NewString(objects.FrameStatic, target))
 		i.helper[target] = index
 	}
-	if _, err := i.scopes.Emit(bytecode.OpImport, index); err != nil {
+	if _, err := i.scopes.Emit(opcodes.OpImport, index); err != nil {
 		return false
 	}
 	return true

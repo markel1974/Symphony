@@ -3,8 +3,8 @@ package native
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/core"
+	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
 
 func init() {
@@ -13,18 +13,18 @@ func init() {
 
 // OpCall represents an operation code for invoking a function call in the virtual machine.
 type OpCall struct {
-	*bytecode.Opcode
+	*opcodes.Opcode
 	vm core.IVMFullAccess
 }
 
 // NewOpCall creates and returns a new instance of OpCall with initialized Opcode for the OpCall opcode.
-func NewOpCall(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
+func NewOpCall(vm core.IVM, op *opcodes.Opcodes) (core.IOpExecutor, error) {
 	vmT, ok := vm.(core.IVMFullAccess)
 	if !ok {
 		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
 	}
 	return &OpCall{
-		Opcode: op.Opcode(bytecode.OpCall),
+		Opcode: op.Opcode(opcodes.OpCall),
 		vm:     vmT,
 	}, nil
 }

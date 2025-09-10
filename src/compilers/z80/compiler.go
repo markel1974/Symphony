@@ -8,6 +8,7 @@ import (
 	"github.com/markel1974/c64emu/src/compilers/native/tables"
 	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/objects"
+	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
 
 // Compiler is responsible for transforming high-level code into executable bytecode using various compilation components.
@@ -15,7 +16,7 @@ import (
 // Compiler maintains constants, registers, and helper tools to facilitate the compilation process efficiently.
 type Compiler struct {
 	gk        objects.IGateKeeper
-	opcodes   *bytecode.Opcodes
+	opcodes   *opcodes.Opcodes
 	scopes    *tables.Scopes
 	constants *tables.Constants
 	z80       *Z80
@@ -23,7 +24,7 @@ type Compiler struct {
 }
 
 // New creates and initializes a new Compiler instance with the provided gatekeeper, loader, and opcode definitions.
-func New(gk objects.IGateKeeper, loader bytecode.ILoader, opcodes *bytecode.Opcodes) *Compiler {
+func New(gk objects.IGateKeeper, loader bytecode.ILoader, opcodes *opcodes.Opcodes) *Compiler {
 	z80 := NewZ80()
 	scopes := tables.NewScopes(gk, opcodes)
 	constants := tables.NewConstants()
@@ -50,7 +51,7 @@ func (c *Compiler) createInit() error {
 	}
 
 	// Aggiungiamo un OpReturn alla fine del nostro bytecode
-	if _, err := c.scopes.Emit(bytecode.OpReturn, 0); err != nil {
+	if _, err := c.scopes.Emit(opcodes.OpReturn, 0); err != nil {
 		return err
 	}
 
@@ -119,7 +120,7 @@ func (c *Compiler) compileInstruction(pc int, opcode byte, operands []byte) (int
 
 		// Emettiamo la nuova istruzione 'OpGlobalCopy' con due operandi: destinazione e sorgente.
 		// Questo raggiunge l'obiettivo 1:1.
-		if _, err := c.scopes.Emit(bytecode.OpGlobalCopy, c.z80.Register(destRegName), c.z80.Register(srcRegName)); err != nil {
+		if _, err := c.scopes.Emit(opcodes.OpGlobalCopy, c.z80.Register(destRegName), c.z80.Register(srcRegName)); err != nil {
 			return 0, err
 		}
 
@@ -127,10 +128,10 @@ func (c *Compiler) compileInstruction(pc int, opcode byte, operands []byte) (int
 	case (opcode & 0xC7) == 0x06:
 		destReg := c.z80.GetRegisterNameFromIndex(int((opcode >> 3) & 0x07))
 		constIndex := c.constants.AddOrGet("", c.gk.NewInt(objects.FrameStatic, int64(operands[0])))
-		if _, err := c.scopes.Emit(bytecode.OpConstant, constIndex); err != nil {
+		if _, err := c.scopes.Emit(opcodes.OpConstant, constIndex); err != nil {
 			return 0, err
 		}
-		if _, err := c.scopes.Emit(bytecode.OpGlobalSet, c.z80.Register(destReg)); err != nil {
+		if _, err := c.scopes.Emit(opcodes.OpGlobalSet, c.z80.Register(destReg)); err != nil {
 			return 0, err
 		}
 		pcIncrement = 2
@@ -225,7 +226,7 @@ func (c *Compiler) compileInstruction(pc int, opcode byte, operands []byte) (int
 		// 1. Save return address on stack
 		retAddrSymbol, _ := c.scopes.SymbolDefineUnique("__ret_addr")
 		constRetAddr := c.constants.AddOrGet("", c.gk.NewInt(objects.FrameStatic, int64(returnAddr)))
-		c.scopes.Emit(bytecode.OpConstant, constRetAddr)
+		c.scopes.Emit(opcodes.OpConstant, constRetAddr)
 		c.scopes.EmitSymbolSetAndPop(retAddrSymbol)
 		if err := c.helper.emitPush16(retAddrSymbol); err != nil {
 			return 0, err
@@ -251,7 +252,7 @@ func (c *Compiler) compileInstruction(pc int, opcode byte, operands []byte) (int
 		}
 
 		// 3. Perform indirect jump - VM will take address from stack
-		if _, err := c.scopes.Emit(bytecode.OpJumpIndirect); err != nil {
+		if _, err := c.scopes.Emit(opcodes.OpJumpIndirect); err != nil {
 			return 0, err
 		}
 		// Conditional Calls

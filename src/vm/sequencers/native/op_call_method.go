@@ -3,9 +3,9 @@ package native
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/core"
 	objects "github.com/markel1974/c64emu/src/vm/objects"
+	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
 
 func init() {
@@ -14,18 +14,18 @@ func init() {
 
 // OpCallMethod represents a bytecode operation for invoking a method on an interface or object with dynamic dispatch.
 type OpCallMethod struct {
-	*bytecode.Opcode
+	*opcodes.Opcode
 	vm core.IVMFullAccess
 }
 
 // NewOpCallMethod creates and returns a new instance of OpCallMethod with initialized Opcode for the OpCallMethod opcode.
-func NewOpCallMethod(vm core.IVM, op *bytecode.Opcodes) (core.IOpExecutor, error) {
+func NewOpCallMethod(vm core.IVM, op *opcodes.Opcodes) (core.IOpExecutor, error) {
 	vmT, ok := vm.(core.IVMFullAccess)
 	if !ok {
 		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
 	}
 	return &OpCallMethod{
-		Opcode: op.Opcode(bytecode.OpCallMethod),
+		Opcode: op.Opcode(opcodes.OpCallMethod),
 		vm:     vmT,
 	}, nil
 }
