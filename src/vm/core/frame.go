@@ -164,15 +164,18 @@ func (f *Frame) HasDeferredCalls() bool {
 	return len(f.deferredCalls) > 0
 }
 
+// SaveParentReturnValues saves the return values from the parent frame into the current frame and marks them as saved.
 func (f *Frame) SaveParentReturnValues(returnValues []objects.IObject) {
 	f.savedReturnValues = returnValues
 	f.hasSavedReturnValues = true
 }
 
+// HasParentReturnValues checks if the frame currently holds saved return values from a parent frame and returns true or false.
 func (f *Frame) HasParentReturnValues() bool {
 	return f.hasSavedReturnValues
 }
 
+// PopParentReturnValues resets and retrieves the saved return values from the parent frame, returning a slice of IObject.
 func (f *Frame) PopParentReturnValues() []objects.IObject {
 	ret := f.savedReturnValues
 	f.savedReturnValues = []objects.IObject{}

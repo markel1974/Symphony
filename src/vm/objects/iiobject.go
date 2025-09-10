@@ -48,7 +48,7 @@ type IObject interface {
 	Equals(other IObject) bool
 	Copy(frame int, depth int) IObject
 	IndexGet(frame int, index IObject) (IObject, error)
-	IndexSet(index, value IObject) error
+	IndexSet(index IObject, value IObject) error
 	Iterate(frame int) IIterator
 	Iterable() bool
 	Call(frame int, args ...IObject) (uint, IObject, error)

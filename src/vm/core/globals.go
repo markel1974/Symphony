@@ -10,7 +10,6 @@ import (
 type Globals struct {
 	gk        objects.IGateKeeper
 	container []objects.IObject
-
 	errSignal func(err error)
 }
 
