@@ -18,20 +18,28 @@ func init() {
 // OpTypeAssert represents a bytecode operation for performing type assertions in a virtual machine.
 // It embeds bytecode.Opcode to utilize opcode-related functionalities and operates on a core.IVMFullAccess instance.
 type OpTypeAssert struct {
-	*opcodes.Opcode
-	vm core.IVMFullAccess
+	opcode *opcodes.Opcode
+	vm     core.IVMFullAccess
 }
 
 // NewOpTypeAssert creates a new instance of OpTypeAssert, ensuring the provided IVM implements IVMFullAccess.
-func NewOpTypeAssert(vm core.IVM, op *opcodes.Opcodes) (core.IOpExecutor, error) {
+func NewOpTypeAssert() core.IOpExecutor {
+	operands := []opcodes.OperandFeature{opcodes.SzUint16}
+	return &OpTypeAssert{
+		opcode: opcodes.NewOpcode(OpTypeAssertId, operands, "OpTypeAssert"),
+		vm:     nil,
+	}
+}
+
+// Bind initializes the instance by casting the provided VM to IVMFullAccess and storing it.
+// Returns an error if the VM does not implement the required interface.
+func (op *OpTypeAssert) Bind(vm core.IVM) error {
 	vmT, ok := vm.(core.IVMFullAccess)
 	if !ok {
-		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
+		return fmt.Errorf("vm does not implement IVMFullAccess")
 	}
-	return &OpTypeAssert{
-		Opcode: op.Opcode(opcodes.OpTypeAssert),
-		vm:     vmT,
-	}, nil
+	op.vm = vmT
+	return nil
 }
 
 // Execute processes the type assertion operation. It attempts to assert if the top stack object matches the desired type.
@@ -39,7 +47,7 @@ func NewOpTypeAssert(vm core.IVM, op *opcodes.Opcodes) (core.IOpExecutor, error)
 // On success, the concrete value and a boolean 'true' are pushed onto the stack. On failure, undefined and 'false' are pushed.
 func (op *OpTypeAssert) Execute(decoder *core.Decoder) {
 	// The operand is the index of the target type name in the constants table.
-	typeNameIndex := decoder.Read(0)
+	typeNameIndex := decoder.Operand(0)
 	interfaceObj := op.vm.Stack().Pop()
 	targetTypeObj := op.vm.Constants().Get(uint(typeNameIndex))
 	targetTypeName, ok := targetTypeObj.(*objects.String)
@@ -65,4 +73,9 @@ func (op *OpTypeAssert) Execute(decoder *core.Decoder) {
 		op.vm.Stack().Push(op.vm.Factory().UndefinedValue())
 		op.vm.Stack().Push(op.vm.Factory().FalseValue())
 	}
+}
+
+// Opcode returns the opcode associated with the instance.
+func (op *OpTypeAssert) Opcode() *opcodes.Opcode {
+	return op.opcode
 }

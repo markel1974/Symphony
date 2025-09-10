@@ -14,20 +14,28 @@ func init() {
 
 // OpReturn represents a specialized operation that extends the behavior of bytecode.Opcode.
 type OpReturn struct {
-	*opcodes.Opcode
-	vm core.IVMFullAccess
+	opcode *opcodes.Opcode
+	vm     core.IVMFullAccess
 }
 
 // NewOpReturn creates a new instance of OpReturn with its Opcode initialized for the OpReturn operation.
-func NewOpReturn(vm core.IVM, op *opcodes.Opcodes) (core.IOpExecutor, error) {
+func NewOpReturn() core.IOpExecutor {
+	operands := []opcodes.OperandFeature{opcodes.SzUint8}
+	return &OpReturn{
+		opcode: opcodes.NewOpcode(OpReturnId, operands, "OpReturn"),
+		vm:     nil,
+	}
+}
+
+// Bind initializes the instance by casting the provided VM to IVMFullAccess and storing it.
+// Returns an error if the VM does not implement the required interface.
+func (op *OpReturn) Bind(vm core.IVM) error {
 	vmT, ok := vm.(core.IVMFullAccess)
 	if !ok {
-		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
+		return fmt.Errorf("vm does not implement IVMFullAccess")
 	}
-	return &OpReturn{
-		Opcode: op.Opcode(opcodes.OpReturn),
-		vm:     vmT,
-	}, nil
+	op.vm = vmT
+	return nil
 }
 
 // Execute performs the return operation for the current frame, manages the stack, and transitions between frames in the VM.
@@ -36,11 +44,16 @@ func (op *OpReturn) Execute(decoder *core.Decoder) {
 	// collect return values from the stack using Pop(),
 	// this is necessary to uncover the underlying values.
 	var returnValues []objects.IObject
-	if numReturnVals := decoder.Read(0); numReturnVals > 0 {
+	if numReturnVals := decoder.Operand(0); numReturnVals > 0 {
 		returnValues = make([]objects.IObject, numReturnVals)
 		for i := 0; i < numReturnVals; i++ {
 			returnValues[i] = op.vm.Stack().Pop()
 		}
 	}
 	op.vm.Return(returnValues)
+}
+
+// Opcode returns the opcode associated with the instance.
+func (op *OpReturn) Opcode() *opcodes.Opcode {
+	return op.opcode
 }

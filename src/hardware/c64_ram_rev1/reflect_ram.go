@@ -26,7 +26,7 @@ func NewRamReflect(r *Ram) *RamReflect {
 	_ = r.CommandAdd("setRamEntry", "ram is a byte slice representing the memory storage of the RAM component.", reflector.setRamEntry)
 
 	_ = r.CommandAdd("Emulate", "Emulate() - Emulate performs the main emulation logic for the Ram component during a simulation cycle.", r.Emulate)
-	_ = r.CommandAdd("Read", "Read(addr) uint8 - Read retrieves a byte from the RAM at the specified memory address.", r.Read)
+	_ = r.CommandAdd("Operand", "Operand(addr) uint8 - Operand retrieves a byte from the RAM at the specified memory address.", r.Read)
 	_ = r.CommandAdd("Write", "Write(addr, data) - Write stores the provided data byte at the specified memory address in the RAM.", r.Write)
 	_ = r.CommandAdd("Size", "Size() int - Size returns the length of the `ram` slice, representing the total size of the RAM in bytes.", r.Size)
 	_ = r.CommandAdd("Reset", "Reset() - Reset clears and reinitializes the RAM to its default state as defined during setup.", r.Reset)

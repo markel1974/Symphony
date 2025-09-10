@@ -15,20 +15,28 @@ func init() {
 // OpUnarySub represents an operation for negating a numeric value.
 // It embeds Opcode, providing details such as the opcode, operands, and name.
 type OpUnarySub struct {
-	*opcodes.Opcode
-	vm core.IVMFullAccess
+	opcode *opcodes.Opcode
+	vm     core.IVMFullAccess
 }
 
 // NewOpUnarySub creates and returns a new OpMinus instance, initializing it with the details of the OpMinus bytecode.
-func NewOpUnarySub(vm core.IVM, op *opcodes.Opcodes) (core.IOpExecutor, error) {
+func NewOpUnarySub() core.IOpExecutor {
+	operands := _noOperands
+	return &OpUnarySub{
+		opcode: opcodes.NewOpcode(OpUnarySubId, operands, "OpUnarySub"),
+		vm:     nil,
+	}
+}
+
+// Bind initializes the instance by casting the provided VM to IVMFullAccess and storing it.
+// Returns an error if the VM does not implement the required interface.
+func (op *OpUnarySub) Bind(vm core.IVM) error {
 	vmT, ok := vm.(core.IVMFullAccess)
 	if !ok {
-		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
+		return fmt.Errorf("vm does not implement IVMFullAccess")
 	}
-	return &OpUnarySub{
-		Opcode: op.Opcode(opcodes.OpUnarySub),
-		vm:     vmT,
-	}, nil
+	op.vm = vmT
+	return nil
 }
 
 // Execute performs a subtraction operation by negating the top stack element, supporting integers and floats.
@@ -44,4 +52,9 @@ func (op *OpUnarySub) Execute(_ *core.Decoder) {
 		res := op.vm.Factory().NewInt(op.vm.Frame().Id(), -x.AsInt64())
 		op.vm.Stack().Push(res)
 	}
+}
+
+// Opcode returns the opcode associated with the instance.
+func (op *OpUnarySub) Opcode() *opcodes.Opcode {
+	return op.opcode
 }

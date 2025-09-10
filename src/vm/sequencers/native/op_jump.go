@@ -13,25 +13,38 @@ func init() {
 
 // OpJump represents an unconditional jump operation in the virtual machine, utilizing associated opcode details.
 type OpJump struct {
-	*opcodes.Opcode
-	vm core.IVMFullAccess
+	opcode *opcodes.Opcode
+	vm     core.IVMFullAccess
 }
 
 // NewOpJump creates and returns a new instance of OpJump with details initialized for the OpJump opcode.
-func NewOpJump(vm core.IVM, op *opcodes.Opcodes) (core.IOpExecutor, error) {
+func NewOpJump() core.IOpExecutor {
+	operands := []opcodes.OperandFeature{opcodes.SzUint16}
+	return &OpJump{
+		opcode: opcodes.NewOpcode(OpJumpId, operands, "OpJump"),
+		vm:     nil,
+	}
+}
+
+// Bind initializes the instance by casting the provided VM to IVMFullAccess and storing it.
+// Returns an error if the VM does not implement the required interface.
+func (op *OpJump) Bind(vm core.IVM) error {
 	vmT, ok := vm.(core.IVMFullAccess)
 	if !ok {
-		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
+		return fmt.Errorf("vm does not implement IVMFullAccess")
 	}
-	return &OpJump{
-		Opcode: op.Opcode(opcodes.OpJump),
-		vm:     vmT,
-	}, nil
+	op.vm = vmT
+	return nil
 }
 
 // Execute updates the instruction pointer (`ip`) in the virtual machine (`VM`) to a calculated position in the frame.
 func (op *OpJump) Execute(decoder *core.Decoder) {
 	// Operands Offset  2 (16-bit)
-	pos := decoder.Read(0)
+	pos := decoder.Operand(0)
 	op.vm.SetIp(pos - 1)
+}
+
+// Opcode returns the opcode associated with the instance.
+func (op *OpJump) Opcode() *opcodes.Opcode {
+	return op.opcode
 }

@@ -15,20 +15,28 @@ func init() {
 // OpUnaryBitwiseComplement represents an operation for performing a bitwise complement on an operand.
 // It extends Opcode, inheriting its metadata and behaviors.
 type OpUnaryBitwiseComplement struct {
-	*opcodes.Opcode
-	vm core.IVMFullAccess
+	opcode *opcodes.Opcode
+	vm     core.IVMFullAccess
 }
 
 // NewOpUnaryBitwiseComplement initializes and returns an OpUnaryBitwiseComplement instance with the corresponding Opcode configuration.
-func NewOpUnaryBitwiseComplement(vm core.IVM, op *opcodes.Opcodes) (core.IOpExecutor, error) {
+func NewOpUnaryBitwiseComplement() core.IOpExecutor {
+	operands := _noOperands
+	return &OpUnaryBitwiseComplement{
+		opcode: opcodes.NewOpcode(OpUnaryBitwiseComplementId, operands, "OpUnaryBitwiseComplement"),
+		vm:     nil,
+	}
+}
+
+// Bind initializes the instance by casting the provided VM to IVMFullAccess and storing it.
+// Returns an error if the VM does not implement the required interface.
+func (op *OpUnaryBitwiseComplement) Bind(vm core.IVM) error {
 	vmT, ok := vm.(core.IVMFullAccess)
 	if !ok {
-		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
+		return fmt.Errorf("vm does not implement IVMFullAccess")
 	}
-	return &OpUnaryBitwiseComplement{
-		Opcode: op.Opcode(opcodes.OpUnaryBitwiseComplement),
-		vm:     vmT,
-	}, nil
+	op.vm = vmT
+	return nil
 }
 
 // Execute performs the bitwise complement operation on the top stack value. Sets an error if the value is not an integer.
@@ -43,4 +51,9 @@ func (op *OpUnaryBitwiseComplement) Execute(_ *core.Decoder) {
 		op.vm.SetError(fmt.Errorf("invalid operation: ^%s", operand.TypeName()))
 		return
 	}
+}
+
+// Opcode returns the opcode associated with the instance.
+func (op *OpUnaryBitwiseComplement) Opcode() *opcodes.Opcode {
+	return op.opcode
 }

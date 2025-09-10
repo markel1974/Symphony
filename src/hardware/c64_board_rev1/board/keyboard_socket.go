@@ -28,7 +28,7 @@ func (w *KeyboardSocket) HardwareId() string {
 	return w.hwId
 }
 
-// Wire initializes the KeyboardSocket by resolving and setting IC64Keyboard and invoking its Setup method with provided config.
+// Wire initializes the KeyboardSocket by resolving and setting IC64Keyboard and invoking its Bind method with provided config.
 func (w *KeyboardSocket) Wire() error {
 	var err error
 	w.component = w.parent.GetChildByHardwareId(w.HardwareId())

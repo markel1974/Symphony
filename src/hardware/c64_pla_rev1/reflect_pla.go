@@ -46,7 +46,7 @@ func NewPLAReflect(r *PLA, factory references.IComponentFactory, parent referenc
 	_ = r.CommandAdd("WriteRam0x0000", "WriteRam0x0000(addr, data) - WriteRam0x0000 handles writing data to memory address 0x0000, updating port direction and data where applicable.", r.WriteRam0x0000)
 	_ = r.CommandAdd("BankSwitch", "BankSwitch(bankIndex) bool - BankSwitch switches the memory bank to the specified bankIndex and applies the corresponding memory configuration.  It returns true if the switch is successful, otherwise false.", r.BankSwitch)
 	_ = r.CommandAdd("RebuildMemoryConfig", "RebuildMemoryConfig() - RebuildMemoryConfig recalculates and applies the current memory configuration based on cartridge and port settings.", r.RebuildMemoryConfig)
-	_ = r.CommandAdd("Read", "Read(addr) uint8 - Read retrieves the value from the memory mapped by the given address.", r.Read)
+	_ = r.CommandAdd("Operand", "Operand(addr) uint8 - Operand retrieves the value from the memory mapped by the given address.", r.Read)
 	_ = r.CommandAdd("WriteExt", "WriteExt(memConfig, addr, data) - WriteExt writes a byte to the specified address using the provided memory configuration, temporarily switching configurations.", r.WriteExt)
 	_ = r.CommandAdd("WriteOpenBus", "WriteOpenBus(_, _) - WriteOpenBus writes to an 'open bus' state where no specific memory or component is targeted.", r.WriteOpenBus)
 	_ = r.CommandAdd("Emulate", "Emulate() - Emulate performs the main emulation step for the PLA, updating its state and processing associated logic.", r.Emulate)

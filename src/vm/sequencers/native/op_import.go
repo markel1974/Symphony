@@ -13,26 +13,39 @@ func init() {
 
 // OpImport extends Opcode to represent operations specifically related to reference handling in the bytecode.
 type OpImport struct {
-	*opcodes.Opcode
-	vm core.IVMFullAccess
+	opcode *opcodes.Opcode
+	vm     core.IVMFullAccess
 }
 
 // NewOpImport initializes a new OpImport instance with corresponding Opcode from the bytecode package.
-func NewOpImport(vm core.IVM, op *opcodes.Opcodes) (core.IOpExecutor, error) {
+func NewOpImport() core.IOpExecutor {
+	operands := []opcodes.OperandFeature{opcodes.Relocatable}
+	return &OpImport{
+		opcode: opcodes.NewOpcode(OpImportId, operands, "OpImport"),
+		vm:     nil,
+	}
+}
+
+// Bind initializes the instance by casting the provided VM to IVMFullAccess and storing it.
+// Returns an error if the VM does not implement the required interface.
+func (op *OpImport) Bind(vm core.IVM) error {
 	vmT, ok := vm.(core.IVMFullAccess)
 	if !ok {
-		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
+		return fmt.Errorf("vm does not implement IVMFullAccess")
 	}
-	return &OpImport{
-		Opcode: op.Opcode(opcodes.OpImport),
-		vm:     vmT,
-	}, nil
+	op.vm = vmT
+	return nil
 }
 
 // Execute processes the specified VM instruction, adjusts the instruction pointer, and pushes a reference onto the stack.
 func (op *OpImport) Execute(decoder *core.Decoder) {
 	// Operands Offset 2 (16-bit)
-	nameIndex := decoder.Read(0)
+	nameIndex := decoder.Operand(0)
 	symbol := op.vm.Imports().Get(uint(nameIndex))
 	op.vm.Stack().Push(symbol)
+}
+
+// Opcode returns the opcode associated with the instance.
+func (op *OpImport) Opcode() *opcodes.Opcode {
+	return op.opcode
 }

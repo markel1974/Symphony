@@ -226,7 +226,7 @@ func (v *VIA2Socket) SignalDDRB(_ uint8) {
 func (v *VIA2Socket) SignalPCR(pcr uint8) {
 	//Bits #1-#3: %111 = Attach Byte Ready line to overflow processor flag.
 	//Whenever a data byte has been successfully read from or written to disk, V flag is set to 1.
-	//Bits #5-#7: Head control; %111 = Read (0xE0); %110 = Write (0xC0).
+	//Bits #5-#7: Head control; %111 = Operand (0xE0); %110 = Write (0xC0).
 	hc := pcr & 0xE0
 	if hc == 0xC0 {
 		v.mec.SetWrite(true)

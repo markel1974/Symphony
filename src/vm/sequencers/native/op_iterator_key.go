@@ -14,26 +14,34 @@ func init() {
 
 // OpIteratorKey wraps bytecode.Opcode to represent the iterator key retrieval operation in a virtual machine.
 type OpIteratorKey struct {
-	*opcodes.Opcode
-	vm core.IVMFullAccess
+	opcode *opcodes.Opcode
+	vm     core.IVMFullAccess
 }
 
 // NewOpIteratorKey creates a new instance of OpIteratorKey with associated opcode details.
-func NewOpIteratorKey(vm core.IVM, op *opcodes.Opcodes) (core.IOpExecutor, error) {
+func NewOpIteratorKey() core.IOpExecutor {
+	operands := []opcodes.OperandFeature{opcodes.SzUint8}
+	return &OpIteratorKey{
+		opcode: opcodes.NewOpcode(OpIteratorKeyId, operands, "OpIteratorKey"),
+		vm:     nil,
+	}
+}
+
+// Bind initializes the instance by casting the provided VM to IVMFullAccess and storing it.
+// Returns an error if the VM does not implement the required interface.
+func (op *OpIteratorKey) Bind(vm core.IVM) error {
 	vmT, ok := vm.(core.IVMFullAccess)
 	if !ok {
-		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
+		return fmt.Errorf("vm does not implement IVMFullAccess")
 	}
-	return &OpIteratorKey{
-		Opcode: op.Opcode(opcodes.OpIteratorKey),
-		vm:     vmT,
-	}, nil
+	op.vm = vmT
+	return nil
 }
 
 // Execute processes the "iterator key" operation, retrieves the iterator key, and pushes it onto the VM stack.
 func (op *OpIteratorKey) Execute(decoder *core.Decoder) {
 	// Operands Offset 1 (8-bit)
-	localIndex := decoder.Read(0)
+	localIndex := decoder.Operand(0)
 	iteratorObj := op.vm.Stack().PeekAbsolute(op.vm.Frame().BasePointer() + localIndex)
 	iterator, ok := iteratorObj.(objects.IIterator)
 	if !ok {
@@ -41,4 +49,9 @@ func (op *OpIteratorKey) Execute(decoder *core.Decoder) {
 		return
 	}
 	op.vm.Stack().Push(iterator.Key(op.vm.Frame().Id()))
+}
+
+// Opcode returns the opcode associated with the instance.
+func (op *OpIteratorKey) Opcode() *opcodes.Opcode {
+	return op.opcode
 }

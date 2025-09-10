@@ -8,6 +8,7 @@ import (
 
 	"github.com/markel1974/c64emu/src/vm/objects"
 	"github.com/markel1974/c64emu/src/vm/opcodes"
+	"github.com/markel1974/c64emu/src/vm/sequencers/native"
 )
 
 // maxScope defines the maximum allowable depth for compilation scopes to prevent excessive recursion or memory use.
@@ -18,7 +19,7 @@ const (
 // Scopes manages a collection of compilation scopes and the associated symbol table for nested compilation contexts.
 type Scopes struct {
 	gk                   objects.IGateKeeper
-	op                   *opcodes.Opcodes
+	op                   opcodes.IOpcodes
 	constants            *Constants
 	symbolTable          *SymbolTable
 	initSymbolTable      *SymbolTable
@@ -29,7 +30,7 @@ type Scopes struct {
 }
 
 // NewScopes initializes and returns a Scopes structure with a new symbol table, main compilation scope, and scope index set to 0.
-func NewScopes(gk objects.IGateKeeper, op *opcodes.Opcodes, constants *Constants) *Scopes {
+func NewScopes(gk objects.IGateKeeper, op opcodes.IOpcodes, constants *Constants) *Scopes {
 	c := &Scopes{
 		gk:                   gk,
 		op:                   op,
@@ -257,7 +258,7 @@ func (c *Scopes) EmitAndPop(op opcodes.OpcodeId, operands ...int) error {
 	if _, err := c.Emit(op, operands...); err != nil {
 		return err
 	}
-	if _, err := c.Emit(opcodes.OpPop); err != nil {
+	if _, err := c.Emit(native.OpPopId); err != nil {
 		return err
 	}
 	return nil
@@ -268,7 +269,7 @@ func (c *Scopes) EmitSymbolDefineAndPop(s *Symbol) error {
 	if err := c.EmitSymbolDefine(s); err != nil {
 		return err
 	}
-	if _, err := c.Emit(opcodes.OpPop); err != nil {
+	if _, err := c.Emit(native.OpPopId); err != nil {
 		return err
 	}
 	return nil
@@ -282,9 +283,9 @@ func (c *Scopes) EmitSymbolDefine(s *Symbol) error {
 	var op opcodes.OpcodeId
 	switch s.Scope() {
 	case GlobalScope:
-		op = opcodes.OpGlobalDefine
+		op = native.OpGlobalDefineId
 	case LocalScope:
-		op = opcodes.OpLocalDefine // Use new opcode for local variables
+		op = native.OpLocalDefineId // Use new opcode for local variables
 	default:
 		return fmt.Errorf("unsupported symbol scope: %v", s.Scope())
 	}
@@ -302,11 +303,11 @@ func (c *Scopes) EmitSymbolSet(s *Symbol) error {
 	var op opcodes.OpcodeId
 	switch s.Scope() {
 	case GlobalScope:
-		op = opcodes.OpGlobalSet
+		op = native.OpGlobalSetId
 	case LocalScope:
-		op = opcodes.OpLocalSet
+		op = native.OpLocalSetId
 	case FreeScope:
-		op = opcodes.OpFreeSet
+		op = native.OpFreeSetId
 	default:
 		return fmt.Errorf("unsupported symbol scope: %v", s.Scope())
 	}
@@ -319,17 +320,17 @@ func (c *Scopes) EmitSymbolSet(s *Symbol) error {
 // EmitSymbolGet generates bytecode instructions to retrieve a symbol's value based on its scope and index.
 func (c *Scopes) EmitSymbolGet(s *Symbol) error {
 	if s.Constant() {
-		_, err := c.Emit(opcodes.OpConstant, s.Index())
+		_, err := c.Emit(native.OpConstantId, s.Index())
 		return err
 	}
 	var op opcodes.OpcodeId
 	switch s.Scope() {
 	case GlobalScope:
-		op = opcodes.OpGlobalGet
+		op = native.OpGlobalGetId
 	case LocalScope:
-		op = opcodes.OpLocalGet
+		op = native.OpLocalGetId
 	case FreeScope:
-		op = opcodes.OpFreeGet
+		op = native.OpFreeGetId
 	default:
 		return fmt.Errorf("unsupported symbol scope: %v", s.Scope())
 	}
@@ -344,7 +345,7 @@ func (c *Scopes) EmitSymbolSetAndPop(s *Symbol) error {
 	if err := c.EmitSymbolSet(s); err != nil {
 		return err
 	}
-	if _, err := c.Emit(opcodes.OpPop); err != nil {
+	if _, err := c.Emit(native.OpPopId); err != nil {
 		return err
 	}
 	return nil

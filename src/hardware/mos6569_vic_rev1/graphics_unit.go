@@ -430,7 +430,7 @@ func (gr *GraphicsUnit) readGraphics(rasterY uint16) {
 		// Extended Color Mode (ECM): Mask the address to use only the lower 13 bits of the character ROM address.
 		addr &= 0xf9ff
 	}
-	gr.gfxData = gr.memory.ReadByte(addr)    // Read the bgrState data (pixel data or character pattern).
+	gr.gfxData = gr.memory.ReadByte(addr)    // Operand the bgrState data (pixel data or character pattern).
 	charData := gr.videoMatrix[gr.lineIndex] // Get the character code from the video matrix.
 	colorData := gr.colorLine[gr.lineIndex]  // Get the color data from the color RAM.
 	gr.setCharData(charData)

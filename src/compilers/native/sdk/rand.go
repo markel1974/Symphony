@@ -28,7 +28,7 @@ func NewRand(gk objects.IGateKeeper) IPackage {
 		gk.NewFuncImport(objects.FrameStatic, "NormFloat64", 0, z.float64(rand.NormFloat64)),
 		gk.NewFuncImport(objects.FrameStatic, "Perm", 1, z.perm(rand.Perm)),
 		gk.NewFuncImport(objects.FrameStatic, "Seed", 1, z.seed(rand.Seed)),
-		gk.NewFuncImport(objects.FrameStatic, "Read", 1, z.read),
+		gk.NewFuncImport(objects.FrameStatic, "Operand", 1, z.read),
 		gk.NewFuncImport(objects.FrameStatic, "Rand", 1, z.rand),
 	}
 	z.Package = NewExternalPackage("rand", container, nil)
@@ -65,7 +65,7 @@ func (z *Rand) rand(gk objects.IGateKeeper, frame int, args ...objects.IObject) 
 			"NormFloat64": gk.NewFuncImport(frame, "NormFloat64", 0, z.float64(r.NormFloat64)),
 			"Perm":        gk.NewFuncImport(frame, "Perm", 1, z.perm(r.Perm)),
 			"Seed":        gk.NewFuncImport(frame, "Seed", 1, z.seed(r.Seed)),
-			"Read": gk.NewFuncImport(frame, "Read", 1, func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
+			"Operand": gk.NewFuncImport(frame, "Operand", 1, func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
 				return z.randOptionsRead(gk, r, frame, args...)
 			}),
 		}), nil

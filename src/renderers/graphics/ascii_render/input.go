@@ -67,7 +67,7 @@ func (g *Inputs) Setup(b references.IC64Board, cfg *config.Config) error {
 				if !g.hasClipboard {
 					return
 				}
-				data := clipboard.Read(clipboard.FmtText)
+				data := clipboard.Operand(clipboard.FmtText)
 				g.board.KeyboardSetCommand(string(data))
 			}
 		}

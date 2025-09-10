@@ -13,20 +13,28 @@ func init() {
 
 // OpCreateError represents an operation that creates and assigns an error object in a virtual machine's runtime environment.
 type OpCreateError struct {
-	*opcodes.Opcode
-	vm core.IVMFullAccess
+	opcode *opcodes.Opcode
+	vm     core.IVMFullAccess
 }
 
 // NewOpCreateError creates and returns a new instance of OpCreateError with associated Opcode for the OpCreateError opcode.
-func NewOpCreateError(vm core.IVM, op *opcodes.Opcodes) (core.IOpExecutor, error) {
+func NewOpCreateError() core.IOpExecutor {
+	operands := _noOperands
+	return &OpCreateError{
+		opcode: opcodes.NewOpcode(OpCreateErrorId, operands, "OpCreateError"),
+		vm:     nil,
+	}
+}
+
+// Bind initializes the instance by casting the provided VM to IVMFullAccess and storing it.
+// Returns an error if the VM does not implement the required interface.
+func (op *OpCreateError) Bind(vm core.IVM) error {
 	vmT, ok := vm.(core.IVMFullAccess)
 	if !ok {
-		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
+		return fmt.Errorf("vm does not implement IVMFullAccess")
 	}
-	return &OpCreateError{
-		Opcode: op.Opcode(opcodes.OpCreateError),
-		vm:     vmT,
-	}, nil
+	op.vm = vmT
+	return nil
 }
 
 // Execute converts the top value on the VM stack into an error object and replaces it on the stack.
@@ -35,4 +43,9 @@ func (op *OpCreateError) Execute(_ *core.Decoder) {
 	value := op.vm.Stack().Peek()
 	e := op.vm.Factory().NewError(op.vm.Frame().Id(), value.AsString())
 	op.vm.Stack().Set(e)
+}
+
+// Opcode returns the opcode associated with the instance.
+func (op *OpCreateError) Opcode() *opcodes.Opcode {
+	return op.opcode
 }

@@ -16,28 +16,36 @@ func init() {
 // OpIntLogical represents an executor for performing logical operations on integer operands within a virtual machine.
 // It extends bytecode.Opcode to utilize its opcode properties and depends on the IVMFullAccess interface for VM interactions.
 type OpIntLogical struct {
-	*opcodes.Opcode
-	vm core.IVMFullAccess
+	opcode *opcodes.Opcode
+	vm     core.IVMFullAccess
 }
 
 // NewOpIntLogical creates a new instance of OpIntLogical, validating the provided virtual machine and opcode inputs.
-func NewOpIntLogical(vm core.IVM, op *opcodes.Opcodes) (core.IOpExecutor, error) {
+func NewOpIntLogical() core.IOpExecutor {
+	operands := []opcodes.OperandFeature{opcodes.SzUint16, opcodes.SzUint16, opcodes.SzUint16, opcodes.SzUint8}
+	return &OpIntLogical{
+		opcode: opcodes.NewOpcode(OpIntLogicalId, operands, "OpIntLogical"),
+		vm:     nil,
+	}
+}
+
+// Bind initializes the instance by casting the provided VM to IVMFullAccess and storing it.
+// Returns an error if the VM does not implement the required interface.
+func (op *OpIntLogical) Bind(vm core.IVM) error {
 	vmT, ok := vm.(core.IVMFullAccess)
 	if !ok {
-		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
+		return fmt.Errorf("vm does not implement IVMFullAccess")
 	}
-	return &OpIntLogical{
-		Opcode: op.Opcode(opcodes.OpIntLogical),
-		vm:     vmT,
-	}, nil
+	op.vm = vmT
+	return nil
 }
 
 // Execute performs the logical operation between two integers on the stack and stores the result in the destination object.
 func (op *OpIntLogical) Execute(decoder *core.Decoder) {
-	logicalOp := objects.LogicalOperator(decoder.Read(0))
-	lhsObj := op.vm.Stack().PeekAbsolute(decoder.Read(1))
-	rhsObj := op.vm.Stack().PeekAbsolute(decoder.Read(2))
-	dstObj := op.vm.Stack().PeekAbsolute(decoder.Read(3))
+	logicalOp := objects.LogicalOperator(decoder.Operand(0))
+	lhsObj := op.vm.Stack().PeekAbsolute(decoder.Operand(1))
+	rhsObj := op.vm.Stack().PeekAbsolute(decoder.Operand(2))
+	dstObj := op.vm.Stack().PeekAbsolute(decoder.Operand(3))
 	dst, ok := dstObj.(*objects.Int)
 	if !ok {
 		op.vm.SetError(fmt.Errorf("dst expected int, got %s", dstObj.TypeName()))
@@ -53,4 +61,9 @@ func (op *OpIntLogical) Execute(decoder *core.Decoder) {
 	} else {
 		dst.SetValue(0)
 	}
+}
+
+// Opcode returns the opcode associated with the instance.
+func (op *OpIntLogical) Opcode() *opcodes.Opcode {
+	return op.opcode
 }

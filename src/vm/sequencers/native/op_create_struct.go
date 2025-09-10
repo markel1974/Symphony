@@ -13,28 +13,41 @@ func init() {
 
 // OpCreateStruct is a wrapper around bytecode.Opcode, representing a struct creation operation in bytecode execution.
 type OpCreateStruct struct {
-	*opcodes.Opcode
-	vm core.IVMFullAccess
+	opcode *opcodes.Opcode
+	vm     core.IVMFullAccess
 }
 
 // NewOpCreateStruct initializes and returns a new instance of OpCreateStruct with its Opcode set to OpCreateMap details.
-func NewOpCreateStruct(vm core.IVM, op *opcodes.Opcodes) (core.IOpExecutor, error) {
+func NewOpCreateStruct() core.IOpExecutor {
+	operands := []opcodes.OperandFeature{opcodes.SzUint16}
+	return &OpCreateStruct{
+		opcode: opcodes.NewOpcode(OpCreateStructId, operands, "OpCreateStruct"),
+		vm:     nil,
+	}
+}
+
+// Bind initializes the instance by casting the provided VM to IVMFullAccess and storing it.
+// Returns an error if the VM does not implement the required interface.
+func (op *OpCreateStruct) Bind(vm core.IVM) error {
 	vmT, ok := vm.(core.IVMFullAccess)
 	if !ok {
-		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
+		return fmt.Errorf("vm does not implement IVMFullAccess")
 	}
-	return &OpCreateStruct{
-		Opcode: op.Opcode(opcodes.OpCreateStruct),
-		vm:     vmT,
-	}, nil
+	op.vm = vmT
+	return nil
 }
 
 // Execute processes the OpCreateMap instruction, adjusts the instruction pointer, and pushes a new map object onto the stack.
 func (op *OpCreateStruct) Execute(decoder *core.Decoder) {
 	// Operands Offset 2 (16-bit)
-	numElements := decoder.Read(0)
+	numElements := decoder.Operand(0)
 	typeNameObj := op.vm.Stack().Pop()
 	mElem := op.vm.Stack().PopMapElements(numElements)
 	structObj := op.vm.Factory().NewStruct(op.vm.Frame().Id(), typeNameObj.AsString(), mElem)
 	op.vm.Stack().Push(structObj)
+}
+
+// Opcode returns the opcode associated with the instance.
+func (op *OpCreateStruct) Opcode() *opcodes.Opcode {
+	return op.opcode
 }

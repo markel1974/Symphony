@@ -15,30 +15,37 @@ func init() {
 
 // OpArithmetic represents an operation responsible for performing arithmetic computations within the virtual machine.
 type OpArithmetic struct {
-	*opcodes.Opcode
-	vm core.IVMFullAccess
+	opcode *opcodes.Opcode
+	vm     core.IVMFullAccess
 }
 
 // NewOpArithmetic creates a new arithmetic operation executor with the given virtual machine and opcode.
 // It ensures the virtual machine implements the IVMFullAccess interface before creating the executor.
 // Returns an IOpExecutor for arithmetic operations or an error if the provided VM does not support full access.
-func NewOpArithmetic(vm core.IVM, op *opcodes.Opcodes) (core.IOpExecutor, error) {
+func NewOpArithmetic() core.IOpExecutor {
+	operands := []opcodes.OperandFeature{opcodes.SzUint8}
+	return &OpArithmetic{
+		opcode: opcodes.NewOpcode(OpArithmeticId, operands, "OpArithmetic"),
+		vm:     nil,
+	}
+}
+
+// Bind initializes the OpArithmetic instance by casting the provided VM to IVMFullAccess and storing it.
+// Returns an error if the VM does not implement the required interface.
+func (op *OpArithmetic) Bind(vm core.IVM) error {
 	vmT, ok := vm.(core.IVMFullAccess)
 	if !ok {
-		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
+		return fmt.Errorf("vm does not implement IVMFullAccess")
 	}
-	return &OpArithmetic{
-		Opcode: op.Opcode(opcodes.OpArithmetic),
-		vm:     vmT,
-	}, nil
+	op.vm = vmT
+	return nil
 }
 
 // Execute processes the arithmetic operation by decoding the operator and applying it to the top two stack elements.
 // It retrieves the operator from the bytecode, performs the calculation, and pushes the result back onto the stack.
 // In case of an operation error, it sets the virtual machine's error state.
 func (op *OpArithmetic) Execute(decoder *core.Decoder) {
-	// Operands Offset  1 (8 bits)
-	opcode := decoder.Read(0)
+	opcode := decoder.Operand(0)
 	right := op.vm.Stack().Pop()
 	left := op.vm.Stack().Pop()
 	operator := objects.ArithmeticOperator(opcode)
@@ -48,4 +55,9 @@ func (op *OpArithmetic) Execute(decoder *core.Decoder) {
 		return
 	}
 	op.vm.Stack().Push(res)
+}
+
+// Opcode returns the opcode associated with the instance.
+func (op *OpArithmetic) Opcode() *opcodes.Opcode {
+	return op.opcode
 }

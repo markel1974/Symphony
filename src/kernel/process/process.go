@@ -8,11 +8,11 @@ import (
 	"github.com/markel1974/c64emu/src/compilers"
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
 	"github.com/markel1974/c64emu/src/kernel/messages"
-	"github.com/markel1974/c64emu/src/vm"
 	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/core"
 	"github.com/markel1974/c64emu/src/vm/objects"
 	"github.com/markel1974/c64emu/src/vm/opcodes"
+	"github.com/markel1974/c64emu/src/vm/sequencers/native"
 )
 
 const (
@@ -34,8 +34,9 @@ type Process struct {
 	executorWaitChan chan bool
 	timeout          time.Duration
 	loader           bytecode.ILoader
-	opcodes          *opcodes.Opcodes
+	opcodes          opcodes.IOpcodes
 	compiler         bytecode.ICompiler
+	executors        []core.IOpExecutor
 	vm               *core.VM
 	onError          interfaces.OnError
 	onTimer          interfaces.OnTimer
@@ -544,20 +545,25 @@ func (t *Process) handleMessageProcessStart(msg interfaces.IMessage) {
 	if t.cmd.HasScript() {
 		if !t.vmInitialized {
 			var err error
-			const sequencerId = "native"
+			seq := native.NewSequencer()
+			if err = seq.Setup(); err != nil {
+				log.Printf("Process [%s]: error creating compiler: %s", t.cmd.Name(), err.Error())
+				return
+			}
 			gk := objects.NewGateKeeper()
-			t.opcodes = opcodes.NewOpcodes()
-			t.compiler, t.loader, err = compilers.NewCompiler(gk, t.opcodes, sequencerId)
+			t.opcodes = seq
+			t.compiler, t.loader, err = compilers.NewCompiler(gk, t.opcodes)
 			if err != nil {
 				log.Printf("Process [%s]: error creating compiler: %s", t.cmd.Name(), err.Error())
 				return
 			}
 			t.loader.AddPackage("kernel", NewLibrary(gk, t).Functions(), nil)
-			t.vm, err = vm.NewVM(gk, t.opcodes, sequencerId)
-			if err != nil {
-				log.Printf("Process [%s]: error creating VM: %s", t.cmd.Name(), err.Error())
+			t.vm = core.New(gk, t.opcodes)
+			if err = seq.Bind(t.vm); err != nil {
+				log.Printf("Process [%s]: error setting up sequencer: %s", t.cmd.Name(), err.Error())
 				return
 			}
+			t.executors = seq.Executors()
 			t.vmInitialized = true
 		}
 		if err := t.compiler.Compile(t.cmd.Name(), t.cmd.Script()); err != nil {
@@ -565,7 +571,7 @@ func (t *Process) handleMessageProcessStart(msg interfaces.IMessage) {
 			return
 		}
 		bc := bytecode.NewBytecode(t.compiler.Constants(), t.compiler.Imports(), t.compiler.Globals(), t.compiler.FileSet())
-		entryPoints, err := t.vm.Setup(t.loader, bc)
+		entryPoints, err := t.vm.Setup(t.loader, t.executors, bc)
 		if err != nil {
 			log.Printf("Process [%s]: error setting up VM: %s", t.cmd.Name(), err.Error())
 		}

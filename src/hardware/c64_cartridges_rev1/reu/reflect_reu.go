@@ -41,7 +41,7 @@ func NewREUReflect(r *REU) *REUReflect {
 	_ = r.CommandAdd("Emulate", "Emulate() - Emulate performs the main emulation logic for the REU device, handling internal operations and DMA processing.", r.Emulate)
 	_ = r.CommandAdd("Config", "Config() uint8,uint8,bool - Config retrieves the cartridge configuration, including game state, EXROM value, and a boolean indicating success.", r.Config)
 	_ = r.CommandAdd("IOWrite", "IOWrite(addr, data) bool - IOWrite processes a write operation to the REU's I/O registers based on the provided address and data.  It validates the address range, updates the REU's internal registers, and triggers DMA execution if necessary.  Returns true if the write operation is valid, otherwise false.", r.IOWrite)
-	_ = r.CommandAdd("Read", "Read(_) uint8 - Read retrieves data from the specified ROM interval and memory address. Returns the data and a boolean indicating success.", r.Read)
+	_ = r.CommandAdd("Operand", "Operand(_) uint8 - Operand retrieves data from the specified ROM interval and memory address. Returns the data and a boolean indicating success.", r.Read)
 	_ = r.CommandAdd("Reset", "Reset() - Reset initializes the REU's registers and status based on its RAM size.", r.Reset)
 	_ = r.CommandAdd("IRQ", "IRQ(_) - ", r.IRQ)
 	_ = r.CommandAdd("IRQCLear", "IRQCLear(_) - ", r.IRQCLear)

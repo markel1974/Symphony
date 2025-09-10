@@ -16,20 +16,28 @@ func init() {
 // OpUnaryAdd represents an opcode that performs a unary addition operation in the virtual machine.
 // It embeds the bytecode.Opcode type for opcode execution and uses core.IVMFullAccess for VM interaction.
 type OpUnaryAdd struct {
-	*opcodes.Opcode
-	vm core.IVMFullAccess
+	opcode *opcodes.Opcode
+	vm     core.IVMFullAccess
 }
 
 // NewOpUnaryAdd initializes and returns an OpUnaryAdd executor, ensuring the provided VM supports full-access operations.
-func NewOpUnaryAdd(vm core.IVM, op *opcodes.Opcodes) (core.IOpExecutor, error) {
+func NewOpUnaryAdd() core.IOpExecutor {
+	operands := _noOperands
+	return &OpUnaryAdd{
+		opcode: opcodes.NewOpcode(OpUnaryAddId, operands, "OpUnaryAdd"),
+		vm:     nil,
+	}
+}
+
+// Bind initializes the instance by casting the provided VM to IVMFullAccess and storing it.
+// Returns an error if the VM does not implement the required interface.
+func (op *OpUnaryAdd) Bind(vm core.IVM) error {
 	vmT, ok := vm.(core.IVMFullAccess)
 	if !ok {
-		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
+		return fmt.Errorf("vm does not implement IVMFullAccess")
 	}
-	return &OpUnaryAdd{
-		Opcode: op.Opcode(opcodes.OpUnaryAdd),
-		vm:     vmT,
-	}, nil
+	op.vm = vmT
+	return nil
 }
 
 // Execute executes the unary addition operation on the top operand of the stack and pushes the result back onto the stack.
@@ -44,4 +52,9 @@ func (op *OpUnaryAdd) Execute(_ *core.Decoder) {
 		res := op.vm.Factory().NewInt(op.vm.Frame().Id(), +x.AsInt64())
 		op.vm.Stack().Push(res)
 	}
+}
+
+// Opcode returns the opcode associated with the instance.
+func (op *OpUnaryAdd) Opcode() *opcodes.Opcode {
+	return op.opcode
 }

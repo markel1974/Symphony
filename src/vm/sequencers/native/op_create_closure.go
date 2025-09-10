@@ -14,27 +14,35 @@ func init() {
 
 // OpCreateClosure represents a closure operation that creates a new closure in the virtual machine.
 type OpCreateClosure struct {
-	*opcodes.Opcode
-	vm core.IVMFullAccess
+	opcode *opcodes.Opcode
+	vm     core.IVMFullAccess
 }
 
 // NewOpCreateClosure returns a new instance of OpCreateClosure initialized with the details of the OpCreateClosure opcode.
-func NewOpCreateClosure(vm core.IVM, op *opcodes.Opcodes) (core.IOpExecutor, error) {
+func NewOpCreateClosure() core.IOpExecutor {
+	operands := []opcodes.OperandFeature{opcodes.SzUint8, opcodes.Relocatable}
+	return &OpCreateClosure{
+		opcode: opcodes.NewOpcode(OpCreateClosureId, operands, "OpCreateClosure"),
+		vm:     nil,
+	}
+}
+
+// Bind initializes the instance by casting the provided VM to IVMFullAccess and storing it.
+// Returns an error if the VM does not implement the required interface.
+func (op *OpCreateClosure) Bind(vm core.IVM) error {
 	vmT, ok := vm.(core.IVMFullAccess)
 	if !ok {
-		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
+		return fmt.Errorf("vm does not implement IVMFullAccess")
 	}
-	return &OpCreateClosure{
-		Opcode: op.Opcode(opcodes.OpCreateClosure),
-		vm:     vmT,
-	}, nil
+	op.vm = vmT
+	return nil
 }
 
 // Execute performs the operation associated with the OpCreateClosure opcode, creating a closure and pushing it onto the stack.
 func (op *OpCreateClosure) Execute(decoder *core.Decoder) {
 	// Operands Offset 3 (16-bit|8-bit)
-	closureIndex := decoder.Read(0)
-	numTotal := decoder.Read(1)
+	closureIndex := decoder.Operand(0)
+	numTotal := decoder.Operand(1)
 	closureObj := op.vm.Constants().Get(uint(closureIndex))
 	fn, ok := closureObj.(*objects.FuncCompiled)
 	if !ok {
@@ -72,4 +80,9 @@ func (op *OpCreateClosure) Execute(decoder *core.Decoder) {
 	op.vm.Stack().DecrementCount(freeIndices.Length())
 	cl := op.vm.Factory().NewFuncCompiled(op.vm.Frame().Id(), fn.Name(), fn.Instructions().Data(), fn.NumLocals(), fn.NumParameters(), fn.VarArgs(), nil, free)
 	op.vm.Stack().Push(cl)
+}
+
+// Opcode returns the opcode associated with the instance.
+func (op *OpCreateClosure) Opcode() *opcodes.Opcode {
+	return op.opcode
 }

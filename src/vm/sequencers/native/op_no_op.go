@@ -13,23 +13,36 @@ func init() {
 
 // OpNoOp represents a no-operation opcode, typically used as a placeholder or for alignment purposes.
 type OpNoOp struct {
-	*opcodes.Opcode
-	vm core.IVMFullAccess
+	opcode *opcodes.Opcode
+	vm     core.IVMFullAccess
 }
 
 // NewOpNoOp initializes and returns a new OpNoOp instance using the given Opcodes configuration.
-func NewOpNoOp(vm core.IVM, op *opcodes.Opcodes) (core.IOpExecutor, error) {
+func NewOpNoOp() core.IOpExecutor {
+	operands := _noOperands
+	return &OpNoOp{
+		opcode: opcodes.NewOpcode(OpNoOpId, operands, "OpNoOp"),
+		vm:     nil,
+	}
+}
+
+// Bind initializes the instance by casting the provided VM to IVMFullAccess and storing it.
+// Returns an error if the VM does not implement the required interface.
+func (op *OpNoOp) Bind(vm core.IVM) error {
 	vmT, ok := vm.(core.IVMFullAccess)
 	if !ok {
-		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
+		return fmt.Errorf("vm does not implement IVMFullAccess")
 	}
-	return &OpNoOp{
-		Opcode: op.Opcode(opcodes.OpNoOp),
-		vm:     vmT,
-	}, nil
+	op.vm = vmT
+	return nil
 }
 
 // Execute performs a no-operation (NOP) for the virtual machine, advancing the instruction pointer without side effects.
 func (op *OpNoOp) Execute(_ *core.Decoder) {
 	// Operands Offset 0
+}
+
+// Opcode returns the opcode associated with the instance.
+func (op *OpNoOp) Opcode() *opcodes.Opcode {
+	return op.opcode
 }

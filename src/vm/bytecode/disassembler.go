@@ -12,12 +12,12 @@ import (
 // Disassembler represents a utility for analyzing and processing bytecode by dissecting its constants and imports.
 type Disassembler struct {
 	bc           *Bytecode
-	opcodes      *opcodes.Opcodes
+	opcodes      opcodes.IOpcodes
 	instructions *opcodes.Instructions
 }
 
 // NewDisassembler creates a new Disassembler instance linked to the provided Bytecode object.
-func NewDisassembler(b *Bytecode, op *opcodes.Opcodes) *Disassembler {
+func NewDisassembler(b *Bytecode, op opcodes.IOpcodes) *Disassembler {
 	return &Disassembler{
 		bc:           b,
 		opcodes:      op,

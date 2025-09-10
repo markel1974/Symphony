@@ -10,16 +10,9 @@ import (
 // Operands retrieves the operands required for the operation's execution.
 // Execute performs the operation within the provided virtual machine instance.
 type IOpExecutor interface {
-	OpcodeId() opcodes.OpcodeId
+	Bind(vm IVM) error
 
-	Name() string
-
-	Operands() []opcodes.OperandFeature
+	Opcode() *opcodes.Opcode
 
 	Execute(decoder *Decoder)
-}
-
-// ISequencer defines an interface to generate a sequence of functions for a given Virtual Machine instance.
-type ISequencer interface {
-	Create(vm *VM) ([]IOpExecutor, error)
 }

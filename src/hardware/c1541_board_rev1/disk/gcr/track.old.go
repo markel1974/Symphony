@@ -118,8 +118,8 @@ func (t *Track) Advance() {
 	}
 }
 
-// Read retrieves the byte at the current cursor position in the track's data buffer.
-func (t *Track) Read() uint8 {
+// Operand retrieves the byte at the current cursor position in the track's data buffer.
+func (t *Track) Operand() uint8 {
 	return t.data[t.cursor]
 }
 

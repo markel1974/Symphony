@@ -41,7 +41,7 @@ func NewCartridgeEasyFlashReflect(r *CartridgeEasyFlash) *CartridgeEasyFlashRefl
 	r.PropertyAdd(reflectFilenameId, "/* filename when attached */", false, reflector.getFilename, reflector.setFilename)
 
 	_ = r.CommandAdd("SetUpdateEApi", "SetUpdateEApi(e) - SetUpdateEApi configures the updateEApi flag to enable or disable the extended API updating functionality.", r.SetUpdateEApi)
-	_ = r.CommandAdd("Read", "Read(addr) uint8 - Read retrieves a byte of data from the cartridge memory based on the provided ROM interval and address.", r.Read)
+	_ = r.CommandAdd("Operand", "Operand(addr) uint8 - Operand retrieves a byte of data from the cartridge memory based on the provided ROM interval and address.", r.Read)
 	_ = r.CommandAdd("Config", "Config() uint8,uint8,bool - Config returns the Game line status, ExROM line state, and a boolean indicating successful configuration retrieval.", r.Config)
 	_ = r.CommandAdd("HardwareButton", "HardwareButton(pressed, value) - HardwareButton handles the system response to a physical button press event, updating cartridge state as necessary.", r.HardwareButton)
 	_ = r.CommandAdd("IRQCLear", "IRQCLear(_) - IRQCLear clears the state of any active Interrupt Requests (IRQ) for the CartridgeGeneric.", r.IRQCLear)

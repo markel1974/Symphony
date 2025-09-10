@@ -93,7 +93,7 @@ func (v *ShiftRegister) Handle(spMode bool) bool {
 		// Shift bits left to prepare for next one
 		v.register <<= 1
 	} else {
-		// Read bit from SP pin
+		// Operand bit from SP pin
 		bit := v.socketReadSP()
 		// Shift bits left
 		v.register <<= 1

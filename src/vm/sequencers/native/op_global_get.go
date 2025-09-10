@@ -14,26 +14,39 @@ func init() {
 // OpGlobalGet represents an operation to retrieve a global variable in the virtual machine.
 // It embeds Opcode for detailed opcode information.
 type OpGlobalGet struct {
-	*opcodes.Opcode
-	vm core.IVMFullAccess
+	opcode *opcodes.Opcode
+	vm     core.IVMFullAccess
 }
 
 // NewOpGlobalGet creates a new instance of OpGlobalGet with its associated opcode details.
-func NewOpGlobalGet(vm core.IVM, op *opcodes.Opcodes) (core.IOpExecutor, error) {
+func NewOpGlobalGet() core.IOpExecutor {
+	operands := []opcodes.OperandFeature{opcodes.Relocatable}
+	return &OpGlobalGet{
+		opcode: opcodes.NewOpcode(OpGlobalGetId, operands, "OpGlobalGet"),
+		vm:     nil,
+	}
+}
+
+// Bind initializes the instance by casting the provided VM to IVMFullAccess and storing it.
+// Returns an error if the VM does not implement the required interface.
+func (op *OpGlobalGet) Bind(vm core.IVM) error {
 	vmT, ok := vm.(core.IVMFullAccess)
 	if !ok {
-		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
+		return fmt.Errorf("vm does not implement IVMFullAccess")
 	}
-	return &OpGlobalGet{
-		Opcode: op.Opcode(opcodes.OpGlobalGet),
-		vm:     vmT,
-	}, nil
+	op.vm = vmT
+	return nil
 }
 
 // Execute retrieves a global object using its index, pushes it onto the stack, and advances the instruction pointer.
 func (op *OpGlobalGet) Execute(decoder *core.Decoder) {
 	// Operands Offset 2 (16-bit)
-	index := decoder.Read(0)
+	index := decoder.Operand(0)
 	obj := op.vm.Globals().Get(uint(index))
 	op.vm.Stack().Push(obj)
+}
+
+// Opcode returns the opcode associated with the instance.
+func (op *OpGlobalGet) Opcode() *opcodes.Opcode {
+	return op.opcode
 }

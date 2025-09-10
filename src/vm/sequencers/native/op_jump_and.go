@@ -13,20 +13,28 @@ func init() {
 
 // OpJumpAnd represents a logical AND operation followed by a conditional jump in the bytecode execution process.
 type OpJumpAnd struct {
-	*opcodes.Opcode
-	vm core.IVMFullAccess
+	opcode *opcodes.Opcode
+	vm     core.IVMFullAccess
 }
 
 // NewOpJumpAnd creates and returns a new instance of OpJumpAnd, initializing it with details for the OpJumpAnd opcode.
-func NewOpJumpAnd(vm core.IVM, op *opcodes.Opcodes) (core.IOpExecutor, error) {
+func NewOpJumpAnd() core.IOpExecutor {
+	operands := []opcodes.OperandFeature{opcodes.SzUint16}
+	return &OpJumpAnd{
+		opcode: opcodes.NewOpcode(OpJumpAndId, operands, "OpJumpAnd"),
+		vm:     nil,
+	}
+}
+
+// Bind initializes the instance by casting the provided VM to IVMFullAccess and storing it.
+// Returns an error if the VM does not implement the required interface.
+func (op *OpJumpAnd) Bind(vm core.IVM) error {
 	vmT, ok := vm.(core.IVMFullAccess)
 	if !ok {
-		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
+		return fmt.Errorf("vm does not implement IVMFullAccess")
 	}
-	return &OpJumpAnd{
-		Opcode: op.Opcode(opcodes.OpJumpAnd),
-		vm:     vmT,
-	}, nil
+	op.vm = vmT
+	return nil
 }
 
 // Execute updates the instruction pointer, evaluates a condition, and adjusts or decrements the stack based on the result.
@@ -34,9 +42,14 @@ func (op *OpJumpAnd) Execute(decoder *core.Decoder) {
 	// Operands Offset  2 (16-bit)
 	obj := op.vm.Stack().Peek()
 	if obj.Falsy() {
-		pos := decoder.Read(0)
+		pos := decoder.Operand(0)
 		op.vm.SetIp(pos - 1)
 	} else {
 		op.vm.Stack().Decrement()
 	}
+}
+
+// Opcode returns the opcode associated with the instance.
+func (op *OpJumpAnd) Opcode() *opcodes.Opcode {
+	return op.opcode
 }

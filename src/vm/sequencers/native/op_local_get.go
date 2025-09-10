@@ -13,26 +13,39 @@ func init() {
 
 // OpLocalGet represents an operation to retrieve a local variable from the stack using its index.
 type OpLocalGet struct {
-	*opcodes.Opcode
-	vm core.IVMFullAccess
+	opcode *opcodes.Opcode
+	vm     core.IVMFullAccess
 }
 
 // NewOpLocalGet creates a new OpLocalGet instance and initializes it with details for the OpLocalGet opcode.
-func NewOpLocalGet(vm core.IVM, op *opcodes.Opcodes) (core.IOpExecutor, error) {
+func NewOpLocalGet() core.IOpExecutor {
+	operands := []opcodes.OperandFeature{opcodes.SzUint16}
+	return &OpLocalGet{
+		opcode: opcodes.NewOpcode(OpLocalGetId, operands, "OpLocalGet"),
+		vm:     nil,
+	}
+}
+
+// Bind initializes the instance by casting the provided VM to IVMFullAccess and storing it.
+// Returns an error if the VM does not implement the required interface.
+func (op *OpLocalGet) Bind(vm core.IVM) error {
 	vmT, ok := vm.(core.IVMFullAccess)
 	if !ok {
-		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
+		return fmt.Errorf("vm does not implement IVMFullAccess")
 	}
-	return &OpLocalGet{
-		Opcode: op.Opcode(opcodes.OpLocalGet),
-		vm:     vmT,
-	}, nil
+	op.vm = vmT
+	return nil
 }
 
 // Execute retrieves a local variable from the current frame's base pointer and pushes it onto the stack.
 func (op *OpLocalGet) Execute(decoder *core.Decoder) {
 	// Operands Offset 2 (16-bit)
-	localIndex := decoder.Read(0)
+	localIndex := decoder.Operand(0)
 	val := op.vm.Stack().PeekAbsolute(op.vm.Frame().BasePointer() + localIndex)
 	op.vm.Stack().Push(val)
+}
+
+// Opcode returns the opcode associated with the instance.
+func (op *OpLocalGet) Opcode() *opcodes.Opcode {
+	return op.opcode
 }

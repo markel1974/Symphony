@@ -79,7 +79,7 @@ func (c *CollisionsUnit) Reset() {
 // RetrieveSprite2Sprite reads and clears the sprite-to-sprite collision state, returning its value as an 8-bit unsigned integer.
 func (c *CollisionsUnit) RetrieveSprite2Sprite() uint8 {
 	ret := c.spr2SprClx
-	c.spr2SprClx = 0 // Read and clear
+	c.spr2SprClx = 0 // Operand and clear
 	return ret
 }
 
@@ -87,7 +87,7 @@ func (c *CollisionsUnit) RetrieveSprite2Sprite() uint8 {
 func (c *CollisionsUnit) RetrieveSprite2Background() uint8 {
 	// Sprite-background collision
 	ret := c.spr2BgrClx
-	c.spr2BgrClx = 0 // Read and clear
+	c.spr2BgrClx = 0 // Operand and clear
 	return ret
 }
 

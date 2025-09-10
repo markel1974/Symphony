@@ -15,27 +15,35 @@ func init() {
 // OpLocalIndex represents an operation for setting a local variable using selectors in the virtual machine.
 // It embeds Opcode to utilize its properties like opcode, name, and operands.
 type OpLocalIndex struct {
-	*opcodes.Opcode
-	vm core.IVMFullAccess
+	opcode *opcodes.Opcode
+	vm     core.IVMFullAccess
 }
 
 // NewOpLocalIndex creates and returns a new instance of the OpLocalIndex operation executor.
-func NewOpLocalIndex(vm core.IVM, op *opcodes.Opcodes) (core.IOpExecutor, error) {
+func NewOpLocalIndex() core.IOpExecutor {
+	operands := []opcodes.OperandFeature{opcodes.SzUint8, opcodes.SzUint16}
+	return &OpLocalIndex{
+		opcode: opcodes.NewOpcode(OpLocalIndexId, operands, "OpLocalIndex"),
+		vm:     nil,
+	}
+}
+
+// Bind initializes the instance by casting the provided VM to IVMFullAccess and storing it.
+// Returns an error if the VM does not implement the required interface.
+func (op *OpLocalIndex) Bind(vm core.IVM) error {
 	vmT, ok := vm.(core.IVMFullAccess)
 	if !ok {
-		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
+		return fmt.Errorf("vm does not implement IVMFullAccess")
 	}
-	return &OpLocalIndex{
-		Opcode: op.Opcode(opcodes.OpLocalIndex),
-		vm:     vmT,
-	}, nil
+	op.vm = vmT
+	return nil
 }
 
 // Execute performs the operation of retrieving, modifying, and reassigning a value using selectors in the local scope.
 func (op *OpLocalIndex) Execute(decoder *core.Decoder) {
 	// Operands Offset 2 (16-bit|8-bit)
-	localIndex := decoder.Read(0)
-	selCount := decoder.Read(1)
+	localIndex := decoder.Operand(0)
+	selCount := decoder.Operand(1)
 	dstObj := op.vm.Stack().PeekAbsolute(op.vm.Frame().BasePointer() + localIndex)
 	//if obj, ok := dstObj.(*objects.ObjectPointer); ok {
 	//	dstObj = *obj.Value()
@@ -51,4 +59,9 @@ func (op *OpLocalIndex) Execute(decoder *core.Decoder) {
 		op.vm.SetError(err)
 		return
 	}
+}
+
+// Opcode returns the opcode associated with the instance.
+func (op *OpLocalIndex) Opcode() *opcodes.Opcode {
+	return op.opcode
 }

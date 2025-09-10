@@ -13,20 +13,28 @@ func init() {
 
 // OpNull represents a virtual machine operation to push a null value onto the stack.
 type OpNull struct {
-	*opcodes.Opcode
-	vm core.IVMFullAccess
+	opcode *opcodes.Opcode
+	vm     core.IVMFullAccess
 }
 
 // NewOpNull creates a new OpNull instance with details mapped from the OpNull opcode.
-func NewOpNull(vm core.IVM, op *opcodes.Opcodes) (core.IOpExecutor, error) {
+func NewOpNull() core.IOpExecutor {
+	operands := _noOperands
+	return &OpNull{
+		opcode: opcodes.NewOpcode(OpNullId, operands, "OpNull"),
+		vm:     nil,
+	}
+}
+
+// Bind initializes the instance by casting the provided VM to IVMFullAccess and storing it.
+// Returns an error if the VM does not implement the required interface.
+func (op *OpNull) Bind(vm core.IVM) error {
 	vmT, ok := vm.(core.IVMFullAccess)
 	if !ok {
-		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
+		return fmt.Errorf("vm does not implement IVMFullAccess")
 	}
-	return &OpNull{
-		Opcode: op.Opcode(opcodes.OpNull),
-		vm:     vmT,
-	}, nil
+	op.vm = vmT
+	return nil
 }
 
 // Execute pushes an undefined value onto the virtual machine's stack.
@@ -34,4 +42,9 @@ func (op *OpNull) Execute(_ *core.Decoder) {
 	// Operands Offset 0
 	val := op.vm.Factory().UndefinedValue()
 	op.vm.Stack().Push(val)
+}
+
+// Opcode returns the opcode associated with the instance.
+func (op *OpNull) Opcode() *opcodes.Opcode {
+	return op.opcode
 }

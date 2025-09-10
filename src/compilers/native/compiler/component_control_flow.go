@@ -6,7 +6,7 @@ import (
 
 	"github.com/markel1974/c64emu/src/compilers/native/tables"
 	"github.com/markel1974/c64emu/src/vm/objects"
-	"github.com/markel1974/c64emu/src/vm/opcodes"
+	"github.com/markel1974/c64emu/src/vm/sequencers/native"
 )
 
 // ControlFlow is a structure used to manage and compile AST nodes with the associated file sets and scope information.
@@ -53,7 +53,7 @@ func (c *ControlFlow) IfStmt(node *ast.IfStmt) error {
 		return err
 	}
 	// emit conditional jump with temporary address
-	jumpNotTruthyPos, err := c.scopes.Emit(opcodes.OpJumpFalsy, 9999)
+	jumpNotTruthyPos, err := c.scopes.Emit(native.OpJumpFalsyId, 9999)
 	if err != nil {
 		return err
 	}
@@ -64,7 +64,7 @@ func (c *ControlFlow) IfStmt(node *ast.IfStmt) error {
 	// if there's an 'else' block, emit jump to skip it
 	jumpToEndPos := 0
 	if node.Else != nil {
-		jumpToEndPos, err = c.scopes.Emit(opcodes.OpJump, 9999)
+		jumpToEndPos, err = c.scopes.Emit(native.OpJumpId, 9999)
 		if err != nil {
 			return err
 		}
@@ -102,7 +102,7 @@ func (c *ControlFlow) BranchStmt(node *ast.BranchStmt) error {
 	}
 	if node.Tok == token.BREAK {
 		if scope.CurrentSwitch() != nil {
-			breakJumpPos, err := c.scopes.Emit(opcodes.OpJump, 9999)
+			breakJumpPos, err := c.scopes.Emit(native.OpJumpId, 9999)
 			if err != nil {
 				return err
 			}
@@ -110,7 +110,7 @@ func (c *ControlFlow) BranchStmt(node *ast.BranchStmt) error {
 				return tables.NewCompilerError(c.fileSet, node, err.Error())
 			}
 		} else if scope.CurrentLoop() != nil { // Otherwise, check if we're in a loop
-			breakJumpPos, err := c.scopes.Emit(opcodes.OpJump, 9999)
+			breakJumpPos, err := c.scopes.Emit(native.OpJumpId, 9999)
 			if err != nil {
 				return err
 			}
@@ -125,7 +125,7 @@ func (c *ControlFlow) BranchStmt(node *ast.BranchStmt) error {
 
 	if node.Tok == token.CONTINUE {
 		// Emit an unconditional jump with a temporary address
-		continueJumpPos, err := c.scopes.Emit(opcodes.OpJump, 9999)
+		continueJumpPos, err := c.scopes.Emit(native.OpJumpId, 9999)
 		if err != nil {
 			return err
 		}
@@ -201,7 +201,7 @@ func (c *ControlFlow) SwitchStmt(node *ast.SwitchStmt) error {
 		//	return err
 		//}
 		// 4. Jump to the next-case if the condition is false
-		jumpPos, err := c.scopes.Emit(opcodes.OpJumpFalsy, 9999)
+		jumpPos, err := c.scopes.Emit(native.OpJumpFalsyId, 9999)
 		if err != nil {
 			return err
 		}
@@ -213,7 +213,7 @@ func (c *ControlFlow) SwitchStmt(node *ast.SwitchStmt) error {
 			}
 		}
 		// 6. add jump to end of switch (Go has no fall-through)
-		endJumpPos, err := c.scopes.Emit(opcodes.OpJump, 9999)
+		endJumpPos, err := c.scopes.Emit(native.OpJumpId, 9999)
 		if err != nil {
 			return err
 		}
@@ -278,11 +278,11 @@ func (c *ControlFlow) TypeSwitchStmt(node *ast.TypeSwitchStmt) error {
 		}
 		targetTypeName := clause.List[0].(*ast.Ident).Name
 		constIndex := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, targetTypeName))
-		if _, err = c.scopes.Emit(opcodes.OpTypeAssert, constIndex); err != nil {
+		if _, err = c.scopes.Emit(native.OpTypeAssertId, constIndex); err != nil {
 			return err
 		}
 
-		jumpToNextCasePos, err = c.scopes.Emit(opcodes.OpJumpFalsy, 9999)
+		jumpToNextCasePos, err = c.scopes.Emit(native.OpJumpFalsyId, 9999)
 		if err != nil {
 			return err
 		}
@@ -328,8 +328,8 @@ func (c *ControlFlow) TypeSwitchStmt(node *ast.TypeSwitchStmt) error {
 
 		// 4. Now, in the outer scope, check the instruction we saved.
 		// If it's not a 'return', add the jump to end.
-		if lastInstructionInCase == nil || lastInstructionInCase.Opcode() != opcodes.OpReturn {
-			jumpPos, err := c.scopes.Emit(opcodes.OpJump, 9999)
+		if lastInstructionInCase == nil || lastInstructionInCase.Opcode() != native.OpReturnId {
+			jumpPos, err := c.scopes.Emit(native.OpJumpId, 9999)
 			if err != nil {
 				return err
 			}
@@ -346,7 +346,7 @@ func (c *ControlFlow) TypeSwitchStmt(node *ast.TypeSwitchStmt) error {
 
 	// Clean the stack from last remaining 'result' (undefined)
 	if len(node.Body.List) > 0 {
-		if _, err := c.scopes.Emit(opcodes.OpPop); err != nil {
+		if _, err := c.scopes.Emit(native.OpPopId); err != nil {
 			return err
 		}
 	}

@@ -18,38 +18,46 @@ func init() {
 // OpAsType represents an executor linked to the bytecode opcode OpAsType for handling unchecked casts in the VM.
 // It embeds a bytecode.Opcode and uses core.IVMFullAccess for full VM functionality.
 type OpAsType struct {
-	*opcodes.Opcode
-	vm core.IVMFullAccess
+	opcode *opcodes.Opcode
+	vm     core.IVMFullAccess
 }
 
 // NewOpAsType creates a new instance of OpAsType executor for the given virtual machine and opcode.
 // Returns an error if the provided VM does not implement IVMFullAccess.
-func NewOpAsType(vm core.IVM, op *opcodes.Opcodes) (core.IOpExecutor, error) {
+func NewOpAsType() core.IOpExecutor {
+	operands := []opcodes.OperandFeature{opcodes.SzUint16}
+	return &OpAsType{
+		opcode: opcodes.NewOpcode(OpAsTypeId, operands, "OpAsType"),
+		vm:     nil,
+	}
+}
+
+// Bind initializes the OpAsType instance by casting the provided VM to IVMFullAccess and storing it.
+// Returns an error if the VM does not implement the required interface.
+func (op *OpAsType) Bind(vm core.IVM) error {
 	vmT, ok := vm.(core.IVMFullAccess)
 	if !ok {
-		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
+		return fmt.Errorf("vm does not implement IVMFullAccess")
 	}
-	return &OpAsType{
-		Opcode: op.Opcode(opcodes.OpAsType),
-		vm:     vmT,
-	}, nil
+	op.vm = vmT
+	return nil
 }
 
 // Execute performs the operation by popping an interface from the stack and pushing its concrete value back.
 // If the popped object is not an interface, it sets an error in the virtual machine.
 func (op *OpAsType) Execute(decoder *core.Decoder) {
-	// Questo opcode non usa i suoi operandi, ma li manteniamo per coerenza
-	// se in futuro servissero per qualche controllo di sicurezza.
-
 	interfaceObj := op.vm.Stack().Pop()
-
 	io, isInterface := interfaceObj.(*objects.Interface)
 	if !isInterface {
-		// Questo non dovrebbe mai accadere in un type switch valido.
+		// This should never happen in a valid type switch.
 		op.vm.SetError(fmt.Errorf("cannot perform unchecked cast on a non-interface type: %s", interfaceObj.TypeName()))
 		return
 	}
-
-	// Sostituisce l'interfaccia con il suo valore concreto sullo stack.
+	// Replace the interface with its concrete value on the stack.
 	op.vm.Stack().Push(io.Value())
+}
+
+// Opcode returns the opcode associated with the instance.
+func (op *OpAsType) Opcode() *opcodes.Opcode {
+	return op.opcode
 }

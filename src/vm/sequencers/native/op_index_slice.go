@@ -15,20 +15,28 @@ func init() {
 // OpIndexSlice represents an operation that performs a slicing action on an array, string, or bytes within a virtual machine.
 // It embeds Opcode to inherit opcode, operand, and name information for execution and identification.
 type OpIndexSlice struct {
-	*opcodes.Opcode
-	vm core.IVMFullAccess
+	opcode *opcodes.Opcode
+	vm     core.IVMFullAccess
 }
 
 // NewOpIndexSlice creates a new instance of OpIndexSlice containing details for the slice indexing bytecode operation.
-func NewOpIndexSlice(vm core.IVM, op *opcodes.Opcodes) (core.IOpExecutor, error) {
+func NewOpIndexSlice() core.IOpExecutor {
+	operands := _noOperands
+	return &OpIndexSlice{
+		opcode: opcodes.NewOpcode(OpIndexSliceId, operands, "OpIndexSlice"),
+		vm:     nil,
+	}
+}
+
+// Bind initializes the instance by casting the provided VM to IVMFullAccess and storing it.
+// Returns an error if the VM does not implement the required interface.
+func (op *OpIndexSlice) Bind(vm core.IVM) error {
 	vmT, ok := vm.(core.IVMFullAccess)
 	if !ok {
-		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
+		return fmt.Errorf("vm does not implement IVMFullAccess")
 	}
-	return &OpIndexSlice{
-		Opcode: op.Opcode(opcodes.OpIndexSlice),
-		vm:     vmT,
-	}, nil
+	op.vm = vmT
+	return nil
 }
 
 // Execute processes the slice operation on the stack, adjusting bounds and supporting various object types like arrays and strings.
@@ -56,4 +64,9 @@ func (op *OpIndexSlice) Execute(_ *core.Decoder) {
 		op.vm.SetError(fmt.Errorf("invalid operation: %s[%d:%d]", left.TypeName(), lowIdx, highIdx))
 		return
 	}
+}
+
+// Opcode returns the opcode associated with the instance.
+func (op *OpIndexSlice) Opcode() *opcodes.Opcode {
+	return op.opcode
 }

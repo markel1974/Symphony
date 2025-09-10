@@ -27,7 +27,7 @@ const (
 // VM represents a virtual machine that executes bytecode instructions, handles stack, and manages execution frames.
 type VM struct {
 	gk                objects.IGateKeeper
-	op                *opcodes.Opcodes
+	op                opcodes.IOpcodes
 	bc                *bytecode.Bytecode
 	stack             *Stack
 	frames            *Frames
@@ -40,14 +40,13 @@ type VM struct {
 	imports           *Imports
 	constants         *Constants
 	globals           *Globals
-	seq               ISequencer
 	counterStart      uint64
 	counterIterations uint64
 	retValues         bool
 }
 
 // New initializes and returns a new virtual machine instance configured with the provided components and settings.
-func New(gk objects.IGateKeeper, seq ISequencer, op *opcodes.Opcodes) *VM {
+func New(gk objects.IGateKeeper, op opcodes.IOpcodes) *VM {
 	v := &VM{
 		gk:        gk,
 		op:        op,
@@ -60,19 +59,20 @@ func New(gk objects.IGateKeeper, seq ISequencer, op *opcodes.Opcodes) *VM {
 	v.globals = NewGlobals(gk, v.SetError)
 	v.stack = NewStack(gk, stackSize, v.SetError)
 	v.frames = NewFrames(gk, maxFrames, v.SetError)
-	v.seq = seq
 	return v
 }
 
 // Setup initializes the virtual machine with the provided bytecode and loader components.
-func (v *VM) Setup(loader bytecode.ILoader, codes ...*bytecode.Bytecode) (map[string]uint, error) {
-	sequencer, err := v.seq.Create(v)
-	if err != nil {
-		return nil, err
-	}
+func (v *VM) Setup(loader bytecode.ILoader, sequencer []IOpExecutor, codes ...*bytecode.Bytecode) (map[string]uint, error) {
+	//sequencer, err := v.seq.Create(v)
+	//if err != nil {
+	//	return nil, err
+	//}
+	var err error
 	v.sequencerMask = len(sequencer) - 1
 	v.sequencer = make([]*Decoder, len(sequencer))
 	for i, s := range sequencer {
+
 		if v.sequencer[i], err = NewDecoder(s); err != nil {
 			return nil, err
 		}
@@ -444,7 +444,7 @@ func (v *VM) loop() {
 	for {
 		v.counterIterations++
 		v.ip, opcode = v.currFrame.Fetch(v.ip)
-		decoder = v.sequencer[int(opcode)&v.sequencerMask]
+		decoder = v.sequencer[opcode&v.sequencerMask]
 		v.ip = decoder.Decode(v.currFrame, v.ip)
 		//log.Printf("Executing instruction opcode: %d name: %s ip: %d decoded: %v", opcode, decoder.Name(), v.ip, decoder.decodedOperands[:decoder.fullWidth])
 		decoder.Execute()

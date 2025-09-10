@@ -7,7 +7,7 @@ import (
 
 	"github.com/markel1974/c64emu/src/compilers/native/tables"
 	"github.com/markel1974/c64emu/src/vm/objects"
-	"github.com/markel1974/c64emu/src/vm/opcodes"
+	"github.com/markel1974/c64emu/src/vm/sequencers/native"
 )
 
 // Functions is a collection that manages a list of function descriptions.
@@ -159,8 +159,8 @@ func (c *Functions) funcBodyCompile(fd *tables.FunctionDescription) error {
 	if err != nil {
 		return err
 	}
-	if scope.LastInstruction() == nil || scope.LastInstruction().Opcode() != opcodes.OpReturn {
-		if _, err = c.scopes.Emit(opcodes.OpReturn, 0); err != nil {
+	if scope.LastInstruction() == nil || scope.LastInstruction().Opcode() != native.OpReturnId {
+		if _, err = c.scopes.Emit(native.OpReturnId, 0); err != nil {
 			return err
 		}
 	}
@@ -190,7 +190,7 @@ func (c *Functions) funcBodyCompile(fd *tables.FunctionDescription) error {
 	fnSymbol.SetReturnTypes(fd.ReturnTypes)
 
 	if node.Recv == nil && !c.scopes.IsRootScope() {
-		if _, err = c.scopes.Emit(opcodes.OpCreateClosure, freeNum, constIndex); err != nil {
+		if _, err = c.scopes.Emit(native.OpCreateClosureId, freeNum, constIndex); err != nil {
 			return err
 		}
 		symbol, _ := c.scopes.SymbolResolve(node.Name.Name)
@@ -293,7 +293,7 @@ func (c *Functions) CallExpr(node *ast.CallExpr) error {
 			numArgs := len(node.Args)
 
 			// TODO 2
-			if _, err := c.scopes.Emit(opcodes.OpCallMethod, methodNameConstIndex, numArgs); err != nil {
+			if _, err := c.scopes.Emit(native.OpCallMethodId, methodNameConstIndex, numArgs); err != nil {
 				return err
 			}
 			// We're done for this case, no need to do anything else.
@@ -331,7 +331,7 @@ func (c *Functions) CallExpr(node *ast.CallExpr) error {
 			}
 		}
 	}
-	if _, err := c.scopes.Emit(opcodes.OpCall, len(finalArgs), 0); err != nil {
+	if _, err := c.scopes.Emit(native.OpCallId, len(finalArgs), 0); err != nil {
 		return err
 	}
 	return nil
@@ -352,7 +352,7 @@ func (c *Functions) ExprStmt(node *ast.ExprStmt) error {
 	if err := c.compile(node.X); err != nil {
 		return err
 	}
-	if _, err := c.scopes.Emit(opcodes.OpPop); err != nil {
+	if _, err := c.scopes.Emit(native.OpPopId); err != nil {
 		return err
 	}
 	return nil
@@ -361,7 +361,7 @@ func (c *Functions) ExprStmt(node *ast.ExprStmt) error {
 // ReturnStmt compiles a return statement, handling cases for both void and value returns, and emits corresponding bytecode.
 func (c *Functions) ReturnStmt(node *ast.ReturnStmt) error {
 	if len(node.Results) == 0 {
-		if _, err := c.scopes.Emit(opcodes.OpReturn, 0); err != nil {
+		if _, err := c.scopes.Emit(native.OpReturnId, 0); err != nil {
 			return err
 		}
 		return nil
@@ -371,7 +371,7 @@ func (c *Functions) ReturnStmt(node *ast.ReturnStmt) error {
 			return err
 		}
 	}
-	if _, err := c.scopes.Emit(opcodes.OpReturn, len(node.Results)); err != nil {
+	if _, err := c.scopes.Emit(native.OpReturnId, len(node.Results)); err != nil {
 		return err
 	}
 	return nil
@@ -404,8 +404,8 @@ func (c *Functions) FuncLit(node *ast.FuncLit) error {
 	if err != nil {
 		return err
 	}
-	if scope.LastInstruction() == nil || scope.LastInstruction().Opcode() != opcodes.OpReturn {
-		if _, err = c.scopes.Emit(opcodes.OpReturn, 0); err != nil {
+	if scope.LastInstruction() == nil || scope.LastInstruction().Opcode() != native.OpReturnId {
+		if _, err = c.scopes.Emit(native.OpReturnId, 0); err != nil {
 			return err
 		}
 	}
@@ -425,13 +425,13 @@ func (c *Functions) FuncLit(node *ast.FuncLit) error {
 	}
 	freeContainer := c.gk.NewArray(objects.FrameStatic, freeData)
 	freeContainerIdx := c.constants.Add(closureName+"_free", freeContainer)
-	if _, err = c.scopes.Emit(opcodes.OpConstant, freeContainerIdx); err != nil {
+	if _, err = c.scopes.Emit(native.OpConstantId, freeContainerIdx); err != nil {
 		return err
 	}
 	compiledFn := c.gk.NewFuncCompiled(objects.FrameStatic, "", code, nLocals, nParams, false, nil, freeObj)
 	constIndex := c.constants.Add("", compiledFn)
 	freeNum := c.scopes.SymbolCount()
-	if _, err = c.scopes.Emit(opcodes.OpCreateClosure, freeNum, constIndex); err != nil {
+	if _, err = c.scopes.Emit(native.OpCreateClosureId, freeNum, constIndex); err != nil {
 		return err
 	}
 	return nil
@@ -452,7 +452,7 @@ func (c *Functions) DeferStmt(node *ast.DeferStmt) error {
 	if err := c.FuncLit(closure); err != nil {
 		return err
 	}
-	if _, err := c.scopes.Emit(opcodes.OpDefer); err != nil {
+	if _, err := c.scopes.Emit(native.OpDeferId); err != nil {
 		return err
 	}
 	return nil
@@ -465,7 +465,7 @@ func (c *Functions) handleInternalInterface(receiverSymbol *tables.Symbol, metho
 
 	//arguments must be passed as operands after method name
 	methodIdx := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, methodName))
-	if _, err := c.scopes.Emit(opcodes.OpConstant, methodIdx); err != nil {
+	if _, err := c.scopes.Emit(native.OpConstantId, methodIdx); err != nil {
 		return err
 	}
 	//for _, arg := range args {
@@ -473,7 +473,7 @@ func (c *Functions) handleInternalInterface(receiverSymbol *tables.Symbol, metho
 	//		return err
 	//	}
 	//}
-	if _, err := c.scopes.Emit(opcodes.OpCall, 1, 0); err != nil {
+	if _, err := c.scopes.Emit(native.OpCallId, 1, 0); err != nil {
 		return err
 	}
 	return nil

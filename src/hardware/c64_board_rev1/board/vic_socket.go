@@ -84,7 +84,7 @@ func (v *VICSocket) HardwareId() string {
 	return v.hwId
 }
 
-// Wire initializes the VICSocket by resolving its dependencies and calling Setup on the IMos6569 component.
+// Wire initializes the VICSocket by resolving its dependencies and calling Bind on the IMos6569 component.
 func (v *VICSocket) Wire() error {
 	var err error
 	v.component = v.parent.GetChildByHardwareId(v.HardwareId())

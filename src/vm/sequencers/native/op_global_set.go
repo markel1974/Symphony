@@ -13,26 +13,39 @@ func init() {
 
 // OpGlobalSet represents a bytecode operation for setting a global variable's value in the virtual machine.
 type OpGlobalSet struct {
-	*opcodes.Opcode
-	vm core.IVMFullAccess
+	opcode *opcodes.Opcode
+	vm     core.IVMFullAccess
 }
 
 // NewOpGlobalSet creates and returns a new instance of OpGlobalSet with initialized Opcode.
-func NewOpGlobalSet(vm core.IVM, op *opcodes.Opcodes) (core.IOpExecutor, error) {
+func NewOpGlobalSet() core.IOpExecutor {
+	operands := []opcodes.OperandFeature{opcodes.Relocatable}
+	return &OpGlobalSet{
+		opcode: opcodes.NewOpcode(OpGlobalSetId, operands, "OpGlobalSet"),
+		vm:     nil,
+	}
+}
+
+// Bind initializes the instance by casting the provided VM to IVMFullAccess and storing it.
+// Returns an error if the VM does not implement the required interface.
+func (op *OpGlobalSet) Bind(vm core.IVM) error {
 	vmT, ok := vm.(core.IVMFullAccess)
 	if !ok {
-		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
+		return fmt.Errorf("vm does not implement IVMFullAccess")
 	}
-	return &OpGlobalSet{
-		Opcode: op.Opcode(opcodes.OpGlobalSet),
-		vm:     vmT,
-	}, nil
+	op.vm = vmT
+	return nil
 }
 
 // Execute updates the instruction pointer, calculates a global variable position, and sets its value from the stack.
 func (op *OpGlobalSet) Execute(decoder *core.Decoder) {
 	// Operands Offset 2 (16-bit)
-	index := decoder.Read(0)
+	index := decoder.Operand(0)
 	val := op.vm.Stack().Peek()
 	op.vm.Globals().Set(uint(index), val)
+}
+
+// Opcode returns the opcode associated with the instance.
+func (op *OpGlobalSet) Opcode() *opcodes.Opcode {
+	return op.opcode
 }

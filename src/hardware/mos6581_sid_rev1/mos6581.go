@@ -198,7 +198,7 @@ func (sid *SID) SetPotY(pot uint8) {
 func (sid *SID) calcSoundBuffer() {
 	// Calculate the starting index to read from sampleBuf for this block
 	currentVolumeBufferReadIdx := (sid.sampleBufIdx - SampleBufHalfSize + SampleBufSize) % SampleBufSize
-	// Read the first volume value to be used for initial audio samples
+	// Operand the first volume value to be used for initial audio samples
 	currentVolumeValue := sid.sampleBuf[currentVolumeBufferReadIdx]
 	// Ratio to determine when to move to the next volume value from sampleBuf
 	// nextChangeAtAudioSampleIdx is the audio sample index at which we should

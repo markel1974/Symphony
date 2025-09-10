@@ -14,20 +14,28 @@ func init() {
 
 // OpIndexGet represents the operation for performing an indexing operation on a value.
 type OpIndexGet struct {
-	*opcodes.Opcode
-	vm core.IVMFullAccess
+	opcode *opcodes.Opcode
+	vm     core.IVMFullAccess
 }
 
 // NewOpIndexGet creates and returns a new instance of OpIndexGet initialized with its associated Opcode.
-func NewOpIndexGet(vm core.IVM, op *opcodes.Opcodes) (core.IOpExecutor, error) {
+func NewOpIndexGet() core.IOpExecutor {
+	operands := _noOperands
+	return &OpIndexGet{
+		opcode: opcodes.NewOpcode(OpIndexGetId, operands, "OpIndexGet"),
+		vm:     nil,
+	}
+}
+
+// Bind initializes the instance by casting the provided VM to IVMFullAccess and storing it.
+// Returns an error if the VM does not implement the required interface.
+func (op *OpIndexGet) Bind(vm core.IVM) error {
 	vmT, ok := vm.(core.IVMFullAccess)
 	if !ok {
-		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
+		return fmt.Errorf("vm does not implement IVMFullAccess")
 	}
-	return &OpIndexGet{
-		Opcode: op.Opcode(opcodes.OpIndexGet),
-		vm:     vmT,
-	}, nil
+	op.vm = vmT
+	return nil
 }
 
 // Execute processes the index operation on the stack, retrieving a value or setting an error if indexing is invalid.
@@ -44,4 +52,9 @@ func (op *OpIndexGet) Execute(_ *core.Decoder) {
 		val = op.vm.Factory().UndefinedValue()
 	}
 	op.vm.Stack().Push(val)
+}
+
+// Opcode returns the opcode associated with the instance.
+func (op *OpIndexGet) Opcode() *opcodes.Opcode {
+	return op.opcode
 }

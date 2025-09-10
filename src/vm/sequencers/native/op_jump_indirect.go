@@ -16,21 +16,29 @@ func init() {
 // It adjusts the instruction pointer (IP) to the target address minus one after popping it from the stack.
 // The instruction supports VM implementations providing full access through the IVMFullAccess interface.
 type OpJumpIndirect struct {
-	*opcodes.Opcode
-	vm core.IVMFullAccess
+	opcode *opcodes.Opcode
+	vm     core.IVMFullAccess
 }
 
 // NewOpJumpIndirect creates an `OpJumpIndirect` executor for handling indirect jump instructions in the virtual machine.
 // It requires a core.IVM instance and a bytecode.Opcodes reference. Returns an error if the vm does not implement IVMFullAccess.
-func NewOpJumpIndirect(vm core.IVM, op *opcodes.Opcodes) (core.IOpExecutor, error) {
+func NewOpJumpIndirect() core.IOpExecutor {
+	operands := _noOperands
+	return &OpJumpIndirect{
+		opcode: opcodes.NewOpcode(OpJumpIndirectId, operands, "OpJumpIndirect"),
+		vm:     nil,
+	}
+}
+
+// Bind initializes the instance by casting the provided VM to IVMFullAccess and storing it.
+// Returns an error if the VM does not implement the required interface.
+func (op *OpJumpIndirect) Bind(vm core.IVM) error {
 	vmT, ok := vm.(core.IVMFullAccess)
 	if !ok {
-		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
+		return fmt.Errorf("vm does not implement IVMFullAccess")
 	}
-	return &OpJumpIndirect{
-		Opcode: op.Opcode(opcodes.OpJumpIndirect),
-		vm:     vmT,
-	}, nil
+	op.vm = vmT
+	return nil
 }
 
 // Execute performs an indirect jump by popping an address from the stack and setting the instruction pointer to it.
@@ -38,4 +46,9 @@ func (op *OpJumpIndirect) Execute(decoder *core.Decoder) {
 	addrObj := op.vm.Stack().Pop()
 	addr := addrObj.AsInt64()
 	op.vm.SetIp(int(addr) - 1)
+}
+
+// Opcode returns the opcode associated with the instance.
+func (op *OpJumpIndirect) Opcode() *opcodes.Opcode {
+	return op.opcode
 }

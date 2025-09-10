@@ -13,20 +13,28 @@ func init() {
 
 // OpJumpOr represents an operation that performs a logical OR and jumps based on the result.
 type OpJumpOr struct {
-	*opcodes.Opcode
-	vm core.IVMFullAccess
+	opcode *opcodes.Opcode
+	vm     core.IVMFullAccess
 }
 
 // NewOpJumpOr creates and returns a new instance of OpJumpOr, associated with the OpJumpOr opcode and its details.
-func NewOpJumpOr(vm core.IVM, op *opcodes.Opcodes) (core.IOpExecutor, error) {
+func NewOpJumpOr() core.IOpExecutor {
+	operands := []opcodes.OperandFeature{opcodes.SzUint16}
+	return &OpJumpOr{
+		opcode: opcodes.NewOpcode(OpJumpOrId, operands, "OpJumpOr"),
+		vm:     nil,
+	}
+}
+
+// Bind initializes the instance by casting the provided VM to IVMFullAccess and storing it.
+// Returns an error if the VM does not implement the required interface.
+func (op *OpJumpOr) Bind(vm core.IVM) error {
 	vmT, ok := vm.(core.IVMFullAccess)
 	if !ok {
-		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
+		return fmt.Errorf("vm does not implement IVMFullAccess")
 	}
-	return &OpJumpOr{
-		Opcode: op.Opcode(opcodes.OpJumpOr),
-		vm:     vmT,
-	}, nil
+	op.vm = vmT
+	return nil
 }
 
 // Execute advances the instruction pointer, evaluates the stack's top object, and updates the IP based on its boolean value.
@@ -36,7 +44,12 @@ func (op *OpJumpOr) Execute(decoder *core.Decoder) {
 	if obj.Falsy() {
 		op.vm.Stack().Decrement()
 	} else {
-		pos := decoder.Read(0)
+		pos := decoder.Operand(0)
 		op.vm.SetIp(pos - 1)
 	}
+}
+
+// Opcode returns the opcode associated with the instance.
+func (op *OpJumpOr) Opcode() *opcodes.Opcode {
+	return op.opcode
 }

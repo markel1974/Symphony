@@ -153,7 +153,7 @@ func (reu *REU) Setup() error {
 }
 
 func (reu *REU) Bind(board references.IC64Expansion, ldr references.IC64CartridgeLoader) error {
-	//TODO from Setup
+	//TODO from Bind
 	reu.expansion = board
 	reu.loaderId = ldr.Id()
 	// Set kind bit in status register

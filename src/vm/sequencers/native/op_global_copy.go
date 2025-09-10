@@ -15,26 +15,39 @@ func init() {
 // OpGlobalCopy represents an operation that copies a value from one global variable index to another in the VM's global state.
 // It embeds the bytecode.Opcode for opcode-related metadata and uses core.IVMFullAccess for VM interactions.
 type OpGlobalCopy struct {
-	*opcodes.Opcode
-	vm core.IVMFullAccess
+	opcode *opcodes.Opcode
+	vm     core.IVMFullAccess
 }
 
 // NewOpGlobalCopy initializes an OpGlobalCopy executor with the provided VM and Opcodes instance or returns an error.
-func NewOpGlobalCopy(vm core.IVM, op *opcodes.Opcodes) (core.IOpExecutor, error) {
+func NewOpGlobalCopy() core.IOpExecutor {
+	operands := []opcodes.OperandFeature{opcodes.Relocatable, opcodes.Relocatable}
+	return &OpGlobalCopy{
+		opcode: opcodes.NewOpcode(OpGlobalCopyId, operands, "OpGlobalCopy"),
+		vm:     nil,
+	}
+}
+
+// Bind initializes the instance by casting the provided VM to IVMFullAccess and storing it.
+// Returns an error if the VM does not implement the required interface.
+func (op *OpGlobalCopy) Bind(vm core.IVM) error {
 	vmT, ok := vm.(core.IVMFullAccess)
 	if !ok {
-		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
+		return fmt.Errorf("vm does not implement IVMFullAccess")
 	}
-	return &OpGlobalCopy{
-		Opcode: op.Opcode(opcodes.OpGlobalCopy),
-		vm:     vmT,
-	}, nil
+	op.vm = vmT
+	return nil
 }
 
 // Execute performs the operation to copy a global variable from sourceIndex to destIndex in the virtual machine.
 func (op *OpGlobalCopy) Execute(decoder *core.Decoder) {
-	sourceIndex := decoder.Read(1)
-	destIndex := decoder.Read(0)
+	sourceIndex := decoder.Operand(1)
+	destIndex := decoder.Operand(0)
 	value := op.vm.Globals().Get(uint(sourceIndex))
 	op.vm.Globals().Set(uint(destIndex), value)
+}
+
+// Opcode returns the opcode associated with the instance.
+func (op *OpGlobalCopy) Opcode() *opcodes.Opcode {
+	return op.opcode
 }

@@ -16,21 +16,29 @@ func init() {
 // OpIndexSet represents an operation for setting a value at a specified index in a container within a virtual machine.
 // It holds a reference to the Opcode and the IVMFullAccess interfaces needed for execution.
 type OpIndexSet struct {
-	*opcodes.Opcode
-	vm core.IVMFullAccess
+	opcode *opcodes.Opcode
+	vm     core.IVMFullAccess
 }
 
 // NewOpIndexSet creates a new instance of OpIndexGet, binding it to the virtual machine and initializing with the given opcode.
 // Returns an implementation of core.IOpExecutor or an error if the VM does not support IVMFullAccess.
-func NewOpIndexSet(vm core.IVM, op *opcodes.Opcodes) (core.IOpExecutor, error) {
+func NewOpIndexSet() core.IOpExecutor {
+	operands := _noOperands
+	return &OpIndexSet{
+		opcode: opcodes.NewOpcode(OpIndexSetId, operands, "OpIndexSet"),
+		vm:     nil,
+	}
+}
+
+// Bind initializes the instance by casting the provided VM to IVMFullAccess and storing it.
+// Returns an error if the VM does not implement the required interface.
+func (op *OpIndexSet) Bind(vm core.IVM) error {
 	vmT, ok := vm.(core.IVMFullAccess)
 	if !ok {
-		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
+		return fmt.Errorf("vm does not implement IVMFullAccess")
 	}
-	return &OpIndexSet{
-		Opcode: op.Opcode(opcodes.OpIndexSet),
-		vm:     vmT,
-	}, nil
+	op.vm = vmT
+	return nil
 }
 
 // Execute modifies a container's index with a new value, setting an error in the virtual machine if the operation fails.
@@ -42,4 +50,9 @@ func (op *OpIndexSet) Execute(_ *core.Decoder) {
 		op.vm.SetError(objects.ComputeIndexSetError(err, container.TypeName(), index.TypeName()))
 		return
 	}
+}
+
+// Opcode returns the opcode associated with the instance.
+func (op *OpIndexSet) Opcode() *opcodes.Opcode {
+	return op.opcode
 }

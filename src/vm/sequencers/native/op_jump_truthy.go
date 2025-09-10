@@ -14,27 +14,40 @@ func init() {
 
 // OpJumpTruthy defines a structure for executing a truthy-check jump operation in a virtual machine context.
 type OpJumpTruthy struct {
-	*opcodes.Opcode
-	vm core.IVMFullAccess
+	opcode *opcodes.Opcode
+	vm     core.IVMFullAccess
 }
 
 // NewOpJumpTruthy creates a new OpJumpTruthy executor, validating the provided virtual machine for required full access capabilities.
-func NewOpJumpTruthy(vm core.IVM, op *opcodes.Opcodes) (core.IOpExecutor, error) {
+func NewOpJumpTruthy() core.IOpExecutor {
+	operands := []opcodes.OperandFeature{opcodes.SzUint16}
+	return &OpJumpTruthy{
+		opcode: opcodes.NewOpcode(OpJumpTruthyId, operands, "OpJumpTruthy"),
+		vm:     nil,
+	}
+}
+
+// Bind initializes the instance by casting the provided VM to IVMFullAccess and storing it.
+// Returns an error if the VM does not implement the required interface.
+func (op *OpJumpTruthy) Bind(vm core.IVM) error {
 	vmT, ok := vm.(core.IVMFullAccess)
 	if !ok {
-		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
+		return fmt.Errorf("vm does not implement IVMFullAccess")
 	}
-	return &OpJumpTruthy{
-		Opcode: op.Opcode(opcodes.OpJumpTruthy),
-		vm:     vmT,
-	}, nil
+	op.vm = vmT
+	return nil
 }
 
 // Execute evaluates the top object on the stack and updates the instruction pointer if it is truthy.
 func (op *OpJumpTruthy) Execute(decoder *core.Decoder) {
 	obj := op.vm.Stack().Pop() // Prendiamo il valore dalla stack
 	if !obj.Falsy() {          // Controlliamo se è 'truthy'
-		pos := decoder.Read(0)
+		pos := decoder.Operand(0)
 		op.vm.SetIp(pos - 1)
 	}
+}
+
+// Opcode returns the opcode associated with the instance.
+func (op *OpJumpTruthy) Opcode() *opcodes.Opcode {
+	return op.opcode
 }

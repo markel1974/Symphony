@@ -506,7 +506,7 @@ return false;
 
 
 //address_args = [expression] END
-//Read start to "address"
+//Operand start to "address"
 //true: OK, false: Error
 bool C64SAM::address_args(void) {
 if (_the_token == T_END)
@@ -520,7 +520,7 @@ return _the_token == T_END;
 
 
 //range_args = [expression] [[COMMA] expression] END
-//Read start address to "address", end address to "end_address"
+//Operand start address to "address", end address to "end_address"
 //true: OK, false: Error
 bool C64SAM::range_args(int16 def_range) {
 _end_address = _address + def_range;
@@ -549,7 +549,7 @@ return _the_token == T_END;
 //| NUMBER [COMMA (X | Y)] END
 //| LPAREN NUMBER (RPAREN [COMMA Y] | COMMA X RPAREN) END
 
-//Read arguments of a 6510 instruction, determine address and addressing mode
+//Operand arguments of a 6510 instruction, determine address and addressing mode
 //
 //true: OK, false: Error
 
@@ -1115,7 +1115,7 @@ uint8 opcode;
 uint16 arg;
 int16 rel;
 
-// Read parameters
+// Operand parameters
 if (!address_args())
 return;
 

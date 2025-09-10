@@ -11,14 +11,14 @@ import (
 // Relocator is responsible for processing, fixing, and reconstructing objects, ensuring compatibility with the runtime environment.
 type Relocator struct {
 	gk           objects.IGateKeeper
-	opcodes      *opcodes.Opcodes
+	opcodes      opcodes.IOpcodes
 	instructions *opcodes.Instructions
 	loader       ILoader
 	preserveFunc map[string]bool
 }
 
 // NewRelocator creates and returns a new instance of Relocator initialized with the provided IGateKeeper, ILoader, and Opcodes.
-func NewRelocator(gk objects.IGateKeeper, loader ILoader, op *opcodes.Opcodes, preserve ...string) *Relocator {
+func NewRelocator(gk objects.IGateKeeper, loader ILoader, op opcodes.IOpcodes, preserve ...string) *Relocator {
 	p := make(map[string]bool)
 	for _, v := range preserve {
 		p[v] = true

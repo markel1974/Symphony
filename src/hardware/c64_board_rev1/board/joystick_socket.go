@@ -30,7 +30,7 @@ func (w *JoystickSocket) HardwareId() string {
 	return w.hwId
 }
 
-// Wire initializes the JoystickSocket by resolving its IC64Joystick component and calling its Setup method with configuration.
+// Wire initializes the JoystickSocket by resolving its IC64Joystick component and calling its Bind method with configuration.
 func (w *JoystickSocket) Wire() error {
 	var err error
 	w.component = w.parent.GetChildByHardwareId(w.HardwareId())

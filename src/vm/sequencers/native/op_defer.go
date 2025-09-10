@@ -13,19 +13,27 @@ func init() {
 }
 
 type OpDefer struct {
-	*opcodes.Opcode
-	vm core.IVMFullAccess
+	opcode *opcodes.Opcode
+	vm     core.IVMFullAccess
 }
 
-func NewOpDefer(vm core.IVM, op *opcodes.Opcodes) (core.IOpExecutor, error) {
+func NewOpDefer() core.IOpExecutor {
+	operands := _noOperands
+	return &OpDefer{
+		opcode: opcodes.NewOpcode(OpDeferId, operands, "OpDefer"),
+		vm:     nil,
+	}
+}
+
+// Bind initializes the instance by casting the provided VM to IVMFullAccess and storing it.
+// Returns an error if the VM does not implement the required interface.
+func (op *OpDefer) Bind(vm core.IVM) error {
 	vmT, ok := vm.(core.IVMFullAccess)
 	if !ok {
-		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
+		return fmt.Errorf("vm does not implement IVMFullAccess")
 	}
-	return &OpDefer{
-		Opcode: op.Opcode(opcodes.OpDefer),
-		vm:     vmT,
-	}, nil
+	op.vm = vmT
+	return nil
 }
 
 func (op *OpDefer) Execute(_ *core.Decoder) {
@@ -38,4 +46,9 @@ func (op *OpDefer) Execute(_ *core.Decoder) {
 		op.vm.SetError(fmt.Errorf("invalid operation: defer %s", obj.TypeName()))
 		return
 	}
+}
+
+// Opcode returns the opcode associated with the instance.
+func (op *OpDefer) Opcode() *opcodes.Opcode {
+	return op.opcode
 }

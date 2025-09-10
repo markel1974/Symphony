@@ -18,21 +18,29 @@ func init() {
 // OpJumpNotError represents an operation that conditionally jumps if the top stack value is not a valid error.
 // It uses VM control flow and stack operations to determine execution flow based on error type validity.
 type OpJumpNotError struct {
-	*opcodes.Opcode
-	vm core.IVMFullAccess
+	opcode *opcodes.Opcode
+	vm     core.IVMFullAccess
 }
 
 // NewOpJumpNotError creates a new OpJumpNotError executor, verifying that the provided VM implements IVMFullAccess.
 // It returns an instance of IOpExecutor or an error if the VM does not support full access functionality.
-func NewOpJumpNotError(vm core.IVM, op *opcodes.Opcodes) (core.IOpExecutor, error) {
+func NewOpJumpNotError() core.IOpExecutor {
+	operands := []opcodes.OperandFeature{opcodes.SzUint16}
+	return &OpJumpNotError{
+		opcode: opcodes.NewOpcode(OpJumpNotErrorId, operands, "OpJumpNotError"),
+		vm:     nil,
+	}
+}
+
+// Bind initializes the instance by casting the provided VM to IVMFullAccess and storing it.
+// Returns an error if the VM does not implement the required interface.
+func (op *OpJumpNotError) Bind(vm core.IVM) error {
 	vmT, ok := vm.(core.IVMFullAccess)
 	if !ok {
-		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
+		return fmt.Errorf("vm does not implement IVMFullAccess")
 	}
-	return &OpJumpNotError{
-		Opcode: op.Opcode(opcodes.OpJumpNotError),
-		vm:     vmT,
-	}, nil
+	op.vm = vmT
+	return nil
 }
 
 // Execute evaluates the top stack element and conditionally updates the instruction pointer if it is not a valid error.
@@ -48,9 +56,14 @@ func (op *OpJumpNotError) Execute(decoder *core.Decoder) {
 	if !isErr || !err.Falsy() {
 		// It's not an error, or it's a null error (Falsy() returns false).
 		// In both cases, skip the if block.
-		pos := decoder.Read(0)
+		pos := decoder.Operand(0)
 		op.vm.SetIp(pos - 1)
 	}
 	// If it's a valid error, execution continues in the if block.
 	// The compiler will handle popping the error from the stack.
+}
+
+// Opcode returns the opcode associated with the instance.
+func (op *OpJumpNotError) Opcode() *opcodes.Opcode {
+	return op.opcode
 }

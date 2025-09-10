@@ -18,8 +18,8 @@ type OperandsDecoderData struct {
 // The decoder uses a "reverse operand" logic. The list of operand widths is stored
 // in reverse order. This allows the Decode function to read operands backwards from the
 // instruction stream, which simplifies handling variable-sized instructions.
-// Consequently, when an IOpExecutor calls decoder.Read(N), it's accessing the N-th operand
-// from the *end* of the list. For example, decoder.Read(0) retrieves the LAST operand.
+// Consequently, when an IOpExecutor calls decoder.Operand(N), it's accessing the N-th operand
+// from the *end* of the list. For example, decoder.Operand(0) retrieves the LAST operand.
 type Decoder struct {
 	executor        IOpExecutor
 	name            string
@@ -32,7 +32,7 @@ type Decoder struct {
 
 // NewDecoder creates a new Decoder instance with the specified execution function and operand widths.
 func NewDecoder(executor IOpExecutor) (*Decoder, error) {
-	features := executor.Operands()
+	features := executor.Opcode().Operands()
 	operandsBits := 0
 	for (1 << operandsBits) <= len(features) {
 		operandsBits++
@@ -42,7 +42,7 @@ func NewDecoder(executor IOpExecutor) (*Decoder, error) {
 	sd := &Decoder{
 		executor:        executor,
 		execute:         executor.Execute,
-		name:            executor.Name(),
+		name:            executor.Opcode().Name(),
 		operandsMask:    operandsMask,
 		fullWidth:       0,
 		decodedOperands: make([]int, operandsMask+1),
@@ -96,11 +96,11 @@ func (d *Decoder) Execute() {
 	d.execute(d)
 }
 
-// Read retrieves a decoded operand from the `decodedOperands` slice using a masked index derived from the input parameter.
+// Operand retrieves a decoded operand from the `decodedOperands` slice using a masked index derived from the input parameter.
 //
-// IMPORTANT: Due to the decoder's reverse logic, Read(0) accesses the LAST operand
-// of the instruction, Read(1) the second to last, and so on
-func (d *Decoder) Read(x int) int {
+// IMPORTANT: Due to the decoder's reverse logic, Operand(0) accesses the LAST operand
+// of the instruction, Operand(1) the second to last, and so on
+func (d *Decoder) Operand(x int) int {
 	return d.decodedOperands[x&d.operandsMask]
 }
 

@@ -12,7 +12,7 @@ type MockPIC struct {
 	verifyIrqResult uint8
 }
 
-func (m *MockPIC) Setup(quartz references.IQuartz) error { return nil }
+func (m *MockPIC) Bind(quartz references.IQuartz) error { return nil }
 func (m *MockPIC) ClearIRQ(u uint32)                     {}
 func (m *MockPIC) TriggerIRQ(u uint32)                   {}
 func (m *MockPIC) TriggerReset()                         {}
@@ -35,7 +35,7 @@ type MockBank struct {
 func (m *MockBank) Write(u uint16, u2 uint8) {
 }
 
-func (m *MockBank) Read(addr uint16) byte {
+func (m *MockBank) Operand(addr uint16) byte {
 	return m.readResult
 }
 
@@ -121,7 +121,7 @@ func TestInstOpINI(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_ = tt.cpu.Setup(&mockSocket{banks: tt.banks, interrupts: tt.interrupts})
+			_ = tt.cpu.Bind(&mockSocket{banks: tt.banks, interrupts: tt.interrupts})
 			// Call InstOpINI
 			InstOpINI(tt.cpu)
 			InstOpINI(tt.cpu)

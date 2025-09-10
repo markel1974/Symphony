@@ -15,26 +15,34 @@ func init() {
 // OpLocalSet represents an operation to set the value of a local variable within the current frame.
 // It embeds Opcode for opcode-specific information such as name, operands, and code.
 type OpLocalSet struct {
-	*opcodes.Opcode
-	vm core.IVMFullAccess
+	opcode *opcodes.Opcode
+	vm     core.IVMFullAccess
 }
 
 // NewOpLocalSet initializes and returns a new instance of OpLocalSet with associated opcode details.
-func NewOpLocalSet(vm core.IVM, op *opcodes.Opcodes) (core.IOpExecutor, error) {
+func NewOpLocalSet() core.IOpExecutor {
+	operands := []opcodes.OperandFeature{opcodes.SzUint16}
+	return &OpLocalSet{
+		opcode: opcodes.NewOpcode(OpLocalSetId, operands, "OpLocalSet"),
+		vm:     nil,
+	}
+}
+
+// Bind initializes the instance by casting the provided VM to IVMFullAccess and storing it.
+// Returns an error if the VM does not implement the required interface.
+func (op *OpLocalSet) Bind(vm core.IVM) error {
 	vmT, ok := vm.(core.IVMFullAccess)
 	if !ok {
-		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
+		return fmt.Errorf("vm does not implement IVMFullAccess")
 	}
-	return &OpLocalSet{
-		Opcode: op.Opcode(opcodes.OpLocalSet),
-		vm:     vmT,
-	}, nil
+	op.vm = vmT
+	return nil
 }
 
 // Execute updates a local variable in the current frame using the stack's top value and the local index from instructions.
 func (op *OpLocalSet) Execute(decoder *core.Decoder) {
 	// Operands Offset 2 (16-bit)
-	localIndex := decoder.Read(0)
+	localIndex := decoder.Operand(0)
 	val := op.vm.Stack().Peek()
 	dstSlot := op.vm.Frame().BasePointer() + localIndex
 	obj := op.vm.Stack().PeekAbsolute(dstSlot)
@@ -43,4 +51,9 @@ func (op *OpLocalSet) Execute(decoder *core.Decoder) {
 	} else {
 		op.vm.Stack().SetAbsolute(dstSlot, val)
 	}
+}
+
+// Opcode returns the opcode associated with the instance.
+func (op *OpLocalSet) Opcode() *opcodes.Opcode {
+	return op.opcode
 }

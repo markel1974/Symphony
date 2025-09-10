@@ -13,27 +13,39 @@ func init() {
 
 // OpCall represents an operation code for invoking a function call in the virtual machine.
 type OpCall struct {
-	*opcodes.Opcode
-	vm core.IVMFullAccess
+	opcode *opcodes.Opcode
+	vm     core.IVMFullAccess
 }
 
 // NewOpCall creates and returns a new instance of OpCall with initialized Opcode for the OpCall opcode.
-func NewOpCall(vm core.IVM, op *opcodes.Opcodes) (core.IOpExecutor, error) {
+func NewOpCall() core.IOpExecutor {
+	operands := []opcodes.OperandFeature{opcodes.SzUint8, opcodes.SzUint8}
+	return &OpCall{
+		opcode: opcodes.NewOpcode(OpCallId, operands, "OpCall"),
+		vm:     nil,
+	}
+}
+
+// Bind initializes the instance by casting the provided VM to IVMFullAccess and storing it.
+// Returns an error if the VM does not implement the required interface.
+func (op *OpCall) Bind(vm core.IVM) error {
 	vmT, ok := vm.(core.IVMFullAccess)
 	if !ok {
-		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
+		return fmt.Errorf("vm does not implement IVMFullAccess")
 	}
-	return &OpCall{
-		Opcode: op.Opcode(opcodes.OpCall),
-		vm:     vmT,
-	}, nil
+	op.vm = vmT
+	return nil
 }
 
 // Execute processes the OpCall instruction, invoking the callable or handling array spreads, and manages the stack state.
 func (op *OpCall) Execute(decoder *core.Decoder) {
-	// Operands Offset 2 (8-bit|8-bit)
-	spread := decoder.Read(0)
-	numArgs := decoder.Read(1)
+	spread := decoder.Operand(0)
+	numArgs := decoder.Operand(1)
 	value := op.vm.Stack().PeekOffset(-1 - numArgs)
 	op.vm.Call(value, spread == 1, numArgs)
+}
+
+// Opcode returns the opcode associated with the instance.
+func (op *OpCall) Opcode() *opcodes.Opcode {
+	return op.opcode
 }

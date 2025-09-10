@@ -43,10 +43,10 @@ type FMode uint8
 // FModeM represents the file mode for reading an open file.
 const (
 	FModeUnknown FMode = iota
-	FModeRead          // Read
+	FModeRead          // Operand
 	FModeWrite         // Write
 	FModeAppend        // Append
-	FModeM             // Read open file
+	FModeM             // Operand open file
 )
 
 // ErrOk represents the error code for a successful operation.

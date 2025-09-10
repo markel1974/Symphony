@@ -15,27 +15,35 @@ func init() {
 
 // OpLogical represents a logical operation bytecode execution handler within the virtual machine context.
 type OpLogical struct {
-	*opcodes.Opcode
-	vm core.IVMFullAccess
+	opcode *opcodes.Opcode
+	vm     core.IVMFullAccess
 }
 
 // NewOpLogical creates a new instance of OpLogical executor for logical bytecode operations using the provided VM and opcode.
 // It returns an IOpExecutor implementation or an error if the VM does not support IVMFullAccess.
-func NewOpLogical(vm core.IVM, op *opcodes.Opcodes) (core.IOpExecutor, error) {
+func NewOpLogical() core.IOpExecutor {
+	operands := []opcodes.OperandFeature{opcodes.SzUint8}
+	return &OpLogical{
+		opcode: opcodes.NewOpcode(OpLogicalId, operands, "OpLogical"),
+		vm:     nil,
+	}
+}
+
+// Bind initializes the instance by casting the provided VM to IVMFullAccess and storing it.
+// Returns an error if the VM does not implement the required interface.
+func (op *OpLogical) Bind(vm core.IVM) error {
 	vmT, ok := vm.(core.IVMFullAccess)
 	if !ok {
-		return nil, fmt.Errorf("vm does not implement IVMFullAccess")
+		return fmt.Errorf("vm does not implement IVMFullAccess")
 	}
-	return &OpLogical{
-		Opcode: op.Opcode(opcodes.OpLogical),
-		vm:     vmT,
-	}, nil
+	op.vm = vmT
+	return nil
 }
 
 // Execute processes the logical operation by decoding the opcode, applying the binary operation, and updating the stack.
 func (op *OpLogical) Execute(decoder *core.Decoder) {
 	// Operands Offset  1 (8 bits)
-	opcode := decoder.Read(0)
+	opcode := decoder.Operand(0)
 	right := op.vm.Stack().Pop()
 	left := op.vm.Stack().Pop()
 	operator := objects.LogicalOperator(opcode)
@@ -45,4 +53,9 @@ func (op *OpLogical) Execute(decoder *core.Decoder) {
 		return
 	}
 	op.vm.Stack().Push(res)
+}
+
+// Opcode returns the opcode associated with the instance.
+func (op *OpLogical) Opcode() *opcodes.Opcode {
+	return op.opcode
 }

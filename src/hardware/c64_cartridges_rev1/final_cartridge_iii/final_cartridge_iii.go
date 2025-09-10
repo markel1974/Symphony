@@ -154,11 +154,11 @@ func (c *CartridgeFinalCartridgeIII) Read(addr uint16) uint8 {
 	// IOWrite must have set `c.intervals` to cover the entire $8000-$FFFF area when entering Freezer mode.
 	bank := c.banksCurrent
 	if int(bank) >= c.banksTotal {
-		fmt.Printf("Read: invalid bank %d >= %d", bank, c.banksTotal)
+		fmt.Printf("Operand: invalid bank %d >= %d", bank, c.banksTotal)
 		return 0
 	}
 	//if addr >= 0xda00 {
-	//	fmt.Printf("[%d][Read] Ultimax mode read addr: 0x%x\n", c.board.Cycle(), addr)
+	//	fmt.Printf("[%d][Operand] Ultimax mode read addr: 0x%x\n", c.board.Cycle(), addr)
 	//}
 	// The FCIII logic in this mode performs a mirroring
 	// of the 16KB bank on the entire $8000-$FFFF area.

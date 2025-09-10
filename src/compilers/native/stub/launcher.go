@@ -6,18 +6,21 @@ import (
 	"os"
 
 	"github.com/markel1974/c64emu/src/compilers"
-	"github.com/markel1974/c64emu/src/vm"
 	"github.com/markel1974/c64emu/src/vm/bytecode"
+	"github.com/markel1974/c64emu/src/vm/core"
 	"github.com/markel1974/c64emu/src/vm/objects"
-	"github.com/markel1974/c64emu/src/vm/opcodes"
+	"github.com/markel1974/c64emu/src/vm/sequencers/native"
 )
 
 func VMTest(sequencerId string, baseDir string, prefix string, debug bool) error {
 	gk := objects.NewGateKeeper()
-	op := opcodes.NewOpcodes()
 	for _, fileName := range Prepare(baseDir, prefix) {
 		fmt.Printf("\n\n------------------ %s ------------------\n", fileName)
-		comp, loader, err := compilers.NewCompiler(gk, op, sequencerId)
+		seq := native.NewSequencer()
+		if err := seq.Setup(); err != nil {
+			return err
+		}
+		comp, loader, err := compilers.NewCompiler(gk, seq)
 		if err != nil {
 			return fmt.Errorf("compiler error: %s", err)
 		}
@@ -30,18 +33,22 @@ func VMTest(sequencerId string, baseDir string, prefix string, debug bool) error
 		dataFile.Close()
 		bc := bytecode.NewBytecode(comp.Constants(), comp.Imports(), comp.Globals(), comp.FileSet())
 		if debug {
-			d := bytecode.NewDisassembler(bc, op)
+			d := bytecode.NewDisassembler(bc, seq)
 			_ = d.Disassemble(log.Writer())
 		}
-
+		machine := core.New(gk, seq)
+		if err = seq.Bind(machine); err != nil {
+			return err
+		}
 		//rel := bytecode.NewRelocator(gk, loader, op, nil)
 		//_, _ = rel.Relocate([]*bytecode.Bytecode{bc, bc})
 
-		machine, err := vm.NewVM(gk, op, sequencerId)
-		if err != nil {
-			return fmt.Errorf("vm initialize error: %s", err)
-		}
-		entryPoints, err := machine.Setup(loader, bc)
+		//machine, err := vm.NewVM(gk, seq)
+		//if err != nil {
+		//	return fmt.Errorf("vm initialize error: %s", err)
+		//}
+
+		entryPoints, err := machine.Setup(loader, seq.Executors(), bc)
 		if err != nil {
 			machine.Print(log.Writer())
 			return fmt.Errorf("vm setup error: %s", err)

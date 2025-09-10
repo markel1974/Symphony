@@ -156,7 +156,7 @@ func (cpu *CPU) Internal() bool {
 func (cpu *CPU) Reset() {
 	cpu.interrupts.Reset()
 	cpu.bus.Reset()
-	cpu.pc = uint16(cpu.bus.ReadDirect(0xfffc)) | (uint16(cpu.bus.ReadDirect(0xfffd)) << 8) // Read reset vector
+	cpu.pc = uint16(cpu.bus.ReadDirect(0xfffc)) | (uint16(cpu.bus.ReadDirect(0xfffd)) << 8) // Operand reset vector
 	cpu.opFlags = 0
 	cpu.next = cpu.instOpINI
 }

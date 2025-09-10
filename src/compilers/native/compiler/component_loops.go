@@ -6,7 +6,7 @@ import (
 
 	"github.com/markel1974/c64emu/src/compilers/native/tables"
 	"github.com/markel1974/c64emu/src/vm/objects"
-	"github.com/markel1974/c64emu/src/vm/opcodes"
+	"github.com/markel1974/c64emu/src/vm/sequencers/native"
 )
 
 type Loops struct {
@@ -66,12 +66,12 @@ func (c *Loops) ForStmt(node *ast.ForStmt) error {
 		}
 	} else {
 		// If there's no condition, it's an infinite loop -> emit 'true'
-		if _, err = c.scopes.Emit(opcodes.OpTrue); err != nil {
+		if _, err = c.scopes.Emit(native.OpTrueId); err != nil {
 			return err
 		}
 	}
 	// Emit a conditional jump to exit the loop if the condition is false
-	jumpNotTruthyPos, err := c.scopes.Emit(opcodes.OpJumpFalsy, 9999)
+	jumpNotTruthyPos, err := c.scopes.Emit(native.OpJumpFalsyId, 9999)
 	if err != nil {
 		return err
 	}
@@ -93,7 +93,7 @@ func (c *Loops) ForStmt(node *ast.ForStmt) error {
 	}
 
 	// Emit an unconditional jump back to the start of the condition
-	if _, err = c.scopes.Emit(opcodes.OpJump, loopStartPos); err != nil {
+	if _, err = c.scopes.Emit(native.OpJumpId, loopStartPos); err != nil {
 		return err
 	}
 
@@ -142,7 +142,7 @@ func (c *Loops) RangeStmt(node *ast.RangeStmt) error {
 	if err != nil {
 		return err
 	}
-	if _, err = c.scopes.Emit(opcodes.OpIteratorInit, iteratorSymbol.Index()); err != nil {
+	if _, err = c.scopes.Emit(native.OpIteratorInitId, iteratorSymbol.Index()); err != nil {
 		return err
 	}
 	var returnTypeName string
@@ -175,15 +175,15 @@ func (c *Loops) RangeStmt(node *ast.RangeStmt) error {
 
 	scope.CurrentLoop().ContinueTargetPosition = loopStartPos // <-- MODIFICATION
 
-	if _, err = c.scopes.Emit(opcodes.OpIteratorNext, iteratorSymbol.Index()); err != nil {
+	if _, err = c.scopes.Emit(native.OpIteratorNextId, iteratorSymbol.Index()); err != nil {
 		return err
 	}
-	jumpNotTruthyPos, err := c.scopes.Emit(opcodes.OpJumpFalsy, 9999)
+	jumpNotTruthyPos, err := c.scopes.Emit(native.OpJumpFalsyId, 9999)
 	if err != nil {
 		return err
 	}
 	if valueSymbol != nil {
-		if _, err = c.scopes.Emit(opcodes.OpIteratorValue, iteratorSymbol.Index()); err != nil {
+		if _, err = c.scopes.Emit(native.OpIteratorValueId, iteratorSymbol.Index()); err != nil {
 			return err
 		}
 		if err = c.scopes.EmitSymbolSetAndPop(valueSymbol); err != nil {
@@ -191,7 +191,7 @@ func (c *Loops) RangeStmt(node *ast.RangeStmt) error {
 		}
 	}
 	if keySymbol != nil {
-		if _, err = c.scopes.Emit(opcodes.OpIteratorKey, iteratorSymbol.Index()); err != nil {
+		if _, err = c.scopes.Emit(native.OpIteratorKeyId, iteratorSymbol.Index()); err != nil {
 			return err
 		}
 		if err = c.scopes.EmitSymbolSetAndPop(keySymbol); err != nil {
@@ -201,7 +201,7 @@ func (c *Loops) RangeStmt(node *ast.RangeStmt) error {
 	if err = c.compile(node.Body); err != nil {
 		return err
 	}
-	if _, err = c.scopes.Emit(opcodes.OpJump, loopStartPos); err != nil {
+	if _, err = c.scopes.Emit(native.OpJumpId, loopStartPos); err != nil {
 		return err
 	}
 

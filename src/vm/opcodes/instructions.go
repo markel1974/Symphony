@@ -266,11 +266,11 @@ func (i *Instructions) Set64(operand uint, offset uint) bool {
 func (i *Instructions) Header(offset uint) (OpcodeId, uint8, bool) {
 	headerBytes, ok := i.Get(HeaderSizeBytes, offset)
 	if !ok {
-		return OpUnknown, 0, false
+		return 0, 0, false
 	}
 	opcodeId, ok := i.Get(HeaderOpcodeIdBytes, offset+HeaderSizeBytes)
 	if !ok {
-		return OpUnknown, 0, false
+		return 0, 0, false
 	}
 	return OpcodeId(opcodeId), uint8(headerBytes), true
 }

@@ -1,6 +1,7 @@
 package opcodes
 
-//const OpcodeWidth = 1
+// OpcodeId is a type alias for byte, used to represent operation codes in instruction sets.
+type OpcodeId = int
 
 const (
 	HeaderSizeBytes     = 1
