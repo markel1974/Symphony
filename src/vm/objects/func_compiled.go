@@ -41,6 +41,26 @@ func (i *Instructions) Length() int {
 	return len(i.data)
 }
 
+// Get retrieves a value of the given byte width from the instructions at the specified base index. Returns an error on failure.
+func (i *Instructions) Get(width int, base uint) (uint, error) {
+	switch width {
+	case 1:
+		v, err := i.Get8(base)
+		return uint(v), err
+	case 2:
+		v, err := i.Get16(base)
+		return uint(v), err
+	case 3:
+		v, err := i.Get32(base)
+		return uint(v), err
+	case 4:
+		v, err := i.Get64(base)
+		return uint(v), err
+	default:
+		return 0, fmt.Errorf("invalid operand width: %d", width)
+	}
+}
+
 // Get8 retrieves a single byte from the instructions at the specified index.
 // Returns an error if the index is out of bounds.
 func (i *Instructions) Get8(base uint) (uint8, error) {

@@ -4,7 +4,7 @@ package bytecode
 
 const (
 	HeaderSizeBytes     = 1
-	HeaderOpcodeIdBytes = 4
+	HeaderOpcodeIdBytes = 2
 )
 
 type OperandFeature int
