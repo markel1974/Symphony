@@ -174,6 +174,10 @@ func (c *Compiler) compile(in ast.Node) error {
 		err = c.declarations.StarExpr(node)
 	case *ast.IndexExpr:
 		err = c.declarations.IndexExpr(node)
+	case *ast.MapType:
+		err = c.declarations.MapType(node)
+	case *ast.ArrayType:
+		err = c.declarations.ArrayType(node)
 	case *ast.BlockStmt:
 		err = c.functions.BlockStmt(node)
 	case *ast.ExprStmt:

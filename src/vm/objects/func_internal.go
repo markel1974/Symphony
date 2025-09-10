@@ -609,21 +609,24 @@ func (h *FuncInternal) make(frame int, args []IObject) (IObject, error) {
 	count := 0
 	reserve := 0
 	switch len(args) {
+	case 1:
+		kind = args[0]
 	case 2:
 		kind = args[0]
-		count = int(args[1].AsInt64())
+		if count = int(args[1].AsInt64()); count < 0 {
+			return nil, fmt.Errorf("make: len out of range: %d", count)
+		}
+		reserve = count
 	case 3:
 		kind = args[0]
-		count = int(args[1].AsInt64())
-		reserve = int(args[2].AsInt64())
+		if count = int(args[1].AsInt64()); count < 0 {
+			return nil, fmt.Errorf("make: len out of range: %d", count)
+		}
+		if reserve = int(args[2].AsInt64()); reserve < count {
+			return nil, fmt.Errorf("make: cap out of range: %d", reserve)
+		}
 	default:
 		return nil, ErrInvalidArgumentsNumber
-	}
-	if count < 0 {
-		return nil, fmt.Errorf("make: len out of range: %d", count)
-	}
-	if reserve < count {
-		return nil, fmt.Errorf("make: cap out of range: %d", reserve)
 	}
 	switch kind.TypeName() {
 	case BytesType:

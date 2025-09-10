@@ -185,7 +185,14 @@ func (c *Expression) SelectorExpr(node *ast.SelectorExpr) error {
 		}
 		return nil
 	}
-	return tables.NewCompilerError(c.fileSet, node, "[SelectorExpr] unsupported selector expression for symbol %s", receiverSymbol.Name())
+	//if receiverSymbol.IsInterface() {
+	if err := c.compile(node.X); err != nil {
+		return err
+	}
+	return nil
+	//}
+
+	//return tables.NewCompilerError(c.fileSet, node, "[SelectorExpr] unsupported selector expression for symbol %s", receiverSymbol.Name())
 }
 
 // IncDecStmt handles increment and decrement statements for identifiers, updating the corresponding variables and cleaning the stack.

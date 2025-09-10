@@ -475,6 +475,40 @@ func (c *Declarations) IndexExpr(node *ast.IndexExpr) error {
 	return err
 }
 
+// MapType handles map type nodes, primarily when they appear as arguments
+// to built-in functions like 'make'. It pushes a prototype Map object onto
+// the stack, which acts as a type descriptor for the runtime function.
+func (c *Declarations) MapType(node *ast.MapType) error {
+	// Create a static, empty map object to serve as a type descriptor.
+	// AddOrGet is used to ensure we only have one such constant.
+	mapPrototype := c.gk.NewMap(objects.FrameStatic, make(map[string]objects.IObject))
+	constIndex := c.constants.AddOrGet("", mapPrototype)
+
+	// Emit the opcode to push this constant prototype onto the stack.
+	// The 'make' function at runtime will inspect its TypeName.
+	if _, err := c.scopes.Emit(native.OpConstantId, constIndex); err != nil {
+		return err
+	}
+	return nil
+}
+
+// ArrayType handles map type nodes, primarily when they appear as arguments
+// to built-in functions like 'make'. It pushes a prototype Map object onto
+// the stack, which acts as a type descriptor for the runtime function.
+func (c *Declarations) ArrayType(node *ast.ArrayType) error {
+	// Create a static, empty map object to serve as a type descriptor.
+	// AddOrGet is used to ensure we only have one such constant.
+	arrayProtoType := c.gk.NewArray(objects.FrameStatic, []objects.IObject{})
+	constIndex := c.constants.AddOrGet("", arrayProtoType)
+
+	// Emit the opcode to push this constant prototype onto the stack.
+	// The 'make' function at runtime will inspect its TypeName.
+	if _, err := c.scopes.Emit(native.OpConstantId, constIndex); err != nil {
+		return err
+	}
+	return nil
+}
+
 // handleInterfaceAssignment validates and assigns a struct to a variable with an interface type, ensuring compatibility.
 // It emits appropriate bytecode for the interface table setup and method bindings required for the variable's interface type.
 // Returns an error if the struct does not implement the interface or if bytecode generation fails.

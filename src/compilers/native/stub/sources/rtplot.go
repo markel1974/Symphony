@@ -60,9 +60,15 @@ type Memory struct {
 
 // timerFn is a timer callback method that reads memory stats, updates min/max values, appends data, and triggers repaint.
 func (plt *RtPlot) onTimer(_ int, _ int) {
+	z := make(map[string]interface{})
+	y := make([]string, 300)
+	fmt.Println(y)
+
+	z["1000"] = "valid"
+	fmt.Println(z)
 
 	m := Memory{}
-
+	//m := runtime.MemStats{}
 	//runtime.ReadMemStats(&m)
 	var val float64
 	switch plt.kind {
