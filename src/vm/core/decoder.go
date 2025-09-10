@@ -6,7 +6,7 @@ import (
 	"github.com/markel1974/c64emu/src/vm/bytecode"
 )
 
-type DecoderData struct {
+type OperandsDecoderData struct {
 	offset   uint
 	retrieve func(*Frame, uint) int
 }
@@ -26,7 +26,7 @@ type Decoder struct {
 	execute         func(data *Decoder)
 	fullWidth       int
 	decodedOperands []int
-	operands        []*DecoderData
+	operands        []*OperandsDecoderData
 	operandsMask    int
 }
 
@@ -54,17 +54,17 @@ func NewDecoder(executor IOpExecutor) (*Decoder, error) {
 		width := features[i] & bytecode.SzMask
 		switch width {
 		case bytecode.SzUint8:
-			retrieve = sd.get8
+			retrieve = sd.get8Reverse
 		case bytecode.SzUint16:
-			retrieve = sd.get16
+			retrieve = sd.get16Reverse
 		case bytecode.SzUint32:
-			retrieve = sd.get32
+			retrieve = sd.get32Reverse
 		case bytecode.SzUint64:
-			retrieve = sd.get64
+			retrieve = sd.get64Reverse
 		default:
 			return nil, fmt.Errorf("invalid operand width: %d", width)
 		}
-		sd.operands = append(sd.operands, &DecoderData{offset: uint(sd.fullWidth), retrieve: retrieve})
+		sd.operands = append(sd.operands, &OperandsDecoderData{offset: uint(sd.fullWidth), retrieve: retrieve})
 		sd.fullWidth += int(width)
 		idx++
 	}
@@ -104,22 +104,22 @@ func (d *Decoder) Read(x int) int {
 	return d.decodedOperands[x&d.operandsMask]
 }
 
-// get8 retrieves an 8-bit integer from the provided frame at the specified instruction pointer as a signed integer.
-func (d *Decoder) get8(f *Frame, ip uint) int {
-	return int(f.Get8(ip))
+// get8Reverse retrieves an 8-bit integer from the frame's instructions, moving backward from the specified pointer position.
+func (d *Decoder) get8Reverse(f *Frame, ip uint) int {
+	return int(f.Get8Reverse(ip))
 }
 
-// get16 retrieves a 16-bit integer from the frame's instructions at the specified instruction pointer (ip) position.
-func (d *Decoder) get16(f *Frame, ip uint) int {
-	return int(f.Get16(ip))
+// get16Reverse retrieves a 16-bit signed integer from the frame's instructions using the specified instruction pointer.
+func (d *Decoder) get16Reverse(f *Frame, ip uint) int {
+	return int(f.Get16Reverse(ip))
 }
 
-// get32 retrieves a 32-bit signed integer from the provided frame at the specified instruction pointer position.
-func (d *Decoder) get32(f *Frame, ip uint) int {
-	return int(f.Get32(ip))
+// get32Reverse retrieves a 32-bit integer from the frame's instructions at a given position in reverse order.
+func (d *Decoder) get32Reverse(f *Frame, ip uint) int {
+	return int(f.Get32Reverse(ip))
 }
 
-// get64 retrieves a 32-bit integer from the provided frame at the specified instruction pointer and converts it to int.
-func (d *Decoder) get64(f *Frame, ip uint) int {
-	return int(f.Get64(ip))
+// get64Reverse retrieves a 64-bit integer from the frame's instructions at the given instruction pointer offset.
+func (d *Decoder) get64Reverse(f *Frame, ip uint) int {
+	return int(f.Get64Reverse(ip))
 }

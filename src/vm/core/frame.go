@@ -53,51 +53,51 @@ func (f *Frame) Bind(startIp int, compiledFunction *objects.FuncCompiled, basePo
 // Fetch retrieves the next instruction pointer and its corresponding OpcodeId from the frame's instructions.
 func (f *Frame) Fetch(ip int) (int, bytecode.OpcodeId) {
 	offset := uint(ip + bytecode.HeaderSizeBytes)
-	headerBytes := f.Get8(offset)
+	headerBytes := f.Get8Reverse(offset)
 	offset += bytecode.HeaderOpcodeIdBytes
-	opcode := f.Get16(offset)
+	opcode := f.Get16Reverse(offset)
 	ip += int(headerBytes)
 	return ip, bytecode.OpcodeId(opcode)
 }
 
-// Get8 retrieves an 8-bit unsigned integer from the instructions at the specified index in the current frame.
+// Get8Reverse retrieves an 8-bit unsigned integer from the instructions at the specified index in the current frame.
 // It signals an error if the retrieval fails and returns 0.
-func (f *Frame) Get8(index uint) uint8 {
-	v, err := f.instructions.Get8(index)
-	if err != nil {
-		f.errSignal(err)
+func (f *Frame) Get8Reverse(low uint) uint8 {
+	v, ok := f.instructions.Get8Reverse(low)
+	if !ok {
+		f.errSignal(fmt.Errorf("invalid instruction 8 pointer: %d", low))
 		return 0
 	}
 	return v
 }
 
-// Get16 retrieves a 16-bit unsigned integer from instructions at specified indices x and y in the current frame.
+// Get16Reverse retrieves a 16-bit unsigned integer from instructions at specified indices x and y in the current frame.
 // If an error occurs during retrieval, it signals the error and returns 0.
-func (f *Frame) Get16(low uint) uint16 {
-	v, err := f.instructions.Get16(low)
-	if err != nil {
-		f.errSignal(err)
+func (f *Frame) Get16Reverse(low uint) uint16 {
+	v, ok := f.instructions.Get16Reverse(low)
+	if !ok {
+		f.errSignal(fmt.Errorf("invalid instruction 16 pointer: %d", low))
 		return 0
 	}
 	return v
 }
 
-// Get32 retrieves a 32-bit unsigned integer from the instructions at the specified index in the current frame. It signals an error if the retrieval fails and returns 0.
-func (f *Frame) Get32(low uint) uint32 {
-	v, err := f.instructions.Get32(low)
-	if err != nil {
-		f.errSignal(err)
+// Get32Reverse retrieves a 32-bit unsigned integer from the instructions at the specified index in the current frame. It signals an error if the retrieval fails and returns 0.
+func (f *Frame) Get32Reverse(low uint) uint32 {
+	v, ok := f.instructions.Get32Reverse(low)
+	if !ok {
+		f.errSignal(fmt.Errorf("invalid instruction 32 pointer: %d", low))
 		return 0
 	}
 	return v
 }
 
-// Get64 retrieves a 64-bit unsigned integer from instructions at the specified index in the current frame.
+// Get64Reverse retrieves a 64-bit unsigned integer from instructions at the specified index in the current frame.
 // It signals an error if the retrieval fails and returns 0.
-func (f *Frame) Get64(low uint) uint64 {
-	v, err := f.instructions.Get64(low)
-	if err != nil {
-		f.errSignal(err)
+func (f *Frame) Get64Reverse(low uint) uint64 {
+	v, ok := f.instructions.Get64Reverse(low)
+	if !ok {
+		f.errSignal(fmt.Errorf("invalid instruction 32 pointer: %d", low))
 		return 0
 	}
 	return v
