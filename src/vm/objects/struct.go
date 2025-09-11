@@ -62,11 +62,15 @@ func (o *Struct) AsString() string {
 
 // AssignValue assigns the elements of another Struct to the current Struct if the input is of type *Struct, otherwise returns an error.
 func (o *Struct) AssignValue(v IObject) error {
-	target, ok := v.(*Map)
-	if !ok {
+	switch v := v.(type) {
+	case *Struct:
+		o.values = v.values
+		return nil
+	case *Map:
+		o.values = v.values
+	default:
 		return ErrNotAssignable
 	}
-	o.values = target.values
 	return nil
 }
 

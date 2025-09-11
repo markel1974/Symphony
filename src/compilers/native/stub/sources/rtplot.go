@@ -3,6 +3,7 @@ package sources
 import (
 	"fmt"
 	"math"
+	"runtime"
 )
 
 // bToMb converts bytes to megabytes by dividing the input value in bytes by 1024 twice.
@@ -60,13 +61,19 @@ type Memory struct {
 
 // timerFn is a timer callback method that reads memory stats, updates min/max values, appends data, and triggers repaint.
 func (plt *RtPlot) onTimer(_ int, _ int) {
-	z := make(map[string]interface{})
-	y := make([]string, 300)
-	fmt.Println(y)
+	//z := make(map[string]interface{})
+	//y := make([]string, 10)
+	//y[3] = "inside array"
+	//fmt.Println(y)
 
-	z["1000"] = "valid"
-	fmt.Println(z)
+	//z["1000"] = "valid"
+	//fmt.Println(z)
 
+	ms := runtime.MemStats{}
+	//out := runtime.ReadMemStats(&ms)
+	runtime.ReadMemStats(&ms)
+	kk := ms.BuckHashSys
+	fmt.Println("MS", kk)
 	m := Memory{}
 	//m := runtime.MemStats{}
 	//runtime.ReadMemStats(&m)
@@ -109,7 +116,7 @@ func (plt *RtPlot) onPaint() {
 }
 
 func main() (int, int, int, map[string]interface{}) {
-	plt := NewRtPlotData(0)
+	plt := RtPlot{} //NewRtPlotData(0)
 	plt.onPaint()
 	plt.onTimer(0, 0)
 	z := map[string]interface{}{"1000": "valid", "2000": "valid", "3000": "valid"}

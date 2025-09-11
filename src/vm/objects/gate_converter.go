@@ -58,10 +58,20 @@ func (gc *GateConverter) FromInterface(frame int, in interface{}) IObject {
 		return gc.gk.UndefinedValue()
 	case string:
 		return gc.gk.NewString(frame, v)
-	case int64:
-		return gc.gk.NewInt(frame, v)
+	case uint:
+		return gc.gk.NewInt(frame, int64(v))
+	case uint16:
+		return gc.gk.NewInt(frame, int64(v))
+	case uint32:
+		return gc.gk.NewInt(frame, int64(v))
+	case uint64:
+		return gc.gk.NewInt(frame, int64(v))
 	case int:
 		return gc.gk.NewInt(frame, int64(v))
+	case int16:
+		return gc.gk.NewInt(frame, int64(v))
+	case int64:
+		return gc.gk.NewInt(frame, v)
 	case bool:
 		if v {
 			return gc.gk.TrueValue()
@@ -73,6 +83,8 @@ func (gc *GateConverter) FromInterface(frame int, in interface{}) IObject {
 		return gc.gk.NewChar(frame, rune(v))
 	case float64:
 		return gc.gk.NewFloat(frame, v)
+	case float32:
+		return gc.gk.NewFloat(frame, float64(v))
 	case []byte:
 		return gc.gk.NewBytes(frame, v)
 	case error:

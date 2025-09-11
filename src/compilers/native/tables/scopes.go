@@ -285,7 +285,7 @@ func (c *Scopes) EmitSymbolDefine(s *Symbol) error {
 	case GlobalScope:
 		op = native.OpGlobalDefineId
 	case LocalScope:
-		op = native.OpLocalDefineId // Use new opcode for local variables
+		op = native.OpLocalDefineId
 	default:
 		return fmt.Errorf("unsupported symbol scope: %v", s.Scope())
 	}

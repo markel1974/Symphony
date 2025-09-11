@@ -5,7 +5,7 @@ import (
 	"go/ast"
 	"go/token"
 
-	objects2 "github.com/markel1974/c64emu/src/vm/objects"
+	"github.com/markel1974/c64emu/src/vm/objects"
 )
 
 // FieldDescription represents metadata about a struct field, including its name, base type, full type, and AST node.
@@ -45,14 +45,14 @@ func (fd *FieldDescription) Node() ast.Node {
 // StructTable is a collection that manages mappings of struct names to their associated properties.
 type StructTable struct {
 	container       map[string][]*FieldDescription
-	gk              objects2.IGateKeeper
+	gk              objects.IGateKeeper
 	scopes          *Scopes
 	implementations map[string][]string
 	internals       map[string]bool
 }
 
 // NewStructTable initializes and returns a pointer to a StructTable instance with an empty container map.
-func NewStructTable(gk objects2.IGateKeeper, scopes *Scopes) *StructTable {
+func NewStructTable(gk objects.IGateKeeper, scopes *Scopes) *StructTable {
 	st := &StructTable{
 		container:       make(map[string][]*FieldDescription),
 		implementations: make(map[string][]string),
@@ -94,6 +94,12 @@ func (st *StructTable) Implements(structName, interfaceName string) bool {
 		}
 	}
 	return false
+}
+
+func (st *StructTable) AddExternal(name string) {
+	if _, ok := st.container[name]; !ok {
+		st.container[name] = []*FieldDescription{}
+	}
 }
 
 // Add adds a new field description to a struct in the StructTable. If the struct does not exist, it creates it.
@@ -202,7 +208,7 @@ func (st *StructTable) FieldsFromLiteral(structName string, eltS []ast.Expr) ([]
 		}
 	}
 	symbol.SetReturnTypes([]string{structName})
-	symbol.SetObject(st.gk.NewString(objects2.FrameStatic, structName+":"+symbol.Name()))
+	symbol.SetObject(st.gk.NewString(objects.FrameStatic, structName+":"+symbol.Name()))
 	st.BindSymbol(symbol, structName)
 
 	isKeyed := false
