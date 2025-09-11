@@ -96,16 +96,7 @@ func (f *FunctionTable) SymbolsFromParameters(fieldList *ast.FieldList) ([]*Symb
 	var symbols []*Symbol
 	if fieldList != nil {
 		for _, p := range fieldList.List {
-			var typeName string
-			switch t := p.Type.(type) {
-			case *ast.Ident:
-				typeName = t.Name
-			case *ast.StarExpr:
-				if ident, ok := t.X.(*ast.Ident); ok {
-					typeName = ident.Name
-				}
-			}
-			// Determina se il tipo è uno struct o un'interfaccia conosciuta
+			typeName := f.TypeName(p.Type)
 			isStruct := f.structTable.Has(typeName)
 			isInterface := f.interfaceTable.Has(typeName)
 			for _, name := range p.Names {
@@ -160,4 +151,14 @@ func (f *FunctionTable) RangeValue(node *ast.RangeStmt, typeName string) (*Symbo
 		}
 	}
 	return nil, nil
+}
+
+func (f *FunctionTable) TypeName(expr ast.Expr) string {
+	switch t := expr.(type) {
+	case *ast.Ident:
+		return t.Name
+	case *ast.StarExpr:
+		return f.TypeName(t.X)
+	}
+	return ""
 }

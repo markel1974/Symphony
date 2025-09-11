@@ -142,6 +142,10 @@ func (v *Stack) PopMapElements(numElements int) map[string]objects.IObject {
 
 // PeekAbsolute retrieves the object at the specified absolute index in the stack without modifying the stack pointer.
 func (v *Stack) PeekAbsolute(absolute int) objects.IObject {
+	sp := absolute
+	if sp < 0 || sp >= len(v.stack) {
+		return v.gk.UndefinedValue()
+	}
 	return v.stack[absolute]
 }
 
@@ -161,7 +165,7 @@ func (v *Stack) Peek() objects.IObject {
 	if sp < 0 || sp >= len(v.stack) {
 		return v.gk.UndefinedValue()
 	}
-	ret := v.stack[v.sp-1]
+	ret := v.stack[sp]
 	return ret
 }
 

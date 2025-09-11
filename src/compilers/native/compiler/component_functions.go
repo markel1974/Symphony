@@ -386,6 +386,63 @@ func (c *Functions) FuncDecl(_ *ast.FuncDecl) error {
 // It creates a new scope, compiles the function body, and emits an OpCreateClosure
 // instruction to create the closure object at runtime.
 func (c *Functions) FuncLit(node *ast.FuncLit) error {
+	return c.handleClosure(node)
+}
+
+// DeferStmt processes a defer statement by wrapping the deferred call in an anonymous function and emitting a defer opcode.
+func (c *Functions) DeferStmt(node *ast.DeferStmt) error {
+	fieldList := &ast.FieldList{
+		List: make([]*ast.Field, len(node.Call.Args)),
+	}
+	for i, arg := range node.Call.Args {
+		if err := c.compile(arg); err != nil {
+			return err
+		}
+		fieldList.List[i] = &ast.Field{
+			Type: arg,
+		}
+	}
+	closure := &ast.FuncLit{
+		Type: &ast.FuncType{
+			Params: fieldList,
+		},
+		Body: &ast.BlockStmt{
+			List: []ast.Stmt{&ast.ExprStmt{X: node.Call}},
+		},
+	}
+	if err := c.handleClosure(closure); err != nil {
+		return err
+	}
+	if _, err := c.scopes.Emit(native.OpDeferId); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *Functions) handleBuiltinInterface(receiverSymbol *tables.Symbol, methodName string, args []ast.Expr) error {
+	if err := c.scopes.EmitSymbolGet(receiverSymbol); err != nil {
+		return err
+	}
+
+	//arguments must be passed as operands after method name
+	methodIdx := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, methodName))
+	if _, err := c.scopes.Emit(native.OpConstantId, methodIdx); err != nil {
+		return err
+	}
+	//for _, arg := range args {
+	//	if err := c.compile(arg); err != nil {
+	//		return err
+	//	}
+	//}
+	if _, err := c.scopes.Emit(native.OpCallId, 1, 0); err != nil {
+		return err
+	}
+	return nil
+}
+
+// handleClosure processes an anonymous function literal and compiles it into a closure with references to free variables.
+// It creates a new scope, defines parameters, compiles the body, and emits bytecode to assemble the closure object.
+func (c *Functions) handleClosure(node *ast.FuncLit) error {
 	// 1. Enter a new scope for the anonymous function.
 	closureName := fmt.Sprintf("__closure_%d", c.closureCounter)
 	if err := c.scopes.Enter(tables.UnknownScope, closureName); err != nil { // No struct or func name
@@ -432,50 +489,6 @@ func (c *Functions) FuncLit(node *ast.FuncLit) error {
 	constIndex := c.constants.Add("", compiledFn)
 	freeNum := c.scopes.SymbolCount()
 	if _, err = c.scopes.Emit(native.OpCreateClosureId, freeNum, constIndex); err != nil {
-		return err
-	}
-	return nil
-}
-
-// DeferStmt processes a defer statement by wrapping the deferred call in an anonymous function and emitting a defer opcode.
-func (c *Functions) DeferStmt(node *ast.DeferStmt) error {
-	// 1. Create a synthetic anonymous function (closure) on the fly
-	closure := &ast.FuncLit{
-		// Closure has no parameters
-		Type: &ast.FuncType{
-			Params: &ast.FieldList{},
-		},
-		Body: &ast.BlockStmt{
-			// Closure body contains only the deferred call
-			List: []ast.Stmt{&ast.ExprStmt{X: node.Call}},
-		},
-	}
-	// 2. Compile this synthetic FuncLit
-	if err := c.FuncLit(closure); err != nil {
-		return err
-	}
-	if _, err := c.scopes.Emit(native.OpDeferId); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (c *Functions) handleBuiltinInterface(receiverSymbol *tables.Symbol, methodName string, args []ast.Expr) error {
-	if err := c.scopes.EmitSymbolGet(receiverSymbol); err != nil {
-		return err
-	}
-
-	//arguments must be passed as operands after method name
-	methodIdx := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, methodName))
-	if _, err := c.scopes.Emit(native.OpConstantId, methodIdx); err != nil {
-		return err
-	}
-	//for _, arg := range args {
-	//	if err := c.compile(arg); err != nil {
-	//		return err
-	//	}
-	//}
-	if _, err := c.scopes.Emit(native.OpCallId, 1, 0); err != nil {
 		return err
 	}
 	return nil
