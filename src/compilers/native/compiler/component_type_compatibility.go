@@ -38,7 +38,7 @@ func (tc *TypeCompatibility) Setup(fileSet *token.FileSet, _ func(node ast.Node)
 func (tc *TypeCompatibility) Prepare() error {
 	//fmt.Println("Running interface implementation check...")
 	// Iterate over each defined struct
-	for structName, _ := range tc.structTable.Container() {
+	for _, structName := range tc.structTable.Keys() { //tc.structTable.Container() {
 		// Iterate over each defined interface
 		for interfaceName, interfaceDesc := range tc.interfaceTable.Container() {
 			implements, err := tc.checkStructImplementsInterface(structName, interfaceDesc)

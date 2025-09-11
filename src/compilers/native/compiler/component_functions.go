@@ -260,8 +260,8 @@ func (c *Functions) CallExpr(node *ast.CallExpr) error {
 			return tables.NewCompilerError(c.fileSet, node, "undefined variable: %s", receiverIdent.Name)
 		}
 
-		if c.structTable.IsInternal(receiverSymbol.StructName()) {
-			if err := c.handleInternalInterface(receiverSymbol, fun.Sel.Name, node.Args); err != nil {
+		if c.structTable.IsBuiltin(receiverSymbol.StructName()) {
+			if err := c.handleBuiltinInterface(receiverSymbol, fun.Sel.Name, node.Args); err != nil {
 				return err
 			}
 			return nil
@@ -439,16 +439,18 @@ func (c *Functions) FuncLit(node *ast.FuncLit) error {
 
 // DeferStmt processes a defer statement by wrapping the deferred call in an anonymous function and emitting a defer opcode.
 func (c *Functions) DeferStmt(node *ast.DeferStmt) error {
-	// 1. Crea una funzione anonima sintetica (una closure) al volo.
+	// 1. Create a synthetic anonymous function (closure) on the fly
 	closure := &ast.FuncLit{
-		// La closure non ha parametri propri
-		Type: &ast.FuncType{Params: &ast.FieldList{}},
+		// Closure has no parameters
+		Type: &ast.FuncType{
+			Params: &ast.FieldList{},
+		},
 		Body: &ast.BlockStmt{
-			// Il corpo della closure contiene solo la chiamata differita
+			// Closure body contains only the deferred call
 			List: []ast.Stmt{&ast.ExprStmt{X: node.Call}},
 		},
 	}
-	// 2. Compila questo FuncLit sintetico.
+	// 2. Compile this synthetic FuncLit
 	if err := c.FuncLit(closure); err != nil {
 		return err
 	}
@@ -458,7 +460,7 @@ func (c *Functions) DeferStmt(node *ast.DeferStmt) error {
 	return nil
 }
 
-func (c *Functions) handleInternalInterface(receiverSymbol *tables.Symbol, methodName string, args []ast.Expr) error {
+func (c *Functions) handleBuiltinInterface(receiverSymbol *tables.Symbol, methodName string, args []ast.Expr) error {
 	if err := c.scopes.EmitSymbolGet(receiverSymbol); err != nil {
 		return err
 	}

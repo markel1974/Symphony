@@ -8,61 +8,29 @@ import (
 	"github.com/markel1974/c64emu/src/vm/objects"
 )
 
-// FieldDescription represents metadata about a struct field, including its name, base type, full type, and AST node.
-type FieldDescription struct {
-	name string
-	base string
-	kind string
-	node ast.Node
-}
-
-// NewFieldDescription creates a new instance of StructProperty with the provided name, base, kind, and AST node.
-func NewFieldDescription(name string, base string, kind string, node ast.Node) *FieldDescription {
-	return &FieldDescription{
-		name: name,
-		base: base,
-		kind: kind,
-		node: node,
-	}
-}
-
-func (fd *FieldDescription) Name() string {
-	return fd.name
-}
-
-func (fd *FieldDescription) Base() string {
-	return fd.base
-}
-
-func (fd *FieldDescription) Kind() string {
-	return fd.kind
-}
-
-func (fd *FieldDescription) Node() ast.Node {
-	return fd.node
-}
-
 // StructTable is a collection that manages mappings of struct names to their associated properties.
 type StructTable struct {
-	container       map[string][]*FieldDescription
+	container       map[string]*Struct
 	gk              objects.IGateKeeper
 	scopes          *Scopes
 	implementations map[string][]string
-	internals       map[string]bool
 }
 
 // NewStructTable initializes and returns a pointer to a StructTable instance with an empty container map.
 func NewStructTable(gk objects.IGateKeeper, scopes *Scopes) *StructTable {
 	st := &StructTable{
-		container:       make(map[string][]*FieldDescription),
+		container:       make(map[string]*Struct),
 		implementations: make(map[string][]string),
-		internals:       make(map[string]bool),
 		gk:              gk,
 		scopes:          scopes,
 	}
-	v := NewFieldDescription("error", "", "error", nil)
-	st.container[v.name] = []*FieldDescription{v}
-	st.internals[v.name] = true
+	builtins := []string{"error"}
+	for _, builtin := range builtins {
+		//z := NewStructField(internal, "", internal, nil)
+		sd := NewStruct(builtin, StructTypeBuiltin)
+		//sd.Add(z)
+		st.container[sd.name] = sd
+	}
 	return st
 }
 
@@ -75,11 +43,7 @@ func (st *StructTable) Keys() []string {
 	return keys
 }
 
-// Container returns the internal map associating struct names with slices of their field descriptions.
-func (st *StructTable) Container() map[string][]*FieldDescription {
-	return st.container
-}
-
+// SetImplementations sets the implementation mappings for structs to interfaces in the StructTable.
 func (st *StructTable) SetImplementations(impls map[string][]string) {
 	st.implementations = impls
 }
@@ -96,35 +60,22 @@ func (st *StructTable) Implements(structName, interfaceName string) bool {
 	return false
 }
 
+// AddExternal adds a new package with the given name to the StructTable if it does not already exist.
 func (st *StructTable) AddExternal(name string) {
 	if _, ok := st.container[name]; !ok {
-		st.container[name] = []*FieldDescription{}
+		sd := NewStruct(name, StructTypePackage)
+		st.container[name] = sd
 	}
 }
 
 // Add adds a new field description to a struct in the StructTable. If the struct does not exist, it creates it.
 func (st *StructTable) Add(name string, fieldName string, baseStruct string, kind string, node ast.Node) {
-	// here we could add a check for duplicate fields.
-	v := NewFieldDescription(fieldName, baseStruct, kind, node)
-	fields, ok := st.container[name]
+	sd, ok := st.container[name]
 	if !ok {
-		st.container[name] = []*FieldDescription{v}
-		return
+		sd = NewStruct(name, StructTypeDefined)
+		st.container[name] = sd
 	}
-	st.container[name] = append(fields, v)
-}
-
-// getFields retrieves a slice of StructProperty pointers associated with the given name from the container map.
-func (st *StructTable) getFields(name string) ([]*FieldDescription, bool) {
-	fields, ok := st.container[name]
-	if !ok {
-		return nil, false
-	}
-	out := make([]*FieldDescription, len(fields))
-	for idx, v := range fields {
-		out[idx] = NewFieldDescription(v.name, v.base, v.kind, nil)
-	}
-	return out, true
+	sd.AddField(fieldName, baseStruct, kind, node)
 }
 
 // Has checks if a struct definition with the given name exists in the container map.
@@ -192,11 +143,12 @@ func (st *StructTable) TypeInference(expr ast.Expr) (string, bool) {
 }
 
 // FieldsFromLiteral extracts and assigns struct fields from a given composite literal node, handling both keyed and positional formats.
-func (st *StructTable) FieldsFromLiteral(structName string, eltS []ast.Expr) ([]*FieldDescription, error) {
-	structFields, ok := st.getFields(structName)
+func (st *StructTable) FieldsFromLiteral(structName string, eltS []ast.Expr) ([]*StructField, error) {
+	sd, ok := st.container[structName]
 	if !ok {
 		return nil, fmt.Errorf("unknown composite literal type: %st", structName)
 	}
+	structFields := sd.Fields()
 	if len(eltS) > len(structFields) {
 		return nil, fmt.Errorf("too many values in positional struct literal for type '%st'", structName)
 	}
@@ -260,11 +212,11 @@ func (st *StructTable) TypeNameFromSymbolField(name string, fieldName string) (s
 	if !ok {
 		return "", false
 	}
-	receiverStructFields, ok := st.getFields(receiverSymbol.StructName())
+	sd, ok := st.container[receiverSymbol.StructName()]
 	if !ok {
 		return "", false
 	}
-	for _, receiverField := range receiverStructFields {
+	for _, receiverField := range sd.Fields() {
 		if receiverField.name == fieldName {
 			return receiverField.base, true
 		}
@@ -274,19 +226,20 @@ func (st *StructTable) TypeNameFromSymbolField(name string, fieldName string) (s
 
 // BindSymbol assigns a struct name and types to a Symbol, validates the struct, and creates a description object.
 func (st *StructTable) BindSymbol(symbol *Symbol, typeName string) {
-	if structFields, ok := st.container[typeName]; ok {
-		fields := make([]string, len(structFields))
-		for x, field := range structFields {
-			fields[x] = field.name
-		}
+	if sd, ok := st.container[typeName]; ok {
+		fields := sd.FieldsName()
 		symbol.SetStruct(typeName, fields)
 		return
 	}
 }
 
-// IsInternal returns true if the given name is a struct internal to the compiler.
-func (st *StructTable) IsInternal(name string) bool {
-	return st.internals[name]
+// IsBuiltin returns true if the given name is a struct internal to the compiler.
+func (st *StructTable) IsBuiltin(name string) bool {
+	fd, ok := st.container[name]
+	if !ok {
+		return false
+	}
+	return fd.IsBuiltin()
 }
 
 // ExtractBaseName extracts the base type name from an AST expression, handling pointers, arrays, maps, and selectors.

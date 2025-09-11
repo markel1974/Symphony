@@ -440,7 +440,6 @@ func (c *Declarations) CompositeLit(node *ast.CompositeLit) error {
 			//TODO this is a temporary fix for the issue with the receiver being a struct
 			c.structTable.AddExternal(val.Sel.Name)
 			mangledName := tables.GetMangledName(receiverIdent.Name, val.Sel.Name)
-			//c.structTable.Add(val.Sel.Name, "", "interface()", "interface()", nil)
 			structNameIdx := c.constants.AddOrGet(mangledName, c.gk.NewString(objects.FrameStatic, mangledName))
 			if _, err := c.scopes.Emit(native.OpConstantId, structNameIdx); err != nil {
 				return tables.NewCompilerError(c.fileSet, node, err.Error())
