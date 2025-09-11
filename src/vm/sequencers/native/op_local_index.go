@@ -50,11 +50,12 @@ func (op *OpLocalIndex) Execute(decoder *core.Decoder) {
 	//}
 	selectors := make([]objects.IObject, selCount)
 	for i := 0; i < selCount; i++ {
-		target := -selCount + i
-		selectors[i] = op.vm.Stack().PeekOffset(target)
+		offset := selCount - i
+		selectors[i] = op.vm.Stack().PeekOffset(offset)
 	}
-	srcObj := op.vm.Stack().PeekOffset(-selCount - 1)
-	op.vm.Stack().DecrementCount(selCount + 1)
+	offset := selCount + 1
+	srcObj := op.vm.Stack().PeekOffset(offset)
+	op.vm.Stack().DecrementCount(offset)
 	if err := op.vm.Factory().IndexAssign(op.vm.Frame().Id(), dstObj, srcObj, selectors); err != nil {
 		op.vm.SetError(err)
 		return

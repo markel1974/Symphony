@@ -41,7 +41,8 @@ func (op *OpCall) Bind(vm core.IVM) error {
 func (op *OpCall) Execute(decoder *core.Decoder) {
 	spread := decoder.Operand(0)
 	numArgs := decoder.Operand(1)
-	value := op.vm.Stack().PeekOffset(-1 - numArgs)
+	offset := numArgs + 1
+	value := op.vm.Stack().PeekOffset(offset)
 	op.vm.Call(value, spread == 1, numArgs)
 }
 

@@ -42,8 +42,7 @@ func (op *OpLocalPtrGet) Bind(vm core.IVM) error {
 func (op *OpLocalPtrGet) Execute(decoder *core.Decoder) {
 	// Operands Offset 2 (16-bit)
 	localIndex := decoder.Operand(0)
-	sp := op.vm.Frame().BasePointer() + localIndex
-	val := op.vm.Stack().PeekAbsolute(sp)
+	val := op.vm.Stack().PeekAbsolute(op.vm.Frame().BasePointer() + localIndex)
 	if obj, ok := val.(*objects.ObjectPointer); ok {
 		op.vm.Stack().Push(obj)
 		return

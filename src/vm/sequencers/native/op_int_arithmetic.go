@@ -45,10 +45,13 @@ func (op *OpIntArithmetic) Bind(vm core.IVM) error {
 // Execute performs an integer arithmetic operation on the stack using the provided decoder to read operands and operator.
 func (op *OpIntArithmetic) Execute(decoder *core.Decoder) {
 	arithmeticOp := objects.ArithmeticOperator(decoder.Operand(0))
-	lhsObj := op.vm.Stack().PeekAbsolute(decoder.Operand(1))
-	rhsObj := op.vm.Stack().PeekAbsolute(decoder.Operand(2))
-	dstObj := op.vm.Stack().PeekAbsolute(decoder.Operand(3))
-	dst, ok := dstObj.(*objects.Int)
+	lhs := decoder.Operand(1)
+	rhs := decoder.Operand(2)
+	dst := decoder.Operand(3)
+	lhsObj := op.vm.Stack().PeekAbsolute(op.vm.Frame().BasePointer() + lhs)
+	rhsObj := op.vm.Stack().PeekAbsolute(op.vm.Frame().BasePointer() + rhs)
+	dstObj := op.vm.Stack().PeekAbsolute(op.vm.Frame().BasePointer() + dst)
+	out, ok := dstObj.(*objects.Int)
 	if !ok {
 		op.vm.SetError(fmt.Errorf("dst expected int, got %s", dstObj.TypeName()))
 		return
@@ -57,7 +60,7 @@ func (op *OpIntArithmetic) Execute(decoder *core.Decoder) {
 	if err != nil {
 		op.vm.SetError(err)
 	}
-	dst.SetValue(result)
+	out.SetValue(result)
 }
 
 // Opcode returns the opcode associated with the instance.

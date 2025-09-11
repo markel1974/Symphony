@@ -149,9 +149,10 @@ func (v *Stack) PeekAbsolute(absolute int) objects.IObject {
 	return v.stack[absolute]
 }
 
-// PeekOffset returns the stack object at the specified offset relative to the current stack pointer.
+// PeekOffset retrieves the object at the stack pointer minus the specified offset without modifying the stack pointer.
+// Returns UndefinedValue if the resolved index is out of stack bounds.
 func (v *Stack) PeekOffset(offset int) objects.IObject {
-	sp := v.sp + offset
+	sp := v.sp - offset
 	if sp < 0 || sp >= len(v.stack) {
 		return v.gk.UndefinedValue()
 	}

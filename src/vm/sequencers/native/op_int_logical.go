@@ -43,10 +43,13 @@ func (op *OpIntLogical) Bind(vm core.IVM) error {
 // Execute performs the logical operation between two integers on the stack and stores the result in the destination object.
 func (op *OpIntLogical) Execute(decoder *core.Decoder) {
 	logicalOp := objects.LogicalOperator(decoder.Operand(0))
-	lhsObj := op.vm.Stack().PeekAbsolute(decoder.Operand(1))
-	rhsObj := op.vm.Stack().PeekAbsolute(decoder.Operand(2))
-	dstObj := op.vm.Stack().PeekAbsolute(decoder.Operand(3))
-	dst, ok := dstObj.(*objects.Int)
+	lhs := decoder.Operand(1)
+	rhs := decoder.Operand(2)
+	dst := decoder.Operand(3)
+	lhsObj := op.vm.Stack().PeekAbsolute(op.vm.Frame().BasePointer() + lhs)
+	rhsObj := op.vm.Stack().PeekAbsolute(op.vm.Frame().BasePointer() + rhs)
+	dstObj := op.vm.Stack().PeekAbsolute(op.vm.Frame().BasePointer() + dst)
+	out, ok := dstObj.(*objects.Int)
 	if !ok {
 		op.vm.SetError(fmt.Errorf("dst expected int, got %s", dstObj.TypeName()))
 		return
@@ -57,9 +60,9 @@ func (op *OpIntLogical) Execute(decoder *core.Decoder) {
 		return
 	}
 	if result {
-		dst.SetValue(1)
+		out.SetValue(1)
 	} else {
-		dst.SetValue(0)
+		out.SetValue(0)
 	}
 }
 

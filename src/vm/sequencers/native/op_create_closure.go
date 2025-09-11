@@ -56,16 +56,14 @@ func (op *OpCreateClosure) Execute(decoder *core.Decoder) {
 		return
 	}
 	free := make([]*objects.ObjectPointer, freeIndices.Length())
-	bp := op.vm.Frame().BasePointer()
 	for idx, freeObjIndex := range freeIndices.Values() {
 		freeIndex, ok := freeObjIndex.(*objects.Int)
 		if !ok {
 			op.vm.SetError(fmt.Errorf("invalid operation: cannot create closure without arguments"))
 			return
 		}
-		//offset := numTotal - int(freeIndex.Value())
-		//target := -offset - 1
-		objOffset := op.vm.Stack().PeekAbsolute(bp + int(freeIndex.Value()))
+		index := int(freeIndex.Value())
+		objOffset := op.vm.Stack().PeekAbsolute(op.vm.Frame().BasePointer() + index)
 		switch objType := objOffset.(type) {
 		case *objects.ObjectPointer:
 			free[idx] = objType
