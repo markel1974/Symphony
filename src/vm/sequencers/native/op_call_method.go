@@ -68,7 +68,7 @@ func (op *OpCallMethod) Execute(decoder *core.Decoder) {
 	target := numArgs + 1
 	op.vm.StackSetOffsetSP(uint(target), io.Value())
 	//op.vm.Stack().SetAbsolute(op.vm.Stack().StackPointer()-1-numArgs, io.Value())
-	op.vm.Call(callee, false, numArgs+1)
+	op.vm.Call(callee, false, target)
 }
 
 // Opcode returns the opcode associated with the instance.
