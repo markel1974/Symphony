@@ -43,7 +43,7 @@ func (op *OpGlobalGet) Execute(decoder *core.Decoder) {
 	// Operands Offset 2 (16-bit)
 	index := decoder.Operand(0)
 	obj := op.vm.Globals().Get(uint(index))
-	op.vm.Stack().Push(obj)
+	op.vm.StackPush(obj)
 }
 
 // Opcode returns the opcode associated with the instance.

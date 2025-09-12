@@ -40,9 +40,9 @@ func (op *OpJumpOr) Bind(vm core.IVM) error {
 // Execute advances the instruction pointer, evaluates the stack's top object, and updates the IP based on its boolean value.
 func (op *OpJumpOr) Execute(decoder *core.Decoder) {
 	// Operands Offset 2 (16-bit)
-	obj := op.vm.Stack().Peek()
+	obj := op.vm.StackPeek()
 	if obj.Falsy() {
-		op.vm.Stack().Decrement()
+		op.vm.StackDecrement()
 	} else {
 		pos := decoder.Operand(0)
 		op.vm.SetIp(pos - 1)

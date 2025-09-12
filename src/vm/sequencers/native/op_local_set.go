@@ -43,12 +43,12 @@ func (op *OpLocalSet) Bind(vm core.IVM) error {
 func (op *OpLocalSet) Execute(decoder *core.Decoder) {
 	// Operands Offset 2 (16-bit)
 	localIndex := decoder.Operand(0)
-	val := op.vm.Stack().Peek()
-	obj := op.vm.Stack().PeekAbsolute(op.vm.Frame().BasePointer() + localIndex)
+	val := op.vm.StackPeek()
+	obj := op.vm.StackPeekOffsetBP(uint(localIndex))
 	if freeObj, ok := obj.(*objects.ObjectPointer); ok {
 		op.vm.Factory().SetPointer(freeObj, val)
 	} else {
-		op.vm.Stack().SetAbsolute(op.vm.Frame().BasePointer()+localIndex, val)
+		op.vm.StackSetOffsetBP(uint(localIndex), val)
 	}
 }
 

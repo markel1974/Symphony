@@ -43,9 +43,9 @@ func (op *OpIndexSet) Bind(vm core.IVM) error {
 
 // Execute modifies a container's index with a new value, setting an error in the virtual machine if the operation fails.
 func (op *OpIndexSet) Execute(_ *core.Decoder) {
-	value := op.vm.Stack().Pop()
-	index := op.vm.Stack().Pop()
-	container := op.vm.Stack().Pop()
+	value := op.vm.StackPop()
+	index := op.vm.StackPop()
+	container := op.vm.StackPop()
 	if err := container.IndexSet(index, value); err != nil {
 		op.vm.SetError(objects.ComputeIndexSetError(err, container.TypeName(), index.TypeName()))
 		return

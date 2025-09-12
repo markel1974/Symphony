@@ -46,11 +46,11 @@ func (op *OpGlobalPtrGet) Execute(decoder *core.Decoder) {
 	globalIndex := decoder.Operand(0)
 	val := op.vm.Globals().Get(uint(globalIndex))
 	if obj, ok := val.(*objects.ObjectPointer); ok {
-		op.vm.Stack().Push(obj)
+		op.vm.StackPush(obj)
 		return
 	}
-	freeVar := op.vm.Factory().NewObjectPointer(op.vm.Frame().Id(), &val)
-	op.vm.Stack().Push(freeVar)
+	freeVar := op.vm.Factory().NewObjectPointer(op.vm.FrameId(), &val)
+	op.vm.StackPush(freeVar)
 }
 
 // Opcode returns the opcode associated with the instance.

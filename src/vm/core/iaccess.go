@@ -9,11 +9,32 @@ type IVM interface {
 	Version() string
 }
 
+type IVMFrameOnly interface {
+	IVM
+	FrameId() int
+	FrameDeferredAdd(*objects.FuncCompiled)
+	FrameFreeVarsIndex(index uint) *objects.ObjectPointer
+}
+
 // IVMStackOnly defines an interface for managing a virtual machine stack with functionalities for stack retrieval,
 // gatekeeper factory access, and error handling.
 type IVMStackOnly interface {
 	IVM
-	Stack() *Stack
+	StackDecrement()
+	StackDecrementCount(count int)
+
+	StackPeek() objects.IObject
+	StackPop() objects.IObject
+	StackPush(value objects.IObject)
+	StackSet(objects.IObject)
+	StackPeekOffsetBP(offset uint) objects.IObject
+	StackSetOffsetBP(offset uint, value objects.IObject)
+	StackPeekOffsetSP(offset uint) objects.IObject
+	StackSetOffsetSP(offset uint, value objects.IObject)
+	StackPeekArray(numArgs int) []objects.IObject
+	StackPopArray(numElements int) []objects.IObject
+	StackPopMap(numElements int) map[string]objects.IObject
+
 	Factory() objects.IGateKeeper
 	SetError(err error)
 }
@@ -25,19 +46,19 @@ type IVMReadOnly interface {
 	Constants() *Constants
 	Globals() *Globals
 	Imports() *Imports
-	Frame() *Frame
 }
 
 // IVMReadWrite represents an interface extending IVMReadOnly with additional write capabilities for VM global state.
 type IVMReadWrite interface {
 	IVMReadOnly
-	Globals() *Globals // Ridefiniamo per chiarezza, anche se già presente
+	Globals() *Globals
 }
 
 // IVMControlFlow defines an interface for managing instruction pointers and control flow within a virtual machine.
 // It extends the IVMStackOnly interface to include stack-dependent operations related to reading conditions.
 type IVMControlFlow interface {
-	IVMStackOnly // Ha bisogno dello stack per leggere le condizioni
+	IVMStackOnly
+	IVMFrameOnly
 	SetIp(ip int)
 	GetIp() int
 }
@@ -47,6 +68,7 @@ type IVMControlFlow interface {
 type IVMFullAccess interface {
 	IVMReadWrite
 	IVMControlFlow
+
 	Call(value objects.IObject, spread bool, numArgs int)
 	CallObject(value objects.IObject, numArgs int, args ...objects.IObject)
 	Return(returnValues []objects.IObject)

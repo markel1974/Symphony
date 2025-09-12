@@ -41,9 +41,8 @@ func (op *OpLocalDefine) Bind(vm core.IVM) error {
 func (op *OpLocalDefine) Execute(decoder *core.Decoder) {
 	// Operands Offset 2 (16-bit)
 	localIndex := decoder.Operand(0)
-	val := op.vm.Stack().Peek()
-	destSlot := op.vm.Frame().BasePointer() + localIndex
-	op.vm.Stack().SetAbsolute(destSlot, val)
+	val := op.vm.StackPeek()
+	op.vm.StackSetOffsetBP(uint(localIndex), val)
 }
 
 // Opcode returns the opcode associated with the instance.

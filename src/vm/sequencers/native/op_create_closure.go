@@ -49,7 +49,7 @@ func (op *OpCreateClosure) Execute(decoder *core.Decoder) {
 		op.vm.SetError(fmt.Errorf("not a function: %s", fn.TypeName()))
 		return
 	}
-	freeArgs := op.vm.Stack().Pop()
+	freeArgs := op.vm.StackPop()
 	freeIndices, ok := freeArgs.(*objects.Array)
 	if !ok {
 		op.vm.SetError(fmt.Errorf("invalid operation: cannot create closure without arguments"))
@@ -63,12 +63,12 @@ func (op *OpCreateClosure) Execute(decoder *core.Decoder) {
 			return
 		}
 		index := int(freeIndex.Value())
-		objOffset := op.vm.Stack().PeekAbsolute(op.vm.Frame().BasePointer() + index)
+		objOffset := op.vm.StackPeekOffsetBP(uint(index))
 		switch objType := objOffset.(type) {
 		case *objects.ObjectPointer:
 			free[idx] = objType
 		default:
-			obj := op.vm.Factory().NewObjectPointer(op.vm.Frame().Id(), &objOffset)
+			obj := op.vm.Factory().NewObjectPointer(op.vm.FrameId(), &objOffset)
 			freeObjPtr, ok := obj.(*objects.ObjectPointer)
 			if !ok {
 				op.vm.SetError(fmt.Errorf("not a pointer: %s", obj.TypeName()))
@@ -77,9 +77,9 @@ func (op *OpCreateClosure) Execute(decoder *core.Decoder) {
 			free[idx] = freeObjPtr
 		}
 	}
-	op.vm.Stack().DecrementCount(freeIndices.Length())
-	cl := op.vm.Factory().NewFuncCompiled(op.vm.Frame().Id(), fn.Name(), fn.Instructions().Data(), fn.NumLocals(), fn.NumParameters(), fn.VarArgs(), nil, free)
-	op.vm.Stack().Push(cl)
+	op.vm.StackDecrementCount(freeIndices.Length())
+	cl := op.vm.Factory().NewFuncCompiled(op.vm.FrameId(), fn.Name(), fn.Instructions().Data(), fn.NumLocals(), fn.NumParameters(), fn.VarArgs(), nil, free)
+	op.vm.StackPush(cl)
 }
 
 // Opcode returns the opcode associated with the instance.

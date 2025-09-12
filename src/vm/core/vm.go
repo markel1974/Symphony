@@ -64,10 +64,8 @@ func New(gk objects.IGateKeeper, op opcodes.IOpcodes) *VM {
 
 // Setup initializes the virtual machine with the provided bytecode and loader components.
 func (v *VM) Setup(loader bytecode.ILoader, sequencer []IOpExecutor, codes ...*bytecode.Bytecode) (map[string]uint, error) {
-	//sequencer, err := v.seq.Create(v)
-	//if err != nil {
-	//	return nil, err
-	//}
+	//var test IVMFullAccess = v
+
 	var err error
 	v.sequencerMask = len(sequencer) - 1
 	v.sequencer = make([]*Decoder, len(sequencer))
@@ -138,9 +136,84 @@ func (v *VM) Run(mainId uint, args ...interface{}) ([]interface{}, error) {
 	return v.exec(mainFn, v.retValues, args...)
 }
 
-// Stack returns the current stack instance associated with the VM.
-func (v *VM) Stack() *Stack {
-	return v.stack
+// StackPeek returns the object currently at the top of the stack without removing it.
+func (v *VM) StackPeek() objects.IObject {
+	return v.stack.Peek()
+}
+
+// StackPop removes and returns the top element from the VM's execution stack. It delegates the operation to the stack's Pop method.
+func (v *VM) StackPop() objects.IObject {
+	return v.stack.Pop()
+}
+
+// StackPush pushes the given IObject value onto the VM's stack.
+func (v *VM) StackPush(value objects.IObject) {
+	v.stack.Push(value)
+}
+
+// StackSet sets a value in the virtual machine's stack to the provided object.
+func (v *VM) StackSet(value objects.IObject) {
+	v.stack.Set(value)
+}
+
+// StackPeekOffsetBP retrieves an object from the stack at the given offset relative to the base pointer of the current frame.
+func (v *VM) StackPeekOffsetBP(offset uint) objects.IObject {
+	return v.stack.PeekAbsolute(v.currFrame.BasePointer() + int(offset))
+}
+
+// StackSetOffsetBP sets a value in the stack at the specified offset from the current frame's base pointer.
+func (v *VM) StackSetOffsetBP(offset uint, value objects.IObject) {
+	v.stack.SetAbsolute(v.currFrame.BasePointer()+int(offset), value)
+}
+
+// StackSetOffsetSP sets the value of a stack element at the specified offset from the stack pointer (SP).
+func (v *VM) StackSetOffsetSP(offset uint, value objects.IObject) {
+	v.stack.SetOffset(int(offset), value)
+}
+
+// StackPeekOffsetSP retrieves the item at the specified offset from the stack, relative to the stack pointer.
+func (v *VM) StackPeekOffsetSP(offset uint) objects.IObject {
+	return v.stack.PeekOffset(int(offset))
+}
+
+// StackPeekArray retrieves and returns an array of objects from the stack without modifying the stack.
+func (v *VM) StackPeekArray(numArgs int) []objects.IObject {
+	return v.stack.PeekArray(numArgs)
+}
+
+// StackPopArray pops a specified number of elements from the stack and returns them as a slice of IObject.
+func (v *VM) StackPopArray(numElements int) []objects.IObject {
+	return v.stack.PopArray(numElements)
+}
+
+// StackPopMap pops a specified number of key-value pairs from the stack and returns them as a map.
+func (v *VM) StackPopMap(numElements int) map[string]objects.IObject {
+	return v.stack.PopMap(numElements)
+}
+
+// StackDecrementCount reduces the count of items on the stack by the specified decrement amount.
+func (v *VM) StackDecrementCount(decrement int) {
+	v.stack.DecrementCount(decrement)
+}
+
+// StackDecrement decreases the size of the stack by calling the Decrement method on the stack instance.
+func (v *VM) StackDecrement() {
+	v.stack.Decrement()
+}
+
+// FrameId returns the identifier of the current frame in the virtual machine.
+func (v *VM) FrameId() int {
+	return v.currFrame.Id()
+}
+
+// FrameDeferredAdd appends the given compiled function to the deferred call stack of the current frame.
+func (v *VM) FrameDeferredAdd(fc *objects.FuncCompiled) {
+	v.currFrame.DeferredAdd(fc)
+}
+
+// FrameFreeVarsIndex retrieves the object pointer for the specified index from the current frame's free variables.
+func (v *VM) FrameFreeVarsIndex(index uint) *objects.ObjectPointer {
+	return v.currFrame.FreeVarsIndex(index)
 }
 
 // Constants returns a pointer to the Constants associated with the VM instance.
@@ -163,11 +236,6 @@ func (v *VM) Factory() objects.IGateKeeper {
 	return v.gk
 }
 
-// Frame returns the current frame instance associated with the VM.
-func (v *VM) Frame() *Frame {
-	return v.currFrame
-}
-
 // SetIp sets the virtual machine's instruction pointer to the specified value.
 func (v *VM) SetIp(ip int) {
 	v.ip = ip
@@ -187,7 +255,7 @@ func (v *VM) Call(value objects.IObject, spread bool, numArgs int) {
 
 	if spread {
 		var args []objects.IObject
-		obj := v.Stack().Pop()
+		obj := v.stack.Pop()
 		switch z := obj.(type) {
 		case *objects.Array:
 			args = z.Values()
@@ -197,7 +265,7 @@ func (v *VM) Call(value objects.IObject, spread bool, numArgs int) {
 		}
 		if argsLen := len(args); argsLen > 0 {
 			for _, item := range args {
-				v.Stack().Push(item)
+				v.stack.Push(item)
 			}
 			numArgs += argsLen - 1
 		}
@@ -210,7 +278,7 @@ func (v *VM) Call(value objects.IObject, spread bool, numArgs int) {
 			if numParams > 0 {
 				numParams--
 			}
-			v.Stack().PushVarArgs(v.currFrame.Id(), numArgs, numParams)
+			v.stack.PushVarArgs(v.currFrame.Id(), numArgs, numParams)
 			numArgs = ce.NumParameters()
 		} else {
 			if numArgs != numParams {
@@ -221,7 +289,7 @@ func (v *VM) Call(value objects.IObject, spread bool, numArgs int) {
 		v.prepareForCall(ce, numArgs)
 	default:
 		var args []objects.IObject
-		args = append(args, v.Stack().PeekArrayObject(numArgs)...)
+		args = append(args, v.stack.PeekArray(numArgs)...)
 		v.CallObject(value, numArgs, args...)
 	}
 }

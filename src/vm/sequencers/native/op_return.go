@@ -47,7 +47,7 @@ func (op *OpReturn) Execute(decoder *core.Decoder) {
 	if numReturnVals := decoder.Operand(0); numReturnVals > 0 {
 		returnValues = make([]objects.IObject, numReturnVals)
 		for i := 0; i < numReturnVals; i++ {
-			returnValues[i] = op.vm.Stack().Pop()
+			returnValues[i] = op.vm.StackPop()
 		}
 	}
 	op.vm.Return(returnValues)

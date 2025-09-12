@@ -42,16 +42,16 @@ func (op *OpIteratorNext) Bind(vm core.IVM) error {
 func (op *OpIteratorNext) Execute(decoder *core.Decoder) {
 	// Operands Offset 1 (8-bit)
 	localIndex := decoder.Operand(0)
-	iteratorObj := op.vm.Stack().PeekAbsolute(op.vm.Frame().BasePointer() + localIndex)
+	iteratorObj := op.vm.StackPeekOffsetBP(uint(localIndex))
 	iterator, ok := iteratorObj.(objects.IIterator)
 	if !ok {
 		op.vm.SetError(fmt.Errorf("not an iterator: %s", iteratorObj.TypeName()))
 		return
 	}
 	if iterator.Next() {
-		op.vm.Stack().Push(op.vm.Factory().TrueValue())
+		op.vm.StackPush(op.vm.Factory().TrueValue())
 	} else {
-		op.vm.Stack().Push(op.vm.Factory().FalseValue())
+		op.vm.StackPush(op.vm.Factory().FalseValue())
 	}
 }
 

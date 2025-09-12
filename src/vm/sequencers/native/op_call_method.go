@@ -49,7 +49,7 @@ func (op *OpCallMethod) Execute(decoder *core.Decoder) {
 		return
 	}
 	offset := numArgs + 1
-	interfaceObj := op.vm.Stack().PeekOffset(offset)
+	interfaceObj := op.vm.StackPeekOffsetSP(uint(offset))
 	io, ok := interfaceObj.(*objects.Interface)
 	if !ok {
 		op.vm.SetError(fmt.Errorf("method call on non-interface object type: %s", interfaceObj.TypeName()))
@@ -65,7 +65,9 @@ func (op *OpCallMethod) Execute(decoder *core.Decoder) {
 		op.vm.SetError(fmt.Errorf("method '%s' is not a callable function", methodName.Value()))
 		return
 	}
-	op.vm.Stack().SetAbsolute(op.vm.Stack().StackPointer()-1-numArgs, io.Value())
+	target := numArgs + 1
+	op.vm.StackSetOffsetSP(uint(target), io.Value())
+	//op.vm.Stack().SetAbsolute(op.vm.Stack().StackPointer()-1-numArgs, io.Value())
 	op.vm.Call(callee, false, numArgs+1)
 }
 

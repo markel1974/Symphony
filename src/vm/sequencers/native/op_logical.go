@@ -44,15 +44,15 @@ func (op *OpLogical) Bind(vm core.IVM) error {
 func (op *OpLogical) Execute(decoder *core.Decoder) {
 	// Operands Offset  1 (8 bits)
 	opcode := decoder.Operand(0)
-	right := op.vm.Stack().Pop()
-	left := op.vm.Stack().Pop()
+	right := op.vm.StackPop()
+	left := op.vm.StackPop()
 	operator := objects.LogicalOperator(opcode)
-	res, err := left.LogicalOp(op.vm.Frame().Id(), operator, right)
+	res, err := left.LogicalOp(op.vm.FrameId(), operator, right)
 	if err != nil {
 		op.vm.SetError(err)
 		return
 	}
-	op.vm.Stack().Push(res)
+	op.vm.StackPush(res)
 }
 
 // Opcode returns the opcode associated with the instance.

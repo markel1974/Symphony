@@ -41,7 +41,7 @@ func (op *OpTrue) Bind(vm core.IVM) error {
 func (op *OpTrue) Execute(_ *core.Decoder) {
 	// Operands Offset 0
 	val := op.vm.Factory().TrueValue()
-	op.vm.Stack().Push(val)
+	op.vm.StackPush(val)
 }
 
 // Opcode returns the opcode associated with the instance.

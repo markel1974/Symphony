@@ -41,10 +41,10 @@ func (op *OpCreateStruct) Bind(vm core.IVM) error {
 func (op *OpCreateStruct) Execute(decoder *core.Decoder) {
 	// Operands Offset 2 (16-bit)
 	numElements := decoder.Operand(0)
-	typeNameObj := op.vm.Stack().Pop()
-	mElem := op.vm.Stack().PopMapElements(numElements)
-	structObj := op.vm.Factory().NewStruct(op.vm.Frame().Id(), typeNameObj.AsString(), mElem)
-	op.vm.Stack().Push(structObj)
+	typeNameObj := op.vm.StackPop()
+	mElem := op.vm.StackPopMap(numElements)
+	structObj := op.vm.Factory().NewStruct(op.vm.FrameId(), typeNameObj.AsString(), mElem)
+	op.vm.StackPush(structObj)
 }
 
 // Opcode returns the opcode associated with the instance.

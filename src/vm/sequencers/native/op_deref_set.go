@@ -41,8 +41,8 @@ func (op *OpDerefSet) Bind(vm core.IVM) error {
 
 // Execute performs a dereference-and-set operation on the stack, assigning a value to the object pointed by a pointer.
 func (op *OpDerefSet) Execute(_ *core.Decoder) {
-	pointerObj := op.vm.Stack().Pop()
-	valueToSet := op.vm.Stack().Pop()
+	pointerObj := op.vm.StackPop()
+	valueToSet := op.vm.StackPop()
 	ptr, ok := pointerObj.(*objects.ObjectPointer)
 	if !ok {
 		op.vm.SetError(fmt.Errorf("invalid operation: cannot assign to a non-pointer type %s", pointerObj.TypeName()))
@@ -52,7 +52,7 @@ func (op *OpDerefSet) Execute(_ *core.Decoder) {
 		op.vm.SetError(err)
 		return
 	}
-	op.vm.Stack().Push(valueToSet)
+	op.vm.StackPush(valueToSet)
 }
 
 // Opcode returns the opcode associated with the instance.

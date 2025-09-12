@@ -41,14 +41,14 @@ func (op *OpUnaryNot) Bind(vm core.IVM) error {
 // Execute performs a logical NOT operation on the operand at the top of the stack, pushing the result back onto the stack.
 func (op *OpUnaryNot) Execute(_ *core.Decoder) {
 	// Operands Offset  0
-	operand := op.vm.Stack().Pop()
+	operand := op.vm.StackPop()
 	var val objects.IObject
 	if operand.Falsy() {
 		val = op.vm.Factory().TrueValue()
 	} else {
 		val = op.vm.Factory().FalseValue()
 	}
-	op.vm.Stack().Push(val)
+	op.vm.StackPush(val)
 }
 
 // Opcode returns the opcode associated with the instance.

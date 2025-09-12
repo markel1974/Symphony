@@ -42,13 +42,13 @@ func (op *OpLocalPtrGet) Bind(vm core.IVM) error {
 func (op *OpLocalPtrGet) Execute(decoder *core.Decoder) {
 	// Operands Offset 2 (16-bit)
 	localIndex := decoder.Operand(0)
-	val := op.vm.Stack().PeekAbsolute(op.vm.Frame().BasePointer() + localIndex)
+	val := op.vm.StackPeekOffsetBP(uint(localIndex))
 	if obj, ok := val.(*objects.ObjectPointer); ok {
-		op.vm.Stack().Push(obj)
+		op.vm.StackPush(obj)
 		return
 	}
-	freeVar := op.vm.Factory().NewObjectPointer(op.vm.Frame().Id(), &val)
-	op.vm.Stack().Push(freeVar)
+	freeVar := op.vm.Factory().NewObjectPointer(op.vm.FrameId(), &val)
+	op.vm.StackPush(freeVar)
 }
 
 // Opcode returns the opcode associated with the instance.

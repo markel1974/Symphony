@@ -42,14 +42,13 @@ func (op *OpIteratorInit) Bind(vm core.IVM) error {
 func (op *OpIteratorInit) Execute(decoder *core.Decoder) {
 	// Operands Offset 1 (8-bit)
 	localIndex := decoder.Operand(0)
-	iterable := op.vm.Stack().Pop()
+	iterable := op.vm.StackPop()
 	if !iterable.Iterable() {
 		op.vm.SetError(fmt.Errorf("not iterable: %s", iterable.TypeName()))
 		return
 	}
-	iterator := iterable.Iterate(op.vm.Frame().Id())
-	destSlot := op.vm.Frame().BasePointer() + localIndex
-	op.vm.Stack().SetAbsolute(destSlot, iterator)
+	iterator := iterable.Iterate(op.vm.FrameId())
+	op.vm.StackSetOffsetBP(uint(localIndex), iterator)
 }
 
 // Opcode returns the opcode associated with the instance.

@@ -42,7 +42,7 @@ func (op *OpImport) Execute(decoder *core.Decoder) {
 	// Operands Offset 2 (16-bit)
 	nameIndex := decoder.Operand(0)
 	symbol := op.vm.Imports().Get(uint(nameIndex))
-	op.vm.Stack().Push(symbol)
+	op.vm.StackPush(symbol)
 }
 
 // Opcode returns the opcode associated with the instance.

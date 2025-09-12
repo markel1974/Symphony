@@ -38,7 +38,7 @@ func NewSequencer() *Sequencer {
 	return seq
 }
 
-// Bind initializes the Sequencer by registering and configuring opcode executors, ensuring no duplicate opcodes exist.
+// Setup initializes the Sequencer by registering and configuring opcode executors, ensuring no duplicate opcodes exist.
 func (ds *Sequencer) Setup() error {
 	var container []core.IOpExecutor
 	maxId := -1

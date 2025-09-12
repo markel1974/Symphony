@@ -42,7 +42,7 @@ func (op *OpConstant) Execute(decoder *core.Decoder) {
 	// Operands Offset 2 (16-bit)
 	cIdx := decoder.Operand(0)
 	glObj := op.vm.Constants().Get(uint(cIdx))
-	op.vm.Stack().Push(glObj)
+	op.vm.StackPush(glObj)
 }
 
 // Opcode returns the opcode associated with the instance.

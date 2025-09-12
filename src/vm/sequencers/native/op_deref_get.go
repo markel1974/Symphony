@@ -41,13 +41,13 @@ func (op *OpDerefGet) Bind(vm core.IVM) error {
 // Execute performs the dereference operation. It takes a pointer from the
 // stack and replaces it with the value it points to.
 func (op *OpDerefGet) Execute(_ *core.Decoder) {
-	operand := op.vm.Stack().Pop()
+	operand := op.vm.StackPop()
 	ptr, ok := operand.(*objects.ObjectPointer)
 	if !ok {
 		op.vm.SetError(fmt.Errorf("invalid operation: cannot dereference non-pointer type %s", operand.TypeName()))
 		return
 	}
-	op.vm.Stack().Push(*ptr.Value())
+	op.vm.StackPush(*ptr.Value())
 }
 
 // Opcode returns the opcode associated with the instance.

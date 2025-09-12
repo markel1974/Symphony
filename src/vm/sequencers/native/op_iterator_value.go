@@ -43,13 +43,13 @@ func (op *OpIteratorValue) Bind(vm core.IVM) error {
 func (op *OpIteratorValue) Execute(decoder *core.Decoder) {
 	// Operands Offset 1 (8-bit)
 	localIndex := decoder.Operand(0)
-	iteratorObj := op.vm.Stack().PeekAbsolute(op.vm.Frame().BasePointer() + localIndex)
+	iteratorObj := op.vm.StackPeekOffsetBP(uint(localIndex))
 	iterator, ok := iteratorObj.(objects.IIterator)
 	if !ok {
 		op.vm.SetError(fmt.Errorf("not an iterator: %s", iteratorObj.TypeName()))
 		return
 	}
-	op.vm.Stack().Push(iterator.Value(op.vm.Frame().Id()))
+	op.vm.StackPush(iterator.Value(op.vm.FrameId()))
 }
 
 // Opcode returns the opcode associated with the instance.

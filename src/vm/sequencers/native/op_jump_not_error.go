@@ -46,7 +46,7 @@ func (op *OpJumpNotError) Bind(vm core.IVM) error {
 // Execute evaluates the top stack element and conditionally updates the instruction pointer if it is not a valid error.
 func (op *OpJumpNotError) Execute(decoder *core.Decoder) {
 	// The object to be checked is at the top of the stack. We don't remove it yet.
-	obj := op.vm.Stack().Peek()
+	obj := op.vm.StackPeek()
 
 	// The Error type's Falsy() logic is perfect: it returns 'true' only for a valid error.
 	// Here we use inverse logic: jump if the object is NOT a valid error.

@@ -48,7 +48,7 @@ func (op *OpTypeAssert) Bind(vm core.IVM) error {
 func (op *OpTypeAssert) Execute(decoder *core.Decoder) {
 	// The operand is the index of the target type name in the constants table.
 	typeNameIndex := decoder.Operand(0)
-	interfaceObj := op.vm.Stack().Pop()
+	interfaceObj := op.vm.StackPop()
 	targetTypeObj := op.vm.Constants().Get(uint(typeNameIndex))
 	targetTypeName, ok := targetTypeObj.(*objects.String)
 	if !ok {
@@ -62,16 +62,16 @@ func (op *OpTypeAssert) Execute(decoder *core.Decoder) {
 	case *objects.Struct:
 		concreteValue = io
 	default:
-		op.vm.Stack().Push(op.vm.Factory().UndefinedValue())
-		op.vm.Stack().Push(op.vm.Factory().FalseValue())
+		op.vm.StackPush(op.vm.Factory().UndefinedValue())
+		op.vm.StackPush(op.vm.Factory().FalseValue())
 		return
 	}
 	if concreteValue.TypeName() == targetTypeName.Value() {
-		op.vm.Stack().Push(concreteValue)
-		op.vm.Stack().Push(op.vm.Factory().TrueValue())
+		op.vm.StackPush(concreteValue)
+		op.vm.StackPush(op.vm.Factory().TrueValue())
 	} else {
-		op.vm.Stack().Push(op.vm.Factory().UndefinedValue())
-		op.vm.Stack().Push(op.vm.Factory().FalseValue())
+		op.vm.StackPush(op.vm.Factory().UndefinedValue())
+		op.vm.StackPush(op.vm.Factory().FalseValue())
 	}
 }
 

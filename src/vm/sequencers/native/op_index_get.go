@@ -41,9 +41,9 @@ func (op *OpIndexGet) Bind(vm core.IVM) error {
 // Execute processes the index operation on the stack, retrieving a value or setting an error if indexing is invalid.
 func (op *OpIndexGet) Execute(_ *core.Decoder) {
 	// Operands Offset  0
-	index := op.vm.Stack().Pop()
-	left := op.vm.Stack().Pop()
-	val, err := left.IndexGet(op.vm.Frame().Id(), index)
+	index := op.vm.StackPop()
+	left := op.vm.StackPop()
+	val, err := left.IndexGet(op.vm.FrameId(), index)
 	if err != nil {
 		op.vm.SetError(objects.ComputeIndexGetError(err, index.TypeName(), index.TypeName()))
 		return
@@ -51,7 +51,7 @@ func (op *OpIndexGet) Execute(_ *core.Decoder) {
 	if val == nil {
 		val = op.vm.Factory().UndefinedValue()
 	}
-	op.vm.Stack().Push(val)
+	op.vm.StackPush(val)
 }
 
 // Opcode returns the opcode associated with the instance.

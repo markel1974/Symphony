@@ -50,8 +50,8 @@ func (op *OpCreateInterface) Execute(decoder *core.Decoder) {
 	iTable := make(map[string]objects.IObject, numMethods)
 	for i := 0; i < numMethods; i++ {
 		// Pop in reverse order: function first, then name.
-		methodFunc := op.vm.Stack().Pop()
-		methodNameObj := op.vm.Stack().Pop()
+		methodFunc := op.vm.StackPop()
+		methodNameObj := op.vm.StackPop()
 		methodName, ok := methodNameObj.(*objects.String)
 		if !ok {
 			op.vm.SetError(fmt.Errorf("interface method name must be a string, got %s", methodNameObj.TypeName()))
@@ -61,13 +61,13 @@ func (op *OpCreateInterface) Execute(decoder *core.Decoder) {
 	}
 
 	// 2. Pop the concrete value (the struct instance) that will be wrapped by the interface.
-	concreteValue := op.vm.Stack().Pop()
+	concreteValue := op.vm.StackPop()
 
 	// 3. Create the new interface object.
-	interfaceObj := op.vm.Factory().NewInterface(op.vm.Frame().Id(), concreteValue, iTable)
+	interfaceObj := op.vm.Factory().NewInterface(op.vm.FrameId(), concreteValue, iTable)
 
 	// 4. Push the final interface object back onto the stack.
-	op.vm.Stack().Push(interfaceObj)
+	op.vm.StackPush(interfaceObj)
 }
 
 // Opcode returns the opcode associated with the instance.

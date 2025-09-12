@@ -42,11 +42,11 @@ func (op *OpUnaryBitwiseComplement) Bind(vm core.IVM) error {
 // Execute performs the bitwise complement operation on the top stack value. Sets an error if the value is not an integer.
 func (op *OpUnaryBitwiseComplement) Execute(_ *core.Decoder) {
 	// Operands Offset 0
-	operand := op.vm.Stack().Pop()
+	operand := op.vm.StackPop()
 	switch x := operand.(type) {
 	case *objects.Int:
-		res := op.vm.Factory().NewInt(op.vm.Frame().Id(), ^x.Value())
-		op.vm.Stack().Push(res)
+		res := op.vm.Factory().NewInt(op.vm.FrameId(), ^x.Value())
+		op.vm.StackPush(res)
 	default:
 		op.vm.SetError(fmt.Errorf("invalid operation: ^%s", operand.TypeName()))
 		return

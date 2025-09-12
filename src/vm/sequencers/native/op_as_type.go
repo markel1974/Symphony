@@ -46,7 +46,7 @@ func (op *OpAsType) Bind(vm core.IVM) error {
 // Execute performs the operation by popping an interface from the stack and pushing its concrete value back.
 // If the popped object is not an interface, it sets an error in the virtual machine.
 func (op *OpAsType) Execute(decoder *core.Decoder) {
-	interfaceObj := op.vm.Stack().Pop()
+	interfaceObj := op.vm.StackPop()
 	io, isInterface := interfaceObj.(*objects.Interface)
 	if !isInterface {
 		// This should never happen in a valid type switch.
@@ -54,7 +54,7 @@ func (op *OpAsType) Execute(decoder *core.Decoder) {
 		return
 	}
 	// Replace the interface with its concrete value on the stack.
-	op.vm.Stack().Push(io.Value())
+	op.vm.StackPush(io.Value())
 }
 
 // Opcode returns the opcode associated with the instance.

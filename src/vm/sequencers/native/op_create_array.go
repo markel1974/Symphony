@@ -42,9 +42,9 @@ func (op *OpCreateArray) Bind(vm core.IVM) error {
 func (op *OpCreateArray) Execute(decoder *core.Decoder) {
 	// Operands Offset 2 (16-bit)
 	numElements := decoder.Operand(0)
-	elements := op.vm.Stack().PopArrayElements(numElements)
-	arr := op.vm.Factory().NewArray(op.vm.Frame().Id(), elements)
-	op.vm.Stack().Push(arr)
+	elements := op.vm.StackPopArray(numElements)
+	arr := op.vm.Factory().NewArray(op.vm.FrameId(), elements)
+	op.vm.StackPush(arr)
 }
 
 // Opcode returns the opcode associated with the instance.

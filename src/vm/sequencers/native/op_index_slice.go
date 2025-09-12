@@ -42,9 +42,9 @@ func (op *OpIndexSlice) Bind(vm core.IVM) error {
 // Execute processes the slice operation on the stack, adjusting bounds and supporting various object types like arrays and strings.
 func (op *OpIndexSlice) Execute(_ *core.Decoder) {
 	// Operands Offset  0
-	highStack := op.vm.Stack().Pop()
-	lowStack := op.vm.Stack().Pop()
-	leftObj := op.vm.Stack().Pop()
+	highStack := op.vm.StackPop()
+	lowStack := op.vm.StackPop()
+	leftObj := op.vm.StackPop()
 	lowIdx, highIdx, err := op.vm.Factory().BoundsCheck(lowStack, highStack, int64(leftObj.Length()))
 	if err != nil {
 		op.vm.SetError(err)
@@ -52,14 +52,14 @@ func (op *OpIndexSlice) Execute(_ *core.Decoder) {
 	}
 	switch left := leftObj.(type) {
 	case *objects.Array:
-		val := op.vm.Factory().NewArray(op.vm.Frame().Id(), left.Values()[lowIdx:highIdx])
-		op.vm.Stack().Push(val)
+		val := op.vm.Factory().NewArray(op.vm.FrameId(), left.Values()[lowIdx:highIdx])
+		op.vm.StackPush(val)
 	case *objects.String:
-		val := op.vm.Factory().NewString(op.vm.Frame().Id(), left.Value()[lowIdx:highIdx])
-		op.vm.Stack().Push(val)
+		val := op.vm.Factory().NewString(op.vm.FrameId(), left.Value()[lowIdx:highIdx])
+		op.vm.StackPush(val)
 	case *objects.Bytes:
-		val := op.vm.Factory().NewBytes(op.vm.Frame().Id(), left.Value()[lowIdx:highIdx])
-		op.vm.Stack().Push(val)
+		val := op.vm.Factory().NewBytes(op.vm.FrameId(), left.Value()[lowIdx:highIdx])
+		op.vm.StackPush(val)
 	default:
 		op.vm.SetError(fmt.Errorf("invalid operation: %s[%d:%d]", left.TypeName(), lowIdx, highIdx))
 		return

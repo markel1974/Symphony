@@ -44,19 +44,19 @@ func (op *OpLocalIndex) Execute(decoder *core.Decoder) {
 	// Operands Offset 2 (16-bit|8-bit)
 	localIndex := decoder.Operand(0)
 	selCount := decoder.Operand(1)
-	dstObj := op.vm.Stack().PeekAbsolute(op.vm.Frame().BasePointer() + localIndex)
+	dstObj := op.vm.StackPeekOffsetBP(uint(localIndex))
 	//if obj, ok := dstObj.(*objects.ObjectPointer); ok {
 	//	dstObj = *obj.Value()
 	//}
 	selectors := make([]objects.IObject, selCount)
 	for i := 0; i < selCount; i++ {
 		offset := selCount - i
-		selectors[i] = op.vm.Stack().PeekOffset(offset)
+		selectors[i] = op.vm.StackPeekOffsetSP(uint(offset))
 	}
 	offset := selCount + 1
-	srcObj := op.vm.Stack().PeekOffset(offset)
-	op.vm.Stack().DecrementCount(offset)
-	if err := op.vm.Factory().IndexAssign(op.vm.Frame().Id(), dstObj, srcObj, selectors); err != nil {
+	srcObj := op.vm.StackPeekOffsetSP(uint(offset))
+	op.vm.StackDecrementCount(offset)
+	if err := op.vm.Factory().IndexAssign(op.vm.FrameId(), dstObj, srcObj, selectors); err != nil {
 		op.vm.SetError(err)
 		return
 	}

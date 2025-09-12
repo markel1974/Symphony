@@ -41,8 +41,8 @@ func (op *OpFreeSet) Bind(vm core.IVM) error {
 func (op *OpFreeSet) Execute(decoder *core.Decoder) {
 	// Operands Offset 2 (16-bit)
 	freeIndex := decoder.Operand(0)
-	o := op.vm.Stack().Pop()
-	freeObj := op.vm.Frame().FreeVarsIndex(uint(freeIndex))
+	o := op.vm.StackPop()
+	freeObj := op.vm.FrameFreeVarsIndex(uint(freeIndex))
 	if freeObj == nil {
 		op.vm.SetError(fmt.Errorf("free variable %d not found", freeIndex))
 		return

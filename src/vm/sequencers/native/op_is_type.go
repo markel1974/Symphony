@@ -52,7 +52,7 @@ func (op *OpIsType) Execute(decoder *core.Decoder) {
 	typeNameIndex := decoder.Operand(0)
 
 	// The interface object is at the top of the stack (we don't use Pop).
-	interfaceObj := op.vm.Stack().Peek()
+	interfaceObj := op.vm.StackPeek()
 
 	targetTypeObj := op.vm.Constants().Get(uint(typeNameIndex))
 	targetTypeName, ok := targetTypeObj.(*objects.String)
@@ -63,14 +63,14 @@ func (op *OpIsType) Execute(decoder *core.Decoder) {
 
 	io, isInterface := interfaceObj.(*objects.Interface)
 	if !isInterface {
-		op.vm.Stack().Push(op.vm.Factory().FalseValue())
+		op.vm.StackPush(op.vm.Factory().FalseValue())
 		return
 	}
 
 	if io.Value().TypeName() == targetTypeName.Value() {
-		op.vm.Stack().Push(op.vm.Factory().TrueValue())
+		op.vm.StackPush(op.vm.Factory().TrueValue())
 	} else {
-		op.vm.Stack().Push(op.vm.Factory().FalseValue())
+		op.vm.StackPush(op.vm.Factory().FalseValue())
 	}
 }
 

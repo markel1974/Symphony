@@ -40,7 +40,7 @@ func (op *OpPop) Bind(vm core.IVM) error {
 // Execute performs the operation defined by OpPop, which decreases the stack pointer of the VM.
 func (op *OpPop) Execute(_ *core.Decoder) {
 	// Operands Offset 0
-	op.vm.Stack().Decrement()
+	op.vm.StackDecrement()
 }
 
 // Opcode returns the opcode associated with the instance.

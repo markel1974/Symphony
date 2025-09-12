@@ -43,14 +43,14 @@ func (op *OpUnaryAdd) Bind(vm core.IVM) error {
 // Execute executes the unary addition operation on the top operand of the stack and pushes the result back onto the stack.
 func (op *OpUnaryAdd) Execute(_ *core.Decoder) {
 	// Operands Offset 0
-	operand := op.vm.Stack().Pop()
+	operand := op.vm.StackPop()
 	switch x := operand.(type) {
 	case *objects.Float:
-		res := op.vm.Factory().NewFloat(op.vm.Frame().Id(), +x.Value())
-		op.vm.Stack().Push(res)
+		res := op.vm.Factory().NewFloat(op.vm.FrameId(), +x.Value())
+		op.vm.StackPush(res)
 	default:
-		res := op.vm.Factory().NewInt(op.vm.Frame().Id(), +x.AsInt64())
-		op.vm.Stack().Push(res)
+		res := op.vm.Factory().NewInt(op.vm.FrameId(), +x.AsInt64())
+		op.vm.StackPush(res)
 	}
 }
 

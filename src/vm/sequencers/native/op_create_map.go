@@ -41,8 +41,8 @@ func (op *OpCreateMap) Bind(vm core.IVM) error {
 func (op *OpCreateMap) Execute(decoder *core.Decoder) {
 	// Operands Offset 2 (16-bit)
 	numElements := decoder.Operand(0)
-	mElem := op.vm.Stack().PopMapElements(numElements)
-	op.vm.Stack().Push(op.vm.Factory().NewMap(op.vm.Frame().Id(), mElem))
+	mElem := op.vm.StackPopMap(numElements)
+	op.vm.StackPush(op.vm.Factory().NewMap(op.vm.FrameId(), mElem))
 }
 
 // Opcode returns the opcode associated with the instance.

@@ -41,13 +41,13 @@ func (op *OpFreeGet) Bind(vm core.IVM) error {
 func (op *OpFreeGet) Execute(decoder *core.Decoder) {
 	// Operands Offset 2 (16-bit)
 	freeIndex := decoder.Operand(0)
-	freeVar := op.vm.Frame().FreeVarsIndex(uint(freeIndex))
+	freeVar := op.vm.FrameFreeVarsIndex(uint(freeIndex))
 	if freeVar == nil {
 		op.vm.SetError(fmt.Errorf("free variable %d not found", freeIndex))
 		return
 	}
 	z := *freeVar.Value()
-	op.vm.Stack().Push(z)
+	op.vm.StackPush(z)
 }
 
 // Opcode returns the opcode associated with the instance.

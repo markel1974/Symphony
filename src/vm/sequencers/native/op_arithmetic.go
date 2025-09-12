@@ -46,15 +46,15 @@ func (op *OpArithmetic) Bind(vm core.IVM) error {
 // In case of an operation error, it sets the virtual machine's error state.
 func (op *OpArithmetic) Execute(decoder *core.Decoder) {
 	opcode := decoder.Operand(0)
-	right := op.vm.Stack().Pop()
-	left := op.vm.Stack().Pop()
+	right := op.vm.StackPop()
+	left := op.vm.StackPop()
 	operator := objects.ArithmeticOperator(opcode)
-	res, err := left.ArithmeticOp(op.vm.Frame().Id(), operator, right)
+	res, err := left.ArithmeticOp(op.vm.FrameId(), operator, right)
 	if err != nil {
 		op.vm.SetError(err)
 		return
 	}
-	op.vm.Stack().Push(res)
+	op.vm.StackPush(res)
 }
 
 // Opcode returns the opcode associated with the instance.
