@@ -65,12 +65,10 @@ func New(gk objects.IGateKeeper, op opcodes.IOpcodes) *VM {
 // Setup initializes the virtual machine with the provided bytecode and loader components.
 func (v *VM) Setup(loader bytecode.ILoader, sequencer []IOpExecutor, codes ...*bytecode.Bytecode) (map[string]uint, error) {
 	//var test IVMFullAccess = v
-
 	var err error
 	v.sequencerMask = len(sequencer) - 1
 	v.sequencer = make([]*Decoder, len(sequencer))
 	for i, s := range sequencer {
-
 		if v.sequencer[i], err = NewDecoder(s); err != nil {
 			return nil, err
 		}
@@ -87,7 +85,6 @@ func (v *VM) Setup(loader bytecode.ILoader, sequencer []IOpExecutor, codes ...*b
 	if v.bc == nil {
 		return nil, fmt.Errorf("no bytecode provided")
 	}
-
 	if err = v.imports.Setup(loader, v.bc.Imports()); err != nil {
 		return nil, err
 	}
