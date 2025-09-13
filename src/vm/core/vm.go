@@ -271,22 +271,18 @@ func (v *VM) Call(value objects.IObject, spread bool, numArgs int) {
 
 	switch ce := value.(type) {
 	case *objects.FuncCompiled:
-		numParams := ce.NumParameters()
 		if ce.VarArgs() {
-			if numParams > 0 {
-				numParams--
+			np := ce.NumParameters()
+			if np > 0 {
+				np--
 			}
-			if varArgs := numArgs - numParams; varArgs > 0 {
+			if varArgs := numArgs - np; varArgs > 0 {
 				elements := v.stack.PopArray(uint(varArgs))
 				v.stack.Push(v.gk.NewArray(v.currFrame.Id(), elements))
-				//v.stack.PushVarArgs(v.currFrame.Id(), uint(varArgs))
-				numArgs = numParams + 1
-				//v.stack.PushVarArgs2(v.currFrame.Id(), numArgs, numParams)
 			}
-			numArgs = ce.NumParameters()
 		} else {
-			if numArgs != numParams {
-				v.SetError(fmt.Errorf("%s invalid arguments [vargs: %v] : want>=%d, got=%d", ce.Name(), ce.VarArgs(), numParams, numArgs))
+			if np := ce.NumParameters(); numArgs != np {
+				v.SetError(fmt.Errorf("%s invalid arguments [vargs: %v] : want>=%d, got=%d", ce.Name(), ce.VarArgs(), np, numArgs))
 				return
 			}
 		}
