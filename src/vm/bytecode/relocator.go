@@ -64,14 +64,14 @@ func (c *Relocator) Relocate(codes []*Bytecode) (*Bytecode, error) {
 
 // RelocateObjects modifies a slice of IObject instances by deduplicating input and updating bytecode constant indexes accordingly.
 func (c *Relocator) relocateObjects(inObj []objects.IObject) ([]objects.IObject, error) {
-	outDeduped, outIndexContainer, err := c.processDuplicates(inObj)
+	outDeduped, outIndexContainer, err := c.processObjects(inObj)
 	if err != nil {
 		return nil, err
 	}
 	for _, in := range outDeduped {
 		switch obj := in.(type) {
 		case *objects.FuncCompiled:
-			if err = c.updateFuncIndexes(obj, outIndexContainer); err != nil {
+			if err = c.relocateFunction(obj, outIndexContainer); err != nil {
 				return nil, err
 			}
 		}
@@ -81,7 +81,7 @@ func (c *Relocator) relocateObjects(inObj []objects.IObject) ([]objects.IObject,
 
 // processDuplicates processes a container of objects, removing duplicates and mapping old indices to new indices.
 // It returns a deduplicated list of objects, a mapping of old to new indices, and an error if encountered.
-func (c *Relocator) processDuplicates(container []objects.IObject) ([]objects.IObject, map[int]int, error) {
+func (c *Relocator) processObjects(container []objects.IObject) ([]objects.IObject, map[int]int, error) {
 	var outDuped []objects.IObject
 	indexContainer := make(map[int]int)
 	ints := make(map[int64]int)
@@ -136,7 +136,7 @@ func (c *Relocator) processDuplicates(container []objects.IObject) ([]objects.IO
 
 // updateConstIndexes modifies bytecode instructions to remap constant indexes based on the provided index map.
 // It updates OpConstant and OpCreateClosure instructions with new constant indexes or returns an error if mapping fails.
-func (c *Relocator) updateFuncIndexes(fc *objects.FuncCompiled, indexContainer map[int]int) error {
+func (c *Relocator) relocateFunction(fc *objects.FuncCompiled, indexContainer map[int]int) error {
 	bc := fc.Data()
 	var end int
 	for i := 0; i < len(bc); {
