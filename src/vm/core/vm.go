@@ -65,6 +65,7 @@ func New(gk objects.IGateKeeper, op opcodes.IOpcodes) *VM {
 // Setup initializes the virtual machine with the provided bytecode and loader components.
 func (v *VM) Setup(loader bytecode.ILoader, sequencer []IOpExecutor, codes ...*bytecode.Bytecode) (map[string]uint, error) {
 	//var test IVMFullAccess = v
+	//fmt.Println("VM.Setup", test)
 	var err error
 	v.sequencerMask = len(sequencer) - 1
 	v.sequencer = make([]*Decoder, len(sequencer))
@@ -155,41 +156,41 @@ func (v *VM) StackSet(value objects.IObject) {
 
 // StackPeekOffsetBP retrieves an object from the stack at the given offset relative to the base pointer of the current frame.
 func (v *VM) StackPeekOffsetBP(offset uint) objects.IObject {
-	return v.stack.PeekAbsolute(v.currFrame.BasePointer() + int(offset))
+	return v.stack.PeekAbsolute(uint(v.currFrame.BasePointer()) + offset)
 }
 
 // StackSetOffsetBP sets a value in the stack at the specified offset from the current frame's base pointer.
 func (v *VM) StackSetOffsetBP(offset uint, value objects.IObject) {
-	v.stack.SetAbsolute(v.currFrame.BasePointer()+int(offset), value)
+	v.stack.SetAbsolute(uint(v.currFrame.BasePointer())+offset, value)
 }
 
 // StackSetOffsetSP sets the value of a stack element at the specified offset from the stack pointer (SP).
 func (v *VM) StackSetOffsetSP(offset uint, value objects.IObject) {
-	v.stack.SetOffset(int(offset), value)
+	v.stack.SetOffset(offset, value)
 }
 
 // StackPeekOffsetSP retrieves the item at the specified offset from the stack, relative to the stack pointer.
 func (v *VM) StackPeekOffsetSP(offset uint) objects.IObject {
-	return v.stack.PeekOffset(int(offset))
+	return v.stack.PeekOffset(offset)
 }
 
 // StackPeekArray retrieves and returns an array of objects from the stack without modifying the stack.
-func (v *VM) StackPeekArray(numArgs int) []objects.IObject {
+func (v *VM) StackPeekArray(numArgs uint) []objects.IObject {
 	return v.stack.PeekArray(numArgs)
 }
 
 // StackPopArray pops a specified number of elements from the stack and returns them as a slice of IObject.
-func (v *VM) StackPopArray(numElements int) []objects.IObject {
+func (v *VM) StackPopArray(numElements uint) []objects.IObject {
 	return v.stack.PopArray(numElements)
 }
 
 // StackPopMap pops a specified number of key-value pairs from the stack and returns them as a map.
-func (v *VM) StackPopMap(numElements int) map[string]objects.IObject {
+func (v *VM) StackPopMap(numElements uint) map[string]objects.IObject {
 	return v.stack.PopMap(numElements)
 }
 
 // StackDecrementCount reduces the count of items on the stack by the specified decrement amount.
-func (v *VM) StackDecrementCount(decrement int) {
+func (v *VM) StackDecrementCount(decrement uint) {
 	v.stack.DecrementCount(decrement)
 }
 
@@ -275,7 +276,13 @@ func (v *VM) Call(value objects.IObject, spread bool, numArgs int) {
 			if numParams > 0 {
 				numParams--
 			}
-			v.stack.PushVarArgs(v.currFrame.Id(), numArgs, numParams)
+			if varArgs := numArgs - numParams; varArgs > 0 {
+				elements := v.stack.PopArray(uint(varArgs))
+				v.stack.Push(v.gk.NewArray(v.currFrame.Id(), elements))
+				//v.stack.PushVarArgs(v.currFrame.Id(), uint(varArgs))
+				numArgs = numParams + 1
+				//v.stack.PushVarArgs2(v.currFrame.Id(), numArgs, numParams)
+			}
 			numArgs = ce.NumParameters()
 		} else {
 			if numArgs != numParams {
@@ -286,7 +293,7 @@ func (v *VM) Call(value objects.IObject, spread bool, numArgs int) {
 		v.prepareForCall(ce, numArgs)
 	default:
 		var args []objects.IObject
-		args = append(args, v.stack.PeekArray(numArgs)...)
+		args = append(args, v.stack.PeekArray(uint(numArgs))...)
 		v.CallObject(value, numArgs, args...)
 	}
 }
@@ -294,7 +301,7 @@ func (v *VM) Call(value objects.IObject, spread bool, numArgs int) {
 // CallObject invokes a callable object with the given arguments and handles stack cleanup and error management.
 func (v *VM) CallObject(value objects.IObject, numArgs int, args ...objects.IObject) {
 	retCount, ret, err := value.Call(v.currFrame.Id(), args...)
-	v.stack.DecrementCount(numArgs + 1)
+	v.stack.DecrementCount(uint(numArgs) + 1)
 	if err != nil {
 		v.SetError(objects.ComputeCallError(err, value.TypeName()))
 		return
@@ -375,14 +382,14 @@ func (v *VM) returnApply(returnValues []objects.IObject) {
 		}
 		// add arguments which are located at the start of the current frame
 		for i := 0; i < numArgs; i++ {
-			obj := v.stack.PeekAbsolute(leavingFrameBasePointer + i)
+			obj := v.stack.PeekAbsolute(uint(leavingFrameBasePointer + i))
 			if obj.Frame() != objects.FrameStatic {
 				objectsToPreserve = append(objectsToPreserve, obj)
 			}
 		}
 	}
 
-	v.stack.ReleaseObjects(leavingFrameId, leavingFrameBasePointer, v.stack.StackPointer(), objectsToPreserve)
+	v.stack.ReleaseObjects(leavingFrameId, leavingFrameBasePointer, int(v.stack.StackPointer()), objectsToPreserve)
 
 	if v.frames.CanMovePrevious() {
 		v.frames.MovePrevious()
@@ -392,7 +399,7 @@ func (v *VM) returnApply(returnValues []objects.IObject) {
 		shutdown = true
 	}
 
-	v.stack.SetStackPointer(leavingFrameBasePointer)
+	v.stack.SetStackPointer(uint(leavingFrameBasePointer))
 
 	if lRet := len(returnValues); lRet > 0 {
 		for i := lRet - 1; i >= 0; i-- {
@@ -424,7 +431,7 @@ func (v *VM) Print(writer io.Writer) {
 
 // GetReturnValue returns the value from the top of the stack as an interface value.
 func (v *VM) GetReturnValue(idx int) interface{} {
-	obj := v.stack.PeekAbsolute(idx)
+	obj := v.stack.PeekAbsolute(uint(idx))
 	if obj == nil {
 		return nil
 	}
@@ -438,7 +445,7 @@ func (v *VM) GetReturnValues() []interface{} {
 		return nil
 	}
 	out := make([]interface{}, values)
-	for x := 0; x < values; x++ {
+	for x := 0; x < int(values); x++ {
 		out[x] = v.GetReturnValue(x)
 	}
 	return out
@@ -473,13 +480,13 @@ func (v *VM) exec(mainFn *objects.FuncCompiled, ret bool, args ...interface{}) (
 	}()
 	v.currFrame = v.frames.Head()
 	v.currFrame.Bind(v.ip, mainFn, 0)
-	v.stack.SetStackPointer(v.currFrame.NumLocals())
+	v.stack.SetStackPointer(uint(v.currFrame.NumLocals()))
 	if v.currFrame.NumParameters() != len(args) {
 		return nil, fmt.Errorf("[%s] wrong number of arguments provided: want=%d, got=%d", mainFn.Name(), v.currFrame.NumParameters(), len(args))
 	}
 	for idx, arg := range args {
 		argObj := v.gk.FromInterface(objects.FrameStatic, arg)
-		v.stack.SetAbsolute(idx, argObj)
+		v.stack.SetAbsolute(uint(idx), argObj)
 	}
 
 	v.loop()
@@ -527,7 +534,7 @@ func (v *VM) prepareForCall(callee *objects.FuncCompiled, numArgs int) *Frame {
 	//	The new "floor" begins exactly where the caller's local variable space ends.
 	bp := v.currFrame.BasePointer() + v.currFrame.NumLocals()
 
-	v.stack.CopyOffset(bp, numArgs)
+	v.stack.CopyOffset(uint(bp), uint(numArgs))
 
 	// 3. Advance to the next frame
 	v.currFrame = v.frames.Current()
@@ -537,7 +544,7 @@ func (v *VM) prepareForCall(callee *objects.FuncCompiled, numArgs int) *Frame {
 	v.currFrame.Bind(v.GetIp(), callee, bp)
 
 	// 5. Set stack pointer to include arguments and space for new locals
-	v.stack.SetStackPointer(bp + numArgs + callee.NumLocals())
+	v.stack.SetStackPointer(uint(bp + numArgs + callee.NumLocals()))
 	v.ReseIp()
 
 	return v.currFrame

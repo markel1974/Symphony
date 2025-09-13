@@ -21,7 +21,7 @@ type IVMFrameOnly interface {
 type IVMStackOnly interface {
 	IVM
 	StackDecrement()
-	StackDecrementCount(count int)
+	StackDecrementCount(count uint)
 
 	StackPeek() objects.IObject
 	StackPop() objects.IObject
@@ -31,9 +31,9 @@ type IVMStackOnly interface {
 	StackSetOffsetBP(offset uint, value objects.IObject)
 	StackPeekOffsetSP(offset uint) objects.IObject
 	StackSetOffsetSP(offset uint, value objects.IObject)
-	StackPeekArray(numArgs int) []objects.IObject
-	StackPopArray(numElements int) []objects.IObject
-	StackPopMap(numElements int) map[string]objects.IObject
+	StackPeekArray(numElements uint) []objects.IObject
+	StackPopArray(numElements uint) []objects.IObject
+	StackPopMap(numElements uint) map[string]objects.IObject
 
 	Factory() objects.IGateKeeper
 	SetError(err error)

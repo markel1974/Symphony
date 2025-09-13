@@ -12,7 +12,7 @@ import (
 type Stack struct {
 	gk        objects.IGateKeeper
 	stack     []objects.IObject
-	sp        int
+	sp        uint
 	errSignal func(err error)
 }
 
@@ -31,12 +31,16 @@ func NewStack(gk objects.IGateKeeper, size int, errSignal func(err error)) *Stac
 }
 
 // StackPointer returns the current stack pointer (sp) indicating the top position of the stack.
-func (v *Stack) StackPointer() int {
+func (v *Stack) StackPointer() uint {
 	return v.sp
 }
 
 // SetStackPointer sets the stack pointer to the specified value.
-func (v *Stack) SetStackPointer(sp int) {
+func (v *Stack) SetStackPointer(sp uint) {
+	if sp >= uint(len(v.stack)) {
+		v.errSignal(objects.ErrIndexOutOfBounds)
+		return
+	}
 	v.sp = sp
 }
 
@@ -55,47 +59,26 @@ func (v *Stack) Decrement() {
 }
 
 // DecrementCount reduces the stack pointer (sp) by the specified count, effectively moving it down the stack.
-func (v *Stack) DecrementCount(count int) {
-	if v.sp < count {
+func (v *Stack) DecrementCount(count uint) {
+	if count > v.sp {
 		v.errSignal(objects.ErrIndexOutOfBounds)
 		return
 	}
 	v.sp -= count
 }
 
-// SetAbsolute assigns the specified object to the stack at the given absolute index.
-func (v *Stack) SetAbsolute(absolute int, obj objects.IObject) {
-	if absolute < 0 || absolute >= len(v.stack) {
-		v.errSignal(objects.ErrIndexOutOfBounds)
-		return
-	}
-	v.stack[absolute] = obj
-}
-
-// SetOffset assigns the given object to the stack at a position determined by the current stack pointer minus the offset.
-// If the resolved index is out of bounds, an error signal is triggered.
-func (v *Stack) SetOffset(offset int, obj objects.IObject) {
-	sp := v.sp - offset
-	if sp < 0 || sp >= len(v.stack) {
-		v.errSignal(objects.ErrIndexOutOfBounds)
-		return
-	}
-	v.stack[sp] = obj
-}
-
 // Set assigns the given object to the position indicated by the current stack pointer minus one.
 func (v *Stack) Set(obj objects.IObject) {
-	sp := v.sp - 1
-	if sp < 0 || sp >= len(v.stack) {
+	if v.sp == 0 {
 		v.errSignal(objects.ErrIndexOutOfBounds)
 		return
 	}
-	v.stack[sp] = obj
+	v.stack[v.sp-1] = obj
 }
 
 // Push adds the provided object to the top of the stack and increments the stack pointer.
 func (v *Stack) Push(obj objects.IObject) {
-	if v.sp < 0 || v.sp >= len(v.stack) {
+	if v.sp+1 >= uint(len(v.stack)) {
 		v.errSignal(objects.ErrIndexOutOfBounds)
 		return
 	}
@@ -103,24 +86,21 @@ func (v *Stack) Push(obj objects.IObject) {
 	v.sp++
 }
 
-// PushVarArgs processes a variadic argument list, grouping extra arguments into an array and updating the stack pointer.
-func (v *Stack) PushVarArgs(frame int, numArgs int, realArgs int) {
-	varArgs := numArgs - realArgs
-	if varArgs < 0 {
-		return
-	}
-	numArgs = realArgs + 1
-	args := make([]objects.IObject, varArgs)
-	spStart := v.sp - varArgs
-	for i := spStart; i < v.sp; i++ {
-		args[i-spStart] = v.stack[i]
-	}
-	if spStart < 0 || spStart >= len(v.stack) {
+// PopArray removes and returns a specified number of elements from the stack as a slice of IObject.
+func (v *Stack) PopArray(numElements uint) []objects.IObject {
+	if numElements > v.sp {
 		v.errSignal(objects.ErrIndexOutOfBounds)
-		return
+		return []objects.IObject{}
 	}
-	v.stack[spStart] = v.gk.NewArray(frame, args)
-	v.sp = spStart + 1
+	elements := make([]objects.IObject, numElements)
+	//var elements []objects.IObject
+	target := v.sp - numElements
+	for i := target; i < v.sp; i++ {
+		elements[i-target] = v.stack[i]
+		//elements = append(elements, v.stack[i])
+	}
+	v.sp -= numElements
+	return elements
 }
 
 // Pop removes and returns the object at the top of the stack.
@@ -134,28 +114,19 @@ func (v *Stack) Pop() objects.IObject {
 	return v.stack[v.sp]
 }
 
-// PopArray removes and returns a specified number of elements from the stack as a slice of IObject.
-func (v *Stack) PopArray(numElements int) []objects.IObject {
-	if numElements > v.sp {
-		v.errSignal(objects.ErrIndexOutOfBounds)
-		return []objects.IObject{}
-	}
-	var elements []objects.IObject
-	for i := v.sp - numElements; i < v.sp; i++ {
-		elements = append(elements, v.stack[i])
-	}
-	v.sp -= numElements
-	return elements
-}
-
 // PopMap removes the specified number of key-value pairs from the stack and returns them as a map.
-func (v *Stack) PopMap(numElements int) map[string]objects.IObject {
+func (v *Stack) PopMap(numElements uint) map[string]objects.IObject {
+	if numElements&1 == 1 {
+		v.errSignal(objects.ErrIndexOutOfBounds)
+		return nil
+	}
 	kv := make(map[string]objects.IObject, numElements)
 	if numElements > v.sp {
 		v.errSignal(objects.ErrIndexOutOfBounds)
 		return kv
 	}
-	for i := v.sp - numElements; i < v.sp; i += 2 {
+	target := v.sp - numElements
+	for i := target; i < v.sp; i += 2 {
 		k := v.stack[i]
 		value := v.stack[i+1]
 		key, ok := k.(*objects.String)
@@ -169,10 +140,18 @@ func (v *Stack) PopMap(numElements int) map[string]objects.IObject {
 	return kv
 }
 
+// SetAbsolute assigns the specified object to the stack at the given absolute index.
+func (v *Stack) SetAbsolute(absolute uint, obj objects.IObject) {
+	if absolute >= v.sp {
+		v.errSignal(objects.ErrIndexOutOfBounds)
+		return
+	}
+	v.stack[absolute] = obj
+}
+
 // PeekAbsolute retrieves the object at the specified absolute index in the stack without modifying the stack pointer.
-func (v *Stack) PeekAbsolute(absolute int) objects.IObject {
-	sp := absolute
-	if sp < 0 || sp >= len(v.stack) {
+func (v *Stack) PeekAbsolute(absolute uint) objects.IObject {
+	if absolute >= v.sp {
 		v.errSignal(objects.ErrIndexOutOfBounds)
 		return v.gk.UndefinedValue()
 	}
@@ -181,34 +160,42 @@ func (v *Stack) PeekAbsolute(absolute int) objects.IObject {
 
 // PeekOffset retrieves the object at the stack pointer minus the specified offset without modifying the stack pointer.
 // Returns UndefinedValue if the resolved index is out of stack bounds.
-func (v *Stack) PeekOffset(offset int) objects.IObject {
-	sp := v.sp - offset
-	if sp < 0 || sp >= len(v.stack) {
+func (v *Stack) PeekOffset(offset uint) objects.IObject {
+	if offset == 0 || offset > v.sp {
 		v.errSignal(objects.ErrIndexOutOfBounds)
 		return v.gk.UndefinedValue()
 	}
-	ret := v.stack[sp]
+	ret := v.stack[v.sp-offset]
 	return ret
+}
+
+// SetOffset assigns the given object to the stack at a position determined by the current stack pointer minus the offset.
+// If the resolved index is out of bounds, an error signal is triggered.
+func (v *Stack) SetOffset(offset uint, obj objects.IObject) {
+	if offset == 0 || offset > v.sp {
+		v.errSignal(objects.ErrIndexOutOfBounds)
+		return
+	}
+	v.stack[v.sp-offset] = obj
 }
 
 // Peek returns the object at the top of the stack.
 func (v *Stack) Peek() objects.IObject {
-	sp := v.sp - 1
-	if sp < 0 || sp >= len(v.stack) {
+	if v.sp == 0 {
 		v.errSignal(objects.ErrIndexOutOfBounds)
 		return v.gk.UndefinedValue()
 	}
-	ret := v.stack[sp]
+	ret := v.stack[v.sp-1]
 	return ret
 }
 
 // PeekInterval returns a slice of objects from the stack within the specified range [start:end). Returns nil for invalid ranges.
-func (v *Stack) PeekInterval(start int, end int) []objects.IObject {
+func (v *Stack) PeekInterval(start uint, end uint) []objects.IObject {
 	if start == end {
 		v.errSignal(objects.ErrIndexOutOfBounds)
 		return []objects.IObject{}
 	}
-	if start < 0 || end > len(v.stack) || start > end {
+	if end > v.sp || start > end {
 		v.errSignal(objects.ErrIndexOutOfBounds)
 		return []objects.IObject{}
 	}
@@ -216,36 +203,28 @@ func (v *Stack) PeekInterval(start int, end int) []objects.IObject {
 }
 
 // PeekArray retrieves a slice of IObject elements from the stack, based on the specified number of arguments.
-func (v *Stack) PeekArray(numArgs int) []objects.IObject {
-	start := v.sp - numArgs
-	if start < 0 || start >= len(v.stack) {
+func (v *Stack) PeekArray(numArgs uint) []objects.IObject {
+	if numArgs > v.sp {
 		v.errSignal(objects.ErrIndexOutOfBounds)
 		return nil
 	}
-	end := v.sp
-	if end < 0 || end > len(v.stack) {
-		return nil
-	}
+	start := v.sp - numArgs
 	z := v.stack[start:v.sp]
 	return z
 }
 
 // CopyOffset copies a specified number of arguments from the source stack area to the designated frame in the stack.
 // It performs bounds checks to prevent stack underflow or overflow and signals an error if any condition is violated.
-func (v *Stack) CopyOffset(start int, count int) {
+func (v *Stack) CopyOffset(start uint, count uint) {
 	if count == 0 {
 		return
 	}
-	sourceStart := v.sp - count
+	if count > v.sp || start > v.sp-count {
+		v.errSignal(objects.ErrIndexOutOfBounds)
+		return
+	}
 	destinationEnd := start + count
-	if sourceStart < 0 {
-		v.errSignal(fmt.Errorf("stack underflow during argument copy: sourceStart is %d", sourceStart))
-		return
-	}
-	if destinationEnd > len(v.stack) {
-		v.errSignal(fmt.Errorf("stack overflow during argument copy: destinationEnd is %d", destinationEnd))
-		return
-	}
+	sourceStart := v.sp - count
 	copy(v.stack[start:destinationEnd], v.stack[sourceStart:v.sp])
 }
 
@@ -302,7 +281,7 @@ func (v *Stack) ReleaseObjects(frame int, start int, end int, preserve []objects
 // Print outputs each element in the stack from the bottom to the current stack pointer.
 func (v *Stack) Print(writer io.Writer) {
 	_, _ = fmt.Fprintln(writer, "------------- Stack -------------")
-	for x := 0; x < v.sp; x++ {
+	for x := uint(0); x < v.sp; x++ {
 		_, _ = fmt.Fprintf(writer, "%v\n", v.stack[x])
 	}
 	_, _ = fmt.Fprintln(writer, "--------------------------------")

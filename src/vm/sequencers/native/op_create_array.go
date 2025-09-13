@@ -42,7 +42,7 @@ func (op *OpCreateArray) Bind(vm core.IVM) error {
 func (op *OpCreateArray) Execute(decoder *core.Decoder) {
 	// Operands Offset 2 (16-bit)
 	numElements := decoder.Operand(0)
-	elements := op.vm.StackPopArray(numElements)
+	elements := op.vm.StackPopArray(uint(numElements))
 	arr := op.vm.Factory().NewArray(op.vm.FrameId(), elements)
 	op.vm.StackPush(arr)
 }

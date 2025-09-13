@@ -77,7 +77,7 @@ func (op *OpCreateClosure) Execute(decoder *core.Decoder) {
 			free[idx] = freeObjPtr
 		}
 	}
-	op.vm.StackDecrementCount(freeIndices.Length())
+	op.vm.StackDecrementCount(uint(freeIndices.Length()))
 	cl := op.vm.Factory().NewFuncCompiled(op.vm.FrameId(), fn.Name(), fn.Instructions().Data(), fn.NumLocals(), fn.NumParameters(), fn.VarArgs(), nil, free)
 	op.vm.StackPush(cl)
 }

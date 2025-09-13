@@ -54,7 +54,7 @@ func (op *OpGlobalIndex) Execute(decoder *core.Decoder) {
 	}
 	offset := selCount + 1
 	srcObj := op.vm.StackPeekOffsetSP(uint(offset))
-	op.vm.StackDecrementCount(offset)
+	op.vm.StackDecrementCount(uint(offset))
 	if err := op.vm.Factory().IndexAssign(op.vm.FrameId(), dstObj, srcObj, selectors); err != nil {
 		op.vm.SetError(err)
 		return

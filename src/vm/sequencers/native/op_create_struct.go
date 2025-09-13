@@ -42,7 +42,7 @@ func (op *OpCreateStruct) Execute(decoder *core.Decoder) {
 	// Operands Offset 2 (16-bit)
 	numElements := decoder.Operand(0)
 	typeNameObj := op.vm.StackPop()
-	mElem := op.vm.StackPopMap(numElements)
+	mElem := op.vm.StackPopMap(uint(numElements))
 	structObj := op.vm.Factory().NewStruct(op.vm.FrameId(), typeNameObj.AsString(), mElem)
 	op.vm.StackPush(structObj)
 }
