@@ -40,7 +40,7 @@ func (g *Globals) Get(index uint) objects.IObject {
 
 // Set updates the value at the specified index in the container. Emits an error signal if the index is invalid.
 func (g *Globals) Set(index uint, value objects.IObject) {
-	if index > uint(len(g.container)) {
+	if index >= uint(len(g.container)) {
 		g.errSignal(fmt.Errorf("invalid constant index: %d", index))
 		return
 	}
