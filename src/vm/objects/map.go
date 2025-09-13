@@ -196,6 +196,15 @@ func (o *Map) IndexSet(index, value IObject) error {
 	return nil
 }
 
+// Count returns the total number of elements in the instance and its sub-elements.
+func (o *Map) Count() int {
+	counter := 0
+	for _, v := range o.values {
+		counter += v.Count()
+	}
+	return counter
+}
+
 // Iterate creates and returns an iterator for the Map, allowing iteration over its keys and associated values.
 func (o *Map) Iterate(frame int) IIterator {
 	return o.GateKeeper().NewMapIterator(frame, o.values, 0)

@@ -130,3 +130,8 @@ func (o *Interface) Value() IObject {
 func (o *Interface) ITable() map[string]IObject {
 	return o.iTable
 }
+
+// Count returns the total number of elements in the instance and its sub-elements.
+func (o *Interface) Count() int {
+	return 1
+}

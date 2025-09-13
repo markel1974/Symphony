@@ -53,6 +53,7 @@ type IObject interface {
 	Iterable() bool
 	Call(frame int, args ...IObject) (uint, IObject, error)
 	Length() int
+	Count() int
 }
 
 // IGateAllocator provides methods for creating and managing various IObject instances within a specific execution frame.

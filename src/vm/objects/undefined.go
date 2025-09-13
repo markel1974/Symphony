@@ -145,3 +145,8 @@ func (o *Undefined) Key(_ int) IObject {
 func (o *Undefined) Value(_ int) IObject {
 	return o
 }
+
+// Count returns the total number of elements in the instance and its sub-elements.
+func (o *Undefined) Count() int {
+	return 1
+}

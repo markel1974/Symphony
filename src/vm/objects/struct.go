@@ -196,3 +196,12 @@ func (o *Struct) Iterate(frame int) IIterator {
 func (o *Struct) Iterable() bool {
 	return true
 }
+
+// Count returns the total number of elements in the instance and its sub-elements.
+func (o *Struct) Count() int {
+	counter := 0
+	for _, v := range o.values {
+		counter += v.Count()
+	}
+	return counter
+}

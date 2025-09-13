@@ -160,3 +160,12 @@ func (o *MapIterator) Value(_ int) IObject {
 	k := o.keys[idx]
 	return o.values[k]
 }
+
+// Count returns the total number of elements in the instance and its sub-elements.
+func (o *MapIterator) Count() int {
+	counter := 0
+	for _, v := range o.values {
+		counter += v.Count()
+	}
+	return counter
+}

@@ -167,3 +167,8 @@ func (o *ObjectPointer) acquire(value *IObject) {
 		(*o.valuePtr).AddRef()
 	}
 }
+
+// Count returns the total number of elements in the instance and its sub-elements.
+func (o *ObjectPointer) Count() int {
+	return 1
+}

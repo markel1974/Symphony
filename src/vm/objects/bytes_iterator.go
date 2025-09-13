@@ -147,3 +147,8 @@ func (o *BytesIterator) Value(frame int) IObject {
 	}
 	return o.GateKeeper().NewInt(frame, int64(o.values[idx]))
 }
+
+// Count returns the total number of elements in the instance and its sub-elements.
+func (o *BytesIterator) Count() int {
+	return 1
+}

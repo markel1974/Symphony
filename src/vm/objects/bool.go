@@ -156,6 +156,11 @@ func (o *Bool) Equals(x IObject) bool {
 	return o == x
 }
 
+// Count returns the total number of elements in the instance and its sub-elements.
+func (o *Bool) Count() int {
+	return 1
+}
+
 // GobDecode decodes the Bool object from a byte slice encoded using Gob into its internal value.
 func (o *Bool) GobDecode(b []byte) (err error) {
 	o.value = b[0] == 1

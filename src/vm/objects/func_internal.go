@@ -639,3 +639,8 @@ func (h *FuncInternal) make(frame int, args []IObject) (IObject, error) {
 		return nil, fmt.Errorf("cannot make type %s", kind.TypeName())
 	}
 }
+
+// Count returns the total number of elements in the instance and its sub-elements.
+func (h *FuncInternal) Count() int {
+	return 1
+}

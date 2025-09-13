@@ -148,3 +148,12 @@ func (o *ArrayIterator) Value(_ int) IObject {
 	}
 	return o.values[idx]
 }
+
+// Count returns the total number of elements in the instance and its sub-elements.
+func (o *ArrayIterator) Count() int {
+	counter := 0
+	for _, v := range o.values {
+		counter += v.Count()
+	}
+	return counter
+}

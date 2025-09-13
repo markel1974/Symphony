@@ -164,3 +164,8 @@ func (o *Error) IndexGet(_ int, index IObject) (IObject, error) {
 	}
 	return o.value, nil
 }
+
+// Count returns the total number of elements in the instance and its sub-elements.
+func (o *Error) Count() int {
+	return o.value.Count()
+}

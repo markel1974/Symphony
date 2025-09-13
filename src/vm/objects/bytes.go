@@ -164,3 +164,8 @@ func (o *Bytes) Iterable() bool {
 func (o *Bytes) Iterate(frame int) IIterator {
 	return o.GateKeeper().NewBytesIterator(frame, o.values, 0)
 }
+
+// Count returns the total number of elements in the instance and its sub-elements.
+func (o *Bytes) Count() int {
+	return 1
+}

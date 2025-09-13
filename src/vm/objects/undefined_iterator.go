@@ -101,7 +101,7 @@ func (o *UndefinedIterator) TypeName() string {
 	return UndefinedIteratorType
 }
 
-// String returns a string representation of the UndefinedIterator object.
+// AsString returns a string representation of the UndefinedIterator object.
 func (o *UndefinedIterator) AsString() string {
 	return UndefinedIteratorLabel
 }
@@ -129,4 +129,9 @@ func (o *UndefinedIterator) Key(_ int) IObject {
 // Value retrieves the undefined value associated with the current UndefinedIterator.
 func (o *UndefinedIterator) Value(_ int) IObject {
 	return o.GateKeeper().UndefinedValue()
+}
+
+// Count returns the total number of elements in the instance and its sub-elements.
+func (o *UndefinedIterator) Count() int {
+	return 1
 }

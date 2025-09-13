@@ -124,6 +124,11 @@ func (o *FuncJit) Call(_ int, _ ...IObject) (uint, IObject, error) {
 	return 0, nil, ErrUnimplemented
 }
 
+// Count returns the total number of elements in the instance and its sub-elements.
+func (o *FuncJit) Count() int {
+	return 1
+}
+
 /*
 func (*FuncJit) create(machineCode []byte) error {
 	//machineCode := []byte{0x48, 0xc7, 0xc0, 0x2a, 0x00, 0x00, 0x00, 0xc3}

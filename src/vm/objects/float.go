@@ -151,3 +151,8 @@ func (o *Float) Equals(x IObject) bool {
 	}
 	return o.value == t.value
 }
+
+// Count returns the total number of elements in the instance and its sub-elements.
+func (o *Float) Count() int {
+	return 1
+}

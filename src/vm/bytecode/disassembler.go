@@ -9,105 +9,87 @@ import (
 	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
 
+type DisassemblerData struct {
+	name string
+	data []objects.IObject
+}
+
 // Disassembler represents a utility for analyzing and processing bytecode by dissecting its constants and imports.
 type Disassembler struct {
-	bc           *Bytecode
+	dd           []DisassemblerData
 	opcodes      opcodes.IOpcodes
 	instructions *opcodes.Instructions
 }
 
 // NewDisassembler creates a new Disassembler instance linked to the provided Bytecode object.
 func NewDisassembler(b *Bytecode, op opcodes.IOpcodes) *Disassembler {
-	return &Disassembler{
-		bc:           b,
+	d := &Disassembler{
 		opcodes:      op,
 		instructions: opcodes.NewInstructions(nil),
 	}
+	d.dd = append(d.dd, DisassemblerData{"Constants", b.Constants()})
+	d.dd = append(d.dd, DisassemblerData{"Imports", b.Imports()})
+	d.dd = append(d.dd, DisassemblerData{"Globals", b.Globals()})
+	return d
 }
 
 // Disassemble parses and logs opcode of objects, constants, and imports within the associated bytecode.
 func (d *Disassembler) Disassemble(writer io.Writer) error {
-	_, _ = fmt.Fprintf(writer, "--- Object Count ---\n")
-	_, _ = fmt.Fprintf(writer, "%d\n", d.CountObjects())
-	_, _ = fmt.Fprintf(writer, "--- Constants ---\n")
-	constants, err := d.disassembleObjects(d.bc.Constants())
-	if err != nil {
-		return err
-	}
-	for idx, v := range constants {
-		_, _ = fmt.Fprintf(writer, "%04d => %s\n", idx, v)
-	}
-	imports, err := d.disassembleObjects(d.bc.Imports())
-	if err != nil {
-		return err
-	}
-	_, _ = fmt.Fprintf(writer, "--- Imports ---\n")
-	for idx, v := range imports {
-		_, _ = fmt.Fprintf(writer, "%04d => %s\n", idx, v)
-	}
-	_, _ = fmt.Fprintf(writer, "--- Globals ---\n")
-	globals, err := d.disassembleObjects(d.bc.Globals())
-	if err != nil {
-		return err
-	}
-	for idx, v := range globals {
-		_, _ = fmt.Fprintf(writer, "%04d => %s\n", idx, v)
+	for _, container := range d.dd {
+		_, _ = fmt.Fprintf(writer, "---- %s ----\n", container.name)
+		count := 0
+		for cIdx, obj := range container.data {
+			data, err := d.disassembleObject(cIdx, obj)
+			if err != nil {
+				return err
+			}
+			_, _ = fmt.Fprintf(writer, "%04d => %s\n", cIdx, data)
+			count += obj.Count()
+		}
+		_, _ = fmt.Fprintf(writer, "total objects: %d\n", count)
 	}
 	return nil
 }
 
-// disassembleConstants iterates through bytecode constants, disassembles each, and returns the results as a slice of strings.
-func (d *Disassembler) disassembleObjects(e []objects.IObject) ([]string, error) {
-	var output []string
-	for cIdx, constant := range e {
-		data, err := d.disassembleObject(cIdx, constant)
-		if err != nil {
-			return nil, err
-		}
-		output = append(output, data...)
-	}
-	return output, nil
-}
-
 // disassembleObject generates a disassembled representation of a constant object, including detailed instructions for functions.
-func (d *Disassembler) disassembleObject(cIdx int, constant objects.IObject) ([]string, error) {
+func (d *Disassembler) disassembleObject(idx int, obj objects.IObject) ([]string, error) {
 	var output []string
-	if constant == nil {
-		return []string{fmt.Sprintf("[% 3d] nil", cIdx)}, nil
+	if obj == nil {
+		return []string{fmt.Sprintf("[% 3d] nil", idx)}, nil
 	}
-	switch cn := constant.(type) {
+	switch cn := obj.(type) {
 	case *objects.FuncCompiled:
-		output = append(output, fmt.Sprintf("[% 3d] %s (Compiled Function|%p)", cIdx, cn.Name(), &cn))
-		data, err := d.disassembleInstructions(cn.Data(), 0)
+		data, err := d.disassembleInstructions(cn.Data())
 		if err != nil {
 			return nil, err
 		}
+		output = append(output, fmt.Sprintf("[% 3d] %s (Compiled Function|%p)", idx, cn.Name(), &cn))
 		for _, l := range data {
 			output = append(output, fmt.Sprintf("\t\t%s", l))
 		}
 	default:
-		z := reflect.TypeOf(cn)
-		output = append(output, fmt.Sprintf("[% 3d] %s -> '%s' (%s|%p)", cIdx, cn.TypeName(), cn.AsString(), z.Elem().Name(), &cn))
+		kind := reflect.TypeOf(cn)
+		output = append(output, fmt.Sprintf("[% 3d] %s -> '%s' (%s|%p)", idx, cn.TypeName(), cn.AsString(), kind.Elem().Name(), &cn))
 	}
 	return output, nil
 }
 
 // disassembleInstructions parses a sequence of bytecode instructions and generates a human-readable representation of the instructions.
-func (d *Disassembler) disassembleInstructions(bc []byte, posOffset int) ([]string, error) {
+func (d *Disassembler) disassembleInstructions(bc []byte) ([]string, error) {
 	var out []string
 	var end int
-	for i := 0; i < len(bc); {
+	for start := 0; start < len(bc); {
 		d.instructions.Assign(bc)
-		targetOpcode, headerBytes, ok := d.instructions.Header(uint(i))
+		targetOpcode, headerBytes, ok := d.instructions.Header(uint(start))
 		if !ok {
-			return nil, fmt.Errorf("invalid instruction at offset %d", i)
+			return nil, fmt.Errorf("invalid instruction at offset %d", start)
 		}
 		opcode := d.opcodes.Opcode(targetOpcode)
 		totalBytes := int(headerBytes) + opcode.OperandsBytes()
-		if end = i + totalBytes; end > len(bc) {
-			return nil, fmt.Errorf("invalid range %d-%d", i, end)
+		if end = start + totalBytes; end > len(bc) {
+			return nil, fmt.Errorf("invalid range %d-%d", start, end)
 		}
-		instructions := bc[i:end]
+		instructions := bc[start:end]
 		operands, err := opcode.DecompileOperands(headerBytes, instructions)
 		if err != nil {
 			return nil, err
@@ -115,47 +97,12 @@ func (d *Disassembler) disassembleInstructions(bc []byte, posOffset int) ([]stri
 		if len(operands) != opcode.OperandsLen() {
 			return nil, fmt.Errorf("invalid operand count: %d", len(operands))
 		}
-		k := fmt.Sprintf("%04d %-16s", posOffset+i, opcode.Name())
+		k := fmt.Sprintf("%04d %-16s", start, opcode.Name())
 		for _, v := range operands {
 			k += fmt.Sprintf(" %-5d", v)
 		}
 		out = append(out, k)
-		i = end
+		start = end
 	}
 	return out, nil
-
-}
-
-// CountObjects computes the total number of objects in the Bytecode's constants and imports, including nested objects.
-func (d *Disassembler) CountObjects() int {
-	n := 0
-	for _, c := range d.bc.Constants() {
-		n += d.countObjects(c)
-	}
-	for _, c := range d.bc.Imports() {
-		n += d.countObjects(c)
-	}
-	return n
-}
-
-// countObjects recursively counts the total number of objects contained in the given IObject, including nested structures.
-func (d *Disassembler) countObjects(in objects.IObject) int {
-	c := 1
-	switch o := in.(type) {
-	case *objects.Array:
-		for _, v := range o.Values() {
-			c += d.countObjects(v)
-		}
-	case *objects.Map:
-		for _, v := range o.Values() {
-			c += d.countObjects(v)
-		}
-	case *objects.Struct:
-		for _, v := range o.Values() {
-			c += d.countObjects(v)
-		}
-	case *objects.Error:
-		c += d.countObjects(o.Value())
-	}
-	return c
 }

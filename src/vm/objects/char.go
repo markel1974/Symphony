@@ -146,3 +146,8 @@ func (o *Char) Equals(x IObject) bool {
 	}
 	return o.value == t.value
 }
+
+// Count returns the total number of elements in the instance and its sub-elements.
+func (o *Char) Count() int {
+	return 1
+}

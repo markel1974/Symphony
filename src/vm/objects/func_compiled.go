@@ -200,3 +200,8 @@ func (o *FuncCompiled) SourcePos(ip int) int {
 	}
 	return 0
 }
+
+// Count returns the total number of elements in the instance and its sub-elements.
+func (o *FuncCompiled) Count() int {
+	return 1
+}

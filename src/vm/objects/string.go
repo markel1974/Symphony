@@ -188,6 +188,11 @@ func (o *String) IndexGet(frame int, index IObject) (IObject, error) {
 	return o.GateKeeper().NewChar(frame, o.runeStr[idxVal]), nil
 }
 
+// Count returns the total number of elements in the instance and its sub-elements.
+func (o *String) Count() int {
+	return 1
+}
+
 // Iterable checks if the String object supports iteration and always returns true.
 func (o *String) Iterable() bool {
 	return true

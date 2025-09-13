@@ -221,6 +221,15 @@ func (o *Array) IndexSet(index IObject, value IObject) (err error) {
 	return nil
 }
 
+// Count returns the total number of elements in the instance and its sub-elements.
+func (o *Array) Count() int {
+	counter := 0
+	for _, v := range o.values {
+		counter += v.Count()
+	}
+	return counter
+}
+
 // Iterable checks if the Array is iterable and always returns true.
 func (o *Array) Iterable() bool {
 	return true

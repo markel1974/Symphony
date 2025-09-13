@@ -147,3 +147,8 @@ func (o *StringIterator) Value(frame int) IObject {
 	}
 	return o.GateKeeper().NewChar(frame, o.values[idx])
 }
+
+// Count returns the total number of elements in the instance and its sub-elements.
+func (o *StringIterator) Count() int {
+	return 1
+}

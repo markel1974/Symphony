@@ -129,3 +129,8 @@ func (o *FuncImport) Call(frame int, args ...IObject) (uint, IObject, error) {
 	}
 	return 0, o.gk.UndefinedValue(), ErrInvalidArgumentsNumber
 }
+
+// Count returns the total number of elements in the instance and its sub-elements.
+func (o *FuncImport) Count() int {
+	return 1
+}

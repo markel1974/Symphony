@@ -153,3 +153,8 @@ func (o *Int) Equals(x IObject) bool {
 	}
 	return o.value == t.value
 }
+
+// Count returns the total number of elements in the instance and its sub-elements.
+func (o *Int) Count() int {
+	return 1
+}

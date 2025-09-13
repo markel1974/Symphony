@@ -186,3 +186,8 @@ func (o *Time) Equals(x IObject) bool {
 	}
 	return o.value.Equal(t.value)
 }
+
+// Count returns the total number of elements in the instance and its sub-elements.
+func (o *Time) Count() int {
+	return 1
+}
