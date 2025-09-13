@@ -90,67 +90,46 @@ func (c *Relocator) processDuplicates(container []objects.IObject) ([]objects.IO
 	strings := make(map[string]int)
 	fns := make(map[*objects.FuncCompiled]int)
 
-	for curIdx, in := range container {
+	for idx, in := range container {
+		newIndex := len(outDuped)
+		foundIndex := -1
+		found := false
 		switch obj := in.(type) {
 		case *objects.FuncCompiled:
-			newIdx := -1
 			if _, preserve := c.preserveFunc[obj.Name()]; !preserve {
-				if v, ok := fns[obj]; ok {
-					newIdx = v
+				var v int
+				if v, found = fns[obj]; found {
+					foundIndex = v
 				}
 			}
-			if newIdx >= 0 {
-				indexContainer[curIdx] = newIdx
-			} else {
-				newIdx = len(outDuped)
-				fns[obj] = newIdx
-				indexContainer[curIdx] = newIdx
-				outDuped = append(outDuped, obj)
+			if !found {
+				fns[obj] = newIndex
 			}
 		case *objects.Int:
-			if newIdx, ok := ints[obj.Value()]; ok {
-				indexContainer[curIdx] = newIdx
-			} else {
-				newIdx = len(outDuped)
-				ints[obj.Value()] = newIdx
-				indexContainer[curIdx] = newIdx
-				outDuped = append(outDuped, obj)
+			if foundIndex, found = ints[obj.Value()]; !found {
+				ints[obj.Value()] = newIndex
 			}
 		case *objects.Float:
-			if newIdx, ok := floats[obj.Value()]; ok {
-				indexContainer[curIdx] = newIdx
-			} else {
-				newIdx = len(outDuped)
-				floats[obj.Value()] = newIdx
-				indexContainer[curIdx] = newIdx
-				outDuped = append(outDuped, obj)
+			if foundIndex, found = floats[obj.Value()]; !found {
+				floats[obj.Value()] = newIndex
 			}
 		case *objects.Char:
-			if newIdx, ok := chars[obj.Value()]; ok {
-				indexContainer[curIdx] = newIdx
-			} else {
-				newIdx = len(outDuped)
-				chars[obj.Value()] = newIdx
-				indexContainer[curIdx] = newIdx
-				outDuped = append(outDuped, obj)
+			if foundIndex, found = chars[obj.Value()]; !found {
+				chars[obj.Value()] = newIndex
 			}
 		case *objects.String:
-			if newIdx, ok := strings[obj.Value()]; ok {
-				indexContainer[curIdx] = newIdx
-			} else {
-				newIdx = len(outDuped)
-				strings[obj.Value()] = newIdx
-				indexContainer[curIdx] = newIdx
-				outDuped = append(outDuped, obj)
+			if foundIndex, found = strings[obj.Value()]; !found {
+				strings[obj.Value()] = newIndex
 			}
 		default:
 			return nil, nil, fmt.Errorf("unsupported top-level object type: %s", reflect.TypeOf(c).Elem().Name())
 		}
-
-		//if add {
-		//	indexContainer[curIdx] = newIdx
-		//	outDuped = append(outDuped, in)
-		//}
+		if found {
+			indexContainer[idx] = foundIndex
+		} else {
+			indexContainer[idx] = newIndex
+			outDuped = append(outDuped, in)
+		}
 	}
 	return outDuped, indexContainer, nil
 }
