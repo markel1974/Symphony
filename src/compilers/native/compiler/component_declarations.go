@@ -219,9 +219,6 @@ func (c *Declarations) BasicLit(node *ast.BasicLit) error {
 	case token.FLOAT:
 		val, _ := strconv.ParseFloat(node.Value, 64)
 		obj = c.gk.NewFloat(objects.FrameStatic, val)
-	case token.STRING:
-		val, _ := strconv.Unquote(node.Value)
-		obj = c.gk.NewString(objects.FrameStatic, val)
 	case token.CHAR:
 		var val rune
 		for _, v := range node.Value {
@@ -229,6 +226,9 @@ func (c *Declarations) BasicLit(node *ast.BasicLit) error {
 			break
 		}
 		obj = c.gk.NewChar(objects.FrameStatic, val)
+	case token.STRING:
+		val, _ := strconv.Unquote(node.Value)
+		obj = c.gk.NewString(objects.FrameStatic, val)
 	default:
 		return tables.NewCompilerError(c.fileSet, node, "unhandled literal: %s", node.Kind)
 	}

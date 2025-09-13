@@ -146,6 +146,11 @@ func (c *Relocator) processDuplicates(container []objects.IObject) ([]objects.IO
 		default:
 			return nil, nil, fmt.Errorf("unsupported top-level object type: %s", reflect.TypeOf(c).Elem().Name())
 		}
+
+		//if add {
+		//	indexContainer[curIdx] = newIdx
+		//	outDuped = append(outDuped, in)
+		//}
 	}
 	return outDuped, indexContainer, nil
 }

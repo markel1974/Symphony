@@ -14,6 +14,12 @@ type DisassemblerData struct {
 	data []objects.IObject
 }
 
+type DisassemblerOpcode struct {
+	name     string
+	start    int
+	operands []int
+}
+
 // Disassembler represents a utility for analyzing and processing bytecode by dissecting its constants and imports.
 type Disassembler struct {
 	dd           []DisassemblerData
@@ -59,13 +65,17 @@ func (d *Disassembler) disassembleObject(idx int, obj objects.IObject) ([]string
 	}
 	switch cn := obj.(type) {
 	case *objects.FuncCompiled:
-		data, err := d.disassembleInstructions(cn.Data())
+		result, err := d.disassembleInstructions(cn.Data())
 		if err != nil {
 			return nil, err
 		}
-		output = append(output, fmt.Sprintf("[% 3d] %s (Compiled Function|%p)", idx, cn.Name(), &cn))
-		for _, l := range data {
-			output = append(output, fmt.Sprintf("\t\t%s", l))
+		output = append(output, fmt.Sprintf("[% 3d] %s (Compiled Function|%p)\n", idx, cn.Name(), &cn))
+		for _, entry := range result {
+			header := fmt.Sprintf("%04d %-16s", entry.start, entry.name)
+			for _, v := range entry.operands {
+				header += fmt.Sprintf(" %-5d", v)
+			}
+			output = append(output, header+"\n")
 		}
 	default:
 		kind := reflect.TypeOf(cn)
@@ -75,8 +85,8 @@ func (d *Disassembler) disassembleObject(idx int, obj objects.IObject) ([]string
 }
 
 // disassembleInstructions parses a sequence of bytecode instructions and generates a human-readable representation of the instructions.
-func (d *Disassembler) disassembleInstructions(bc []byte) ([]string, error) {
-	var out []string
+func (d *Disassembler) disassembleInstructions(bc []byte) ([]DisassemblerOpcode, error) {
+	var out []DisassemblerOpcode
 	var end int
 	for start := 0; start < len(bc); {
 		d.instructions.Assign(bc)
@@ -97,11 +107,7 @@ func (d *Disassembler) disassembleInstructions(bc []byte) ([]string, error) {
 		if len(operands) != opcode.OperandsLen() {
 			return nil, fmt.Errorf("invalid operand count: %d", len(operands))
 		}
-		k := fmt.Sprintf("%04d %-16s", start, opcode.Name())
-		for _, v := range operands {
-			k += fmt.Sprintf(" %-5d", v)
-		}
-		out = append(out, k)
+		out = append(out, DisassemblerOpcode{name: opcode.Name(), start: start, operands: operands})
 		start = end
 	}
 	return out, nil
