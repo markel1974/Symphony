@@ -35,22 +35,21 @@ func NewRelocator(gk objects.IGateKeeper, loader ILoader, op opcodes.IOpcodes, p
 // Relocate processes a slice of Bytecode instances, ensuring each bytecode is fixed and reconstructed correctly.
 // Returns a new Bytecode instance or an error if the fixing process fails.
 func (c *Relocator) Relocate(codes []*Bytecode) (*Bytecode, error) {
-	relocator := NewContainerData(nil)
+	relocator := NewBytecodeEmpty()
 	for _, bc := range codes {
-		relocator.Append(constantsType, bc.Constants())
-		relocator.Append(importsType, bc.Imports())
-		relocator.Append(globalsType, bc.Globals())
-		relocator.AppendSourceFiles(bc.SourceFiles().Files())
+		relocator.Append(ConstantsType, bc.Constants())
+		relocator.Append(ImportsType, bc.Imports())
+		relocator.Append(GlobalsType, bc.Globals())
+		relocator.AddFiles(bc.Files())
 	}
-	for idx, r := range relocator.Values() {
-		data, err := c.relocateObjects(r.Data())
+	for _, r := range relocator.Containers() {
+		data, err := c.relocateObjects(r.Objects())
 		if err != nil {
 			return nil, err
 		}
-		relocator.Assign(containerType(idx), data)
+		relocator.Assign(r.kind, data)
 	}
-	out := relocator.Bytecode()
-	return out, nil
+	return relocator, nil
 }
 
 // RelocateObjects modifies a slice of IObject instances by deduplicating input and updating bytecode constant indexes accordingly.

@@ -570,8 +570,7 @@ func (t *Process) handleMessageProcessStart(msg interfaces.IMessage) {
 			log.Printf("Process [%s]: error compiling script: %s", t.cmd.Name(), err.Error())
 			return
 		}
-		bc := bytecode.NewBytecode(t.compiler.Constants(), t.compiler.Imports(), t.compiler.Globals())
-		bc.AddFile(t.compiler.FileSet())
+		bc := bytecode.NewBytecode(t.compiler.Constants(), t.compiler.Imports(), t.compiler.Globals(), t.compiler.FileSet())
 		entryPoints, err := t.vm.Setup(t.loader, t.executors, bc)
 		if err != nil {
 			log.Printf("Process [%s]: error setting up VM: %s", t.cmd.Name(), err.Error())

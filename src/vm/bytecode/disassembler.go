@@ -17,7 +17,7 @@ type DisassemblerOpcode struct {
 
 // Disassembler represents a utility for analyzing and processing bytecode by dissecting its constants and imports.
 type Disassembler struct {
-	cd           *ContainerData
+	cd           *Bytecode
 	opcodes      opcodes.IOpcodes
 	instructions *opcodes.Instructions
 }
@@ -27,17 +27,17 @@ func NewDisassembler(b *Bytecode, op opcodes.IOpcodes) *Disassembler {
 	d := &Disassembler{
 		opcodes:      op,
 		instructions: opcodes.NewInstructions(nil),
-		cd:           NewContainerData(b),
+		cd:           b,
 	}
 	return d
 }
 
 // Disassemble parses and logs opcode of objects, constants, and imports within the associated bytecode.
 func (d *Disassembler) Disassemble(writer io.Writer) error {
-	for _, container := range d.cd.Values() {
+	for _, container := range d.cd.Containers() {
 		_, _ = fmt.Fprintf(writer, "---- %s ----\n", container.Name())
 		count := 0
-		for cIdx, obj := range container.Data() {
+		for cIdx, obj := range container.Objects() {
 			data, err := d.disassembleObject(cIdx, obj)
 			if err != nil {
 				return err
