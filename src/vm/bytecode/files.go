@@ -31,34 +31,21 @@ func (s *Files) AddFile(f IFile) {
 	s.lastFile = f
 }
 
-// File retrieves the SourceFile containing the given position p, or nil if p is NoPos or not valid for any file.
+// Files returns a slice of all SourceFiles added to the Files.
+func (s *Files) Files() []IFile {
+	return s.files
+}
+
+// File retrieves the SourceFile corresponding to the specified Pos from the Files or nil if not found.
 func (s *Files) File(p int) IFile {
 	if p == 0 {
 		return nil
 	}
-	return s.file(p)
-}
-
-// Position returns the detailed FilePos for a given Pos, translating it to filename, line, and column information.
-// If the position is invalid or cannot be resolved to a specific file, a zero-value FilePos is returned.
-func (s *Files) Position(p int) (*FilePos, error) {
-	if p == 0 {
-		return nil, fmt.Errorf("illegal NoPos value")
-	}
-	f := s.file(p)
-	if f == nil {
-		return nil, fmt.Errorf("illegal Pos value")
-	}
-	return f.Position(p)
-}
-
-// file retrieves the SourceFile corresponding to the specified Pos from the Files or nil if not found.
-func (s *Files) file(p int) IFile {
 	lf := s.lastFile
 	if lf != nil && lf.Base() <= p && p <= lf.Base()+lf.Size() {
 		return lf
 	}
-	if i := searchFiles(s.files, p); i >= 0 {
+	if i := s.search(p); i >= 0 {
 		f := s.files[i]
 		if p <= f.Base()+f.Size() {
 			s.lastFile = f
@@ -68,7 +55,19 @@ func (s *Files) file(p int) IFile {
 	return nil
 }
 
+// Position returns the detailed FilePos for a given Pos, translating it to filename, line, and column information.
+// If the position is invalid or cannot be resolved to a specific file, a zero-value FilePos is returned.
+func (s *Files) Position(p int) (*FilePos, error) {
+	f := s.File(p)
+	if f == nil {
+		return nil, fmt.Errorf("illegal Pos value")
+	}
+	return f.Position(p)
+}
+
 // searchFiles performs a binary search on a slice of SourceFile pointers to locate the index of the last file with a base offset <= x.
-func searchFiles(a []IFile, x int) int {
-	return sort.Search(len(a), func(i int) bool { return a[i].Base() > x }) - 1
+func (s *Files) search(x int) int {
+	return sort.Search(len(s.files), func(i int) bool {
+		return s.files[i].Base() > x
+	}) - 1
 }

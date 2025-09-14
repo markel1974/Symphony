@@ -8,6 +8,15 @@ import (
 	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
 
+type relocatorType int
+
+const (
+	constantsType relocatorType = iota
+	importsType
+	globalsType
+	lastType //must be the last one
+)
+
 // Relocator is responsible for processing, fixing, and reconstructing objects, ensuring compatibility with the runtime environment.
 type Relocator struct {
 	gk           objects.IGateKeeper
@@ -35,16 +44,13 @@ func NewRelocator(gk objects.IGateKeeper, loader ILoader, op opcodes.IOpcodes, p
 // Relocate processes a slice of Bytecode instances, ensuring each bytecode is fixed and reconstructed correctly.
 // Returns a new Bytecode instance or an error if the fixing process fails.
 func (c *Relocator) Relocate(codes []*Bytecode) (*Bytecode, error) {
-	const constants = 0
-	const imports = 1
-	const globals = 2
 	var sourceFiles []IFile
-	relocator := make([][]objects.IObject, 3)
+	relocator := make([][]objects.IObject, lastType)
 	for _, bc := range codes {
-		relocator[constants] = append(relocator[constants], bc.Constants()...)
-		relocator[imports] = append(relocator[imports], bc.Imports()...)
-		relocator[globals] = append(relocator[globals], bc.Globals()...)
-		sourceFiles = append(sourceFiles, bc.SourceFiles().files...)
+		relocator[constantsType] = append(relocator[constantsType], bc.Constants()...)
+		relocator[importsType] = append(relocator[importsType], bc.Imports()...)
+		relocator[globalsType] = append(relocator[globalsType], bc.Globals()...)
+		sourceFiles = append(sourceFiles, bc.SourceFiles().Files()...)
 	}
 	for idx, r := range relocator {
 		var err error
@@ -52,7 +58,7 @@ func (c *Relocator) Relocate(codes []*Bytecode) (*Bytecode, error) {
 			return nil, err
 		}
 	}
-	out := NewBytecode(relocator[constants], relocator[imports], relocator[globals])
+	out := NewBytecode(relocator[constantsType], relocator[importsType], relocator[globalsType])
 	for _, sf := range sourceFiles {
 		out.AddFile(sf)
 	}
@@ -61,26 +67,26 @@ func (c *Relocator) Relocate(codes []*Bytecode) (*Bytecode, error) {
 
 // RelocateObjects modifies a slice of IObject instances by deduplicating input and updating bytecode constant indexes accordingly.
 func (c *Relocator) relocateObjects(inObj []objects.IObject) ([]objects.IObject, error) {
-	outDeduped, outIndexContainer, err := c.processObjects(inObj)
+	result, indices, err := c.processObjects(inObj)
 	if err != nil {
 		return nil, err
 	}
-	for _, in := range outDeduped {
+	for _, in := range result {
 		switch obj := in.(type) {
 		case *objects.FuncCompiled:
-			if err = c.relocateFunction(obj, outIndexContainer); err != nil {
+			if err = c.relocateFunction(obj, indices); err != nil {
 				return nil, err
 			}
 		}
 	}
-	return outDeduped, nil
+	return result, nil
 }
 
 // processDuplicates processes a container of objects, removing duplicates and mapping old indices to new indices.
 // It returns a deduplicated list of objects, a mapping of old to new indices, and an error if encountered.
 func (c *Relocator) processObjects(container []objects.IObject) ([]objects.IObject, map[int]int, error) {
-	var outDuped []objects.IObject
-	indexContainer := make(map[int]int)
+	var result []objects.IObject
+	indices := make(map[int]int)
 	ints := make(map[int64]int)
 	floats := make(map[float64]int)
 	chars := make(map[rune]int)
@@ -88,7 +94,7 @@ func (c *Relocator) processObjects(container []objects.IObject) ([]objects.IObje
 	fns := make(map[*objects.FuncCompiled]int)
 
 	for idx, in := range container {
-		newIndex := len(outDuped)
+		newIndex := len(result)
 		foundIndex := -1
 		found := false
 		switch obj := in.(type) {
@@ -122,18 +128,18 @@ func (c *Relocator) processObjects(container []objects.IObject) ([]objects.IObje
 			return nil, nil, fmt.Errorf("unsupported top-level object type: %s", reflect.TypeOf(c).Elem().Name())
 		}
 		if found {
-			indexContainer[idx] = foundIndex
+			indices[idx] = foundIndex
 		} else {
-			indexContainer[idx] = newIndex
-			outDuped = append(outDuped, in)
+			indices[idx] = newIndex
+			result = append(result, in)
 		}
 	}
-	return outDuped, indexContainer, nil
+	return result, indices, nil
 }
 
 // updateConstIndexes modifies bytecode instructions to remap constant indexes based on the provided index map.
 // It updates OpConstant and OpCreateClosure instructions with new constant indexes or returns an error if mapping fails.
-func (c *Relocator) relocateFunction(fc *objects.FuncCompiled, indexContainer map[int]int) error {
+func (c *Relocator) relocateFunction(fc *objects.FuncCompiled, indices map[int]int) error {
 	bc := fc.Data()
 	var end int
 	for i := 0; i < len(bc); {
@@ -162,7 +168,7 @@ func (c *Relocator) relocateFunction(fc *objects.FuncCompiled, indexContainer ma
 					return fmt.Errorf("invalid relocation: %d", rel)
 				}
 				curr := operands[rel]
-				newIdx, ok := indexContainer[curr]
+				newIdx, ok := indices[curr]
 				if !ok {
 					return fmt.Errorf("index not found: %d", curr)
 				}
