@@ -6,11 +6,6 @@ import (
 	"sort"
 )
 
-// init registers various types with the gob package to enable serialization and deserialization.
-func init() {
-	gob.Register(&Files{})
-}
-
 // Files represents a collection of source files with positional metadata for efficient file and position lookups.
 type Files struct {
 	base     int
@@ -76,4 +71,32 @@ func (s *Files) search(x int) int {
 	return sort.Search(len(s.files), func(i int) bool {
 		return s.files[i].Base() > x
 	}) - 1
+}
+
+// Encode serializes the Files structure including its base, files, and lastFile properties using the provided gob.Encoder.
+func (s *Files) Encode(enc *gob.Encoder) error {
+	if err := enc.Encode(s.base); err != nil {
+		return err
+	}
+	if err := enc.Encode(s.files); err != nil {
+		return err
+	}
+	if err := enc.Encode(s.lastFile); err != nil {
+		return err
+	}
+	return nil
+}
+
+// Decode deserializes the Files object, restoring its base, files slice, and lastFile from the provided gob.Decoder.
+func (s *Files) Decode(dec *gob.Decoder) error {
+	if err := dec.Decode(&s.base); err != nil {
+		return err
+	}
+	if err := dec.Decode(&s.files); err != nil {
+		return err
+	}
+	if err := dec.Decode(&s.lastFile); err != nil {
+		return err
+	}
+	return nil
 }

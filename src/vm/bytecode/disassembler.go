@@ -35,7 +35,7 @@ func NewDisassembler(b *Bytecode, op opcodes.IOpcodes) *Disassembler {
 // Disassemble parses and logs opcode of objects, constants, and imports within the associated bytecode.
 func (d *Disassembler) Disassemble(writer io.Writer) error {
 	for _, container := range d.cd.Containers() {
-		_, _ = fmt.Fprintf(writer, "---- %s ----\n", container.Name())
+		_, _ = fmt.Fprintf(writer, "---- %s ----\n", container.Type())
 		count := 0
 		for cIdx, obj := range container.Objects() {
 			data, err := d.disassembleObject(cIdx, obj)
@@ -54,7 +54,7 @@ func (d *Disassembler) Disassemble(writer io.Writer) error {
 func (d *Disassembler) disassembleObject(idx int, obj objects.IObject) ([]string, error) {
 	var output []string
 	if obj == nil {
-		return []string{fmt.Sprintf("[% 3d] nil", idx)}, nil
+		return []string{fmt.Sprintf("<% 4d> nil", idx)}, nil
 	}
 	switch cn := obj.(type) {
 	case *objects.FuncCompiled:
@@ -62,7 +62,7 @@ func (d *Disassembler) disassembleObject(idx int, obj objects.IObject) ([]string
 		if err != nil {
 			return nil, err
 		}
-		output = append(output, fmt.Sprintf("[% 3d] %s (Compiled Function|%p)\n", idx, cn.Name(), &cn))
+		output = append(output, fmt.Sprintf("<% 4d> %s (Compiled Function|%p)\n", idx, cn.Name(), &cn))
 		for _, entry := range result {
 			header := fmt.Sprintf("%04d %-16s", entry.start, entry.name)
 			for _, v := range entry.operands {
@@ -72,7 +72,7 @@ func (d *Disassembler) disassembleObject(idx int, obj objects.IObject) ([]string
 		}
 	default:
 		kind := reflect.TypeOf(cn)
-		output = append(output, fmt.Sprintf("[% 3d] %s -> '%s' (%s|%p)", idx, cn.TypeName(), cn.AsString(), kind.Elem().Name(), &cn))
+		output = append(output, fmt.Sprintf("<% 4d> %s -> '%s' (%s|%p)", idx, cn.TypeName(), cn.AsString(), kind.Elem().Name(), &cn))
 	}
 	return output, nil
 }

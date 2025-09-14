@@ -1,10 +1,15 @@
 package compiler
 
 import (
+	"encoding/gob"
 	"go/token"
 
 	"github.com/markel1974/c64emu/src/vm/bytecode"
 )
+
+func init() {
+	gob.Register(&FileSet{})
+}
 
 // FileSet wraps a token.FileSet and provides methods to interact with file position and size metadata.
 type FileSet struct {
