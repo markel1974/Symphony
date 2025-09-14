@@ -12,11 +12,6 @@ const (
 	InitFunction    = "init"
 )
 
-// init registers various types with the gob package to enable serialization and deserialization.
-func init() {
-	gob.Register(&Files{})
-}
-
 // Bytecode represents a construct that encapsulates compiled code, associated constants, and object imports.
 // It aggregates information like source files, constant pool, and referenced objects required for execution.
 type Bytecode struct {

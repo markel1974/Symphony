@@ -1,9 +1,15 @@
 package bytecode
 
 import (
+	"encoding/gob"
 	"fmt"
 	"sort"
 )
+
+// init registers various types with the gob package to enable serialization and deserialization.
+func init() {
+	gob.Register(&Files{})
+}
 
 // Files represents a collection of source files with positional metadata for efficient file and position lookups.
 type Files struct {
