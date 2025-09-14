@@ -48,6 +48,12 @@ Instead of writing a compiler from Z80 assembly to the VM's bytecode, one could 
 
 In this scenario, the VM's execution loop is no longer interpreting a scripting language. It is, in effect, performing the **fetch-decode-execute cycle of an emulated Z80 CPU**, with the maximum efficiency afforded by direct function pointer dispatch. This ability to transform a high-level language VM into a high-performance, low-level CPU emulator—simply by "swapping the instruction disk"—is the ultimate testament to the robustness and brilliance of this architecture.
 
+##### The ISA as a Shared Object Plugin
+
+This architectural pattern, where the core VM is decoupled from the instruction set via the `opcodes.IOpcodes` interface, is the key enabler for a true plugin system. The design is technically ready to load an entire ISA from a **shared object** (`.so` on Linux, `.dll` on Windows) at runtime.
+
+A plugin would simply need to be compiled using Go's `-buildmode=plugin` and export a function that returns a fully configured `Sequencer` that satisfies the `opcodes.IOpcodes` interface. The main VM application could then load this plugin dynamically, effectively swapping out its entire execution engine. This elevates the "interchangeable instruction disk" concept from a powerful metaphor to a practical, deployable reality, offering unparalleled flexibility.
+
 ### 4. The Object System: Dynamic and Rich
 
 The VM operates on a flexible and powerful type system defined in the `vm/objects` package.
