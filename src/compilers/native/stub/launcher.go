@@ -31,7 +31,8 @@ func VMTest(sequencerId string, baseDir string, prefix string, debug bool) error
 			return fmt.Errorf("compiler error: %s", err)
 		}
 		dataFile.Close()
-		bc := bytecode.NewBytecode(comp.Constants(), comp.Imports(), comp.Globals(), comp.FileSet())
+		bc := bytecode.NewBytecode(comp.Constants(), comp.Imports(), comp.Globals())
+		bc.AddFile(comp.FileSet())
 		if debug {
 			d := bytecode.NewDisassembler(bc, seq)
 			_ = d.Disassemble(log.Writer())

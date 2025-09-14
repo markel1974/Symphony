@@ -35,27 +35,24 @@ func NewRelocator(gk objects.IGateKeeper, loader ILoader, op opcodes.IOpcodes, p
 // Relocate processes a slice of Bytecode instances, ensuring each bytecode is fixed and reconstructed correctly.
 // Returns a new Bytecode instance or an error if the fixing process fails.
 func (c *Relocator) Relocate(codes []*Bytecode) (*Bytecode, error) {
-	var constants []objects.IObject
-	var imports []objects.IObject
-	var globals []objects.IObject
+	const constants = 0
+	const imports = 1
+	const globals = 2
 	var sourceFiles []IFile
+	relocator := make([][]objects.IObject, 3)
 	for _, bc := range codes {
-		imports = append(imports, bc.Imports()...)
-		constants = append(constants, bc.Constants()...)
-		globals = append(globals, bc.Globals()...)
+		relocator[constants] = append(relocator[constants], bc.Constants()...)
+		relocator[imports] = append(relocator[imports], bc.Imports()...)
+		relocator[globals] = append(relocator[globals], bc.Globals()...)
 		sourceFiles = append(sourceFiles, bc.SourceFiles().files...)
 	}
-	var err error
-	if imports, err = c.relocateObjects(imports); err != nil {
-		return nil, err
+	for idx, r := range relocator {
+		var err error
+		if relocator[idx], err = c.relocateObjects(r); err != nil {
+			return nil, err
+		}
 	}
-	if constants, err = c.relocateObjects(constants); err != nil {
-		return nil, err
-	}
-	if globals, err = c.relocateObjects(globals); err != nil {
-		return nil, err
-	}
-	out := NewBytecode(constants, imports, globals, nil)
+	out := NewBytecode(relocator[constants], relocator[imports], relocator[globals])
 	for _, sf := range sourceFiles {
 		out.AddFile(sf)
 	}
@@ -184,6 +181,5 @@ func (c *Relocator) relocateFunction(fc *objects.FuncCompiled, indexContainer ma
 		}
 		i = end
 	}
-
 	return nil
 }

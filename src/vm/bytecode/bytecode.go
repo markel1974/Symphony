@@ -27,14 +27,13 @@ type Bytecode struct {
 }
 
 // NewBytecode creates and returns a new instance of Bytecode with an initialized Files object.
-func NewBytecode(constants []objects.IObject, imports []objects.IObject, global []objects.IObject, f IFile) *Bytecode {
+func NewBytecode(constants []objects.IObject, imports []objects.IObject, global []objects.IObject) *Bytecode {
 	bc := &Bytecode{
 		files:     NewFiles(),
 		constants: constants,
 		imports:   imports,
 		globals:   global,
 	}
-	bc.AddFile(f)
 	return bc
 }
 
