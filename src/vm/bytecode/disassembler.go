@@ -9,11 +9,6 @@ import (
 	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
 
-type DisassemblerData struct {
-	name string
-	data []objects.IObject
-}
-
 type DisassemblerOpcode struct {
 	name     string
 	start    int
@@ -22,7 +17,7 @@ type DisassemblerOpcode struct {
 
 // Disassembler represents a utility for analyzing and processing bytecode by dissecting its constants and imports.
 type Disassembler struct {
-	dd           []DisassemblerData
+	cd           *ContainerData
 	opcodes      opcodes.IOpcodes
 	instructions *opcodes.Instructions
 }
@@ -32,19 +27,17 @@ func NewDisassembler(b *Bytecode, op opcodes.IOpcodes) *Disassembler {
 	d := &Disassembler{
 		opcodes:      op,
 		instructions: opcodes.NewInstructions(nil),
+		cd:           NewContainerData(b),
 	}
-	d.dd = append(d.dd, DisassemblerData{"Constants", b.Constants()})
-	d.dd = append(d.dd, DisassemblerData{"Imports", b.Imports()})
-	d.dd = append(d.dd, DisassemblerData{"Globals", b.Globals()})
 	return d
 }
 
 // Disassemble parses and logs opcode of objects, constants, and imports within the associated bytecode.
 func (d *Disassembler) Disassemble(writer io.Writer) error {
-	for _, container := range d.dd {
-		_, _ = fmt.Fprintf(writer, "---- %s ----\n", container.name)
+	for _, container := range d.cd.Values() {
+		_, _ = fmt.Fprintf(writer, "---- %s ----\n", container.Name())
 		count := 0
-		for cIdx, obj := range container.data {
+		for cIdx, obj := range container.Data() {
 			data, err := d.disassembleObject(cIdx, obj)
 			if err != nil {
 				return err
