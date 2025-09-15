@@ -2,19 +2,23 @@
 
 package scripts
 
-import "kernel"
+import (
+	"kernel"
+)
 
-func main(a int) {
-	//var input string = "INPUT"
-	//results := "RESULTS"
-	//for y:=10; y==0; y-- {
-	//	fmt.Printf("y:%d -> %s\n", y, "Hello World")
-	//}
-	for y := 0; y < 10; y++ {
+func main(in int) {
+	for x := 10; x > 0; x-- {
+		kernel.Printf("x:%d -> %s", x, "World Hello")
+	}
+	for y := 0; y <= 10; y++ {
 		kernel.Printf("y:%d -> %s", y, "Hello World")
 	}
-	//z := a + b
-	//y := a - b
-	//x := a * b
-	//fmt.Println(input, a, b, results, z, z, y, x)
+	var input string = "INPUT"
+	results := "RESULTS"
+	a := 7
+	b := 3
+	z := a + b
+	y := a - b
+	x := a * b
+	kernel.Printf("%s %d %d %s %d %d %d %d", input, a, b, results, z, z, y, x)
 }
