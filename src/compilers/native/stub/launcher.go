@@ -48,8 +48,7 @@ func walk(baseDir string, prefix string, files *[]string) error {
 // Returns an error if file walking, compilation, setup, or execution fails.
 func Launch(prefix string, debug bool) error {
 	var files []string
-	err := walk(".", prefix, &files)
-	if err != nil {
+	if err := walk(".", prefix, &files); err != nil {
 		return nil
 	}
 	sort.Strings(files)
@@ -58,7 +57,7 @@ func Launch(prefix string, debug bool) error {
 	for _, fileName := range files {
 		fmt.Printf("\n\n------------------ %s ------------------\n", fileName)
 		seq := native.NewSequencer()
-		if err = seq.Setup(); err != nil {
+		if err := seq.Setup(); err != nil {
 			return err
 		}
 		comp, loader, err := compilers.NewCompiler(gk, seq)
@@ -74,7 +73,6 @@ func Launch(prefix string, debug bool) error {
 		if err = comp.Compile(fileName, dataFile); err != nil {
 			return fmt.Errorf("compiler error: %s", err)
 		}
-		//dataFile.Close()
 		bc := bytecode.NewBytecode(comp.Constants(), comp.Imports(), comp.Globals(), comp.FileSet())
 		if debug {
 			d := bytecode.NewDisassembler(bc, seq)
