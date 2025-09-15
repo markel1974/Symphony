@@ -129,15 +129,13 @@ func BuildDrives(d string) ([]*config.Drive, error) {
 }
 
 func vmTest() {
-	const sequencerId = "native"
-
 	//const prefix = "simple"
-	const prefix = "rt"
+	//const prefix = "rt"
 	//const prefix = "simple2"
-	const baseDir = "../src/compilers/native/stub/sources"
-	//const prefix = "test_"
+	//const baseDir = "../src/compilers/native/stub/sources"
+	const prefix = "test_"
 	//const baseDir = "../src/compilers/native/stub/tests"
-	if err := stub.VMTest(sequencerId, baseDir, prefix, true); err != nil {
+	if err := stub.Launch(prefix, true); err != nil {
 		log.Fatal(err)
 	}
 	os.Exit(0)
@@ -152,7 +150,7 @@ func (nw *NilWriter) Write(p []byte) (int, error) {
 
 func main() {
 	//benchmark.VIC(1000000, 20, 10, 1)
-	//vmTest()
+	vmTest()
 
 	var showHelp bool
 	var showVersion bool
