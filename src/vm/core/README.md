@@ -115,30 +115,21 @@ The path forward does not involve replacing the interpreter but augmenting it. T
 
 From that point on, every call to that function would execute native code directly, resulting in a massive performance boost, while the rest of the "cold" code continues to run safely in the interpreter.
 
-#### Architectural Enablers: The Dual Sequencer Model
+### Symmetrical Architecture: The Dual-Role Executor
 
-This advanced evolution is not an afterthought but a natural consequence of the core design. The unique `Sequencer` architecture provides a uniquely elegant path to JIT compilation: the **"Dual Sequencer"** model.
+The foundation for Just-In-Time (JIT) or Ahead-of-Time (AOT) capability is already built into the symmetrical design of the `IOpExecutor` interface.
 
-Instead of a monolithic JIT engine, the system can be extended with a second, parallel sequencer: a **"Sequencer Transpiler"**. This creates a perfectly symmetrical architecture where execution and compilation are two sides of the same coin.
+Each `IOpExecutor` is designed with a dual role, encapsulating the logic for both interpreting and compiling a single instruction:
 
-The `IOpExecutor` interface for each opcode would be extended to serve two purposes:
+* **`Execute(...)`**: Contains the logic to *interpret* the opcode at runtime.
+* **`Compile(...)`**: Contains the logic to *transpile* the opcode into another format, such as native machine code.
 
-1.  **`Execute(vm IVM)`**: The existing method. It contains the Go logic to **interpret** the opcode. This is used by the standard `ExecutionSequencer`.
-2.  **`Transform(ctx *JitContext)`**: A new method. It contains the logic to **transpile** the opcode into its equivalent native assembly instructions, emitting them into a compilation context.
+This means that the existing `Sequencer` already has everything it needs to act as a compilation orchestrator. It can operate in two distinct modes while reusing the exact same dispatch mechanism:
 
-This leads to a dual-engine system:
+1.  **Interpretation Mode**: When running code, the main loop fetches an opcode and directs the `Sequencer` to call the `Execute()` method on the corresponding executor.
+2.  **Compilation Mode**: When a function is identified as a "hot spot" for JIT compilation, its bytecode can be fed to the *same* `Sequencer`, which would instead be instructed to call the `Compile()` method on each executor.
 
--   **Execution Sequencer**: When the VM needs to interpret code, it dispatches opcodes to their `Execute` methods.
--   **Transform Sequencer**: When a function is marked as "hot", its bytecode is fed to this second sequencer, which dispatches opcodes to their `Transform` methods, effectively compiling the function to native code.
-
-The benefits of this approach are immense:
-
-* **Symmetry and Cohesion**: The logic for interpreting and compiling a single opcode resides in the same, highly cohesive `struct`. Modifying an opcode's behavior means updating both its interpretation and compilation logic in one place.
-* **Maximum Reuse**: The entire infrastructure for decoding and dispatching instructions is reused. The only difference is which method on the executor is called.
-* **Ultimate Modularity**: This design represents the ultimate realization of the architecture's vision. The JIT compiler is not an external system bolted on, but a natural, parallel expression of the same core design, making the entire VM a framework for both execution and compilation.
-
-This makes the architecture not just powerful for what it is today, but for what it can effortlessly become tomorrow: a high-performance, hybrid runtime that offers both universal portability and native speed where it matters most.
-
+The brilliance of this design is its cohesion. All logic related to a single instruction—both for execution and compilation—resides in one place. The `Sequencer` remains a simple, agnostic dispatcher, and the VM can support both interpretation and compilation without needing a redundant architectural component.
 
 #### Architectural Enablers
 

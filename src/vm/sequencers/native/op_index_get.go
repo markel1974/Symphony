@@ -38,6 +38,11 @@ func (op *OpIndexGet) Bind(vm core.IVM) error {
 	return nil
 }
 
+// Opcode returns the opcode associated with the instance.
+func (op *OpIndexGet) Opcode() *opcodes.Opcode {
+	return op.opcode
+}
+
 // Execute processes the index operation on the stack, retrieving a value or setting an error if indexing is invalid.
 func (op *OpIndexGet) Execute(_ *core.Decoder) {
 	// Operands Offset  0
@@ -54,7 +59,7 @@ func (op *OpIndexGet) Execute(_ *core.Decoder) {
 	op.vm.StackPush(val)
 }
 
-// Opcode returns the opcode associated with the instance.
-func (op *OpIndexGet) Opcode() *opcodes.Opcode {
-	return op.opcode
+// Compile generates the compiled representation of the OpIndexGet operation or returns an unimplemented error.
+func (op *OpIndexGet) Compile() ([]byte, error) {
+	return nil, objects.ErrUnimplemented
 }

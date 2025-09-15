@@ -27,6 +27,11 @@ func NewOpDerefGet() core.IOpExecutor {
 	}
 }
 
+// Opcode returns the opcode associated with the instance.
+func (op *OpDerefGet) Opcode() *opcodes.Opcode {
+	return op.opcode
+}
+
 // Bind initializes the instance by casting the provided VM to IVMFullAccess and storing it.
 // Returns an error if the VM does not implement the required interface.
 func (op *OpDerefGet) Bind(vm core.IVM) error {
@@ -50,7 +55,7 @@ func (op *OpDerefGet) Execute(_ *core.Decoder) {
 	op.vm.StackPush(*ptr.Value())
 }
 
-// Opcode returns the opcode associated with the instance.
-func (op *OpDerefGet) Opcode() *opcodes.Opcode {
-	return op.opcode
+// Compile generates the compiled representation of the OpDerefGet operation or returns an unimplemented error.
+func (op *OpDerefGet) Compile() ([]byte, error) {
+	return nil, objects.ErrUnimplemented
 }

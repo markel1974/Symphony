@@ -27,6 +27,11 @@ func NewOpLocalPtrGet() core.IOpExecutor {
 	}
 }
 
+// Opcode returns the opcode associated with the instance.
+func (op *OpLocalPtrGet) Opcode() *opcodes.Opcode {
+	return op.opcode
+}
+
 // Bind initializes the instance by casting the provided VM to IVMFullAccess and storing it.
 // Returns an error if the VM does not implement the required interface.
 func (op *OpLocalPtrGet) Bind(vm core.IVM) error {
@@ -51,7 +56,7 @@ func (op *OpLocalPtrGet) Execute(decoder *core.Decoder) {
 	op.vm.StackPush(freeVar)
 }
 
-// Opcode returns the opcode associated with the instance.
-func (op *OpLocalPtrGet) Opcode() *opcodes.Opcode {
-	return op.opcode
+// Compile generates the compiled representation of the OpLocalPtrGet operation or returns an unimplemented error.
+func (op *OpLocalPtrGet) Compile() ([]byte, error) {
+	return nil, objects.ErrUnimplemented
 }

@@ -39,6 +39,11 @@ func (op *OpDerefSet) Bind(vm core.IVM) error {
 	return nil
 }
 
+// Opcode returns the opcode associated with the instance.
+func (op *OpDerefSet) Opcode() *opcodes.Opcode {
+	return op.opcode
+}
+
 // Execute performs a dereference-and-set operation on the stack, assigning a value to the object pointed by a pointer.
 func (op *OpDerefSet) Execute(_ *core.Decoder) {
 	pointerObj := op.vm.StackPop()
@@ -55,7 +60,7 @@ func (op *OpDerefSet) Execute(_ *core.Decoder) {
 	op.vm.StackPush(valueToSet)
 }
 
-// Opcode returns the opcode associated with the instance.
-func (op *OpDerefSet) Opcode() *opcodes.Opcode {
-	return op.opcode
+// Compile generates the compiled representation of the OpDerefSet operation or returns an unimplemented error.
+func (op *OpDerefSet) Compile() ([]byte, error) {
+	return nil, objects.ErrUnimplemented
 }

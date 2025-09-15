@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/markel1974/c64emu/src/vm/core"
+	"github.com/markel1974/c64emu/src/vm/objects"
 	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
 
@@ -25,6 +26,11 @@ func NewOpIteratorInit() core.IOpExecutor {
 		opcode: opcodes.NewOpcode(OpIteratorInitId, operands, "OpIteratorInit"),
 		vm:     nil,
 	}
+}
+
+// Opcode returns the opcode associated with the instance.
+func (op *OpIteratorInit) Opcode() *opcodes.Opcode {
+	return op.opcode
 }
 
 // Bind initializes the instance by casting the provided VM to IVMFullAccess and storing it.
@@ -51,7 +57,7 @@ func (op *OpIteratorInit) Execute(decoder *core.Decoder) {
 	op.vm.StackSetOffsetBP(uint(localIndex), iterator)
 }
 
-// Opcode returns the opcode associated with the instance.
-func (op *OpIteratorInit) Opcode() *opcodes.Opcode {
-	return op.opcode
+// Compile generates the compiled representation of the OpIteratorInit operation or returns an unimplemented error.
+func (op *OpIteratorInit) Compile() ([]byte, error) {
+	return nil, objects.ErrUnimplemented
 }

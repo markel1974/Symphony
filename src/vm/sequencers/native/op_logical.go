@@ -29,6 +29,11 @@ func NewOpLogical() core.IOpExecutor {
 	}
 }
 
+// Opcode returns the opcode associated with the instance.
+func (op *OpLogical) Opcode() *opcodes.Opcode {
+	return op.opcode
+}
+
 // Bind initializes the instance by casting the provided VM to IVMFullAccess and storing it.
 // Returns an error if the VM does not implement the required interface.
 func (op *OpLogical) Bind(vm core.IVM) error {
@@ -55,7 +60,7 @@ func (op *OpLogical) Execute(decoder *core.Decoder) {
 	op.vm.StackPush(res)
 }
 
-// Opcode returns the opcode associated with the instance.
-func (op *OpLogical) Opcode() *opcodes.Opcode {
-	return op.opcode
+// Compile generates the compiled representation of the OpLogical operation or returns an unimplemented error.
+func (op *OpLogical) Compile() ([]byte, error) {
+	return nil, objects.ErrUnimplemented
 }

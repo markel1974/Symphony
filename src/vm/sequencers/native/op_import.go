@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/markel1974/c64emu/src/vm/core"
+	"github.com/markel1974/c64emu/src/vm/objects"
 	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
 
@@ -26,6 +27,11 @@ func NewOpImport() core.IOpExecutor {
 	}
 }
 
+// Opcode returns the opcode associated with the instance.
+func (op *OpImport) Opcode() *opcodes.Opcode {
+	return op.opcode
+}
+
 // Bind initializes the instance by casting the provided VM to IVMFullAccess and storing it.
 // Returns an error if the VM does not implement the required interface.
 func (op *OpImport) Bind(vm core.IVM) error {
@@ -45,7 +51,7 @@ func (op *OpImport) Execute(decoder *core.Decoder) {
 	op.vm.StackPush(symbol)
 }
 
-// Opcode returns the opcode associated with the instance.
-func (op *OpImport) Opcode() *opcodes.Opcode {
-	return op.opcode
+// Compile generates the compiled representation of the OpImport operation or returns an unimplemented error.
+func (op *OpImport) Compile() ([]byte, error) {
+	return nil, objects.ErrUnimplemented
 }

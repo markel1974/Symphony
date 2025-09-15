@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/markel1974/c64emu/src/vm/core"
+	"github.com/markel1974/c64emu/src/vm/objects"
 	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
 
@@ -30,6 +31,11 @@ func NewOpGlobalDefine() core.IOpExecutor {
 	}
 }
 
+// Opcode returns the opcode associated with the instance.
+func (op *OpGlobalDefine) Opcode() *opcodes.Opcode {
+	return op.opcode
+}
+
 // Bind initializes the instance by casting the provided VM to IVMFullAccess and storing it.
 // Returns an error if the VM does not implement the required interface.
 func (op *OpGlobalDefine) Bind(vm core.IVM) error {
@@ -49,7 +55,7 @@ func (op *OpGlobalDefine) Execute(decoder *core.Decoder) {
 	op.vm.Globals().Set(uint(index), val)
 }
 
-// Opcode returns the opcode associated with the instance.
-func (op *OpGlobalDefine) Opcode() *opcodes.Opcode {
-	return op.opcode
+// Compile generates the compiled representation of the OpGlobalDefine operation or returns an unimplemented error.
+func (op *OpGlobalDefine) Compile() ([]byte, error) {
+	return nil, objects.ErrUnimplemented
 }

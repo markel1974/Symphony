@@ -32,6 +32,11 @@ func NewOpAsType() core.IOpExecutor {
 	}
 }
 
+// Opcode returns the opcode associated with the instance.
+func (op *OpAsType) Opcode() *opcodes.Opcode {
+	return op.opcode
+}
+
 // Bind initializes the OpAsType instance by casting the provided VM to IVMFullAccess and storing it.
 // Returns an error if the VM does not implement the required interface.
 func (op *OpAsType) Bind(vm core.IVM) error {
@@ -57,7 +62,7 @@ func (op *OpAsType) Execute(decoder *core.Decoder) {
 	op.vm.StackPush(io.Value())
 }
 
-// Opcode returns the opcode associated with the instance.
-func (op *OpAsType) Opcode() *opcodes.Opcode {
-	return op.opcode
+// Compile generates the compiled representation of the OpAsType operation or returns an unimplemented error.
+func (op *OpAsType) Compile() ([]byte, error) {
+	return nil, objects.ErrUnimplemented
 }

@@ -30,6 +30,11 @@ func NewOpIndexSet() core.IOpExecutor {
 	}
 }
 
+// Opcode returns the opcode associated with the instance.
+func (op *OpIndexSet) Opcode() *opcodes.Opcode {
+	return op.opcode
+}
+
 // Bind initializes the instance by casting the provided VM to IVMFullAccess and storing it.
 // Returns an error if the VM does not implement the required interface.
 func (op *OpIndexSet) Bind(vm core.IVM) error {
@@ -52,7 +57,7 @@ func (op *OpIndexSet) Execute(_ *core.Decoder) {
 	}
 }
 
-// Opcode returns the opcode associated with the instance.
-func (op *OpIndexSet) Opcode() *opcodes.Opcode {
-	return op.opcode
+// Compile generates the compiled representation of the OpIndexSet operation or returns an unimplemented error.
+func (op *OpIndexSet) Compile() ([]byte, error) {
+	return nil, objects.ErrUnimplemented
 }

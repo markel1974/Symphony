@@ -28,6 +28,11 @@ func NewOpIteratorValue() core.IOpExecutor {
 	}
 }
 
+// Opcode returns the opcode associated with the instance.
+func (op *OpIteratorValue) Opcode() *opcodes.Opcode {
+	return op.opcode
+}
+
 // Bind initializes the instance by casting the provided VM to IVMFullAccess and storing it.
 // Returns an error if the VM does not implement the required interface.
 func (op *OpIteratorValue) Bind(vm core.IVM) error {
@@ -52,7 +57,7 @@ func (op *OpIteratorValue) Execute(decoder *core.Decoder) {
 	op.vm.StackPush(iterator.Value(op.vm.FrameId()))
 }
 
-// Opcode returns the opcode associated with the instance.
-func (op *OpIteratorValue) Opcode() *opcodes.Opcode {
-	return op.opcode
+// Compile generates the compiled representation of the OpIteratorValue operation or returns an unimplemented error.
+func (op *OpIteratorValue) Compile() ([]byte, error) {
+	return nil, objects.ErrUnimplemented
 }

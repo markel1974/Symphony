@@ -27,6 +27,11 @@ func NewOpGlobalIndex() core.IOpExecutor {
 	}
 }
 
+// Opcode returns the opcode associated with the instance.
+func (op *OpGlobalIndex) Opcode() *opcodes.Opcode {
+	return op.opcode
+}
+
 // Bind initializes the instance by casting the provided VM to IVMFullAccess and storing it.
 // Returns an error if the VM does not implement the required interface.
 func (op *OpGlobalIndex) Bind(vm core.IVM) error {
@@ -61,7 +66,7 @@ func (op *OpGlobalIndex) Execute(decoder *core.Decoder) {
 	}
 }
 
-// Opcode returns the opcode associated with the instance.
-func (op *OpGlobalIndex) Opcode() *opcodes.Opcode {
-	return op.opcode
+// Compile generates the compiled representation of the OpGlobalIndex operation or returns an unimplemented error.
+func (op *OpGlobalIndex) Compile() ([]byte, error) {
+	return nil, objects.ErrUnimplemented
 }

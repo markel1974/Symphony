@@ -25,6 +25,11 @@ func NewOpDefer() core.IOpExecutor {
 	}
 }
 
+// Opcode returns the opcode associated with the instance.
+func (op *OpDefer) Opcode() *opcodes.Opcode {
+	return op.opcode
+}
+
 // Bind initializes the instance by casting the provided VM to IVMFullAccess and storing it.
 // Returns an error if the VM does not implement the required interface.
 func (op *OpDefer) Bind(vm core.IVM) error {
@@ -36,8 +41,8 @@ func (op *OpDefer) Bind(vm core.IVM) error {
 	return nil
 }
 
+// Execute processes the top stack item, deferring its execution if it is a compiled function, otherwise sets an error.
 func (op *OpDefer) Execute(_ *core.Decoder) {
-	// Operands Offset  0
 	obj := op.vm.StackPop()
 	switch objT := obj.(type) {
 	case *objects.FuncCompiled:
@@ -48,7 +53,7 @@ func (op *OpDefer) Execute(_ *core.Decoder) {
 	}
 }
 
-// Opcode returns the opcode associated with the instance.
-func (op *OpDefer) Opcode() *opcodes.Opcode {
-	return op.opcode
+// Compile generates the compiled representation of the OpDefer operation or returns an unimplemented error.
+func (op *OpDefer) Compile() ([]byte, error) {
+	return nil, objects.ErrUnimplemented
 }

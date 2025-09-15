@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/markel1974/c64emu/src/vm/core"
+	"github.com/markel1974/c64emu/src/vm/objects"
 	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
 
@@ -26,6 +27,11 @@ func NewOpCreateStruct() core.IOpExecutor {
 	}
 }
 
+// Opcode returns the opcode associated with the instance.
+func (op *OpCreateStruct) Opcode() *opcodes.Opcode {
+	return op.opcode
+}
+
 // Bind initializes the instance by casting the provided VM to IVMFullAccess and storing it.
 // Returns an error if the VM does not implement the required interface.
 func (op *OpCreateStruct) Bind(vm core.IVM) error {
@@ -39,7 +45,6 @@ func (op *OpCreateStruct) Bind(vm core.IVM) error {
 
 // Execute processes the OpCreateMap instruction, adjusts the instruction pointer, and pushes a new map object onto the stack.
 func (op *OpCreateStruct) Execute(decoder *core.Decoder) {
-	// Operands Offset 2 (16-bit)
 	numElements := decoder.Operand(0)
 	typeNameObj := op.vm.StackPop()
 	mElem := op.vm.StackPopMap(uint(numElements))
@@ -47,7 +52,7 @@ func (op *OpCreateStruct) Execute(decoder *core.Decoder) {
 	op.vm.StackPush(structObj)
 }
 
-// Opcode returns the opcode associated with the instance.
-func (op *OpCreateStruct) Opcode() *opcodes.Opcode {
-	return op.opcode
+// Compile generates the compiled representation of the OpCreateStruct operation or returns an unimplemented error.
+func (op *OpCreateStruct) Compile() ([]byte, error) {
+	return nil, objects.ErrUnimplemented
 }

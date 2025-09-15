@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/markel1974/c64emu/src/vm/core"
+	"github.com/markel1974/c64emu/src/vm/objects"
 	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
 
@@ -26,6 +27,11 @@ func NewOpCreateMap() core.IOpExecutor {
 	}
 }
 
+// Opcode returns the opcode associated with the instance.
+func (op *OpCreateMap) Opcode() *opcodes.Opcode {
+	return op.opcode
+}
+
 // Bind initializes the instance by casting the provided VM to IVMFullAccess and storing it.
 // Returns an error if the VM does not implement the required interface.
 func (op *OpCreateMap) Bind(vm core.IVM) error {
@@ -45,7 +51,7 @@ func (op *OpCreateMap) Execute(decoder *core.Decoder) {
 	op.vm.StackPush(op.vm.Factory().NewMap(op.vm.FrameId(), mElem))
 }
 
-// Opcode returns the opcode associated with the instance.
-func (op *OpCreateMap) Opcode() *opcodes.Opcode {
-	return op.opcode
+// Compile generates the compiled representation of the OpCreateMap operation or returns an unimplemented error.
+func (op *OpCreateMap) Compile() ([]byte, error) {
+	return nil, objects.ErrUnimplemented
 }

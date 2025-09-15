@@ -4,15 +4,17 @@ import (
 	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
 
-// IOpExecutor defines an interface for executing specific bytecode instructions within a virtual machine context.
-// Opcode returns the bytecode.OpcodeId associated with the operation.
-// Name returns the name of the operation represented by the executor.
-// Operands retrieves the operands required for the operation's execution.
-// Execute performs the operation within the provided virtual machine instance.
+// IOpExecutor defines the interface for executing virtual machine operations, including binding, execution, and compilation.
+// Bind associates the executor with a virtual machine instance.
+// Opcode retrieves the Opcode instance associated with the operation.
+// Execute performs the execution logic using a decoder for operand processing.
+// Compile compiles the operation into assembly and returns the result.
 type IOpExecutor interface {
 	Bind(vm IVM) error
 
 	Opcode() *opcodes.Opcode
 
 	Execute(decoder *Decoder)
+
+	Compile() ([]byte, error)
 }

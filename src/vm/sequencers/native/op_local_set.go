@@ -28,6 +28,11 @@ func NewOpLocalSet() core.IOpExecutor {
 	}
 }
 
+// Opcode returns the opcode associated with the instance.
+func (op *OpLocalSet) Opcode() *opcodes.Opcode {
+	return op.opcode
+}
+
 // Bind initializes the instance by casting the provided VM to IVMFullAccess and storing it.
 // Returns an error if the VM does not implement the required interface.
 func (op *OpLocalSet) Bind(vm core.IVM) error {
@@ -52,7 +57,7 @@ func (op *OpLocalSet) Execute(decoder *core.Decoder) {
 	}
 }
 
-// Opcode returns the opcode associated with the instance.
-func (op *OpLocalSet) Opcode() *opcodes.Opcode {
-	return op.opcode
+// Compile generates the compiled representation of the OpLocalSet operation or returns an unimplemented error.
+func (op *OpLocalSet) Compile() ([]byte, error) {
+	return nil, objects.ErrUnimplemented
 }

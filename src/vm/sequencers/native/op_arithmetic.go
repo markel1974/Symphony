@@ -30,6 +30,11 @@ func NewOpArithmetic() core.IOpExecutor {
 	}
 }
 
+// Opcode returns the opcode associated with the instance.
+func (op *OpArithmetic) Opcode() *opcodes.Opcode {
+	return op.opcode
+}
+
 // Bind initializes the OpArithmetic instance by casting the provided VM to IVMFullAccess and storing it.
 // Returns an error if the VM does not implement the required interface.
 func (op *OpArithmetic) Bind(vm core.IVM) error {
@@ -57,7 +62,7 @@ func (op *OpArithmetic) Execute(decoder *core.Decoder) {
 	op.vm.StackPush(res)
 }
 
-// Opcode returns the opcode associated with the instance.
-func (op *OpArithmetic) Opcode() *opcodes.Opcode {
-	return op.opcode
+// Compile generates the compiled representation of the OpArithmetic operation or returns an unimplemented error.
+func (op *OpArithmetic) Compile() ([]byte, error) {
+	return nil, objects.ErrUnimplemented
 }

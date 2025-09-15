@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/markel1974/c64emu/src/vm/core"
+	"github.com/markel1974/c64emu/src/vm/objects"
 	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
 
@@ -26,6 +27,11 @@ func NewOpNoOp() core.IOpExecutor {
 	}
 }
 
+// Opcode returns the opcode associated with the instance.
+func (op *OpNoOp) Opcode() *opcodes.Opcode {
+	return op.opcode
+}
+
 // Bind initializes the instance by casting the provided VM to IVMFullAccess and storing it.
 // Returns an error if the VM does not implement the required interface.
 func (op *OpNoOp) Bind(vm core.IVM) error {
@@ -42,7 +48,7 @@ func (op *OpNoOp) Execute(_ *core.Decoder) {
 	// Operands Offset 0
 }
 
-// Opcode returns the opcode associated with the instance.
-func (op *OpNoOp) Opcode() *opcodes.Opcode {
-	return op.opcode
+// Compile generates the compiled representation of the OpLogical operation or returns an unimplemented error.
+func (op *OpNoOp) Compile() ([]byte, error) {
+	return nil, objects.ErrUnimplemented
 }

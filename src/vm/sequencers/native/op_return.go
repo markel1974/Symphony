@@ -27,6 +27,11 @@ func NewOpReturn() core.IOpExecutor {
 	}
 }
 
+// Opcode returns the opcode associated with the instance.
+func (op *OpReturn) Opcode() *opcodes.Opcode {
+	return op.opcode
+}
+
 // Bind initializes the instance by casting the provided VM to IVMFullAccess and storing it.
 // Returns an error if the VM does not implement the required interface.
 func (op *OpReturn) Bind(vm core.IVM) error {
@@ -53,7 +58,7 @@ func (op *OpReturn) Execute(decoder *core.Decoder) {
 	op.vm.Return(returnValues)
 }
 
-// Opcode returns the opcode associated with the instance.
-func (op *OpReturn) Opcode() *opcodes.Opcode {
-	return op.opcode
+// Compile generates the compiled representation of the OpReturn operation or returns an unimplemented error.
+func (op *OpReturn) Compile() ([]byte, error) {
+	return nil, objects.ErrUnimplemented
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/markel1974/c64emu/src/vm/core"
+	"github.com/markel1974/c64emu/src/vm/objects"
 	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
 
@@ -24,6 +25,11 @@ func NewOpJumpFalsy() core.IOpExecutor {
 		opcode: opcodes.NewOpcode(OpJumpFalsyId, operands, "OpJumpFalsy"),
 		vm:     nil,
 	}
+}
+
+// Opcode returns the opcode associated with the instance.
+func (op *OpJumpFalsy) Opcode() *opcodes.Opcode {
+	return op.opcode
 }
 
 // Bind initializes the instance by casting the provided VM to IVMFullAccess and storing it.
@@ -47,7 +53,7 @@ func (op *OpJumpFalsy) Execute(decoder *core.Decoder) {
 	}
 }
 
-// Opcode returns the opcode associated with the instance.
-func (op *OpJumpFalsy) Opcode() *opcodes.Opcode {
-	return op.opcode
+// Compile generates the compiled representation of the OpJumpFalsy operation or returns an unimplemented error.
+func (op *OpJumpFalsy) Compile() ([]byte, error) {
+	return nil, objects.ErrUnimplemented
 }

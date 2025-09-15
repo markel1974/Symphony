@@ -27,6 +27,11 @@ func NewOpCreateClosure() core.IOpExecutor {
 	}
 }
 
+// Opcode returns the opcode associated with the instance.
+func (op *OpCreateClosure) Opcode() *opcodes.Opcode {
+	return op.opcode
+}
+
 // Bind initializes the instance by casting the provided VM to IVMFullAccess and storing it.
 // Returns an error if the VM does not implement the required interface.
 func (op *OpCreateClosure) Bind(vm core.IVM) error {
@@ -82,7 +87,7 @@ func (op *OpCreateClosure) Execute(decoder *core.Decoder) {
 	op.vm.StackPush(cl)
 }
 
-// Opcode returns the opcode associated with the instance.
-func (op *OpCreateClosure) Opcode() *opcodes.Opcode {
-	return op.opcode
+// Compile generates the compiled representation of the OpCreateClosure operation or returns an unimplemented error.
+func (op *OpCreateClosure) Compile() ([]byte, error) {
+	return nil, objects.ErrUnimplemented
 }

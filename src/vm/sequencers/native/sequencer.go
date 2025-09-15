@@ -85,8 +85,8 @@ func (ds *Sequencer) Opcode(opcodeId opcodes.OpcodeId) *opcodes.Opcode {
 	return ds.executors[opcodeId&ds.mask].Opcode()
 }
 
-// Compile generates a bytecode representation for a given opcode and its operands, or returns an error if compilation fails.
-func (ds *Sequencer) Compile(opcodeId opcodes.OpcodeId, operands ...int) ([]byte, error) {
+// Bytecode generates a bytecode representation for a given opcode and its operands, or returns an error if compilation fails.
+func (ds *Sequencer) Bytecode(opcodeId opcodes.OpcodeId, operands ...int) ([]byte, error) {
 	opcode := ds.Opcode(opcodeId)
 	if opcode.OpcodeId() == ds.unknownId {
 		return nil, fmt.Errorf("compile: Unknown opcode: %d", opcodeId)

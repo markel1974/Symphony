@@ -11,7 +11,7 @@ type IOpcodes interface {
 
 	Opcode(opcodeId OpcodeId) *Opcode
 
-	Compile(opcodeId OpcodeId, operands ...int) ([]byte, error)
+	Bytecode(opcodeId OpcodeId, operands ...int) ([]byte, error)
 
 	Mask() int
 

@@ -32,6 +32,11 @@ func NewOpJumpNotError() core.IOpExecutor {
 	}
 }
 
+// Opcode returns the opcode associated with the instance.
+func (op *OpJumpNotError) Opcode() *opcodes.Opcode {
+	return op.opcode
+}
+
 // Bind initializes the instance by casting the provided VM to IVMFullAccess and storing it.
 // Returns an error if the VM does not implement the required interface.
 func (op *OpJumpNotError) Bind(vm core.IVM) error {
@@ -63,7 +68,7 @@ func (op *OpJumpNotError) Execute(decoder *core.Decoder) {
 	// The compiler will handle popping the error from the stack.
 }
 
-// Opcode returns the opcode associated with the instance.
-func (op *OpJumpNotError) Opcode() *opcodes.Opcode {
-	return op.opcode
+// Compile generates the compiled representation of the OpJumpNotError operation or returns an unimplemented error.
+func (op *OpJumpNotError) Compile() ([]byte, error) {
+	return nil, objects.ErrUnimplemented
 }
