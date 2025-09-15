@@ -14,7 +14,7 @@ func Create() (*process.Command, []interfaces.ICommand) {
 	root.SetHelp("Runtime", "Runtime")
 	var apps []interfaces.ICommand
 	apps = append(apps, CreateGC())
-	apps = append(apps, CreateScript())
+	apps = append(apps, CreateExample())
 	for _, app := range apps {
 		_ = root.AddCommand(app)
 	}

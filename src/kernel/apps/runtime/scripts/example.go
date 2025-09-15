@@ -1,4 +1,4 @@
-//go:build nocompile
+//go:build no_compile
 
 package scripts
 
