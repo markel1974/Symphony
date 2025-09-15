@@ -11,11 +11,11 @@ import (
 func CreateCPUProfileStop() interfaces.ICommand {
 	run := func(process interfaces.IUserProcess, args []string) error {
 		pprof.StopCPUProfile()
-		process.Write("Cpu Profiling stopped", true)
+		process.Write("CPU Profiling stopped", true)
 		return nil
 	}
-	root := process.NewCommand("stopcpuprofile", interfaces.CommandTypeFile, nil, false, run)
-	root.SetHelp("Stop cpu profiling", "Stop cpu profiling")
+	root := process.NewCommand("cpu_profile_stop", interfaces.CommandTypeFile, nil, false, run)
+	root.SetHelp("Stop CPU profiling", "Stop CPU profiling")
 
 	return root
 }

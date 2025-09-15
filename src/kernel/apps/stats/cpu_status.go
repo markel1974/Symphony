@@ -17,7 +17,7 @@ func CreateCPUStatus() interfaces.ICommand {
 		process.Write(fmt.Sprintf("Number of cgo calls made by the current process: %d", runtime.NumCgoCall()), true)
 		return nil
 	}
-	root := process.NewCommand("cpu", interfaces.CommandTypeFile, nil, false, run)
-	root.SetHelp("CPUs status", "CPUs status")
+	root := process.NewCommand("cpu_status", interfaces.CommandTypeFile, nil, false, run)
+	root.SetHelp("CPU status", "CPU status")
 	return root
 }

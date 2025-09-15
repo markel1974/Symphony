@@ -27,10 +27,10 @@ func CreateCPUProfileStart() interfaces.ICommand {
 			process.Write("could not start CPU profile: "+err.Error(), true)
 			return nil
 		}
-		process.Write("Cpu Profiling started", true)
+		process.Write("CPU Profiling started", true)
 		return nil
 	}
-	root := process.NewCommand("startcpuprofile", interfaces.CommandTypeFile, nil, false, run)
-	root.SetHelp("Start cpu profiling", "Start cpu profiling")
+	root := process.NewCommand("cpu_profile_start", interfaces.CommandTypeFile, nil, false, run)
+	root.SetHelp("Start CPU profiling", "Start CPU profiling")
 	return root
 }
