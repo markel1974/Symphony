@@ -19,6 +19,5 @@ func CreateCPUStatus() interfaces.ICommand {
 	}
 	root := process.NewCommand("cpu", interfaces.CommandTypeFile, nil, false, run)
 	root.SetHelp("CPUs status", "CPUs status")
-
 	return root
 }

@@ -8,8 +8,8 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/process"
 )
 
-// CreateMemoryStatus initializes a shell command for monitoring runtime memory statistics and garbage collection cycles.
-func CreateMemoryStatus() interfaces.ICommand {
+// CreateMemStatus initializes a shell command for monitoring runtime memory statistics and garbage collection cycles.
+func CreateMemStatus() interfaces.ICommand {
 	run := func(process interfaces.IUserProcess, args []string) error {
 		var m runtime.MemStats
 		runtime.ReadMemStats(&m)
@@ -21,6 +21,5 @@ func CreateMemoryStatus() interfaces.ICommand {
 	}
 	root := process.NewCommand("rt", interfaces.CommandTypeFile, nil, false, run)
 	root.SetHelp("Runtime Status", "Runtime Status")
-
 	return root
 }

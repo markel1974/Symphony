@@ -14,13 +14,12 @@ func Create() (*process.Command, []interfaces.ICommand) {
 	root.SetHelp("System Stats", "System Stats")
 
 	var apps []interfaces.ICommand
-	apps = append(apps, CreateProfileCPUStart())
-	apps = append(apps, CreateProfileCPUStop())
-	apps = append(apps, CreateProfileMemory())
-	apps = append(apps, CreateMemoryStatus())
-	apps = append(apps, CreateMemoryPlot())
+	apps = append(apps, CreateCPUProfileStart())
+	apps = append(apps, CreateCPUProfileStop())
+	apps = append(apps, CreateMemProfile())
+	apps = append(apps, CreateMemStatus())
+	apps = append(apps, CreateMemPlot())
 	apps = append(apps, CreateCPUStatus())
-	//apps = append(apps, CreateCPUUsage())
 	for _, app := range apps {
 		_ = root.AddCommand(app)
 	}

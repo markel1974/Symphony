@@ -8,8 +8,13 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/process"
 )
 
-// RtPlot represents a real-time data plotting mechanism, managing data, its limits, rendering setup, and auto-scaling.
-type RtPlot struct {
+// bToMb converts a byte value (uint64) to megabytes (float64) by dividing the input by 1024 twice.
+func bToMb(b uint64) float64 {
+	return float64(b) / 1024 / 1024
+}
+
+// MemPlot represents a memory plotting utility for capturing and visualizing runtime memory statistics in real-time.
+type MemPlot struct {
 	process interfaces.IUserProcess
 	data    []float64
 	kind    int
@@ -18,11 +23,9 @@ type RtPlot struct {
 	auto    bool
 }
 
-// NewRtPlotData initializes a new RtPlot instance with the specified kind and default settings.
-// It sets up the plot to automatically adjust its range and prepares it for plotting runtime data.
-// Returns a pointer to the newly created RtPlot instance.
-func NewRtPlotData(kind int) *RtPlot {
-	plt := &RtPlot{
+// NewMemPlot creates a new instance of MemPlot with the specified kind, initializing its fields with default values.
+func NewMemPlot(kind int) *MemPlot {
+	plt := &MemPlot{
 		kind:   kind,
 		auto:   true,
 		data:   nil,
@@ -32,21 +35,21 @@ func NewRtPlotData(kind int) *RtPlot {
 	return plt
 }
 
-// Setup configures the RtPlot instance with the provided IUserProcess and binds event handlers for read, timer, and paint.
-func (plt *RtPlot) Setup(process interfaces.IUserProcess) {
+// Setup initializes the MemPlot instance by setting up the required process handlers for key, timer, and paint events.
+func (plt *MemPlot) Setup(process interfaces.IUserProcess) {
 	plt.process = process
 	plt.process.SetOnKey(plt.onKey)
 	plt.process.SetOnTimer(plt.onTimer)
 	plt.process.SetOnPaint(plt.onPaint)
 }
 
-// Start initializes and starts a timer for the plot with a zero delay, a 300ms interval, and infinite occurrences.
-func (plt *RtPlot) Start() {
+// Start initializes the timer for the MemPlot instance with a 300 millisecond interval and an infinite execution count.
+func (plt *MemPlot) Start() {
 	plt.process.CreateTimer(0, 300, -1)
 }
 
-// onKey handles keyboard input, adjusts plot range dynamically, and toggles auto-scaling based on provided key actions.
-func (plt *RtPlot) onKey(_ int, key rune) {
+// onKey handles keyboard input events, allowing adjustments to plot scaling or toggling the auto-scaling feature.
+func (plt *MemPlot) onKey(_ int, key rune) {
 	interval := math.Abs(plt.maxVal - plt.minVal)
 	scale := (interval * 10) / 100
 	switch key {
@@ -63,8 +66,8 @@ func (plt *RtPlot) onKey(_ int, key rune) {
 	}
 }
 
-// timerFn is a timer callback method that reads memory stats, updates min/max values, appends data, and triggers repaint.
-func (plt *RtPlot) onTimer(_ int, _ int) {
+// onTimer is invoked periodically based on the timer to collect and track memory statistics and update the plot data.
+func (plt *MemPlot) onTimer(_ int, _ int) {
 	var m runtime.MemStats
 	runtime.ReadMemStats(&m)
 	var val float64
@@ -93,8 +96,8 @@ func (plt *RtPlot) onTimer(_ int, _ int) {
 	plt.process.PaintRequest()
 }
 
-// paintFn renders the current data series onto the provided ISurface, using defined min and max values or auto-scaling.
-func (plt *RtPlot) onPaint(surface interfaces.ISurface) {
+// onPaint renders the graph data on the provided surface, using custom or automatic plot range values.
+func (plt *MemPlot) onPaint(surface interfaces.ISurface) {
 	var minPlot float64 = 0
 	var maxPlot float64 = 0
 	if !plt.auto {
@@ -104,8 +107,8 @@ func (plt *RtPlot) onPaint(surface interfaces.ISurface) {
 	surface.DrawSeries(plt.data, -1, -1, minPlot, maxPlot)
 }
 
-// CreateMemoryPlot returns a new command that generates a runtime memory plot with selectable memory statistics types.
-func CreateMemoryPlot() interfaces.ICommand {
+// CreateMemPlot creates a new runtime memory plotting command, initializing its setup and starting the memory monitoring process.
+func CreateMemPlot() interfaces.ICommand {
 	run := func(process interfaces.IUserProcess, args []string) error {
 		kind := 0
 		if len(args) > 0 {
@@ -120,7 +123,7 @@ func CreateMemoryPlot() interfaces.ICommand {
 				kind = 3
 			}
 		}
-		plt := NewRtPlotData(kind)
+		plt := NewMemPlot(kind)
 		plt.Setup(process)
 		plt.Start()
 		return nil

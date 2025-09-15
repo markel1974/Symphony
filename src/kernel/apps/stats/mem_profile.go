@@ -10,9 +10,9 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/process"
 )
 
-// CreateProfileMemory creates a shell command for generating memory usage profiles.
+// CreateMemProfile creates a shell command for generating memory usage profiles.
 // It triggers garbage collection and writes the heap profile to a specified file.
-func CreateProfileMemory() interfaces.ICommand {
+func CreateMemProfile() interfaces.ICommand {
 	run := func(process interfaces.IUserProcess, args []string) error {
 		if len(args) <= 0 {
 			process.Write("could not create mem profile: "+"missing filename", true)
@@ -25,18 +25,14 @@ func CreateProfileMemory() interfaces.ICommand {
 			return nil
 		}
 		defer f.Close()
-
 		runtime.GC()
 		if err = pprof.WriteHeapProfile(f); err != nil {
 			process.Write("could not write mem profile: "+err.Error(), true)
 		}
-
-		process.Write("Cpu Profiling started", true)
-
+		process.Write("Memory Profiling started", true)
 		return nil
 	}
 	root := process.NewCommand("memprofile", interfaces.CommandTypeFile, nil, false, run)
 	root.SetHelp("Memory profiling", "Memory profiling")
-
 	return root
 }

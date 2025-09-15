@@ -5,6 +5,7 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/process"
 )
 
+// CreateXVI initializes and returns a new command for the XVI process setup and execution.
 func CreateXVI() *process.Command {
 	onCreate := func(process interfaces.IUserProcess, args []string) error {
 		p := NewXVI()

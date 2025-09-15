@@ -13,11 +13,6 @@ type Buffer struct {
 
 // NewBuffer creates and returns a new Buffer instance initialized with the given file path and content.
 func NewBuffer(filePath string, content string) *Buffer {
-	//defaultLines := 80
-	//lines := strings.Split(content, "\n")
-	//if len(lines) > defaultLines {
-	//	defaultLines = len(lines)
-	//}
 	lines := strings.Split(content, "\n")
 	b := &Buffer{
 		lines:    make([]string, len(lines)),

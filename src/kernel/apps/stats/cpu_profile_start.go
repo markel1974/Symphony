@@ -9,8 +9,8 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/process"
 )
 
-// CreateProfileCPUStart initializes and returns a shell command to start CPU profiling and save it to a specified file.
-func CreateProfileCPUStart() interfaces.ICommand {
+// CreateCPUProfileStart initializes and returns a shell command to start CPU profiling and save it to a specified file.
+func CreateCPUProfileStart() interfaces.ICommand {
 	run := func(process interfaces.IUserProcess, args []string) error {
 		if len(args) <= 0 {
 			process.Write("could not create cpu profile: "+"missing filename", true)

@@ -7,8 +7,8 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/process"
 )
 
-// CreateProfileCPUStop creates and returns a shell command to stop CPU profiling.
-func CreateProfileCPUStop() interfaces.ICommand {
+// CreateCPUProfileStop creates and returns a shell command to stop CPU profiling.
+func CreateCPUProfileStop() interfaces.ICommand {
 	run := func(process interfaces.IUserProcess, args []string) error {
 		pprof.StopCPUProfile()
 		process.Write("Cpu Profiling stopped", true)
