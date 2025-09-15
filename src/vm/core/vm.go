@@ -3,6 +3,7 @@ package core
 import (
 	"fmt"
 	"io"
+	"log"
 	"time"
 
 	"github.com/markel1974/c64emu/src/vm/bytecode"
@@ -514,7 +515,7 @@ func (v *VM) loop() {
 		v.ip, opcode = v.currFrame.Fetch(v.ip)
 		decoder = v.sequencer[opcode&v.sequencerMask]
 		v.ip = decoder.Decode(v.currFrame, v.ip)
-		//log.Printf("Executing instruction opcode: %d name: %s ip: %d decoded: %v", opcode, decoder.Name(), v.ip, decoder.decodedOperands[:decoder.fullWidth])
+		log.Printf("Executing instruction opcode: %d name: %s ip: %d decoded: %v", opcode, decoder.Name(), v.ip, decoder.decodedOperands[:decoder.fullWidth])
 		decoder.Execute()
 		if v.shutdown {
 			break

@@ -526,7 +526,7 @@ func (h *FuncInternal) append(frame int, args []IObject) (IObject, error) {
 	case *Array:
 		return h.gk.NewArray(frame, append(arg.Values(), args[1:]...)), nil
 	default:
-		return nil, NewInvalidArgumentError(0, "array", arg.TypeName())
+		return h.gk.NewArray(frame, args[1:]), nil
 	}
 }
 

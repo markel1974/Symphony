@@ -7,6 +7,7 @@ import (
 	"go/printer"
 	"go/token"
 	"strconv"
+	"strings"
 
 	"github.com/markel1974/c64emu/src/compilers/native/tables"
 	"github.com/markel1974/c64emu/src/vm/objects"
@@ -26,6 +27,7 @@ type Declarations struct {
 	structTable    *tables.StructTable
 	functionTables *tables.FunctionTable
 	interfaceTable *tables.InterfaceTable
+	initRef        map[string]int
 	compile        func(node ast.Node) error
 }
 
@@ -45,6 +47,19 @@ func NewDeclarations(gk objects.IGateKeeper, references *tables.Constants, const
 func (c *Declarations) Setup(fileSet *token.FileSet, compile func(node ast.Node) error) error {
 	c.fileSet = fileSet
 	c.compile = compile
+	boolConst := c.constants.AddOrGet("$_default_bool", c.gk.NewBool(objects.FrameStatic, false))
+	intConst := c.constants.AddOrGet("$_default_int", c.gk.NewInt(objects.FrameStatic, 0))
+	floatConst := c.constants.AddOrGet("$_default_float", c.gk.NewFloat(objects.FrameStatic, 0.0))
+	charConst := c.constants.AddOrGet("$_default_char", c.gk.NewChar(objects.FrameStatic, 0))
+	stringConst := c.constants.AddOrGet("$_default_string", c.gk.NewString(objects.FrameStatic, ""))
+	c.initRef = map[string]int{
+		"bool": boolConst,
+		"int":  intConst, "int32": intConst, "int64": intConst,
+		"uint": intConst, "uint32": intConst, "uint64": intConst,
+		"float": floatConst, "float32": floatConst, "float64": floatConst,
+		"char": charConst, "rune": charConst,
+		"string": stringConst,
+	}
 	return nil
 }
 
@@ -374,7 +389,6 @@ func (c *Declarations) CompositeLit(node *ast.CompositeLit) error {
 		}
 		return nil
 	}
-
 	switch val := node.Type.(type) {
 	case *ast.Ident:
 		// struct literal (es. MyStruct{...})
@@ -388,8 +402,8 @@ func (c *Declarations) CompositeLit(node *ast.CompositeLit) error {
 			return err
 		}
 		for _, field := range structFields {
-			keyConst := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, field.Name()))
-			if _, err = c.scopes.Emit(native.OpConstantId, keyConst); err != nil {
+			keyIdx := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, field.Name()))
+			if _, err = c.scopes.Emit(native.OpConstantId, keyIdx); err != nil {
 				return err
 			}
 			if field.Node() != nil {
@@ -397,8 +411,15 @@ func (c *Declarations) CompositeLit(node *ast.CompositeLit) error {
 					return err
 				}
 			} else {
-				if _, err = c.scopes.Emit(native.OpNullId); err != nil {
-					return err
+				ref := strings.TrimSpace(strings.ToLower(field.Kind()))
+				if valIdx, ok := c.initRef[ref]; ok {
+					if _, err = c.scopes.Emit(native.OpConstantId, valIdx); err != nil {
+						return err
+					}
+				} else {
+					if _, err = c.scopes.Emit(native.OpNullId); err != nil {
+						return err
+					}
 				}
 			}
 		}
@@ -437,7 +458,6 @@ func (c *Declarations) CompositeLit(node *ast.CompositeLit) error {
 		return nil
 	case *ast.SelectorExpr:
 		if receiverIdent, ok := val.X.(*ast.Ident); ok {
-			//TODO this is a temporary fix for the issue with the receiver being a struct
 			c.structTable.AddExternal(val.Sel.Name)
 			mangledName := tables.GetMangledName(receiverIdent.Name, val.Sel.Name)
 			structNameIdx := c.constants.AddOrGet(mangledName, c.gk.NewString(objects.FrameStatic, mangledName))

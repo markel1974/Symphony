@@ -61,34 +61,24 @@ type Memory struct {
 
 // timerFn is a timer callback method that reads memory stats, updates min/max values, appends data, and triggers repaint.
 func (plt *RtPlot) onTimer(_ int, _ int) {
-	//z := make(map[string]interface{})
-	//y := make([]string, 10)
-	//y[3] = "inside array"
-	//fmt.Println(y)
-
-	//z["1000"] = "valid"
-	//fmt.Println(z)
-
 	ms := runtime.MemStats{}
 	//out := runtime.ReadMemStats(&ms)
 	runtime.ReadMemStats(&ms)
-	kk := ms.BuckHashSys
-	fmt.Println("MS", kk)
-	m := Memory{}
+	//m := Memory{}
 	//m := runtime.MemStats{}
 	//runtime.ReadMemStats(&m)
 	var val float64
 	switch plt.kind {
 	case 0:
-		val = bToMb(m.Alloc)
+		val = bToMb(ms.Alloc)
 	case 1:
-		val = bToMb(m.TotalAlloc)
+		val = bToMb(ms.TotalAlloc)
 	case 2:
-		val = bToMb(m.Sys)
+		val = bToMb(ms.Sys)
 	case 3:
-		val = float64(m.NumGC)
+		val = float64(ms.NumGC)
 	default:
-		val = bToMb(m.Alloc)
+		val = bToMb(ms.Alloc)
 	}
 	if val < plt.minVal {
 		plt.minVal = val
@@ -115,10 +105,28 @@ func (plt *RtPlot) onPaint() {
 	fmt.Println("Painting:", minPlot, maxPlot)
 }
 
-func main() (int, int, int, map[string]interface{}) {
-	plt := RtPlot{} //NewRtPlotData(0)
-	plt.onPaint()
-	plt.onTimer(0, 0)
+var _instance = RtPlot{}
+
+func onPaint() (int, int, int, map[string]interface{}) {
+	_instance.onPaint()
+	z := map[string]interface{}{"1000": "valid", "2000": "valid", "3000": "valid"}
+	return 1, 2, 3, z
+}
+
+func onTimer(a int, b int) (int, int, int, map[string]interface{}) {
+	_instance.onTimer(a, b)
 	z := map[string]interface{}{"1000": "valid", "2000": "valid", "3000": "valid"}
 	return 3, 2, 1, z
+}
+
+func main() (int, int, int, map[string]interface{}) {
+	//plt := RtPlot{} //NewRtPlotData(0)
+	//_instance.onPaint()
+	//test3 := &RtPlot{}
+	//test3.minVal += 1
+	//_instance.onTimer(0, 0)
+
+	return onPaint()
+	//z := map[string]interface{}{"1000": "valid", "2000": "valid", "3000": "valid"}
+	//return 3, 2, 1, z
 }
