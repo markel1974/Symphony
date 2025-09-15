@@ -126,6 +126,8 @@ func main() (int, int, int, map[string]interface{}) {
 	//test3.minVal += 1
 	//_instance.onTimer(0, 0)
 
+	onTimer(0, 0)
+
 	return onPaint()
 	//z := map[string]interface{}{"1000": "valid", "2000": "valid", "3000": "valid"}
 	//return 3, 2, 1, z
