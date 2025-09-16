@@ -67,7 +67,7 @@ func (c *Expression) UnaryExpr(node *ast.UnaryExpr) error {
 			default:
 				return tables.NewCompilerError(c.fileSet, node, "cannot take the address of a unknown scope")
 			}
-			if _, err := c.scopes.Emit(opcodeId, symbol.Index()); err != nil {
+			if _, err := c.scopes.Emit(node.Pos(), opcodeId, symbol.Index()); err != nil {
 				return err
 			}
 		case *ast.CompositeLit:
@@ -80,7 +80,7 @@ func (c *Expression) UnaryExpr(node *ast.UnaryExpr) error {
 				return err
 			}
 			//tempSymbol.SetScope(tables.LocalScope)
-			if err = c.scopes.EmitSymbolDefine(tempSymbol); err != nil {
+			if err = c.scopes.EmitSymbolDefine(node.Pos(), tempSymbol); err != nil {
 				return err
 			}
 			opcodeId := native.OpNullId
@@ -94,7 +94,7 @@ func (c *Expression) UnaryExpr(node *ast.UnaryExpr) error {
 			default:
 				return tables.NewCompilerError(c.fileSet, node, "cannot take the address of a unknown scope")
 			}
-			if _, err = c.scopes.Emit(opcodeId, tempSymbol.Index()); err != nil {
+			if _, err = c.scopes.Emit(node.Pos(), opcodeId, tempSymbol.Index()); err != nil {
 				return err
 			}
 		default:
@@ -110,7 +110,7 @@ func (c *Expression) UnaryExpr(node *ast.UnaryExpr) error {
 	if !ok {
 		return tables.NewCompilerError(c.fileSet, node, "unhandled unary op: %s", node.Op)
 	}
-	if _, err := c.scopes.Emit(z.op, z.arguments...); err != nil {
+	if _, err := c.scopes.Emit(node.Pos(), z.op, z.arguments...); err != nil {
 		return err
 	}
 	return nil
@@ -126,13 +126,13 @@ func (c *Expression) BinaryExpr(node *ast.BinaryExpr) error {
 		if err != nil {
 			return err
 		}
-		if err = c.scopes.EmitSymbolSetAndPop(tempSymbol); err != nil {
+		if err = c.scopes.EmitSymbolSetAndPop(node.Pos(), tempSymbol); err != nil {
 			return err
 		}
 		if err = c.compile(node.X); err != nil {
 			return err
 		}
-		if err = c.scopes.EmitSymbolGet(tempSymbol); err != nil {
+		if err = c.scopes.EmitSymbolGet(node.Pos(), tempSymbol); err != nil {
 			return err
 		}
 	} else {
@@ -147,7 +147,7 @@ func (c *Expression) BinaryExpr(node *ast.BinaryExpr) error {
 	if !ok {
 		return tables.NewCompilerError(c.fileSet, node, "unhandled binary op: %s", node.Op)
 	}
-	if _, err := c.scopes.Emit(adapter.op, adapter.arguments...); err != nil {
+	if _, err := c.scopes.Emit(node.Pos(), adapter.op, adapter.arguments...); err != nil {
 		return err
 	}
 
@@ -164,7 +164,7 @@ func (c *Expression) SelectorExpr(node *ast.SelectorExpr) error {
 		// currently not handling complex cases like a[0].field
 		return tables.NewCompilerError(c.fileSet, node, "[SelectorExpr] unsupported receiver for selector expression: %T", node.X)
 	}
-	if c.imports.Emit(receiverIdent.Name, node.Sel.Name) {
+	if c.imports.Emit(node.Pos(), receiverIdent.Name, node.Sel.Name) {
 		return nil
 	}
 	receiverSymbol, ok := c.scopes.SymbolResolve(receiverIdent.Name)
@@ -177,10 +177,10 @@ func (c *Expression) SelectorExpr(node *ast.SelectorExpr) error {
 		}
 		fieldName := node.Sel.Name
 		keyConst := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, fieldName))
-		if _, err := c.scopes.Emit(native.OpConstantId, keyConst); err != nil {
+		if _, err := c.scopes.Emit(node.Pos(), native.OpConstantId, keyConst); err != nil {
 			return err
 		}
-		if _, err := c.scopes.Emit(native.OpIndexGetId); err != nil {
+		if _, err := c.scopes.Emit(node.Pos(), native.OpIndexGetId); err != nil {
 			return err
 		}
 		return nil
@@ -205,26 +205,26 @@ func (c *Expression) IncDecStmt(node *ast.IncDecStmt) error {
 	if !ok {
 		return tables.NewCompilerError(c.fileSet, node, "undefined variable: %s", ident.Name)
 	}
-	if err := c.scopes.EmitSymbolGet(symbol); err != nil {
+	if err := c.scopes.EmitSymbolGet(node.Pos(), symbol); err != nil {
 		return err
 	}
 	// adds constant '1' to the stack
 	constIndex := c.constants.Add("", c.gk.NewInt(objects.FrameStatic, 1))
-	if _, err := c.scopes.Emit(native.OpConstantId, constIndex); err != nil {
+	if _, err := c.scopes.Emit(node.Pos(), native.OpConstantId, constIndex); err != nil {
 		return err
 	}
 	if node.Tok == token.INC {
-		if _, err := c.scopes.Emit(native.OpArithmeticId, int(objects.OperatorAdd)); err != nil {
+		if _, err := c.scopes.Emit(node.Pos(), native.OpArithmeticId, int(objects.OperatorAdd)); err != nil {
 			return err
 		}
 	} else if node.Tok == token.DEC {
-		if _, err := c.scopes.Emit(native.OpArithmeticId, int(objects.OperatorSub)); err != nil {
+		if _, err := c.scopes.Emit(node.Pos(), native.OpArithmeticId, int(objects.OperatorSub)); err != nil {
 			return err
 		}
 	} else {
 		return tables.NewCompilerError(c.fileSet, node, "unsupported IncDec token: %s", node.Tok)
 	}
-	if err := c.scopes.EmitSymbolSetAndPop(symbol); err != nil {
+	if err := c.scopes.EmitSymbolSetAndPop(node.Pos(), symbol); err != nil {
 		return err
 	}
 	return nil
@@ -249,7 +249,7 @@ func (c *Expression) SliceExpr(node *ast.SliceExpr) error {
 		}
 	} else {
 		// If 'low' index is omitted, push 'undefined' (OpNull)
-		if _, err := c.scopes.Emit(native.OpNullId); err != nil {
+		if _, err := c.scopes.Emit(node.Pos(), native.OpNullId); err != nil {
 			return err
 		}
 	}
@@ -260,11 +260,11 @@ func (c *Expression) SliceExpr(node *ast.SliceExpr) error {
 		}
 	} else {
 		// If 'high' index is omitted, push 'undefined' (OpNull)
-		if _, err := c.scopes.Emit(native.OpNullId); err != nil {
+		if _, err := c.scopes.Emit(node.Pos(), native.OpNullId); err != nil {
 			return err
 		}
 	}
-	if _, err := c.scopes.Emit(native.OpIndexSliceId); err != nil {
+	if _, err := c.scopes.Emit(node.Pos(), native.OpIndexSliceId); err != nil {
 		return err
 	}
 	return nil

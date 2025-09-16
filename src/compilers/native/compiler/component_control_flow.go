@@ -53,7 +53,7 @@ func (c *ControlFlow) IfStmt(node *ast.IfStmt) error {
 		return err
 	}
 	// emit conditional jump with temporary address
-	jumpNotTruthyPos, err := c.scopes.Emit(native.OpJumpFalsyId, 9999)
+	jumpNotTruthyPos, err := c.scopes.Emit(node.Pos(), native.OpJumpFalsyId, 9999)
 	if err != nil {
 		return err
 	}
@@ -64,7 +64,7 @@ func (c *ControlFlow) IfStmt(node *ast.IfStmt) error {
 	// if there's an 'else' block, emit jump to skip it
 	jumpToEndPos := 0
 	if node.Else != nil {
-		jumpToEndPos, err = c.scopes.Emit(native.OpJumpId, 9999)
+		jumpToEndPos, err = c.scopes.Emit(node.Pos(), native.OpJumpId, 9999)
 		if err != nil {
 			return err
 		}
@@ -74,7 +74,7 @@ func (c *ControlFlow) IfStmt(node *ast.IfStmt) error {
 		return err
 	}
 	// update conditional jump address
-	if err = c.scopes.ChangeOperand(jumpNotTruthyPos, scope.InstructionsLen()); err != nil {
+	if err = c.scopes.ChangeOperand(node.Pos(), jumpNotTruthyPos, scope.InstructionsLen()); err != nil {
 		return err
 	}
 	// compile 'else' block if it exists
@@ -87,7 +87,7 @@ func (c *ControlFlow) IfStmt(node *ast.IfStmt) error {
 			return err
 		}
 		// update jump address to skip else
-		if err = c.scopes.ChangeOperand(jumpToEndPos, scope.InstructionsLen()); err != nil {
+		if err = c.scopes.ChangeOperand(node.Pos(), jumpToEndPos, scope.InstructionsLen()); err != nil {
 			return err
 		}
 	}
@@ -102,7 +102,7 @@ func (c *ControlFlow) BranchStmt(node *ast.BranchStmt) error {
 	}
 	if node.Tok == token.BREAK {
 		if scope.CurrentSwitch() != nil {
-			breakJumpPos, err := c.scopes.Emit(native.OpJumpId, 9999)
+			breakJumpPos, err := c.scopes.Emit(node.Pos(), native.OpJumpId, 9999)
 			if err != nil {
 				return err
 			}
@@ -110,7 +110,7 @@ func (c *ControlFlow) BranchStmt(node *ast.BranchStmt) error {
 				return tables.NewCompilerError(c.fileSet, node, err.Error())
 			}
 		} else if scope.CurrentLoop() != nil { // Otherwise, check if we're in a loop
-			breakJumpPos, err := c.scopes.Emit(native.OpJumpId, 9999)
+			breakJumpPos, err := c.scopes.Emit(node.Pos(), native.OpJumpId, 9999)
 			if err != nil {
 				return err
 			}
@@ -125,7 +125,7 @@ func (c *ControlFlow) BranchStmt(node *ast.BranchStmt) error {
 
 	if node.Tok == token.CONTINUE {
 		// Emit an unconditional jump with a temporary address
-		continueJumpPos, err := c.scopes.Emit(native.OpJumpId, 9999)
+		continueJumpPos, err := c.scopes.Emit(node.Pos(), native.OpJumpId, 9999)
 		if err != nil {
 			return err
 		}
@@ -158,7 +158,7 @@ func (c *ControlFlow) SwitchStmt(node *ast.SwitchStmt) error {
 		if err != nil {
 			return err
 		}
-		if err = c.scopes.EmitSymbolDefineAndPop(tagSymbol); err != nil {
+		if err = c.scopes.EmitSymbolDefineAndPop(node.Pos(), tagSymbol); err != nil {
 			return err
 		}
 	}
@@ -176,14 +176,14 @@ func (c *ControlFlow) SwitchStmt(node *ast.SwitchStmt) error {
 		// Back-patch: connect previous case jumps to this one
 		afterPreviousCasePos := scope.InstructionsLen()
 		for _, pos := range jumpsToNextCase {
-			if err := c.scopes.ChangeOperand(pos, afterPreviousCasePos); err != nil {
+			if err := c.scopes.ChangeOperand(node.Pos(), pos, afterPreviousCasePos); err != nil {
 				return err
 			}
 		}
 		jumpsToNextCase = []int{} // Reset list for current-case
 		// 3. Compile case condition (e.g. tag == val1)
 		if tagSymbol != nil {
-			if err := c.scopes.EmitSymbolGet(tagSymbol); err != nil {
+			if err := c.scopes.EmitSymbolGet(node.Pos(), tagSymbol); err != nil {
 				return err
 			}
 		}
@@ -194,14 +194,14 @@ func (c *ControlFlow) SwitchStmt(node *ast.SwitchStmt) error {
 		if !ok {
 			return tables.NewCompilerError(c.fileSet, node, "unhandled binary op: %s", token.EQL)
 		}
-		if _, err := c.scopes.Emit(eql.op, eql.arguments...); err != nil {
+		if _, err := c.scopes.Emit(node.Pos(), eql.op, eql.arguments...); err != nil {
 			return err
 		}
 		//if _, err := c.scopes.Emit(bytecode.OpLogical, int(objects.OperatorLogicalEq)); err != nil {
 		//	return err
 		//}
 		// 4. Jump to the next-case if the condition is false
-		jumpPos, err := c.scopes.Emit(native.OpJumpFalsyId, 9999)
+		jumpPos, err := c.scopes.Emit(node.Pos(), native.OpJumpFalsyId, 9999)
 		if err != nil {
 			return err
 		}
@@ -213,7 +213,7 @@ func (c *ControlFlow) SwitchStmt(node *ast.SwitchStmt) error {
 			}
 		}
 		// 6. add jump to end of switch (Go has no fall-through)
-		endJumpPos, err := c.scopes.Emit(native.OpJumpId, 9999)
+		endJumpPos, err := c.scopes.Emit(node.Pos(), native.OpJumpId, 9999)
 		if err != nil {
 			return err
 		}
@@ -224,7 +224,7 @@ func (c *ControlFlow) SwitchStmt(node *ast.SwitchStmt) error {
 	// 7. Compile 'default' if it exists
 	afterLastCasePos := scope.InstructionsLen()
 	for _, pos := range jumpsToNextCase {
-		if err := c.scopes.ChangeOperand(pos, afterLastCasePos); err != nil {
+		if err := c.scopes.ChangeOperand(node.Pos(), pos, afterLastCasePos); err != nil {
 			return err
 		}
 	}
@@ -238,7 +238,7 @@ func (c *ControlFlow) SwitchStmt(node *ast.SwitchStmt) error {
 	// 8. Final back-patch: update all jumps to end
 	afterSwitchPos := scope.InstructionsLen()
 	for _, pos := range scope.CurrentSwitch().EndJumps {
-		if err := c.scopes.ChangeOperand(pos, afterSwitchPos); err != nil {
+		if err := c.scopes.ChangeOperand(node.Pos(), pos, afterSwitchPos); err != nil {
 			return err
 		}
 	}
@@ -268,7 +268,7 @@ func (c *ControlFlow) TypeSwitchStmt(node *ast.TypeSwitchStmt) error {
 		}
 
 		if jumpToNextCasePos != -1 {
-			if err = c.scopes.ChangeOperand(jumpToNextCasePos, scope.InstructionsLen()); err != nil {
+			if err = c.scopes.ChangeOperand(node.Pos(), jumpToNextCasePos, scope.InstructionsLen()); err != nil {
 				return err
 			}
 		}
@@ -278,11 +278,11 @@ func (c *ControlFlow) TypeSwitchStmt(node *ast.TypeSwitchStmt) error {
 		}
 		targetTypeName := clause.List[0].(*ast.Ident).Name
 		constIndex := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, targetTypeName))
-		if _, err = c.scopes.Emit(native.OpTypeAssertId, constIndex); err != nil {
+		if _, err = c.scopes.Emit(node.Pos(), native.OpTypeAssertId, constIndex); err != nil {
 			return err
 		}
 
-		jumpToNextCasePos, err = c.scopes.Emit(native.OpJumpFalsyId, 9999)
+		jumpToNextCasePos, err = c.scopes.Emit(node.Pos(), native.OpJumpFalsyId, 9999)
 		if err != nil {
 			return err
 		}
@@ -300,7 +300,7 @@ func (c *ControlFlow) TypeSwitchStmt(node *ast.TypeSwitchStmt) error {
 		caseVarSymbol.SetObject(c.gk.NewString(objects.FrameStatic, targetTypeName+":"+caseVarSymbol.Name()))
 		c.structTable.BindSymbol(caseVarSymbol, targetTypeName)
 
-		if err = c.scopes.EmitSymbolSetAndPop(caseVarSymbol); err != nil {
+		if err = c.scopes.EmitSymbolSetAndPop(node.Pos(), caseVarSymbol); err != nil {
 			return err
 		}
 		for _, stmt := range clause.Body {
@@ -316,20 +316,20 @@ func (c *ControlFlow) TypeSwitchStmt(node *ast.TypeSwitchStmt) error {
 		lastInstructionInCase := innerScope.LastInstruction()
 
 		// 2. Now leave the scope and get the generated bytecode.
-		caseBytecode, err := c.scopes.Leave()
+		caseBytecode, source, err := c.scopes.Leave()
 		if err != nil {
 			return err
 		}
 
 		// 3. add case bytecode to outer scope.
-		if _, err := c.scopes.InstructionsAdd(caseBytecode); err != nil {
+		if _, err = c.scopes.InstructionsAppend(caseBytecode, source); err != nil {
 			return err
 		}
 
 		// 4. Now, in the outer scope, check the instruction we saved.
 		// If it's not a 'return', add the jump to end.
 		if lastInstructionInCase == nil || lastInstructionInCase.Opcode() != native.OpReturnId {
-			jumpPos, err := c.scopes.Emit(native.OpJumpId, 9999)
+			jumpPos, err := c.scopes.Emit(node.Pos(), native.OpJumpId, 9999)
 			if err != nil {
 				return err
 			}
@@ -339,14 +339,14 @@ func (c *ControlFlow) TypeSwitchStmt(node *ast.TypeSwitchStmt) error {
 
 	// Final landing for last failed case
 	if jumpToNextCasePos != -1 {
-		if err := c.scopes.ChangeOperand(jumpToNextCasePos, scope.InstructionsLen()); err != nil {
+		if err := c.scopes.ChangeOperand(node.Pos(), jumpToNextCasePos, scope.InstructionsLen()); err != nil {
 			return err
 		}
 	}
 
 	// Clean the stack from last remaining 'result' (undefined)
 	if len(node.Body.List) > 0 {
-		if _, err := c.scopes.Emit(native.OpPopId); err != nil {
+		if _, err := c.scopes.Emit(node.Pos(), native.OpPopId); err != nil {
 			return err
 		}
 	}
@@ -363,12 +363,12 @@ func (c *ControlFlow) TypeSwitchStmt(node *ast.TypeSwitchStmt) error {
 	// Final back-patching of all jumps to end
 	endPos := scope.InstructionsLen()
 	for _, pos := range jumpsToEnd {
-		if err := c.scopes.ChangeOperand(pos, endPos); err != nil {
+		if err := c.scopes.ChangeOperand(node.Pos(), pos, endPos); err != nil {
 			return err
 		}
 	}
 	for _, pos := range scope.CurrentSwitch().EndJumps {
-		if err := c.scopes.ChangeOperand(pos, endPos); err != nil {
+		if err := c.scopes.ChangeOperand(node.Pos(), pos, endPos); err != nil {
 			return err
 		}
 	}

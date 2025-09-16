@@ -285,12 +285,13 @@ func (c *Compiler) createInit() error {
 	if scope.InstructionsLen() == 0 {
 		return nil
 	}
-	if _, err = c.scopes.Emit(native.OpReturnId, 0); err != nil {
+	if _, err = c.scopes.Emit(token.Pos(0), native.OpReturnId, 0); err != nil {
 		return err
 	}
 	initFuncCode := scope.Instructions()
+	initSource := scope.Source()
 	numLocals := c.scopes.SymbolCount()
-	compiledInitFn := c.gk.NewFuncCompiled(objects.FrameStatic, bytecode.PreInitFunction, initFuncCode, numLocals, 0, false, nil, nil)
+	compiledInitFn := c.gk.NewFuncCompiled(objects.FrameStatic, bytecode.PreInitFunction, initFuncCode, numLocals, 0, false, initSource, nil)
 	_, err = c.scopes.SymbolDefineConst(bytecode.PreInitFunction, compiledInitFn)
 	if err != nil {
 		return err

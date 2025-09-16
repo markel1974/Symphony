@@ -66,7 +66,7 @@ func (i *Imports) Declare(decls ast.Decl) {
 }
 
 // Emit attempts to attach a function reference or emit a builtin reference, returning true if successful.
-func (i *Imports) Emit(name string, selName string) bool {
+func (i *Imports) Emit(pos token.Pos, name string, selName string) bool {
 	if len(name) == 0 {
 		return false
 	}
@@ -87,7 +87,7 @@ func (i *Imports) Emit(name string, selName string) bool {
 		index = i.imports.Add(target, i.gk.NewString(objects.FrameStatic, target))
 		i.helper[target] = index
 	}
-	if _, err := i.scopes.Emit(native.OpImportId, index); err != nil {
+	if _, err := i.scopes.Emit(pos, native.OpImportId, index); err != nil {
 		return false
 	}
 	return true

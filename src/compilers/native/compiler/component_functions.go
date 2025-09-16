@@ -160,7 +160,7 @@ func (c *Functions) funcBodyCompile(fd *tables.FunctionDescription) error {
 		return err
 	}
 	if scope.LastInstruction() == nil || scope.LastInstruction().Opcode() != native.OpReturnId {
-		if _, err = c.scopes.Emit(native.OpReturnId, 0); err != nil {
+		if _, err = c.scopes.Emit(node.Pos(), native.OpReturnId, 0); err != nil {
 			return err
 		}
 	}
@@ -168,7 +168,7 @@ func (c *Functions) funcBodyCompile(fd *tables.FunctionDescription) error {
 	var freeObj []*objects.ObjectPointer = nil
 	freeNum := 0
 	nLocals := c.scopes.SymbolCount()
-	code, err := c.scopes.Leave()
+	code, source, err := c.scopes.Leave()
 	if err != nil {
 		return err
 	}
@@ -180,7 +180,7 @@ func (c *Functions) funcBodyCompile(fd *tables.FunctionDescription) error {
 	if !ok {
 		return tables.NewCompilerError(c.fileSet, node, "undefined function: %s", fd.Name)
 	}
-	compiledFn := c.gk.NewFuncCompiled(objects.FrameStatic, fd.Name, code, nLocals, nParams, false, nil, freeObj)
+	compiledFn := c.gk.NewFuncCompiled(objects.FrameStatic, fd.Name, code, nLocals, nParams, false, source, freeObj)
 	//fnSymbol.SetObject(compiledFn)
 	if err = c.constants.SetIndex(fnSymbol.Index(), compiledFn); err != nil {
 		return tables.NewCompilerError(c.fileSet, node, err.Error())
@@ -190,11 +190,11 @@ func (c *Functions) funcBodyCompile(fd *tables.FunctionDescription) error {
 	fnSymbol.SetReturnTypes(fd.ReturnTypes)
 
 	if node.Recv == nil && !c.scopes.IsRootScope() {
-		if _, err = c.scopes.Emit(native.OpCreateClosureId, freeNum, constIndex); err != nil {
+		if _, err = c.scopes.Emit(node.Pos(), native.OpCreateClosureId, freeNum, constIndex); err != nil {
 			return err
 		}
 		symbol, _ := c.scopes.SymbolResolve(node.Name.Name)
-		if err = c.scopes.EmitSymbolSet(symbol); err != nil {
+		if err = c.scopes.EmitSymbolSet(node.Pos(), symbol); err != nil {
 			return err
 		}
 	}
@@ -219,7 +219,7 @@ func (c *Functions) CallExpr(node *ast.CallExpr) error {
 			}
 			tempSymbol.SetScope(tables.LocalScope)
 			tempSymbolMap[arg] = tempSymbol
-			if err = c.scopes.EmitSymbolSetAndPop(tempSymbol); err != nil {
+			if err = c.scopes.EmitSymbolSetAndPop(node.Pos(), tempSymbol); err != nil {
 				return err
 			}
 		}
@@ -232,13 +232,13 @@ func (c *Functions) CallExpr(node *ast.CallExpr) error {
 		// Handle a simple function call (unchanged)
 		symbol, ok := c.scopes.SymbolResolve(fun.Name)
 		if !ok {
-			if c.imports.Emit(fun.Name, "") {
+			if c.imports.Emit(node.Pos(), fun.Name, "") {
 				finalArgs = node.Args
 				break
 			}
 			return tables.NewCompilerError(c.fileSet, node, "undefined function: %s", fun.Name)
 		}
-		if err := c.scopes.EmitSymbolGet(symbol); err != nil {
+		if err := c.scopes.EmitSymbolGet(node.Pos(), symbol); err != nil {
 			return err
 		}
 		finalArgs = node.Args
@@ -250,7 +250,7 @@ func (c *Functions) CallExpr(node *ast.CallExpr) error {
 		}
 
 		// Path 1: Package function (e.g., fmt.Println)
-		if c.imports.Emit(receiverIdent.Name, fun.Sel.Name) {
+		if c.imports.Emit(node.Pos(), receiverIdent.Name, fun.Sel.Name) {
 			finalArgs = node.Args
 			break
 		}
@@ -261,7 +261,7 @@ func (c *Functions) CallExpr(node *ast.CallExpr) error {
 		}
 
 		if c.structTable.IsBuiltin(receiverSymbol.StructName()) {
-			if err := c.handleBuiltinInterface(receiverSymbol, fun.Sel.Name, node.Args); err != nil {
+			if err := c.handleBuiltinInterface(node.Pos(), receiverSymbol, fun.Sel.Name, node.Args); err != nil {
 				return err
 			}
 			return nil
@@ -277,7 +277,7 @@ func (c *Functions) CallExpr(node *ast.CallExpr) error {
 			// 2b. Load all call arguments onto the stack.
 			for _, arg := range node.Args {
 				if tempSymbol, ok := tempSymbolMap[arg]; ok {
-					if err := c.scopes.EmitSymbolGet(tempSymbol); err != nil {
+					if err := c.scopes.EmitSymbolGet(node.Pos(), tempSymbol); err != nil {
 						return err
 					}
 				} else {
@@ -293,7 +293,7 @@ func (c *Functions) CallExpr(node *ast.CallExpr) error {
 			numArgs := len(node.Args)
 
 			// TODO 2
-			if _, err := c.scopes.Emit(native.OpCallMethodId, methodNameConstIndex, numArgs); err != nil {
+			if _, err := c.scopes.Emit(node.Pos(), native.OpCallMethodId, methodNameConstIndex, numArgs); err != nil {
 				return err
 			}
 			// We're done for this case, no need to do anything else.
@@ -307,7 +307,7 @@ func (c *Functions) CallExpr(node *ast.CallExpr) error {
 			if !ok {
 				return tables.NewCompilerError(c.fileSet, node, "undefined method '%s' for type '%s'", fun.Sel.Name, receiverSymbol.StructName())
 			}
-			if err := c.scopes.EmitSymbolGet(methodSymbol); err != nil {
+			if err := c.scopes.EmitSymbolGet(node.Pos(), methodSymbol); err != nil {
 				return err
 			}
 			finalArgs = append([]ast.Expr{fun.X}, node.Args...)
@@ -322,7 +322,7 @@ func (c *Functions) CallExpr(node *ast.CallExpr) error {
 	// Step 3 & 4 for simple functions and struct methods
 	for _, arg := range finalArgs {
 		if tempSymbol, ok := tempSymbolMap[arg]; ok {
-			if err := c.scopes.EmitSymbolGet(tempSymbol); err != nil {
+			if err := c.scopes.EmitSymbolGet(node.Pos(), tempSymbol); err != nil {
 				return err
 			}
 		} else {
@@ -331,7 +331,7 @@ func (c *Functions) CallExpr(node *ast.CallExpr) error {
 			}
 		}
 	}
-	if _, err := c.scopes.Emit(native.OpCallId, len(finalArgs), 0); err != nil {
+	if _, err := c.scopes.Emit(node.Pos(), native.OpCallId, len(finalArgs), 0); err != nil {
 		return err
 	}
 	return nil
@@ -352,7 +352,7 @@ func (c *Functions) ExprStmt(node *ast.ExprStmt) error {
 	if err := c.compile(node.X); err != nil {
 		return err
 	}
-	if _, err := c.scopes.Emit(native.OpPopId); err != nil {
+	if _, err := c.scopes.Emit(node.Pos(), native.OpPopId); err != nil {
 		return err
 	}
 	return nil
@@ -361,7 +361,7 @@ func (c *Functions) ExprStmt(node *ast.ExprStmt) error {
 // ReturnStmt compiles a return statement, handling cases for both void and value returns, and emits corresponding bytecode.
 func (c *Functions) ReturnStmt(node *ast.ReturnStmt) error {
 	if len(node.Results) == 0 {
-		if _, err := c.scopes.Emit(native.OpReturnId, 0); err != nil {
+		if _, err := c.scopes.Emit(node.Pos(), native.OpReturnId, 0); err != nil {
 			return err
 		}
 		return nil
@@ -371,7 +371,7 @@ func (c *Functions) ReturnStmt(node *ast.ReturnStmt) error {
 			return err
 		}
 	}
-	if _, err := c.scopes.Emit(native.OpReturnId, len(node.Results)); err != nil {
+	if _, err := c.scopes.Emit(node.Pos(), native.OpReturnId, len(node.Results)); err != nil {
 		return err
 	}
 	return nil
@@ -413,20 +413,20 @@ func (c *Functions) DeferStmt(node *ast.DeferStmt) error {
 	if err := c.handleClosure(closure); err != nil {
 		return err
 	}
-	if _, err := c.scopes.Emit(native.OpDeferId); err != nil {
+	if _, err := c.scopes.Emit(node.Pos(), native.OpDeferId); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (c *Functions) handleBuiltinInterface(receiverSymbol *tables.Symbol, methodName string, args []ast.Expr) error {
-	if err := c.scopes.EmitSymbolGet(receiverSymbol); err != nil {
+func (c *Functions) handleBuiltinInterface(pos token.Pos, receiverSymbol *tables.Symbol, methodName string, args []ast.Expr) error {
+	if err := c.scopes.EmitSymbolGet(pos, receiverSymbol); err != nil {
 		return err
 	}
 
 	//arguments must be passed as operands after method name
 	methodIdx := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, methodName))
-	if _, err := c.scopes.Emit(native.OpConstantId, methodIdx); err != nil {
+	if _, err := c.scopes.Emit(pos, native.OpConstantId, methodIdx); err != nil {
 		return err
 	}
 	//for _, arg := range args {
@@ -434,7 +434,7 @@ func (c *Functions) handleBuiltinInterface(receiverSymbol *tables.Symbol, method
 	//		return err
 	//	}
 	//}
-	if _, err := c.scopes.Emit(native.OpCallId, 1, 0); err != nil {
+	if _, err := c.scopes.Emit(pos, native.OpCallId, 1, 0); err != nil {
 		return err
 	}
 	return nil
@@ -462,7 +462,7 @@ func (c *Functions) handleClosure(node *ast.FuncLit) error {
 		return err
 	}
 	if scope.LastInstruction() == nil || scope.LastInstruction().Opcode() != native.OpReturnId {
-		if _, err = c.scopes.Emit(native.OpReturnId, 0); err != nil {
+		if _, err = c.scopes.Emit(node.Pos(), native.OpReturnId, 0); err != nil {
 			return err
 		}
 	}
@@ -472,7 +472,7 @@ func (c *Functions) handleClosure(node *ast.FuncLit) error {
 	freeObj := make([]*objects.ObjectPointer, len(freeSymbols))
 	nParams := c.functionTable.CountParams(node.Type.Params)
 	nLocals := c.scopes.SymbolCount()
-	code, err := c.scopes.Leave()
+	code, source, err := c.scopes.Leave()
 	if err != nil {
 		return err
 	}
@@ -482,13 +482,13 @@ func (c *Functions) handleClosure(node *ast.FuncLit) error {
 	}
 	freeContainer := c.gk.NewArray(objects.FrameStatic, freeData)
 	freeContainerIdx := c.constants.Add(closureName+"_free", freeContainer)
-	if _, err = c.scopes.Emit(native.OpConstantId, freeContainerIdx); err != nil {
+	if _, err = c.scopes.Emit(node.Pos(), native.OpConstantId, freeContainerIdx); err != nil {
 		return err
 	}
-	compiledFn := c.gk.NewFuncCompiled(objects.FrameStatic, "", code, nLocals, nParams, false, nil, freeObj)
+	compiledFn := c.gk.NewFuncCompiled(objects.FrameStatic, "", code, nLocals, nParams, false, source, freeObj)
 	constIndex := c.constants.Add("", compiledFn)
 	freeNum := c.scopes.SymbolCount()
-	if _, err = c.scopes.Emit(native.OpCreateClosureId, freeNum, constIndex); err != nil {
+	if _, err = c.scopes.Emit(node.Pos(), native.OpCreateClosureId, freeNum, constIndex); err != nil {
 		return err
 	}
 	return nil

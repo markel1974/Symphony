@@ -2,6 +2,7 @@ package tables
 
 import (
 	"fmt"
+	"go/token"
 
 	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
@@ -27,6 +28,7 @@ type CompilationScope struct {
 	previousInstruction *EmittedInstruction
 	loopScopes          []*LoopScope
 	switchScopes        []*SwitchScope
+	source              map[int]int
 }
 
 // NewCompilationScope initializes and returns a new instance of CompilationScope with default values.
@@ -38,7 +40,18 @@ func NewCompilationScope() *CompilationScope {
 		previousInstruction: nil,
 		loopScopes:          []*LoopScope{},
 		switchScopes:        []*SwitchScope{},
+		source:              make(map[int]int),
 	}
+}
+
+// SetSource associates a source position with the given instruction position in the compilation scope.
+func (c *CompilationScope) SetSource(opPos int, p token.Pos) {
+	c.source[opPos] = int(p)
+}
+
+// Source returns the mapping of instruction positions to source positions in the current compilation scope.
+func (c *CompilationScope) Source() map[int]int {
+	return c.source
 }
 
 // Instructions returns the bytecode instructions currently stored in the compilation scope.
@@ -71,39 +84,32 @@ func (c *CompilationScope) SetPreviousInstruction(instruction *EmittedInstructio
 	c.previousInstruction = instruction
 }
 
-// InstructionsSet updates the instruction at the specified position in the current scope with the given byte value.
-// Returns an error if the position is invalid or out of bounds.
-func (c *CompilationScope) InstructionsSet(pos int, instruction byte) error {
-	if pos < 0 || pos >= len(c.instructions) {
-		return fmt.Errorf("invalid instruction position: %d", pos)
-	}
-	c.instructions[pos] = instruction
-	return nil
-}
-
 // InstructionsGet retrieves the instruction at the specified position in the instructions slice of the compilation scope.
 // Returns the instruction as a byte or an error if the position is invalid (e.g., out of bounds).
-func (c *CompilationScope) InstructionsGet(pos int) (opcodes.OpcodeId, error) {
+func (c *CompilationScope) InstructionsGet(opPos int) (opcodes.OpcodeId, error) {
 	c.instructionsHelper.Assign(c.instructions)
-	opcodeId, _, ok := c.instructionsHelper.Header(uint(pos))
+	opcodeId, _, ok := c.instructionsHelper.Header(uint(opPos))
 	if !ok {
-		return 0, fmt.Errorf("invalid instruction position: %d", pos)
+		return 0, fmt.Errorf("invalid instruction position: %d", opPos)
 	}
 	return opcodeId, nil
 }
 
 // InstructionsAppend appends a byte slice to the instructions of the current compilation scope and returns any errors encountered.
-func (c *CompilationScope) InstructionsAppend(instruction []byte) error {
+func (c *CompilationScope) InstructionsAppend(instruction []byte) (int, error) {
+	posNewInstruction := c.InstructionsLen()
 	c.instructions = append(c.instructions, instruction...)
-	return nil
+	return posNewInstruction, nil
 }
 
 // InstructionsReplace replaces a slice of instructions starting at the specified position with the provided new instructions.
-func (c *CompilationScope) InstructionsReplace(pos int, newInstruction []byte) error {
+func (c *CompilationScope) InstructionsReplace(opPos int, newInstruction []byte) error {
 	for i := 0; i < len(newInstruction); i++ {
-		if err := c.InstructionsSet(pos+i, newInstruction[i]); err != nil {
-			return err
+		newOpPos := opPos + i
+		if newOpPos < 0 || newOpPos >= len(c.instructions) {
+			return fmt.Errorf("invalid instruction position: %d", newOpPos)
 		}
+		c.instructions[newOpPos] = newInstruction[i]
 	}
 	return nil
 }

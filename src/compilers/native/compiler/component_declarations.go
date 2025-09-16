@@ -172,7 +172,7 @@ func (c *Declarations) ValueSpec(node *ast.ValueSpec) error {
 				}
 			}
 			if isInterfaceAssignment && assignedStructSymbol != nil && assignedStructSymbol.IsStruct() {
-				if err := c.handleInterfaceAssignment(symbol, assignedStructSymbol); err != nil {
+				if err := c.handleInterfaceAssignment(node.Pos(), symbol, assignedStructSymbol); err != nil {
 					return tables.NewCompilerError(c.fileSet, node, err.Error())
 				}
 			} else {
@@ -184,7 +184,7 @@ func (c *Declarations) ValueSpec(node *ast.ValueSpec) error {
 					symbol.SetObject(c.gk.NewString(objects.FrameStatic, symbol.Name()))
 				}
 			}
-			if err = c.scopes.EmitSymbolDefineAndPop(symbol); err != nil {
+			if err = c.scopes.EmitSymbolDefineAndPop(node.Pos(), symbol); err != nil {
 				return err
 			}
 		}
@@ -213,11 +213,11 @@ func (c *Declarations) ValueSpec(node *ast.ValueSpec) error {
 		}
 		// Emit zero value for the type. For interfaces, pointers, slices and maps, the zero value is 'nil'
 		// OpNull opcode does exactly this
-		if _, err = c.scopes.Emit(native.OpNullId); err != nil {
+		if _, err = c.scopes.Emit(node.Pos(), native.OpNullId); err != nil {
 			return err
 		}
 		// Define the variable and initialize it with 'nil'
-		if err = c.scopes.EmitSymbolDefineAndPop(symbol); err != nil {
+		if err = c.scopes.EmitSymbolDefineAndPop(node.Pos(), symbol); err != nil {
 			return err
 		}
 	}
@@ -248,7 +248,7 @@ func (c *Declarations) BasicLit(node *ast.BasicLit) error {
 		return tables.NewCompilerError(c.fileSet, node, "unhandled literal: %s", node.Kind)
 	}
 	id := c.constants.Add("", obj)
-	if _, err := c.scopes.Emit(native.OpConstantId, id); err != nil {
+	if _, err := c.scopes.Emit(node.Pos(), native.OpConstantId, id); err != nil {
 		return err
 	}
 	return nil
@@ -258,17 +258,17 @@ func (c *Declarations) BasicLit(node *ast.BasicLit) error {
 func (c *Declarations) Ident(node *ast.Ident) error {
 	switch node.Name {
 	case "true":
-		if _, err := c.scopes.Emit(native.OpTrueId); err != nil {
+		if _, err := c.scopes.Emit(node.Pos(), native.OpTrueId); err != nil {
 			return err
 		}
 		return nil
 	case "false":
-		if _, err := c.scopes.Emit(native.OpFalseId); err != nil {
+		if _, err := c.scopes.Emit(node.Pos(), native.OpFalseId); err != nil {
 			return err
 		}
 		return nil
 	case "nil":
-		if _, err := c.scopes.Emit(native.OpNullId); err != nil {
+		if _, err := c.scopes.Emit(node.Pos(), native.OpNullId); err != nil {
 			return err
 		}
 	}
@@ -281,7 +281,7 @@ func (c *Declarations) Ident(node *ast.Ident) error {
 		return nil
 		//return NewCompilerError(c.FileSet, node,"[Ident] undefined variable: %s", node.Name)
 	}
-	if err := c.scopes.EmitSymbolGet(symbol); err != nil {
+	if err := c.scopes.EmitSymbolGet(node.Pos(), symbol); err != nil {
 		return err
 	}
 	return nil
@@ -338,7 +338,7 @@ func (c *Declarations) AssignStmt(node *ast.AssignStmt) error {
 		// Extract the target type name (e.g. "User")
 		targetTypeName := rhsType.Type.(*ast.Ident).Name
 		constIndex := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, targetTypeName))
-		if _, err := c.scopes.Emit(native.OpTypeAssertId, constIndex); err != nil {
+		if _, err := c.scopes.Emit(node.Pos(), native.OpTypeAssertId, constIndex); err != nil {
 			return tables.NewCompilerError(c.fileSet, node, err.Error())
 		}
 		rhsContainer = make([]*rhs, len(node.Lhs))
@@ -364,7 +364,7 @@ func (c *Declarations) AssignStmt(node *ast.AssignStmt) error {
 
 	// Handle multiple assignments (e.g. x, y := 1, 2)
 	for i := len(node.Lhs) - 1; i >= 0; i-- {
-		if err := c.handleVariableDeclaration(node.Tok, rhsContainer[i].node, node.Lhs[i], rhsContainer[i].returnType); err != nil {
+		if err := c.handleVariableDeclaration(node.Pos(), node.Tok, rhsContainer[i].node, node.Lhs[i], rhsContainer[i].returnType); err != nil {
 			return tables.NewCompilerError(c.fileSet, node, err.Error())
 		}
 	}
@@ -384,7 +384,7 @@ func (c *Declarations) CompositeLit(node *ast.CompositeLit) error {
 				return err
 			}
 		}
-		if _, err := c.scopes.Emit(native.OpCreateArrayId, len(node.Elts)); err != nil {
+		if _, err := c.scopes.Emit(node.Pos(), native.OpCreateArrayId, len(node.Elts)); err != nil {
 			return err
 		}
 		return nil
@@ -403,7 +403,7 @@ func (c *Declarations) CompositeLit(node *ast.CompositeLit) error {
 		}
 		for _, field := range structFields {
 			keyIdx := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, field.Name()))
-			if _, err = c.scopes.Emit(native.OpConstantId, keyIdx); err != nil {
+			if _, err = c.scopes.Emit(node.Pos(), native.OpConstantId, keyIdx); err != nil {
 				return err
 			}
 			if field.Node() != nil {
@@ -413,22 +413,22 @@ func (c *Declarations) CompositeLit(node *ast.CompositeLit) error {
 			} else {
 				ref := strings.TrimSpace(strings.ToLower(field.Kind()))
 				if valIdx, ok := c.initRef[ref]; ok {
-					if _, err = c.scopes.Emit(native.OpConstantId, valIdx); err != nil {
+					if _, err = c.scopes.Emit(node.Pos(), native.OpConstantId, valIdx); err != nil {
 						return err
 					}
 				} else {
-					if _, err = c.scopes.Emit(native.OpNullId); err != nil {
+					if _, err = c.scopes.Emit(node.Pos(), native.OpNullId); err != nil {
 						return err
 					}
 				}
 			}
 		}
 		structNameIdx := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, structName))
-		if _, err = c.scopes.Emit(native.OpConstantId, structNameIdx); err != nil {
+		if _, err = c.scopes.Emit(node.Pos(), native.OpConstantId, structNameIdx); err != nil {
 			return tables.NewCompilerError(c.fileSet, node, err.Error())
 		}
 		structLen := len(structFields) * 2
-		if _, err = c.scopes.Emit(native.OpCreateStructId, structLen); err != nil {
+		if _, err = c.scopes.Emit(node.Pos(), native.OpCreateStructId, structLen); err != nil {
 			return err
 		}
 		return nil
@@ -438,7 +438,7 @@ func (c *Declarations) CompositeLit(node *ast.CompositeLit) error {
 				return err
 			}
 		}
-		if _, err := c.scopes.Emit(native.OpCreateArrayId, len(node.Elts)); err != nil {
+		if _, err := c.scopes.Emit(node.Pos(), native.OpCreateArrayId, len(node.Elts)); err != nil {
 			return err
 		}
 		return nil
@@ -452,7 +452,7 @@ func (c *Declarations) CompositeLit(node *ast.CompositeLit) error {
 				return err
 			}
 		}
-		if _, err := c.scopes.Emit(native.OpCreateMapId, len(node.Elts)*2); err != nil {
+		if _, err := c.scopes.Emit(node.Pos(), native.OpCreateMapId, len(node.Elts)*2); err != nil {
 			return err
 		}
 		return nil
@@ -461,10 +461,10 @@ func (c *Declarations) CompositeLit(node *ast.CompositeLit) error {
 			c.structTable.AddExternal(val.Sel.Name)
 			mangledName := tables.GetMangledName(receiverIdent.Name, val.Sel.Name)
 			structNameIdx := c.constants.AddOrGet(mangledName, c.gk.NewString(objects.FrameStatic, mangledName))
-			if _, err := c.scopes.Emit(native.OpConstantId, structNameIdx); err != nil {
+			if _, err := c.scopes.Emit(node.Pos(), native.OpConstantId, structNameIdx); err != nil {
 				return tables.NewCompilerError(c.fileSet, node, err.Error())
 			}
-			if _, err := c.scopes.Emit(native.OpCreateStructId, 0); err != nil {
+			if _, err := c.scopes.Emit(node.Pos(), native.OpCreateStructId, 0); err != nil {
 				return err
 			}
 		}
@@ -490,7 +490,7 @@ func (c *Declarations) StarExpr(node *ast.StarExpr) error {
 	if err := c.compile(node.X); err != nil {
 		return err
 	}
-	_, err := c.scopes.Emit(native.OpDerefGetId)
+	_, err := c.scopes.Emit(node.Pos(), native.OpDerefGetId)
 	return err
 }
 
@@ -505,7 +505,7 @@ func (c *Declarations) IndexExpr(node *ast.IndexExpr) error {
 		return err
 	}
 	// Emit OpIndexGet instruction. The VM will take the index and container from the stack and perform the access.
-	_, err := c.scopes.Emit(native.OpIndexGetId)
+	_, err := c.scopes.Emit(node.Pos(), native.OpIndexGetId)
 	return err
 }
 
@@ -520,7 +520,7 @@ func (c *Declarations) MapType(node *ast.MapType) error {
 
 	// Emit the opcode to push this constant prototype onto the stack.
 	// The 'make' function at runtime will inspect its TypeName.
-	if _, err := c.scopes.Emit(native.OpConstantId, constIndex); err != nil {
+	if _, err := c.scopes.Emit(node.Pos(), native.OpConstantId, constIndex); err != nil {
 		return err
 	}
 	return nil
@@ -537,7 +537,7 @@ func (c *Declarations) ArrayType(node *ast.ArrayType) error {
 
 	// Emit the opcode to push this constant prototype onto the stack.
 	// The 'make' function at runtime will inspect its TypeName.
-	if _, err := c.scopes.Emit(native.OpConstantId, constIndex); err != nil {
+	if _, err := c.scopes.Emit(node.Pos(), native.OpConstantId, constIndex); err != nil {
 		return err
 	}
 	return nil
@@ -546,7 +546,7 @@ func (c *Declarations) ArrayType(node *ast.ArrayType) error {
 // handleInterfaceAssignment validates and assigns a struct to a variable with an interface type, ensuring compatibility.
 // It emits appropriate bytecode for the interface table setup and method bindings required for the variable's interface type.
 // Returns an error if the struct does not implement the interface or if bytecode generation fails.
-func (c *Declarations) handleInterfaceAssignment(variableSymbol *tables.Symbol, assignedStructSymbol *tables.Symbol) error {
+func (c *Declarations) handleInterfaceAssignment(pos token.Pos, variableSymbol *tables.Symbol, assignedStructSymbol *tables.Symbol) error {
 	interfaceName := variableSymbol.InterfaceName()
 	structName := assignedStructSymbol.StructName()
 	// Compatibility check
@@ -563,7 +563,7 @@ func (c *Declarations) handleInterfaceAssignment(variableSymbol *tables.Symbol, 
 	for _, requiredMethod := range interfaceDesc.Methods {
 		// Push method name as string constant
 		methodNameConst := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, requiredMethod.Name))
-		if _, err := c.scopes.Emit(native.OpConstantId, methodNameConst); err != nil {
+		if _, err := c.scopes.Emit(pos, native.OpConstantId, methodNameConst); err != nil {
 			return err
 		}
 		// Push method function
@@ -572,12 +572,12 @@ func (c *Declarations) handleInterfaceAssignment(variableSymbol *tables.Symbol, 
 		if !ok {
 			return fmt.Errorf("internal compiler error: could not resolve method %s for struct %s", requiredMethod.Name, structName)
 		}
-		if err := c.scopes.EmitSymbolGet(methodSymbol); err != nil {
+		if err := c.scopes.EmitSymbolGet(pos, methodSymbol); err != nil {
 			return err
 		}
 	}
 	// Emit OpCreateInterface opcode to create the object
-	if _, err := c.scopes.Emit(native.OpCreateInterfaceId, len(interfaceDesc.Methods)); err != nil {
+	if _, err := c.scopes.Emit(pos, native.OpCreateInterfaceId, len(interfaceDesc.Methods)); err != nil {
 		return err
 	}
 	return nil
@@ -586,12 +586,12 @@ func (c *Declarations) handleInterfaceAssignment(variableSymbol *tables.Symbol, 
 // handleVariableDeclaration processes variable declarations and assignments, handling various cases like ':=' and '='.
 // It resolves symbols, infers types, and manages scope and structure assignments based on the given token and expressions.
 // Returns an error if the operation fails or if invalid assignments are attempted.
-func (c *Declarations) handleVariableDeclaration(tok token.Token, rhsIn ast.Expr, lhsIn ast.Expr, inferredTypeName string) error {
+func (c *Declarations) handleVariableDeclaration(pos token.Pos, tok token.Token, rhsIn ast.Expr, lhsIn ast.Expr, inferredTypeName string) error {
 	switch lhs := lhsIn.(type) {
 	case *ast.Ident:
 		if lhs.Name == tables.UndefinedSymbol {
 			// if is '_', we don't create a symbol, simply discard the corresponding value from the top of the stack.
-			if _, err := c.scopes.Emit(native.OpPopId); err != nil {
+			if _, err := c.scopes.Emit(pos, native.OpPopId); err != nil {
 				return err
 			}
 			return nil
@@ -610,7 +610,7 @@ func (c *Declarations) handleVariableDeclaration(tok token.Token, rhsIn ast.Expr
 				symbol.SetObject(c.gk.NewString(objects.FrameStatic, inferredTypeName+":"+symbol.Name()))
 				c.structTable.BindSymbol(symbol, inferredTypeName)
 			}
-			if err = c.scopes.EmitSymbolDefineAndPop(symbol); err != nil {
+			if err = c.scopes.EmitSymbolDefineAndPop(pos, symbol); err != nil {
 				return err
 			}
 		} else {
@@ -631,7 +631,7 @@ func (c *Declarations) handleVariableDeclaration(tok token.Token, rhsIn ast.Expr
 				}
 				if len(rhsName) > 0 {
 					if assignedStructSymbol, ok := c.scopes.SymbolResolve(rhsName); ok && assignedStructSymbol.IsStruct() {
-						if err := c.handleInterfaceAssignment(symbol, assignedStructSymbol); err != nil {
+						if err := c.handleInterfaceAssignment(pos, symbol, assignedStructSymbol); err != nil {
 							return err
 						}
 					}
@@ -648,7 +648,7 @@ func (c *Declarations) handleVariableDeclaration(tok token.Token, rhsIn ast.Expr
 					c.structTable.BindSymbol(symbol, inferredTypeName)
 				}
 			}
-			if err := c.scopes.EmitSymbolSetAndPop(symbol); err != nil {
+			if err := c.scopes.EmitSymbolSetAndPop(pos, symbol); err != nil {
 				return err
 			}
 		}
@@ -662,7 +662,7 @@ func (c *Declarations) handleVariableDeclaration(tok token.Token, rhsIn ast.Expr
 		if err != nil {
 			return err
 		}
-		if err = c.scopes.EmitSymbolSetAndPop(tempSymbol); err != nil {
+		if err = c.scopes.EmitSymbolSetAndPop(pos, tempSymbol); err != nil {
 			return err
 		}
 		if err = c.compile(lhs.X); err != nil { // Compiles 'm'
@@ -671,10 +671,10 @@ func (c *Declarations) handleVariableDeclaration(tok token.Token, rhsIn ast.Expr
 		if err = c.compile(lhs.Index); err != nil { // Compiles "three"
 			return err
 		}
-		if err = c.scopes.EmitSymbolGet(tempSymbol); err != nil {
+		if err = c.scopes.EmitSymbolGet(pos, tempSymbol); err != nil {
 			return err
 		}
-		if _, err = c.scopes.Emit(native.OpIndexSetId); err != nil {
+		if _, err = c.scopes.Emit(pos, native.OpIndexSetId); err != nil {
 			return err
 		}
 		return nil
@@ -690,7 +690,7 @@ func (c *Declarations) handleVariableDeclaration(tok token.Token, rhsIn ast.Expr
 				// Push the field name as key.
 				fieldName := lhs.Sel.Name
 				keyConst := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, fieldName))
-				if _, err := c.scopes.Emit(native.OpConstantId, keyConst); err != nil {
+				if _, err := c.scopes.Emit(pos, native.OpConstantId, keyConst); err != nil {
 					return err
 				}
 				// Stack is now: [..., value, "fieldName"]
@@ -699,7 +699,7 @@ func (c *Declarations) handleVariableDeclaration(tok token.Token, rhsIn ast.Expr
 				if symbol.Scope() == tables.GlobalScope {
 					op = native.OpGlobalIndexId
 				}
-				if _, err := c.scopes.Emit(op, numSelectors, symbol.Index()); err != nil {
+				if _, err := c.scopes.Emit(pos, op, numSelectors, symbol.Index()); err != nil {
 					return err
 				}
 				return nil
@@ -710,7 +710,7 @@ func (c *Declarations) handleVariableDeclaration(tok token.Token, rhsIn ast.Expr
 		if err != nil {
 			return err
 		}
-		if err = c.scopes.EmitSymbolSet(tempSymbol); err != nil {
+		if err = c.scopes.EmitSymbolSet(pos, tempSymbol); err != nil {
 			return err
 		}
 		if err = c.compile(lhs.X); err != nil {
@@ -718,13 +718,13 @@ func (c *Declarations) handleVariableDeclaration(tok token.Token, rhsIn ast.Expr
 		}
 		fieldName := lhs.Sel.Name
 		keyConst := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, fieldName))
-		if _, err = c.scopes.Emit(native.OpConstantId, keyConst); err != nil {
+		if _, err = c.scopes.Emit(pos, native.OpConstantId, keyConst); err != nil {
 			return err
 		}
-		if err = c.scopes.EmitSymbolGet(tempSymbol); err != nil {
+		if err = c.scopes.EmitSymbolGet(pos, tempSymbol); err != nil {
 			return err
 		}
-		if err = c.scopes.EmitAndPop(native.OpIndexSetId); err != nil {
+		if err = c.scopes.EmitAndPop(pos, native.OpIndexSetId); err != nil {
 			return err
 		}
 		return nil
@@ -736,7 +736,7 @@ func (c *Declarations) handleVariableDeclaration(tok token.Token, rhsIn ast.Expr
 		if err := c.compile(lhs.X); err != nil {
 			return err
 		}
-		if err := c.scopes.EmitAndPop(native.OpDerefSetId); err != nil {
+		if err := c.scopes.EmitAndPop(pos, native.OpDerefSetId); err != nil {
 			return err
 		}
 		return nil
