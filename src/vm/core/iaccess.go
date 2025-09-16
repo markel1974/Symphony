@@ -25,15 +25,15 @@ type IVMStackOnly interface {
 
 	StackPeek() objects.IObject
 	StackPop() objects.IObject
-	StackPush(value objects.IObject)
+	StackPush(obj objects.IObject)
 	StackSet(objects.IObject)
-	StackPeekOffsetBP(offset uint) objects.IObject
-	StackSetOffsetBP(offset uint, value objects.IObject)
-	StackPeekOffsetSP(offset uint) objects.IObject
-	StackSetOffsetSP(offset uint, value objects.IObject)
-	StackPeekArray(numElements uint) []objects.IObject
-	StackPopArray(numElements uint) []objects.IObject
-	StackPopMap(numElements uint) map[string]objects.IObject
+	StackPeekBP(offset uint) objects.IObject
+	StackSetBP(offset uint, obj objects.IObject)
+	StackPeekSP(offset uint) objects.IObject
+	StackSetSP(offset uint, obj objects.IObject)
+	StackPeekArray(numElem uint) []objects.IObject
+	StackPopArray(numElem uint) []objects.IObject
+	StackPopMap(numElem uint) map[string]objects.IObject
 
 	Factory() objects.IGateKeeper
 	SetError(err error)

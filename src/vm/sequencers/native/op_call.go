@@ -48,7 +48,7 @@ func (op *OpCall) Execute(decoder *core.Decoder) {
 	spread := decoder.Operand(0)
 	numArgs := decoder.Operand(1)
 	offset := numArgs + 1
-	value := op.vm.StackPeekOffsetSP(uint(offset))
+	value := op.vm.StackPeekSP(uint(offset))
 	op.vm.Call(value, spread == 1, numArgs)
 }
 

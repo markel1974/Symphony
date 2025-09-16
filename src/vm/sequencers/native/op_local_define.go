@@ -47,7 +47,7 @@ func (op *OpLocalDefine) Bind(vm core.IVM) error {
 func (op *OpLocalDefine) Execute(decoder *core.Decoder) {
 	localIndex := decoder.Operand(0)
 	val := op.vm.StackPeek()
-	op.vm.StackSetOffsetBP(uint(localIndex), val)
+	op.vm.StackSetBP(uint(localIndex), val)
 }
 
 // Compile generates the compiled representation of the OpLocalDefine operation or returns an unimplemented error.

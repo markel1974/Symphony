@@ -46,8 +46,8 @@ func (op *OpCreateError) Bind(vm core.IVM) error {
 // Execute converts the top value on the VM stack into an error object and replaces it on the stack.
 func (op *OpCreateError) Execute(_ *core.Decoder) {
 	value := op.vm.StackPeek()
-	e := op.vm.Factory().NewError(op.vm.FrameId(), value.AsString())
-	op.vm.StackSet(e)
+	errObj := op.vm.Factory().NewError(op.vm.FrameId(), value.AsString())
+	op.vm.StackSet(errObj)
 }
 
 // Compile generates the compiled representation of the OpCreateError operation or returns an unimplemented error.

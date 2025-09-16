@@ -45,7 +45,6 @@ func (op *OpGlobalSet) Bind(vm core.IVM) error {
 
 // Execute updates the instruction pointer, calculates a global variable position, and sets its value from the stack.
 func (op *OpGlobalSet) Execute(decoder *core.Decoder) {
-	// Operands Offset 2 (16-bit)
 	index := decoder.Operand(0)
 	val := op.vm.StackPeek()
 	op.vm.Globals().Set(uint(index), val)

@@ -47,8 +47,8 @@ func (op *OpUnarySub) Bind(vm core.IVM) error {
 // Execute performs a subtraction operation by negating the top stack element, supporting integers and floats.
 // Pushes the result back to the stack or sets an error for unsupported types.
 func (op *OpUnarySub) Execute(_ *core.Decoder) {
-	operand := op.vm.StackPop()
-	switch x := operand.(type) {
+	obj := op.vm.StackPop()
+	switch x := obj.(type) {
 	case *objects.Float:
 		res := op.vm.Factory().NewFloat(op.vm.FrameId(), -x.Value())
 		op.vm.StackPush(res)

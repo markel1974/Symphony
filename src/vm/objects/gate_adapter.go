@@ -1,5 +1,7 @@
 package objects
 
+import "fmt"
+
 // GateAdapter is a type that wraps a GateKeeper and provides functional adapters to map Go functions to FuncCallable.
 type GateAdapter struct {
 	factory *GateKeeper
@@ -23,10 +25,12 @@ func (ga *GateAdapter) LogicalOpInt64(op LogicalOperator, lhs int64, rhs int64) 
 	return logicalOpInt64(lhs, op, rhs)
 }
 
-// BoundsCheck validates and adjusts slice bounds using provided low and high indices, ensuring they are within valid range.
-func (ga *GateAdapter) BoundsCheck(lowObj IObject, highObj IObject, numElem int64) (int64, int64, error) {
-	lowIdx := lowObj.AsInt64()
-	highIdx := highObj.AsInt64()
+// CreateSlice generates a slice of a target object using the given low and high indices and returns the resulting object.
+// The method supports slicing Arrays, Strings, and Bytes, returning an error if the target type is unsupported.
+func (ga *GateAdapter) CreateSlice(frameId int, lowObj IObject, highObj IObject, target IObject) (IObject, error) {
+	numElem := target.Length()
+	lowIdx := int(lowObj.AsInt64())
+	highIdx := int(highObj.AsInt64())
 	if lowIdx > highIdx {
 		lowIdx = highIdx
 	}
@@ -40,7 +44,16 @@ func (ga *GateAdapter) BoundsCheck(lowObj IObject, highObj IObject, numElem int6
 	} else if highIdx > numElem {
 		highIdx = numElem
 	}
-	return lowIdx, highIdx, nil
+	switch left := target.(type) {
+	case *Array:
+		return ga.factory.NewArray(frameId, left.Values()[lowIdx:highIdx]), nil
+	case *String:
+		return ga.factory.NewString(frameId, left.Value()[lowIdx:highIdx]), nil
+	case *Bytes:
+		return ga.factory.NewBytes(frameId, left.Value()[lowIdx:highIdx]), nil
+	default:
+		return nil, fmt.Errorf("invalid slice: %s[%d:%d]", left.TypeName(), lowIdx, highIdx)
+	}
 }
 
 // IndexAssign assigns a value to a nested structure, using selectors to determine the target location.

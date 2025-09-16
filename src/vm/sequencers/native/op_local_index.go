@@ -46,20 +46,16 @@ func (op *OpLocalIndex) Bind(vm core.IVM) error {
 
 // Execute performs the operation of retrieving, modifying, and reassigning a value using selectors in the local scope.
 func (op *OpLocalIndex) Execute(decoder *core.Decoder) {
-	// Operands Offset 2 (16-bit|8-bit)
 	localIndex := decoder.Operand(0)
 	selCount := decoder.Operand(1)
-	dstObj := op.vm.StackPeekOffsetBP(uint(localIndex))
-	//if obj, ok := dstObj.(*objects.ObjectPointer); ok {
-	//	dstObj = *obj.Value()
-	//}
+	dstObj := op.vm.StackPeekBP(uint(localIndex))
 	selectors := make([]objects.IObject, selCount)
 	for i := 0; i < selCount; i++ {
 		offset := selCount - i
-		selectors[i] = op.vm.StackPeekOffsetSP(uint(offset))
+		selectors[i] = op.vm.StackPeekSP(uint(offset))
 	}
 	offset := selCount + 1
-	srcObj := op.vm.StackPeekOffsetSP(uint(offset))
+	srcObj := op.vm.StackPeekSP(uint(offset))
 	op.vm.StackDecrementCount(uint(offset))
 	if err := op.vm.Factory().IndexAssign(op.vm.FrameId(), dstObj, srcObj, selectors); err != nil {
 		op.vm.SetError(err)

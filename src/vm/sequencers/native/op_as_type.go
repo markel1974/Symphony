@@ -54,11 +54,9 @@ func (op *OpAsType) Execute(decoder *core.Decoder) {
 	interfaceObj := op.vm.StackPop()
 	io, isInterface := interfaceObj.(*objects.Interface)
 	if !isInterface {
-		// This should never happen in a valid type switch.
 		op.vm.SetError(fmt.Errorf("cannot perform unchecked cast on a non-interface type: %s", interfaceObj.TypeName()))
 		return
 	}
-	// Replace the interface with its concrete value on the stack.
 	op.vm.StackPush(io.Value())
 }
 

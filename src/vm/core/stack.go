@@ -73,6 +73,9 @@ func (v *Stack) Set(obj objects.IObject) {
 		v.errSignal(objects.ErrIndexOutOfBounds)
 		return
 	}
+	if obj == nil {
+		obj = v.gk.UndefinedValue()
+	}
 	v.stack[v.sp-1] = obj
 }
 
@@ -81,6 +84,9 @@ func (v *Stack) Push(obj objects.IObject) {
 	if v.sp+1 >= uint(len(v.stack)) {
 		v.errSignal(objects.ErrIndexOutOfBounds)
 		return
+	}
+	if obj == nil {
+		obj = v.gk.UndefinedValue()
 	}
 	v.stack[v.sp] = obj
 	v.sp++
@@ -145,6 +151,9 @@ func (v *Stack) SetAbsolute(absolute uint, obj objects.IObject) {
 	if absolute >= v.sp {
 		v.errSignal(objects.ErrIndexOutOfBounds)
 		return
+	}
+	if obj == nil {
+		obj = v.gk.UndefinedValue()
 	}
 	v.stack[absolute] = obj
 }

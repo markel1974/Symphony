@@ -55,10 +55,10 @@ func (op *OpGlobalIndex) Execute(decoder *core.Decoder) {
 	selectors := make([]objects.IObject, selCount)
 	for i := 0; i < selCount; i++ {
 		offset := selCount - i
-		selectors[i] = op.vm.StackPeekOffsetSP(uint(offset))
+		selectors[i] = op.vm.StackPeekSP(uint(offset))
 	}
 	offset := selCount + 1
-	srcObj := op.vm.StackPeekOffsetSP(uint(offset))
+	srcObj := op.vm.StackPeekSP(uint(offset))
 	op.vm.StackDecrementCount(uint(offset))
 	if err := op.vm.Factory().IndexAssign(op.vm.FrameId(), dstObj, srcObj, selectors); err != nil {
 		op.vm.SetError(err)

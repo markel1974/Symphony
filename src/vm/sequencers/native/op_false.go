@@ -45,7 +45,6 @@ func (op *OpFalse) Bind(vm core.IVM) error {
 
 // Execute pushes a predefined `FalseValue` onto the virtual machine's stack.
 func (op *OpFalse) Execute(_ *core.Decoder) {
-	// Operands Offset  0
 	val := op.vm.Factory().FalseValue()
 	op.vm.StackPush(val)
 }

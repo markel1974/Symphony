@@ -49,7 +49,6 @@ func (op *OpGlobalDefine) Bind(vm core.IVM) error {
 
 // Execute sets a value from the stack into the global variables using the operand index from the decoder.
 func (op *OpGlobalDefine) Execute(decoder *core.Decoder) {
-	// Operands Offset 2 (16-bit)
 	index := decoder.Operand(0)
 	val := op.vm.StackPeek()
 	op.vm.Globals().Set(uint(index), val)

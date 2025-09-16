@@ -46,7 +46,7 @@ func (op *OpLocalGet) Bind(vm core.IVM) error {
 // Execute retrieves a local variable from the current frame's base pointer and pushes it onto the stack.
 func (op *OpLocalGet) Execute(decoder *core.Decoder) {
 	localIndex := decoder.Operand(0)
-	val := op.vm.StackPeekOffsetBP(uint(localIndex))
+	val := op.vm.StackPeekBP(uint(localIndex))
 	op.vm.StackPush(val)
 }
 

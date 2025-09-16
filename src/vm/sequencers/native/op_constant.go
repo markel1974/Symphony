@@ -45,7 +45,6 @@ func (op *OpConstant) Bind(vm core.IVM) error {
 
 // Execute executes the OpConstant instruction in the virtual machine, pushing a global constant onto the stack.
 func (op *OpConstant) Execute(decoder *core.Decoder) {
-	// Operands Offset 2 (16-bit)
 	cIdx := decoder.Operand(0)
 	glObj := op.vm.Constants().Get(uint(cIdx))
 	op.vm.StackPush(glObj)

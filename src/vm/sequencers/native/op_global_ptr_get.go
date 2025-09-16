@@ -47,7 +47,6 @@ func (op *OpGlobalPtrGet) Bind(vm core.IVM) error {
 
 // Execute retrieves a global value by its index, checks its type, and pushes a pointer object onto the stack.
 func (op *OpGlobalPtrGet) Execute(decoder *core.Decoder) {
-	// Operands Offset 2 (16-bit)
 	globalIndex := decoder.Operand(0)
 	val := op.vm.Globals().Get(uint(globalIndex))
 	if obj, ok := val.(*objects.ObjectPointer); ok {

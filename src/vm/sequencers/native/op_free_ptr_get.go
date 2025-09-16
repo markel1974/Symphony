@@ -46,7 +46,6 @@ func (op *OpFreePtrGet) Bind(vm core.IVM) error {
 
 // Execute executes the OpFreePtrGet operation, pushing a free variable onto the stack based on the current instruction pointer.
 func (op *OpFreePtrGet) Execute(decoder *core.Decoder) {
-	// Operands Offset 2 (16-bit)
 	freeIndex := decoder.Operand(0)
 	val := op.vm.FrameFreeVarsIndex(uint(freeIndex))
 	if val == nil {

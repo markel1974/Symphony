@@ -154,23 +154,23 @@ func (v *VM) StackSet(value objects.IObject) {
 	v.stack.Set(value)
 }
 
-// StackPeekOffsetBP retrieves an object from the stack at the given offset relative to the base pointer of the current frame.
-func (v *VM) StackPeekOffsetBP(offset uint) objects.IObject {
+// StackPeekBP retrieves an object from the stack at the given offset relative to the base pointer of the current frame.
+func (v *VM) StackPeekBP(offset uint) objects.IObject {
 	return v.stack.PeekAbsolute(uint(v.currFrame.BasePointer()) + offset)
 }
 
-// StackSetOffsetBP sets a value in the stack at the specified offset from the current frame's base pointer.
-func (v *VM) StackSetOffsetBP(offset uint, value objects.IObject) {
+// StackSetBP sets a value in the stack at the specified offset from the current frame's base pointer.
+func (v *VM) StackSetBP(offset uint, value objects.IObject) {
 	v.stack.SetAbsolute(uint(v.currFrame.BasePointer())+offset, value)
 }
 
-// StackSetOffsetSP sets the value of a stack element at the specified offset from the stack pointer (SP).
-func (v *VM) StackSetOffsetSP(offset uint, value objects.IObject) {
+// StackSetSP sets the value of a stack element at the specified offset from the stack pointer (SP).
+func (v *VM) StackSetSP(offset uint, value objects.IObject) {
 	v.stack.SetOffset(offset, value)
 }
 
-// StackPeekOffsetSP retrieves the item at the specified offset from the stack, relative to the stack pointer.
-func (v *VM) StackPeekOffsetSP(offset uint) objects.IObject {
+// StackPeekSP retrieves the item at the specified offset from the stack, relative to the stack pointer.
+func (v *VM) StackPeekSP(offset uint) objects.IObject {
 	return v.stack.PeekOffset(offset)
 }
 

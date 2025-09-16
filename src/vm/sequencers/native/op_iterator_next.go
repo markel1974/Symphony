@@ -46,14 +46,13 @@ func (op *OpIteratorNext) Bind(vm core.IVM) error {
 // Execute processes the next iterator state in the current frame, pushing a boolean to the stack indicating iteration status.
 func (op *OpIteratorNext) Execute(decoder *core.Decoder) {
 	localIndex := decoder.Operand(0)
-	iteratorObj := op.vm.StackPeekOffsetBP(uint(localIndex))
-	iterator, ok := iteratorObj.(objects.IIterator)
+	itObj := op.vm.StackPeekBP(uint(localIndex))
+	it, ok := itObj.(objects.IIterator)
 	if !ok {
-		err := objects.ComputeIteratorError(objects.ErrNotIterator, iteratorObj.TypeName())
-		op.vm.SetError(err)
+		op.vm.SetError(objects.ComputeIteratorError(objects.ErrNotIterator, itObj.TypeName()))
 		return
 	}
-	if iterator.Next() {
+	if it.Next() {
 		op.vm.StackPush(op.vm.Factory().TrueValue())
 	} else {
 		op.vm.StackPush(op.vm.Factory().FalseValue())

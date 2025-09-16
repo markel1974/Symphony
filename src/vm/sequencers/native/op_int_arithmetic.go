@@ -53,9 +53,9 @@ func (op *OpIntArithmetic) Execute(decoder *core.Decoder) {
 	lhs := decoder.Operand(1)
 	rhs := decoder.Operand(2)
 	dst := decoder.Operand(3)
-	lhsObj := op.vm.StackPeekOffsetBP(uint(lhs))
-	rhsObj := op.vm.StackPeekOffsetBP(uint(rhs))
-	dstObj := op.vm.StackPeekOffsetBP(uint(dst))
+	lhsObj := op.vm.StackPeekBP(uint(lhs))
+	rhsObj := op.vm.StackPeekBP(uint(rhs))
+	dstObj := op.vm.StackPeekBP(uint(dst))
 	out, ok := dstObj.(*objects.Int)
 	if !ok {
 		op.vm.SetError(fmt.Errorf("dst expected int, got %s", dstObj.TypeName()))

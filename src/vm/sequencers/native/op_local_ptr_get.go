@@ -45,9 +45,8 @@ func (op *OpLocalPtrGet) Bind(vm core.IVM) error {
 
 // Execute advances the instruction pointer, retrieves a local variable, and pushes an ObjectPointer to the stack.
 func (op *OpLocalPtrGet) Execute(decoder *core.Decoder) {
-	// Operands Offset 2 (16-bit)
 	localIndex := decoder.Operand(0)
-	val := op.vm.StackPeekOffsetBP(uint(localIndex))
+	val := op.vm.StackPeekBP(uint(localIndex))
 	if obj, ok := val.(*objects.ObjectPointer); ok {
 		op.vm.StackPush(obj)
 		return

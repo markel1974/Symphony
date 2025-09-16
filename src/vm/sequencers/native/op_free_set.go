@@ -45,7 +45,6 @@ func (op *OpFreeSet) Bind(vm core.IVM) error {
 
 // Execute increments the instruction pointer, retrieves a free variable index, and sets its value from the stack.
 func (op *OpFreeSet) Execute(decoder *core.Decoder) {
-	// Operands Offset 2 (16-bit)
 	freeIndex := decoder.Operand(0)
 	o := op.vm.StackPop()
 	freeObj := op.vm.FrameFreeVarsIndex(uint(freeIndex))

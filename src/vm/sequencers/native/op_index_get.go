@@ -45,7 +45,6 @@ func (op *OpIndexGet) Opcode() *opcodes.Opcode {
 
 // Execute processes the index operation on the stack, retrieving a value or setting an error if indexing is invalid.
 func (op *OpIndexGet) Execute(_ *core.Decoder) {
-	// Operands Offset  0
 	index := op.vm.StackPop()
 	left := op.vm.StackPop()
 	val, err := left.IndexGet(op.vm.FrameId(), index)

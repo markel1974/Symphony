@@ -48,26 +48,14 @@ func (op *OpIndexSlice) Bind(vm core.IVM) error {
 func (op *OpIndexSlice) Execute(_ *core.Decoder) {
 	highObj := op.vm.StackPop()
 	lowObj := op.vm.StackPop()
-	leftObj := op.vm.StackPop()
-	lowIdx, highIdx, err := op.vm.Factory().BoundsCheck(lowObj, highObj, int64(leftObj.Length()))
+	targetObj := op.vm.StackPop()
+	ret, err := op.vm.Factory().CreateSlice(op.vm.FrameId(), lowObj, highObj, targetObj)
 	if err != nil {
 		op.vm.SetError(err)
 		return
 	}
-	switch left := leftObj.(type) {
-	case *objects.Array:
-		val := op.vm.Factory().NewArray(op.vm.FrameId(), left.Values()[lowIdx:highIdx])
-		op.vm.StackPush(val)
-	case *objects.String:
-		val := op.vm.Factory().NewString(op.vm.FrameId(), left.Value()[lowIdx:highIdx])
-		op.vm.StackPush(val)
-	case *objects.Bytes:
-		val := op.vm.Factory().NewBytes(op.vm.FrameId(), left.Value()[lowIdx:highIdx])
-		op.vm.StackPush(val)
-	default:
-		op.vm.SetError(fmt.Errorf("invalid operation: %s[%d:%d]", left.TypeName(), lowIdx, highIdx))
-		return
-	}
+	op.vm.StackPush(ret)
+	//lowIdx, highIdx, err := op.vm.Factory().BoundsCheck(lowObj, highObj, int64(leftObj.Length()))
 }
 
 // Compile generates the compiled representation of the OpIndexSlice operation or returns an unimplemented error.

@@ -45,7 +45,6 @@ func (op *OpCreateClosure) Bind(vm core.IVM) error {
 
 // Execute performs the operation associated with the OpCreateClosure opcode, creating a closure and pushing it onto the stack.
 func (op *OpCreateClosure) Execute(decoder *core.Decoder) {
-	// Operands Offset 3 (16-bit|8-bit)
 	closureIndex := decoder.Operand(0)
 	//numTotal := decoder.Operand(1)
 	closureObj := op.vm.Constants().Get(uint(closureIndex))
@@ -68,7 +67,7 @@ func (op *OpCreateClosure) Execute(decoder *core.Decoder) {
 			return
 		}
 		index := int(freeIndex.Value())
-		objOffset := op.vm.StackPeekOffsetBP(uint(index))
+		objOffset := op.vm.StackPeekBP(uint(index))
 		switch objType := objOffset.(type) {
 		case *objects.ObjectPointer:
 			free[idx] = objType

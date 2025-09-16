@@ -48,13 +48,9 @@ func (op *OpCreateInterface) Bind(vm core.IVM) error {
 
 // Execute processes an `OpCreateInterface` operation, constructing an interface by combining methods and a concrete value.
 func (op *OpCreateInterface) Execute(decoder *core.Decoder) {
-	// Operands: Number of methods (8-bit)
 	numMethods := decoder.Operand(0)
-
-	// 1. Build the iTable by popping method names and functions from the stack.
 	iTable := make(map[string]objects.IObject, numMethods)
 	for i := 0; i < numMethods; i++ {
-		// Pop in reverse order: function first, then name.
 		methodFunc := op.vm.StackPop()
 		methodNameObj := op.vm.StackPop()
 		methodName, ok := methodNameObj.(*objects.String)
@@ -64,14 +60,8 @@ func (op *OpCreateInterface) Execute(decoder *core.Decoder) {
 		}
 		iTable[methodName.Value()] = methodFunc
 	}
-
-	// 2. Pop the concrete value (the struct instance) that will be wrapped by the interface.
 	concreteValue := op.vm.StackPop()
-
-	// 3. Create the new interface object.
 	interfaceObj := op.vm.Factory().NewInterface(op.vm.FrameId(), concreteValue, iTable)
-
-	// 4. Push the final interface object back onto the stack.
 	op.vm.StackPush(interfaceObj)
 }
 

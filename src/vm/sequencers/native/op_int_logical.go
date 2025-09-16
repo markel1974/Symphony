@@ -48,12 +48,12 @@ func (op *OpIntLogical) Bind(vm core.IVM) error {
 // Execute performs the logical operation between two integers on the stack and stores the result in the destination object.
 func (op *OpIntLogical) Execute(decoder *core.Decoder) {
 	logicalOp := objects.LogicalOperator(decoder.Operand(0))
-	lhs := decoder.Operand(1)
-	rhs := decoder.Operand(2)
-	dst := decoder.Operand(3)
-	lhsObj := op.vm.StackPeekOffsetBP(uint(lhs))
-	rhsObj := op.vm.StackPeekOffsetBP(uint(rhs))
-	dstObj := op.vm.StackPeekOffsetBP(uint(dst))
+	lhsIndex := decoder.Operand(1)
+	rhsIndex := decoder.Operand(2)
+	dstIndex := decoder.Operand(3)
+	lhsObj := op.vm.StackPeekBP(uint(lhsIndex))
+	rhsObj := op.vm.StackPeekBP(uint(rhsIndex))
+	dstObj := op.vm.StackPeekBP(uint(dstIndex))
 	result, err := op.vm.Factory().LogicalOpInt64(logicalOp, lhsObj.AsInt64(), rhsObj.AsInt64())
 	if err != nil {
 		op.vm.SetError(err)
