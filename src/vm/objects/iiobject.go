@@ -10,6 +10,7 @@ type IAllocator interface {
 	AddRef() int
 	ReleaseRef() int
 	RefCount() int
+	setFrame(int)
 	Frame() int
 	SetStatic()
 }
@@ -35,7 +36,7 @@ type IAllocator interface {
 // Length retrieves the length of the object, if applicable (e.g., arrays, strings).
 type IObject interface {
 	IAllocator
-	//setAllocator(IAllocator)
+	setAllocator(allocator IAllocator)
 	TypeName() string
 	AsBool() bool
 	AsInt64() int64
@@ -67,6 +68,7 @@ type IGateAllocator interface {
 	ReleaseObjects(int, []IObject)
 	ReleaseAll()
 	AllocatedObjects() uint64
+	AssignAllocator(object IObject)
 	SetPointer(ptr *ObjectPointer, value IObject)
 	NewFuncInternal(frame int, id CallId) IObject
 	NewFunc(frame int, name string, instructions []byte, numLocals int, numParameters int, varArgs bool, sourceMap map[int]int, free []*ObjectPointer) IObject

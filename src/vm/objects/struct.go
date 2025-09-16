@@ -12,13 +12,13 @@ func init() {
 
 // Struct is a composite object that implements the IObject interface and stores a collection of key-value pairs.
 type Struct struct {
-	Allocator
+	IAllocator
 	typeName string
 	values   map[string]IObject
 }
 
 // NewStruct creates a new instance of MapImmutable with the provided map of string keys and IObject values.
-func newStruct(factory IGateKeeper, frame int, value map[string]IObject) IObject {
+func newStruct(allocator IAllocator, value map[string]IObject) IObject {
 	if len(value) > maxStructLen {
 		nv := make(map[string]IObject)
 		for k, v := range value {
@@ -30,10 +30,15 @@ func newStruct(factory IGateKeeper, frame int, value map[string]IObject) IObject
 		value = nv
 	}
 	return &Struct{
-		Allocator: Allocator{gk: factory, frame: frame},
-		typeName:  "",
-		values:    value,
+		IAllocator: allocator,
+		typeName:   "",
+		values:     value,
 	}
+}
+
+// setAllocator sets the allocator for the instance, defining its memory management and lifecycle behavior.
+func (o *Struct) setAllocator(allocator IAllocator) {
+	o.IAllocator = allocator
 }
 
 // AsBool converts the Struct to a boolean, returning true if the Struct contains at least one key-value pair; otherwise false.
@@ -82,7 +87,7 @@ func (o *Struct) Nil() bool {
 // LogicalOp performs a logical operation using the specified operator and operand, returning the result or an error.
 func (o *Struct) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, error) {
 	if rhsIn.Nil() {
-		return logicalOpNil(o.gk, op)
+		return logicalOpNil(o.GateKeeper(), op)
 	}
 	return nil, ErrInvalidOperator
 }

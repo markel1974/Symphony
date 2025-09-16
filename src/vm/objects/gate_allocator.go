@@ -48,10 +48,10 @@ func NewGateAllocator(gk *GateKeeper) *GateAllocator {
 	}
 	ga.allocatedObjects = NewAllocatedObjects(gk)
 	// Initialization of static values
-	ga.trueValue = newBool(gk, FrameStatic, true)
-	ga.falseValue = newBool(gk, FrameStatic, false)
-	ga.undefinedValue = newUndefined(gk, FrameStatic)
-	ga.undefinedIterator = newUndefinedIterator(gk, FrameStatic)
+	ga.trueValue = newBool(NewAllocator(gk, FrameStatic), true)
+	ga.falseValue = newBool(NewAllocator(gk, FrameStatic), false)
+	ga.undefinedValue = newUndefined(NewAllocator(gk, FrameStatic))
+	ga.undefinedIterator = newUndefinedIterator(NewAllocator(gk, FrameStatic))
 
 	// Primitive types
 	ga.poolBool.New = ga.allocatedObjects.NewBool
@@ -81,10 +81,7 @@ func NewGateAllocator(gk *GateKeeper) *GateAllocator {
 }
 
 func (f *GateAllocator) AssignAllocator(object IObject) {
-	switch v := object.(type) {
-	case *Int:
-		v.Allocator = Allocator{gk: f.gk, frame: 0, references: 0}
-	}
+	object.setAllocator(NewAllocator(f.gk, FrameStatic))
 }
 
 // Reset resets the internal counter of the GateAllocator to its initial state, 0.
@@ -126,23 +123,23 @@ func (f *GateAllocator) UndefinedValue() IObject {
 // It initializes the object, acquires resources if available, and returns an IObject instance.
 // If resource acquisition fails, it returns the undefined object from the allocator.
 func (f *GateAllocator) NewFunc(frame int, name string, instructions []byte, numLocals int, numParameters int, varArgs bool, source map[int]int, free []*ObjectPointer) IObject {
-	return newFunc(f.gk, frame, name, instructions, numLocals, numParameters, varArgs, source, free)
+	return newFunc(NewAllocator(f.gk, frame), name, instructions, numLocals, numParameters, varArgs, source, free)
 }
 
 // NewFuncInternal creates a new IObject using the provided frame and CallId, ensuring proper allocation and preparation.
 func (f *GateAllocator) NewFuncInternal(frame int, id CallId) IObject {
-	return newFuncInternal(f.gk, frame, id)
+	return newFuncInternal(NewAllocator(f.gk, frame), id)
 }
 
 // NewFuncImport creates a new function import object with the given frame, name, and callable function.
 // Returns an IObject instance or a default undefined value if object acquisition fails.
 func (f *GateAllocator) NewFuncImport(frame int, name string, args int, fn FuncCallable) IObject {
-	return newFuncImport(f.gk, frame, name, args, fn)
+	return newFuncImport(NewAllocator(f.gk, frame), name, args, fn)
 }
 
 // NewFuncJit creates and returns a new instance of a function-based IObject with the specified frame, name, and data.
 func (f *GateAllocator) NewFuncJit(frame int, name string, data []byte) IObject {
-	return newFuncJit(f.gk, frame, name, data)
+	return newFuncJit(NewAllocator(f.gk, frame), name, data)
 }
 
 // NewBool creates a new boolean object wrapped in the IObject interface, based on the provided boolean value.
@@ -153,7 +150,7 @@ func (f *GateAllocator) NewBool(_ int, v bool) IObject {
 // NewInt retrieves an Int object from the pool, sets its frame and value, and returns it as an IObject.
 func (f *GateAllocator) NewInt(frame int, v int64) IObject {
 	obj := f.poolInt.Get().(*Int)
-	obj.frame = frame
+	obj.setFrame(frame)
 	obj.value = v
 	return obj
 }
@@ -161,7 +158,7 @@ func (f *GateAllocator) NewInt(frame int, v int64) IObject {
 // NewChar retrieves a Char object from the pool, sets its frame and value, and returns it as an IObject instance.
 func (f *GateAllocator) NewChar(frame int, v rune) IObject {
 	obj := f.poolChar.Get().(*Char)
-	obj.frame = frame
+	obj.setFrame(frame)
 	obj.value = v
 	return obj
 }
@@ -169,7 +166,7 @@ func (f *GateAllocator) NewChar(frame int, v rune) IObject {
 // NewFloat creates and initializes a new Float object with the specified frame and float64 value. It returns the object.
 func (f *GateAllocator) NewFloat(frame int, v float64) IObject {
 	obj := f.poolFloat.Get().(*Float)
-	obj.frame = frame
+	obj.setFrame(frame)
 	obj.value = v
 	return obj
 }
@@ -180,7 +177,7 @@ func (f *GateAllocator) NewString(frame int, v string) IObject {
 		v = v[0:MaxStringLen]
 	}
 	obj := f.poolString.Get().(*String)
-	obj.frame = frame
+	obj.setFrame(frame)
 	obj.value = v
 	obj.runeStr = nil
 	return obj
@@ -189,7 +186,7 @@ func (f *GateAllocator) NewString(frame int, v string) IObject {
 // NewTime creates a new Time object from the object pool, initializes it with the given frame and time value, and returns it.
 func (f *GateAllocator) NewTime(frame int, value time.Time) IObject {
 	obj := f.poolTime.Get().(*Time)
-	obj.frame = frame
+	obj.setFrame(frame)
 	obj.value = value
 	return obj
 }
@@ -200,7 +197,7 @@ func (f *GateAllocator) NewBytes(frame int, v []byte) IObject {
 		v = v[0:maxBytesLen]
 	}
 	obj := f.poolBytes.Get().(*Bytes)
-	obj.frame = frame
+	obj.setFrame(frame)
 	obj.values = v
 	return obj
 }
@@ -211,7 +208,7 @@ func (f *GateAllocator) NewArray(frame int, v []IObject) IObject {
 		v = v[0:maxArrayLen]
 	}
 	obj := f.poolArray.Get().(*Array)
-	obj.frame = frame
+	obj.setFrame(frame)
 	obj.values = v
 	return obj
 }
@@ -225,7 +222,7 @@ func (f *GateAllocator) NewMap(frame int, v map[string]IObject) IObject {
 		// Tronca mappa
 	}
 	obj := f.poolMap.Get().(*Map)
-	obj.frame = frame
+	obj.setFrame(frame)
 	obj.values = v
 	return obj
 }
@@ -236,7 +233,7 @@ func (f *GateAllocator) NewStruct(frame int, name string, v map[string]IObject) 
 		// Tronca struct
 	}
 	obj := f.poolStruct.Get().(*Struct)
-	obj.frame = frame
+	obj.setFrame(frame)
 	obj.typeName = name
 	obj.values = v
 	return obj
@@ -245,16 +242,16 @@ func (f *GateAllocator) NewStruct(frame int, name string, v map[string]IObject) 
 // NewError creates and returns a new Error object with the specified frame and error message.
 func (f *GateAllocator) NewError(frame int, e string) IObject {
 	obj := f.poolError.Get().(*Error)
-	obj.frame = frame
+	obj.setFrame(frame)
 	obj.err = e
-	obj.value = f.NewString(FrameStatic, e) // Stringa statica, non legata al frame
+	obj.value = f.NewString(FrameStatic, e)
 	return obj
 }
 
 // NewObjectPointer creates and initializes an ObjectPointer with the given frame and IObject reference, returning it.
 func (f *GateAllocator) NewObjectPointer(frame int, v *IObject) IObject {
 	obj := f.poolObjectPointer.Get().(*ObjectPointer)
-	obj.frame = frame
+	obj.setFrame(frame)
 	obj.acquire(v)
 	return obj
 }
@@ -262,7 +259,7 @@ func (f *GateAllocator) NewObjectPointer(frame int, v *IObject) IObject {
 // NewInterface initializes and returns a new Interface object with the given frame, value, and internal table.
 func (f *GateAllocator) NewInterface(frame int, value IObject, iTable map[string]IObject) IObject {
 	obj := f.poolInterface.Get().(*Interface)
-	obj.frame = frame
+	obj.setFrame(frame)
 	obj.value = value
 	obj.iTable = iTable
 	return obj
@@ -271,21 +268,30 @@ func (f *GateAllocator) NewInterface(frame int, value IObject, iTable map[string
 // NewArrayIterator creates and initializes a reusable ArrayIterator instance from the allocator pool for traversing an array.
 func (f *GateAllocator) NewArrayIterator(frame int, v []IObject, index int) IIterator {
 	obj := f.poolArrayIterator.Get().(*ArrayIterator)
-	obj.frame, obj.values, obj.index, obj.length = frame, v, index, len(v)
+	obj.setFrame(frame)
+	obj.values = v
+	obj.index = index
+	obj.length = len(v)
 	return obj
 }
 
 // NewBytesIterator allocates and initializes a BytesIterator instance for iterating over a provided byte slice.
 func (f *GateAllocator) NewBytesIterator(frame int, v []byte, index int) IIterator {
 	obj := f.poolBytesIterator.Get().(*BytesIterator)
-	obj.frame, obj.values, obj.index, obj.length = frame, v, index, len(v)
+	obj.setFrame(frame)
+	obj.values = v
+	obj.index = index
+	obj.length = len(v)
 	return obj
 }
 
 // NewStringIterator creates and initializes a new StringIterator instance from the pool with the given frame, rune slice, and index.
 func (f *GateAllocator) NewStringIterator(frame int, v []rune, index int) IIterator {
 	obj := f.poolStringIterator.Get().(*StringIterator)
-	obj.frame, obj.values, obj.index, obj.length = frame, v, index, len(v)
+	obj.setFrame(frame)
+	obj.values = v
+	obj.index = index
+	obj.length = len(v)
 	return obj
 }
 
@@ -296,7 +302,11 @@ func (f *GateAllocator) NewMapIterator(frame int, v map[string]IObject, index in
 	for k := range v {
 		keys = append(keys, k)
 	}
-	obj.frame, obj.values, obj.keys, obj.index, obj.length = frame, v, keys, index, len(keys)
+	obj.setFrame(frame)
+	obj.values = v
+	obj.keys = keys
+	obj.index = index
+	obj.length = len(keys)
 	return obj
 }
 
@@ -307,7 +317,11 @@ func (f *GateAllocator) NewStructIterator(frame int, v map[string]IObject, index
 	for k := range v {
 		keys = append(keys, k)
 	}
-	obj.frame, obj.values, obj.keys, obj.index, obj.length = frame, v, keys, index, len(keys)
+	obj.setFrame(frame)
+	obj.values = v
+	obj.keys = keys
+	obj.index = index
+	obj.length = len(keys)
 	return obj
 }
 

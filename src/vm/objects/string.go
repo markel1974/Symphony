@@ -16,20 +16,25 @@ func init() {
 // This type embeds Object and supports operations like indexing, iteration, comparison, and copying.
 // It implements IObject and provides a richer functionality for string manipulation within the runtime system.
 type String struct {
-	Allocator
+	IAllocator
 	value   string
 	runeStr []rune
 }
 
 // NewString creates and returns a new String object initialized with the provided string values.
-func newString(factory IGateKeeper, frame int, value string) IObject {
+func newString(allocator IAllocator, value string) IObject {
 	if len(value) > MaxStringLen {
 		value = value[0:MaxStringLen]
 	}
 	return &String{
-		Allocator: Allocator{gk: factory, frame: frame},
-		value:     value,
+		IAllocator: allocator,
+		value:      value,
 	}
+}
+
+// setAllocator sets the allocator for the instance, defining its memory management and lifecycle behavior.
+func (o *String) setAllocator(allocator IAllocator) {
+	o.IAllocator = allocator
 }
 
 // AsBool converts the String object to a boolean. Returns true if the string has non-zero length, otherwise false.
@@ -100,7 +105,7 @@ func (o *String) TypeName() string {
 // Returns a boolean IObject or an error for unsupported operations or invalid types.
 func (o *String) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, error) {
 	if rhsIn.Nil() {
-		return logicalOpNil(o.gk, op)
+		return logicalOpNil(o.GateKeeper(), op)
 	}
 
 	switch op {

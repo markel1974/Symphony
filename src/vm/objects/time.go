@@ -15,16 +15,21 @@ func init() {
 
 // Time represents a custom object encapsulating a Go time.Time values with extended behaviors and operations.
 type Time struct {
-	Allocator
+	IAllocator
 	value time.Time
 }
 
 // NewTime creates a new instance of Time wrapping the provided time.Time values.
-func newTime(factory IGateKeeper, frame int, value time.Time) IObject {
+func newTime(allocator IAllocator, value time.Time) IObject {
 	return &Time{
-		Allocator: Allocator{gk: factory, frame: frame},
-		value:     value,
+		IAllocator: allocator,
+		value:      value,
 	}
+}
+
+// setAllocator sets the allocator for the instance, defining its memory management and lifecycle behavior.
+func (o *Time) setAllocator(allocator IAllocator) {
+	o.IAllocator = allocator
 }
 
 // AsBool returns the boolean representation of the Time object, which is true if the value is not zero.
@@ -64,7 +69,7 @@ func (o *Time) Nil() bool {
 
 // IndexGet attempts to retrieve a value at the given index and returns an error if the object is not indexable.
 func (o *Time) IndexGet(_ int, _ IObject) (IObject, error) {
-	return o.gk.UndefinedValue(), ErrIndexNotIndexable
+	return o.GateKeeper().UndefinedValue(), ErrIndexNotIndexable
 }
 
 // IndexSet attempts to assign a value to an index in the object but always returns ErrIndexUnsupported,
@@ -106,7 +111,7 @@ func (o *Time) TypeName() string {
 // LogicalOp performs logical comparison operations (e.g., <, >, <=, >=) between the Time object and another Time object.
 func (o *Time) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, error) {
 	if rhsIn.Nil() {
-		return logicalOpNil(o.gk, op)
+		return logicalOpNil(o.GateKeeper(), op)
 	}
 	switch rhs := rhsIn.(type) {
 	case *Time:

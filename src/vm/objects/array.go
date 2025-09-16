@@ -16,19 +16,24 @@ func init() {
 
 // Array represents a collection of IObject elements, providing methods for manipulation, indexing, and iteration.
 type Array struct {
-	Allocator
+	IAllocator
 	values []IObject
 }
 
 // NewArray creates and returns a new Array object initialized with the provided slice of IObject elements.
-func newArray(gk IGateKeeper, frame int, value []IObject) IObject {
+func newArray(allocator IAllocator, value []IObject) IObject {
 	if len(value) > maxArrayLen {
 		value = value[0:maxArrayLen]
 	}
 	return &Array{
-		Allocator: Allocator{gk: gk, frame: frame},
-		values:    value,
+		IAllocator: allocator,
+		values:     value,
 	}
+}
+
+// setAllocator sets the allocator for the instance, defining its memory management and lifecycle behavior.
+func (o *Array) setAllocator(allocator IAllocator) {
+	o.IAllocator = allocator
 }
 
 // AsBool returns true if the array is not empty, otherwise false.
@@ -125,7 +130,7 @@ func (o *Array) Assign(v []IObject) {
 // LogicalOp performs a logical operation on the array using the given operator and operand, returning an error if invalid.
 func (o *Array) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, error) {
 	if rhsIn.Nil() {
-		return logicalOpNil(o.gk, op)
+		return logicalOpNil(o.GateKeeper(), op)
 	}
 	return nil, ErrInvalidOperator
 }
@@ -139,7 +144,7 @@ func (o *Array) ArithmeticOp(frame int, op ArithmeticOperator, rhsIn IObject) (I
 			if len(o.values)+rhsIn.Length() > maxArrayLen {
 				return nil, ErrLimitExceed
 			}
-			return o.gk.NewArray(frame, append(o.values, rhsIn)), nil
+			return o.GateKeeper().NewArray(frame, append(o.values, rhsIn)), nil
 		case *Array:
 			if len(rhs.values) == 0 {
 				return o, nil
@@ -147,7 +152,7 @@ func (o *Array) ArithmeticOp(frame int, op ArithmeticOperator, rhsIn IObject) (I
 			if len(o.values)+len(rhs.values) > maxArrayLen {
 				return nil, ErrLimitExceed
 			}
-			return o.gk.NewArray(frame, append(o.values, rhs.values...)), nil
+			return o.GateKeeper().NewArray(frame, append(o.values, rhs.values...)), nil
 		}
 	default:
 		return nil, ErrInvalidOperator
@@ -164,7 +169,7 @@ func (o *Array) Copy(frame int, depth int) IObject {
 		}
 		c = append(c, elem.Copy(frame, depth+1))
 	}
-	return o.gk.NewArray(frame, c)
+	return o.GateKeeper().NewArray(frame, c)
 }
 
 // Falsy returns true if the array is empty, otherwise false.
@@ -196,11 +201,11 @@ func (o *Array) Equals(in IObject) bool {
 func (o *Array) IndexGet(_ int, index IObject) (IObject, error) {
 	intIdx, ok := index.(*Int)
 	if !ok {
-		return o.gk.UndefinedValue(), ErrIndexInvalidType
+		return o.GateKeeper().UndefinedValue(), ErrIndexInvalidType
 	}
 	idxVal := int(intIdx.value)
 	if idxVal < 0 || idxVal >= len(o.values) {
-		return o.gk.UndefinedValue(), nil
+		return o.GateKeeper().UndefinedValue(), nil
 	}
 	return o.values[idxVal], nil
 }

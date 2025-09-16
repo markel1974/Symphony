@@ -13,20 +13,25 @@ func init() {
 
 // StringIterator represents an iterator for traversing over the characters of a string, implemented as runes.
 type StringIterator struct {
-	Allocator
+	IAllocator
 	values []rune
 	index  int
 	length int
 }
 
 // NewStringIterator creates and returns a new instance of StringIterator with the given rune slice.
-func newStringIterator(factory IGateKeeper, frame int, v []rune, index int) IIterator {
+func newStringIterator(allocator IAllocator, v []rune, index int) IIterator {
 	return &StringIterator{
-		Allocator: Allocator{gk: factory, frame: frame},
-		values:    v,
-		length:    len(v),
-		index:     index,
+		IAllocator: allocator,
+		values:     v,
+		length:     len(v),
+		index:      index,
 	}
+}
+
+// setAllocator sets the allocator for the instance, defining its memory management and lifecycle behavior.
+func (o *StringIterator) setAllocator(allocator IAllocator) {
+	o.IAllocator = allocator
 }
 
 // AsBool returns true if the array is not empty, otherwise false.
@@ -62,7 +67,7 @@ func (o *StringIterator) Nil() bool {
 // LogicalOp performs a logical operation using a specified operator and right-hand operand, but always returns an error.
 func (o *StringIterator) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, error) {
 	if rhsIn.Nil() {
-		return logicalOpNil(o.gk, op)
+		return logicalOpNil(o.GateKeeper(), op)
 	}
 	return nil, ErrInvalidOperator
 }
@@ -74,7 +79,7 @@ func (o *StringIterator) ArithmeticOp(_ int, _ ArithmeticOperator, _ IObject) (I
 
 // IndexGet attempts to retrieve a value at the given index and returns an error if the object is not indexable.
 func (o *StringIterator) IndexGet(_ int, _ IObject) (IObject, error) {
-	return o.gk.UndefinedValue(), ErrIndexNotIndexable
+	return o.GateKeeper().UndefinedValue(), ErrIndexNotIndexable
 }
 
 // IndexSet attempts to assign a value to an index in the object but always returns ErrIndexUnsupported,

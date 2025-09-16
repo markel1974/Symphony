@@ -13,20 +13,25 @@ func init() {
 
 // BytesIterator is an iterator for traversing elements of a byte slice, implementing the IIterator interface.
 type BytesIterator struct {
-	Allocator
+	IAllocator
 	values []byte
 	index  int
 	length int
 }
 
 // NewBytesIterator creates and returns a new BytesIterator instance with the given slice of bytes.
-func newBytesIterator(factory IGateKeeper, frame int, v []byte, index int) IIterator {
+func newBytesIterator(allocator IAllocator, v []byte, index int) IIterator {
 	return &BytesIterator{
-		Allocator: Allocator{gk: factory, frame: frame},
-		values:    v,
-		length:    len(v),
-		index:     index,
+		IAllocator: allocator,
+		values:     v,
+		length:     len(v),
+		index:      index,
 	}
+}
+
+// setAllocator sets the allocator for the instance, defining its memory management and lifecycle behavior.
+func (o *BytesIterator) setAllocator(allocator IAllocator) {
+	o.IAllocator = allocator
 }
 
 // AsBool returns true if the object is not empty, otherwise false.
@@ -62,7 +67,7 @@ func (o *BytesIterator) Nil() bool {
 // LogicalOp performs a logical operation on the BytesIterator object, always returning an error for invalid operations.
 func (o *BytesIterator) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, error) {
 	if rhsIn.Nil() {
-		return logicalOpNil(o.gk, op)
+		return logicalOpNil(o.GateKeeper(), op)
 	}
 	return nil, ErrInvalidOperator
 }
@@ -79,7 +84,7 @@ func (o *BytesIterator) Falsy() bool {
 
 // IndexGet attempts to retrieve a value at the given index and returns an error if the object is not indexable.
 func (o *BytesIterator) IndexGet(_ int, _ IObject) (IObject, error) {
-	return o.gk.UndefinedValue(), ErrIndexNotIndexable
+	return o.GateKeeper().UndefinedValue(), ErrIndexNotIndexable
 }
 
 // IndexSet attempts to assign a value to an index in the object but always returns ErrIndexUnsupported,

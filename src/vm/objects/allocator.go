@@ -13,6 +13,10 @@ type Allocator struct {
 	references int
 }
 
+func NewAllocator(gk IGateKeeper, frame int) *Allocator {
+	return &Allocator{gk: gk, frame: frame, references: 0}
+}
+
 // GateKeeper returns the IGateKeeper instance associated with the Allocator.
 func (a *Allocator) GateKeeper() IGateKeeper {
 	return a.gk
@@ -35,6 +39,11 @@ func (a *Allocator) ReleaseRef() int {
 // RefCount returns the current reference count for the Allocator instance.
 func (a *Allocator) RefCount() int {
 	return a.references
+}
+
+// setFrame sets the current execution frame value for the Allocator instance.
+func (a *Allocator) setFrame(frame int) {
+	a.frame = frame
 }
 
 // Frame returns the current execution frame value managed by the Allocator instance.

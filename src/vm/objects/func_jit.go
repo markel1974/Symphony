@@ -10,18 +10,23 @@ func init() {
 
 // FuncJit is a callable object type that encapsulates a function and provides execution context information.
 type FuncJit struct {
-	Allocator
+	IAllocator
 	name  string
 	value []byte
 }
 
 // NewFuncImport creates a new FuncImport instance with the specified Id and callable function.
-func newFuncJit(factory IGateKeeper, frame int, name string, fn []byte) IObject {
+func newFuncJit(allocator IAllocator, name string, fn []byte) IObject {
 	return &FuncJit{
-		Allocator: Allocator{gk: factory, frame: frame},
-		name:      name,
-		value:     fn,
+		IAllocator: allocator,
+		name:       name,
+		value:      fn,
 	}
+}
+
+// setAllocator sets the allocator for the instance, defining its memory management and lifecycle behavior.
+func (o *FuncJit) setAllocator(allocator IAllocator) {
+	o.IAllocator = allocator
 }
 
 // AsBool returns a boolean representation of the object, always returning false for FuncJit.
@@ -58,7 +63,7 @@ func (o *FuncJit) Nil() bool {
 // Always returns nil and ErrInvalidOperator as logical operations are not supported for this object type.
 func (o *FuncJit) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, error) {
 	if rhsIn.Nil() {
-		return logicalOpNil(o.gk, op)
+		return logicalOpNil(o.GateKeeper(), op)
 	}
 	return nil, ErrInvalidOperator
 }
@@ -75,7 +80,7 @@ func (o *FuncJit) Falsy() bool {
 
 // IndexGet attempts to retrieve a value at the given index and returns an error if the object is not indexable.
 func (o *FuncJit) IndexGet(_ int, _ IObject) (IObject, error) {
-	return o.gk.UndefinedValue(), ErrIndexNotIndexable
+	return o.GateKeeper().UndefinedValue(), ErrIndexNotIndexable
 }
 
 // IndexSet attempts to assign a value to an index in the object but always returns ErrIndexUnsupported,

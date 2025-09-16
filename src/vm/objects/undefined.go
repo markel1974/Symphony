@@ -13,13 +13,18 @@ func init() {
 
 // Undefined represents an undefined values.
 type Undefined struct {
-	Allocator
+	IAllocator
 }
 
-func newUndefined(factory IGateKeeper, frame int) IObject {
+func newUndefined(allocator IAllocator) IObject {
 	return &Undefined{
-		Allocator: Allocator{gk: factory, frame: frame},
+		IAllocator: allocator,
 	}
+}
+
+// setAllocator sets the allocator for the instance, defining its memory management and lifecycle behavior.
+func (o *Undefined) setAllocator(allocator IAllocator) {
+	o.IAllocator = allocator
 }
 
 // AsBool returns the boolean representation of the Undefined object, which is always false.
@@ -118,7 +123,7 @@ func (o *Undefined) Equals(x IObject) bool {
 
 // IndexGet returns an element at a given index.
 func (o *Undefined) IndexGet(_ int, _ IObject) (IObject, error) {
-	return o.gk.UndefinedValue(), nil
+	return o.GateKeeper().UndefinedValue(), nil
 }
 
 // Iterate creates a map iterator.

@@ -36,13 +36,15 @@ func (ct ContainerType) String() string {
 
 // Container represents a struct that holds a named collection of IObject instances.
 type Container struct {
+	gk   objects.IGateKeeper
 	kind ContainerType
 	data []objects.IObject
 }
 
 // NewContainer creates and returns a new Container instance of the specified ContainerType.
-func NewContainer(kind ContainerType) *Container {
+func NewContainer(gk objects.IGateKeeper, kind ContainerType) *Container {
 	return &Container{
+		gk:   gk,
 		kind: kind,
 		data: nil,
 	}
@@ -70,5 +72,12 @@ func (c *Container) Encode(enc *gob.Encoder) error {
 
 // Decode deserializes the Container's data using the provided gob.Decoder instance.
 func (c *Container) Decode(dec *gob.Decoder) error {
-	return dec.Decode(&c.data)
+	err := dec.Decode(&c.data)
+	if err != nil {
+		return err
+	}
+	for _, v := range c.data {
+		c.gk.AssignAllocator(v)
+	}
+	return nil
 }

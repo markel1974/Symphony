@@ -16,7 +16,7 @@ func init() {
 // The embedded Object provides default implementations for methods from the IObject interface.
 // The internal state includes the map (values), keys (keys), current position index (index), and total keys length (length).
 type MapIterator struct {
-	Allocator
+	IAllocator
 	values map[string]IObject
 	keys   []string
 	index  int
@@ -24,18 +24,23 @@ type MapIterator struct {
 }
 
 // NewMapIterator creates and returns a new instance of MapIterator.
-func newMapIterator(factory IGateKeeper, frame int, v map[string]IObject, index int) IIterator {
+func newMapIterator(allocator IAllocator, v map[string]IObject, index int) IIterator {
 	var keys []string
 	for k := range v {
 		keys = append(keys, k)
 	}
 	return &MapIterator{
-		Allocator: Allocator{gk: factory, frame: frame},
-		values:    v,
-		keys:      keys,
-		length:    len(keys),
-		index:     index,
+		IAllocator: allocator,
+		values:     v,
+		keys:       keys,
+		length:     len(keys),
+		index:      index,
 	}
+}
+
+// setAllocator sets the allocator for the instance, defining its memory management and lifecycle behavior.
+func (o *MapIterator) setAllocator(allocator IAllocator) {
+	o.IAllocator = allocator
 }
 
 // AsBool returns true if the map is not empty, otherwise false.
@@ -72,7 +77,7 @@ func (o *MapIterator) Nil() bool {
 // Returns nil and ErrInvalidOperator as logical operations are unsupported for MapIterator.
 func (o *MapIterator) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, error) {
 	if rhsIn.Nil() {
-		return logicalOpNil(o.gk, op)
+		return logicalOpNil(o.GateKeeper(), op)
 	}
 	return nil, ErrInvalidOperator
 }
@@ -85,7 +90,7 @@ func (o *MapIterator) ArithmeticOp(_ int, _ ArithmeticOperator, _ IObject) (IObj
 
 // IndexGet attempts to retrieve a value at the given index and returns an error if the object is not indexable.
 func (o *MapIterator) IndexGet(_ int, _ IObject) (IObject, error) {
-	return o.gk.UndefinedValue(), ErrIndexNotIndexable
+	return o.GateKeeper().UndefinedValue(), ErrIndexNotIndexable
 }
 
 // IndexSet attempts to assign a value to an index in the object but always returns ErrIndexUnsupported,

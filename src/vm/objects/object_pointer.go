@@ -15,22 +15,27 @@ func init() {
 // It embeds Object, inheriting default behaviors for the IObject interface methods.
 // The value field holds the actual IObject instance being wrapped.
 type ObjectPointer struct {
-	Allocator
+	IAllocator
 	valuePtr *IObject
 }
 
 // NewObjectPointer creates a new ObjectPointer instance wrapping the provided IObject pointer.// NewObjectPointer creates a new ObjectPointer instance with the provided IObject values.
-func newObjectPointer(factory IGateKeeper, frame int, value *IObject) IObject {
+func newObjectPointer(allocator IAllocator, value *IObject) IObject {
 	ptr := &ObjectPointer{
-		Allocator: Allocator{gk: factory, frame: frame},
+		IAllocator: allocator,
 	}
 	if value != nil {
 		ptr.acquire(value)
 	} else {
-		undefined := factory.UndefinedValue()
+		undefined := allocator.GateKeeper().UndefinedValue()
 		ptr.valuePtr = &undefined
 	}
 	return ptr
+}
+
+// setAllocator sets the allocator for the instance, defining its memory management and lifecycle behavior.
+func (o *ObjectPointer) setAllocator(allocator IAllocator) {
+	o.IAllocator = allocator
 }
 
 // AsBool returns the boolean representation of the ObjectPointer, defaulting to false.

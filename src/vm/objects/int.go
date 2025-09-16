@@ -15,16 +15,21 @@ func init() {
 
 // Int represents an integer type with a 64-bit value and methods for operations, equality, and object behavior.
 type Int struct {
-	Allocator
+	IAllocator
 	value int64
 }
 
 // NewInt creates and returns a new instance of the Int struct initialized with the specified int64 value.
-func newInt(factory IGateKeeper, frame int, value int64) IObject {
+func newInt(allocator IAllocator, value int64) IObject {
 	return &Int{
-		Allocator: Allocator{gk: factory, frame: frame},
-		value:     value,
+		IAllocator: allocator,
+		value:      value,
 	}
+}
+
+// setAllocator sets the allocator for the instance, defining its memory management and lifecycle behavior.
+func (o *Int) setAllocator(allocator IAllocator) {
+	o.IAllocator = allocator
 }
 
 // AsBool converts the integer value to a boolean, returning true if the value is non-zero, otherwise false.
@@ -64,7 +69,7 @@ func (o *Int) Nil() bool {
 
 // IndexGet attempts to retrieve a value at the given index and returns an error if the object is not indexable.
 func (o *Int) IndexGet(_ int, _ IObject) (IObject, error) {
-	return o.gk.UndefinedValue(), ErrIndexNotIndexable
+	return o.GateKeeper().UndefinedValue(), ErrIndexNotIndexable
 }
 
 // IndexSet attempts to assign a value to an index in the object but always returns ErrIndexUnsupported,
@@ -111,16 +116,16 @@ func (o *Int) TypeName() string {
 // LogicalOp performs a logical operation between the object's value and a given operand, using the specified operator.
 func (o *Int) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, error) {
 	if rhsIn.Nil() {
-		return logicalOpNil(o.gk, op)
+		return logicalOpNil(o.GateKeeper(), op)
 	}
 	ret, err := logicalOpInt64(o.value, op, rhsIn.AsInt64())
 	if err != nil {
 		return nil, err
 	}
 	if ret {
-		return o.gk.TrueValue(), nil
+		return o.GateKeeper().TrueValue(), nil
 	}
-	return o.gk.FalseValue(), nil
+	return o.GateKeeper().FalseValue(), nil
 }
 
 // ArithmeticOp performs a binary arithmetic operation on the Int object using the specified operator and right-hand operand.

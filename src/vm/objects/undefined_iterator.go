@@ -15,14 +15,19 @@ func init() {
 
 // UndefinedIterator represents an iterator that is implicitly undefined and cannot traverse any elements.
 type UndefinedIterator struct {
-	Allocator
+	IAllocator
 }
 
 // newUndefinedIterator creates a new instance of UndefinedIterator initialized with an undefined object from the GateKeeper.
-func newUndefinedIterator(factory IGateKeeper, frame int) IIterator {
+func newUndefinedIterator(allocator IAllocator) IIterator {
 	return &UndefinedIterator{
-		Allocator: Allocator{gk: factory, frame: frame},
+		IAllocator: allocator,
 	}
+}
+
+// setAllocator sets the allocator for the instance, defining its memory management and lifecycle behavior.
+func (o *UndefinedIterator) setAllocator(allocator IAllocator) {
+	o.IAllocator = allocator
 }
 
 // AsBool returns a boolean representation of the object, always returning false.
@@ -62,7 +67,7 @@ func (o *UndefinedIterator) ArithmeticOp(_ int, _ ArithmeticOperator, _ IObject)
 
 // IndexGet attempts to retrieve a value at the given index and returns an error if the object is not indexable.
 func (o *UndefinedIterator) IndexGet(_ int, _ IObject) (IObject, error) {
-	return o.gk.UndefinedValue(), ErrIndexNotIndexable
+	return o.GateKeeper().UndefinedValue(), ErrIndexNotIndexable
 }
 
 // IndexSet attempts to assign a value to an index in the object but always returns ErrIndexUnsupported,

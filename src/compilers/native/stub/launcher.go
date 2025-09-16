@@ -73,7 +73,7 @@ func Launch(prefix string, debug bool) error {
 		if err = comp.Compile(fileName, dataFile); err != nil {
 			return fmt.Errorf("compiler error: %s", err)
 		}
-		bc := bytecode.NewBytecode(comp.Constants(), comp.Imports(), comp.Globals(), comp.FileSet())
+		bc := bytecode.NewBytecode(gk, comp.Constants(), comp.Imports(), comp.Globals(), comp.FileSet())
 		if debug {
 			d := bytecode.NewDisassembler(bc, seq)
 			_ = d.Disassemble(log.Writer())

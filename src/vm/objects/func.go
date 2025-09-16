@@ -21,7 +21,7 @@ func init() {
 // Func represents a compiled function object with associated instructions, metadata, and runtime state.
 // It includes memory allocation management, local variable tracking, parameter handling, and a source map.
 type Func struct {
-	Allocator
+	IAllocator
 	name          string
 	instructions  *opcodes.Instructions
 	numLocals     int
@@ -38,12 +38,12 @@ type Func struct {
 // varArgs indicates if the function accepts a variable number of arguments.
 // source maps instruction indices to source code, defaulting to an empty map if nil is provided.
 // free holds externally closed variables as object pointers for use within the function's scope.
-func newFunc(factory IGateKeeper, frame int, name string, data []byte, numLocals int, numParameters int, varArgs bool, source map[int]int, free []*ObjectPointer) IObject {
+func newFunc(allocator IAllocator, name string, data []byte, numLocals int, numParameters int, varArgs bool, source map[int]int, free []*ObjectPointer) IObject {
 	if source == nil {
 		source = make(map[int]int)
 	}
 	return &Func{
-		Allocator:     Allocator{gk: factory, frame: frame},
+		IAllocator:    allocator,
 		name:          name,
 		instructions:  opcodes.NewInstructions(data),
 		numLocals:     numLocals,
@@ -52,6 +52,11 @@ func newFunc(factory IGateKeeper, frame int, name string, data []byte, numLocals
 		source:        source,
 		free:          free,
 	}
+}
+
+// setAllocator sets the allocator for the instance, defining its memory management and lifecycle behavior.
+func (o *Func) setAllocator(allocator IAllocator) {
+	o.IAllocator = allocator
 }
 
 // AsBool returns a boolean representation of the Func object, always returning false.
@@ -88,7 +93,7 @@ func (o *Func) Nil() bool {
 // Returns the result of the logical operation or an error if the operator is invalid or unsupported.
 func (o *Func) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, error) {
 	if rhsIn.Nil() {
-		return logicalOpNil(o.gk, op)
+		return logicalOpNil(o.GateKeeper(), op)
 	}
 	return nil, ErrInvalidOperator
 }
@@ -105,7 +110,7 @@ func (o *Func) Falsy() bool {
 
 // IndexGet attempts to retrieve an element by index but always returns ErrIndexNotIndexable as the object is not indexable.
 func (o *Func) IndexGet(_ int, _ IObject) (IObject, error) {
-	return o.gk.UndefinedValue(), ErrIndexNotIndexable
+	return o.GateKeeper().UndefinedValue(), ErrIndexNotIndexable
 }
 
 // IndexSet assigns a specified value to an index on the object but always returns ErrIndexUnsupported, indicating the operation is not supported.

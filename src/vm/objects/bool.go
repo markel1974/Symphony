@@ -14,16 +14,21 @@ func init() {
 
 // Bool represents a boolean type with frame-specific and gatekeeper-managed value assignments.
 type Bool struct {
-	Allocator
+	IAllocator
 	value bool
 }
 
 // newBool creates and returns a new instance of Bool, initializing it with the given frame and boolean value.
-func newBool(factory IGateKeeper, frame int, value bool) IObject {
+func newBool(allocator IAllocator, value bool) IObject {
 	return &Bool{
-		Allocator: Allocator{gk: factory, frame: frame},
-		value:     value,
+		IAllocator: allocator,
+		value:      value,
 	}
+}
+
+// setAllocator sets the allocator for the instance, defining its memory management and lifecycle behavior.
+func (o *Bool) setAllocator(allocator IAllocator) {
+	o.IAllocator = allocator
 }
 
 func (o *Bool) AsBool() bool {
@@ -73,7 +78,7 @@ func (o *Bool) Nil() bool {
 // Returns the result of the operation as an IObject or an error if the operation is invalid.
 func (o *Bool) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, error) {
 	if rhsIn.Nil() {
-		return logicalOpNil(o.gk, op)
+		return logicalOpNil(o.GateKeeper(), op)
 	}
 	lhsValue := int64(0)
 	if o.value {
@@ -84,9 +89,9 @@ func (o *Bool) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, err
 		return nil, err
 	}
 	if ret {
-		return o.gk.TrueValue(), nil
+		return o.GateKeeper().TrueValue(), nil
 	}
-	return o.gk.FalseValue(), nil
+	return o.GateKeeper().FalseValue(), nil
 }
 
 // ArithmeticOp performs an arithmetic operation between the Bool object and a given IObject using the specified operator.
@@ -101,14 +106,14 @@ func (o *Bool) ArithmeticOp(_ int, op ArithmeticOperator, rhsIn IObject) (IObjec
 		return nil, err
 	}
 	if ret != 0 {
-		return o.gk.TrueValue(), nil
+		return o.GateKeeper().TrueValue(), nil
 	}
-	return o.gk.FalseValue(), nil
+	return o.GateKeeper().FalseValue(), nil
 }
 
 // IndexGet retrieves the value at a given index from the Bool object, but always returns an error as Bool is not indexable.
 func (o *Bool) IndexGet(_ int, _ IObject) (IObject, error) {
-	return o.gk.UndefinedValue(), ErrIndexNotIndexable
+	return o.GateKeeper().UndefinedValue(), ErrIndexNotIndexable
 }
 
 // IndexSet attempts to set an index on the Bool object but always returns ErrIndexUnsupported as Bool is not indexable.
@@ -143,7 +148,7 @@ func (o *Bool) TypeName() string {
 
 // Copy creates and returns a new Bool instance with the same value and the specified execution frame.
 func (o *Bool) Copy(frame int, _ int) IObject {
-	return o.gk.NewBool(frame, o.value)
+	return o.GateKeeper().NewBool(frame, o.value)
 }
 
 // Falsy determines if the Bool's value is logically false by returning the negation of its `value` field.

@@ -16,19 +16,24 @@ const (
 // Bytes represents a data type for handling a sequence of bytes.
 // It embeds Object and provides behaviors like indexing, iteration, and binary operations.
 type Bytes struct {
-	Allocator
+	IAllocator
 	values []byte
 }
 
 // NewBytes creates and returns a new Bytes object initialized with the provided byte slice.
-func newBytes(factory IGateKeeper, frame int, value []byte) IObject {
+func newBytes(allocator IAllocator, value []byte) IObject {
 	if len(value) > maxBytesLen {
 		value = value[0:maxBytesLen]
 	}
 	return &Bytes{
-		Allocator: Allocator{gk: factory, frame: frame},
-		values:    value,
+		IAllocator: allocator,
+		values:     value,
 	}
+}
+
+// setAllocator sets the allocator for the instance, defining its memory management and lifecycle behavior.
+func (o *Bytes) setAllocator(allocator IAllocator) {
+	o.IAllocator = allocator
 }
 
 // AsBool returns true if the object is not empty, otherwise false.
@@ -118,7 +123,7 @@ func (o *Bytes) ArithmeticOp(frame int, op ArithmeticOperator, in IObject) (IObj
 // LogicalOp performs a logical operation on the Bytes object using the specified operator and operand, returning an error.
 func (o *Bytes) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, error) {
 	if rhsIn.Nil() {
-		return logicalOpNil(o.gk, op)
+		return logicalOpNil(o.GateKeeper(), op)
 	}
 	return nil, ErrInvalidOperator
 }
@@ -150,9 +155,9 @@ func (o *Bytes) IndexGet(frame int, index IObject) (IObject, error) {
 	}
 	idxVal := int(intIdx.value)
 	if idxVal < 0 || idxVal >= len(o.values) {
-		return o.gk.UndefinedValue(), nil
+		return o.GateKeeper().UndefinedValue(), nil
 	}
-	return o.gk.NewInt(frame, int64(o.values[idxVal])), nil
+	return o.GateKeeper().NewInt(frame, int64(o.values[idxVal])), nil
 }
 
 // Iterable returns true if the object can be iterated over, otherwise false.

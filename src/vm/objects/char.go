@@ -12,16 +12,21 @@ func init() {
 
 // Char represents a character type, encapsulating a single rune values and inheriting behavior from Object.
 type Char struct {
-	Allocator
+	IAllocator
 	value rune
 }
 
 // NewChar creates and returns a new Char object with the specified rune values.
-func newChar(factory IGateKeeper, frame int, value rune) IObject {
+func newChar(allocator IAllocator, value rune) IObject {
 	return &Char{
-		Allocator: Allocator{gk: factory, frame: frame},
-		value:     value,
+		IAllocator: allocator,
+		value:      value,
 	}
+}
+
+// setAllocator sets the allocator for the instance, defining its memory management and lifecycle behavior.
+func (o *Char) setAllocator(allocator IAllocator) {
+	o.IAllocator = allocator
 }
 
 // AsBool returns true if the object is not empty, otherwise false.
@@ -61,7 +66,7 @@ func (o *Char) Nil() bool {
 
 // IndexGet attempts to retrieve a value at the given index and returns an error if the object is not indexable.
 func (o *Char) IndexGet(_ int, _ IObject) (IObject, error) {
-	return o.gk.UndefinedValue(), ErrIndexNotIndexable
+	return o.GateKeeper().UndefinedValue(), ErrIndexNotIndexable
 }
 
 // IndexSet attempts to assign a value to an index in the object but always returns ErrIndexUnsupported,
@@ -103,16 +108,16 @@ func (o *Char) TypeName() string {
 // LogicalOp performs a logical operation between the current Char object and another IObject using the specified operator.
 func (o *Char) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, error) {
 	if rhsIn.Nil() {
-		return logicalOpNil(o.gk, op)
+		return logicalOpNil(o.GateKeeper(), op)
 	}
 	ret, err := logicalOpInt64(int64(o.value), op, rhsIn.AsInt64())
 	if err != nil {
 		return nil, err
 	}
 	if ret {
-		return o.gk.TrueValue(), nil
+		return o.GateKeeper().TrueValue(), nil
 	}
-	return o.gk.FalseValue(), nil
+	return o.GateKeeper().FalseValue(), nil
 }
 
 // ArithmeticOp applies the specified arithmetic operation between a Char object and another IObject, returning the result.

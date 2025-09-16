@@ -12,18 +12,23 @@ func init() {
 
 // Interface represents an object with contextual execution information and dynamic properties managed within a frame.
 type Interface struct {
-	Allocator
+	IAllocator
 	value  IObject
 	iTable map[string]IObject
 }
 
 // newInterface creates a new instance of Interface with the provided gk, frame ID, value, and interface table.
-func newInterface(gk IGateKeeper, frame int, value IObject, itable map[string]IObject) IObject {
+func newInterface(allocator IAllocator, value IObject, itable map[string]IObject) IObject {
 	return &Interface{
-		Allocator: Allocator{gk: gk, frame: frame},
-		value:     value,
-		iTable:    itable,
+		IAllocator: allocator,
+		value:      value,
+		iTable:     itable,
 	}
+}
+
+// setAllocator sets the allocator for the instance, defining its memory management and lifecycle behavior.
+func (o *Interface) setAllocator(allocator IAllocator) {
+	o.IAllocator = allocator
 }
 
 // AsBool converts and returns the Interface's underlying value as a boolean.
@@ -80,7 +85,7 @@ func (o *Interface) Copy(frame int, depth int) IObject {
 // It returns the result of the operation or an error if the operation cannot be performed.
 func (o *Interface) LogicalOp(frame int, op LogicalOperator, rhsIn IObject) (IObject, error) {
 	if rhsIn.Nil() {
-		return logicalOpNil(o.gk, op)
+		return logicalOpNil(o.GateKeeper(), op)
 	}
 	return o.value.LogicalOp(frame, op, rhsIn)
 }

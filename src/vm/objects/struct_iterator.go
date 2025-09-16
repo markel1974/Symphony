@@ -18,7 +18,7 @@ func init() {
 // The keys and values are stored in separate slices to facilitate order-preserving iteration.
 // The index tracks the current position within the iteration, and length is the total number of elements.
 type StructIterator struct {
-	Allocator
+	IAllocator
 	values map[string]IObject
 	keys   []string
 	index  int
@@ -26,23 +26,28 @@ type StructIterator struct {
 }
 
 // NewStructIterator initializes and returns a new StructIterator for the given map of string keys to IObject values.
-func newStructIterator(factory IGateKeeper, frame int, v map[string]IObject, index int) IIterator {
+func newStructIterator(allocator IAllocator, v map[string]IObject, index int) IIterator {
 	var keys []string
 	for k := range v {
 		keys = append(keys, k)
 	}
 	return &StructIterator{
-		Allocator: Allocator{gk: factory, frame: frame},
-		values:    v,
-		keys:      keys,
-		length:    len(keys),
-		index:     index,
+		IAllocator: allocator,
+		values:     v,
+		keys:       keys,
+		length:     len(keys),
+		index:      index,
 	}
+}
+
+// setAllocator sets the allocator for the instance, defining its memory management and lifecycle behavior.
+func (o *StructIterator) setAllocator(allocator IAllocator) {
+	o.IAllocator = allocator
 }
 
 // GateKeeper returns a reference to the GateKeeper associated with the Object.
 func (o *StructIterator) GateKeeper() IGateKeeper {
-	return o.gk
+	return o.GateKeeper()
 }
 
 // AsBool returns true if the array is not empty, otherwise false.
@@ -79,7 +84,7 @@ func (o *StructIterator) AssignValue(_ IObject) error {
 // It returns ErrInvalidOperator as logical operations are unsupported for StructIterator.
 func (o *StructIterator) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, error) {
 	if rhsIn.Nil() {
-		return logicalOpNil(o.gk, op)
+		return logicalOpNil(o.GateKeeper(), op)
 	}
 	return nil, ErrInvalidOperator
 }
@@ -91,7 +96,7 @@ func (o *StructIterator) ArithmeticOp(_ int, _ ArithmeticOperator, _ IObject) (I
 
 // IndexGet attempts to retrieve a value at the given index and returns an error if the object is not indexable.
 func (o *StructIterator) IndexGet(_ int, _ IObject) (IObject, error) {
-	return o.gk.UndefinedValue(), ErrIndexNotIndexable
+	return o.GateKeeper().UndefinedValue(), ErrIndexNotIndexable
 }
 
 // IndexSet attempts to assign a value to an index in the object but always returns ErrIndexUnsupported,

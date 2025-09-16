@@ -16,25 +16,27 @@ const (
 
 // Bytecode represents a compiled state containing source file metadata and categorized object containers.
 type Bytecode struct {
+	gk          objects.IGateKeeper
 	fileHandler *Files
 	containers  []*Container
 }
 
 // NewBytecodeEmpty creates and returns an empty Bytecode instance with initialized files and container values.
-func NewBytecodeEmpty() *Bytecode {
+func NewBytecodeEmpty(gk objects.IGateKeeper) *Bytecode {
 	bc := &Bytecode{
+		gk:          gk,
 		fileHandler: NewFiles(),
 		containers:  make([]*Container, LastType),
 	}
 	for i := range bc.containers {
-		bc.containers[i] = NewContainer(ContainerType(i))
+		bc.containers[i] = NewContainer(gk, ContainerType(i))
 	}
 	return bc
 }
 
 // NewBytecode initializes a new Bytecode instance with provided constants, imports, and globals data.
-func NewBytecode(constants []objects.IObject, imports []objects.IObject, globals []objects.IObject, file IFile) *Bytecode {
-	bc := NewBytecodeEmpty()
+func NewBytecode(gk objects.IGateKeeper, constants []objects.IObject, imports []objects.IObject, globals []objects.IObject, file IFile) *Bytecode {
+	bc := NewBytecodeEmpty(gk)
 	bc.Assign(ConstantsType, constants)
 	bc.Assign(ImportsType, imports)
 	bc.Assign(GlobalsType, globals)

@@ -19,21 +19,26 @@ func init() {
 
 // Error represents an object that encapsulates an error and implements the IObject interface.
 type Error struct {
-	Allocator
+	IAllocator
 	err   string
 	value IObject
 }
 
 // NewError creates and returns a new Error object with the specified values.
-func newError(factory IGateKeeper, frame int, err string) IObject {
+func newError(allocator IAllocator, err string) IObject {
 	if len(err) > maxErrorLen {
 		err = err[:maxErrorLen]
 	}
 	return &Error{
-		Allocator: Allocator{gk: factory, frame: frame},
-		value:     factory.NewString(frame, err),
-		err:       err,
+		IAllocator: allocator,
+		value:      allocator.GateKeeper().NewString(allocator.Frame(), err),
+		err:        err,
 	}
+}
+
+// setAllocator sets the allocator for the instance, defining its memory management and lifecycle behavior.
+func (o *Error) setAllocator(allocator IAllocator) {
+	o.IAllocator = allocator
 }
 
 // AsBool returns true if the object is not empty, otherwise false.
@@ -72,7 +77,7 @@ func (o *Error) Nil() bool {
 // LogicalOp performs a logical operation on the Error object with the provided operator and operand, returning an error.
 func (o *Error) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, error) {
 	if rhsIn.Nil() {
-		return logicalOpNil(o.gk, op)
+		return logicalOpNil(o.GateKeeper(), op)
 	}
 	rhs, ok := rhsIn.(*Error)
 	if !ok {
@@ -81,14 +86,14 @@ func (o *Error) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, er
 	switch op {
 	case OperatorLogicalEq:
 		if o.value == rhs.value {
-			return o.gk.TrueValue(), nil
+			return o.GateKeeper().TrueValue(), nil
 		}
-		return o.gk.FalseValue(), nil
+		return o.GateKeeper().FalseValue(), nil
 	case OperatorLogicalNotEq:
 		if o.value != rhs.value {
-			return o.gk.TrueValue(), nil
+			return o.GateKeeper().TrueValue(), nil
 		}
-		return o.gk.FalseValue(), nil
+		return o.GateKeeper().FalseValue(), nil
 	default:
 		return nil, ErrInvalidOperator
 	}
@@ -118,13 +123,13 @@ func (o *Error) Iterable() bool {
 // Call invokes the Object with the provided arguments, returning a result object and an error, if any.
 func (o *Error) Call(_ int, params ...IObject) (retCount uint, ret IObject, err error) {
 	if len(params) != 1 {
-		return 0, o.gk.UndefinedValue(), fmt.Errorf("expected 1 param, got %d", len(params))
+		return 0, o.GateKeeper().UndefinedValue(), fmt.Errorf("expected 1 param, got %d", len(params))
 	}
 	switch params[0].AsString() {
 	case "Error":
 		return 1, o.value, nil
 	}
-	return 0, o.gk.UndefinedValue(), fmt.Errorf("invalid param: %s", params[0].AsString())
+	return 0, o.GateKeeper().UndefinedValue(), fmt.Errorf("invalid param: %s", params[0].AsString())
 }
 
 // Length returns the length of the Int object.

@@ -33,6 +33,7 @@ type Process struct {
 	executorChan     chan interfaces.IMessage
 	executorWaitChan chan bool
 	timeout          time.Duration
+	gk               objects.IGateKeeper
 	loader           bytecode.ILoader
 	opcodes          opcodes.IOpcodes
 	compiler         bytecode.ICompiler
@@ -55,6 +56,7 @@ func NewProcess(cmd interfaces.ICommand) *Process {
 		loader:           nil,
 		compiler:         nil,
 		vm:               nil,
+		gk:               nil,
 		state:            interfaces.ProcessStateSetup,
 		gatekeeperChan:   make(chan interfaces.IMessage, gatekeeperQueueLen),
 		executorChan:     make(chan interfaces.IMessage, executorQueueLen),
@@ -550,15 +552,15 @@ func (t *Process) handleMessageProcessStart(msg interfaces.IMessage) {
 				log.Printf("Process [%s]: error creating compiler: %s", t.cmd.Name(), err.Error())
 				return
 			}
-			gk := objects.NewGateKeeper()
+			t.gk = objects.NewGateKeeper()
 			t.opcodes = seq
-			t.compiler, t.loader, err = compilers.NewCompiler(gk, t.opcodes)
+			t.compiler, t.loader, err = compilers.NewCompiler(t.gk, t.opcodes)
 			if err != nil {
 				log.Printf("Process [%s]: error creating compiler: %s", t.cmd.Name(), err.Error())
 				return
 			}
-			t.loader.AddPackage("kernel", NewLibrary(gk, t).Functions(), nil)
-			t.vm = core.New(gk, t.opcodes)
+			t.loader.AddPackage("kernel", NewLibrary(t.gk, t).Functions(), nil)
+			t.vm = core.New(t.gk, t.opcodes)
 			if err = seq.Bind(t.vm); err != nil {
 				log.Printf("Process [%s]: error setting up sequencer: %s", t.cmd.Name(), err.Error())
 				return
@@ -570,7 +572,7 @@ func (t *Process) handleMessageProcessStart(msg interfaces.IMessage) {
 			log.Printf("Process [%s]: error compiling script: %s", t.cmd.Name(), err.Error())
 			return
 		}
-		bc := bytecode.NewBytecode(t.compiler.Constants(), t.compiler.Imports(), t.compiler.Globals(), t.compiler.FileSet())
+		bc := bytecode.NewBytecode(t.gk, t.compiler.Constants(), t.compiler.Imports(), t.compiler.Globals(), t.compiler.FileSet())
 		entryPoints, err := t.vm.Setup(t.loader, t.executors, bc)
 		if err != nil {
 			log.Printf("Process [%s]: error setting up VM: %s", t.cmd.Name(), err.Error())

@@ -16,12 +16,12 @@ func init() {
 
 // Map represents a collection of key-values pairs where keys are strings and values implement the IObject interface.
 type Map struct {
-	Allocator
+	IAllocator
 	values map[string]IObject
 }
 
 // NewMap creates and returns a new instance of Map initialized with the provided map of string keys to IObject values.
-func newMap(factory IGateKeeper, frame int, value map[string]IObject) IObject {
+func newMap(allocator IAllocator, value map[string]IObject) IObject {
 	if len(value) > maxMapLen {
 		nv := make(map[string]IObject)
 		for k, v := range value {
@@ -33,9 +33,14 @@ func newMap(factory IGateKeeper, frame int, value map[string]IObject) IObject {
 		value = nv
 	}
 	return &Map{
-		Allocator: Allocator{gk: factory, frame: frame},
-		values:    value,
+		IAllocator: allocator,
+		values:     value,
 	}
+}
+
+// setAllocator sets the allocator for the instance, defining its memory management and lifecycle behavior.
+func (o *Map) setAllocator(allocator IAllocator) {
+	o.IAllocator = allocator
 }
 
 // AsBool converts the String object to a boolean. Returns true if the string has non-zero length, otherwise false.
@@ -80,7 +85,7 @@ func (o *Map) Nil() bool {
 // LogicalOp performs a logical operation using the given operator and operand, returning an error for unsupported operators.
 func (o *Map) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, error) {
 	if rhsIn.Nil() {
-		return logicalOpNil(o.gk, op)
+		return logicalOpNil(o.GateKeeper(), op)
 	}
 	return nil, ErrInvalidOperator
 }
@@ -175,20 +180,20 @@ func (o *Map) Equals(in IObject) bool {
 // IndexGet retrieves the values associated with the given index in the map. Returns UndefinedValue if the index does not exist.
 // An error is returned if the index type is invalid.
 func (o *Map) IndexGet(_ int, index IObject) (IObject, error) {
-	strIdx, ok := o.gk.ToString(index)
+	strIdx, ok := o.GateKeeper().ToString(index)
 	if !ok {
 		return nil, ErrIndexInvalidType
 	}
 	res, ok := o.values[strIdx]
 	if !ok {
-		return o.gk.UndefinedValue(), nil
+		return o.GateKeeper().UndefinedValue(), nil
 	}
 	return res, nil
 }
 
 // IndexSet sets the specified values at the given string-convertible index in the Map. Returns an error for invalid index types.
 func (o *Map) IndexSet(index, value IObject) error {
-	strIdx, ok := o.gk.ToString(index)
+	strIdx, ok := o.GateKeeper().ToString(index)
 	if !ok {
 		return ErrIndexInvalidType
 	}

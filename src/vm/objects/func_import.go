@@ -11,20 +11,25 @@ type FuncCallable = func(gk IGateKeeper, frame int, args ...IObject) (retCount u
 
 // FuncImport is a callable object type that encapsulates a function and provides execution context information.
 type FuncImport struct {
-	Allocator
+	IAllocator
 	name  string
 	args  int
 	value FuncCallable
 }
 
 // NewFuncImport creates a new FuncImport instance with the specified Id and callable function.
-func newFuncImport(factory IGateKeeper, frame int, name string, args int, fn FuncCallable) IObject {
+func newFuncImport(allocator IAllocator, name string, args int, fn FuncCallable) IObject {
 	return &FuncImport{
-		Allocator: Allocator{gk: factory, frame: frame},
-		name:      name,
-		args:      args,
-		value:     fn,
+		IAllocator: allocator,
+		name:       name,
+		args:       args,
+		value:      fn,
 	}
+}
+
+// setAllocator sets the allocator for the instance, defining its memory management and lifecycle behavior.
+func (o *FuncImport) setAllocator(allocator IAllocator) {
+	o.IAllocator = allocator
 }
 
 // AsBool returns a boolean representation of the object, always returning false.
@@ -56,7 +61,7 @@ func (o *FuncImport) Nil() bool {
 // Returns the resulting object or an ErrInvalidOperator error if the operation is not valid.
 func (o *FuncImport) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, error) {
 	if rhsIn.Nil() {
-		return logicalOpNil(o.gk, op)
+		return logicalOpNil(o.GateKeeper(), op)
 	}
 	return nil, ErrInvalidOperator
 }
@@ -73,7 +78,7 @@ func (o *FuncImport) Falsy() bool {
 
 // IndexGet attempts to retrieve a value at the given index and returns an error if the object is not indexable.
 func (o *FuncImport) IndexGet(_ int, _ IObject) (IObject, error) {
-	return o.gk.UndefinedValue(), ErrIndexNotIndexable
+	return o.GateKeeper().UndefinedValue(), ErrIndexNotIndexable
 }
 
 // IndexSet attempts to assign a value to an index in the object but always returns ErrIndexUnsupported,
@@ -125,9 +130,9 @@ func (o *FuncImport) Equals(_ IObject) bool {
 // Call invokes the function encapsulated within the FuncImport with the provided arguments and returns the result or an error.
 func (o *FuncImport) Call(frame int, args ...IObject) (uint, IObject, error) {
 	if o.args < 0 || len(args) == o.args {
-		return o.value(o.gk, frame, args...)
+		return o.value(o.GateKeeper(), frame, args...)
 	}
-	return 0, o.gk.UndefinedValue(), ErrInvalidArgumentsNumber
+	return 0, o.GateKeeper().UndefinedValue(), ErrInvalidArgumentsNumber
 }
 
 // Count returns the total number of elements in the instance and its sub-elements.

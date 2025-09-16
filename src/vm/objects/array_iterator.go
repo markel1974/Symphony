@@ -14,20 +14,25 @@ func init() {
 // ArrayIterator is an iterator type for traversing elements of an array.
 // It implements the IIterator interface to provide sequential access to array elements.
 type ArrayIterator struct {
-	Allocator
+	IAllocator
 	values []IObject
 	index  int
 	length int
 }
 
 // NewArrayIterator creates and returns a new ArrayIterator instance with the given slice of IObject.
-func newArrayIterator(factory IGateKeeper, frame int, v []IObject, index int) IIterator {
+func newArrayIterator(allocator IAllocator, v []IObject, index int) IIterator {
 	return &ArrayIterator{
-		Allocator: Allocator{gk: factory, frame: frame},
-		values:    v,
-		length:    len(v),
-		index:     index,
+		IAllocator: allocator,
+		values:     v,
+		length:     len(v),
+		index:      index,
 	}
+}
+
+// setAllocator sets the allocator for the instance, defining its memory management and lifecycle behavior.
+func (o *ArrayIterator) setAllocator(allocator IAllocator) {
+	o.IAllocator = allocator
 }
 
 // AsBool returns true if the array is not empty, otherwise false.
@@ -68,7 +73,7 @@ func (o *ArrayIterator) Call(_ int, _ ...IObject) (retCount uint, ret IObject, e
 // LogicalOp attempts to perform a logical operation, returning an error as this operation is not supported.
 func (o *ArrayIterator) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, error) {
 	if rhsIn.Nil() {
-		return logicalOpNil(o.gk, op)
+		return logicalOpNil(o.GateKeeper(), op)
 	}
 	return nil, ErrInvalidOperator
 }
@@ -80,7 +85,7 @@ func (o *ArrayIterator) ArithmeticOp(_ int, _ ArithmeticOperator, _ IObject) (IO
 
 // IndexGet retrieves an element at a specific index from the array but always returns ErrIndexNotIndexable for this implementation.
 func (o *ArrayIterator) IndexGet(_ int, _ IObject) (IObject, error) {
-	return o.gk.UndefinedValue(), ErrIndexNotIndexable
+	return o.GateKeeper().UndefinedValue(), ErrIndexNotIndexable
 }
 
 // IndexSet attempts to assign a value to an index in the object but always returns ErrIndexUnsupported,
@@ -121,7 +126,7 @@ func (o *ArrayIterator) Equals(IObject) bool {
 
 // Copy creates and returns a duplicate of the ArrayIterator, preserving its current state.
 func (o *ArrayIterator) Copy(frame int, _ int) IObject {
-	ret := o.gk.NewArrayIterator(frame, o.values, o.index)
+	ret := o.GateKeeper().NewArrayIterator(frame, o.values, o.index)
 	return ret
 }
 
@@ -135,16 +140,16 @@ func (o *ArrayIterator) Next() bool {
 func (o *ArrayIterator) Key(frame int) IObject {
 	idx := int64(o.index - 1)
 	if idx < 0 || idx >= int64(o.length) {
-		return o.gk.UndefinedValue()
+		return o.GateKeeper().UndefinedValue()
 	}
-	return o.gk.NewInt(frame, idx)
+	return o.GateKeeper().NewInt(frame, idx)
 }
 
 // Value returns the current element in the iteration based on the iterator's internal position.
 func (o *ArrayIterator) Value(_ int) IObject {
 	idx := int64(o.index - 1)
 	if idx < 0 || idx >= int64(o.length) {
-		return o.gk.UndefinedValue()
+		return o.GateKeeper().UndefinedValue()
 	}
 	return o.values[idx]
 }

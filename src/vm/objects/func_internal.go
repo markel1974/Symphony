@@ -101,20 +101,25 @@ func CallIdFromString(in string) (CallId, bool) {
 
 // FuncInternal is a callable object type that encapsulates a function and provides execution context information.
 type FuncInternal struct {
-	Allocator
+	IAllocator
 	id CallId
 	fn func(frame int, args []IObject) (IObject, error)
 }
 
 // NewFuncImport creates a new FuncImport instance with the specified Id and callable function.
-func newFuncInternal(factory IGateKeeper, frame int, id CallId) IObject {
+func newFuncInternal(allocator IAllocator, id CallId) IObject {
 	fi := &FuncInternal{
-		Allocator: Allocator{gk: factory, frame: frame},
-		id:        id,
-		fn:        nil,
+		IAllocator: allocator,
+		id:         id,
+		fn:         nil,
 	}
 	fi.prepare(id)
 	return fi
+}
+
+// setAllocator sets the allocator for the instance, defining its memory management and lifecycle behavior.
+func (h *FuncInternal) setAllocator(allocator IAllocator) {
+	h.IAllocator = allocator
 }
 
 // AsBool returns a boolean representation of the object, always returning false for FuncJit.
@@ -151,7 +156,7 @@ func (h *FuncInternal) Nil() bool {
 // Always returns nil and ErrInvalidOperator as logical operations are not supported for this object type.
 func (h *FuncInternal) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, error) {
 	if rhsIn.Nil() {
-		return logicalOpNil(h.gk, op)
+		return logicalOpNil(h.GateKeeper(), op)
 	}
 	return nil, ErrInvalidOperator
 }
@@ -168,7 +173,7 @@ func (h *FuncInternal) Falsy() bool {
 
 // IndexGet attempts to retrieve a value at the given index and returns an error if the object is not indexable.
 func (h *FuncInternal) IndexGet(_ int, _ IObject) (IObject, error) {
-	return h.gk.UndefinedValue(), ErrIndexNotIndexable
+	return h.GateKeeper().UndefinedValue(), ErrIndexNotIndexable
 }
 
 // IndexSet attempts to assign a value to an index in the object but always returns ErrIndexUnsupported,
@@ -285,7 +290,7 @@ func (h *FuncInternal) prepare(id CallId) {
 
 // undefined is a placeholder function for handling undefined arguments.
 func (h *FuncInternal) undefined(_ int, _ []IObject) (IObject, error) {
-	return h.gk.UndefinedValue(), nil
+	return h.GateKeeper().UndefinedValue(), nil
 }
 
 // isString verifies if the first argument is of type String and returns a Boolean indicating the result.
@@ -294,7 +299,7 @@ func (h *FuncInternal) isString(_ int, args []IObject) (IObject, error) {
 		return nil, ErrInvalidArgumentsNumber
 	}
 	_, ok := args[0].(*String)
-	return h.gk.Boolean(ok), nil
+	return h.GateKeeper().Boolean(ok), nil
 }
 
 // isInt checks if the first argument in the args slice is of type Int and returns a boolean IObject indicating the result.
@@ -303,7 +308,7 @@ func (h *FuncInternal) isInt(_ int, args []IObject) (IObject, error) {
 		return nil, ErrInvalidArgumentsNumber
 	}
 	_, ok := args[0].(*Int)
-	return h.gk.Boolean(ok), nil
+	return h.GateKeeper().Boolean(ok), nil
 }
 
 // isFloat checks if the first argument is of type Float and returns a Boolean result.
@@ -312,7 +317,7 @@ func (h *FuncInternal) isFloat(_ int, args []IObject) (IObject, error) {
 		return nil, ErrInvalidArgumentsNumber
 	}
 	_, ok := args[0].(*Float)
-	return h.gk.Boolean(ok), nil
+	return h.GateKeeper().Boolean(ok), nil
 }
 
 // isBool checks if the first element in the args slice is of type Bool and returns a Boolean object accordingly.
@@ -321,7 +326,7 @@ func (h *FuncInternal) isBool(_ int, args []IObject) (IObject, error) {
 		return nil, ErrInvalidArgumentsNumber
 	}
 	_, ok := args[0].(*Bool)
-	return h.gk.Boolean(ok), nil
+	return h.GateKeeper().Boolean(ok), nil
 }
 
 // isChar checks if the first argument is of type *Char and returns a boolean result wrapped in an IObject.
@@ -330,7 +335,7 @@ func (h *FuncInternal) isChar(_ int, args []IObject) (IObject, error) {
 		return nil, ErrInvalidArgumentsNumber
 	}
 	_, ok := args[0].(*Char)
-	return h.gk.Boolean(ok), nil
+	return h.GateKeeper().Boolean(ok), nil
 }
 
 // isBytes checks if the first argument is of type Bytes and returns a boolean result wrapped in IObject.
@@ -339,7 +344,7 @@ func (h *FuncInternal) isBytes(_ int, args []IObject) (IObject, error) {
 		return nil, ErrInvalidArgumentsNumber
 	}
 	_, ok := args[0].(*Bytes)
-	return h.gk.Boolean(ok), nil
+	return h.GateKeeper().Boolean(ok), nil
 }
 
 // isArray checks if the first argument is of type Array and returns a boolean IObject accordingly.
@@ -348,7 +353,7 @@ func (h *FuncInternal) isArray(_ int, args []IObject) (IObject, error) {
 		return nil, ErrInvalidArgumentsNumber
 	}
 	_, ok := args[0].(*Array)
-	return h.gk.Boolean(ok), nil
+	return h.GateKeeper().Boolean(ok), nil
 }
 
 // isMap checks if the first argument is of type *Map and returns a boolean IObject and an error if applicable.
@@ -357,7 +362,7 @@ func (h *FuncInternal) isMap(_ int, args []IObject) (IObject, error) {
 		return nil, ErrInvalidArgumentsNumber
 	}
 	_, ok := args[0].(*Map)
-	return h.gk.Boolean(ok), nil
+	return h.GateKeeper().Boolean(ok), nil
 }
 
 // isTime verifies if the provided argument is of type Time and returns a boolean result or an error.
@@ -366,7 +371,7 @@ func (h *FuncInternal) isTime(_ int, args []IObject) (IObject, error) {
 		return nil, ErrInvalidArgumentsNumber
 	}
 	_, ok := args[0].(*Time)
-	return h.gk.Boolean(ok), nil
+	return h.GateKeeper().Boolean(ok), nil
 }
 
 // isError determines if the given argument is of type *Error and returns a boolean result with any error encountered.
@@ -375,7 +380,7 @@ func (h *FuncInternal) isError(_ int, args []IObject) (IObject, error) {
 		return nil, ErrInvalidArgumentsNumber
 	}
 	_, ok := args[0].(*Error)
-	return h.gk.Boolean(ok), nil
+	return h.GateKeeper().Boolean(ok), nil
 }
 
 // isUndefined checks if the first argument is of type Undefined and returns a boolean result or an error if invalid input.
@@ -384,7 +389,7 @@ func (h *FuncInternal) isUndefined(_ int, args []IObject) (IObject, error) {
 		return nil, ErrInvalidArgumentsNumber
 	}
 	_, ok := args[0].(*Undefined)
-	return h.gk.Boolean(ok), nil
+	return h.GateKeeper().Boolean(ok), nil
 }
 
 // isFunction checks if the first argument is of type *Func and returns a boolean IObject accordingly.
@@ -393,7 +398,7 @@ func (h *FuncInternal) isFunction(_ int, args []IObject) (IObject, error) {
 		return nil, ErrInvalidArgumentsNumber
 	}
 	_, ok := args[0].(*Func)
-	return h.gk.Boolean(ok), nil
+	return h.GateKeeper().Boolean(ok), nil
 }
 
 // isIterable determines if the argument is iterable and returns a boolean representation of the result.
@@ -401,7 +406,7 @@ func (h *FuncInternal) isIterable(_ int, args []IObject) (IObject, error) {
 	if len(args) != 1 {
 		return nil, ErrInvalidArgumentsNumber
 	}
-	return h.gk.Boolean(args[0].Iterable()), nil
+	return h.GateKeeper().Boolean(args[0].Iterable()), nil
 }
 
 // callIdTypeName generates a string representation of the type name for the provided argument.
@@ -409,7 +414,7 @@ func (h *FuncInternal) callIdTypeName(frame int, args []IObject) (IObject, error
 	if len(args) != 1 {
 		return nil, ErrInvalidArgumentsNumber
 	}
-	return h.gk.NewString(frame, args[0].TypeName()), nil
+	return h.GateKeeper().NewString(frame, args[0].TypeName()), nil
 }
 
 // callIdString generates a new string object using the provided frame and argument, ensuring exactly one argument is passed.
@@ -417,7 +422,7 @@ func (h *FuncInternal) callIdString(frame int, args []IObject) (IObject, error) 
 	if len(args) != 1 {
 		return nil, ErrInvalidArgumentsNumber
 	}
-	return h.gk.NewString(frame, args[0].AsString()), nil
+	return h.GateKeeper().NewString(frame, args[0].AsString()), nil
 }
 
 // callIdInt generates a new integer object using the provided frame and the integer value extracted from the input argument.
@@ -425,7 +430,7 @@ func (h *FuncInternal) int(frame int, args []IObject) (IObject, error) {
 	if len(args) != 1 {
 		return nil, ErrInvalidArgumentsNumber
 	}
-	return h.gk.NewInt(frame, args[0].AsInt64()), nil
+	return h.GateKeeper().NewInt(frame, args[0].AsInt64()), nil
 }
 
 // callIdFloat converts the first argument to a float and creates a new float object for the given frame.
@@ -433,7 +438,7 @@ func (h *FuncInternal) float(frame int, args []IObject) (IObject, error) {
 	if len(args) != 1 {
 		return nil, ErrInvalidArgumentsNumber
 	}
-	return h.gk.NewFloat(frame, args[0].AsFloat64()), nil
+	return h.GateKeeper().NewFloat(frame, args[0].AsFloat64()), nil
 }
 
 // callIdChar converts an integer argument to a character and returns the new character object, or an error if input is invalid.
@@ -441,7 +446,7 @@ func (h *FuncInternal) char(frame int, args []IObject) (IObject, error) {
 	if len(args) != 1 {
 		return nil, ErrInvalidArgumentsNumber
 	}
-	return h.gk.NewChar(frame, rune(args[0].AsInt64())), nil
+	return h.GateKeeper().NewChar(frame, rune(args[0].AsInt64())), nil
 }
 
 // callIdBool processes a single argument and returns a Boolean object based on the argument's boolean value or an error.
@@ -449,7 +454,7 @@ func (h *FuncInternal) bool(_ int, args []IObject) (IObject, error) {
 	if len(args) != 1 {
 		return nil, ErrInvalidArgumentsNumber
 	}
-	return h.gk.Boolean(args[0].AsBool()), nil
+	return h.GateKeeper().Boolean(args[0].AsBool()), nil
 }
 
 // callIdTime processes a method call to generate a new Time object based on the provided frame and argument.
@@ -460,9 +465,9 @@ func (h *FuncInternal) time(frame int, args []IObject) (IObject, error) {
 		return nil, ErrInvalidArgumentsNumber
 	}
 	if v, ok := args[0].(*Time); ok {
-		return h.gk.NewTime(frame, v.Value()), nil
+		return h.GateKeeper().NewTime(frame, v.Value()), nil
 	}
-	return h.gk.NewTime(frame, time.Unix(args[0].AsInt64(), 0)), nil
+	return h.GateKeeper().NewTime(frame, time.Unix(args[0].AsInt64(), 0)), nil
 }
 
 // copy creates a copy of the given IObject argument and returns it, ensuring only a single argument is provided.
@@ -478,7 +483,7 @@ func (h *FuncInternal) len(frame int, args []IObject) (IObject, error) {
 	if len(args) != 1 {
 		return nil, ErrInvalidArgumentsNumber
 	}
-	return h.gk.NewInt(frame, int64(args[0].Length())), nil
+	return h.GateKeeper().NewInt(frame, int64(args[0].Length())), nil
 }
 
 // sprintf formats a string using the format specified in args[0] and additional arguments provided.
@@ -487,15 +492,15 @@ func (h *FuncInternal) len(frame int, args []IObject) (IObject, error) {
 func (h *FuncInternal) sprintf(frame int, args []IObject) (IObject, error) {
 	switch len(args) {
 	case 0:
-		return h.gk.UndefinedValue(), ErrInvalidArgumentsNumber
+		return h.GateKeeper().UndefinedValue(), ErrInvalidArgumentsNumber
 	case 1:
 		return args[0], nil
 	default:
 		var ar []interface{}
 		for _, v := range args[1:] {
-			ar = append(ar, h.gk.ToInterface(v))
+			ar = append(ar, h.GateKeeper().ToInterface(v))
 		}
-		return h.gk.NewString(frame, fmt.Sprintf(args[0].AsString(), ar...)), nil
+		return h.GateKeeper().NewString(frame, fmt.Sprintf(args[0].AsString(), ar...)), nil
 	}
 }
 
@@ -503,17 +508,17 @@ func (h *FuncInternal) sprintf(frame int, args []IObject) (IObject, error) {
 func (h *FuncInternal) printf(_ int, args []IObject) (IObject, error) {
 	switch len(args) {
 	case 0:
-		return h.gk.UndefinedValue(), ErrInvalidArgumentsNumber
+		return h.GateKeeper().UndefinedValue(), ErrInvalidArgumentsNumber
 	case 1:
 		fmt.Printf(args[0].AsString())
-		return h.gk.UndefinedValue(), nil
+		return h.GateKeeper().UndefinedValue(), nil
 	default:
 		var ar []interface{}
 		for _, v := range args[1:] {
-			ar = append(ar, h.gk.ToInterface(v))
+			ar = append(ar, h.GateKeeper().ToInterface(v))
 		}
 		fmt.Printf(args[0].AsString(), ar...)
-		return h.gk.UndefinedValue(), nil
+		return h.GateKeeper().UndefinedValue(), nil
 	}
 }
 
@@ -524,9 +529,9 @@ func (h *FuncInternal) append(frame int, args []IObject) (IObject, error) {
 	}
 	switch arg := args[0].(type) {
 	case *Array:
-		return h.gk.NewArray(frame, append(arg.Values(), args[1:]...)), nil
+		return h.GateKeeper().NewArray(frame, append(arg.Values(), args[1:]...)), nil
 	default:
-		return h.gk.NewArray(frame, args[1:]), nil
+		return h.GateKeeper().NewArray(frame, args[1:]), nil
 	}
 }
 
@@ -538,7 +543,7 @@ func (h *FuncInternal) delete(_ int, args []IObject) (IObject, error) {
 	switch arg := args[0].(type) {
 	case *Map:
 		arg.Delete(args[1].AsString())
-		return h.gk.UndefinedValue(), nil
+		return h.GateKeeper().UndefinedValue(), nil
 	default:
 		return nil, NewInvalidArgumentError(0, "map", arg.TypeName())
 	}
@@ -586,7 +591,7 @@ func (h *FuncInternal) splice(frame int, args []IObject) (IObject, error) {
 	}
 	items = append(items, array.Values()[endIdx:]...)
 	array.Assign(append(head, items...))
-	return h.gk.NewArray(frame, deleted), nil
+	return h.GateKeeper().NewArray(frame, deleted), nil
 }
 
 // panic triggers a runtime panic with the provided argument or a default message if no argument is given.
@@ -600,7 +605,7 @@ func (h *FuncInternal) panic(_ int, args []IObject) (IObject, error) {
 // recover is a method that handles logic for recovering from specific scenarios and returns an IObject and an error.
 // It takes an integer and a slice of IObject as arguments and returns a default undefined value and nil error.
 func (h *FuncInternal) recover(_ int, _ []IObject) (IObject, error) {
-	return h.gk.UndefinedValue(), nil
+	return h.GateKeeper().UndefinedValue(), nil
 }
 
 // make creates a new object of the specified type, with optional length and capacity, or returns an error on failure.
@@ -630,11 +635,11 @@ func (h *FuncInternal) make(frame int, args []IObject) (IObject, error) {
 	}
 	switch kind.TypeName() {
 	case BytesType:
-		return h.gk.NewBytes(frame, make([]byte, count, reserve)), nil
+		return h.GateKeeper().NewBytes(frame, make([]byte, count, reserve)), nil
 	case ArrayType:
-		return h.gk.NewArray(frame, make([]IObject, count, reserve)), nil
+		return h.GateKeeper().NewArray(frame, make([]IObject, count, reserve)), nil
 	case MapType:
-		return h.gk.NewMap(frame, make(map[string]IObject, count)), nil
+		return h.GateKeeper().NewMap(frame, make(map[string]IObject, count)), nil
 	default:
 		return nil, fmt.Errorf("cannot make type %s", kind.TypeName())
 	}

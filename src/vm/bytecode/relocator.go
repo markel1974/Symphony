@@ -35,7 +35,7 @@ func NewRelocator(gk objects.IGateKeeper, loader ILoader, op opcodes.IOpcodes, p
 // Relocate processes a slice of Bytecode instances, ensuring each bytecode is fixed and reconstructed correctly.
 // Returns a new Bytecode instance or an error if the fixing process fails.
 func (c *Relocator) Relocate(codes []*Bytecode) (*Bytecode, error) {
-	relocator := NewBytecodeEmpty()
+	relocator := NewBytecodeEmpty(c.gk)
 	for _, bc := range codes {
 		relocator.Append(ConstantsType, bc.Constants())
 		relocator.Append(ImportsType, bc.Imports())
