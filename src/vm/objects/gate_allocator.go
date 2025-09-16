@@ -80,6 +80,13 @@ func NewGateAllocator(gk *GateKeeper) *GateAllocator {
 	return ga
 }
 
+func (f *GateAllocator) AssignAllocator(object IObject) {
+	switch v := object.(type) {
+	case *Int:
+		v.Allocator = Allocator{gk: f.gk, frame: 0, references: 0}
+	}
+}
+
 // Reset resets the internal counter of the GateAllocator to its initial state, 0.
 func (f *GateAllocator) Reset() {
 	f.ReleaseAll()
@@ -451,4 +458,14 @@ func (f *GateAllocator) releaseObject(frame int, obj IObject) {
 	case *StructIterator:
 		f.poolStructIterator.Put(o)
 	}
+}
+
+// GobDecode decodes the Bool object from a byte slice encoded using Gob into its internal value.
+func (f *GateAllocator) GobDecode() error {
+	return nil
+}
+
+// GobEncode encodes the Bool instance into a byte slice representation. Returns the byte slice and any encoding error.
+func (f *GateAllocator) GobEncode() ([]byte, error) {
+	return nil, nil
 }

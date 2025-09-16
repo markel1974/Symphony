@@ -39,3 +39,13 @@ func (f *FileSet) Position(p int) (*bytecode.FilePos, error) {
 func (f *FileSet) Size() int {
 	return 1
 }
+
+// GobDecode decodes the Bool object from a byte slice encoded using Gob into its internal value.
+func (f *FileSet) GobDecode() error {
+	return nil
+}
+
+// GobEncode encodes the Bool instance into a byte slice representation. Returns the byte slice and any encoding error.
+func (f *FileSet) GobEncode() ([]byte, error) {
+	return nil, nil
+}

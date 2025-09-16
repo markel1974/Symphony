@@ -35,6 +35,7 @@ type IAllocator interface {
 // Length retrieves the length of the object, if applicable (e.g., arrays, strings).
 type IObject interface {
 	IAllocator
+	//setAllocator(IAllocator)
 	TypeName() string
 	AsBool() bool
 	AsInt64() int64

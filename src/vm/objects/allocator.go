@@ -46,3 +46,13 @@ func (a *Allocator) Frame() int {
 func (a *Allocator) SetStatic() {
 	a.frame = FrameStatic
 }
+
+// GobDecode implements the gob.GobDecoder interface, allowing the Allocator struct to decode its state from a gob encoding.
+func (a *Allocator) GobDecode() error {
+	return nil
+}
+
+// GobEncode encodes the Allocator instance into a byte slice for serialization used by the gob package.
+func (a *Allocator) GobEncode() ([]byte, error) {
+	return nil, nil
+}

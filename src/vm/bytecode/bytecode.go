@@ -98,13 +98,13 @@ func (b *Bytecode) Globals() []objects.IObject {
 // Encode serializes the Bytecode instance, writing its data to the provided io.Writer using gob encoding.
 func (b *Bytecode) Encode(w io.Writer) error {
 	enc := gob.NewEncoder(w)
-	if err := b.fileHandler.Encode(enc); err != nil {
-		return err
-	}
 	for _, container := range b.containers {
 		if err := container.Encode(enc); err != nil {
 			return err
 		}
+	}
+	if err := b.fileHandler.Encode(enc); err != nil {
+		return err
 	}
 	return nil
 }
@@ -112,13 +112,13 @@ func (b *Bytecode) Encode(w io.Writer) error {
 // Decode deserializes bytecode data from the provided io.Reader into the Bytecode instance using gob decoding.
 func (b *Bytecode) Decode(r io.Reader) error {
 	dec := gob.NewDecoder(r)
-	if err := b.fileHandler.Decode(dec); err != nil {
-		return err
-	}
 	for _, container := range b.containers {
 		if err := container.Decode(dec); err != nil {
 			return err
 		}
+	}
+	if err := b.fileHandler.Decode(dec); err != nil {
+		return err
 	}
 	return nil
 }

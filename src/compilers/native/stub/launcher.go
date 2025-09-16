@@ -78,6 +78,10 @@ func Launch(prefix string, debug bool) error {
 			d := bytecode.NewDisassembler(bc, seq)
 			_ = d.Disassemble(log.Writer())
 		}
+		//buf := bytes.NewBuffer([]byte{})
+		//if err = bc.Encode(buf); err != nil {
+		//	return fmt.Errorf("compiler error: %s", err)
+		//}
 		machine := core.New(gk, seq)
 		if err = seq.Bind(machine); err != nil {
 			return err
