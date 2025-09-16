@@ -45,7 +45,7 @@ func (op *OpDefer) Bind(vm core.IVM) error {
 func (op *OpDefer) Execute(_ *core.Decoder) {
 	obj := op.vm.StackPop()
 	switch objT := obj.(type) {
-	case *objects.FuncCompiled:
+	case *objects.Func:
 		op.vm.FrameDeferredAdd(objT)
 	default:
 		op.vm.SetError(fmt.Errorf("invalid operation: defer %s", obj.TypeName()))

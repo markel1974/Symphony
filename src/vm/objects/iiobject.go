@@ -68,7 +68,7 @@ type IGateAllocator interface {
 	AllocatedObjects() uint64
 	SetPointer(ptr *ObjectPointer, value IObject)
 	NewFuncInternal(frame int, id CallId) IObject
-	NewFuncCompiled(frame int, name string, instructions []byte, numLocals int, numParameters int, varArgs bool, sourceMap map[int]int, free []*ObjectPointer) IObject
+	NewFunc(frame int, name string, instructions []byte, numLocals int, numParameters int, varArgs bool, sourceMap map[int]int, free []*ObjectPointer) IObject
 	NewFuncImport(frame int, name string, args int, fn FuncCallable) IObject
 	NewFuncJit(frame int, name string, data []byte) IObject
 	NewArray(frame int, values []IObject) IObject
@@ -79,6 +79,7 @@ type IGateAllocator interface {
 	NewFloat(frame int, v float64) IObject
 	NewInt(frame int, v int64) IObject
 	NewObjectPointer(frame int, value *IObject) IObject
+	NewInterface(frame int, value IObject, iTable map[string]IObject) IObject
 	NewMap(frame int, v map[string]IObject) IObject
 	NewString(frame int, value string) IObject
 	NewStruct(frame int, name string, value map[string]IObject) IObject
@@ -88,7 +89,6 @@ type IGateAllocator interface {
 	NewStringIterator(frame int, v []rune, index int) IIterator
 	NewArrayIterator(frame int, values []IObject, index int) IIterator
 	NewBytesIterator(frame int, v []byte, index int) IIterator
-	NewInterface(frame int, value IObject, iTable map[string]IObject) IObject
 }
 
 // IGateConverter provides methods to convert IObject types to and from various native Go types and data structures.

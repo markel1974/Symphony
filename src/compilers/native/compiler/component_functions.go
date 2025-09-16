@@ -180,7 +180,7 @@ func (c *Functions) funcBodyCompile(fd *tables.FunctionDescription) error {
 	if !ok {
 		return tables.NewCompilerError(c.fileSet, node, "undefined function: %s", fd.Name)
 	}
-	compiledFn := c.gk.NewFuncCompiled(objects.FrameStatic, fd.Name, code, nLocals, nParams, false, source, freeObj)
+	compiledFn := c.gk.NewFunc(objects.FrameStatic, fd.Name, code, nLocals, nParams, false, source, freeObj)
 	//fnSymbol.SetObject(compiledFn)
 	if err = c.constants.SetIndex(fnSymbol.Index(), compiledFn); err != nil {
 		return tables.NewCompilerError(c.fileSet, node, err.Error())
@@ -485,7 +485,7 @@ func (c *Functions) handleClosure(node *ast.FuncLit) error {
 	if _, err = c.scopes.Emit(node.Pos(), native.OpConstantId, freeContainerIdx); err != nil {
 		return err
 	}
-	compiledFn := c.gk.NewFuncCompiled(objects.FrameStatic, "", code, nLocals, nParams, false, source, freeObj)
+	compiledFn := c.gk.NewFunc(objects.FrameStatic, "", code, nLocals, nParams, false, source, freeObj)
 	constIndex := c.constants.Add("", compiledFn)
 	freeNum := c.scopes.SymbolCount()
 	if _, err = c.scopes.Emit(node.Pos(), native.OpCreateClosureId, freeNum, constIndex); err != nil {

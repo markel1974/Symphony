@@ -10,8 +10,8 @@ import (
 type Constants struct {
 	gk           objects.IGateKeeper
 	container    []objects.IObject
-	preInitFuncs []*objects.FuncCompiled
-	init         []*objects.FuncCompiled
+	preInitFuncs []*objects.Func
+	init         []*objects.Func
 	errSignal    func(err error)
 }
 
@@ -20,8 +20,8 @@ func NewConstants(gk objects.IGateKeeper, errSignal func(err error)) *Constants 
 	return &Constants{
 		gk:           gk,
 		container:    nil,
-		preInitFuncs: []*objects.FuncCompiled{},
-		init:         []*objects.FuncCompiled{},
+		preInitFuncs: []*objects.Func{},
+		init:         []*objects.Func{},
 		errSignal:    errSignal,
 	}
 }
@@ -32,7 +32,7 @@ func (g *Constants) Setup(constants []objects.IObject, preInit string, init stri
 	entryPoints := make(map[string]uint)
 	for idx, global := range g.container {
 		switch c := global.(type) {
-		case *objects.FuncCompiled:
+		case *objects.Func:
 			if c.Name() == preInit {
 				g.preInitFuncs = append(g.preInitFuncs, c)
 			} else if c.Name() == init {
@@ -46,12 +46,12 @@ func (g *Constants) Setup(constants []objects.IObject, preInit string, init stri
 }
 
 // PreInitFuncs returns a slice of pre-initialization compiled functions associated with the Globals instance.
-func (g *Constants) PreInitFuncs() []*objects.FuncCompiled {
+func (g *Constants) PreInitFuncs() []*objects.Func {
 	return g.preInitFuncs
 }
 
 // InitFuncs returns the slice of compiled functions designated to run during the initialization phase.
-func (g *Constants) InitFuncs() []*objects.FuncCompiled {
+func (g *Constants) InitFuncs() []*objects.Func {
 	return g.init
 }
 

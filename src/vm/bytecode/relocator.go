@@ -60,7 +60,7 @@ func (c *Relocator) relocateObjects(inObj []objects.IObject) ([]objects.IObject,
 	}
 	for _, in := range result {
 		switch obj := in.(type) {
-		case *objects.FuncCompiled:
+		case *objects.Func:
 			if err = c.relocateFunction(obj, indices); err != nil {
 				return nil, err
 			}
@@ -78,14 +78,14 @@ func (c *Relocator) processObjects(container []objects.IObject) ([]objects.IObje
 	floats := make(map[float64]int)
 	chars := make(map[rune]int)
 	strings := make(map[string]int)
-	fns := make(map[*objects.FuncCompiled]int)
+	fns := make(map[*objects.Func]int)
 
 	for idx, in := range container {
 		newIndex := len(result)
 		foundIndex := -1
 		found := false
 		switch obj := in.(type) {
-		case *objects.FuncCompiled:
+		case *objects.Func:
 			if _, preserve := c.preserveFunc[obj.Name()]; !preserve {
 				var v int
 				if v, found = fns[obj]; found {
@@ -126,7 +126,7 @@ func (c *Relocator) processObjects(container []objects.IObject) ([]objects.IObje
 
 // updateConstIndexes modifies bytecode instructions to remap constant indexes based on the provided index map.
 // It updates OpConstant and OpCreateClosure instructions with new constant indexes or returns an error if mapping fails.
-func (c *Relocator) relocateFunction(fc *objects.FuncCompiled, indices map[int]int) error {
+func (c *Relocator) relocateFunction(fc *objects.Func, indices map[int]int) error {
 	bc := fc.Data()
 	var end int
 	for i := 0; i < len(bc); {

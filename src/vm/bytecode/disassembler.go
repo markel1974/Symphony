@@ -57,7 +57,7 @@ func (d *Disassembler) disassembleObject(idx int, obj objects.IObject) ([]string
 		return []string{fmt.Sprintf("<% 4d> nil", idx)}, nil
 	}
 	switch cn := obj.(type) {
-	case *objects.FuncCompiled:
+	case *objects.Func:
 		result, err := d.disassembleInstructions(cn.Data())
 		if err != nil {
 			return nil, err

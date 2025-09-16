@@ -12,7 +12,7 @@ type IVM interface {
 type IVMFrameOnly interface {
 	IVM
 	FrameId() int
-	FrameDeferredAdd(*objects.FuncCompiled)
+	FrameDeferredAdd(*objects.Func)
 	FrameFreeVarsIndex(index uint) *objects.ObjectPointer
 }
 

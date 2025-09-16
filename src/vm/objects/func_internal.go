@@ -387,12 +387,12 @@ func (h *FuncInternal) isUndefined(_ int, args []IObject) (IObject, error) {
 	return h.gk.Boolean(ok), nil
 }
 
-// isFunction checks if the first argument is of type *FuncCompiled and returns a boolean IObject accordingly.
+// isFunction checks if the first argument is of type *Func and returns a boolean IObject accordingly.
 func (h *FuncInternal) isFunction(_ int, args []IObject) (IObject, error) {
 	if len(args) != 1 {
 		return nil, ErrInvalidArgumentsNumber
 	}
-	_, ok := args[0].(*FuncCompiled)
+	_, ok := args[0].(*Func)
 	return h.gk.Boolean(ok), nil
 }
 

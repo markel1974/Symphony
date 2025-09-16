@@ -115,11 +115,11 @@ func (f *GateAllocator) UndefinedValue() IObject {
 
 // --- Methods for Non-Poolable objects ---
 
-// NewFuncCompiled creates a new compiled function object with the given frame, name, instructions, locals, parameters, and settings.
+// NewFunc creates a new compiled function object with the given frame, name, instructions, locals, parameters, and settings.
 // It initializes the object, acquires resources if available, and returns an IObject instance.
 // If resource acquisition fails, it returns the undefined object from the allocator.
-func (f *GateAllocator) NewFuncCompiled(frame int, name string, instructions []byte, numLocals int, numParameters int, varArgs bool, sourceMap map[int]int, free []*ObjectPointer) IObject {
-	return newFuncCompiled(f.gk, frame, name, instructions, numLocals, numParameters, varArgs, sourceMap, free)
+func (f *GateAllocator) NewFunc(frame int, name string, instructions []byte, numLocals int, numParameters int, varArgs bool, source map[int]int, free []*ObjectPointer) IObject {
+	return newFunc(f.gk, frame, name, instructions, numLocals, numParameters, varArgs, source, free)
 }
 
 // NewFuncInternal creates a new IObject using the provided frame and CallId, ensuring proper allocation and preparation.

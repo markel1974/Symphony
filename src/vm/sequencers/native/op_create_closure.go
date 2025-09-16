@@ -48,7 +48,7 @@ func (op *OpCreateClosure) Execute(decoder *core.Decoder) {
 	closureIndex := decoder.Operand(0)
 	//numTotal := decoder.Operand(1)
 	closureObj := op.vm.Constants().Get(uint(closureIndex))
-	fn, ok := closureObj.(*objects.FuncCompiled)
+	fn, ok := closureObj.(*objects.Func)
 	if !ok {
 		op.vm.SetError(fmt.Errorf("not a function: %s", fn.TypeName()))
 		return
@@ -82,7 +82,7 @@ func (op *OpCreateClosure) Execute(decoder *core.Decoder) {
 		}
 	}
 	op.vm.StackDecrementCount(uint(freeIndices.Length()))
-	cl := op.vm.Factory().NewFuncCompiled(op.vm.FrameId(), fn.Name(), fn.Instructions().Data(), fn.NumLocals(), fn.NumParameters(), fn.VarArgs(), nil, free)
+	cl := op.vm.Factory().NewFunc(op.vm.FrameId(), fn.Name(), fn.Instructions().Data(), fn.NumLocals(), fn.NumParameters(), fn.VarArgs(), nil, free)
 	op.vm.StackPush(cl)
 }
 

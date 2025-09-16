@@ -1,5 +1,11 @@
 package opcodes
 
+import "encoding/gob"
+
+func init() {
+	gob.Register(&Instructions{})
+}
+
 // Instructions represents a sequence of bytecode instructions used in the virtual machine or interpreter.
 type Instructions struct {
 	data []byte

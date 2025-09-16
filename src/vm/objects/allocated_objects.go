@@ -147,5 +147,5 @@ func (f *AllocatedObjects) NewMapIterator() any {
 
 // NewStructIterator creates and returns an iterator for a structure if allocation is successful; returns an undefined value otherwise.
 func (f *AllocatedObjects) NewStructIterator() any {
-	return f.add(newMapIterator(f.gk, FrameStatic, make(map[string]IObject), 0))
+	return f.add(newStructIterator(f.gk, FrameStatic, make(map[string]IObject), 0))
 }

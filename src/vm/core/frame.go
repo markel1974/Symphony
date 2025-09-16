@@ -12,12 +12,12 @@ import (
 type Frame struct {
 	gk                   objects.IGateKeeper
 	id                   int
-	compiledFunction     *objects.FuncCompiled
+	compiledFunction     *objects.Func
 	freeVars             []*objects.ObjectPointer
 	savedIp              int
 	basePointer          int
 	instructions         *opcodes.Instructions
-	deferredCalls        []*objects.FuncCompiled
+	deferredCalls        []*objects.Func
 	savedReturnValues    []objects.IObject
 	hasSavedReturnValues bool
 	errSignal            func(err error)
@@ -32,7 +32,7 @@ func NewFrame(gk objects.IGateKeeper, id int, errSignal func(err error)) *Frame 
 		errSignal:            errSignal,
 		savedReturnValues:    []objects.IObject{},
 		hasSavedReturnValues: false,
-		deferredCalls:        []*objects.FuncCompiled{},
+		deferredCalls:        []*objects.Func{},
 	}
 }
 
@@ -42,7 +42,7 @@ func (f *Frame) Id() int {
 }
 
 // Bind initializes the frame with the given instruction pointer, compiled function, and base pointer values.
-func (f *Frame) Bind(startIp int, compiledFunction *objects.FuncCompiled, basePointer int) {
+func (f *Frame) Bind(startIp int, compiledFunction *objects.Func, basePointer int) {
 	f.savedIp = startIp
 	f.basePointer = basePointer
 	f.compiledFunction = compiledFunction
@@ -126,8 +126,8 @@ func (f *Frame) SourcePos(ip int) int {
 	return f.compiledFunction.SourcePos(ip)
 }
 
-// SameFunction compares the given FuncCompiled with the Frame's compiled function and returns true if they are the same.
-func (f *Frame) SameFunction(callee *objects.FuncCompiled) bool {
+// SameFunction compares the given Func with the Frame's compiled function and returns true if they are the same.
+func (f *Frame) SameFunction(callee *objects.Func) bool {
 	return f.compiledFunction == callee
 }
 
@@ -142,12 +142,12 @@ func (f *Frame) NumParameters() int {
 }
 
 // DeferredAdd appends a deferred call object to the frame's deferred calls queue for later execution.
-func (f *Frame) DeferredAdd(call *objects.FuncCompiled) {
+func (f *Frame) DeferredAdd(call *objects.Func) {
 	f.deferredCalls = append(f.deferredCalls, call)
 }
 
 // DeferredPop removes and returns the last deferred call object from the frame's deferred calls queue.
-func (f *Frame) DeferredPop() *objects.FuncCompiled {
+func (f *Frame) DeferredPop() *objects.Func {
 	numDeferred := len(f.deferredCalls)
 	if numDeferred == 0 {
 		f.errSignal(fmt.Errorf("no deferred calls in frame %d", f.id))

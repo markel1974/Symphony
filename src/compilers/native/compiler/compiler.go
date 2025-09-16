@@ -291,7 +291,7 @@ func (c *Compiler) createInit() error {
 	initFuncCode := scope.Instructions()
 	initSource := scope.Source()
 	numLocals := c.scopes.SymbolCount()
-	compiledInitFn := c.gk.NewFuncCompiled(objects.FrameStatic, bytecode.PreInitFunction, initFuncCode, numLocals, 0, false, initSource, nil)
+	compiledInitFn := c.gk.NewFunc(objects.FrameStatic, bytecode.PreInitFunction, initFuncCode, numLocals, 0, false, initSource, nil)
 	_, err = c.scopes.SymbolDefineConst(bytecode.PreInitFunction, compiledInitFn)
 	if err != nil {
 		return err

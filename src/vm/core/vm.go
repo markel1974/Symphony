@@ -127,7 +127,7 @@ func (v *VM) EnableRetValues(retValues bool) {
 // Run executes the main function identified by mainId with the provided arguments in the virtual machine context.
 func (v *VM) Run(mainId uint, args ...interface{}) ([]interface{}, error) {
 	obj := v.constants.Get(mainId)
-	mainFn, ok := obj.(*objects.FuncCompiled)
+	mainFn, ok := obj.(*objects.Func)
 	if !ok {
 		return nil, fmt.Errorf("entry point not found: %d", mainId)
 	}
@@ -205,7 +205,7 @@ func (v *VM) FrameId() int {
 }
 
 // FrameDeferredAdd appends the given compiled function to the deferred call stack of the current frame.
-func (v *VM) FrameDeferredAdd(fc *objects.FuncCompiled) {
+func (v *VM) FrameDeferredAdd(fc *objects.Func) {
 	v.currFrame.DeferredAdd(fc)
 }
 
@@ -270,7 +270,7 @@ func (v *VM) Call(value objects.IObject, spread bool, numArgs int) {
 	}
 
 	switch ce := value.(type) {
-	case *objects.FuncCompiled:
+	case *objects.Func:
 		if ce.VarArgs() {
 			np := ce.NumParameters()
 			if np > 0 {
@@ -469,7 +469,7 @@ func (v *VM) prepare() {
 }
 
 // Run executes the virtual machine's bytecode, managing the stack, frames, and instruction pointer state.
-func (v *VM) exec(mainFn *objects.FuncCompiled, ret bool, args ...interface{}) ([]interface{}, error) {
+func (v *VM) exec(mainFn *objects.Func, ret bool, args ...interface{}) ([]interface{}, error) {
 	v.prepare()
 	defer func() {
 		v.stack.ReleaseAll()
@@ -525,7 +525,7 @@ func (v *VM) loop() {
 // callCompiled sets up a new execution frame for a compiled function and manages stack allocation for local variables.
 // Callee specifies the compiled function to be executed, and numArgs determines the number of arguments passed.
 // It reserves stack space for all local variables and adjusts the instruction pointer accordingly.
-func (v *VM) prepareForCall(callee *objects.FuncCompiled, numArgs int) *Frame {
+func (v *VM) prepareForCall(callee *objects.Func, numArgs int) *Frame {
 	// 1. Calculate the new basePointer safely, anchoring it to the caller's frame.
 	//	The new "floor" begins exactly where the caller's local variable space ends.
 	bp := v.currFrame.BasePointer() + v.currFrame.NumLocals()
