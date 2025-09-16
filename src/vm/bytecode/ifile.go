@@ -1,5 +1,6 @@
 package bytecode
 
+/*
 // IFile represents an interface for interacting with source files containing positional metadata.
 // Position retrieves the FilePos for a specified position within the file.
 // Size returns the total size of the file in bytes.
@@ -11,3 +12,4 @@ type IFile interface {
 
 	Base() int
 }
+*/

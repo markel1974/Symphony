@@ -10,7 +10,7 @@ type ICompiler interface {
 
 	Compile(filename string, source any) error
 
-	FileSet() IFile
+	FileSet() *FileSet
 
 	Constants() []objects.IObject
 

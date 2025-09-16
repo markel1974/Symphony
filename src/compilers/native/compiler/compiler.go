@@ -96,8 +96,8 @@ func (c *Compiler) Id() string {
 }
 
 // FileSet returns the token file set associated with the compiler.
-func (c *Compiler) FileSet() bytecode.IFile {
-	return NewFileSet(c.fileSet)
+func (c *Compiler) FileSet() *bytecode.FileSet {
+	return bytecode.NewFileSet(c.fileSet)
 }
 
 // Compile parses the provided source file and compiles it into bytecode. Returns compiled bytecode or an error.

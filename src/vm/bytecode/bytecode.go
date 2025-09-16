@@ -35,7 +35,7 @@ func NewBytecodeEmpty(gk objects.IGateKeeper) *Bytecode {
 }
 
 // NewBytecode initializes a new Bytecode instance with provided constants, imports, and globals data.
-func NewBytecode(gk objects.IGateKeeper, constants []objects.IObject, imports []objects.IObject, globals []objects.IObject, file IFile) *Bytecode {
+func NewBytecode(gk objects.IGateKeeper, constants []objects.IObject, imports []objects.IObject, globals []objects.IObject, file *FileSet) *Bytecode {
 	bc := NewBytecodeEmpty(gk)
 	bc.Assign(ConstantsType, constants)
 	bc.Assign(ImportsType, imports)
@@ -45,12 +45,12 @@ func NewBytecode(gk objects.IGateKeeper, constants []objects.IObject, imports []
 }
 
 // AddFile adds a new IFile instance to the collection of files in the Bytecode.
-func (b *Bytecode) AddFile(f IFile) {
+func (b *Bytecode) AddFile(f *FileSet) {
 	b.fileHandler.AddFile(f)
 }
 
 // AddFiles appends multiple IFile instances to the Bytecode's internal file collection.
-func (b *Bytecode) AddFiles(data []IFile) {
+func (b *Bytecode) AddFiles(data []*FileSet) {
 	for _, f := range data {
 		b.fileHandler.AddFile(f)
 	}
@@ -63,7 +63,7 @@ func (b *Bytecode) Position(p int) (*FilePos, error) {
 }
 
 // Files retrieves a slice of IFile instances associated with the Bytecode.
-func (b *Bytecode) Files() []IFile {
+func (b *Bytecode) Files() []*FileSet {
 	return b.fileHandler.Files()
 }
 

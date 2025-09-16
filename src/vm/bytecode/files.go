@@ -13,8 +13,8 @@ func init() {
 // Files represents a collection of source files with positional metadata for efficient file and position lookups.
 type Files struct {
 	base     int
-	files    []IFile
-	lastFile IFile
+	files    []*FileSet
+	lastFile *FileSet
 }
 
 // NewFiles creates and returns a new instance of Files initialized with a base offset of 1.
@@ -24,7 +24,7 @@ func NewFiles() *Files {
 
 // AddFile adds a new source file with the specified filename, base offset, and size to the Files.
 // Returns a pointer to the created SourceFile. Panics if base or size is invalid or if offset overflows.
-func (s *Files) AddFile(f IFile) {
+func (s *Files) AddFile(f *FileSet) {
 	if f == nil {
 		return
 	}
@@ -37,12 +37,12 @@ func (s *Files) AddFile(f IFile) {
 }
 
 // Files returns a slice of all SourceFiles added to the Files.
-func (s *Files) Files() []IFile {
+func (s *Files) Files() []*FileSet {
 	return s.files
 }
 
 // File retrieves the SourceFile corresponding to the specified Pos from the Files or nil if not found.
-func (s *Files) File(p int) IFile {
+func (s *Files) File(p int) *FileSet {
 	if p == 0 {
 		return nil
 	}
@@ -79,8 +79,6 @@ func (s *Files) search(x int) int {
 
 // Encode serializes the Files structure including its base, files, and lastFile properties using the provided gob.Encoder.
 func (s *Files) Encode(enc *gob.Encoder) error {
-	return nil
-	//TODO IMPLEMENT!!!!
 	if err := enc.Encode(s.base); err != nil {
 		return err
 	}
@@ -95,8 +93,6 @@ func (s *Files) Encode(enc *gob.Encoder) error {
 
 // Decode deserializes the Files object, restoring its base, files slice, and lastFile from the provided gob.Decoder.
 func (s *Files) Decode(dec *gob.Decoder) error {
-	return nil
-	//TODO IMPLEMENT!!!!
 	if err := dec.Decode(&s.base); err != nil {
 		return err
 	}
