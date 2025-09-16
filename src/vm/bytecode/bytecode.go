@@ -2,6 +2,7 @@ package bytecode
 
 import (
 	"encoding/gob"
+	"go/token"
 	"io"
 
 	"github.com/markel1974/c64emu/src/vm/objects"
@@ -58,7 +59,7 @@ func (b *Bytecode) AddFiles(data []*FileSet) {
 
 // Position returns the file position (FilePos) corresponding to a given bytecode offset (p).
 // It translates the offset into filename, line, and column information, or returns an error if invalid.
-func (b *Bytecode) Position(p int) (*FilePos, error) {
+func (b *Bytecode) Position(p int) (token.Position, error) {
 	return b.fileHandler.Position(p)
 }
 

@@ -19,37 +19,42 @@ func init() {
 
 // FileSet wraps a token.FileSet and provides methods to interact with file position and size metadata.
 type FileSet struct {
-	fSet *token.FileSet
+	fileSet *token.FileSet
+	size    int
 }
 
 // NewFileSet creates and returns a new instance of FileSet with the specified size and token.FileSet.
-func NewFileSet(fSet *token.FileSet) *FileSet {
+func NewFileSet(fileSet *token.FileSet) *FileSet {
+	size := 0
+	fileSet.Iterate(func(f *token.File) bool {
+		size++
+		return true
+	})
 	return &FileSet{
-		fSet: fSet,
+		size:    size,
+		fileSet: fileSet,
 	}
 }
 
 // Base returns the base offset of the underlying token.FileSet.
 func (f *FileSet) Base() int {
-	return f.fSet.Base()
+	return f.fileSet.Base()
 }
 
 // Position converts an integer position to a *bytecode.FilePos, including filename, offset, line, and column information.
-func (f *FileSet) Position(p int) (*FilePos, error) {
-	pos := f.fSet.Position(token.Pos(p))
-	z := NewFilePos(pos.Filename, pos.Offset, pos.Line, pos.Column)
-	return z, nil
+func (f *FileSet) Position(p int) token.Position {
+	return f.fileSet.Position(token.Pos(p))
 }
 
 // Size returns the number of files within the FileSet.
 func (f *FileSet) Size() int {
-	return 1
+	return f.size
 }
 
 // GobEncode serializes the FileSet into a byte slice for use with the gob package, including metadata about contained files.
 func (f *FileSet) GobEncode() ([]byte, error) {
 	var files []fileData
-	f.fSet.Iterate(func(f *token.File) bool {
+	f.fileSet.Iterate(func(f *token.File) bool {
 		files = append(files, fileData{
 			Name:  f.Name(),
 			Base:  f.Base(),
@@ -60,6 +65,9 @@ func (f *FileSet) GobEncode() ([]byte, error) {
 	})
 	var buf bytes.Buffer
 	encoder := gob.NewEncoder(&buf)
+	if err := encoder.Encode(f.size); err != nil {
+		return nil, err
+	}
 	if err := encoder.Encode(files); err != nil {
 		return nil, err
 	}
@@ -72,12 +80,16 @@ func (f *FileSet) GobDecode(data []byte) error {
 	buf := bytes.NewBuffer(data)
 	decoder := gob.NewDecoder(buf)
 
+	if err := decoder.Decode(&f.size); err != nil {
+		return err
+	}
+
 	if err := decoder.Decode(&files); err != nil {
 		return err
 	}
-	f.fSet = token.NewFileSet()
+	f.fileSet = token.NewFileSet()
 	for _, fd := range files {
-		z := f.fSet.AddFile(fd.Name, fd.Base, fd.Size)
+		z := f.fileSet.AddFile(fd.Name, fd.Base, fd.Size)
 		if fd.Lines != nil {
 			z.SetLines(fd.Lines)
 		}

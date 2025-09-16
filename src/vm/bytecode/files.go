@@ -3,6 +3,7 @@ package bytecode
 import (
 	"encoding/gob"
 	"fmt"
+	"go/token"
 	"sort"
 )
 
@@ -12,14 +13,13 @@ func init() {
 
 // Files represents a collection of source files with positional metadata for efficient file and position lookups.
 type Files struct {
-	base     int
+	lastFile int
 	files    []*FileSet
-	lastFile *FileSet
 }
 
 // NewFiles creates and returns a new instance of Files initialized with a base offset of 1.
 func NewFiles() *Files {
-	return &Files{base: 1}
+	return &Files{lastFile: -1, files: []*FileSet{}}
 }
 
 // AddFile adds a new source file with the specified filename, base offset, and size to the Files.
@@ -29,11 +29,10 @@ func (s *Files) AddFile(f *FileSet) {
 		return
 	}
 	if f.Base() < 0 {
-		return //overflow > 2G
+		return // > 2G
 	}
-	s.base = f.Base()
+	s.lastFile = len(s.files)
 	s.files = append(s.files, f)
-	s.lastFile = f
 }
 
 // Files returns a slice of all SourceFiles added to the Files.
@@ -46,14 +45,16 @@ func (s *Files) File(p int) *FileSet {
 	if p == 0 {
 		return nil
 	}
-	lf := s.lastFile
-	if lf != nil && lf.Base() <= p && p <= lf.Base()+lf.Size() {
-		return lf
+	if s.lastFile >= 0 {
+		lf := s.files[s.lastFile]
+		if lf.Base() <= p && p <= lf.Base()+lf.Size() {
+			return lf
+		}
 	}
 	if i := s.search(p); i >= 0 {
 		f := s.files[i]
 		if p <= f.Base()+f.Size() {
-			s.lastFile = f
+			s.lastFile = i
 			return f
 		}
 	}
@@ -62,12 +63,12 @@ func (s *Files) File(p int) *FileSet {
 
 // Position returns the detailed FilePos for a given Pos, translating it to filename, line, and column information.
 // If the position is invalid or cannot be resolved to a specific file, a zero-value FilePos is returned.
-func (s *Files) Position(p int) (*FilePos, error) {
+func (s *Files) Position(p int) (token.Position, error) {
 	f := s.File(p)
 	if f == nil {
-		return nil, fmt.Errorf("illegal Pos value")
+		return token.Position{}, fmt.Errorf("illegal pos")
 	}
-	return f.Position(p)
+	return f.Position(p), nil
 }
 
 // searchFiles performs a binary search on a slice of SourceFile pointers to locate the index of the last file with a base offset <= x.
@@ -79,13 +80,10 @@ func (s *Files) search(x int) int {
 
 // Encode serializes the Files structure including its base, files, and lastFile properties using the provided gob.Encoder.
 func (s *Files) Encode(enc *gob.Encoder) error {
-	if err := enc.Encode(s.base); err != nil {
+	if err := enc.Encode(s.lastFile); err != nil {
 		return err
 	}
 	if err := enc.Encode(s.files); err != nil {
-		return err
-	}
-	if err := enc.Encode(s.lastFile); err != nil {
 		return err
 	}
 	return nil
@@ -93,13 +91,10 @@ func (s *Files) Encode(enc *gob.Encoder) error {
 
 // Decode deserializes the Files object, restoring its base, files slice, and lastFile from the provided gob.Decoder.
 func (s *Files) Decode(dec *gob.Decoder) error {
-	if err := dec.Decode(&s.base); err != nil {
+	if err := dec.Decode(&s.lastFile); err != nil {
 		return err
 	}
 	if err := dec.Decode(&s.files); err != nil {
-		return err
-	}
-	if err := dec.Decode(&s.lastFile); err != nil {
 		return err
 	}
 	return nil
