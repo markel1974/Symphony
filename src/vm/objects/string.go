@@ -63,14 +63,17 @@ func (o *String) AssignValue(v IObject) error {
 	if !ok {
 		return ErrNotAssignable
 	}
+	if len(target.value) > MaxStringLen {
+		return ErrLimitExceed
+	}
 	o.value = target.value
 	return nil
 }
 
-// IndexSet attempts to assign a value to an index in the object but always returns ErrUnsupportedIndex,
+// IndexSet attempts to assign a value to an index in the object but always returns ErrIndexUnsupported,
 // as this operation is unsupported.
 func (o *String) IndexSet(_, _ IObject) (err error) {
-	return ErrUnsupportedIndex
+	return ErrIndexUnsupported
 }
 
 // Call invokes the Object with the provided arguments, returning a result object and an error, if any.
@@ -176,7 +179,7 @@ func (o *String) Equals(x IObject) bool {
 func (o *String) IndexGet(frame int, index IObject) (IObject, error) {
 	intIdx, ok := index.(*Int)
 	if !ok {
-		return nil, ErrInvalidIndexType
+		return nil, ErrIndexInvalidType
 	}
 	idxVal := int(intIdx.value)
 	if o.runeStr == nil {
@@ -191,6 +194,15 @@ func (o *String) IndexGet(frame int, index IObject) (IObject, error) {
 // Count returns the total number of elements in the instance and its sub-elements.
 func (o *String) Count() int {
 	return 1
+}
+
+// SetValue assigns the given string value to the object, returning an error if the value exceeds the maximum allowed length.
+func (o *String) SetValue(v string) error {
+	if len(v) > MaxStringLen {
+		return ErrLimitExceed
+	}
+	o.value = v
+	return nil
 }
 
 // Iterable checks if the String object supports iteration and always returns true.

@@ -67,13 +67,13 @@ func (o *Float) Nil() bool {
 
 // IndexGet attempts to retrieve a value at the given index and returns an error if the object is not indexable.
 func (o *Float) IndexGet(_ int, _ IObject) (IObject, error) {
-	return o.gk.UndefinedValue(), ErrNotIndexable
+	return o.gk.UndefinedValue(), ErrIndexNotIndexable
 }
 
-// IndexSet attempts to assign a value to an index in the object but always returns ErrUnsupportedIndex,
+// IndexSet attempts to assign a value to an index in the object but always returns ErrIndexUnsupported,
 // as this operation is unsupported.
 func (o *Float) IndexSet(_, _ IObject) error {
-	return ErrUnsupportedIndex
+	return ErrIndexUnsupported
 }
 
 // Iterate returns an IIterator to traverse over the elements of the object. If iteration is not supported, it returns nil.
@@ -155,4 +155,9 @@ func (o *Float) Equals(x IObject) bool {
 // Count returns the total number of elements in the instance and its sub-elements.
 func (o *Float) Count() int {
 	return 1
+}
+
+// SetValue assigns a new float64 value to the internal value field of the Float object.
+func (o *Float) SetValue(value float64) {
+	o.value = value
 }

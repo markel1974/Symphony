@@ -147,7 +147,7 @@ func (o *Struct) Falsy() bool {
 func (o *Struct) IndexGet(_ int, index IObject) (IObject, error) {
 	strIdx, ok := o.GateKeeper().ToString(index)
 	if !ok {
-		return nil, ErrInvalidIndexType
+		return nil, ErrIndexInvalidType
 	}
 	res, ok := o.values[strIdx]
 	if !ok {
@@ -160,7 +160,7 @@ func (o *Struct) IndexGet(_ int, index IObject) (IObject, error) {
 func (o *Struct) IndexSet(index, value IObject) error {
 	strIdx, ok := o.GateKeeper().ToString(index)
 	if !ok {
-		return ErrInvalidIndexType
+		return ErrIndexInvalidType
 	}
 	o.values[strIdx] = value
 	return nil

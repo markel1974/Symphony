@@ -54,20 +54,14 @@ func (op *OpIntLogical) Execute(decoder *core.Decoder) {
 	lhsObj := op.vm.StackPeekOffsetBP(uint(lhs))
 	rhsObj := op.vm.StackPeekOffsetBP(uint(rhs))
 	dstObj := op.vm.StackPeekOffsetBP(uint(dst))
-	out, ok := dstObj.(*objects.Int)
-	if !ok {
-		op.vm.SetError(fmt.Errorf("dst expected int, got %s", dstObj.TypeName()))
-		return
-	}
 	result, err := op.vm.Factory().LogicalOpInt64(logicalOp, lhsObj.AsInt64(), rhsObj.AsInt64())
 	if err != nil {
 		op.vm.SetError(err)
 		return
 	}
-	if result {
-		out.SetValue(1)
-	} else {
-		out.SetValue(0)
+	if err = op.vm.Factory().AssignBool(result, dstObj); err != nil {
+		op.vm.SetError(err)
+		return
 	}
 }
 

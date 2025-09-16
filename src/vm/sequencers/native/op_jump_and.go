@@ -45,7 +45,6 @@ func (op *OpJumpAnd) Bind(vm core.IVM) error {
 
 // Execute updates the instruction pointer, evaluates a condition, and adjusts or decrements the stack based on the result.
 func (op *OpJumpAnd) Execute(decoder *core.Decoder) {
-	// Operands Offset  2 (16-bit)
 	obj := op.vm.StackPeek()
 	if obj.Falsy() {
 		pos := decoder.Operand(0)

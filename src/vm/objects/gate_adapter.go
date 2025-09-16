@@ -1,9 +1,5 @@
 package objects
 
-import (
-	"fmt"
-)
-
 // GateAdapter is a type that wraps a GateKeeper and provides functional adapters to map Go functions to FuncCallable.
 type GateAdapter struct {
 	factory *GateKeeper
@@ -28,35 +24,21 @@ func (ga *GateAdapter) LogicalOpInt64(op LogicalOperator, lhs int64, rhs int64) 
 }
 
 // BoundsCheck validates and adjusts slice bounds using provided low and high indices, ensuring they are within valid range.
-func (ga *GateAdapter) BoundsCheck(lowStack IObject, highStack IObject, numElements int64) (int64, int64, error) {
-	var lowIdx int64
-	if lowStack != ga.factory.UndefinedValue() {
-		if low, ok := lowStack.(*Int); ok {
-			lowIdx = low.Value()
-		} else {
-			return 0, 0, fmt.Errorf("invalid slice index type: %s", low.TypeName())
-		}
-	}
-	var highIdx int64
-	if highStack == ga.factory.UndefinedValue() {
-		highIdx = numElements
-	} else if high, ok := highStack.(*Int); ok {
-		highIdx = high.Value()
-	} else {
-		return 0, 0, fmt.Errorf("invalid slice index type: %s", high.TypeName())
-	}
+func (ga *GateAdapter) BoundsCheck(lowObj IObject, highObj IObject, numElem int64) (int64, int64, error) {
+	lowIdx := lowObj.AsInt64()
+	highIdx := highObj.AsInt64()
 	if lowIdx > highIdx {
-		return 0, 0, fmt.Errorf("invalid slice index: %d > %d", lowIdx, highIdx)
+		lowIdx = highIdx
 	}
 	if lowIdx < 0 {
 		lowIdx = 0
-	} else if lowIdx > numElements {
-		lowIdx = numElements
+	} else if lowIdx > numElem {
+		lowIdx = numElem
 	}
 	if highIdx < 0 {
 		highIdx = 0
-	} else if highIdx > numElements {
-		highIdx = numElements
+	} else if highIdx > numElem {
+		highIdx = numElem
 	}
 	return lowIdx, highIdx, nil
 }

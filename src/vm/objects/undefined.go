@@ -75,10 +75,10 @@ func (o *Undefined) ArithmeticOp(_ int, _ ArithmeticOperator, _ IObject) (IObjec
 	return nil, ErrInvalidOperator
 }
 
-// IndexSet attempts to assign a value to an index in the object but always returns ErrUnsupportedIndex,
+// IndexSet attempts to assign a value to an index in the object but always returns ErrIndexUnsupported,
 // as this operation is unsupported.
 func (o *Undefined) IndexSet(_, _ IObject) (err error) {
-	return ErrUnsupportedIndex
+	return ErrIndexUnsupported
 }
 
 // Call invokes the Object with the provided arguments, returning a result object and an error, if any.
@@ -97,7 +97,7 @@ func (o *Undefined) TypeName() string {
 }
 
 func (o *Undefined) AsString() string {
-	return UndefinedLabel
+	return ""
 }
 
 // Copy returns a copy of the type.

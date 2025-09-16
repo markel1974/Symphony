@@ -48,7 +48,7 @@ func (op *OpJumpIndirect) Bind(vm core.IVM) error {
 }
 
 // Execute performs an indirect jump by popping an address from the stack and setting the instruction pointer to it.
-func (op *OpJumpIndirect) Execute(decoder *core.Decoder) {
+func (op *OpJumpIndirect) Execute(_ *core.Decoder) {
 	addrObj := op.vm.StackPop()
 	addr := addrObj.AsInt64()
 	op.vm.SetIp(int(addr) - 1)

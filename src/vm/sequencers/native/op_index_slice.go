@@ -46,11 +46,10 @@ func (op *OpIndexSlice) Bind(vm core.IVM) error {
 
 // Execute processes the slice operation on the stack, adjusting bounds and supporting various object types like arrays and strings.
 func (op *OpIndexSlice) Execute(_ *core.Decoder) {
-	// Operands Offset  0
-	highStack := op.vm.StackPop()
-	lowStack := op.vm.StackPop()
+	highObj := op.vm.StackPop()
+	lowObj := op.vm.StackPop()
 	leftObj := op.vm.StackPop()
-	lowIdx, highIdx, err := op.vm.Factory().BoundsCheck(lowStack, highStack, int64(leftObj.Length()))
+	lowIdx, highIdx, err := op.vm.Factory().BoundsCheck(lowObj, highObj, int64(leftObj.Length()))
 	if err != nil {
 		op.vm.SetError(err)
 		return

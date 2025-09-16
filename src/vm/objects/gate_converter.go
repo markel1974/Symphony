@@ -6,52 +6,67 @@ import (
 	"time"
 )
 
+// GateConverter provides methods to convert between various data types and IObject representations, leveraging GateKeeper.
 type GateConverter struct {
 	gk *GateKeeper
 }
 
+// NewGateConverter creates and returns a new instance of GateConverter with the provided GateKeeper for conversions.
 func NewGateConverter(gk *GateKeeper) *GateConverter {
 	return &GateConverter{gk: gk}
 }
 
-// ToInterface converts an IObject to its corresponding native Go representation, such as int, string, float64, bool, etc.
-func (gc *GateConverter) ToInterface(in IObject) (res interface{}) {
-	switch o := in.(type) {
-	case *Int:
-		res = o.value
-	case *String:
-		res = o.value
-	case *Float:
-		res = o.value
-	case *Bool:
-		res = o == gc.gk.TrueValue()
-	case *Char:
-		res = o.value
-	case *Bytes:
-		res = o.values
-	case *Array:
-		res = make([]interface{}, len(o.Values()))
-		for i, val := range o.Values() {
-			res.([]interface{})[i] = gc.ToInterface(val)
-		}
-	case *Map:
-		res = make(map[string]interface{})
-		for key, v := range o.values {
-			res.(map[string]interface{})[key] = gc.ToInterface(v)
-		}
-	case *Time:
-		res = o.value
-	case *Error:
-		res = errors.New(o.AsString())
-	case *Undefined:
-		res = nil
-	case IObject:
-		return o
+// AssignBool assigns a boolean value to the destination object by converting it to an integer (1 for true, 0 for false).
+func (gc *GateConverter) AssignBool(val bool, dstObj IObject) error {
+	v := int64(0)
+	if val {
+		v = 1
 	}
-	return
+	return gc.AssignInt(v, dstObj)
 }
 
-// FromInterface converts a native Go value of various types into a corresponding IObject implementation.
+// AssignInt assigns an int64 value to the destination object (dstObj) if it is a supported type.
+// It handles multiple destination types including Bool, Int, Float, Char, and String.
+// Returns an error if the destination type is not supported.
+func (gc *GateConverter) AssignInt(val int64, dstObj IObject) error {
+	switch out := dstObj.(type) {
+	case *Bool:
+		if val == 0 {
+			out.SetValue(false)
+		} else {
+			out.SetValue(true)
+		}
+		return nil
+	case *Int:
+		out.SetValue(val)
+		return nil
+	case *Float:
+		out.SetValue(float64(val))
+		return nil
+	case *Char:
+		out.SetValue(rune(val))
+		return nil
+	case *String:
+		return out.SetValue(strconv.FormatInt(val, 10))
+	default:
+		return ErrNotAssignable
+	}
+}
+
+// FromStringArray converts an input slice of strings into an array of IObject and wraps it in a new IObject array.
+func (gc *GateConverter) FromStringArray(frame int, in []string) (IObject, error) {
+	var data []IObject
+	if len(in) > 0 {
+		data = make([]IObject, len(in))
+		for idx, v := range in {
+			r := gc.gk.NewString(frame, v)
+			data[idx] = r
+		}
+	}
+	return gc.gk.NewArray(frame, data), nil
+}
+
+// FromInterface converts an interface value into an IObject instance based on its underlying type using the provided frame.
 func (gc *GateConverter) FromInterface(frame int, in interface{}) IObject {
 	switch v := in.(type) {
 	case nil:
@@ -136,9 +151,9 @@ func (gc *GateConverter) FromInterface(frame int, in interface{}) IObject {
 	return gc.gk.UndefinedValue()
 }
 
-// ToMap converts an IObject to a map[string]interface{} if the object is a *Map, recursively applying ToInterface.
-func (gc *GateConverter) ToMap(o IObject) (res map[string]interface{}) {
-	switch o := o.(type) {
+// ToMap converts an IObject to a map[string]interface{}, recursively transforming nested elements.
+func (gc *GateConverter) ToMap(in IObject) (res map[string]interface{}) {
+	switch o := in.(type) {
 	case *Map:
 		res = make(map[string]interface{})
 		for key, v := range o.values {
@@ -148,7 +163,44 @@ func (gc *GateConverter) ToMap(o IObject) (res map[string]interface{}) {
 	return
 }
 
-// FromMap converts a map with string keys and interface{} values into a map with string keys and IObject values.
+// ToInterface converts an IObject to its native Go interface representation, based on the underlying type of the object.
+func (gc *GateConverter) ToInterface(in IObject) (res interface{}) {
+	switch o := in.(type) {
+	case *Int:
+		res = o.value
+	case *String:
+		res = o.value
+	case *Float:
+		res = o.value
+	case *Bool:
+		res = o == gc.gk.TrueValue()
+	case *Char:
+		res = o.value
+	case *Bytes:
+		res = o.values
+	case *Array:
+		res = make([]interface{}, len(o.Values()))
+		for i, val := range o.Values() {
+			res.([]interface{})[i] = gc.ToInterface(val)
+		}
+	case *Map:
+		res = make(map[string]interface{})
+		for key, v := range o.values {
+			res.(map[string]interface{})[key] = gc.ToInterface(v)
+		}
+	case *Time:
+		res = o.value
+	case *Error:
+		res = errors.New(o.AsString())
+	case *Undefined:
+		res = nil
+	case IObject:
+		return o
+	}
+	return
+}
+
+// FromMap converts a map of string keys and interface values into a map of string keys and IObject values.
 func (gc *GateConverter) FromMap(frame int, v map[string]interface{}) map[string]IObject {
 	kv := make(map[string]IObject)
 	for key, val := range v {
@@ -157,10 +209,9 @@ func (gc *GateConverter) FromMap(frame int, v map[string]interface{}) map[string
 	return kv
 }
 
-// ToInt64 attempts to convert the given IObject to an int64 value.
-// It returns the converted value and a boolean indicating success or failure.
-func (gc *GateConverter) ToInt64(o IObject) (int64, bool) {
-	switch o := o.(type) {
+// ToInt64 converts an IObject to an int64 and returns the value along with a boolean indicating success or failure.
+func (gc *GateConverter) ToInt64(in IObject) (int64, bool) {
+	switch o := in.(type) {
 	case *Int:
 		return o.value, true
 	case *Float:
@@ -183,7 +234,7 @@ func (gc *GateConverter) ToInt64(o IObject) (int64, bool) {
 	}
 }
 
-// ToInt64Arg converts an IObject to an int64, returning an error if the conversion is not possible or the type is invalid.
+// ToInt64Arg extracts an int64 value from the input slice at the specified index or returns an error if invalid.
 func (gc *GateConverter) ToInt64Arg(index int, in []IObject) (int64, error) {
 	if index < 0 || index >= len(in) {
 		return 0, ErrInvalidArgumentsNumber
@@ -196,9 +247,9 @@ func (gc *GateConverter) ToInt64Arg(index int, in []IObject) (int64, error) {
 	return v, nil
 }
 
-// ToRune attempts to convert an IObject to a rune if it is of type *Int or *Char, returning the rune and a boolean success flag.
-func (gc *GateConverter) ToRune(o IObject) (v rune, ok bool) {
-	switch o := o.(type) {
+// ToRune converts the given IObject to a rune if possible, returning the result and a success flag.
+func (gc *GateConverter) ToRune(in IObject) (v rune, ok bool) {
+	switch o := in.(type) {
 	case *Int:
 		v = rune(o.value)
 		ok = true
@@ -209,21 +260,15 @@ func (gc *GateConverter) ToRune(o IObject) (v rune, ok bool) {
 	return
 }
 
-// ToString converts an IObject to its string representation and determines whether the conversion is valid.
-func (gc *GateConverter) ToString(o IObject) (string, bool) {
-	if o == nil {
+// ToString converts the given IObject to its string representation. It returns the string value and a boolean for success.
+func (gc *GateConverter) ToString(in IObject) (string, bool) {
+	if in == nil {
 		return "", false
 	}
-	if o == gc.gk.UndefinedValue() {
-		return "", false
-	}
-	if str, isStr := o.(*String); isStr {
-		return str.value, true
-	}
-	return o.AsString(), true
+	return in.AsString(), true
 }
 
-// ToStringArg attempts to convert an IObject to a string. Returns an error if conversion fails or type is incompatible.
+// ToStringArg converts an IObject at the given index in the slice to a string. Returns an error if conversion fails.
 func (gc *GateConverter) ToStringArg(index int, in []IObject) (string, error) {
 	if index < 0 || index >= len(in) {
 		return "", ErrInvalidArgumentsNumber
@@ -236,10 +281,21 @@ func (gc *GateConverter) ToStringArg(index int, in []IObject) (string, error) {
 	return v, nil
 }
 
-// ToBytes converts an IObject to a byte slice if the object is of type *Bytes or *String.
-// It returns the converted byte slice and a boolean indicating success.
-func (gc *GateConverter) ToBytes(o IObject) ([]byte, bool) {
-	switch o := o.(type) {
+// ToBytes converts the provided IObject to a byte slice. Returns the byte slice and true if successful, otherwise nil and false.
+func (gc *GateConverter) ToBytes(in IObject) ([]byte, bool) {
+	switch o := in.(type) {
+	case *Int:
+		return []byte{byte(o.value)}, true
+	case *Float:
+		return []byte{byte(o.value)}, true
+	case *Char:
+		return []byte{byte(o.value)}, true
+	case *Bool:
+		if o == gc.gk.TrueValue() {
+			return []byte{1}, true
+		} else {
+			return []byte{0}, true
+		}
 	case *Bytes:
 		return o.values, true
 	case *String:
@@ -249,7 +305,7 @@ func (gc *GateConverter) ToBytes(o IObject) ([]byte, bool) {
 	}
 }
 
-// ToBytesArg attempts to convert an IObject to a byte slice. Returns an error if the conversion fails or the type is incompatible.
+// ToBytesArg converts the IObject at the specified index in the input slice to a byte array or returns an error if invalid.
 func (gc *GateConverter) ToBytesArg(index int, in []IObject) ([]byte, error) {
 	if index < 0 || index >= len(in) {
 		return nil, ErrInvalidArgumentsNumber
@@ -262,7 +318,7 @@ func (gc *GateConverter) ToBytesArg(index int, in []IObject) ([]byte, error) {
 	return b, nil
 }
 
-// ToFloat64 attempts to convert an IObject to a float64 and returns the values along with a success flag.
+// ToFloat64 converts an IObject to a float64, returning the value and a boolean indicating success or failure.
 func (gc *GateConverter) ToFloat64(o IObject) (float64, bool) {
 	switch o := o.(type) {
 	case *Int:
@@ -287,7 +343,7 @@ func (gc *GateConverter) ToFloat64(o IObject) (float64, bool) {
 	}
 }
 
-// ToFloat64Arg converts an IObject to a float64 and returns an error if the conversion fails or the type is incompatible.
+// ToFloat64Arg converts an argument at the specified index from an []IObject to a float64 or returns an error if conversion fails.
 func (gc *GateConverter) ToFloat64Arg(index int, in []IObject) (float64, error) {
 	if index < 0 || index >= len(in) {
 		return 0, ErrInvalidArgumentsNumber
@@ -300,17 +356,26 @@ func (gc *GateConverter) ToFloat64Arg(index int, in []IObject) (float64, error) 
 	return v, nil
 }
 
-// ToTime converts an IObject into a time.Time if it is time-compatible (e.g., *Time or *Int). Returns the time and a boolean.
-func (gc *GateConverter) ToTime(o IObject) (time.Time, bool) {
-	switch o := o.(type) {
+// ToTime converts an IObject to a time.Time value if the conversion is possible. Returns the time and a bool indicating success.
+func (gc *GateConverter) ToTime(in IObject) (time.Time, bool) {
+	switch o := in.(type) {
 	case *Time:
 		return o.value, true
 	case *Int:
 		return time.Unix(o.value, 0), true
+	case *Float:
+		return time.Unix(int64(o.value), 0), true
+	case *Char:
+		return time.Unix(int64(o.value), 0), true
+	case *String:
+		if v, err := strconv.ParseInt(o.value, 10, 64); err == nil {
+			return time.Unix(v, 0), true
+		}
 	}
 	return time.Time{}, false
 }
 
+// ToTimeArg extracts a time.Time value from the IObject slice at the specified index, returning an error if invalid.
 func (gc *GateConverter) ToTimeArg(index int, in []IObject) (time.Time, error) {
 	if index < 0 || index >= len(in) {
 		return time.Time{}, ErrInvalidArgumentsNumber
@@ -323,14 +388,14 @@ func (gc *GateConverter) ToTimeArg(index int, in []IObject) (time.Time, error) {
 	return v, nil
 }
 
-// ToBool converts the given IObject to a bool based on its Falsy() method and returns the result along with a success flag.
+// ToBool converts the provided IObject to a boolean value. Returns the computed boolean and a success flag.
 func (gc *GateConverter) ToBool(o IObject) (v bool, ok bool) {
 	ok = true
 	v = !o.Falsy()
 	return
 }
 
-// FromBool converts a boolean values into its corresponding IObject representation, returning TrueValue or FalseValue.
+// FromBool converts a boolean value into an IObject representation based on the GateKeeper's true and false values.
 func (gc *GateConverter) FromBool(v bool) IObject {
 	if v {
 		return gc.gk.TrueValue()
@@ -338,7 +403,7 @@ func (gc *GateConverter) FromBool(v bool) IObject {
 	return gc.gk.FalseValue()
 }
 
-// ToBoolArg converts the given IObject to a boolean if possible or returns an error indicating an invalid argument type.
+// ToBoolArg extracts a boolean value from the IObject array at the specified index or returns an error if invalid.
 func (gc *GateConverter) ToBoolArg(index int, in []IObject) (bool, error) {
 	if index < 0 || index >= len(in) {
 		return false, ErrInvalidArgumentsNumber
@@ -349,17 +414,4 @@ func (gc *GateConverter) ToBoolArg(index int, in []IObject) (bool, error) {
 		return false, NewInvalidArgumentError(index, "bool", o.TypeName())
 	}
 	return b1.value, nil
-}
-
-// FromStringArray converts a slice of strings into an array of IObjects.
-func (gc *GateConverter) FromStringArray(frame int, in []string) (IObject, error) {
-	var data []IObject
-	if len(in) > 0 {
-		data = make([]IObject, len(in))
-		for idx, v := range in {
-			r := gc.gk.NewString(frame, v)
-			data[idx] = r
-		}
-	}
-	return gc.gk.NewArray(frame, data), nil
 }

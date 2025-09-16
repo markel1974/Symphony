@@ -97,7 +97,7 @@ func (o *ObjectPointer) IndexGet(frame int, obj IObject) (IObject, error) {
 	return (*o.valuePtr).IndexGet(frame, obj)
 }
 
-// IndexSet attempts to assign a value to an index in the object but always returns ErrUnsupportedIndex,
+// IndexSet attempts to assign a value to an index in the object but always returns ErrIndexUnsupported,
 // as this operation is unsupported.
 func (o *ObjectPointer) IndexSet(frame, obj IObject) error {
 	return (*o.valuePtr).IndexSet(frame, obj)

@@ -45,7 +45,6 @@ func (op *OpJumpFalsy) Bind(vm core.IVM) error {
 
 // Execute advances the instruction pointer, evaluates the stack's top element, and updates the pointer if false.
 func (op *OpJumpFalsy) Execute(decoder *core.Decoder) {
-	// Operands Offset 2 (16-bit)
 	obj := op.vm.StackPop()
 	if obj.Falsy() {
 		pos := decoder.Operand(0)

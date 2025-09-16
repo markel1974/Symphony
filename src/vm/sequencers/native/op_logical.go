@@ -47,12 +47,11 @@ func (op *OpLogical) Bind(vm core.IVM) error {
 
 // Execute processes the logical operation by decoding the opcode, applying the binary operation, and updating the stack.
 func (op *OpLogical) Execute(decoder *core.Decoder) {
-	// Operands Offset  1 (8 bits)
 	opcode := decoder.Operand(0)
-	right := op.vm.StackPop()
-	left := op.vm.StackPop()
+	rhs := op.vm.StackPop()
+	lhs := op.vm.StackPop()
 	operator := objects.LogicalOperator(opcode)
-	res, err := left.LogicalOp(op.vm.FrameId(), operator, right)
+	res, err := lhs.LogicalOp(op.vm.FrameId(), operator, rhs)
 	if err != nil {
 		op.vm.SetError(err)
 		return

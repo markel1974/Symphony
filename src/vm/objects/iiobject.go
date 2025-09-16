@@ -114,13 +114,16 @@ type IGateConverter interface {
 	FromMap(frame int, v map[string]interface{}) map[string]IObject
 	FromBool(v bool) IObject
 	FromStringArray(frame int, in []string) (IObject, error)
+
+	AssignInt(val int64, dstObj IObject) error
+	AssignBool(val bool, dstObj IObject) error
 }
 
 // IGateAdapter defines an interface for adapting various function signatures into FuncCallable instances.
 type IGateAdapter interface {
 	LogicalOpInt64(op LogicalOperator, lhs int64, rhs int64) (bool, error)
 	ArithmeticOpInt64(op ArithmeticOperator, lhs int64, rhs int64) (int64, error)
-	BoundsCheck(lowStack IObject, highStack IObject, numElements int64) (int64, int64, error)
+	BoundsCheck(low IObject, high IObject, numElements int64) (int64, int64, error)
 	IndexAssign(frame int, dst IObject, src IObject, selectors []IObject) error
 }
 

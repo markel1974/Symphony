@@ -45,7 +45,6 @@ func (op *OpLocalDefine) Bind(vm core.IVM) error {
 
 // Execute increments the instruction pointer, retrieves a local index, and assigns a stack value to a designated slot.
 func (op *OpLocalDefine) Execute(decoder *core.Decoder) {
-	// Operands Offset 2 (16-bit)
 	localIndex := decoder.Operand(0)
 	val := op.vm.StackPeek()
 	op.vm.StackSetOffsetBP(uint(localIndex), val)

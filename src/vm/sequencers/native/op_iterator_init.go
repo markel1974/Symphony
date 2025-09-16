@@ -46,11 +46,11 @@ func (op *OpIteratorInit) Bind(vm core.IVM) error {
 
 // Execute initializes an iterator for an iterable object and stores it in the specified local slot in the current frame.
 func (op *OpIteratorInit) Execute(decoder *core.Decoder) {
-	// Operands Offset 1 (8-bit)
 	localIndex := decoder.Operand(0)
 	iterable := op.vm.StackPop()
 	if !iterable.Iterable() {
-		op.vm.SetError(fmt.Errorf("not iterable: %s", iterable.TypeName()))
+		err := objects.ComputeIteratorError(objects.ErrNotIterable, iterable.TypeName())
+		op.vm.SetError(err)
 		return
 	}
 	iterator := iterable.Iterate(op.vm.FrameId())

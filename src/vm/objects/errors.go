@@ -12,8 +12,11 @@ var (
 	// ErrStackOverflow is returned when the execution stack exceeds its allowed limit, indicating a stack overflow condition.
 	ErrStackOverflow = errors.New("stack overflow")
 
-	// ErrInvalidIndexValueType represents an error occurring when an index operation involves an invalid index value type.
-	ErrInvalidIndexValueType = errors.New("invalid index value type")
+	// ErrSelectorNotProvided indicates that no selector was provided for an operation requiring at least one selector.
+	ErrSelectorNotProvided = errors.New("selector not provided")
+
+	// ErrUnimplemented indicates that the requested functionality has not been implemented.
+	ErrUnimplemented = errors.New("unimplemented")
 
 	// ErrInvalidOperator represents an error returned when an unsupported or invalid operator is encountered.
 	ErrInvalidOperator = errors.New("invalid operator")
@@ -21,32 +24,32 @@ var (
 	// ErrNotAssignable is used to indicate an error when attempting to assign an incompatible or unsupported value.
 	ErrNotAssignable = errors.New("not assignable")
 
-	// ErrInvalidArgument represents an error when an invalid argument is provided to a function or operation.
-	ErrInvalidArgument = errors.New("invalid argument")
-
 	// ErrInvalidArgumentsNumber indicates that the number of arguments provided is invalid for the operation or function.
 	ErrInvalidArgumentsNumber = errors.New("invalid arguments number")
 
 	// ErrLimitExceed is returned when an operation exceeds a predefined limit, such as maximum length or capacity.
 	ErrLimitExceed = errors.New("limit exceed")
 
+	// ErrNotIterator is returned when an operation is attempted on an object that is not an iterator.
+	ErrNotIterator = errors.New("not an iterator")
+
+	// ErrNotIterable is returned when an operation is attempted on an object that is not iterable.
+	ErrNotIterable = errors.New("not iterable")
+
 	// ErrIndexOutOfBounds indicates an error where an index is out of the allowable range for an operation.
 	ErrIndexOutOfBounds = errors.New("index out of bounds")
 
-	// ErrInvalidIndexType represents an error occurring when an index is of an invalid or unsupported type for the given operation.
-	ErrInvalidIndexType = errors.New("invalid index type")
+	// ErrIndexInvalidType represents an error occurring when an index is of an invalid or unsupported type for the given operation.
+	ErrIndexInvalidType = errors.New("invalid index type")
 
-	// ErrNotIndexable represents an error indicating that an object is not indexable.
-	ErrNotIndexable = errors.New("not indexable")
+	// ErrIndexNotIndexable represents an error indicating that an object is not indexable.
+	ErrIndexNotIndexable = errors.New("not indexable")
 
-	// ErrUnsupportedIndex indicates that an index operation is unsupported for the given object.
-	ErrUnsupportedIndex = errors.New("unsupported index")
+	// ErrIndexUnsupported indicates that an index operation is unsupported for the given object.
+	ErrIndexUnsupported = errors.New("unsupported index")
 
-	// ErrSelectorNotProvided indicates that no selector was provided for an operation requiring at least one selector.
-	ErrSelectorNotProvided = errors.New("selector not provided")
-
-	// ErrUnimplemented indicates that the requested functionality has not been implemented.
-	ErrUnimplemented = errors.New("unimplemented")
+	// ErrIndexInvalidValueType represents an error occurring when an index operation involves an invalid index value type.
+	ErrIndexInvalidValueType = errors.New("invalid index value type")
 )
 
 // NewInvalidArgumentError creates and returns an error indicating that an argument has an invalid type.
@@ -57,10 +60,10 @@ func NewInvalidArgumentError(index int, expected string, found string) error {
 
 // ComputeIndexGetError converts indexing-related errors into descriptive error messages for non-indexable or invalid types.
 func ComputeIndexGetError(err error, dst string, sel string) error {
-	if errors.Is(err, ErrNotIndexable) {
+	if errors.Is(err, ErrIndexNotIndexable) {
 		return fmt.Errorf("not indexable: %s", dst)
 	}
-	if errors.Is(err, ErrInvalidIndexType) {
+	if errors.Is(err, ErrIndexInvalidType) {
 		return fmt.Errorf("invalid index type: %s", sel)
 	}
 	return err
@@ -69,11 +72,22 @@ func ComputeIndexGetError(err error, dst string, sel string) error {
 // ComputeIndexSetError transforms specific index operation errors into user-friendly error messages.
 // Returns an error indicating why the index operation failed based on the type of the given error.
 func ComputeIndexSetError(err error, dst string, src string) error {
-	if errors.Is(err, ErrUnsupportedIndex) {
+	if errors.Is(err, ErrIndexUnsupported) {
 		return fmt.Errorf("not index-assignable: %s", dst)
 	}
-	if errors.Is(err, ErrInvalidIndexValueType) {
+	if errors.Is(err, ErrIndexInvalidValueType) {
 		return fmt.Errorf("invaid index values type: %s", src)
+	}
+	return err
+}
+
+// ComputeIteratorError returns a formatted error if the provided error matches ErrNotIterator, otherwise returns the original error.
+func ComputeIteratorError(err error, typeName string) error {
+	if errors.Is(err, ErrNotIterator) {
+		return fmt.Errorf("not an iterator: %s", typeName)
+	}
+	if errors.Is(err, ErrNotIterable) {
+		return fmt.Errorf("not iterable: %s", typeName)
 	}
 	return err
 }

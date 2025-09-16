@@ -99,10 +99,10 @@ func (o *Error) ArithmeticOp(_ int, _ ArithmeticOperator, _ IObject) (IObject, e
 	return nil, ErrInvalidOperator
 }
 
-// IndexSet attempts to assign a value to an index in the object but always returns ErrUnsupportedIndex,
+// IndexSet attempts to assign a value to an index in the object but always returns ErrIndexUnsupported,
 // as this operation is unsupported.
 func (o *Error) IndexSet(_, _ IObject) (err error) {
-	return ErrUnsupportedIndex
+	return ErrIndexUnsupported
 }
 
 // Iterate returns an IIterator to traverse over the elements of the object. If iteration is not supported, it returns nil.
@@ -160,7 +160,7 @@ func (o *Error) Equals(x IObject) bool {
 // IndexGet retrieves the values associated with the "values" index in an Error object or returns an error for invalid indices.
 func (o *Error) IndexGet(_ int, index IObject) (IObject, error) {
 	if strIdx, _ := o.GateKeeper().ToString(index); strIdx != "values" {
-		return nil, ErrInvalidIndexValueType
+		return nil, ErrIndexInvalidValueType
 	}
 	return o.value, nil
 }

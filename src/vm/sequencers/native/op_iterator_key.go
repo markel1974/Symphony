@@ -50,7 +50,8 @@ func (op *OpIteratorKey) Execute(decoder *core.Decoder) {
 	iteratorObj := op.vm.StackPeekOffsetBP(uint(localIndex))
 	iterator, ok := iteratorObj.(objects.IIterator)
 	if !ok {
-		op.vm.SetError(fmt.Errorf("not an iterator: %s", iteratorObj.TypeName()))
+		err := objects.ComputeIteratorError(objects.ErrNotIterator, iteratorObj.TypeName())
+		op.vm.SetError(err)
 		return
 	}
 	op.vm.StackPush(iterator.Key(op.vm.FrameId()))

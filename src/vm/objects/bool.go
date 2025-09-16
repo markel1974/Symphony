@@ -108,12 +108,12 @@ func (o *Bool) ArithmeticOp(_ int, op ArithmeticOperator, rhsIn IObject) (IObjec
 
 // IndexGet retrieves the value at a given index from the Bool object, but always returns an error as Bool is not indexable.
 func (o *Bool) IndexGet(_ int, _ IObject) (IObject, error) {
-	return o.gk.UndefinedValue(), ErrNotIndexable
+	return o.gk.UndefinedValue(), ErrIndexNotIndexable
 }
 
-// IndexSet attempts to set an index on the Bool object but always returns ErrUnsupportedIndex as Bool is not indexable.
+// IndexSet attempts to set an index on the Bool object but always returns ErrIndexUnsupported as Bool is not indexable.
 func (o *Bool) IndexSet(_, _ IObject) (err error) {
-	return ErrUnsupportedIndex
+	return ErrIndexUnsupported
 }
 
 // Iterate returns nil as Bool does not support iteration.
@@ -159,6 +159,11 @@ func (o *Bool) Equals(x IObject) bool {
 // Count returns the total number of elements in the instance and its sub-elements.
 func (o *Bool) Count() int {
 	return 1
+}
+
+// SetValue assigns the provided boolean value to the Bool object's internal value field.
+func (o *Bool) SetValue(v bool) {
+	o.value = v
 }
 
 // GobDecode decodes the Bool object from a byte slice encoded using Gob into its internal value.

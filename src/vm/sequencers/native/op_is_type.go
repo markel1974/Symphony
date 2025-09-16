@@ -53,28 +53,17 @@ func (op *OpIsType) Bind(vm core.IVM) error {
 
 // Execute performs the runtime logic for the `OpIsType` operation, checking if the interface value matches the target type.
 func (op *OpIsType) Execute(decoder *core.Decoder) {
-	// The operand is the target type name index in the constants table.
-	typeNameIndex := decoder.Operand(0)
-
-	// The interface object is at the top of the stack (we don't use Pop).
 	interfaceObj := op.vm.StackPeek()
-
-	targetTypeObj := op.vm.Constants().Get(uint(typeNameIndex))
-	targetTypeName, ok := targetTypeObj.(*objects.String)
-	if !ok {
-		op.vm.SetError(fmt.Errorf("constant for type check is not a string"))
-		return
-	}
-
-	io, isInterface := interfaceObj.(*objects.Interface)
-	if !isInterface {
-		op.vm.StackPush(op.vm.Factory().FalseValue())
-		return
-	}
-
-	if io.Value().TypeName() == targetTypeName.Value() {
-		op.vm.StackPush(op.vm.Factory().TrueValue())
-	} else {
+	switch io := interfaceObj.(type) {
+	case *objects.Interface:
+		typeNameIndex := decoder.Operand(0)
+		targetTypeObj := op.vm.Constants().Get(uint(typeNameIndex))
+		if io.Value().TypeName() == targetTypeObj.AsString() {
+			op.vm.StackPush(op.vm.Factory().TrueValue())
+		} else {
+			op.vm.StackPush(op.vm.Factory().FalseValue())
+		}
+	default:
 		op.vm.StackPush(op.vm.Factory().FalseValue())
 	}
 }

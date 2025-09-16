@@ -103,14 +103,14 @@ func (o *FuncCompiled) Falsy() bool {
 	return false
 }
 
-// IndexGet attempts to retrieve an element by index but always returns ErrNotIndexable as the object is not indexable.
+// IndexGet attempts to retrieve an element by index but always returns ErrIndexNotIndexable as the object is not indexable.
 func (o *FuncCompiled) IndexGet(_ int, _ IObject) (IObject, error) {
-	return o.gk.UndefinedValue(), ErrNotIndexable
+	return o.gk.UndefinedValue(), ErrIndexNotIndexable
 }
 
-// IndexSet assigns a specified value to an index on the object but always returns ErrUnsupportedIndex, indicating the operation is not supported.
+// IndexSet assigns a specified value to an index on the object but always returns ErrIndexUnsupported, indicating the operation is not supported.
 func (o *FuncCompiled) IndexSet(_, _ IObject) error {
-	return ErrUnsupportedIndex
+	return ErrIndexUnsupported
 }
 
 // Iterate returns nil, as iteration is not supported by FuncCompiled.

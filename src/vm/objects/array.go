@@ -196,7 +196,7 @@ func (o *Array) Equals(in IObject) bool {
 func (o *Array) IndexGet(_ int, index IObject) (IObject, error) {
 	intIdx, ok := index.(*Int)
 	if !ok {
-		return o.gk.UndefinedValue(), ErrInvalidIndexType
+		return o.gk.UndefinedValue(), ErrIndexInvalidType
 	}
 	idxVal := int(intIdx.value)
 	if idxVal < 0 || idxVal >= len(o.values) {
@@ -209,7 +209,7 @@ func (o *Array) IndexGet(_ int, index IObject) (IObject, error) {
 func (o *Array) IndexSet(index IObject, value IObject) (err error) {
 	idx, ok := o.GateKeeper().ToInt64(index)
 	if !ok {
-		err = ErrInvalidIndexType
+		err = ErrIndexInvalidType
 		return
 	}
 	intIdx := int(idx)

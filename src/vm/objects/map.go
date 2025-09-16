@@ -177,7 +177,7 @@ func (o *Map) Equals(in IObject) bool {
 func (o *Map) IndexGet(_ int, index IObject) (IObject, error) {
 	strIdx, ok := o.gk.ToString(index)
 	if !ok {
-		return nil, ErrInvalidIndexType
+		return nil, ErrIndexInvalidType
 	}
 	res, ok := o.values[strIdx]
 	if !ok {
@@ -190,7 +190,7 @@ func (o *Map) IndexGet(_ int, index IObject) (IObject, error) {
 func (o *Map) IndexSet(index, value IObject) error {
 	strIdx, ok := o.gk.ToString(index)
 	if !ok {
-		return ErrInvalidIndexType
+		return ErrIndexInvalidType
 	}
 	o.values[strIdx] = value
 	return nil

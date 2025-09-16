@@ -131,9 +131,9 @@ func BuildDrives(d string) ([]*config.Drive, error) {
 func vmTest() {
 	//const prefix = "simple"
 	//const prefix = "rt"
-	const prefix = "simple3"
+	//const prefix = "simple3"
 	//const baseDir = "../src/compilers/native/stub/sources"
-	//const prefix = "test_"
+	const prefix = "test_"
 	//const baseDir = "../src/compilers/native/stub/tests"
 	if err := stub.Launch(prefix, true); err != nil {
 		log.Fatal(err)

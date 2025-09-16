@@ -46,7 +46,6 @@ func (op *OpLocalSet) Bind(vm core.IVM) error {
 
 // Execute updates a local variable in the current frame using the stack's top value and the local index from instructions.
 func (op *OpLocalSet) Execute(decoder *core.Decoder) {
-	// Operands Offset 2 (16-bit)
 	localIndex := decoder.Operand(0)
 	val := op.vm.StackPeek()
 	obj := op.vm.StackPeekOffsetBP(uint(localIndex))

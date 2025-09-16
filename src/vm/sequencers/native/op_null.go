@@ -45,9 +45,7 @@ func (op *OpNull) Bind(vm core.IVM) error {
 
 // Execute pushes an undefined value onto the virtual machine's stack.
 func (op *OpNull) Execute(_ *core.Decoder) {
-	// Operands Offset 0
-	val := op.vm.Factory().UndefinedValue()
-	op.vm.StackPush(val)
+	op.vm.StackPush(op.vm.Factory().UndefinedValue())
 }
 
 // Compile generates the compiled representation of the OpNull operation or returns an unimplemented error.

@@ -85,13 +85,13 @@ func (o *MapIterator) ArithmeticOp(_ int, _ ArithmeticOperator, _ IObject) (IObj
 
 // IndexGet attempts to retrieve a value at the given index and returns an error if the object is not indexable.
 func (o *MapIterator) IndexGet(_ int, _ IObject) (IObject, error) {
-	return o.gk.UndefinedValue(), ErrNotIndexable
+	return o.gk.UndefinedValue(), ErrIndexNotIndexable
 }
 
-// IndexSet attempts to assign a value to an index in the object but always returns ErrUnsupportedIndex,
+// IndexSet attempts to assign a value to an index in the object but always returns ErrIndexUnsupported,
 // as this operation is unsupported.
 func (o *MapIterator) IndexSet(_, _ IObject) error {
-	return ErrUnsupportedIndex
+	return ErrIndexUnsupported
 }
 
 // Iterate returns an IIterator to traverse over the elements of the object. If iteration is not supported, it returns nil.

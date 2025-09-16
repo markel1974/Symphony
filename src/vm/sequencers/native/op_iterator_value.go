@@ -46,15 +46,16 @@ func (op *OpIteratorValue) Bind(vm core.IVM) error {
 
 // Execute processes the next instruction to retrieve and push the current value of an iterator onto the stack.
 func (op *OpIteratorValue) Execute(decoder *core.Decoder) {
-	// Operands Offset 1 (8-bit)
 	localIndex := decoder.Operand(0)
 	iteratorObj := op.vm.StackPeekOffsetBP(uint(localIndex))
-	iterator, ok := iteratorObj.(objects.IIterator)
-	if !ok {
-		op.vm.SetError(fmt.Errorf("not an iterator: %s", iteratorObj.TypeName()))
+	switch it := iteratorObj.(type) {
+	case objects.IIterator:
+		op.vm.StackPush(it.Value(op.vm.FrameId()))
+	default:
+		err := objects.ComputeIteratorError(objects.ErrNotIterator, iteratorObj.TypeName())
+		op.vm.SetError(err)
 		return
 	}
-	op.vm.StackPush(iterator.Value(op.vm.FrameId()))
 }
 
 // Compile generates the compiled representation of the OpIteratorValue operation or returns an unimplemented error.

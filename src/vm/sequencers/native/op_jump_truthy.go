@@ -46,8 +46,8 @@ func (op *OpJumpTruthy) Bind(vm core.IVM) error {
 
 // Execute evaluates the top object on the stack and updates the instruction pointer if it is truthy.
 func (op *OpJumpTruthy) Execute(decoder *core.Decoder) {
-	obj := op.vm.StackPop() // Prendiamo il valore dalla stack
-	if !obj.Falsy() {       // Controlliamo se è 'truthy'
+	obj := op.vm.StackPop()
+	if !obj.Falsy() {
 		pos := decoder.Operand(0)
 		op.vm.SetIp(pos - 1)
 	}

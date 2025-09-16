@@ -61,13 +61,13 @@ func (o *Char) Nil() bool {
 
 // IndexGet attempts to retrieve a value at the given index and returns an error if the object is not indexable.
 func (o *Char) IndexGet(_ int, _ IObject) (IObject, error) {
-	return o.gk.UndefinedValue(), ErrNotIndexable
+	return o.gk.UndefinedValue(), ErrIndexNotIndexable
 }
 
-// IndexSet attempts to assign a value to an index in the object but always returns ErrUnsupportedIndex,
+// IndexSet attempts to assign a value to an index in the object but always returns ErrIndexUnsupported,
 // as this operation is unsupported.
 func (o *Char) IndexSet(_, _ IObject) (err error) {
-	return ErrUnsupportedIndex
+	return ErrIndexUnsupported
 }
 
 // Iterate returns an IIterator to traverse over the elements of the object. If iteration is not supported, it returns nil.
@@ -150,4 +150,9 @@ func (o *Char) Equals(x IObject) bool {
 // Count returns the total number of elements in the instance and its sub-elements.
 func (o *Char) Count() int {
 	return 1
+}
+
+// SetValue updates the value stored in the Char object with the given rune.
+func (o *Char) SetValue(value rune) {
+	o.value = value
 }

@@ -66,10 +66,10 @@ func (o *Bytes) Nil() bool {
 	return false
 }
 
-// IndexSet attempts to assign a value to an index in the object but always returns ErrUnsupportedIndex,
+// IndexSet attempts to assign a value to an index in the object but always returns ErrIndexUnsupported,
 // as this operation is unsupported.
 func (o *Bytes) IndexSet(_, _ IObject) (err error) {
-	return ErrUnsupportedIndex
+	return ErrIndexUnsupported
 }
 
 // Call invokes the Object with the provided arguments, returning a result object and an error, if any.
@@ -146,7 +146,7 @@ func (o *Bytes) Equals(x IObject) bool {
 func (o *Bytes) IndexGet(frame int, index IObject) (IObject, error) {
 	intIdx, ok := index.(*Int)
 	if !ok {
-		return nil, ErrInvalidIndexType
+		return nil, ErrIndexInvalidType
 	}
 	idxVal := int(intIdx.value)
 	if idxVal < 0 || idxVal >= len(o.values) {
