@@ -38,14 +38,14 @@ type FuncCompiled struct {
 // varArgs indicates if the function accepts a variable number of arguments.
 // sourceMap maps instruction indices to source code, defaulting to an empty map if nil is provided.
 // free holds externally closed variables as object pointers for use within the function's scope.
-func newFuncCompiled(factory IGateKeeper, frame int, name string, instructions []byte, numLocals int, numParameters int, varArgs bool, sourceMap map[int]int, free []*ObjectPointer) IObject {
+func newFuncCompiled(factory IGateKeeper, frame int, name string, data []byte, numLocals int, numParameters int, varArgs bool, sourceMap map[int]int, free []*ObjectPointer) IObject {
 	if sourceMap == nil {
 		sourceMap = make(map[int]int)
 	}
 	return &FuncCompiled{
 		Allocator:     Allocator{gk: factory, frame: frame},
 		name:          name,
-		instructions:  opcodes.NewInstructions(instructions),
+		instructions:  opcodes.NewInstructions(data),
 		numLocals:     numLocals,
 		numParameters: numParameters,
 		varArgs:       varArgs,

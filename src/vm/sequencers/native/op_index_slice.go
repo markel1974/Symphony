@@ -55,7 +55,6 @@ func (op *OpIndexSlice) Execute(_ *core.Decoder) {
 		return
 	}
 	op.vm.StackPush(ret)
-	//lowIdx, highIdx, err := op.vm.Factory().BoundsCheck(lowObj, highObj, int64(leftObj.Length()))
 }
 
 // Compile generates the compiled representation of the OpIndexSlice operation or returns an unimplemented error.
