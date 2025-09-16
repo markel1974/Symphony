@@ -12,13 +12,13 @@ func NewGateAdapter(gk *GateKeeper) *GateAdapter {
 	return &GateAdapter{factory: gk}
 }
 
-// ArithmeticOpInt64 performs integer arithmetic or bitwise operations on two int64 values based on the provided operator.
+// ArithmeticOpInt64 performs integer arithmetic or bitwise operations on two int64 Code based on the provided operator.
 // Returns the result of the operation and an error if an invalid operator is used or division by zero occurs.
 func (ga *GateAdapter) ArithmeticOpInt64(op ArithmeticOperator, lhs int64, rhs int64) (int64, error) {
 	return arithmeticOpInt64(lhs, op, rhs)
 }
 
-// LogicalOpInt64 performs the specified logical operation on two int64 values and returns a boolean result or an error.
+// LogicalOpInt64 performs the specified logical operation on two int64 Code and returns a boolean result or an error.
 // Supported operations include less than, greater than, less than or equal, and greater than or equal.
 // Returns ErrInvalidOperator if an unsupported operator is provided.
 func (ga *GateAdapter) LogicalOpInt64(op LogicalOperator, lhs int64, rhs int64) (bool, error) {
@@ -56,7 +56,7 @@ func (ga *GateAdapter) CreateSlice(frameId int, lowObj IObject, highObj IObject,
 	}
 }
 
-// IndexAssign assigns a value to a nested structure, using selectors to determine the target location.
+// IndexAssign assigns a Code to a nested structure, using selectors to determine the target location.
 // It navigates through the provided selectors and performs an assignment on the target object at the final index.
 // Returns an error if any selector is invalid, the object is not indexable, or the assignment fails.
 func (ga *GateAdapter) IndexAssign(frame int, dst IObject, src IObject, selectors []IObject) error {

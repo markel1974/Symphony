@@ -56,8 +56,8 @@ type IMos6522Socket interface {
 // Emulate performs a single step of VIA emulation logic, processing registers and signals.
 // ReadByte retrieves an 8-bit value from a specified register address in the VIA memory map.
 // WriteByte writes an 8-bit value to a specified register address in the VIA memory map.
-// ReadDDRA returns the current state of the Data Direction Register for Port A (DDRA).
-// ReadDDRB returns the current state of the Data Direction Register for Port B (DDRB).
+// ReadDDRA returns the current state of the Code Direction Register for Port A (DDRA).
+// ReadDDRB returns the current state of the Code Direction Register for Port B (DDRB).
 // ReadPRA retrieves the current value of the Port A register (PRA).
 // ReadPRB retrieves the current value of the Port B register (PRB).
 // ReadACR retrieves the current value of the Auxiliary Control Register (ACR).

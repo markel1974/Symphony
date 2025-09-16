@@ -59,47 +59,47 @@ func (f *AllocatedObjects) add(obj IObject) any {
 	return obj
 }
 
-// NewBool creates a new Bool instance with a static frame and a default value of false, handling object acquisition logic.
+// NewBool creates a new Bool instance with a static frame and a default Code of false, handling object acquisition logic.
 func (f *AllocatedObjects) NewBool() any {
 	return f.add(newBool(NewAllocator(f.gk, FrameStatic), false))
 }
 
-// NewChar creates or retrieves a Char object from the pool, initializing it with the specified gatekeeper and frame values.
+// NewChar creates or retrieves a Char object from the pool, initializing it with the specified gatekeeper and frame Code.
 func (f *AllocatedObjects) NewChar() any {
 	return f.add(newChar(NewAllocator(f.gk, FrameStatic), 0))
 }
 
-// NewInt creates a new integer object or returns an undefined value if object acquisition fails.
+// NewInt creates a new integer object or returns an undefined Code if object acquisition fails.
 func (f *AllocatedObjects) NewInt() any {
 	return f.add(newInt(NewAllocator(f.gk, FrameStatic), 0))
 }
 
-// NewFloat creates and retrieves a reusable floating-point object from the pool, or returns a default value if unavailable.
+// NewFloat creates and retrieves a reusable floating-point object from the pool, or returns a default Code if unavailable.
 func (f *AllocatedObjects) NewFloat() any {
 	return f.add(newFloat(NewAllocator(f.gk, FrameStatic), 0))
 }
 
-// NewString creates a new String object using the IGateKeeper instance, static frame identifier, and an empty value.
+// NewString creates a new String object using the IGateKeeper instance, static frame identifier, and an empty Code.
 func (f *AllocatedObjects) NewString() any {
 	return f.add(newString(NewAllocator(f.gk, FrameStatic), ""))
 }
 
-// NewTime attempts to acquire a new reusable time object or returns an undefined value upon failure.
+// NewTime attempts to acquire a new reusable time object or returns an undefined Code upon failure.
 func (f *AllocatedObjects) NewTime() any {
 	return f.add(newTime(NewAllocator(f.gk, FrameStatic), time.Now()))
 }
 
-// NewObjectPointer creates a new object pointer using the gatekeeper and returns it or undefined value on error.
+// NewObjectPointer creates a new object pointer using the gatekeeper and returns it or undefined Code on error.
 func (f *AllocatedObjects) NewObjectPointer() any {
 	return f.add(newObjectPointer(NewAllocator(f.gk, FrameStatic), nil))
 }
 
-// NewError attempts to acquire and return a new error object; if unavailable, it falls back to the undefined value.
+// NewError attempts to acquire and return a new error object; if unavailable, it falls back to the undefined Code.
 func (f *AllocatedObjects) NewError() any {
 	return f.add(newError(NewAllocator(f.gk, FrameStatic), ""))
 }
 
-// NewBytes creates and returns a new Bytes object, ensuring the byte slice length does not exceed the maximum allowed size.
+// NewBytes creates and returns a new Bytes object, ensuring the byte slice len does not exceed the maximum allowed size.
 func (f *AllocatedObjects) NewBytes() any {
 	return f.add(newBytes(NewAllocator(f.gk, FrameStatic), []byte{}))
 }
@@ -109,12 +109,12 @@ func (f *AllocatedObjects) NewArray() any {
 	return f.add(newArray(NewAllocator(f.gk, FrameStatic), []IObject{}))
 }
 
-// NewMap initializes and returns a pooled Map instance or the undefined value if the acquisition fails.
+// NewMap initializes and returns a pooled Map instance or the undefined Code if the acquisition fails.
 func (f *AllocatedObjects) NewMap() any {
 	return f.add(newMap(NewAllocator(f.gk, FrameStatic), make(map[string]IObject)))
 }
 
-// NewStruct acquires and returns a new struct instance from the object pool or an undefined value if allocation fails.
+// NewStruct acquires and returns a new struct instance from the object pool or an undefined Code if allocation fails.
 func (f *AllocatedObjects) NewStruct() any {
 	return f.add(newStruct(NewAllocator(f.gk, FrameStatic), make(map[string]IObject)))
 }
@@ -130,7 +130,7 @@ func (f *AllocatedObjects) NewArrayIterator() any {
 }
 
 // NewBytesIterator creates a new instance of a BytesIterator with a static frame and an empty byte slice.
-// It acquires the instance if resources are available; otherwise, returns the undefined value.
+// It acquires the instance if resources are available; otherwise, returns the undefined Code.
 func (f *AllocatedObjects) NewBytesIterator() any {
 	return f.add(newBytesIterator(NewAllocator(f.gk, FrameStatic), []byte{}, 0))
 }
@@ -145,7 +145,7 @@ func (f *AllocatedObjects) NewMapIterator() any {
 	return f.add(newMapIterator(NewAllocator(f.gk, FrameStatic), make(map[string]IObject), 0))
 }
 
-// NewStructIterator creates and returns an iterator for a structure if allocation is successful; returns an undefined value otherwise.
+// NewStructIterator creates and returns an iterator for a structure if allocation is successful; returns an undefined Code otherwise.
 func (f *AllocatedObjects) NewStructIterator() any {
 	return f.add(newStructIterator(NewAllocator(f.gk, FrameStatic), make(map[string]IObject), 0))
 }

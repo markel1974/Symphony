@@ -45,9 +45,9 @@ type CIA struct {
 	writes                [RegisterCount]func(uint8)
 	prA                   uint8 // symphony:export prA represents the current state of the port A register for the CIA component.
 	prB                   uint8 // symphony:export prB represents the current state of the port B register for the CIA component.
-	ddrA                  uint8 // symphony:export ddrA represents the Data Direction Register for port A, used to configure input/output direction of each bit.
-	ddrB                  uint8 // symphony:export ddrB represents the Data Direction Register for Port B, used to configure input/output for the CIA port B pins.
-	sdr                   uint8 // symphony:export sdr holds the contents of the Serial Data Register (SDR), used for serial communication operations in the CIA chip.
+	ddrA                  uint8 // symphony:export ddrA represents the Code Direction Register for port A, used to configure input/output direction of each bit.
+	ddrB                  uint8 // symphony:export ddrB represents the Code Direction Register for Port B, used to configure input/output for the CIA port B pins.
+	sdr                   uint8 // symphony:export sdr holds the contents of the Serial Code Register (SDR), used for serial communication operations in the CIA chip.
 	icr                   uint8 // symphony:export icr holds the Interrupt Control Register value, managing interrupt flags and statuses for the CIA component.
 	irqMask               uint8 // symphony:export irqMask defines the interrupt control mask used to enable or disable specific interrupt sources within the CIA.
 	timerAIrqCycle        bool  // symphony:export timerAIrqCycle indicates whether an interrupt request should be triggered in the next cycle for Timer A.
@@ -204,7 +204,7 @@ func (m *CIA) ReadPRB() uint8 {
 	return m.prB
 }
 
-// ReadDDRA reads the value of the Data Direction Register A (DDRA), which determines input/output configuration for port A.
+// ReadDDRA reads the value of the Code Direction Register A (DDRA), which determines input/output configuration for port A.
 func (m *CIA) ReadDDRA() uint8 {
 	return m.ddrA
 }
@@ -260,12 +260,12 @@ func (m *CIA) irqUpdateMask(data uint8) {
 	//Bit 3: 1 = Interrupt release if a complete byte has been received/sent.
 	//Bit 4: 1 = Interrupt release if a positive slope occurs at the FLAG-Pin.
 	//Bit 5..6: unused
-	//Bit 7: Source bit.
+	//Bit 7: source bit.
 	//     0 = set bits 0..4 are clearing the according mask bit.
 	//     1 = set bits 0..4 are setting the according mask bit.
 	//If all 5 bits [0..4] are cleared, there will be no change to the mask.
 	if bits := data & 0x1f; bits != 0 {
-		//Bit 7: Source bit.
+		//Bit 7: source bit.
 		// 1 = set bits 0..4 are setting the according mask bit.
 		// 0 = set bits 0..4 are clearing the according mask bit.
 		if (data & 0x80) != 0 {
@@ -338,7 +338,7 @@ func (m *CIA) WriteDDRB(data uint8) {
 	m.socketSignalDDRB(m.ddrB)
 }
 
-// WriteSDR writes an 8-bit value to the SDR (Serial Data Register) and updates the shift register if serial mode is active.
+// WriteSDR writes an 8-bit value to the SDR (Serial Code Register) and updates the shift register if serial mode is active.
 func (m *CIA) WriteSDR(data uint8) {
 	m.sdr = data
 	if (m.timerA.ReadCR() & crBitSPMode) != 0 {

@@ -70,7 +70,7 @@ func NewCPUReflect(r *CPU, factory references.IComponentFactory, parent referenc
 
 	r.PropertyAdd(reflectAr2Id, "ar2 Address register 2", false, reflector.getAr2, reflector.setAr2)
 
-	r.PropertyAdd(reflectRmwId, "rmw Data buffer for RMW instructions", false, reflector.getRmw, reflector.setRmw)
+	r.PropertyAdd(reflectRmwId, "rmw Code buffer for RMW instructions", false, reflector.getRmw, reflector.setRmw)
 
 	r.PropertyAdd(reflectRdyLowId, "rdyLow current RDY state", false, reflector.getRdyLow, reflector.setRdyLow)
 

@@ -126,7 +126,7 @@ func (w *CIA2Socket) SignalSP( /*level*/ _ bool) {
 // updateVA updates the VIC-memory bank based on the current states of prA and ddrA and triggers a corresponding VA change event.
 func (w *CIA2Socket) updateVA(prA uint8, ddrA uint8) {
 	//Bit 0..1: Select the position of the VIC-memory
-	//Bit 2: RS-232: TXD Output, userPort: Data PA 2 (pin M)
+	//Bit 2: RS-232: TXD Output, userPort: Code PA 2 (pin M)
 	//Bit 3..5: serial bus Output (0=High/Inactive, 1=Low/Active)
 	//Bit 6..7: serial bus Input (0=Low/Active, 1=High/Inactive)
 

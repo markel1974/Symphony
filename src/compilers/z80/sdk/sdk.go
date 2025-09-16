@@ -256,14 +256,14 @@ func (z *Z80Package) pop16(gk objects.IGateKeeper, frame int, args ...objects.IO
 	currentSP := sp.AsInt64()
 
 	// Pop del byte LO
-	loByteObj, err := memory.Index(int(currentSP))
+	loByteObj, err := memory.index(int(currentSP))
 	if err != nil {
 		return 0, nil, err
 	}
 	currentSP++
 
 	// Pop del byte HI
-	hiByteObj, err := memory.Index(int(currentSP))
+	hiByteObj, err := memory.index(int(currentSP))
 	if err != nil {
 		return 0, nil, err
 	}
@@ -289,8 +289,8 @@ func (z *Z80Package) pop16(gk objects.IGateKeeper, frame int, args ...objects.IO
 //   cpu, _ := args[1].(*objects.Array)
 //
 //    // Accesso ultra-veloce tramite indice!
-//    valA_obj, _ := cpu.Index(A_IDX)
-//    valF_obj, _ := cpu.Index(F_IDX)
+//    valA_obj, _ := cpu.index(A_IDX)
+//    valF_obj, _ := cpu.index(F_IDX)
 //
 //    // ... logica ...
 

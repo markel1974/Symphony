@@ -3,7 +3,7 @@ package tests
 import "fmt"
 
 func main() {
-	fmt.Println("--- Running Test: Data Structures (Array, Map, Slice) ---")
+	fmt.Println("--- Running Test: Code Structures (Array, Map, Slice) ---")
 
 	arr := []int{10, 20, 30}
 	val := arr[1]
@@ -19,7 +19,7 @@ func main() {
 	expectedValue := 55
 
 	if finalValue == expectedValue {
-		fmt.Println("[TEST PASSED] Data structures handled correctly.")
+		fmt.Println("[TEST PASSED] Code structures handled correctly.")
 	} else {
 		fmt.Printf("[TEST FAILED] Error in data structure manipulation. %d\n", finalValue)
 	}

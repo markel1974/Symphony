@@ -37,11 +37,11 @@ func NewVIAReflect(r *VIA, factory references.IComponentFactory, parent referenc
 	r.BaseComponent.Register(factory, parent, identifier, instance, r, hardwareId)
 	r.PropertyAdd(reflectPraId, "pra represents the Peripheral Register A (PRA) used to store or output data for port A in the VIA.", false, reflector.getPra, reflector.setPra)
 
-	r.PropertyAdd(reflectDdraId, "ddra represents the Data Direction Register A in the VIA, used to configure the direction of port A pins as input or output.", false, reflector.getDdra, reflector.setDdra)
+	r.PropertyAdd(reflectDdraId, "ddra represents the Code Direction Register A in the VIA, used to configure the direction of port A pins as input or output.", false, reflector.getDdra, reflector.setDdra)
 
 	r.PropertyAdd(reflectPrbId, "prb represents the Peripheral Register B (PRB) used to store or output data for port B in the VIA.", false, reflector.getPrb, reflector.setPrb)
 
-	r.PropertyAdd(reflectDdrbId, "ddrb represents the Data Direction Register B, controlling the input/output configuration of the VIA Port B pins.", false, reflector.getDdrb, reflector.setDdrb)
+	r.PropertyAdd(reflectDdrbId, "ddrb represents the Code Direction Register B, controlling the input/output configuration of the VIA Port B pins.", false, reflector.getDdrb, reflector.setDdrb)
 
 	r.PropertyAdd(reflectAcrId, "acr represents the Auxiliary Control Register used for configuring VIA operating modes and functionalities.", false, reflector.getAcr, reflector.setAcr)
 
@@ -63,8 +63,8 @@ func NewVIAReflect(r *VIA, factory references.IComponentFactory, parent referenc
 	_ = r.CommandAdd("Emulate", "Emulate() - Emulate executes a single emulation cycle for VIA, decrementing timers and handling interrupts based on current settings.  go:nosplit", r.Emulate)
 	_ = r.CommandAdd("ReadPRA", "ReadPRA() uint8 - ReadPRA returns the current value of the Peripheral Register A (PRA) from the VIA.", r.ReadPRA)
 	_ = r.CommandAdd("ReadPCR", "ReadPCR() uint8 - ReadPCR retrieves the current value of the Peripheral Control Register (PCR) from the VIA.", r.ReadPCR)
-	_ = r.CommandAdd("ReadDDRA", "ReadDDRA() uint8 - ReadDDRA returns the current value of the Data Direction Register A (DDRA) of the VIA.", r.ReadDDRA)
-	_ = r.CommandAdd("ReadDDRB", "ReadDDRB() uint8 - ReadDDRB returns the current value of the Data Direction Register A (DDRB) of the VIA.", r.ReadDDRB)
+	_ = r.CommandAdd("ReadDDRA", "ReadDDRA() uint8 - ReadDDRA returns the current value of the Code Direction Register A (DDRA) of the VIA.", r.ReadDDRA)
+	_ = r.CommandAdd("ReadDDRB", "ReadDDRB() uint8 - ReadDDRB returns the current value of the Code Direction Register A (DDRB) of the VIA.", r.ReadDDRB)
 	_ = r.CommandAdd("ReadPRB", "ReadPRB() uint8 - ReadPRB returns the current value of the Peripheral Register B (PRB) from the VIA.", r.ReadPRB)
 	_ = r.CommandAdd("ReadACR", "ReadACR() uint8 - ReadACR returns the current value of the Auxiliary Control Register (ACR) from the VIA.", r.ReadACR)
 	_ = r.CommandAdd("ReadByte", "ReadByte(addr) uint8 - ReadByte reads a byte from the specified VIA register address and returns the corresponding value based on its state.", r.ReadByte)

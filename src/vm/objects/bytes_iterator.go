@@ -1,6 +1,9 @@
 package objects
 
-import "encoding/gob"
+import (
+	"bytes"
+	"encoding/gob"
+)
 
 const (
 	BytesIteratorType  = "bytes_iterator"
@@ -14,7 +17,7 @@ func init() {
 // BytesIterator is an iterator for traversing elements of a byte slice, implementing the IIterator interface.
 type BytesIterator struct {
 	IAllocator
-	values []byte
+	data   []byte
 	index  int
 	length int
 }
@@ -23,7 +26,7 @@ type BytesIterator struct {
 func newBytesIterator(allocator IAllocator, v []byte, index int) IIterator {
 	return &BytesIterator{
 		IAllocator: allocator,
-		values:     v,
+		data:       v,
 		length:     len(v),
 		index:      index,
 	}
@@ -39,12 +42,12 @@ func (o *BytesIterator) AsBool() bool {
 	return o.length > 0
 }
 
-// AsInt64 returns the length of the array as an int64 value.
+// AsInt64 returns the length of the array as an int64 data.
 func (o *BytesIterator) AsInt64() int64 {
 	return int64(o.length)
 }
 
-// AsFloat64 returns the length of the array as an int64 value.
+// AsFloat64 returns the length of the array as an int64 data.
 func (o *BytesIterator) AsFloat64() float64 {
 	return float64(o.length)
 }
@@ -82,12 +85,12 @@ func (o *BytesIterator) Falsy() bool {
 	return false
 }
 
-// IndexGet attempts to retrieve a value at the given index and returns an error if the object is not indexable.
+// IndexGet attempts to retrieve a data at the given index and returns an error if the object is not indexable.
 func (o *BytesIterator) IndexGet(_ int, _ IObject) (IObject, error) {
 	return o.GateKeeper().UndefinedValue(), ErrIndexNotIndexable
 }
 
-// IndexSet attempts to assign a value to an index in the object but always returns ErrIndexUnsupported,
+// IndexSet attempts to assign a data to an index in the object but always returns ErrIndexUnsupported,
 // as this operation is unsupported.
 func (o *BytesIterator) IndexSet(_, _ IObject) error {
 	return ErrIndexUnsupported
@@ -125,7 +128,7 @@ func (o *BytesIterator) Equals(IObject) bool {
 
 // Copy creates and returns a new instance of BytesIterator with the same state as the current instance.
 func (o *BytesIterator) Copy(frame int, _ int) IObject {
-	ret := o.GateKeeper().NewBytesIterator(frame, o.values, o.index)
+	ret := o.GateKeeper().NewBytesIterator(frame, o.data, o.index)
 	return ret
 }
 
@@ -144,16 +147,48 @@ func (o *BytesIterator) Key(frame int) IObject {
 	return o.GateKeeper().NewInt(frame, int64(idx))
 }
 
-// Value returns the values of the current byte in the iteration as an IObject, wrapped in an Int struct.
+// Value returns the data of the current byte in the iteration as an IObject, wrapped in an Int struct.
 func (o *BytesIterator) Value(frame int) IObject {
 	idx := o.index - 1
 	if idx < 0 || idx >= o.length {
 		return o.GateKeeper().UndefinedValue()
 	}
-	return o.GateKeeper().NewInt(frame, int64(o.values[idx]))
+	return o.GateKeeper().NewInt(frame, int64(o.data[idx]))
 }
 
 // Count returns the total number of elements in the instance and its sub-elements.
 func (o *BytesIterator) Count() int {
 	return 1
+}
+
+// GobEncode serializes the ArrayIterator's data into a byte slice using gob encoding and returns the result or an error.
+func (o *BytesIterator) GobEncode() ([]byte, error) {
+	var buf bytes.Buffer
+	encoder := gob.NewEncoder(&buf)
+	if err := encoder.Encode(o.data); err != nil {
+		return nil, err
+	}
+	if err := encoder.Encode(o.index); err != nil {
+		return nil, err
+	}
+	if err := encoder.Encode(o.length); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+// GobDecode decodes the provided byte slice into the ArrayIterator's data field using the gob package.
+func (o *BytesIterator) GobDecode(data []byte) error {
+	buf := bytes.NewBuffer(data)
+	decoder := gob.NewDecoder(buf)
+	if err := decoder.Decode(&o.data); err != nil {
+		return err
+	}
+	if err := decoder.Decode(&o.index); err != nil {
+		return err
+	}
+	if err := decoder.Decode(&o.length); err != nil {
+		return err
+	}
+	return nil
 }

@@ -1,6 +1,7 @@
 package objects
 
 import (
+	"bytes"
 	"encoding/gob"
 	"fmt"
 	"strings"
@@ -10,14 +11,14 @@ func init() {
 	gob.Register(&Struct{})
 }
 
-// Struct is a composite object that implements the IObject interface and stores a collection of key-value pairs.
+// Struct is a composite object that implements the IObject interface and stores a collection of key-Code pairs.
 type Struct struct {
 	IAllocator
-	typeName string
-	values   map[string]IObject
+	name string
+	data map[string]IObject
 }
 
-// NewStruct creates a new instance of MapImmutable with the provided map of string keys and IObject values.
+// NewStruct creates a new instance of MapImmutable with the provided map of string keys and IObject Code.
 func newStruct(allocator IAllocator, value map[string]IObject) IObject {
 	if len(value) > maxStructLen {
 		nv := make(map[string]IObject)
@@ -31,8 +32,8 @@ func newStruct(allocator IAllocator, value map[string]IObject) IObject {
 	}
 	return &Struct{
 		IAllocator: allocator,
-		typeName:   "",
-		values:     value,
+		name:       "",
+		data:       value,
 	}
 }
 
@@ -41,25 +42,25 @@ func (o *Struct) setAllocator(allocator IAllocator) {
 	o.IAllocator = allocator
 }
 
-// AsBool converts the Struct to a boolean, returning true if the Struct contains at least one key-value pair; otherwise false.
+// AsBool converts the Struct to a boolean, returning true if the Struct contains at least one key-Code pair; otherwise false.
 func (o *Struct) AsBool() bool {
-	return len(o.values) > 0
+	return len(o.data) > 0
 }
 
-// AsInt64 returns the length of the array as an int64 value.
+// AsInt64 returns the len of the array as an int64 Code.
 func (o *Struct) AsInt64() int64 {
-	return int64(len(o.values))
+	return int64(len(o.data))
 }
 
-// AsFloat64 returns the length of the array as an int64 value.
+// AsFloat64 returns the len of the array as an int64 Code.
 func (o *Struct) AsFloat64() float64 {
-	return float64(len(o.values))
+	return float64(len(o.data))
 }
 
-// AsString returns a string representation of the Struct object, formatting its key-value pairs into a map-like structure.
+// AsString returns a string representation of the Struct object, formatting its key-Code pairs into a map-like structure.
 func (o *Struct) AsString() string {
 	var pairs []string
-	for k, v := range o.values {
+	for k, v := range o.data {
 		pairs = append(pairs, fmt.Sprintf("%s: %s", k, v.AsString()))
 	}
 	return fmt.Sprintf("{%s}", strings.Join(pairs, ", "))
@@ -69,10 +70,10 @@ func (o *Struct) AsString() string {
 func (o *Struct) AssignValue(v IObject) error {
 	switch v := v.(type) {
 	case *Struct:
-		o.values = v.values
+		o.data = v.data
 		return nil
 	case *Map:
-		o.values = v.values
+		o.data = v.data
 	default:
 		return ErrNotAssignable
 	}
@@ -102,88 +103,88 @@ func (o *Struct) Call(_ int, _ ...IObject) (retCount uint, ret IObject, err erro
 	return 0, nil, nil
 }
 
-// Values returns the underlying map of string keys to IObject values contained within the Struct.
+// Values returns the underlying map of string keys to IObject Code contained within the Struct.
 func (o *Struct) Values() map[string]IObject {
-	return o.values
+	return o.data
 }
 
-// Length returns the number of key-value pairs stored in the Struct.
+// Length returns the number of key-Code pairs stored in the Struct.
 func (o *Struct) Length() int {
-	return len(o.values)
+	return len(o.data)
 }
 
-// SetValue sets the specified key to the given value in the values map of the Struct.
+// SetValue sets the specified key to the given Code in the Code map of the Struct.
 func (o *Struct) SetValue(k string, v IObject) {
-	if len(o.values) > maxStructLen {
+	if len(o.data) > maxStructLen {
 		return
 	}
-	o.values[k] = v
+	o.data[k] = v
 }
 
-// GetValue retrieves the value associated with the given key in the values map and a boolean indicating its presence.
+// GetValue retrieves the Code associated with the given key in the Code map and a boolean indicating its presence.
 func (o *Struct) GetValue(k string) (IObject, bool) {
-	v, ok := o.values[k]
+	v, ok := o.data[k]
 	return v, ok
 }
 
 // TypeName returns the type name of the object as a string.
 func (o *Struct) TypeName() string {
-	return o.typeName
+	return o.name
 }
 
 // Copy creates and returns a new IObject by duplicating the internal state of the Struct instance.
 func (o *Struct) Copy(frame int, depth int) IObject {
 	c := make(map[string]IObject)
-	for k, v := range o.values {
+	for k, v := range o.data {
 		if depth >= maxDepth {
 			break
 		}
 		c[k] = v.Copy(frame, depth+1)
 	}
-	return o.GateKeeper().NewStruct(frame, o.typeName, c)
+	return o.GateKeeper().NewStruct(frame, o.name, c)
 }
 
-// Falsy returns true if the Struct contains no values, otherwise false.
+// Falsy returns true if the Struct contains no Code, otherwise false.
 func (o *Struct) Falsy() bool {
-	return len(o.values) == 0
+	return len(o.data) == 0
 }
 
-// IndexGet retrieves the value associated with the given index within the Struct. Returns an error for invalid index types.
+// IndexGet retrieves the Code associated with the given index within the Struct. Returns an error for invalid index types.
 func (o *Struct) IndexGet(_ int, index IObject) (IObject, error) {
 	strIdx, ok := o.GateKeeper().ToString(index)
 	if !ok {
 		return nil, ErrIndexInvalidType
 	}
-	res, ok := o.values[strIdx]
+	res, ok := o.data[strIdx]
 	if !ok {
 		res = o.GateKeeper().UndefinedValue()
 	}
 	return res, nil
 }
 
-// IndexSet updates or assigns a value to the specified index within the Struct. Returns an error for invalid index types.
+// IndexSet updates or assigns a Code to the specified index within the Struct. Returns an error for invalid index types.
 func (o *Struct) IndexSet(index, value IObject) error {
 	strIdx, ok := o.GateKeeper().ToString(index)
 	if !ok {
 		return ErrIndexInvalidType
 	}
-	o.values[strIdx] = value
+	o.data[strIdx] = value
 	return nil
 }
 
-// Equals checks if the current Struct is equal to another IObject by comparing their key-value pairs and lengths.
+// Equals checks if the current Struct is equal to another IObject by comparing their key-Code pairs and lengths.
 func (o *Struct) Equals(in IObject) bool {
 	var xVal map[string]IObject
 	switch x := in.(type) {
 	case *Struct:
-		xVal = x.values
+		xVal = x.data
 	default:
 		return false
 	}
-	if len(o.values) != len(xVal) {
+	if len(o.data) != len(xVal) {
 		return false
 	}
-	for k, v := range o.values {
+	for k, v := range o.data {
 		tv := xVal[k]
 		if !v.Equals(tv) {
 			return false
@@ -192,9 +193,9 @@ func (o *Struct) Equals(in IObject) bool {
 	return true
 }
 
-// Iterate returns an IIterator for traversing the key-value pairs in the Struct's internal map.
+// Iterate returns an IIterator for traversing the key-Code pairs in the Struct's internal map.
 func (o *Struct) Iterate(frame int) IIterator {
-	return o.GateKeeper().NewStructIterator(frame, o.values, 0)
+	return o.GateKeeper().NewStructIterator(frame, o.data, 0)
 }
 
 // Iterable checks if the object can be iterated over. Always returns true for this implementation.
@@ -205,8 +206,34 @@ func (o *Struct) Iterable() bool {
 // Count returns the total number of elements in the instance and its sub-elements.
 func (o *Struct) Count() int {
 	counter := 0
-	for _, v := range o.values {
+	for _, v := range o.data {
 		counter += v.Count()
 	}
 	return counter
+}
+
+// GobEncode serializes the Struct's data into a byte slice using gob encoding and returns the result or an error.
+func (o *Struct) GobEncode() ([]byte, error) {
+	var buf bytes.Buffer
+	encoder := gob.NewEncoder(&buf)
+	if err := encoder.Encode(o.name); err != nil {
+		return nil, err
+	}
+	if err := encoder.Encode(o.data); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+// GobDecode decodes the provided byte slice into the Struct's data field using the gob package.
+func (o *Struct) GobDecode(data []byte) error {
+	buf := bytes.NewBuffer(data)
+	decoder := gob.NewDecoder(buf)
+	if err := decoder.Decode(&o.name); err != nil {
+		return err
+	}
+	if err := decoder.Decode(&o.data); err != nil {
+		return err
+	}
+	return nil
 }

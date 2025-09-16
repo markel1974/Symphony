@@ -82,7 +82,7 @@ func (op *OpCreateClosure) Execute(decoder *core.Decoder) {
 		}
 	}
 	op.vm.StackDecrementCount(uint(freeIndices.Length()))
-	cl := op.vm.Factory().NewFunc(op.vm.FrameId(), fn.Name(), fn.Instructions().Data(), fn.NumLocals(), fn.NumParameters(), fn.VarArgs(), nil, free)
+	cl := op.vm.Factory().NewFunc(op.vm.FrameId(), fn.Name(), fn.Instructions().Code(), fn.NumLocals(), fn.NumParameters(), fn.VarArgs(), nil, free)
 	op.vm.StackPush(cl)
 }
 

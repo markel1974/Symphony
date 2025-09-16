@@ -1,6 +1,9 @@
 package objects
 
-import "encoding/gob"
+import (
+	"bytes"
+	"encoding/gob"
+)
 
 const (
 	StringIteratorType  = "string_iterator"
@@ -14,7 +17,7 @@ func init() {
 // StringIterator represents an iterator for traversing over the characters of a string, implemented as runes.
 type StringIterator struct {
 	IAllocator
-	values []rune
+	data   []rune
 	index  int
 	length int
 }
@@ -23,7 +26,7 @@ type StringIterator struct {
 func newStringIterator(allocator IAllocator, v []rune, index int) IIterator {
 	return &StringIterator{
 		IAllocator: allocator,
-		values:     v,
+		data:       v,
 		length:     len(v),
 		index:      index,
 	}
@@ -39,12 +42,12 @@ func (o *StringIterator) AsBool() bool {
 	return o.length > 0
 }
 
-// AsInt64 returns the length of the array as an int64 value.
+// AsInt64 returns the length of the array as an int64 Code.
 func (o *StringIterator) AsInt64() int64 {
 	return int64(o.length)
 }
 
-// AsFloat64 returns the length of the array as an int64 value.
+// AsFloat64 returns the length of the array as an int64 Code.
 func (o *StringIterator) AsFloat64() float64 {
 	return float64(o.length)
 }
@@ -77,12 +80,12 @@ func (o *StringIterator) ArithmeticOp(_ int, _ ArithmeticOperator, _ IObject) (I
 	return nil, ErrInvalidOperator
 }
 
-// IndexGet attempts to retrieve a value at the given index and returns an error if the object is not indexable.
+// IndexGet attempts to retrieve a Code at the given index and returns an error if the object is not indexable.
 func (o *StringIterator) IndexGet(_ int, _ IObject) (IObject, error) {
 	return o.GateKeeper().UndefinedValue(), ErrIndexNotIndexable
 }
 
-// IndexSet attempts to assign a value to an index in the object but always returns ErrIndexUnsupported,
+// IndexSet attempts to assign a Code to an index in the object but always returns ErrIndexUnsupported,
 // as this operation is unsupported.
 func (o *StringIterator) IndexSet(_, _ IObject) error {
 	return ErrIndexUnsupported
@@ -110,7 +113,7 @@ func (o *StringIterator) Length() int {
 
 // Copy creates and returns a new instance of StringIterator with the same state as the current one.
 func (o *StringIterator) Copy(frame int, _ int) IObject {
-	ret := o.GateKeeper().NewStringIterator(frame, o.values, o.index)
+	ret := o.GateKeeper().NewStringIterator(frame, o.data, o.index)
 	return ret
 }
 
@@ -150,10 +153,42 @@ func (o *StringIterator) Value(frame int) IObject {
 	if idx < 0 || idx >= o.length {
 		return o.GateKeeper().UndefinedValue()
 	}
-	return o.GateKeeper().NewChar(frame, o.values[idx])
+	return o.GateKeeper().NewChar(frame, o.data[idx])
 }
 
 // Count returns the total number of elements in the instance and its sub-elements.
 func (o *StringIterator) Count() int {
 	return 1
+}
+
+// GobEncode serializes the ArrayIterator's data into a byte slice using gob encoding and returns the result or an error.
+func (o *StringIterator) GobEncode() ([]byte, error) {
+	var buf bytes.Buffer
+	encoder := gob.NewEncoder(&buf)
+	if err := encoder.Encode(o.data); err != nil {
+		return nil, err
+	}
+	if err := encoder.Encode(o.index); err != nil {
+		return nil, err
+	}
+	if err := encoder.Encode(o.length); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+// GobDecode decodes the provided byte slice into the StringIterator's data field using the gob package.
+func (o *StringIterator) GobDecode(data []byte) error {
+	buf := bytes.NewBuffer(data)
+	decoder := gob.NewDecoder(buf)
+	if err := decoder.Decode(&o.data); err != nil {
+		return err
+	}
+	if err := decoder.Decode(&o.index); err != nil {
+		return err
+	}
+	if err := decoder.Decode(&o.length); err != nil {
+		return err
+	}
+	return nil
 }

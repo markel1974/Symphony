@@ -52,8 +52,8 @@ func NewTrack(trackIdx uint8, sectors uint8, overlap bool) *Track {
 	return t
 }
 
-// Index returns the index of the track as a uint8.
-func (t *Track) Index() uint8 {
+// index returns the index of the track as a uint8.
+func (t *Track) index() uint8 {
 	return t.trackIdx
 }
 
@@ -99,13 +99,13 @@ func (t *Track) Cursor() uint32 {
 func (t *Track) Enter(cursor uint32) {
 	t.cursor = cursor % uint32(len(t.data))
 	t.writeCount = 0
-	//fmt.Println("ENTERING TRACK", t.Index(), len(t.data))
+	//fmt.Println("ENTERING TRACK", t.index(), len(t.data))
 }
 
 // Leave resets the write count of the track to zero, indicating no pending writes on the track.
 func (t *Track) Leave() {
 	//if t.writeCount > 0 {
-	//	fmt.Println("LEAVING TRACK", t.Index(), len(t.data), t.writeCount)
+	//	fmt.Println("LEAVING TRACK", t.index(), len(t.data), t.writeCount)
 	//}
 	t.writeCount = 0
 }
@@ -136,10 +136,10 @@ func (t *Track) Next() uint8 {
 func (t *Track) Write(data uint8) {
 	t.data[t.cursor] = data
 	t.writeCount++
-	//if t.Index() == 18 {
+	//if t.index() == 18 {
 	//	fmt.Printf("Write %d -> %02x\n", t.Cursor(), data)
 	//}
 	//TODO
-	//fmt.Printf("%d - %d Write %02x\n", t.Index(), t.Cursor(), data)
+	//fmt.Printf("%d - %d Write %02x\n", t.index(), t.Cursor(), data)
 }
 */

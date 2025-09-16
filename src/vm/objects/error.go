@@ -1,6 +1,7 @@
 package objects
 
 import (
+	"bytes"
 	"encoding/gob"
 	"fmt"
 )
@@ -20,19 +21,17 @@ func init() {
 // Error represents an object that encapsulates an error and implements the IObject interface.
 type Error struct {
 	IAllocator
-	err   string
-	value IObject
+	data IObject
 }
 
-// NewError creates and returns a new Error object with the specified values.
+// NewError creates and returns a new Error object with the specified Code.
 func newError(allocator IAllocator, err string) IObject {
 	if len(err) > maxErrorLen {
 		err = err[:maxErrorLen]
 	}
 	return &Error{
 		IAllocator: allocator,
-		value:      allocator.GateKeeper().NewString(allocator.Frame(), err),
-		err:        err,
+		data:       allocator.GateKeeper().NewString(allocator.Frame(), err),
 	}
 }
 
@@ -46,20 +45,20 @@ func (o *Error) AsBool() bool {
 	return false
 }
 
-// AsInt64 returns the length of the array as an int64 value.
+// AsInt64 returns the len of the array as an int64 data.
 func (o *Error) AsInt64() int64 {
 	return 0
 }
 
-// AsFloat64 returns the length of the array as an int64 value.
+// AsFloat64 returns the len of the array as an int64 data.
 func (o *Error) AsFloat64() float64 {
 	return 0
 }
 
-// AsString returns the string representation of the Error object. If the values is nil, it returns "error".
+// AsString returns the string representation of the Error object. If the data is nil, it returns "error".
 func (o *Error) AsString() string {
-	if o.value != nil {
-		return o.value.AsString()
+	if o.data != nil {
+		return o.data.AsString()
 	}
 	return ErrorType
 }
@@ -85,12 +84,12 @@ func (o *Error) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, er
 	}
 	switch op {
 	case OperatorLogicalEq:
-		if o.value == rhs.value {
+		if o.data == rhs.data {
 			return o.GateKeeper().TrueValue(), nil
 		}
 		return o.GateKeeper().FalseValue(), nil
 	case OperatorLogicalNotEq:
-		if o.value != rhs.value {
+		if o.data != rhs.data {
 			return o.GateKeeper().TrueValue(), nil
 		}
 		return o.GateKeeper().FalseValue(), nil
@@ -104,7 +103,7 @@ func (o *Error) ArithmeticOp(_ int, _ ArithmeticOperator, _ IObject) (IObject, e
 	return nil, ErrInvalidOperator
 }
 
-// IndexSet attempts to assign a value to an index in the object but always returns ErrIndexUnsupported,
+// IndexSet attempts to assign a data to an index in the object but always returns ErrIndexUnsupported,
 // as this operation is unsupported.
 func (o *Error) IndexSet(_, _ IObject) (err error) {
 	return ErrIndexUnsupported
@@ -127,19 +126,19 @@ func (o *Error) Call(_ int, params ...IObject) (retCount uint, ret IObject, err 
 	}
 	switch params[0].AsString() {
 	case "Error":
-		return 1, o.value, nil
+		return 1, o.data, nil
 	}
 	return 0, o.GateKeeper().UndefinedValue(), fmt.Errorf("invalid param: %s", params[0].AsString())
 }
 
-// Length returns the length of the Int object.
+// Length returns the len of the Int object.
 func (o *Error) Length() int {
 	return 0
 }
 
-// Value returns the underlying IObject value of the Error object.
+// Value returns the underlying IObject data of the Error object.
 func (o *Error) Value() IObject {
-	return o.value
+	return o.data
 }
 
 // TypeName returns the name of the type as a string, which is "error".
@@ -152,9 +151,9 @@ func (o *Error) Falsy() bool {
 	return true // error is always false.
 }
 
-// Copy creates and returns a new instance of the Error object with the same underlying values.
+// Copy creates and returns a new instance of the Error object with the same underlying data.
 func (o *Error) Copy(frame int, _ int) IObject {
-	return o.GateKeeper().NewError(frame, o.err)
+	return o.GateKeeper().NewError(frame, o.data.AsString())
 }
 
 // Equals checks if the current Error object is equal to another object using pointer equality.
@@ -162,15 +161,35 @@ func (o *Error) Equals(x IObject) bool {
 	return o == x // pointer equality
 }
 
-// IndexGet retrieves the values associated with the "values" index in an Error object or returns an error for invalid indices.
+// IndexGet retrieves the data associated with the "Code" index in an Error object or returns an error for invalid indices.
 func (o *Error) IndexGet(_ int, index IObject) (IObject, error) {
-	if strIdx, _ := o.GateKeeper().ToString(index); strIdx != "values" {
+	if strIdx, _ := o.GateKeeper().ToString(index); strIdx != "Code" {
 		return nil, ErrIndexInvalidValueType
 	}
-	return o.value, nil
+	return o.data, nil
 }
 
 // Count returns the total number of elements in the instance and its sub-elements.
 func (o *Error) Count() int {
-	return o.value.Count()
+	return o.data.Count()
+}
+
+// GobEncode serializes the Error's data into a byte slice using gob encoding and returns the result or an error.
+func (o *Error) GobEncode() ([]byte, error) {
+	var buf bytes.Buffer
+	encoder := gob.NewEncoder(&buf)
+	if err := encoder.Encode(o.data); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+// GobDecode decodes the provided byte slice into the Error's data field using the gob package.
+func (o *Error) GobDecode(data []byte) error {
+	buf := bytes.NewBuffer(data)
+	decoder := gob.NewDecoder(buf)
+	if err := decoder.Decode(&o.data); err != nil {
+		return err
+	}
+	return nil
 }

@@ -10,7 +10,7 @@ const (
 )
 
 // GateKeeper is a type responsible for creating and managing IObject instances, including primitive and complex types.
-// It provides pre-instantiated objects for `true`, `false`, and `undefined` values for efficient reuse.
+// It provides pre-instantiated objects for `true`, `false`, and `undefined` Code for efficient reuse.
 // The GateKeeper may also include object pooling for specific types to optimize memory usage and performance.
 type GateKeeper struct {
 	IGateAllocator
@@ -22,7 +22,7 @@ const (
 	FrameStatic = -1
 )
 
-// NewGateKeeper initializes a new GateKeeper instance and sets up default bool and undefined values.
+// NewGateKeeper initializes a new GateKeeper instance and sets up default bool and undefined Code.
 func NewGateKeeper() IGateKeeper {
 	f := &GateKeeper{}
 	f.IGateAllocator = NewGateAllocator(f)

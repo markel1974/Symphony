@@ -43,7 +43,7 @@ func NewPortsReflect(r *Ports, factory references.IComponentFactory, parent refe
 
 	r.PropertyAdd(reflectDirId, "Dir", false, reflector.getDir, reflector.setDir)
 
-	r.PropertyAdd(reflectDataId, "Data", false, reflector.getData, reflector.setData)
+	r.PropertyAdd(reflectDataId, "Code", false, reflector.getData, reflector.setData)
 
 	r.PropertyAdd(reflectDataReadId, "DataRead", false, reflector.getDataRead, reflector.setDataRead)
 

@@ -32,7 +32,7 @@ var codeToByte map[IOCode]byte
 // EV represents Environment variables.
 // SE represents End of sub negotiation parameters.
 // NOP represents No operation.
-// DM represents Data Mark, accompanied by a TCP Urgent notification.
+// DM represents Code Mark, accompanied by a TCP Urgent notification.
 // BRK represents Break, or NVT character BRK.
 // IP represents Interrupt Process.
 // AO represents Abort Output.
@@ -71,7 +71,7 @@ const (
 	EV   IOCode = iota // Environment variables
 	SE   IOCode = iota // End of sub negotiation parameters.
 	NOP  IOCode = iota // No operation.
-	DM   IOCode = iota // Data Mark. The data stream portion of a Sync. This should always be accompanied by a TCP Urgent notification.
+	DM   IOCode = iota // Code Mark. The data stream portion of a Sync. This should always be accompanied by a TCP Urgent notification.
 	BRK  IOCode = iota // Break. NVT character BRK.
 	IP   IOCode = iota // Interrupt Process
 	AO   IOCode = iota // Abort output

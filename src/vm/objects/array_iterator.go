@@ -1,6 +1,9 @@
 package objects
 
-import "encoding/gob"
+import (
+	"bytes"
+	"encoding/gob"
+)
 
 const (
 	ArrayIteratorType  = "array_iterator"
@@ -15,7 +18,7 @@ func init() {
 // It implements the IIterator interface to provide sequential access to array elements.
 type ArrayIterator struct {
 	IAllocator
-	values []IObject
+	data   []IObject
 	index  int
 	length int
 }
@@ -24,7 +27,7 @@ type ArrayIterator struct {
 func newArrayIterator(allocator IAllocator, v []IObject, index int) IIterator {
 	return &ArrayIterator{
 		IAllocator: allocator,
-		values:     v,
+		data:       v,
 		length:     len(v),
 		index:      index,
 	}
@@ -40,12 +43,12 @@ func (o *ArrayIterator) AsBool() bool {
 	return o.length > 0
 }
 
-// AsInt64 returns the length of the array as an int64 value.
+// AsInt64 returns the len of the array as an int64 data.
 func (o *ArrayIterator) AsInt64() int64 {
 	return int64(o.length)
 }
 
-// AsFloat64 returns the length of the array as an int64 value.
+// AsFloat64 returns the len of the array as an int64 data.
 func (o *ArrayIterator) AsFloat64() float64 {
 	return float64(o.length)
 }
@@ -88,7 +91,7 @@ func (o *ArrayIterator) IndexGet(_ int, _ IObject) (IObject, error) {
 	return o.GateKeeper().UndefinedValue(), ErrIndexNotIndexable
 }
 
-// IndexSet attempts to assign a value to an index in the object but always returns ErrIndexUnsupported,
+// IndexSet attempts to assign a data to an index in the object but always returns ErrIndexUnsupported,
 // as this operation is unsupported.
 func (o *ArrayIterator) IndexSet(_, _ IObject) (err error) {
 	return ErrIndexUnsupported
@@ -104,7 +107,7 @@ func (o *ArrayIterator) Iterable() bool {
 	return false
 }
 
-// Length returns the length of the Int object.
+// Length returns the len of the Int object.
 func (o *ArrayIterator) Length() int {
 	return 0
 }
@@ -114,19 +117,19 @@ func (o *ArrayIterator) TypeName() string {
 	return ArrayIteratorType
 }
 
-// Falsy determines whether the ArrayIterator should be considered a falsy value. Always returns true.
+// Falsy determines whether the ArrayIterator should be considered a falsy data. Always returns true.
 func (o *ArrayIterator) Falsy() bool {
 	return true
 }
 
-// Equals checks whether the given IObject is equal to the current ArrayIterator instance by values comparison.
+// Equals checks whether the given IObject is equal to the current ArrayIterator instance by data comparison.
 func (o *ArrayIterator) Equals(IObject) bool {
 	return false
 }
 
 // Copy creates and returns a duplicate of the ArrayIterator, preserving its current state.
 func (o *ArrayIterator) Copy(frame int, _ int) IObject {
-	ret := o.GateKeeper().NewArrayIterator(frame, o.values, o.index)
+	ret := o.GateKeeper().NewArrayIterator(frame, o.data, o.index)
 	return ret
 }
 
@@ -151,14 +154,46 @@ func (o *ArrayIterator) Value(_ int) IObject {
 	if idx < 0 || idx >= int64(o.length) {
 		return o.GateKeeper().UndefinedValue()
 	}
-	return o.values[idx]
+	return o.data[idx]
 }
 
 // Count returns the total number of elements in the instance and its sub-elements.
 func (o *ArrayIterator) Count() int {
 	counter := 0
-	for _, v := range o.values {
+	for _, v := range o.data {
 		counter += v.Count()
 	}
 	return counter
+}
+
+// GobEncode serializes the ArrayIterator's data into a byte slice using gob encoding and returns the result or an error.
+func (o *ArrayIterator) GobEncode() ([]byte, error) {
+	var buf bytes.Buffer
+	encoder := gob.NewEncoder(&buf)
+	if err := encoder.Encode(o.data); err != nil {
+		return nil, err
+	}
+	if err := encoder.Encode(o.index); err != nil {
+		return nil, err
+	}
+	if err := encoder.Encode(o.length); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+// GobDecode decodes the provided byte slice into the ArrayIterator's data field using the gob package.
+func (o *ArrayIterator) GobDecode(data []byte) error {
+	buf := bytes.NewBuffer(data)
+	decoder := gob.NewDecoder(buf)
+	if err := decoder.Decode(&o.data); err != nil {
+		return err
+	}
+	if err := decoder.Decode(&o.index); err != nil {
+		return err
+	}
+	if err := decoder.Decode(&o.length); err != nil {
+		return err
+	}
+	return nil
 }

@@ -19,9 +19,9 @@ type IAllocator interface {
 // TypeName provides the name of the object's type as a string.
 // AsBool converts and returns the object as a boolean.
 // AsInt64 converts and returns the object as a 64-bit integer.
-// AsFloat64 converts and returns the object as a 64-bit floating-point value.
+// AsFloat64 converts and returns the object as a 64-bit floating-point Code.
 // AsString converts and returns the object as a string.
-// AssignValue assigns the value of another IObject to the implementing object instance.
+// AssignValue assigns the Code of another IObject to the implementing object instance.
 // Nil checks if the object is nil or uninitialized.
 // LogicalOp performs a logical operation with another IObject and returns the result.
 // ArithmeticOp performs an arithmetic operation with another IObject and returns the result.
@@ -29,11 +29,11 @@ type IAllocator interface {
 // Equals determines whether another IObject is equal to the current instance.
 // Copy creates a deep copy of the object, with specified frame and depth.
 // IndexGet retrieves an element from the object using another IObject as an index.
-// IndexSet assigns a value to an index on the object using another IObject as the key.
+// IndexSet assigns a Code to an index on the object using another IObject as the key.
 // Iterate provides an iterator over the object if it supports iteration.
 // Iterable checks whether the object can be iterated.
 // Call invokes the object as a callable with the provided arguments.
-// Length retrieves the length of the object, if applicable (e.g., arrays, strings).
+// Length retrieves the len of the object, if applicable (e.g., arrays, strings).
 type IObject interface {
 	IAllocator
 	setAllocator(allocator IAllocator)

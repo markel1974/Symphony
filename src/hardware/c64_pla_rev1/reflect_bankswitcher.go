@@ -27,7 +27,7 @@ func NewBankSwitcherReflect(r *BankSwitcher, factory references.IComponentFactor
 	r.BaseComponent.Register(factory, parent, identifier, instance, r, hardwareId)
 	r.PropertyAdd(reflectMaskId, "Mask", false, reflector.getMask, reflector.setMask)
 
-	r.PropertyAdd(reflectIndexId, "Index", false, reflector.getIndex, reflector.setIndex)
+	r.PropertyAdd(reflectIndexId, "index", false, reflector.getIndex, reflector.setIndex)
 
 	_ = r.CommandAdd("Reset", "Reset() - Reset restores the BankSwitcher instance to its initial state, clearing any previous configurations or settings.", r.Reset)
 	_ = r.CommandAdd("Emulate", "Emulate() - Emulate performs the emulation logic associated with the BankSwitcher component during a processing cycle.", r.Emulate)

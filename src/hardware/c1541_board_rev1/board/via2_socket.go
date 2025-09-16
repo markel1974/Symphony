@@ -196,13 +196,13 @@ func (v *VIA2Socket) SignalPRB(prb uint8) {
 	//fmt.Println("TODO - PHOTOCELL", photocell)
 	//}
 	//bit [5-6]:
-	//Data density; %00 = Lowest; %11 = Highest.
+	//Code density; %00 = Lowest; %11 = Highest.
 	//if (m & densityControl) != 0 {
 	//density := (prb & densityControl) >> 5
 	//fmt.Printf("TODO - DENSITY %2b\n", density)
 	//}
 	//Bit [7]
-	//0 = SYNC marks are being currently read from disk; 1 = Data bytes are being read.
+	//0 = SYNC marks are being currently read from disk; 1 = Code bytes are being read.
 	//if (m & dataArrivedControl) != 0 {
 	//sync := (prb & syncControl) != 0
 	//fmt.Println("TODO - DATA ARRIVED", !sync)
@@ -212,12 +212,12 @@ func (v *VIA2Socket) SignalPRB(prb uint8) {
 	//}
 }
 
-// SignalDDRA updates the Data Direction Register A (DDRA) with specified values, affecting the VIA port configuration.
+// SignalDDRA updates the Code Direction Register A (DDRA) with specified values, affecting the VIA port configuration.
 func (v *VIA2Socket) SignalDDRA(_ uint8) {
 
 }
 
-// SignalDDRB writes data to the Data Direction Register B (DDRB) of the VIA2Socket, configuring the I/O port direction.
+// SignalDDRB writes data to the Code Direction Register B (DDRB) of the VIA2Socket, configuring the I/O port direction.
 func (v *VIA2Socket) SignalDDRB(_ uint8) {
 
 }

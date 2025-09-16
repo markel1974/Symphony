@@ -38,7 +38,7 @@ type GraphicsUnit struct {
 	ecmBackgroundColor    uint8
 	ecmForegroundColor    uint8
 	baseOffset            int     // Offset from bitmap sprPresence
-	lineIndex             int     // Index in video matrix / color line
+	lineIndex             int     // index in video matrix / color line
 	videoMatrix           []uint8 // Video matrix sprPresence
 	colorLine             []uint8 // Color line sprPresence
 	rowCounter            uint16  // Row counter
@@ -48,7 +48,7 @@ type GraphicsUnit struct {
 	textBuffer            []byte
 	xScroll               uint16 // X scroll value
 	yScroll               uint16 // Y scroll value
-	displayMode           uint8  // Index of current display mode
+	displayMode           uint8  // index of current display mode
 	bmm                   bool
 	ecm                   bool
 	b0c                   uint8 // VIC register - bgrState

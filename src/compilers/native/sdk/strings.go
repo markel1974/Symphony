@@ -36,7 +36,7 @@ func NewStrings(factory objects.IGateKeeper) IPackage {
 		factory.NewFuncImport(objects.FrameStatic, "Fields", 1, s.funcStringToStrings(strings.Fields)),
 		factory.NewFuncImport(objects.FrameStatic, "HasPrefix", 2, s.funcStringStringToBool(strings.HasPrefix)),
 		factory.NewFuncImport(objects.FrameStatic, "HasSuffix", 2, s.funcStringStringToBool(strings.HasSuffix)),
-		factory.NewFuncImport(objects.FrameStatic, "Index", 2, s.funcStringStringToInt(strings.Index)),
+		factory.NewFuncImport(objects.FrameStatic, "index", 2, s.funcStringStringToInt(strings.Index)),
 		factory.NewFuncImport(objects.FrameStatic, "IndexAny", 2, s.funcStringStringToInt(strings.IndexAny)),
 		factory.NewFuncImport(objects.FrameStatic, "LastIndex", 2, s.funcStringStringToInt(strings.LastIndex)),
 		factory.NewFuncImport(objects.FrameStatic, "LastIndexAny", 2, s.funcStringStringToInt(strings.LastIndexAny)),

@@ -176,7 +176,7 @@ func (w *CIA1Socket) ReadPortB(prA uint8, prB uint8, ddrA uint8, ddrB uint8) uin
 func (w *CIA1Socket) SignalPRA(_ uint8) {
 }
 
-// SignalDDRA updates the Data Direction Register A (DDRA) with the provided parameters without performing any operation.
+// SignalDDRA updates the Code Direction Register A (DDRA) with the provided parameters without performing any operation.
 func (w *CIA1Socket) SignalDDRA(_ uint8) {
 }
 

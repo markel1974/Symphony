@@ -65,7 +65,7 @@ func NewGraphicsUnitReflect(r *GraphicsUnit, factory references.IComponentFactor
 
 	r.PropertyAdd(reflectBaseOffsetId, "Offset from bitmap sprPresence", false, reflector.getBaseOffset, reflector.setBaseOffset)
 
-	r.PropertyAdd(reflectLineIndexId, "Index in video matrix / color line", false, reflector.getLineIndex, reflector.setLineIndex)
+	r.PropertyAdd(reflectLineIndexId, "index in video matrix / color line", false, reflector.getLineIndex, reflector.setLineIndex)
 
 	r.PropertyAdd(reflectVideoMatrixId, "Video matrix sprPresence", false, reflector.getVideoMatrix, reflector.setVideoMatrix)
 
@@ -94,7 +94,7 @@ func NewGraphicsUnitReflect(r *GraphicsUnit, factory references.IComponentFactor
 
 	r.PropertyAdd(reflectYScrollId, "Y scroll value", false, reflector.getYScroll, reflector.setYScroll)
 
-	r.PropertyAdd(reflectDisplayModeId, "Index of current display mode", false, reflector.getDisplayMode, reflector.setDisplayMode)
+	r.PropertyAdd(reflectDisplayModeId, "index of current display mode", false, reflector.getDisplayMode, reflector.setDisplayMode)
 
 	r.PropertyAdd(reflectBmmId, "Bmm", false, reflector.getBmm, reflector.setBmm)
 

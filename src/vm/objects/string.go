@@ -1,6 +1,7 @@
 package objects
 
 import (
+	"bytes"
 	"encoding/gob"
 )
 
@@ -17,18 +18,17 @@ func init() {
 // It implements IObject and provides a richer functionality for string manipulation within the runtime system.
 type String struct {
 	IAllocator
-	value   string
-	runeStr []rune
+	data string
 }
 
-// NewString creates and returns a new String object initialized with the provided string values.
+// NewString creates and returns a new String object initialized with the provided string Code.
 func newString(allocator IAllocator, value string) IObject {
 	if len(value) > MaxStringLen {
 		value = value[0:MaxStringLen]
 	}
 	return &String{
 		IAllocator: allocator,
-		value:      value,
+		data:       value,
 	}
 }
 
@@ -37,24 +37,24 @@ func (o *String) setAllocator(allocator IAllocator) {
 	o.IAllocator = allocator
 }
 
-// AsBool converts the String object to a boolean. Returns true if the string has non-zero length, otherwise false.
+// AsBool converts the String object to a boolean. Returns true if the string has non-zero len, otherwise false.
 func (o *String) AsBool() bool {
-	return len(o.value) > 0
+	return len(o.data) > 0
 }
 
-// AsInt64 returns the length of the array as an int64 value.
+// AsInt64 returns the len of the array as an int64 data.
 func (o *String) AsInt64() int64 {
-	return int64(len(o.value))
+	return int64(len(o.data))
 }
 
-// AsFloat64 returns the length of the array as an int64 value.
+// AsFloat64 returns the len of the array as an int64 data.
 func (o *String) AsFloat64() float64 {
-	return float64(len(o.value))
+	return float64(len(o.data))
 }
 
 // AsString returns the quoted string representation of the String object.
 func (o *String) AsString() string {
-	return o.value
+	return o.data
 }
 
 // Nil checks if the object is nil and always returns false.
@@ -62,20 +62,20 @@ func (o *String) Nil() bool {
 	return false
 }
 
-// AssignValue assigns the value of another IObject to the current String object if the type is compatible, otherwise returns an error.
+// AssignValue assigns the data of another IObject to the current String object if the type is compatible, otherwise returns an error.
 func (o *String) AssignValue(v IObject) error {
 	target, ok := v.(*String)
 	if !ok {
 		return ErrNotAssignable
 	}
-	if len(target.value) > MaxStringLen {
+	if len(target.data) > MaxStringLen {
 		return ErrLimitExceed
 	}
-	o.value = target.value
+	o.data = target.data
 	return nil
 }
 
-// IndexSet attempts to assign a value to an index in the object but always returns ErrIndexUnsupported,
+// IndexSet attempts to assign a data to an index in the object but always returns ErrIndexUnsupported,
 // as this operation is unsupported.
 func (o *String) IndexSet(_, _ IObject) (err error) {
 	return ErrIndexUnsupported
@@ -86,14 +86,14 @@ func (o *String) Call(_ int, _ ...IObject) (retCount uint, ret IObject, err erro
 	return 0, nil, nil
 }
 
-// Value returns the string values of the String object.
+// Value returns the string data of the String object.
 func (o *String) Value() string {
-	return o.value
+	return o.data
 }
 
-// Length returns the length of the string values.
+// Length returns the len of the string data.
 func (o *String) Length() int {
-	return len(o.value)
+	return len(o.data)
 }
 
 // TypeName returns the name of the type "string".
@@ -110,32 +110,32 @@ func (o *String) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, e
 
 	switch op {
 	case OperatorLogicalNotEq:
-		if o.value != rhsIn.AsString() {
+		if o.data != rhsIn.AsString() {
 			return o.GateKeeper().TrueValue(), nil
 		}
 		return o.GateKeeper().FalseValue(), nil
 	case OperatorLogicalEq:
-		if o.value == rhsIn.AsString() {
+		if o.data == rhsIn.AsString() {
 			return o.GateKeeper().TrueValue(), nil
 		}
 		return o.GateKeeper().FalseValue(), nil
 	case OperatorLogicalLess:
-		if o.value < rhsIn.AsString() {
+		if o.data < rhsIn.AsString() {
 			return o.GateKeeper().TrueValue(), nil
 		}
 		return o.GateKeeper().FalseValue(), nil
 	case OperatorLogicalLessEq:
-		if o.value <= rhsIn.AsString() {
+		if o.data <= rhsIn.AsString() {
 			return o.GateKeeper().TrueValue(), nil
 		}
 		return o.GateKeeper().FalseValue(), nil
 	case OperatorLogicalGreater:
-		if o.value > rhsIn.AsString() {
+		if o.data > rhsIn.AsString() {
 			return o.GateKeeper().TrueValue(), nil
 		}
 		return o.GateKeeper().FalseValue(), nil
 	case OperatorLogicalGreaterEq:
-		if o.value >= rhsIn.AsString() {
+		if o.data >= rhsIn.AsString() {
 			return o.GateKeeper().TrueValue(), nil
 		}
 		return o.GateKeeper().FalseValue(), nil
@@ -146,37 +146,37 @@ func (o *String) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, e
 
 // ArithmeticOp performs an arithmetic operation based on the given operator and right-hand side operand.
 // Supports concatenation with strings if the operator is OperatorAdd.
-// Returns a new resulting object or an error for unsupported operations or excessive string length.
+// Returns a new resulting object or an error for unsupported operations or excessive string len.
 func (o *String) ArithmeticOp(frame int, op ArithmeticOperator, rhsIn IObject) (IObject, error) {
 	switch op {
 	case OperatorAdd:
 		str := rhsIn.AsString()
-		if len(o.value)+len(str) > MaxStringLen {
+		if len(o.data)+len(str) > MaxStringLen {
 			return nil, ErrLimitExceed
 		}
-		return o.GateKeeper().NewString(frame, o.value+str), nil
+		return o.GateKeeper().NewString(frame, o.data+str), nil
 	default:
 		return nil, ErrInvalidOperator
 	}
 }
 
-// Falsy returns true if the String's values is an empty string, indicating it is considered falsy in a boolean context.
+// Falsy returns true if the String's data is an empty string, indicating it is considered falsy in a boolean context.
 func (o *String) Falsy() bool {
-	return len(o.value) == 0
+	return len(o.data) == 0
 }
 
-// Copy creates and returns a new String instance with the same values as the original.
+// Copy creates and returns a new String instance with the same data as the original.
 func (o *String) Copy(frame int, _ int) IObject {
-	return o.GateKeeper().NewString(frame, o.value)
+	return o.GateKeeper().NewString(frame, o.data)
 }
 
-// Equals checks whether the current String object is equal to the provided IObject by comparing their values.
+// Equals checks whether the current String object is equal to the provided IObject by comparing their data.
 func (o *String) Equals(x IObject) bool {
 	t, ok := x.(*String)
 	if !ok {
 		return false
 	}
-	return o.value == t.value
+	return o.data == t.data
 }
 
 // IndexGet retrieves the character at the specified index from the String object.
@@ -186,14 +186,12 @@ func (o *String) IndexGet(frame int, index IObject) (IObject, error) {
 	if !ok {
 		return nil, ErrIndexInvalidType
 	}
-	idxVal := int(intIdx.value)
-	if o.runeStr == nil {
-		o.runeStr = []rune(o.value)
-	}
-	if idxVal < 0 || idxVal >= len(o.runeStr) {
+	idxVal := int(intIdx.data)
+	r := []rune(o.data)
+	if idxVal < 0 || idxVal >= len(r) {
 		return o.GateKeeper().UndefinedValue(), nil
 	}
-	return o.GateKeeper().NewChar(frame, o.runeStr[idxVal]), nil
+	return o.GateKeeper().NewChar(frame, r[idxVal]), nil
 }
 
 // Count returns the total number of elements in the instance and its sub-elements.
@@ -201,12 +199,12 @@ func (o *String) Count() int {
 	return 1
 }
 
-// SetValue assigns the given string value to the object, returning an error if the value exceeds the maximum allowed length.
+// SetValue assigns the given string data to the object, returning an error if the data exceeds the maximum allowed len.
 func (o *String) SetValue(v string) error {
 	if len(v) > MaxStringLen {
 		return ErrLimitExceed
 	}
-	o.value = v
+	o.data = v
 	return nil
 }
 
@@ -217,8 +215,25 @@ func (o *String) Iterable() bool {
 
 // Iterate returns an IIterator for iterating over the runes of the String. It initializes runeStr if not already initialized.
 func (o *String) Iterate(frame int) IIterator {
-	if o.runeStr == nil {
-		o.runeStr = []rune(o.value)
+	return o.GateKeeper().NewStringIterator(frame, []rune(o.data), 0)
+}
+
+// GobEncode serializes the String's data into a byte slice using gob encoding and returns the result or an error.
+func (o *String) GobEncode() ([]byte, error) {
+	var buf bytes.Buffer
+	encoder := gob.NewEncoder(&buf)
+	if err := encoder.Encode(o.data); err != nil {
+		return nil, err
 	}
-	return o.GateKeeper().NewStringIterator(frame, o.runeStr, 0)
+	return buf.Bytes(), nil
+}
+
+// GobDecode decodes the provided byte slice into the String's data field using the gob package.
+func (o *String) GobDecode(data []byte) error {
+	buf := bytes.NewBuffer(data)
+	decoder := gob.NewDecoder(buf)
+	if err := decoder.Decode(&o.data); err != nil {
+		return err
+	}
+	return nil
 }

@@ -11,8 +11,8 @@ import (
 // SignalSP sets the level of the Serial Port input line based on the provided boolean value.
 // SignalPRA sets the value of Port A (8-bit) to the specified value.
 // SignalPRB sets the value of Port B (8-bit) to the specified value.
-// SignalDDRA sets the Data Direction Register for Port A (8-bit).
-// SignalDDRB sets the Data Direction Register for Port B (8-bit).
+// SignalDDRA sets the Code Direction Register for Port A (8-bit).
+// SignalDDRB sets the Code Direction Register for Port B (8-bit).
 // IRQTrigger signals an Interrupt Request (IRQ) to be triggered.
 // IRQClearTrigger clears any triggered Interrupt Request (IRQ).
 type IMos6526Socket interface {
@@ -46,10 +46,10 @@ type IMos6526Socket interface {
 // Update triggers an internal update of the chip's state and outputs in response to the latest inputs.
 // WriteRegister writes an 8-bit value to a specified 16-bit address in the chip's register space.
 // ReadRegister retrieves an 8-bit value from a specified 16-bit address in the chip's register space.
-// ReadPRA reads and returns the 8-bit value stored in Port A Data Register (PRA).
-// ReadPRB reads and returns the 8-bit value stored in Port B Data Register (PRB).
-// ReadDDRA retrieves the 8-bit value from the Data Direction Register for Port A (DDRA).
-// ReadDDRB retrieves the 8-bit value from the Data Direction Register for Port B (DDRB).
+// ReadPRA reads and returns the 8-bit value stored in Port A Code Register (PRA).
+// ReadPRB reads and returns the 8-bit value stored in Port B Code Register (PRB).
+// ReadDDRA retrieves the 8-bit value from the Code Direction Register for Port A (DDRA).
+// ReadDDRB retrieves the 8-bit value from the Code Direction Register for Port B (DDRB).
 type IMos6526 interface {
 	Setup() error
 

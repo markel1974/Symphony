@@ -38,11 +38,11 @@ func NewCIAReflect(r *CIA, factory references.IComponentFactory, parent referenc
 
 	r.PropertyAdd(reflectPrBId, "prB represents the current state of the port B register for the CIA component.", false, reflector.getPrB, reflector.setPrB)
 
-	r.PropertyAdd(reflectDdrAId, "ddrA represents the Data Direction Register for port A, used to configure input/output direction of each bit.", false, reflector.getDdrA, reflector.setDdrA)
+	r.PropertyAdd(reflectDdrAId, "ddrA represents the Code Direction Register for port A, used to configure input/output direction of each bit.", false, reflector.getDdrA, reflector.setDdrA)
 
-	r.PropertyAdd(reflectDdrBId, "ddrB represents the Data Direction Register for Port B, used to configure input/output for the CIA port B pins.", false, reflector.getDdrB, reflector.setDdrB)
+	r.PropertyAdd(reflectDdrBId, "ddrB represents the Code Direction Register for Port B, used to configure input/output for the CIA port B pins.", false, reflector.getDdrB, reflector.setDdrB)
 
-	r.PropertyAdd(reflectSdrId, "sdr holds the contents of the Serial Data Register (SDR), used for serial communication operations in the CIA chip.", false, reflector.getSdr, reflector.setSdr)
+	r.PropertyAdd(reflectSdrId, "sdr holds the contents of the Serial Code Register (SDR), used for serial communication operations in the CIA chip.", false, reflector.getSdr, reflector.setSdr)
 
 	r.PropertyAdd(reflectIcrId, "icr holds the Interrupt Control Register value, managing interrupt flags and statuses for the CIA component.", false, reflector.getIcr, reflector.setIcr)
 
@@ -72,10 +72,10 @@ func NewCIAReflect(r *CIA, factory references.IComponentFactory, parent referenc
 	_ = r.CommandAdd("Reset", "Reset() - Reset reinitializes the internal state of the CIA by resetting all registers, timers, and the time of day (TOD) clock.", r.Reset)
 	_ = r.CommandAdd("ReadPortA", "ReadPortA() uint8 - ReadPortA reads the current state of port A by considering its data direction and peripheral registers.", r.ReadPortA)
 	_ = r.CommandAdd("WriteDDRA", "WriteDDRA(data) - WriteDDRA updates the data direction register A and triggers the associated socket signal with the new value.", r.WriteDDRA)
-	_ = r.CommandAdd("WriteSDR", "WriteSDR(data) - WriteSDR writes an 8-bit value to the SDR (Serial Data Register) and updates the shift register if serial mode is active.", r.WriteSDR)
+	_ = r.CommandAdd("WriteSDR", "WriteSDR(data) - WriteSDR writes an 8-bit value to the SDR (Serial Code Register) and updates the shift register if serial mode is active.", r.WriteSDR)
 	_ = r.CommandAdd("WriteControlRegisterTimerB", "WriteControlRegisterTimerB(data) - WriteControlRegisterTimerB sets the control register for timer B based on the provided data and count mode settings.", r.WriteControlRegisterTimerB)
 	_ = r.CommandAdd("WriteTODSec", "WriteTODSec(data) - WriteTODSec sets the seconds value of the Time of Day (TOD) clock using the provided data parameter.", r.WriteTODSec)
-	_ = r.CommandAdd("ReadDDRA", "ReadDDRA() uint8 - ReadDDRA reads the value of the Data Direction Register A (DDRA), which determines input/output configuration for port A.", r.ReadDDRA)
+	_ = r.CommandAdd("ReadDDRA", "ReadDDRA() uint8 - ReadDDRA reads the value of the Code Direction Register A (DDRA), which determines input/output configuration for port A.", r.ReadDDRA)
 	_ = r.CommandAdd("ReadPortB", "ReadPortB() uint8 - ReadPortB reads and returns the current value of Port B, including modifications based on timers with PB output enabled.", r.ReadPortB)
 	_ = r.CommandAdd("WritePRA", "WritePRA(data) - WritePRA writes the given data to the prA register and triggers the socketSignalPRA with the updated value.", r.WritePRA)
 	_ = r.CommandAdd("WritePRB", "WritePRB(data) - WritePRB sets the prB field to the provided data value and triggers socketSignalPRB with the updated prB value.", r.WritePRB)

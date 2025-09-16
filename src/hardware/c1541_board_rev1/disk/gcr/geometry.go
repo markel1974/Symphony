@@ -5,7 +5,7 @@ import (
 	"log"
 )
 
-//Zone	Track	Sectors	Data(362*N) Tail Gap 	Capacity	Value Timer VIA
+//Zone	Track	Sectors	Code(362*N) Tail Gap 	Capacity	Value Timer VIA
 //3   	1-17	21  	7602 byte	90  byte	7692 byte	32 / $20
 //2   	18-24	19   	6878 byte	262 byte	7140 byte	30 / $1E
 //1     25-30	18   	6516 byte	150 byte	6666 byte	28 / $1C

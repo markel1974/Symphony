@@ -6,7 +6,7 @@ import (
 )
 
 var (
-	// ErrDivisionByZero indicates an error caused by an attempt to divide a numeric value by zero.
+	// ErrDivisionByZero indicates an error caused by an attempt to divide a numeric Code by zero.
 	ErrDivisionByZero = errors.New("division by zero")
 
 	// ErrStackOverflow is returned when the execution stack exceeds its allowed limit, indicating a stack overflow condition.
@@ -21,13 +21,13 @@ var (
 	// ErrInvalidOperator represents an error returned when an unsupported or invalid operator is encountered.
 	ErrInvalidOperator = errors.New("invalid operator")
 
-	// ErrNotAssignable is used to indicate an error when attempting to assign an incompatible or unsupported value.
+	// ErrNotAssignable is used to indicate an error when attempting to assign an incompatible or unsupported Code.
 	ErrNotAssignable = errors.New("not assignable")
 
 	// ErrInvalidArgumentsNumber indicates that the number of arguments provided is invalid for the operation or function.
 	ErrInvalidArgumentsNumber = errors.New("invalid arguments number")
 
-	// ErrLimitExceed is returned when an operation exceeds a predefined limit, such as maximum length or capacity.
+	// ErrLimitExceed is returned when an operation exceeds a predefined limit, such as maximum len or capacity.
 	ErrLimitExceed = errors.New("limit exceed")
 
 	// ErrNotIterator is returned when an operation is attempted on an object that is not an iterator.
@@ -48,8 +48,8 @@ var (
 	// ErrIndexUnsupported indicates that an index operation is unsupported for the given object.
 	ErrIndexUnsupported = errors.New("unsupported index")
 
-	// ErrIndexInvalidValueType represents an error occurring when an index operation involves an invalid index value type.
-	ErrIndexInvalidValueType = errors.New("invalid index value type")
+	// ErrIndexInvalidValueType represents an error occurring when an index operation involves an invalid index Code type.
+	ErrIndexInvalidValueType = errors.New("invalid index Code type")
 )
 
 // NewInvalidArgumentError creates and returns an error indicating that an argument has an invalid type.
@@ -76,7 +76,7 @@ func ComputeIndexSetError(err error, dst string, src string) error {
 		return fmt.Errorf("not index-assignable: %s", dst)
 	}
 	if errors.Is(err, ErrIndexInvalidValueType) {
-		return fmt.Errorf("invaid index values type: %s", src)
+		return fmt.Errorf("invaid index Code type: %s", src)
 	}
 	return err
 }

@@ -66,7 +66,7 @@ type SID struct {
 	reads                     [RegisterCount]ReadFn
 	volume                    uint8   // Master volume
 	sampleBuf                 []uint8 // Buffer for sampled voices
-	sampleBufIdx              int     // Index in sample_buf for writing
+	sampleBufIdx              int     // index in sample_buf for writing
 	soundBuffer               []float32
 	audioSamplesPerVolumeStep float64
 }

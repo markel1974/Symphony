@@ -237,7 +237,7 @@ func (c *Kernel) eventLoop() {
 // on message type and process routing tables, forming the core of the kernel's
 // message processing architecture.
 func (c *Kernel) handleMessageEvent(m interfaces.IMessage) {
-	//log.Printf("Kernel: message received: %d - %d", m.Source(), m.GetType())
+	//log.Printf("Kernel: message received: %d - %d", m.source(), m.GetType())
 	kSourceProc, _ := c.running[m.Source()]
 	if kSourceProc == nil {
 		log.Printf("Kernel [handleMessageEvent]: unknown source process: %d - type %d", m.Source(), m.GetType())

@@ -1,6 +1,9 @@
 package opcodes
 
-import "encoding/gob"
+import (
+	"bytes"
+	"encoding/gob"
+)
 
 func init() {
 	gob.Register(&Instructions{})
@@ -23,8 +26,8 @@ func (i *Instructions) Allocate(l int) {
 
 // Assign copies the provided data into the receiver's data field.
 func (i *Instructions) Assign(data []byte) {
-	//i.data = make([]byte, len(data))
-	//copy(i.data, data)
+	//i.Code = make([]byte, len(Code))
+	//copy(i.Code, Code)
 	i.data = data
 }
 
@@ -35,8 +38,8 @@ func (i *Instructions) Copy() *Instructions {
 	return out
 }
 
-// Data returns the byte slice representing the instruction set stored within the Instructions object.
-func (i *Instructions) Data() []byte {
+// Code returns the byte slice representing the instruction set stored within the Instructions object.
+func (i *Instructions) Code() []byte {
 	return i.data
 }
 
@@ -74,7 +77,7 @@ func (i *Instructions) Get8Reverse(base uint) (uint8, bool) {
 	return i.data[base], true
 }
 
-// Get16Reverse retrieves a 16-bit value from the `data` byte slice in reverse order, starting at the given `base` index.
+// Get16Reverse retrieves a 16-bit value from the `Code` byte slice in reverse order, starting at the given `base` index.
 // Returns an error if the provided `base` or corresponding high index is out of bounds.
 func (i *Instructions) Get16Reverse(base uint) (uint16, bool) {
 	const backwardBytes = 1
@@ -279,4 +282,24 @@ func (i *Instructions) Header(offset uint) (OpcodeId, uint8, bool) {
 		return 0, 0, false
 	}
 	return OpcodeId(opcodeId), uint8(headerBytes), true
+}
+
+// GobEncode serializes the Instructions data into a byte slice using gob encoding and returns the result or an error.
+func (i *Instructions) GobEncode() ([]byte, error) {
+	var buf bytes.Buffer
+	encoder := gob.NewEncoder(&buf)
+	if err := encoder.Encode(i.data); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+// GobDecode decodes the provided byte slice into the Instructions data field using the gob package.
+func (i *Instructions) GobDecode(data []byte) error {
+	buf := bytes.NewBuffer(data)
+	decoder := gob.NewDecoder(buf)
+	if err := decoder.Decode(&i.data); err != nil {
+		return err
+	}
+	return nil
 }

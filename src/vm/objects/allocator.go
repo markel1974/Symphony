@@ -41,27 +41,27 @@ func (a *Allocator) RefCount() int {
 	return a.references
 }
 
-// setFrame sets the current execution frame value for the Allocator instance.
+// setFrame sets the current execution frame Code for the Allocator instance.
 func (a *Allocator) setFrame(frame int) {
 	a.frame = frame
 }
 
-// Frame returns the current execution frame value managed by the Allocator instance.
+// Frame returns the current execution frame Code managed by the Allocator instance.
 func (a *Allocator) Frame() int {
 	return a.frame
 }
 
-// SetStatic sets the Allocator's frame to a static state by assigning it the FrameStatic constant value.
+// SetStatic sets the Allocator's frame to a static state by assigning it the FrameStatic constant Code.
 func (a *Allocator) SetStatic() {
 	a.frame = FrameStatic
 }
 
-// GobDecode implements the gob.GobDecoder interface, allowing the Allocator struct to decode its state from a gob encoding.
-func (a *Allocator) GobDecode() error {
+// GobDecode implements the gob.GobDecoder interface, decoding the Allocator state from a byte slice representation.
+func (a *Allocator) GobDecode(_ []byte) (err error) {
 	return nil
 }
 
-// GobEncode encodes the Allocator instance into a byte slice for serialization used by the gob package.
+// GobEncode encodes the Allocator instance into a byte slice for use with the gob package and returns it along with any error.
 func (a *Allocator) GobEncode() ([]byte, error) {
 	return nil, nil
 }

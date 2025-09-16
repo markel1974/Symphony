@@ -1,6 +1,9 @@
 package objects
 
-import "encoding/gob"
+import (
+	"bytes"
+	"encoding/gob"
+)
 
 // StructIteratorType represents the type for a struct iterator, used as a constant string identifier.
 // StructIteratorLabel is a formatted label that includes the StructIteratorType constant within angle brackets.
@@ -13,19 +16,19 @@ func init() {
 	gob.Register(&StructIterator{})
 }
 
-// StructIterator is an iterator for traversing over the keys and values of a struct-like map of IObjects.
+// StructIterator is an iterator for traversing over the keys and Code of a struct-like map of IObjects.
 // It embeds Object and implements the IIterator interface.
-// The keys and values are stored in separate slices to facilitate order-preserving iteration.
+// The keys and Code are stored in separate slices to facilitate order-preserving iteration.
 // The index tracks the current position within the iteration, and length is the total number of elements.
 type StructIterator struct {
 	IAllocator
-	values map[string]IObject
+	data   map[string]IObject
 	keys   []string
 	index  int
 	length int
 }
 
-// NewStructIterator initializes and returns a new StructIterator for the given map of string keys to IObject values.
+// NewStructIterator initializes and returns a new StructIterator for the given map of string keys to IObject Code.
 func newStructIterator(allocator IAllocator, v map[string]IObject, index int) IIterator {
 	var keys []string
 	for k := range v {
@@ -33,7 +36,7 @@ func newStructIterator(allocator IAllocator, v map[string]IObject, index int) II
 	}
 	return &StructIterator{
 		IAllocator: allocator,
-		values:     v,
+		data:       v,
 		keys:       keys,
 		length:     len(keys),
 		index:      index,
@@ -55,12 +58,12 @@ func (o *StructIterator) AsBool() bool {
 	return o.length > 0
 }
 
-// AsInt64 returns the length of the array as an int64 value.
+// AsInt64 returns the length of the array as an int64 Code.
 func (o *StructIterator) AsInt64() int64 {
 	return int64(o.length)
 }
 
-// AsFloat64 returns the length of the array as an int64 value.
+// AsFloat64 returns the length of the array as an int64 Code.
 func (o *StructIterator) AsFloat64() float64 {
 	return float64(o.length)
 }
@@ -94,12 +97,12 @@ func (o *StructIterator) ArithmeticOp(_ int, _ ArithmeticOperator, _ IObject) (I
 	return nil, ErrInvalidOperator
 }
 
-// IndexGet attempts to retrieve a value at the given index and returns an error if the object is not indexable.
+// IndexGet attempts to retrieve a Code at the given index and returns an error if the object is not indexable.
 func (o *StructIterator) IndexGet(_ int, _ IObject) (IObject, error) {
 	return o.GateKeeper().UndefinedValue(), ErrIndexNotIndexable
 }
 
-// IndexSet attempts to assign a value to an index in the object but always returns ErrIndexUnsupported,
+// IndexSet attempts to assign a Code to an index in the object but always returns ErrIndexUnsupported,
 // as this operation is unsupported.
 func (o *StructIterator) IndexSet(_, _ IObject) (err error) {
 	return ErrIndexUnsupported
@@ -127,7 +130,7 @@ func (o *StructIterator) Length() int {
 
 // Copy creates and returns a duplicate instance of the current StructIterator with the same internal state.
 func (o *StructIterator) Copy(frame int, _ int) IObject {
-	ret := o.GateKeeper().NewStructIterator(frame, o.values, o.index)
+	ret := o.GateKeeper().NewStructIterator(frame, o.data, o.index)
 	return ret
 }
 
@@ -162,21 +165,59 @@ func (o *StructIterator) Key(frame int) IObject {
 	return o.GateKeeper().NewString(frame, k)
 }
 
-// Value retrieves the value of the current element in the iteration based on the iterator's current position.
+// Value retrieves the Code of the current element in the iteration based on the iterator's current position.
 func (o *StructIterator) Value(_ int) IObject {
 	idx := o.index - 1
 	if idx < 0 || idx >= o.length {
 		return o.GateKeeper().UndefinedValue()
 	}
 	k := o.keys[idx]
-	return o.values[k]
+	return o.data[k]
 }
 
 // Count returns the total number of elements in the instance and its sub-elements.
 func (o *StructIterator) Count() int {
 	counter := 0
-	for _, v := range o.values {
+	for _, v := range o.data {
 		counter += v.Count()
 	}
 	return counter
+}
+
+// GobEncode serializes the ArrayIterator's data into a byte slice using gob encoding and returns the result or an error.
+func (o *StructIterator) GobEncode() ([]byte, error) {
+	var buf bytes.Buffer
+	encoder := gob.NewEncoder(&buf)
+	if err := encoder.Encode(o.data); err != nil {
+		return nil, err
+	}
+	if err := encoder.Encode(o.index); err != nil {
+		return nil, err
+	}
+	if err := encoder.Encode(o.keys); err != nil {
+		return nil, err
+	}
+	if err := encoder.Encode(o.length); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+// GobDecode decodes the provided byte slice into the StructIterator's data field using the gob package.
+func (o *StructIterator) GobDecode(data []byte) error {
+	buf := bytes.NewBuffer(data)
+	decoder := gob.NewDecoder(buf)
+	if err := decoder.Decode(&o.data); err != nil {
+		return err
+	}
+	if err := decoder.Decode(&o.index); err != nil {
+		return err
+	}
+	if err := decoder.Decode(&o.keys); err != nil {
+		return err
+	}
+	if err := decoder.Decode(&o.length); err != nil {
+		return err
+	}
+	return nil
 }

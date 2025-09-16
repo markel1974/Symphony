@@ -1,6 +1,7 @@
 package objects
 
 import (
+	"bytes"
 	"encoding/gob"
 	"math"
 	"strconv"
@@ -16,17 +17,17 @@ func init() {
 
 // Float represents a floating-point number and provides operations and behaviors specific to numeric types.
 // It embeds Object to implement common interface methods and extends behavior where necessary.
-// The value field holds the actual float64 values encapsulated by the Float type.
+// The data field holds the actual float64 data encapsulated by the Float type.
 type Float struct {
 	IAllocator
-	value float64
+	data float64
 }
 
-// NewFloat creates and returns a pointer to a new Float object initialized with the specified float64 values.
+// NewFloat creates and returns a pointer to a new Float object initialized with the specified float64 Code.
 func newFloat(allocator IAllocator, value float64) IObject {
 	return &Float{
 		IAllocator: allocator,
-		value:      value,
+		data:       value,
 	}
 }
 
@@ -37,32 +38,32 @@ func (o *Float) setAllocator(allocator IAllocator) {
 
 // AsBool returns true if the object is not empty, otherwise false.
 func (o *Float) AsBool() bool {
-	return o.value != 0
+	return o.data != 0
 }
 
-// AsInt64 returns the length of the array as an int64 value.
+// AsInt64 returns the len of the array as an int64 data.
 func (o *Float) AsInt64() int64 {
-	return int64(o.value)
+	return int64(o.data)
 }
 
-// AsFloat64 returns the length of the array as an int64 value.
+// AsFloat64 returns the len of the array as an int64 data.
 func (o *Float) AsFloat64() float64 {
-	return o.value
+	return o.data
 }
 
-// AssignValue assigns the value of another IObject to the current Float object if the type is compatible, otherwise returns an error.
+// AssignValue assigns the data of another IObject to the current Float object if the type is compatible, otherwise returns an error.
 func (o *Float) AssignValue(v IObject) error {
 	target, ok := v.(*Float)
 	if !ok {
 		return ErrNotAssignable
 	}
-	o.value = target.value
+	o.data = target.data
 	return nil
 }
 
-// AsString returns the string representation of the Float object using its internal float64 values.
+// AsString returns the string representation of the Float object using its internal float64 data.
 func (o *Float) AsString() string {
-	return strconv.FormatFloat(o.value, 'f', -1, 64)
+	return strconv.FormatFloat(o.data, 'f', -1, 64)
 }
 
 // Nil checks if the object is nil and always returns false.
@@ -70,12 +71,12 @@ func (o *Float) Nil() bool {
 	return false
 }
 
-// IndexGet attempts to retrieve a value at the given index and returns an error if the object is not indexable.
+// IndexGet attempts to retrieve a data at the given index and returns an error if the object is not indexable.
 func (o *Float) IndexGet(_ int, _ IObject) (IObject, error) {
 	return o.GateKeeper().UndefinedValue(), ErrIndexNotIndexable
 }
 
-// IndexSet attempts to assign a value to an index in the object but always returns ErrIndexUnsupported,
+// IndexSet attempts to assign a data to an index in the object but always returns ErrIndexUnsupported,
 // as this operation is unsupported.
 func (o *Float) IndexSet(_, _ IObject) error {
 	return ErrIndexUnsupported
@@ -96,13 +97,13 @@ func (o *Float) Call(_ int, _ ...IObject) (retCount uint, ret IObject, err error
 	return 0, nil, nil
 }
 
-// Length returns the length of the Int object.
+// Length returns the len of the Int object.
 func (o *Float) Length() int {
 	return 0
 }
 
 func (o *Float) Value() float64 {
-	return o.value
+	return o.data
 }
 
 // TypeName returns the name of the type.
@@ -116,7 +117,7 @@ func (o *Float) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, er
 	if rhsIn.Nil() {
 		return logicalOpNil(o.GateKeeper(), op)
 	}
-	ret, err := logicalOpFloat64(o.value, op, rhsIn.AsFloat64())
+	ret, err := logicalOpFloat64(o.data, op, rhsIn.AsFloat64())
 	if err != nil {
 		return nil, err
 	}
@@ -128,11 +129,11 @@ func (o *Float) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, er
 
 // ArithmeticOp performs an arithmetic operation with the specified operator and returns the result or an error.
 func (o *Float) ArithmeticOp(frame int, op ArithmeticOperator, rhsIn IObject) (IObject, error) {
-	ret, err := arithmeticOpFloat64(o.value, op, rhsIn.AsFloat64())
+	ret, err := arithmeticOpFloat64(o.data, op, rhsIn.AsFloat64())
 	if err != nil {
 		return nil, err
 	}
-	if ret == o.value {
+	if ret == o.data {
 		return o, nil
 	}
 	return o.GateKeeper().NewFloat(frame, ret), nil
@@ -140,21 +141,21 @@ func (o *Float) ArithmeticOp(frame int, op ArithmeticOperator, rhsIn IObject) (I
 
 // Copy creates and returns a new instance of the Float object, duplicating its current state.
 func (o *Float) Copy(frame int, _ int) IObject {
-	return o.GateKeeper().NewFloat(frame, o.value)
+	return o.GateKeeper().NewFloat(frame, o.data)
 }
 
-// Falsy determines if the float object is considered falsy, returning true if the values is NaN; otherwise, false.
+// Falsy determines if the float object is considered falsy, returning true if the data is NaN; otherwise, false.
 func (o *Float) Falsy() bool {
-	return math.IsNaN(o.value)
+	return math.IsNaN(o.data)
 }
 
-// Equals checks if the current Float object is equal to another IObject by comparing their internal float64 values.
+// Equals checks if the current Float object is equal to another IObject by comparing their internal float64 data.
 func (o *Float) Equals(x IObject) bool {
 	t, ok := x.(*Float)
 	if !ok {
 		return false
 	}
-	return o.value == t.value
+	return o.data == t.data
 }
 
 // Count returns the total number of elements in the instance and its sub-elements.
@@ -162,7 +163,27 @@ func (o *Float) Count() int {
 	return 1
 }
 
-// SetValue assigns a new float64 value to the internal value field of the Float object.
+// SetValue assigns a new float64 data to the internal data field of the Float object.
 func (o *Float) SetValue(value float64) {
-	o.value = value
+	o.data = value
+}
+
+// GobEncode serializes the Float's data into a byte slice using gob encoding and returns the result or an error.
+func (o *Float) GobEncode() ([]byte, error) {
+	var buf bytes.Buffer
+	encoder := gob.NewEncoder(&buf)
+	if err := encoder.Encode(o.data); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+// GobDecode decodes the provided byte slice into the Float's data field using the gob package.
+func (o *Float) GobDecode(data []byte) error {
+	buf := bytes.NewBuffer(data)
+	decoder := gob.NewDecoder(buf)
+	if err := decoder.Decode(&o.data); err != nil {
+		return err
+	}
+	return nil
 }

@@ -127,7 +127,7 @@ func (c *Relocator) processObjects(container []objects.IObject) ([]objects.IObje
 // updateConstIndexes modifies bytecode instructions to remap constant indexes based on the provided index map.
 // It updates OpConstant and OpCreateClosure instructions with new constant indexes or returns an error if mapping fails.
 func (c *Relocator) relocateFunction(fc *objects.Func, indices map[int]int) error {
-	bc := fc.Data()
+	bc := fc.Code()
 	var end int
 	for i := 0; i < len(bc); {
 		c.instructions.Assign(bc)

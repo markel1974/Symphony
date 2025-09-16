@@ -14,7 +14,7 @@ type Voices struct {
 	*component.BaseComponent
 	reflect     *VoicesReflect
 	voiceNumber int
-	voices      []*Voice // Data for 3 voices
+	voices      []*Voice // Code for 3 voices
 }
 
 var _voicesJoin = [][]uint8{

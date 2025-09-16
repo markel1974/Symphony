@@ -43,7 +43,7 @@ func NewSIDReflect(r *SID, factory references.IComponentFactory, parent referenc
 	_ = r.CommandAdd("getSampleBufEntry", "Buffer for sampled voices", reflector.getSampleBufEntry)
 	_ = r.CommandAdd("setSampleBufEntry", "Buffer for sampled voices", reflector.setSampleBufEntry)
 
-	r.PropertyAdd(reflectSampleBufIdxId, "Index in sample_buf for writing", false, reflector.getSampleBufIdx, reflector.setSampleBufIdx)
+	r.PropertyAdd(reflectSampleBufIdxId, "index in sample_buf for writing", false, reflector.getSampleBufIdx, reflector.setSampleBufIdx)
 
 	r.PropertyAdd(reflectAudioSamplesPerVolumeStepId, "AudioSamplesPerVolumeStep", false, reflector.getAudioSamplesPerVolumeStep, reflector.setAudioSamplesPerVolumeStep)
 

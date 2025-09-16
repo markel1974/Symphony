@@ -1,6 +1,7 @@
 package objects
 
 import (
+	"bytes"
 	"encoding/gob"
 )
 
@@ -11,8 +12,8 @@ func init() {
 // FuncJit is a callable object type that encapsulates a function and provides execution context information.
 type FuncJit struct {
 	IAllocator
-	name  string
-	value []byte
+	name string
+	data []byte
 }
 
 // NewFuncImport creates a new FuncImport instance with the specified Id and callable function.
@@ -20,7 +21,7 @@ func newFuncJit(allocator IAllocator, name string, fn []byte) IObject {
 	return &FuncJit{
 		IAllocator: allocator,
 		name:       name,
-		value:      fn,
+		data:       fn,
 	}
 }
 
@@ -34,12 +35,12 @@ func (o *FuncJit) AsBool() bool {
 	return false
 }
 
-// AsInt64 returns the length of the array as an int64 value.
+// AsInt64 returns the len of the array as an int64 Code.
 func (o *FuncJit) AsInt64() int64 {
 	return 0
 }
 
-// AsFloat64 returns the length of the array as an int64 value.
+// AsFloat64 returns the len of the array as an int64 Code.
 func (o *FuncJit) AsFloat64() float64 {
 	return 0
 }
@@ -78,12 +79,12 @@ func (o *FuncJit) Falsy() bool {
 	return false
 }
 
-// IndexGet attempts to retrieve a value at the given index and returns an error if the object is not indexable.
+// IndexGet attempts to retrieve a Code at the given index and returns an error if the object is not indexable.
 func (o *FuncJit) IndexGet(_ int, _ IObject) (IObject, error) {
 	return o.GateKeeper().UndefinedValue(), ErrIndexNotIndexable
 }
 
-// IndexSet attempts to assign a value to an index in the object but always returns ErrIndexUnsupported,
+// IndexSet attempts to assign a Code to an index in the object but always returns ErrIndexUnsupported,
 // as this operation is unsupported.
 func (o *FuncJit) IndexSet(_, _ IObject) error {
 	return ErrIndexUnsupported
@@ -99,7 +100,7 @@ func (o *FuncJit) Iterable() bool {
 	return false
 }
 
-// Length returns the length of the Int object.
+// Length returns the len of the Int object.
 func (o *FuncJit) Length() int {
 	return 0
 }
@@ -116,7 +117,7 @@ func (o *FuncJit) TypeName() string {
 
 // Copy creates and returns a new FuncImport instance with the same Value field as the original object.
 func (o *FuncJit) Copy(frame int, _ int) IObject {
-	return o.GateKeeper().NewFuncJit(frame, o.name, o.value)
+	return o.GateKeeper().NewFuncJit(frame, o.name, o.data)
 }
 
 // Equals checks whether the current FuncImport is equal to another object of type IObject. Always returns false.
@@ -134,6 +135,32 @@ func (o *FuncJit) Count() int {
 	return 1
 }
 
+// GobEncode serializes the FuncJit's data into a byte slice using gob encoding and returns the result or an error.
+func (i *FuncJit) GobEncode() ([]byte, error) {
+	var buf bytes.Buffer
+	encoder := gob.NewEncoder(&buf)
+	if err := encoder.Encode(i.name); err != nil {
+		return nil, err
+	}
+	if err := encoder.Encode(i.data); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+// GobDecode decodes the provided byte slice into the FuncJit's data field using the gob package.
+func (i *FuncJit) GobDecode(data []byte) error {
+	buf := bytes.NewBuffer(data)
+	decoder := gob.NewDecoder(buf)
+	if err := decoder.Decode(&i.name); err != nil {
+		return err
+	}
+	if err := decoder.Decode(&i.data); err != nil {
+		return err
+	}
+	return nil
+}
+
 /*
 func (*FuncJit) create(machineCode []byte) error {
 	//machineCode := []byte{0x48, 0xc7, 0xc0, 0x2a, 0x00, 0x00, 0x00, 0xc3}
@@ -142,7 +169,7 @@ func (*FuncJit) create(machineCode []byte) error {
 	memory, err := unix.Mmap(
 		-1,   // fd (file descriptor), -1 for anonymous memory
 		0,    // offset
-		4096, // length (es. 1 un page)
+		4096, // len (es. 1 un page)
 		unix.PROT_READ|unix.PROT_WRITE|unix.PROT_EXEC,
 		unix.MAP_ANON|unix.MAP_PRIVATE,
 	)

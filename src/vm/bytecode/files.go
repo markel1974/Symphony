@@ -6,6 +6,10 @@ import (
 	"sort"
 )
 
+func init() {
+	gob.Register(&Files{})
+}
+
 // Files represents a collection of source files with positional metadata for efficient file and position lookups.
 type Files struct {
 	base     int
@@ -75,6 +79,8 @@ func (s *Files) search(x int) int {
 
 // Encode serializes the Files structure including its base, files, and lastFile properties using the provided gob.Encoder.
 func (s *Files) Encode(enc *gob.Encoder) error {
+	return nil
+	//TODO IMPLEMENT!!!!
 	if err := enc.Encode(s.base); err != nil {
 		return err
 	}
@@ -89,6 +95,8 @@ func (s *Files) Encode(enc *gob.Encoder) error {
 
 // Decode deserializes the Files object, restoring its base, files slice, and lastFile from the provided gob.Decoder.
 func (s *Files) Decode(dec *gob.Decoder) error {
+	return nil
+	//TODO IMPLEMENT!!!!
 	if err := dec.Decode(&s.base); err != nil {
 		return err
 	}

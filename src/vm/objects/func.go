@@ -1,12 +1,13 @@
 package objects
 
 import (
+	"bytes"
 	"encoding/gob"
 
 	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
 
-// FuncCompiledDef represents a constant value for a compiled function definition.
+// FuncCompiledDef represents a constant Code for a compiled function definition.
 // FuncCompiledLabel represents a formatted label using FuncCompiledDef.
 const (
 	FuncCompiledDef   = "func_compiled"
@@ -79,7 +80,7 @@ func (o *Func) AsString() string {
 	return FuncCompiledLabel
 }
 
-// AssignValue attempts to assign a value to the instance but always returns ErrNotAssignable as it is not supported.
+// AssignValue attempts to assign a Code to the instance but always returns ErrNotAssignable as it is not supported.
 func (o *Func) AssignValue(_ IObject) error {
 	return ErrNotAssignable
 }
@@ -113,7 +114,7 @@ func (o *Func) IndexGet(_ int, _ IObject) (IObject, error) {
 	return o.GateKeeper().UndefinedValue(), ErrIndexNotIndexable
 }
 
-// IndexSet assigns a specified value to an index on the object but always returns ErrIndexUnsupported, indicating the operation is not supported.
+// IndexSet assigns a specified Code to an index on the object but always returns ErrIndexUnsupported, indicating the operation is not supported.
 func (o *Func) IndexSet(_, _ IObject) error {
 	return ErrIndexUnsupported
 }
@@ -133,7 +134,7 @@ func (o *Func) Call(_ int, _ ...IObject) (retCount uint, ret IObject, err error)
 	return 0, nil, nil
 }
 
-// Length returns the length of the Func object, typically representing the size of its associated instructions or data.
+// Length returns the len of the Func object, typically representing the size of its associated instructions or data.
 func (o *Func) Length() int {
 	return 0
 }
@@ -143,9 +144,9 @@ func (o *Func) Name() string {
 	return o.name
 }
 
-// Data retrieves the compiled bytecode instructions associated with the Func object.
-func (o *Func) Data() []byte {
-	return o.instructions.Data()
+// Code retrieves the compiled bytecode instructions associated with the Func object.
+func (o *Func) Code() []byte {
+	return o.instructions.Code()
 }
 
 // Instructions return a pointer to the Instructions associated with the Func instance.
@@ -190,7 +191,7 @@ func (o *Func) Copy(frame int, _ int) IObject {
 	return ret
 }
 
-// Equals determines whether the current Func instance is equal to the provided IObject. Returns false.
+// Equals determine whether the current Func instance is equal to the provided IObject. Returns false.
 func (o *Func) Equals(_ IObject) bool {
 	return false
 }
@@ -209,4 +210,60 @@ func (o *Func) SourcePos(ip int) int {
 // Count returns the total number of elements in the instance and its sub-elements.
 func (o *Func) Count() int {
 	return 1
+}
+
+// GobEncode serializes the Func's data into a byte slice using gob encoding and returns the result or an error.
+func (o *Func) GobEncode() ([]byte, error) {
+	var buf bytes.Buffer
+	encoder := gob.NewEncoder(&buf)
+	if err := encoder.Encode(o.name); err != nil {
+		return nil, err
+	}
+	if err := encoder.Encode(o.instructions); err != nil {
+		return nil, err
+	}
+	if err := encoder.Encode(o.numLocals); err != nil {
+		return nil, err
+	}
+	if err := encoder.Encode(o.numParameters); err != nil {
+		return nil, err
+	}
+	if err := encoder.Encode(o.varArgs); err != nil {
+		return nil, err
+	}
+	if err := encoder.Encode(o.source); err != nil {
+		return nil, err
+	}
+	if err := encoder.Encode(o.free); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+// GobDecode decodes the provided byte slice into the Func's data field using the gob package.
+func (o *Func) GobDecode(data []byte) error {
+	buf := bytes.NewBuffer(data)
+	decoder := gob.NewDecoder(buf)
+	if err := decoder.Decode(&o.name); err != nil {
+		return err
+	}
+	if err := decoder.Decode(&o.instructions); err != nil {
+		return err
+	}
+	if err := decoder.Decode(&o.numLocals); err != nil {
+		return err
+	}
+	if err := decoder.Decode(&o.numParameters); err != nil {
+		return err
+	}
+	if err := decoder.Decode(&o.varArgs); err != nil {
+		return err
+	}
+	if err := decoder.Decode(&o.source); err != nil {
+		return err
+	}
+	if err := decoder.Decode(&o.free); err != nil {
+		return err
+	}
+	return nil
 }

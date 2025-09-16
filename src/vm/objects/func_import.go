@@ -12,18 +12,18 @@ type FuncCallable = func(gk IGateKeeper, frame int, args ...IObject) (retCount u
 // FuncImport is a callable object type that encapsulates a function and provides execution context information.
 type FuncImport struct {
 	IAllocator
-	name  string
-	args  int
-	value FuncCallable
+	FnName string
+	Args   int
+	Data   FuncCallable
 }
 
 // NewFuncImport creates a new FuncImport instance with the specified Id and callable function.
 func newFuncImport(allocator IAllocator, name string, args int, fn FuncCallable) IObject {
 	return &FuncImport{
 		IAllocator: allocator,
-		name:       name,
-		args:       args,
-		value:      fn,
+		FnName:     name,
+		Args:       args,
+		Data:       fn,
 	}
 }
 
@@ -37,12 +37,12 @@ func (o *FuncImport) AsBool() bool {
 	return false
 }
 
-// AsInt64 returns the length of the array as an int64 value.
+// AsInt64 returns the len of the array as an int64 Code.
 func (o *FuncImport) AsInt64() int64 {
 	return 0
 }
 
-// AsFloat64 returns the length of the array as an int64 value.
+// AsFloat64 returns the len of the array as an int64 Code.
 func (o *FuncImport) AsFloat64() float64 {
 	return 0
 }
@@ -76,12 +76,12 @@ func (o *FuncImport) Falsy() bool {
 	return false
 }
 
-// IndexGet attempts to retrieve a value at the given index and returns an error if the object is not indexable.
+// IndexGet attempts to retrieve a Code at the given index and returns an error if the object is not indexable.
 func (o *FuncImport) IndexGet(_ int, _ IObject) (IObject, error) {
 	return o.GateKeeper().UndefinedValue(), ErrIndexNotIndexable
 }
 
-// IndexSet attempts to assign a value to an index in the object but always returns ErrIndexUnsupported,
+// IndexSet attempts to assign a Code to an index in the object but always returns ErrIndexUnsupported,
 // as this operation is unsupported.
 func (o *FuncImport) IndexSet(_, _ IObject) error {
 	return ErrIndexUnsupported
@@ -97,19 +97,19 @@ func (o *FuncImport) Iterable() bool {
 	return false
 }
 
-// Length returns the length of the Int object.
+// Length returns the len of the Int object.
 func (o *FuncImport) Length() int {
 	return 0
 }
 
-// Name returns the name of the FuncImport as a string.
+// Name returns the FnName of the FuncImport as a string.
 func (o *FuncImport) Name() string {
-	return o.name
+	return o.FnName
 }
 
-// TypeName returns the type name of the FuncImport as a string.
+// TypeName returns the type FnName of the FuncImport as a string.
 func (o *FuncImport) TypeName() string {
-	return "FuncImport:" + o.name
+	return "FuncImport:" + o.FnName
 }
 
 // AsString returns the string representation of a FuncImport object.
@@ -119,7 +119,7 @@ func (o *FuncImport) AsString() string {
 
 // Copy creates and returns a new FuncImport instance with the same Value field as the original object.
 func (o *FuncImport) Copy(frame int, _ int) IObject {
-	return o.GateKeeper().NewFuncImport(frame, o.name, o.args, o.value)
+	return o.GateKeeper().NewFuncImport(frame, o.FnName, o.Args, o.Data)
 }
 
 // Equals checks whether the current FuncImport is equal to another object of type IObject. Always returns false.
@@ -129,8 +129,8 @@ func (o *FuncImport) Equals(_ IObject) bool {
 
 // Call invokes the function encapsulated within the FuncImport with the provided arguments and returns the result or an error.
 func (o *FuncImport) Call(frame int, args ...IObject) (uint, IObject, error) {
-	if o.args < 0 || len(args) == o.args {
-		return o.value(o.GateKeeper(), frame, args...)
+	if o.Args < 0 || len(args) == o.Args {
+		return o.Data(o.GateKeeper(), frame, args...)
 	}
 	return 0, o.GateKeeper().UndefinedValue(), ErrInvalidArgumentsNumber
 }

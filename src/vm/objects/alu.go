@@ -11,7 +11,7 @@ func logicalOpNil(gk IGateAllocator, op LogicalOperator) (IObject, error) {
 	}
 }
 
-// logicalOpInt64 performs a logical comparison between two int64 values using the specified LogicalOperator.
+// logicalOpInt64 performs a logical comparison between two int64 Code using the specified LogicalOperator.
 // Returns the boolean result of the operation or an error if the operator is invalid.
 func logicalOpInt64(lhsValue int64, op LogicalOperator, rhsValue int64) (bool, error) {
 	switch op {
@@ -56,7 +56,7 @@ func arithmeticOpFloat64(lhsValue float64, op ArithmeticOperator, rhsValue float
 	}
 }
 
-// logicalOpFloat64 performs a logical operation between two float64 values using the specified LogicalOperator.
+// logicalOpFloat64 performs a logical operation between two float64 Code using the specified LogicalOperator.
 // Returns the result as a boolean and an error if the operator is invalid.
 func logicalOpFloat64(lhsValue float64, op LogicalOperator, rhsValue float64) (bool, error) {
 	switch op {

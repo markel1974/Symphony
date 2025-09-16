@@ -1,6 +1,8 @@
 package objects
 
-import "encoding/gob"
+import (
+	"encoding/gob"
+)
 
 // UndefinedIteratorType represents a type label for an undefined iterator.
 // UndefinedIteratorLabel represents a label used when the iterator type is undefined.
@@ -35,12 +37,12 @@ func (o *UndefinedIterator) AsBool() bool {
 	return false
 }
 
-// AsInt64 returns the length of the array as an int64 value.
+// AsInt64 returns the len of the array as an int64 Code.
 func (o *UndefinedIterator) AsInt64() int64 {
 	return 0
 }
 
-// AsFloat64 returns the length of the array as an int64 value.
+// AsFloat64 returns the len of the array as an int64 Code.
 func (o *UndefinedIterator) AsFloat64() float64 {
 	return 0
 }
@@ -65,12 +67,12 @@ func (o *UndefinedIterator) ArithmeticOp(_ int, _ ArithmeticOperator, _ IObject)
 	return nil, ErrInvalidOperator
 }
 
-// IndexGet attempts to retrieve a value at the given index and returns an error if the object is not indexable.
+// IndexGet attempts to retrieve a Code at the given index and returns an error if the object is not indexable.
 func (o *UndefinedIterator) IndexGet(_ int, _ IObject) (IObject, error) {
 	return o.GateKeeper().UndefinedValue(), ErrIndexNotIndexable
 }
 
-// IndexSet attempts to assign a value to an index in the object but always returns ErrIndexUnsupported,
+// IndexSet attempts to assign a Code to an index in the object but always returns ErrIndexUnsupported,
 // as this operation is unsupported.
 func (o *UndefinedIterator) IndexSet(_, _ IObject) error {
 	return ErrIndexUnsupported
@@ -91,7 +93,7 @@ func (o *UndefinedIterator) Call(_ int, _ ...IObject) (retCount uint, ret IObjec
 	return 0, nil, nil
 }
 
-// Length returns the length of the Int object.
+// Length returns the len of the Int object.
 func (o *UndefinedIterator) Length() int {
 	return 0
 }
@@ -126,12 +128,12 @@ func (o *UndefinedIterator) Next() bool {
 	return false
 }
 
-// Key returns the key of the current element in the iteration, which is always the undefined value for this iterator type.
+// Key returns the key of the current element in the iteration, which is always the undefined Code for this iterator type.
 func (o *UndefinedIterator) Key(_ int) IObject {
 	return o.GateKeeper().UndefinedValue()
 }
 
-// Value retrieves the undefined value associated with the current UndefinedIterator.
+// Value retrieves the undefined Code associated with the current UndefinedIterator.
 func (o *UndefinedIterator) Value(_ int) IObject {
 	return o.GateKeeper().UndefinedValue()
 }
@@ -139,4 +141,14 @@ func (o *UndefinedIterator) Value(_ int) IObject {
 // Count returns the total number of elements in the instance and its sub-elements.
 func (o *UndefinedIterator) Count() int {
 	return 1
+}
+
+// GobEncode serializes the UndefinedIterator's data into a byte slice using gob encoding and returns the result or an error.
+func (o *UndefinedIterator) GobEncode() ([]byte, error) {
+	return nil, nil
+}
+
+// GobDecode decodes the provided byte slice into the UndefinedIterator's data field using the gob package.
+func (o *UndefinedIterator) GobDecode(_ []byte) error {
+	return nil
 }

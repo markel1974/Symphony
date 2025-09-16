@@ -58,7 +58,7 @@ func (d *Disassembler) disassembleObject(idx int, obj objects.IObject) ([]string
 	}
 	switch cn := obj.(type) {
 	case *objects.Func:
-		result, err := d.disassembleInstructions(cn.Data())
+		result, err := d.disassembleInstructions(cn.Code())
 		if err != nil {
 			return nil, err
 		}

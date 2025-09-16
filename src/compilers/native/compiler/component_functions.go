@@ -443,17 +443,14 @@ func (c *Functions) handleBuiltinInterface(pos token.Pos, receiverSymbol *tables
 // handleClosure processes an anonymous function literal and compiles it into a closure with references to free variables.
 // It creates a new scope, defines parameters, compiles the body, and emits bytecode to assemble the closure object.
 func (c *Functions) handleClosure(node *ast.FuncLit) error {
-	// 1. Enter a new scope for the anonymous function.
 	closureName := fmt.Sprintf("__closure_%d", c.closureCounter)
 	if err := c.scopes.Enter(tables.UnknownScope, closureName); err != nil { // No struct or func name
 		return err
 	}
 	c.closureCounter++
-	// 2. Define symbols for the function parameters.
 	if _, err := c.functionTable.SymbolsFromParameters(node.Type.Params); err != nil {
 		return err
 	}
-	// 3. Compile the function body.
 	if err := c.compile(node.Body); err != nil {
 		return err
 	}
@@ -466,10 +463,14 @@ func (c *Functions) handleClosure(node *ast.FuncLit) error {
 			return err
 		}
 	}
-
 	//prepare free symbols
 	freeSymbols := c.scopes.SymbolFree()
 	freeObj := make([]*objects.ObjectPointer, len(freeSymbols))
+	for idx := range freeSymbols {
+		v := c.gk.UndefinedValue()
+		ptr, _ := c.gk.NewObjectPointer(objects.FrameStatic, &v).(*objects.ObjectPointer)
+		freeObj[idx] = ptr
+	}
 	nParams := c.functionTable.CountParams(node.Type.Params)
 	nLocals := c.scopes.SymbolCount()
 	code, source, err := c.scopes.Leave()

@@ -1,6 +1,9 @@
 package objects
 
-import "encoding/gob"
+import (
+	"bytes"
+	"encoding/gob"
+)
 
 // BoolType defines the string representation of the boolean type. It is used as the type name for boolean objects.
 const (
@@ -12,17 +15,17 @@ func init() {
 	gob.Register(&Bool{})
 }
 
-// Bool represents a boolean type with frame-specific and gatekeeper-managed value assignments.
+// Bool represents a boolean type with frame-specific and gatekeeper-managed data assignments.
 type Bool struct {
 	IAllocator
-	value bool
+	data bool
 }
 
-// newBool creates and returns a new instance of Bool, initializing it with the given frame and boolean value.
+// newBool creates and returns a new instance of Bool, initializing it with the given frame and boolean Code.
 func newBool(allocator IAllocator, value bool) IObject {
 	return &Bool{
 		IAllocator: allocator,
-		value:      value,
+		data:       value,
 	}
 }
 
@@ -32,40 +35,40 @@ func (o *Bool) setAllocator(allocator IAllocator) {
 }
 
 func (o *Bool) AsBool() bool {
-	return o.value
+	return o.data
 }
 
-// AsInt64 returns the length of the array as an int64 value.
+// AsInt64 returns the len of the array as an int64 data.
 func (o *Bool) AsInt64() int64 {
-	if o.value {
+	if o.data {
 		return 1
 	}
 	return 0
 }
 
-// AsFloat64 returns the length of the array as an int64 value.
+// AsFloat64 returns the len of the array as an int64 data.
 func (o *Bool) AsFloat64() float64 {
-	if o.value {
+	if o.data {
 		return 1
 	}
 	return 0
 }
 
-// AsString returns the string representation of the Bool object, either "true" or "false" based on its boolean value.
+// AsString returns the string representation of the Bool object, either "true" or "false" based on its boolean data.
 func (o *Bool) AsString() string {
-	if o.value {
+	if o.data {
 		return "true"
 	}
 	return "false"
 }
 
-// AssignValue assigns the value of another Bool instance to the current instance. Returns an error if the input is not a Bool.
+// AssignValue assigns the data of another Bool instance to the current instance. Returns an error if the input is not a Bool.
 func (o *Bool) AssignValue(v IObject) error {
 	target, ok := v.(*Bool)
 	if !ok {
 		return ErrNotAssignable
 	}
-	o.value = target.value
+	o.data = target.data
 	return nil
 }
 
@@ -81,7 +84,7 @@ func (o *Bool) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, err
 		return logicalOpNil(o.GateKeeper(), op)
 	}
 	lhsValue := int64(0)
-	if o.value {
+	if o.data {
 		lhsValue = 1
 	}
 	ret, err := logicalOpInt64(lhsValue, op, rhsIn.AsInt64())
@@ -98,7 +101,7 @@ func (o *Bool) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, err
 // Returns the result as an IObject and an error if the operation is not valid or executable.
 func (o *Bool) ArithmeticOp(_ int, op ArithmeticOperator, rhsIn IObject) (IObject, error) {
 	lhsValue := int64(0)
-	if o.value {
+	if o.data {
 		lhsValue = 1
 	}
 	ret, err := arithmeticOpInt64(lhsValue, op, rhsIn.AsInt64())
@@ -111,7 +114,7 @@ func (o *Bool) ArithmeticOp(_ int, op ArithmeticOperator, rhsIn IObject) (IObjec
 	return o.GateKeeper().FalseValue(), nil
 }
 
-// IndexGet retrieves the value at a given index from the Bool object, but always returns an error as Bool is not indexable.
+// IndexGet retrieves the data at a given index from the Bool object, but always returns an error as Bool is not indexable.
 func (o *Bool) IndexGet(_ int, _ IObject) (IObject, error) {
 	return o.GateKeeper().UndefinedValue(), ErrIndexNotIndexable
 }
@@ -136,7 +139,7 @@ func (o *Bool) Call(_ int, _ ...IObject) (retCount uint, ret IObject, err error)
 	return 0, nil, nil
 }
 
-// Length returns the length of the Bool object, which is always 0.
+// Length returns the len of the Bool object, which is always 0.
 func (o *Bool) Length() int {
 	return 0
 }
@@ -146,14 +149,14 @@ func (o *Bool) TypeName() string {
 	return BoolType
 }
 
-// Copy creates and returns a new Bool instance with the same value and the specified execution frame.
+// Copy creates and returns a new Bool instance with the same data and the specified execution frame.
 func (o *Bool) Copy(frame int, _ int) IObject {
-	return o.GateKeeper().NewBool(frame, o.value)
+	return o.GateKeeper().NewBool(frame, o.data)
 }
 
-// Falsy determines if the Bool's value is logically false by returning the negation of its `value` field.
+// Falsy determines if the Bool's data is logically false by returning the negation of its `Code` field.
 func (o *Bool) Falsy() bool {
-	return !o.value
+	return !o.data
 }
 
 // Equals checks if the current Bool object is equal to the provided IObject.
@@ -166,23 +169,27 @@ func (o *Bool) Count() int {
 	return 1
 }
 
-// SetValue assigns the provided boolean value to the Bool object's internal value field.
+// SetValue assigns the provided boolean data to the Bool object's internal data field.
 func (o *Bool) SetValue(v bool) {
-	o.value = v
+	o.data = v
 }
 
-// GobDecode decodes the Bool object from a byte slice encoded using Gob into its internal value.
-func (o *Bool) GobDecode(b []byte) (err error) {
-	o.value = b[0] == 1
-	return
-}
-
-// GobEncode encodes the Bool instance into a byte slice representation. Returns the byte slice and any encoding error.
-func (o *Bool) GobEncode() (b []byte, err error) {
-	if o.value {
-		b = []byte{1}
-	} else {
-		b = []byte{0}
+// GobEncode serializes the Bool's data into a byte slice using gob encoding and returns the result or an error.
+func (o *Bool) GobEncode() ([]byte, error) {
+	var buf bytes.Buffer
+	encoder := gob.NewEncoder(&buf)
+	if err := encoder.Encode(o.data); err != nil {
+		return nil, err
 	}
-	return
+	return buf.Bytes(), nil
+}
+
+// GobDecode decodes the provided byte slice into the Bool's data field using the gob package.
+func (o *Bool) GobDecode(data []byte) error {
+	buf := bytes.NewBuffer(data)
+	decoder := gob.NewDecoder(buf)
+	if err := decoder.Decode(&o.data); err != nil {
+		return err
+	}
+	return nil
 }

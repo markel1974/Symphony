@@ -44,9 +44,9 @@ type VIA struct {
 	reads                 [RegisterCount]func() uint8
 	writes                [RegisterCount]func(uint8)
 	pra                   uint8 // symphony:export pra represents the Peripheral Register A (PRA) used to store or output data for port A in the VIA.
-	ddra                  uint8 // symphony:export ddra represents the Data Direction Register A in the VIA, used to configure the direction of port A pins as input or output.
+	ddra                  uint8 // symphony:export ddra represents the Code Direction Register A in the VIA, used to configure the direction of port A pins as input or output.
 	prb                   uint8 // symphony:export prb represents the Peripheral Register B (PRB) used to store or output data for port B in the VIA.
-	ddrb                  uint8 // symphony:export ddrb represents the Data Direction Register B, controlling the input/output configuration of the VIA Port B pins.
+	ddrb                  uint8 // symphony:export ddrb represents the Code Direction Register B, controlling the input/output configuration of the VIA Port B pins.
 	acr                   uint8 // symphony:export acr represents the Auxiliary Control Register used for configuring VIA operating modes and functionalities.
 	pcr                   uint8 // symphony:export pcr represents the Peripheral Control Register for managing control pin configurations and interrupt settings.
 	ifr                   uint8 // symphony:export ifr represents the interrupt flag register, which indicates pending interrupts for the VIA component.
@@ -190,12 +190,12 @@ func (v *VIA) EmulationRequired() bool {
 	return true
 }
 
-// ReadDDRA returns the current value of the Data Direction Register A (DDRA) of the VIA.
+// ReadDDRA returns the current value of the Code Direction Register A (DDRA) of the VIA.
 func (v *VIA) ReadDDRA() uint8 {
 	return v.ddra
 }
 
-// ReadDDRB returns the current value of the Data Direction Register A (DDRB) of the VIA.
+// ReadDDRB returns the current value of the Code Direction Register A (DDRB) of the VIA.
 func (v *VIA) ReadDDRB() uint8 {
 	return v.ddrb
 }

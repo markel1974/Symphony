@@ -1,6 +1,9 @@
 package objects
 
-import "encoding/gob"
+import (
+	"bytes"
+	"encoding/gob"
+)
 
 const (
 	MapIteratorType  = "map_iterator"
@@ -11,13 +14,13 @@ func init() {
 	gob.Register(&MapIterator{})
 }
 
-// MapIterator is a type used for iterating over key-values pairs in a map-like structure.
+// MapIterator is a type used for iterating over key-Code pairs in a map-like structure.
 // It implements the IIterator interface and provides methods for traversal and element access.
 // The embedded Object provides default implementations for methods from the IObject interface.
-// The internal state includes the map (values), keys (keys), current position index (index), and total keys length (length).
+// The internal state includes the map (Code), keys (keys), current position index (index), and total keys length (length).
 type MapIterator struct {
 	IAllocator
-	values map[string]IObject
+	data   map[string]IObject
 	keys   []string
 	index  int
 	length int
@@ -31,7 +34,7 @@ func newMapIterator(allocator IAllocator, v map[string]IObject, index int) IIter
 	}
 	return &MapIterator{
 		IAllocator: allocator,
-		values:     v,
+		data:       v,
 		keys:       keys,
 		length:     len(keys),
 		index:      index,
@@ -48,12 +51,12 @@ func (o *MapIterator) AsBool() bool {
 	return o.length > 0
 }
 
-// AsInt64 returns the length of the array as an int64 value.
+// AsInt64 returns the length of the array as an int64 Code.
 func (o *MapIterator) AsInt64() int64 {
 	return int64(o.length)
 }
 
-// AsFloat64 returns the length of the array as an int64 value.
+// AsFloat64 returns the length of the array as an int64 Code.
 func (o *MapIterator) AsFloat64() float64 {
 	return float64(o.length)
 }
@@ -88,12 +91,12 @@ func (o *MapIterator) ArithmeticOp(_ int, _ ArithmeticOperator, _ IObject) (IObj
 	return nil, ErrInvalidOperator
 }
 
-// IndexGet attempts to retrieve a value at the given index and returns an error if the object is not indexable.
+// IndexGet attempts to retrieve a Code at the given index and returns an error if the object is not indexable.
 func (o *MapIterator) IndexGet(_ int, _ IObject) (IObject, error) {
 	return o.GateKeeper().UndefinedValue(), ErrIndexNotIndexable
 }
 
-// IndexSet attempts to assign a value to an index in the object but always returns ErrIndexUnsupported,
+// IndexSet attempts to assign a Code to an index in the object but always returns ErrIndexUnsupported,
 // as this operation is unsupported.
 func (o *MapIterator) IndexSet(_, _ IObject) error {
 	return ErrIndexUnsupported
@@ -121,7 +124,7 @@ func (o *MapIterator) Length() int {
 
 // Copy creates and returns a new instance of MapIterator, duplicating its current state.
 func (o *MapIterator) Copy(frame int, _ int) IObject {
-	ret := o.GateKeeper().NewMapIterator(frame, o.values, o.index)
+	ret := o.GateKeeper().NewMapIterator(frame, o.data, o.index)
 	return ret
 }
 
@@ -156,21 +159,59 @@ func (o *MapIterator) Key(frame int) IObject {
 	return o.GateKeeper().NewString(frame, k)
 }
 
-// Value retrieves the values of the current element in the iteration based on the iterator's current position.
+// Value retrieves the Code of the current element in the iteration based on the iterator's current position.
 func (o *MapIterator) Value(_ int) IObject {
 	idx := o.index - 1
 	if idx < 0 || idx >= o.length {
 		return o.GateKeeper().UndefinedValue()
 	}
 	k := o.keys[idx]
-	return o.values[k]
+	return o.data[k]
 }
 
 // Count returns the total number of elements in the instance and its sub-elements.
 func (o *MapIterator) Count() int {
 	counter := 0
-	for _, v := range o.values {
+	for _, v := range o.data {
 		counter += v.Count()
 	}
 	return counter
+}
+
+// GobEncode serializes the ArrayIterator's data into a byte slice using gob encoding and returns the result or an error.
+func (o *MapIterator) GobEncode() ([]byte, error) {
+	var buf bytes.Buffer
+	encoder := gob.NewEncoder(&buf)
+	if err := encoder.Encode(o.data); err != nil {
+		return nil, err
+	}
+	if err := encoder.Encode(o.index); err != nil {
+		return nil, err
+	}
+	if err := encoder.Encode(o.keys); err != nil {
+		return nil, err
+	}
+	if err := encoder.Encode(o.length); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+// GobDecode decodes the provided byte slice into the MapIterator's data field using the gob package.
+func (o *MapIterator) GobDecode(data []byte) error {
+	buf := bytes.NewBuffer(data)
+	decoder := gob.NewDecoder(buf)
+	if err := decoder.Decode(&o.data); err != nil {
+		return err
+	}
+	if err := decoder.Decode(&o.index); err != nil {
+		return err
+	}
+	if err := decoder.Decode(&o.keys); err != nil {
+		return err
+	}
+	if err := decoder.Decode(&o.length); err != nil {
+		return err
+	}
+	return nil
 }

@@ -1,6 +1,7 @@
 package objects
 
 import (
+	"bytes"
 	"encoding/gob"
 	"fmt"
 	"strings"
@@ -17,7 +18,7 @@ func init() {
 // Array represents a collection of IObject elements, providing methods for manipulation, indexing, and iteration.
 type Array struct {
 	IAllocator
-	values []IObject
+	data []IObject
 }
 
 // NewArray creates and returns a new Array object initialized with the provided slice of IObject elements.
@@ -27,7 +28,7 @@ func newArray(allocator IAllocator, value []IObject) IObject {
 	}
 	return &Array{
 		IAllocator: allocator,
-		values:     value,
+		data:       value,
 	}
 }
 
@@ -38,23 +39,23 @@ func (o *Array) setAllocator(allocator IAllocator) {
 
 // AsBool returns true if the array is not empty, otherwise false.
 func (o *Array) AsBool() bool {
-	return len(o.values) > 0
+	return len(o.data) > 0
 }
 
-// AsInt64 returns the length of the array as an int64 value.
+// AsInt64 returns the len of the array as an int64 data.
 func (o *Array) AsInt64() int64 {
-	return int64(len(o.values))
+	return int64(len(o.data))
 }
 
-// AsFloat64 returns the length of the array as an int64 value.
+// AsFloat64 returns the len of the array as an int64 data.
 func (o *Array) AsFloat64() float64 {
-	return float64(len(o.values))
+	return float64(len(o.data))
 }
 
 // AsString returns a string representation of the Array, formatting its elements in a comma-separated list enclosed in brackets.
 func (o *Array) AsString() string {
 	var elements []string
-	for _, e := range o.values {
+	for _, e := range o.data {
 		elements = append(elements, e.AsString())
 	}
 	return fmt.Sprintf("[%s]", strings.Join(elements, "; "))
@@ -66,7 +67,7 @@ func (o *Array) AssignValue(v IObject) error {
 	if !ok {
 		return ErrNotAssignable
 	}
-	o.Assign(target.values)
+	o.Assign(target.data)
 	return nil
 }
 
@@ -87,36 +88,36 @@ func (o *Array) TypeName() string {
 
 // Values return the slice of IObject elements stored in the Array.
 func (o *Array) Values() []IObject {
-	return o.values
+	return o.data
 }
 
-// Index returns the element at the specified index in the Array, or an error if the index is out of bounds.
+// Index returns the element at the specified Index in the Array, or an error if the Index is out of bounds.
 func (o *Array) Index(index int) (IObject, error) {
-	if index < 0 || index >= len(o.values) {
+	if index < 0 || index >= len(o.data) {
 		return nil, ErrIndexOutOfBounds
 	}
-	return o.values[index], nil
+	return o.data[index], nil
 }
 
 // Length returns the number of elements in the Array.
 func (o *Array) Length() int {
-	return len(o.values)
+	return len(o.data)
 }
 
-// SetValue assigns a given IObject value to the specified index in the Array if the index is within bounds
+// SetValue assigns a given IObject data to the specified Index in the Array if the Index is within bounds
 func (o *Array) SetValue(idx int, value IObject) {
-	if idx < 0 || idx >= len(o.values) {
+	if idx < 0 || idx >= len(o.data) {
 		return
 	}
-	o.values[idx] = value
+	o.data[idx] = value
 }
 
 // Append adds an element to the end of the Array.
 func (o *Array) Append(elem IObject) {
-	if len(o.values) >= maxArrayLen {
+	if len(o.data) >= maxArrayLen {
 		return
 	}
-	o.values = append(o.values, elem)
+	o.data = append(o.data, elem)
 }
 
 // Assign replaces the current slice of elements with the provided slice.
@@ -124,7 +125,7 @@ func (o *Array) Assign(v []IObject) {
 	if len(v) > maxArrayLen {
 		v = v[0:maxArrayLen]
 	}
-	o.values = v
+	o.data = v
 }
 
 // LogicalOp performs a logical operation on the array using the given operator and operand, returning an error if invalid.
@@ -141,18 +142,18 @@ func (o *Array) ArithmeticOp(frame int, op ArithmeticOperator, rhsIn IObject) (I
 	case OperatorAdd:
 		switch rhs := rhsIn.(type) {
 		case *Bool, *Int, *Float, *Char, *String:
-			if len(o.values)+rhsIn.Length() > maxArrayLen {
+			if len(o.data)+rhsIn.Length() > maxArrayLen {
 				return nil, ErrLimitExceed
 			}
-			return o.GateKeeper().NewArray(frame, append(o.values, rhsIn)), nil
+			return o.GateKeeper().NewArray(frame, append(o.data, rhsIn)), nil
 		case *Array:
-			if len(rhs.values) == 0 {
+			if len(rhs.data) == 0 {
 				return o, nil
 			}
-			if len(o.values)+len(rhs.values) > maxArrayLen {
+			if len(o.data)+len(rhs.data) > maxArrayLen {
 				return nil, ErrLimitExceed
 			}
-			return o.GateKeeper().NewArray(frame, append(o.values, rhs.values...)), nil
+			return o.GateKeeper().NewArray(frame, append(o.data, rhs.data...)), nil
 		}
 	default:
 		return nil, ErrInvalidOperator
@@ -163,7 +164,7 @@ func (o *Array) ArithmeticOp(frame int, op ArithmeticOperator, rhsIn IObject) (I
 // Copy creates and returns a deep copy of the Array and its elements.
 func (o *Array) Copy(frame int, depth int) IObject {
 	var c []IObject
-	for _, elem := range o.values {
+	for _, elem := range o.data {
 		if depth >= maxDepth {
 			break
 		}
@@ -174,22 +175,22 @@ func (o *Array) Copy(frame int, depth int) IObject {
 
 // Falsy returns true if the array is empty, otherwise false.
 func (o *Array) Falsy() bool {
-	return len(o.values) == 0
+	return len(o.data) == 0
 }
 
-// Equals compare the current Array with another IObject and return true if they have equivalent values and order.
+// Equals compare the current Array with another IObject and return true if they have equivalent data and order.
 func (o *Array) Equals(in IObject) bool {
 	var xVal []IObject
 	switch x := in.(type) {
 	case *Array:
-		xVal = x.values
+		xVal = x.data
 	default:
 		return false
 	}
-	if len(o.values) != len(xVal) {
+	if len(o.data) != len(xVal) {
 		return false
 	}
-	for i, e := range o.values {
+	for i, e := range o.data {
 		if !e.Equals(xVal[i]) {
 			return false
 		}
@@ -197,20 +198,20 @@ func (o *Array) Equals(in IObject) bool {
 	return true
 }
 
-// IndexGet retrieves the element at the given index from the Array. Returns an error if the index type is invalid or out of bounds.
+// IndexGet retrieves the element at the given Index from the Array. Returns an error if the Index type is invalid or out of bounds.
 func (o *Array) IndexGet(_ int, index IObject) (IObject, error) {
 	intIdx, ok := index.(*Int)
 	if !ok {
 		return o.GateKeeper().UndefinedValue(), ErrIndexInvalidType
 	}
-	idxVal := int(intIdx.value)
-	if idxVal < 0 || idxVal >= len(o.values) {
+	idxVal := int(intIdx.data)
+	if idxVal < 0 || idxVal >= len(o.data) {
 		return o.GateKeeper().UndefinedValue(), nil
 	}
-	return o.values[idxVal], nil
+	return o.data[idxVal], nil
 }
 
-// IndexSet assigns a given value to the specified index in the array, returning an error if the operation is invalid.
+// IndexSet assigns a given data to the specified Index in the array, returning an error if the operation is invalid.
 func (o *Array) IndexSet(index IObject, value IObject) (err error) {
 	idx, ok := o.GateKeeper().ToInt64(index)
 	if !ok {
@@ -218,18 +219,18 @@ func (o *Array) IndexSet(index IObject, value IObject) (err error) {
 		return
 	}
 	intIdx := int(idx)
-	if intIdx < 0 || intIdx >= len(o.values) {
+	if intIdx < 0 || intIdx >= len(o.data) {
 		err = ErrIndexOutOfBounds
 		return
 	}
-	o.values[intIdx] = value
+	o.data[intIdx] = value
 	return nil
 }
 
 // Count returns the total number of elements in the instance and its sub-elements.
 func (o *Array) Count() int {
 	counter := 0
-	for _, v := range o.values {
+	for _, v := range o.data {
 		counter += v.Count()
 	}
 	return counter
@@ -242,5 +243,25 @@ func (o *Array) Iterable() bool {
 
 // Iterate returns an IIterator for the Array instance, allowing sequential access to its elements.
 func (o *Array) Iterate(frame int) IIterator {
-	return o.GateKeeper().NewArrayIterator(frame, o.values, 0)
+	return o.GateKeeper().NewArrayIterator(frame, o.data, 0)
+}
+
+// GobEncode serializes the Array's data into a byte slice using gob encoding and returns the result or an error.
+func (o *Array) GobEncode() ([]byte, error) {
+	var buf bytes.Buffer
+	encoder := gob.NewEncoder(&buf)
+	if err := encoder.Encode(o.data); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+// GobDecode decodes the provided byte slice into the Array's data field using the gob package.
+func (o *Array) GobDecode(data []byte) error {
+	buf := bytes.NewBuffer(data)
+	decoder := gob.NewDecoder(buf)
+	if err := decoder.Decode(&o.data); err != nil {
+		return err
+	}
+	return nil
 }

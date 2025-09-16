@@ -1,6 +1,7 @@
 package objects
 
 import (
+	"bytes"
 	"encoding/gob"
 	"strconv"
 )
@@ -13,17 +14,17 @@ func init() {
 	gob.Register(&Int{})
 }
 
-// Int represents an integer type with a 64-bit value and methods for operations, equality, and object behavior.
+// Int represents an integer type with a 64-bit Code and methods for operations, equality, and object behavior.
 type Int struct {
 	IAllocator
-	value int64
+	data int64
 }
 
-// NewInt creates and returns a new instance of the Int struct initialized with the specified int64 value.
+// NewInt creates and returns a new instance of the Int struct initialized with the specified int64 Code.
 func newInt(allocator IAllocator, value int64) IObject {
 	return &Int{
 		IAllocator: allocator,
-		value:      value,
+		data:       value,
 	}
 }
 
@@ -32,33 +33,33 @@ func (o *Int) setAllocator(allocator IAllocator) {
 	o.IAllocator = allocator
 }
 
-// AsBool converts the integer value to a boolean, returning true if the value is non-zero, otherwise false.
+// AsBool converts the integer Code to a boolean, returning true if the Code is non-zero, otherwise false.
 func (o *Int) AsBool() bool {
-	return o.value != 0
+	return o.data != 0
 }
 
-// AsInt64 returns the length of the array as an int64 value.
+// AsInt64 returns the len of the array as an int64 Code.
 func (o *Int) AsInt64() int64 {
-	return o.value
+	return o.data
 }
 
-// AsFloat64 returns the length of the array as an int64 value.
+// AsFloat64 returns the len of the array as an int64 Code.
 func (o *Int) AsFloat64() float64 {
-	return float64(o.value)
+	return float64(o.data)
 }
 
-// AsString returns the string representation of the Int value using base 10 format.
+// AsString returns the string representation of the Int Code using base 10 format.
 func (o *Int) AsString() string {
-	return strconv.FormatInt(o.value, 10)
+	return strconv.FormatInt(o.data, 10)
 }
 
-// AssignValue assigns the value of another IObject to the current Int object if the type is compatible, otherwise returns an error.
+// AssignValue assigns the Code of another IObject to the current Int object if the type is compatible, otherwise returns an error.
 func (o *Int) AssignValue(v IObject) error {
 	target, ok := v.(*Int)
 	if !ok {
 		return ErrNotAssignable
 	}
-	o.value = target.value
+	o.data = target.data
 	return nil
 }
 
@@ -67,12 +68,12 @@ func (o *Int) Nil() bool {
 	return false
 }
 
-// IndexGet attempts to retrieve a value at the given index and returns an error if the object is not indexable.
+// IndexGet attempts to retrieve a Code at the given index and returns an error if the object is not indexable.
 func (o *Int) IndexGet(_ int, _ IObject) (IObject, error) {
 	return o.GateKeeper().UndefinedValue(), ErrIndexNotIndexable
 }
 
-// IndexSet attempts to assign a value to an index in the object but always returns ErrIndexUnsupported,
+// IndexSet attempts to assign a Code to an index in the object but always returns ErrIndexUnsupported,
 // as this operation is unsupported.
 func (o *Int) IndexSet(_, _ IObject) error {
 	return ErrIndexUnsupported
@@ -93,19 +94,19 @@ func (o *Int) Call(_ int, _ ...IObject) (retCount uint, ret IObject, err error) 
 	return 0, nil, nil
 }
 
-// Length returns the length of the Int object.
+// Length returns the len of the Int object.
 func (o *Int) Length() int {
 	return 0
 }
 
-// Value returns the underlying int64 value of the Int object.
+// Value returns the underlying int64 Code of the Int object.
 func (o *Int) Value() int64 {
-	return o.value
+	return o.data
 }
 
-// SetValue sets the underlying int64 value of the Int object.
+// SetValue sets the underlying int64 Code of the Int object.
 func (o *Int) SetValue(value int64) {
-	o.value = value
+	o.data = value
 }
 
 // TypeName returns the name of the type as a string, which is "int" for this object.
@@ -113,12 +114,12 @@ func (o *Int) TypeName() string {
 	return IntType
 }
 
-// LogicalOp performs a logical operation between the object's value and a given operand, using the specified operator.
+// LogicalOp performs a logical operation between the object's Code and a given operand, using the specified operator.
 func (o *Int) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, error) {
 	if rhsIn.Nil() {
 		return logicalOpNil(o.GateKeeper(), op)
 	}
-	ret, err := logicalOpInt64(o.value, op, rhsIn.AsInt64())
+	ret, err := logicalOpInt64(o.data, op, rhsIn.AsInt64())
 	if err != nil {
 		return nil, err
 	}
@@ -130,36 +131,56 @@ func (o *Int) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, erro
 
 // ArithmeticOp performs a binary arithmetic operation on the Int object using the specified operator and right-hand operand.
 func (o *Int) ArithmeticOp(frame int, op ArithmeticOperator, rhsIn IObject) (IObject, error) {
-	ret, err := arithmeticOpInt64(o.value, op, rhsIn.AsInt64())
+	ret, err := arithmeticOpInt64(o.data, op, rhsIn.AsInt64())
 	if err != nil {
 		return nil, err
 	}
-	if ret == o.value {
+	if ret == o.data {
 		return o, nil
 	}
 	return o.GateKeeper().NewInt(frame, ret), nil
 }
 
-// Copy creates and returns a new instance of the Int object with the same value as the current instance.
+// Copy creates and returns a new instance of the Int object with the same Code as the current instance.
 func (o *Int) Copy(frame int, _ int) IObject {
-	return o.GateKeeper().NewInt(frame, o.value)
+	return o.GateKeeper().NewInt(frame, o.data)
 }
 
-// Falsy checks whether the integer value is considered falsy. Returns true if the value is 0, otherwise false.
+// Falsy checks whether the integer Code is considered falsy. Returns true if the Code is 0, otherwise false.
 func (o *Int) Falsy() bool {
-	return o.value == 0
+	return o.data == 0
 }
 
-// Equals checks if the current Int object is equal to another IObject of type Int by comparing their values.
+// Equals checks if the current Int object is equal to another IObject of type Int by comparing their Code.
 func (o *Int) Equals(x IObject) bool {
 	t, ok := x.(*Int)
 	if !ok {
 		return false
 	}
-	return o.value == t.value
+	return o.data == t.data
 }
 
 // Count returns the total number of elements in the instance and its sub-elements.
 func (o *Int) Count() int {
 	return 1
+}
+
+// GobEncode serializes the Int's data into a byte slice using gob encoding and returns the result or an error.
+func (o *Int) GobEncode() ([]byte, error) {
+	var buf bytes.Buffer
+	encoder := gob.NewEncoder(&buf)
+	if err := encoder.Encode(o.data); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+// GobDecode decodes the provided byte slice into the Int's data field using the gob package.
+func (o *Int) GobDecode(data []byte) error {
+	buf := bytes.NewBuffer(data)
+	decoder := gob.NewDecoder(buf)
+	if err := decoder.Decode(&o.data); err != nil {
+		return err
+	}
+	return nil
 }

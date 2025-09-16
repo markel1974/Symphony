@@ -107,11 +107,11 @@ func (v *VIA1Socket) SignalPRB(prb uint8) {
 	v.peripheralWrite(prb, ddrb)
 }
 
-// SignalDDRA updates the Data Direction Register A (DDRA) with the provided values.
+// SignalDDRA updates the Code Direction Register A (DDRA) with the provided values.
 func (v *VIA1Socket) SignalDDRA(_ uint8) {
 }
 
-// SignalDDRB performs a write operation to the Data Direction Register B (DDRB) and invokes the peripheral write method.
+// SignalDDRB performs a write operation to the Code Direction Register B (DDRB) and invokes the peripheral write method.
 func (v *VIA1Socket) SignalDDRB(ddrb uint8) {
 	prb := v.ReadPRB()
 	v.peripheralWrite(prb, ddrb)

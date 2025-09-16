@@ -1629,7 +1629,7 @@ fprintf(_fout, "Bitmap base       : %04lx\n\n", vs.bitmap_base);
 
 fprintf(_fout, "         Spr.0  Spr.1  Spr.2  Spr.3  Spr.4  Spr.5  Spr.6  Spr.7\n");
 fprintf(_fout, "Enabled: "); dump_spr_flags(vs.me);
-fprintf(_fout, "Data   : %04lx   %04lx   %04lx   %04lx   %04lx   %04lx   %04lx   %04lx\n",
+fprintf(_fout, "Code   : %04lx   %04lx   %04lx   %04lx   %04lx   %04lx   %04lx   %04lx\n",
 vs.sprite_base[0], vs.sprite_base[1], vs.sprite_base[2], vs.sprite_base[3],
 vs.sprite_base[4], vs.sprite_base[5], vs.sprite_base[6], vs.sprite_base[7]);
 fprintf(_fout, "MC     : %02lx     %02lx     %02lx     %02lx     %02lx     %02lx     %02lx     %02lx\n",
@@ -1676,7 +1676,7 @@ fputc('\n', _fout);
 void C64SAM::dump_vic_ints(uint8 i) {
 if (i & 0x1f) {
 if (i & 1) fprintf(_fout, "Raster ");
-if (i & 2) fprintf(_fout, "Spr-Data ");
+if (i & 2) fprintf(_fout, "Spr-Code ");
 if (i & 4) fprintf(_fout, "Spr-Spr ");
 if (i & 8) fprintf(_fout, "Lightpen");
 } else

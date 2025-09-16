@@ -1,6 +1,7 @@
 package stub
 
 import (
+	"bytes"
 	"embed"
 	"fmt"
 	"log"
@@ -62,26 +63,30 @@ func Launch(prefix string, debug bool) error {
 		}
 		comp, loader, err := compilers.NewCompiler(gk, seq)
 		if err != nil {
-			return fmt.Errorf("compiler error: %s", err)
+			return fmt.Errorf("create compiler error: %s", err)
 		}
 		var args []interface{} = nil
 		//args := []interface{}{1, 2}
 		dataFile, err := All.ReadFile(fileName)
 		if err != nil {
-			return fmt.Errorf("compiler error: %s", err)
+			return fmt.Errorf("read file error: %s", err)
 		}
 		if err = comp.Compile(fileName, dataFile); err != nil {
 			return fmt.Errorf("compiler error: %s", err)
 		}
-		bc := bytecode.NewBytecode(gk, comp.Constants(), comp.Imports(), comp.Globals(), comp.FileSet())
+		bc2 := bytecode.NewBytecode(gk, comp.Constants(), comp.Imports(), comp.Globals(), comp.FileSet())
 		if debug {
-			d := bytecode.NewDisassembler(bc, seq)
+			d := bytecode.NewDisassembler(bc2, seq)
 			_ = d.Disassemble(log.Writer())
 		}
-		//buf := bytes.NewBuffer([]byte{})
-		//if err = bc.Encode(buf); err != nil {
-		//	return fmt.Errorf("compiler error: %s", err)
-		//}
+		buf := bytes.NewBuffer([]byte{})
+		if err = bc2.Encode(buf); err != nil {
+			return fmt.Errorf("encoding error: %s", err)
+		}
+		bc := bytecode.NewBytecodeEmpty(gk)
+		if err = bc.Decode(buf); err != nil {
+			return fmt.Errorf("decoding error: %s", err)
+		}
 		machine := core.New(gk, seq)
 		if err = seq.Bind(machine); err != nil {
 			return err

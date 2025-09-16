@@ -73,7 +73,7 @@ type CPU struct {
 	op             uint8          // op Current opcode
 	ar             uint16         // ar Address register
 	ar2            uint16         // ar2 Address register 2
-	rmw            uint8          // rmw Data buffer for RMW instructions
+	rmw            uint8          // rmw Code buffer for RMW instructions
 	rdyLow         bool           // rdyLow current RDY state
 	aecLow         bool           // aecLow current AEC state
 	opFlags        uint8          // opFlags is a uint8 value used to store operational flags for the CPU's current instruction state.

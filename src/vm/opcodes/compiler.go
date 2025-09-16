@@ -20,7 +20,7 @@ func NewCompiler(opcode *Opcode) *Compiler {
 
 // Instructions returns the compiled bytecode as a slice of bytes from the compiler instance.
 func (c *Compiler) Instructions() []byte {
-	return c.instructions.Data()
+	return c.instructions.Code()
 }
 
 // Compile converts a list of operands into bytecode based on the opcode and writes the result to the instructions buffer.

@@ -11,7 +11,7 @@ func init() {
 	gob.Register(&Undefined{})
 }
 
-// Undefined represents an undefined values.
+// Undefined represents an undefined Code.
 type Undefined struct {
 	IAllocator
 }
@@ -32,12 +32,12 @@ func (o *Undefined) AsBool() bool {
 	return false
 }
 
-// AsInt64 returns the length of the array as an int64 value.
+// AsInt64 returns the len of the array as an int64 Code.
 func (o *Undefined) AsInt64() int64 {
 	return 0
 }
 
-// AsFloat64 returns the length of the array as an int64 value.
+// AsFloat64 returns the len of the array as an int64 Code.
 func (o *Undefined) AsFloat64() float64 {
 	return 0
 }
@@ -80,7 +80,7 @@ func (o *Undefined) ArithmeticOp(_ int, _ ArithmeticOperator, _ IObject) (IObjec
 	return nil, ErrInvalidOperator
 }
 
-// IndexSet attempts to assign a value to an index in the object but always returns ErrIndexUnsupported,
+// IndexSet attempts to assign a Code to an index in the object but always returns ErrIndexUnsupported,
 // as this operation is unsupported.
 func (o *Undefined) IndexSet(_, _ IObject) (err error) {
 	return ErrIndexUnsupported
@@ -91,7 +91,7 @@ func (o *Undefined) Call(_ int, _ ...IObject) (retCount uint, ret IObject, err e
 	return 0, nil, nil
 }
 
-// Length returns the length of the Int object.
+// Length returns the len of the Int object.
 func (o *Undefined) Length() int {
 	return 0
 }
@@ -115,7 +115,7 @@ func (o *Undefined) Falsy() bool {
 	return true
 }
 
-// Equals returns true if the values of the type are equal to the values of
+// Equals returns true if the Code of the type are equal to the Code of
 // another object.
 func (o *Undefined) Equals(x IObject) bool {
 	return o == x
@@ -141,12 +141,12 @@ func (o *Undefined) Next() bool {
 	return false
 }
 
-// Key returns the key or index values of the current element.
+// Key returns the key or index Code of the current element.
 func (o *Undefined) Key(_ int) IObject {
 	return o
 }
 
-// Value returns the values of the current element.
+// Value returns the Code of the current element.
 func (o *Undefined) Value(_ int) IObject {
 	return o
 }
@@ -154,4 +154,14 @@ func (o *Undefined) Value(_ int) IObject {
 // Count returns the total number of elements in the instance and its sub-elements.
 func (o *Undefined) Count() int {
 	return 1
+}
+
+// GobEncode serializes the Undefined's data into a byte slice using gob encoding and returns the result or an error.
+func (o *Undefined) GobEncode() ([]byte, error) {
+	return nil, nil
+}
+
+// GobDecode decodes the provided byte slice into the Undefined's data field using the gob package.
+func (o *Undefined) GobDecode(_ []byte) error {
+	return nil
 }
