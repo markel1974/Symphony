@@ -45,7 +45,6 @@ func (op *OpTrue) Bind(vm core.IVM) error {
 
 // Execute pushes the constant true value onto the virtual machine's stack.
 func (op *OpTrue) Execute(_ *core.Decoder) {
-	// Operands Offset 0
 	val := op.vm.Factory().TrueValue()
 	op.vm.StackPush(val)
 }

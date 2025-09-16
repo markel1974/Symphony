@@ -45,17 +45,14 @@ func (op *OpReturn) Bind(vm core.IVM) error {
 
 // Execute performs the return operation for the current frame, manages the stack, and transitions between frames in the VM.
 func (op *OpReturn) Execute(decoder *core.Decoder) {
-	// Operands Offset 1 (8-bit)
-	// collect return values from the stack using Pop(),
-	// this is necessary to uncover the underlying values.
-	var returnValues []objects.IObject
-	if numReturnVals := decoder.Operand(0); numReturnVals > 0 {
-		returnValues = make([]objects.IObject, numReturnVals)
-		for i := 0; i < numReturnVals; i++ {
-			returnValues[i] = op.vm.StackPop()
+	var ret []objects.IObject
+	if nRet := decoder.Operand(0); nRet > 0 {
+		ret = make([]objects.IObject, nRet)
+		for i := 0; i < nRet; i++ {
+			ret[i] = op.vm.StackPop()
 		}
 	}
-	op.vm.Return(returnValues)
+	op.vm.Return(ret)
 }
 
 // Compile generates the compiled representation of the OpReturn operation or returns an unimplemented error.

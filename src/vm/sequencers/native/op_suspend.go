@@ -45,7 +45,6 @@ func (op *OpSuspend) Bind(vm core.IVM) error {
 
 // Execute performs the suspend operation on the given virtual machine by setting its shutdown state to true.
 func (op *OpSuspend) Execute(_ *core.Decoder) {
-	// Operands Offset 0
 	op.vm.Shutdown()
 }
 

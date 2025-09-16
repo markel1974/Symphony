@@ -51,7 +51,6 @@ func (op *OpTypeAssert) Bind(vm core.IVM) error {
 // It decodes the target type from the constant pool using the provided decoder and validates against the interface object.
 // On success, the concrete value and a boolean 'true' are pushed onto the stack. On failure, undefined and 'false' are pushed.
 func (op *OpTypeAssert) Execute(decoder *core.Decoder) {
-	// The operand is the index of the target type name in the constants table.
 	typeNameIndex := decoder.Operand(0)
 	interfaceObj := op.vm.StackPop()
 	targetTypeObj := op.vm.Constants().Get(uint(typeNameIndex))
@@ -66,6 +65,8 @@ func (op *OpTypeAssert) Execute(decoder *core.Decoder) {
 		concreteValue = io.Value()
 	case *objects.Struct:
 		concreteValue = io
+	case *objects.ObjectPointer:
+		concreteValue = *io.Value()
 	default:
 		op.vm.StackPush(op.vm.Factory().UndefinedValue())
 		op.vm.StackPush(op.vm.Factory().FalseValue())
