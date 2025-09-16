@@ -92,23 +92,6 @@ func (v *Stack) Push(obj objects.IObject) {
 	v.sp++
 }
 
-// PopArray removes and returns a specified number of elements from the stack as a slice of IObject.
-func (v *Stack) PopArray(numElements uint) []objects.IObject {
-	if numElements > v.sp {
-		v.errSignal(objects.ErrIndexOutOfBounds)
-		return []objects.IObject{}
-	}
-	elements := make([]objects.IObject, numElements)
-	//var elements []objects.IObject
-	target := v.sp - numElements
-	for i := target; i < v.sp; i++ {
-		elements[i-target] = v.stack[i]
-		//elements = append(elements, v.stack[i])
-	}
-	v.sp -= numElements
-	return elements
-}
-
 // Pop removes and returns the object at the top of the stack.
 // It returns UndefinedValue if the stack is empty (stack underflow).
 func (v *Stack) Pop() objects.IObject {
@@ -118,6 +101,21 @@ func (v *Stack) Pop() objects.IObject {
 	}
 	v.sp--
 	return v.stack[v.sp]
+}
+
+// PopArray removes and returns a specified number of elements from the stack as a slice of IObject.
+func (v *Stack) PopArray(numElements uint) []objects.IObject {
+	if numElements > v.sp {
+		v.errSignal(objects.ErrIndexOutOfBounds)
+		return []objects.IObject{}
+	}
+	elements := make([]objects.IObject, numElements)
+	target := v.sp - numElements
+	for i := target; i < v.sp; i++ {
+		elements[i-target] = v.stack[i]
+	}
+	v.sp -= numElements
+	return elements
 }
 
 // PopMap removes the specified number of key-value pairs from the stack and returns them as a map.
@@ -135,12 +133,7 @@ func (v *Stack) PopMap(numElements uint) map[string]objects.IObject {
 	for i := target; i < v.sp; i += 2 {
 		k := v.stack[i]
 		value := v.stack[i+1]
-		key, ok := k.(*objects.String)
-		if !ok {
-			v.errSignal(fmt.Errorf("expected key to be of type AsString, got %T (value is %v)", k, value))
-			return nil
-		}
-		kv[key.Value()] = value
+		kv[k.AsString()] = value
 	}
 	v.sp -= numElements
 	return kv

@@ -189,6 +189,11 @@ func (v *VM) StackPopMap(numElements uint) map[string]objects.IObject {
 	return v.stack.PopMap(numElements)
 }
 
+// StackPopStruct pops a specified number of key-value pairs from the stack and returns them as a map.
+func (v *VM) StackPopStruct(numElements uint) map[string]objects.IObject {
+	return v.stack.PopMap(numElements)
+}
+
 // StackDecrementCount reduces the count of items on the stack by the specified decrement amount.
 func (v *VM) StackDecrementCount(decrement uint) {
 	v.stack.DecrementCount(decrement)

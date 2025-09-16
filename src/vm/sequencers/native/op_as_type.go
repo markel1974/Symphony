@@ -50,10 +50,10 @@ func (op *OpAsType) Bind(vm core.IVM) error {
 
 // Execute performs the operation by popping an interface from the stack and pushing its concrete value back.
 // If the popped object is not an interface, it sets an error in the virtual machine.
-func (op *OpAsType) Execute(decoder *core.Decoder) {
+func (op *OpAsType) Execute(_ *core.Decoder) {
 	interfaceObj := op.vm.StackPop()
-	io, isInterface := interfaceObj.(*objects.Interface)
-	if !isInterface {
+	io, ok := interfaceObj.(*objects.Interface)
+	if !ok {
 		op.vm.SetError(fmt.Errorf("cannot perform unchecked cast on a non-interface type: %s", interfaceObj.TypeName()))
 		return
 	}
