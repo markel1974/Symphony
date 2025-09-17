@@ -34,6 +34,12 @@ func (o *Bool) setAllocator(allocator IAllocator) {
 	o.IAllocator = allocator
 }
 
+// AsInterface converts the object into a generic interface{} type and returns the underlying data.
+func (o *Bool) AsInterface() interface{} {
+	return o == o.GateKeeper().TrueValue()
+}
+
+// AsBool returns the boolean value stored in the Bool object.
 func (o *Bool) AsBool() bool {
 	return o.data
 }

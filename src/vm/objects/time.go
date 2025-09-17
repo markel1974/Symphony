@@ -33,6 +33,11 @@ func (o *Time) setAllocator(allocator IAllocator) {
 	o.IAllocator = allocator
 }
 
+// AsInterface converts the object into a generic interface{} type and returns the underlying data.
+func (o *Time) AsInterface() interface{} {
+	return o.data
+}
+
 // AsBool returns the boolean representation of the Time object, which is true if the Code is not zero.
 func (o *Time) AsBool() bool {
 	return !o.data.IsZero()

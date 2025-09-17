@@ -102,203 +102,208 @@ func newFuncInternal(allocator IAllocator, id CallId) IObject {
 }
 
 // setAllocator sets the allocator instance for the FuncInternal. It replaces the existing allocator with the provided one.
-func (i *FuncInternal) setAllocator(allocator IAllocator) {
-	i.IAllocator = allocator
+func (o *FuncInternal) setAllocator(allocator IAllocator) {
+	o.IAllocator = allocator
+}
+
+// AsInterface converts the object into a generic interface{} type and returns the underlying data.
+func (o *FuncInternal) AsInterface() interface{} {
+	return nil
 }
 
 // AsBool converts the internal state of the FuncInternal instance into a boolean representation and returns it.
-func (i *FuncInternal) AsBool() bool {
+func (o *FuncInternal) AsBool() bool {
 	return false
 }
 
 // AsInt64 converts and returns the internal value of the receiver to an int64 type.
-func (i *FuncInternal) AsInt64() int64 {
+func (o *FuncInternal) AsInt64() int64 {
 	return 0
 }
 
 // AsFloat64 converts the internal value of FuncInternal to a float64 representation and returns it.
-func (i *FuncInternal) AsFloat64() float64 {
+func (o *FuncInternal) AsFloat64() float64 {
 	return 0
 }
 
 // AsString returns the string representation of the FuncInternal instance.
-func (i *FuncInternal) AsString() string {
+func (o *FuncInternal) AsString() string {
 	return "<FuncInternal>"
 }
 
 // AssignValue attempts to assign a value to the object and returns an error if assignment is not possible.
-func (i *FuncInternal) AssignValue(_ IObject) error {
+func (o *FuncInternal) AssignValue(_ IObject) error {
 	return ErrNotAssignable
 }
 
 // Nil checks whether the associated internal function is nil or not and returns false as a constant result.
-func (i *FuncInternal) Nil() bool {
+func (o *FuncInternal) Nil() bool {
 	return false
 }
 
 // LogicalOp performs a logical operation specified by the operator on the current object and the given right-hand side.
 // Returns the result as an IObject or an error if the operation is invalid.
-func (i *FuncInternal) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, error) {
+func (o *FuncInternal) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, error) {
 	if rhsIn.Nil() {
-		return logicalOpNil(i.GateKeeper(), op)
+		return logicalOpNil(o.GateKeeper(), op)
 	}
 	return nil, ErrInvalidOperator
 }
 
 // ArithmeticOp performs an arithmetic operation on the provided operands and returns the resulting object or an error.
-func (i *FuncInternal) ArithmeticOp(_ int, _ ArithmeticOperator, _ IObject) (IObject, error) {
+func (o *FuncInternal) ArithmeticOp(_ int, _ ArithmeticOperator, _ IObject) (IObject, error) {
 	return nil, ErrInvalidOperator
 }
 
 // Falsy returns a boolean value indicating false. It is a utility function that always evaluates to false.
-func (i *FuncInternal) Falsy() bool {
+func (o *FuncInternal) Falsy() bool {
 	return false
 }
 
 // IndexGet retrieves an element based on an index from the object. Returns an error if the object is not indexable.
-func (i *FuncInternal) IndexGet(_ int, _ IObject) (IObject, error) {
-	return i.GateKeeper().UndefinedValue(), ErrIndexNotIndexable
+func (o *FuncInternal) IndexGet(_ int, _ IObject) (IObject, error) {
+	return o.GateKeeper().UndefinedValue(), ErrIndexNotIndexable
 }
 
 // IndexSet attempts to set a value at a specified index but returns an error as indexing is not supported.
-func (i *FuncInternal) IndexSet(_, _ IObject) error {
+func (o *FuncInternal) IndexSet(_, _ IObject) error {
 	return ErrIndexUnsupported
 }
 
 // Iterate is a method that returns an IIterator instance with the given integer input, intended for implementing iteration logic.
-func (i *FuncInternal) Iterate(_ int) IIterator {
+func (o *FuncInternal) Iterate(_ int) IIterator {
 	return nil
 }
 
 // Iterable determines if the current FuncInternal instance supports iteration and returns a boolean result.
-func (i *FuncInternal) Iterable() bool {
+func (o *FuncInternal) Iterable() bool {
 	return false
 }
 
 // Length returns the integer representing the length or size as determined by the implementation.
-func (i *FuncInternal) Length() int {
+func (o *FuncInternal) Length() int {
 	return 0
 }
 
 // TypeName returns the type name of the FuncInternal instance as a string, including its identifier.
-func (i *FuncInternal) TypeName() string {
-	return "FuncInternal:" + strconv.Itoa(int(i.id))
+func (o *FuncInternal) TypeName() string {
+	return "FuncInternal:" + strconv.Itoa(int(o.id))
 }
 
 // Copy creates a new instance of FuncInternal with the specified frame and retains the original id.
-func (i *FuncInternal) Copy(frame int, _ int) IObject {
-	return i.GateKeeper().NewFuncInternal(frame, i.id)
+func (o *FuncInternal) Copy(frame int, _ int) IObject {
+	return o.GateKeeper().NewFuncInternal(frame, o.id)
 }
 
 // Equals determine if the provided IObject is equal to the current instance. Returns true if equal, otherwise false.
-func (i *FuncInternal) Equals(_ IObject) bool {
+func (o *FuncInternal) Equals(_ IObject) bool {
 	return false
 }
 
 // Call invokes the function with the given frame and arguments, returning a status code, the result, and an error if any.
-func (i *FuncInternal) Call(frame int, args ...IObject) (uint, IObject, error) {
-	v, err := i.fn(frame, args)
+func (o *FuncInternal) Call(frame int, args ...IObject) (uint, IObject, error) {
+	v, err := o.fn(frame, args)
 	return 1, v, err
 }
 
 // prepare initializes the function pointer `fn` based on the given CallId by mapping it to the appropriate method.
-func (i *FuncInternal) prepare(id CallId) {
+func (o *FuncInternal) prepare(id CallId) {
 	switch id {
 	case CallIdString:
-		i.fn = i.string
+		o.fn = o.string
 	case CallIdInt:
-		i.fn = i.int
+		o.fn = o.int
 	case CallIdFloat:
-		i.fn = i.float
+		o.fn = o.float
 	case CallIdChar:
-		i.fn = i.char
+		o.fn = o.char
 	case CallIdBool:
-		i.fn = i.bool
+		o.fn = o.bool
 	case CallIdTime:
-		i.fn = i.time
+		o.fn = o.time
 	case CallIdLen:
-		i.fn = i.len
+		o.fn = o.len
 	case CallIdPrintf:
-		i.fn = i.printf
+		o.fn = o.printf
 	case CallIdSprintf:
-		i.fn = i.sprintf
+		o.fn = o.sprintf
 	case CallIdCopy:
-		i.fn = i.copy
+		o.fn = o.copy
 	case CallIdAppend:
-		i.fn = i.append
+		o.fn = o.append
 	case CallIdSplice:
-		i.fn = i.splice
+		o.fn = o.splice
 	case CallIdRecover:
-		i.fn = i.recover
+		o.fn = o.recover
 	case CallIdPanic:
-		i.fn = i.panic
+		o.fn = o.panic
 	case CallIdDelete:
-		i.fn = i.delete
+		o.fn = o.delete
 	case CallIdMake:
-		i.fn = i.make
+		o.fn = o.make
 	default:
-		i.fn = i.undefined
+		o.fn = o.undefined
 	}
 }
 
 // undefined returns an IObject representing an undefined value, leveraging the GateKeeper's UndefinedValue method.
-func (i *FuncInternal) undefined(_ int, _ []IObject) (IObject, error) {
-	return i.GateKeeper().UndefinedValue(), nil
+func (o *FuncInternal) undefined(_ int, _ []IObject) (IObject, error) {
+	return o.GateKeeper().UndefinedValue(), nil
 }
 
 // string processes a single argument, converts it to a string, and returns a new string object or an error.
-func (i *FuncInternal) string(frame int, args []IObject) (IObject, error) {
+func (o *FuncInternal) string(frame int, args []IObject) (IObject, error) {
 	if len(args) != 1 {
 		return nil, ErrInvalidArgumentsNumber
 	}
-	return i.GateKeeper().NewString(frame, args[0].AsString()), nil
+	return o.GateKeeper().NewString(frame, args[0].AsString()), nil
 }
 
 // int handles integer conversion and validation of input arguments, returning an integer object or an error if invalid.
-func (i *FuncInternal) int(frame int, args []IObject) (IObject, error) {
+func (o *FuncInternal) int(frame int, args []IObject) (IObject, error) {
 	if len(args) != 1 {
 		return nil, ErrInvalidArgumentsNumber
 	}
-	return i.GateKeeper().NewInt(frame, args[0].AsInt64()), nil
+	return o.GateKeeper().NewInt(frame, args[0].AsInt64()), nil
 }
 
 // float converts the provided argument to a floating-point object or returns an error if the conversion fails.
-func (i *FuncInternal) float(frame int, args []IObject) (IObject, error) {
+func (o *FuncInternal) float(frame int, args []IObject) (IObject, error) {
 	if len(args) != 1 {
 		return nil, ErrInvalidArgumentsNumber
 	}
-	return i.GateKeeper().NewFloat(frame, args[0].AsFloat64()), nil
+	return o.GateKeeper().NewFloat(frame, args[0].AsFloat64()), nil
 }
 
 // char converts an integer argument to a character and returns it as a new IObject.
-func (i *FuncInternal) char(frame int, args []IObject) (IObject, error) {
+func (o *FuncInternal) char(frame int, args []IObject) (IObject, error) {
 	if len(args) != 1 {
 		return nil, ErrInvalidArgumentsNumber
 	}
-	return i.GateKeeper().NewChar(frame, rune(args[0].AsInt64())), nil
+	return o.GateKeeper().NewChar(frame, rune(args[0].AsInt64())), nil
 }
 
 // bool evaluates the given argument and converts it to a boolean, returning the result as an IObject or an error.
-func (i *FuncInternal) bool(_ int, args []IObject) (IObject, error) {
+func (o *FuncInternal) bool(_ int, args []IObject) (IObject, error) {
 	if len(args) != 1 {
 		return nil, ErrInvalidArgumentsNumber
 	}
-	return i.GateKeeper().Boolean(args[0].AsBool()), nil
+	return o.GateKeeper().Boolean(args[0].AsBool()), nil
 }
 
 // time processes a frame and arguments to return a new time object or an error if arguments are invalid.
-func (i *FuncInternal) time(frame int, args []IObject) (IObject, error) {
+func (o *FuncInternal) time(frame int, args []IObject) (IObject, error) {
 	if len(args) != 1 {
 		return nil, ErrInvalidArgumentsNumber
 	}
 	if v, ok := args[0].(*Time); ok {
-		return i.GateKeeper().NewTime(frame, v.Value()), nil
+		return o.GateKeeper().NewTime(frame, v.Value()), nil
 	}
-	return i.GateKeeper().NewTime(frame, time.Unix(args[0].AsInt64(), 0)), nil
+	return o.GateKeeper().NewTime(frame, time.Unix(args[0].AsInt64(), 0)), nil
 }
 
 // copy creates a duplicate of the provided object, ensuring only one argument is passed for the operation.
-func (i *FuncInternal) copy(frame int, args []IObject) (IObject, error) {
+func (o *FuncInternal) copy(frame int, args []IObject) (IObject, error) {
 	if len(args) != 1 {
 		return nil, ErrInvalidArgumentsNumber
 	}
@@ -306,80 +311,80 @@ func (i *FuncInternal) copy(frame int, args []IObject) (IObject, error) {
 }
 
 // len computes the length of the given argument and returns it as an integer object. Returns an error on failure.
-func (i *FuncInternal) len(frame int, args []IObject) (IObject, error) {
+func (o *FuncInternal) len(frame int, args []IObject) (IObject, error) {
 	if len(args) != 1 {
 		return nil, ErrInvalidArgumentsNumber
 	}
-	return i.GateKeeper().NewInt(frame, int64(args[0].Length())), nil
+	return o.GateKeeper().NewInt(frame, int64(args[0].Length())), nil
 }
 
 // sprintf formats a string according to a format specifier and arguments, returning the formatted string or an error.
-func (i *FuncInternal) sprintf(frame int, args []IObject) (IObject, error) {
+func (o *FuncInternal) sprintf(frame int, args []IObject) (IObject, error) {
 	switch len(args) {
 	case 0:
-		return i.GateKeeper().UndefinedValue(), ErrInvalidArgumentsNumber
+		return o.GateKeeper().UndefinedValue(), ErrInvalidArgumentsNumber
 	case 1:
 		return args[0], nil
 	default:
 		var ar []interface{}
 		for _, v := range args[1:] {
-			ar = append(ar, i.GateKeeper().ToInterface(v))
+			ar = append(ar, o.GateKeeper().ToInterface(v))
 		}
-		return i.GateKeeper().NewString(frame, fmt.Sprintf(args[0].AsString(), ar...)), nil
+		return o.GateKeeper().NewString(frame, fmt.Sprintf(args[0].AsString(), ar...)), nil
 	}
 }
 
 // printf formats and prints the provided arguments according to the specified format.
 // The first argument is treated as a format string, and the subsequent arguments are its values.
 // Returns an UndefinedValue and error if the number of arguments is invalid.
-func (i *FuncInternal) printf(_ int, args []IObject) (IObject, error) {
+func (o *FuncInternal) printf(_ int, args []IObject) (IObject, error) {
 	switch len(args) {
 	case 0:
-		return i.GateKeeper().UndefinedValue(), ErrInvalidArgumentsNumber
+		return o.GateKeeper().UndefinedValue(), ErrInvalidArgumentsNumber
 	case 1:
 		fmt.Printf(args[0].AsString())
-		return i.GateKeeper().UndefinedValue(), nil
+		return o.GateKeeper().UndefinedValue(), nil
 	default:
 		var ar []interface{}
 		for _, v := range args[1:] {
-			ar = append(ar, i.GateKeeper().ToInterface(v))
+			ar = append(ar, o.GateKeeper().ToInterface(v))
 		}
 		fmt.Printf(args[0].AsString(), ar...)
-		return i.GateKeeper().UndefinedValue(), nil
+		return o.GateKeeper().UndefinedValue(), nil
 	}
 }
 
 // append adds elements to an array or creates a new array with the provided arguments.
 // It requires at least two arguments: the target array and the elements to append.
 // Returns the modified or new array and an error if invalid arguments are provided.
-func (i *FuncInternal) append(frame int, args []IObject) (IObject, error) {
+func (o *FuncInternal) append(frame int, args []IObject) (IObject, error) {
 	if len(args) < 2 {
 		return nil, ErrInvalidArgumentsNumber
 	}
 	switch arg := args[0].(type) {
 	case *Array:
-		return i.GateKeeper().NewArray(frame, append(arg.Values(), args[1:]...)), nil
+		return o.GateKeeper().NewArray(frame, append(arg.Values(), args[1:]...)), nil
 	default:
-		return i.GateKeeper().NewArray(frame, args[1:]), nil
+		return o.GateKeeper().NewArray(frame, args[1:]), nil
 	}
 }
 
 // delete removes a key-value pair from a Map object based on the provided key and returns an undefined value or an error.
-func (i *FuncInternal) delete(_ int, args []IObject) (IObject, error) {
+func (o *FuncInternal) delete(_ int, args []IObject) (IObject, error) {
 	if len(args) != 2 {
 		return nil, ErrInvalidArgumentsNumber
 	}
 	switch arg := args[0].(type) {
 	case *Map:
 		arg.Delete(args[1].AsString())
-		return i.GateKeeper().UndefinedValue(), nil
+		return o.GateKeeper().UndefinedValue(), nil
 	default:
 		return nil, NewInvalidArgumentError(0, "map", arg.TypeName())
 	}
 }
 
 // splice removes or replaces elements in an array, starting at a specified index, and optionally inserts new elements.
-func (i *FuncInternal) splice(frame int, args []IObject) (IObject, error) {
+func (o *FuncInternal) splice(frame int, args []IObject) (IObject, error) {
 	argsLen := len(args)
 	if argsLen == 0 {
 		return nil, ErrInvalidArgumentsNumber
@@ -418,11 +423,11 @@ func (i *FuncInternal) splice(frame int, args []IObject) (IObject, error) {
 	}
 	items = append(items, array.Values()[endIdx:]...)
 	array.Assign(append(head, items...))
-	return i.GateKeeper().NewArray(frame, deleted), nil
+	return o.GateKeeper().NewArray(frame, deleted), nil
 }
 
 // panic triggers a runtime panic by returning an error with the message from the first argument or a default "panic" message.
-func (i *FuncInternal) panic(_ int, args []IObject) (IObject, error) {
+func (o *FuncInternal) panic(_ int, args []IObject) (IObject, error) {
 	if len(args) > 0 {
 		return nil, fmt.Errorf("%s", args[0].AsString())
 	}
@@ -430,12 +435,12 @@ func (i *FuncInternal) panic(_ int, args []IObject) (IObject, error) {
 }
 
 // recover attempts to gracefully handle potential panics or errors within the function and ensures a safe fallback response.
-func (i *FuncInternal) recover(_ int, _ []IObject) (IObject, error) {
-	return i.GateKeeper().UndefinedValue(), nil
+func (o *FuncInternal) recover(_ int, _ []IObject) (IObject, error) {
+	return o.GateKeeper().UndefinedValue(), nil
 }
 
 // make creates and initializes objects such as slices, maps, or arrays based on the specified type and dimensions.
-func (i *FuncInternal) make(frame int, args []IObject) (IObject, error) {
+func (o *FuncInternal) make(frame int, args []IObject) (IObject, error) {
 	var kind IObject
 	count := 0
 	reserve := 0
@@ -461,42 +466,42 @@ func (i *FuncInternal) make(frame int, args []IObject) (IObject, error) {
 	}
 	switch kind.TypeName() {
 	case BytesType:
-		return i.GateKeeper().NewBytes(frame, make([]byte, count, reserve)), nil
+		return o.GateKeeper().NewBytes(frame, make([]byte, count, reserve)), nil
 	case ArrayType:
-		return i.GateKeeper().NewArray(frame, make([]IObject, count, reserve)), nil
+		return o.GateKeeper().NewArray(frame, make([]IObject, count, reserve)), nil
 	case MapType:
-		return i.GateKeeper().NewMap(frame, make(map[string]IObject, count)), nil
+		return o.GateKeeper().NewMap(frame, make(map[string]IObject, count)), nil
 	default:
 		return nil, fmt.Errorf("cannot make type %s", kind.TypeName())
 	}
 }
 
 // Count returns an integer value typically representing the count or total computed by this method.
-func (i *FuncInternal) Count() int {
+func (o *FuncInternal) Count() int {
 	return 1
 }
 
 // GobEncode serializes the receiver into a byte slice using the gob encoding format and returns the encoded data and error.
-func (i *FuncInternal) GobEncode() ([]byte, error) {
+func (o *FuncInternal) GobEncode() ([]byte, error) {
 	var buf bytes.Buffer
 	encoder := gob.NewEncoder(&buf)
-	if err := encoder.Encode(i.id); err != nil {
+	if err := encoder.Encode(o.id); err != nil {
 		return nil, err
 	}
-	if err := encoder.Encode(i.fn); err != nil {
+	if err := encoder.Encode(o.fn); err != nil {
 		return nil, err
 	}
 	return buf.Bytes(), nil
 }
 
 // GobDecode decodes the provided byte slice into the FuncInternal fields using the gob package.
-func (i *FuncInternal) GobDecode(data []byte) error {
+func (o *FuncInternal) GobDecode(data []byte) error {
 	buf := bytes.NewBuffer(data)
 	decoder := gob.NewDecoder(buf)
-	if err := decoder.Decode(&i.id); err != nil {
+	if err := decoder.Decode(&o.id); err != nil {
 		return err
 	}
-	if err := decoder.Decode(&i.fn); err != nil {
+	if err := decoder.Decode(&o.fn); err != nil {
 		return err
 	}
 	return nil

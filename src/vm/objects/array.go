@@ -37,6 +37,15 @@ func (o *Array) setAllocator(allocator IAllocator) {
 	o.IAllocator = allocator
 }
 
+// AsInterface converts the object into a generic interface{} type and returns the underlying data.
+func (o *Array) AsInterface() interface{} {
+	res := make([]interface{}, len(o.data))
+	for i, val := range o.data {
+		res[i] = o.GateKeeper().ToInterface(val)
+	}
+	return res
+}
+
 // AsBool returns true if the array is not empty, otherwise false.
 func (o *Array) AsBool() bool {
 	return len(o.data) > 0

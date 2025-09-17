@@ -60,6 +60,11 @@ func (o *Func) setAllocator(allocator IAllocator) {
 	o.IAllocator = allocator
 }
 
+// AsInterface converts the object into a generic interface{} type and returns the underlying data.
+func (o *Func) AsInterface() interface{} {
+	return nil
+}
+
 // AsBool returns a boolean representation of the Func object, always returning false.
 func (o *Func) AsBool() bool {
 	return false

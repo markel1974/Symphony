@@ -34,6 +34,11 @@ func (o *Any) TypeName() string {
 	return o.kind.String()
 }
 
+// AsInterface converts the object into a generic interface{} type and returns the underlying data.
+func (o *Any) AsInterface() interface{} {
+	return o.data
+}
+
 // AsString returns the string representation of the wrapped data. If the data is nil, it returns "<nil>".
 func (o *Any) AsString() string {
 	if o.data == nil {

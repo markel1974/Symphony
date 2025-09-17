@@ -42,6 +42,15 @@ func (o *Struct) setAllocator(allocator IAllocator) {
 	o.IAllocator = allocator
 }
 
+// AsInterface converts the object into a generic interface{} type and returns the underlying data.
+func (o *Struct) AsInterface() interface{} {
+	res := make(map[string]interface{})
+	for key, v := range o.data {
+		res[key] = o.GateKeeper().ToInterface(v)
+	}
+	return res
+}
+
 // AsBool converts the Struct to a boolean, returning true if the Struct contains at least one key-Code pair; otherwise false.
 func (o *Struct) AsBool() bool {
 	return len(o.data) > 0

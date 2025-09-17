@@ -36,6 +36,11 @@ func (o *Float) setAllocator(allocator IAllocator) {
 	o.IAllocator = allocator
 }
 
+// AsInterface converts the object into a generic interface{} type and returns the underlying data.
+func (o *Float) AsInterface() interface{} {
+	return o.data
+}
+
 // AsBool returns true if the object is not empty, otherwise false.
 func (o *Float) AsBool() bool {
 	return o.data != 0

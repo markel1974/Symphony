@@ -37,6 +37,11 @@ func (o *String) setAllocator(allocator IAllocator) {
 	o.IAllocator = allocator
 }
 
+// AsInterface converts the object into a generic interface{} type and returns the underlying data.
+func (o *String) AsInterface() interface{} {
+	return o.data
+}
+
 // AsBool converts the String object to a boolean. Returns true if the string has non-zero len, otherwise false.
 func (o *String) AsBool() bool {
 	return len(o.data) > 0

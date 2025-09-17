@@ -27,6 +27,11 @@ func (o *Undefined) setAllocator(allocator IAllocator) {
 	o.IAllocator = allocator
 }
 
+// AsInterface converts the object into a generic interface{} type and returns the underlying data.
+func (o *Undefined) AsInterface() interface{} {
+	return nil
+}
+
 // AsBool returns the boolean representation of the Undefined object, which is always false.
 func (o *Undefined) AsBool() bool {
 	return false

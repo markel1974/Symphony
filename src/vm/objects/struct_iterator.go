@@ -53,6 +53,15 @@ func (o *StructIterator) GateKeeper() IGateKeeper {
 	return o.GateKeeper()
 }
 
+// AsInterface converts the object into a generic interface{} type and returns the underlying data.
+func (o *StructIterator) AsInterface() interface{} {
+	res := make(map[string]interface{})
+	for key, v := range o.data {
+		res[key] = o.GateKeeper().ToInterface(v)
+	}
+	return res
+}
+
 // AsBool returns true if the array is not empty, otherwise false.
 func (o *StructIterator) AsBool() bool {
 	return o.length > 0

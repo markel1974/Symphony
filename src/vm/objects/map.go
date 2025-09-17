@@ -44,6 +44,15 @@ func (o *Map) setAllocator(allocator IAllocator) {
 	o.IAllocator = allocator
 }
 
+// AsInterface converts the object into a generic interface{} type and returns the underlying data.
+func (o *Map) AsInterface() interface{} {
+	res := make(map[string]interface{})
+	for key, v := range o.data {
+		res[key] = o.GateKeeper().ToInterface(v)
+	}
+	return res
+}
+
 // AsBool converts the String object to a boolean. Returns true if the string has non-zero len, otherwise false.
 func (o *Map) AsBool() bool {
 	return len(o.data) > 0

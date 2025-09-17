@@ -33,6 +33,11 @@ func (o *Int) setAllocator(allocator IAllocator) {
 	o.IAllocator = allocator
 }
 
+// AsInterface converts the object into a generic interface{} type and returns the underlying data.
+func (o *Int) AsInterface() interface{} {
+	return o.data
+}
+
 // AsBool converts the integer Code to a boolean, returning true if the Code is non-zero, otherwise false.
 func (o *Int) AsBool() bool {
 	return o.data != 0

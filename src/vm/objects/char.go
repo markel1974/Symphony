@@ -32,6 +32,11 @@ func (o *Char) setAllocator(allocator IAllocator) {
 	o.IAllocator = allocator
 }
 
+// AsInterface converts the object into a generic interface{} type and returns the underlying data.
+func (o *Char) AsInterface() interface{} {
+	return o.data
+}
+
 // AsBool returns true if the object is not empty, otherwise false.
 func (o *Char) AsBool() bool {
 	return o.data != 0

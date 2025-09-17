@@ -36,6 +36,11 @@ func (o *Bytes) setAllocator(allocator IAllocator) {
 	o.IAllocator = allocator
 }
 
+// AsInterface converts the object into a generic interface{} type and returns the underlying data.
+func (o *Bytes) AsInterface() interface{} {
+	return o.data
+}
+
 // AsBool returns true if the object is not empty, otherwise false.
 func (o *Bytes) AsBool() bool {
 	return len(o.data) > 0

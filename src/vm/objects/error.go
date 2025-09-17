@@ -3,6 +3,7 @@ package objects
 import (
 	"bytes"
 	"encoding/gob"
+	"errors"
 	"fmt"
 )
 
@@ -38,6 +39,11 @@ func newError(allocator IAllocator, err string) IObject {
 // setAllocator sets the allocator for the instance, defining its memory management and lifecycle behavior.
 func (o *Error) setAllocator(allocator IAllocator) {
 	o.IAllocator = allocator
+}
+
+// AsInterface converts the object into a generic interface{} type and returns the underlying data.
+func (o *Error) AsInterface() interface{} {
+	return errors.New(o.data.AsString())
 }
 
 // AsBool returns true if the object is not empty, otherwise false.

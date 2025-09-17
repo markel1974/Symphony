@@ -30,6 +30,11 @@ func (o *FuncJit) setAllocator(allocator IAllocator) {
 	o.IAllocator = allocator
 }
 
+// AsInterface converts the object into a generic interface{} type and returns the underlying data.
+func (o *FuncJit) AsInterface() interface{} {
+	return nil
+}
+
 // AsBool returns a boolean representation of the object, always returning false for FuncJit.
 func (o *FuncJit) AsBool() bool {
 	return false
@@ -136,26 +141,26 @@ func (o *FuncJit) Count() int {
 }
 
 // GobEncode serializes the FuncJit's data into a byte slice using gob encoding and returns the result or an error.
-func (i *FuncJit) GobEncode() ([]byte, error) {
+func (o *FuncJit) GobEncode() ([]byte, error) {
 	var buf bytes.Buffer
 	encoder := gob.NewEncoder(&buf)
-	if err := encoder.Encode(i.name); err != nil {
+	if err := encoder.Encode(o.name); err != nil {
 		return nil, err
 	}
-	if err := encoder.Encode(i.data); err != nil {
+	if err := encoder.Encode(o.data); err != nil {
 		return nil, err
 	}
 	return buf.Bytes(), nil
 }
 
 // GobDecode decodes the provided byte slice into the FuncJit's data field using the gob package.
-func (i *FuncJit) GobDecode(data []byte) error {
+func (o *FuncJit) GobDecode(data []byte) error {
 	buf := bytes.NewBuffer(data)
 	decoder := gob.NewDecoder(buf)
-	if err := decoder.Decode(&i.name); err != nil {
+	if err := decoder.Decode(&o.name); err != nil {
 		return err
 	}
-	if err := decoder.Decode(&i.data); err != nil {
+	if err := decoder.Decode(&o.data); err != nil {
 		return err
 	}
 	return nil

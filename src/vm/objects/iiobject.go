@@ -17,6 +17,7 @@ type IAllocator interface {
 
 // IObject defines a polymorphic interface for managing various operations on objects, including conversions and evaluations.
 // TypeName provides the name of the object's type as a string.
+// AsInterface converts and returns the object as an interface{}.
 // AsBool converts and returns the object as a boolean.
 // AsInt64 converts and returns the object as a 64-bit integer.
 // AsFloat64 converts and returns the object as a 64-bit floating-point Code.
@@ -38,6 +39,7 @@ type IObject interface {
 	IAllocator
 	setAllocator(allocator IAllocator)
 	TypeName() string
+	AsInterface() interface{}
 	AsBool() bool
 	AsInt64() int64
 	AsFloat64() float64
