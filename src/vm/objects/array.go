@@ -3,7 +3,6 @@ package objects
 import (
 	"bytes"
 	"encoding/gob"
-	"fmt"
 	"strings"
 )
 
@@ -67,7 +66,7 @@ func (o *Array) AsString() string {
 	for _, e := range o.data {
 		elements = append(elements, e.AsString())
 	}
-	return fmt.Sprintf("[%s]", strings.Join(elements, "; "))
+	return strings.Join(elements, ";")
 }
 
 // AssignValue assigns the elements of another Array to the current Array if the input is of type *Array, otherwise returns an error.
