@@ -80,6 +80,11 @@ func (o *Func) AsFloat64() float64 {
 	return 0
 }
 
+// AsBytes converts the object elements into a single concatenated slice of bytes by calling AsBytes on each element.
+func (o *Func) AsBytes() []byte {
+	return nil
+}
+
 // AsString returns a string representation of the Func instance, specifically the constant FuncCompiledLabel.
 func (o *Func) AsString() string {
 	return FuncCompiledLabel

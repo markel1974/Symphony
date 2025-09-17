@@ -1,8 +1,6 @@
 package objects
 
 import (
-	"encoding/binary"
-	"math"
 	"strconv"
 	"time"
 )
@@ -245,53 +243,13 @@ func (gc *GateConverter) ToStringArg(index int, in []IObject) (string, error) {
 	return o.AsString(), nil
 }
 
-// ToBytes converts the provided IObject to a byte slice. Returns the byte slice and true if successful, otherwise nil and false.
-func (gc *GateConverter) toBytes(in IObject) ([]byte, bool) {
-	switch o := in.(type) {
-	case *Bool:
-		if o == gc.gk.TrueValue() {
-			return []byte{1}, true
-		} else {
-			return []byte{0}, true
-		}
-	case *Char:
-		if o.data <= 0xff {
-			return []byte{byte(o.data)}, true
-		}
-		b := make([]byte, 4)
-		binary.LittleEndian.PutUint32(b, uint32(o.data))
-		return b, true
-	case *Int:
-		b := make([]byte, 8)
-		binary.LittleEndian.PutUint64(b, uint64(o.data))
-		return b, true
-	case *Float:
-		b := make([]byte, 8)
-		binary.LittleEndian.PutUint64(b, math.Float64bits(o.data))
-		return b, true
-	case *Bytes:
-		return o.data, true
-	case *String:
-		return []byte(o.data), true
-	case *Time:
-		b := make([]byte, 8)
-		binary.LittleEndian.PutUint64(b, uint64(o.data.Unix()))
-		return b, true
-	default:
-		return nil, false
-	}
-}
-
 // ToBytesArg converts the IObject at the specified index in the input slice to a byte array or returns an error if invalid.
 func (gc *GateConverter) ToBytesArg(index int, in []IObject) ([]byte, error) {
 	if index < 0 || index >= len(in) {
 		return nil, ErrInvalidArgumentsNumber
 	}
 	o := in[index]
-	b, ok := gc.toBytes(o)
-	if !ok {
-		return nil, NewInvalidArgumentError(index, "bytes", o.TypeName())
-	}
+	b := o.AsBytes()
 	return b, nil
 }
 

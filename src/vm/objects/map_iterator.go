@@ -70,6 +70,15 @@ func (o *MapIterator) AsFloat64() float64 {
 	return float64(o.length)
 }
 
+// AsBytes converts the object elements into a single concatenated slice of bytes by calling AsBytes on each element.
+func (o *MapIterator) AsBytes() []byte {
+	var res []byte
+	for _, v := range o.data {
+		res = append(res, v.AsBytes()...)
+	}
+	return res
+}
+
 // AsString returns the string representation of the MapIterator.
 func (o *MapIterator) AsString() string {
 	return MapIteratorLabel

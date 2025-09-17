@@ -64,6 +64,14 @@ func (o *ObjectPointer) AsFloat64() float64 {
 	return (*o.data).AsFloat64()
 }
 
+// AsBytes converts the object elements into a single concatenated slice of bytes by calling AsBytes on each element.
+func (o *ObjectPointer) AsBytes() []byte {
+	if o.data == nil {
+		return nil
+	}
+	return (*o.data).AsBytes()
+}
+
 // AsString returns the string representation of the ObjectPointer instance.
 func (o *ObjectPointer) AsString() string {
 	return (*o.data).AsString()

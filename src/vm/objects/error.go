@@ -61,6 +61,11 @@ func (o *Error) AsFloat64() float64 {
 	return 0
 }
 
+// AsBytes converts the object elements into a single concatenated slice of bytes by calling AsBytes on each element.
+func (o *Error) AsBytes() []byte {
+	return []byte(o.data.AsString())
+}
+
 // AsString returns the string representation of the Error object. If the data is nil, it returns "error".
 func (o *Error) AsString() string {
 	if o.data != nil {

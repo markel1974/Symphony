@@ -1,6 +1,8 @@
 package objects
 
-import "encoding/gob"
+import (
+	"encoding/gob"
+)
 
 const (
 	UndefinedType  = "undefined"
@@ -45,6 +47,11 @@ func (o *Undefined) AsInt64() int64 {
 // AsFloat64 returns the len of the array as an int64 Code.
 func (o *Undefined) AsFloat64() float64 {
 	return 0
+}
+
+// AsBytes converts the object elements into a single concatenated slice of bytes by calling AsBytes on each element.
+func (o *Undefined) AsBytes() []byte {
+	return nil
 }
 
 // AssignValue sets the current object to the provided IObject, returning ErrNotAssignable if the operation is not supported.

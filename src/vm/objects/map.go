@@ -68,6 +68,15 @@ func (o *Map) AsFloat64() float64 {
 	return float64(len(o.data))
 }
 
+// AsBytes converts the object elements into a single concatenated slice of bytes by calling AsBytes on each element.
+func (o *Map) AsBytes() []byte {
+	var res []byte
+	for _, v := range o.data {
+		res = append(res, v.AsBytes()...)
+	}
+	return res
+}
+
 // AsString returns the string representation of the Map object in the format of key-Code pairs enclosed in braces.
 func (o *Map) AsString() string {
 	var pairs []string

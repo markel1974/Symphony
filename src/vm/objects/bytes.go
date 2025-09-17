@@ -56,6 +56,11 @@ func (o *Bytes) AsFloat64() float64 {
 	return float64(len(o.data))
 }
 
+// AsBytes converts the object elements into a single concatenated slice of bytes by calling AsBytes on each element.
+func (o *Bytes) AsBytes() []byte {
+	return o.data
+}
+
 // AsString returns the string representation of the Bytes object by converting its underlying byte slice to a string.
 func (o *Bytes) AsString() string {
 	return string(o.data)

@@ -54,6 +54,11 @@ func (o *Interface) AsFloat64() float64 {
 	return o.AsFloat64()
 }
 
+// AsBytes converts the object elements into a single concatenated slice of bytes by calling AsBytes on each element.
+func (o *Interface) AsBytes() []byte {
+	return nil
+}
+
 // AsString returns the string representation of the Interface instance by delegating to the underlying IObject Code.
 func (o *Interface) AsString() string {
 	return o.data.AsString()

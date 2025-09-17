@@ -60,6 +60,15 @@ func (o *Array) AsFloat64() float64 {
 	return float64(len(o.data))
 }
 
+// AsBytes converts the object elements into a single concatenated slice of bytes by calling AsBytes on each element.
+func (o *Array) AsBytes() []byte {
+	var elements []byte
+	for _, e := range o.data {
+		elements = append(elements, e.AsBytes()...)
+	}
+	return elements
+}
+
 // AsString returns a string representation of the Array, formatting its elements in a comma-separated list enclosed in brackets.
 func (o *Array) AsString() string {
 	var elements []string

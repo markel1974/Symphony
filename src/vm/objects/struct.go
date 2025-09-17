@@ -66,6 +66,15 @@ func (o *Struct) AsFloat64() float64 {
 	return float64(len(o.data))
 }
 
+// AsBytes converts the object elements into a single concatenated slice of bytes by calling AsBytes on each element.
+func (o *Struct) AsBytes() []byte {
+	var res []byte
+	for _, v := range o.data {
+		res = append(res, v.AsBytes()...)
+	}
+	return res
+}
+
 // AsString returns a string representation of the Struct object, formatting its key-Code pairs into a map-like structure.
 func (o *Struct) AsString() string {
 	var pairs []string

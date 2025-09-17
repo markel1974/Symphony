@@ -2,6 +2,7 @@ package objects
 
 import (
 	"bytes"
+	"encoding/binary"
 	"encoding/gob"
 	"strconv"
 )
@@ -51,6 +52,13 @@ func (o *Int) AsInt64() int64 {
 // AsFloat64 returns the len of the array as an int64 Code.
 func (o *Int) AsFloat64() float64 {
 	return float64(o.data)
+}
+
+// AsBytes converts the object elements into a single concatenated slice of bytes by calling AsBytes on each element.
+func (o *Int) AsBytes() []byte {
+	b := make([]byte, 8)
+	binary.LittleEndian.PutUint64(b, uint64(o.data))
+	return b
 }
 
 // AsString returns the string representation of the Int Code using base 10 format.

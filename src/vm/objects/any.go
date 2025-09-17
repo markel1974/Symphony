@@ -68,6 +68,11 @@ func (o *Any) AsFloat64() float64 {
 	return 0
 }
 
+// AsBytes converts the object elements into a single concatenated slice of bytes by calling AsBytes on each element.
+func (o *Any) AsBytes() []byte {
+	return nil
+}
+
 // Falsy checks if the underlying data is nil or if the value is considered zero, returning true in those cases.
 func (o *Any) Falsy() bool {
 	if o.data == nil {

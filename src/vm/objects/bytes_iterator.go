@@ -57,6 +57,11 @@ func (o *BytesIterator) AsFloat64() float64 {
 	return float64(o.length)
 }
 
+// AsBytes converts the object elements into a single concatenated slice of bytes by calling AsBytes on each element.
+func (o *BytesIterator) AsBytes() []byte {
+	return o.data
+}
+
 // AsString returns the string representation of the BytesIterator.
 func (o *BytesIterator) AsString() string {
 	return BytesIteratorLabel

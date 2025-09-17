@@ -60,6 +60,15 @@ func (o *Bool) AsFloat64() float64 {
 	return 0
 }
 
+// AsBytes converts the object elements into a single concatenated slice of bytes by calling AsBytes on each element.
+func (o *Bool) AsBytes() []byte {
+	if o == o.GateKeeper().TrueValue() {
+		return []byte{1}
+	} else {
+		return []byte{0}
+	}
+}
+
 // AsString returns the string representation of the Bool object, either "true" or "false" based on its boolean data.
 func (o *Bool) AsString() string {
 	if o.data {

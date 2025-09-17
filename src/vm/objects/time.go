@@ -2,6 +2,7 @@ package objects
 
 import (
 	"bytes"
+	"encoding/binary"
 	"encoding/gob"
 	"time"
 )
@@ -56,6 +57,13 @@ func (o *Time) AsFloat64() float64 {
 // AsString returns the string representation of the Time object by delegating to the underlying time.Time Code.
 func (o *Time) AsString() string {
 	return o.data.String()
+}
+
+// AsBytes converts the object elements into a single concatenated slice of bytes by calling AsBytes on each element.
+func (o *Time) AsBytes() []byte {
+	b := make([]byte, 8)
+	binary.LittleEndian.PutUint64(b, uint64(o.data.Unix()))
+	return b
 }
 
 // AssignValue assigns the Code of another IObject to the current Time object if the type is compatible, otherwise returns an error.

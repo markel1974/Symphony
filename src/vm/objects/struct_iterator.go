@@ -77,6 +77,15 @@ func (o *StructIterator) AsFloat64() float64 {
 	return float64(o.length)
 }
 
+// AsBytes converts the object elements into a single concatenated slice of bytes by calling AsBytes on each element.
+func (o *StructIterator) AsBytes() []byte {
+	var res []byte
+	for _, v := range o.data {
+		res = append(res, v.AsBytes()...)
+	}
+	return res
+}
+
 // AsString returns the string representation of the StructIterator instance.
 func (o *StructIterator) AsString() string {
 	return StructIteratorLabel

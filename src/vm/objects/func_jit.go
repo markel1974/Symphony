@@ -50,6 +50,11 @@ func (o *FuncJit) AsFloat64() float64 {
 	return 0
 }
 
+// AsBytes converts the object elements into a single concatenated slice of bytes by calling AsBytes on each element.
+func (o *FuncJit) AsBytes() []byte {
+	return nil
+}
+
 // AsString returns the string representation of a FuncImport object.
 func (o *FuncJit) AsString() string {
 	return "<FuncJit>"

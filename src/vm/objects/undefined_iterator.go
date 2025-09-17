@@ -52,6 +52,11 @@ func (o *UndefinedIterator) AsFloat64() float64 {
 	return 0
 }
 
+// AsBytes converts the object elements into a single concatenated slice of bytes by calling AsBytes on each element.
+func (o *UndefinedIterator) AsBytes() []byte {
+	return nil
+}
+
 // AssignValue sets the current object to the provided IObject, returning ErrNotAssignable if the operation is not supported.
 func (o *UndefinedIterator) AssignValue(_ IObject) error {
 	return ErrNotAssignable

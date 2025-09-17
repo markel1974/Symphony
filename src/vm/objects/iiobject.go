@@ -43,6 +43,7 @@ type IObject interface {
 	AsBool() bool
 	AsInt64() int64
 	AsFloat64() float64
+	AsBytes() []byte
 	AsString() string
 	AssignValue(object IObject) error
 	Nil() bool

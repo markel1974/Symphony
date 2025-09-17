@@ -2,6 +2,7 @@ package objects
 
 import (
 	"bytes"
+	"encoding/binary"
 	"encoding/gob"
 	"math"
 	"strconv"
@@ -56,6 +57,18 @@ func (o *Float) AsFloat64() float64 {
 	return o.data
 }
 
+// AsBytes converts the object elements into a single concatenated slice of bytes by calling AsBytes on each element.
+func (o *Float) AsBytes() []byte {
+	b := make([]byte, 8)
+	binary.LittleEndian.PutUint64(b, math.Float64bits(o.data))
+	return b
+}
+
+// AsString returns the string representation of the Float object using its internal float64 data.
+func (o *Float) AsString() string {
+	return strconv.FormatFloat(o.data, 'f', -1, 64)
+}
+
 // AssignValue assigns the data of another IObject to the current Float object if the type is compatible, otherwise returns an error.
 func (o *Float) AssignValue(v IObject) error {
 	target, ok := v.(*Float)
@@ -64,11 +77,6 @@ func (o *Float) AssignValue(v IObject) error {
 	}
 	o.data = target.data
 	return nil
-}
-
-// AsString returns the string representation of the Float object using its internal float64 data.
-func (o *Float) AsString() string {
-	return strconv.FormatFloat(o.data, 'f', -1, 64)
 }
 
 // Nil checks if the object is nil and always returns false.

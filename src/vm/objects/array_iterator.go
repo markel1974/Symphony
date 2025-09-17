@@ -62,6 +62,15 @@ func (o *ArrayIterator) AsFloat64() float64 {
 	return float64(o.length)
 }
 
+// AsBytes converts the object elements into a single concatenated slice of bytes by calling AsBytes on each element.
+func (o *ArrayIterator) AsBytes() []byte {
+	var elements []byte
+	for _, e := range o.data {
+		elements = append(elements, e.AsBytes()...)
+	}
+	return elements
+}
+
 // AsString returns a string representation of the ArrayIterator instance.
 func (o *ArrayIterator) AsString() string {
 	return ArrayIteratorLabel
