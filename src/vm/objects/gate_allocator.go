@@ -246,8 +246,8 @@ func (f *GateAllocator) NewAny(frame int, value interface{}) IObject {
 	obj := f.poolAny.Get().(*Any)
 	obj.setFrame(frame)
 	obj.data = value
-	obj.v = reflect.ValueOf(value)
-	obj.t = obj.v.Type()
+	obj.valueOf = reflect.ValueOf(value)
+	obj.kind = obj.valueOf.Type()
 	return obj
 }
 
