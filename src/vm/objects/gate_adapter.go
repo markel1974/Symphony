@@ -2,7 +2,7 @@ package objects
 
 import "fmt"
 
-// GateAdapter is a type that wraps a GateKeeper and provides functional adapters to map Go functions to Callable.
+// GateAdapter is a type that wraps a GateKeeper and provides functional adapters to map Go functions to Invocable.
 type GateAdapter struct {
 	factory *GateKeeper
 }

@@ -75,7 +75,7 @@ type IGateAllocator interface {
 	SetPointer(ptr *ObjectPointer, value IObject)
 	NewFuncInternal(frame int, id CallId) IObject
 	NewFunc(frame int, name string, instructions []byte, numLocals int, numParameters int, varArgs bool, sourceMap map[int]int, free []*ObjectPointer) IObject
-	NewFuncImport(frame int, name string, args int, fn Callable) IObject
+	NewFuncImport(frame int, name string, args int, fn Invocable) IObject
 	NewFuncJit(frame int, name string, data []byte) IObject
 	NewArray(frame int, values []IObject) IObject
 	NewBool(frame int, value bool) IObject
@@ -114,7 +114,7 @@ type IGateConverter interface {
 	AssignBool(val bool, dstObj IObject) error
 }
 
-// IGateAdapter defines an interface for adapting various function signatures into Callable instances.
+// IGateAdapter defines an interface for adapting various function signatures into Invocable instances.
 type IGateAdapter interface {
 	LogicalOpInt64(op LogicalOperator, lhs int64, rhs int64) (bool, error)
 	ArithmeticOpInt64(op ArithmeticOperator, lhs int64, rhs int64) (int64, error)
