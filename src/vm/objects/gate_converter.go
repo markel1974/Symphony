@@ -57,17 +57,11 @@ func (gc *GateConverter) AssignInt(val int64, dstObj IObject) error {
 	}
 }
 
-// FromStringArray converts an input slice of strings into an array of IObject and wraps it in a new IObject array.
-func (gc *GateConverter) FromStringArray(frame int, in []string) (IObject, error) {
-	var data []IObject
-	if len(in) > 0 {
-		data = make([]IObject, len(in))
-		for idx, v := range in {
-			r := gc.gk.NewString(frame, v)
-			data[idx] = r
-		}
-	}
-	return gc.gk.NewArray(frame, data), nil
+// StructFromMap converts a map of key-value pairs to an IObject representation of a structured data entity.
+func (gc *GateConverter) StructFromMap(frame int, name string, v map[string]interface{}) IObject {
+	base := gc.createObjectMap(frame, v)
+	out := gc.gk.NewStruct(frame, name, base)
+	return out
 }
 
 // FromInterface converts an interface Code into an IObject instance based on its underlying type using the provided frame.
@@ -109,18 +103,25 @@ func (gc *GateConverter) FromInterface(frame int, in interface{}) IObject {
 	case map[string]IObject:
 		return gc.gk.NewMap(frame, v)
 	case map[string]interface{}:
-		kv := gc.FromMap(frame, v)
+		kv := gc.createObjectMap(frame, v)
 		return gc.gk.NewMap(frame, kv)
 	case []map[string]interface{}:
 		arr := make([]IObject, len(v))
 		for i, e := range v {
-			kv := gc.FromMap(frame, e)
+			kv := gc.createObjectMap(frame, e)
 			vo := gc.FromInterface(frame, kv)
 			arr[i] = vo
 		}
 		return gc.gk.NewArray(frame, arr)
 	case []byte:
 		return gc.gk.NewBytes(frame, v)
+	case []string:
+		arr := make([]IObject, len(v))
+		for idx, v := range v {
+			r := gc.gk.NewString(frame, v)
+			arr[idx] = r
+		}
+		return gc.gk.NewArray(frame, arr)
 	case []bool:
 		arr := make([]IObject, len(v))
 		for i, e := range v {
@@ -216,20 +217,8 @@ func (gc *GateConverter) FromInterface(frame int, in interface{}) IObject {
 	}
 }
 
-// ToMap converts an IObject to a map[string]interface{}, recursively transforming nested elements.
-func (gc *GateConverter) ToMap(in IObject) (res map[string]interface{}) {
-	switch o := in.(type) {
-	case *Map:
-		res = make(map[string]interface{})
-		for key, v := range o.data {
-			res[key] = v.AsInterface()
-		}
-	}
-	return
-}
-
-// FromMap converts a map of string keys and interface Code into a map of string keys and IObject Code.
-func (gc *GateConverter) FromMap(frame int, v map[string]interface{}) map[string]IObject {
+// CreateObjectMap converts a map of string-interface pairs into a map of string-IObject pairs using the provided frame.
+func (gc *GateConverter) createObjectMap(frame int, v map[string]interface{}) map[string]IObject {
 	kv := make(map[string]IObject)
 	for key, val := range v {
 		kv[key] = gc.FromInterface(frame, val)
@@ -257,7 +246,7 @@ func (gc *GateConverter) ToStringArg(index int, in []IObject) (string, error) {
 }
 
 // ToBytes converts the provided IObject to a byte slice. Returns the byte slice and true if successful, otherwise nil and false.
-func (gc *GateConverter) ToBytes(in IObject) ([]byte, bool) {
+func (gc *GateConverter) toBytes(in IObject) ([]byte, bool) {
 	switch o := in.(type) {
 	case *Bool:
 		if o == gc.gk.TrueValue() {
@@ -299,7 +288,7 @@ func (gc *GateConverter) ToBytesArg(index int, in []IObject) ([]byte, error) {
 		return nil, ErrInvalidArgumentsNumber
 	}
 	o := in[index]
-	b, ok := gc.ToBytes(o)
+	b, ok := gc.toBytes(o)
 	if !ok {
 		return nil, NewInvalidArgumentError(index, "bytes", o.TypeName())
 	}
@@ -317,7 +306,7 @@ func (gc *GateConverter) ToFloat64Arg(index int, in []IObject) (float64, error) 
 }
 
 // ToTime converts an IObject to a time.Time Code if the conversion is possible. Returns the time and a bool indicating success.
-func (gc *GateConverter) ToTime(in IObject) (time.Time, bool) {
+func (gc *GateConverter) toTime(in IObject) (time.Time, bool) {
 	switch o := in.(type) {
 	case *Char:
 		return time.Unix(int64(o.data), 0), true
@@ -345,19 +334,11 @@ func (gc *GateConverter) ToTimeArg(index int, in []IObject) (time.Time, error) {
 		return time.Time{}, ErrInvalidArgumentsNumber
 	}
 	o := in[index]
-	v, ok := gc.ToTime(o)
+	v, ok := gc.toTime(o)
 	if !ok {
 		return time.Time{}, NewInvalidArgumentError(index, "time", o.TypeName())
 	}
 	return v, nil
-}
-
-// FromBool converts a boolean Code into an IObject representation based on the GateKeeper's true and false Code.
-func (gc *GateConverter) FromBool(v bool) IObject {
-	if v {
-		return gc.gk.TrueValue()
-	}
-	return gc.gk.FalseValue()
 }
 
 // ToBoolArg extracts a boolean Code from the IObject array at the specified index or returns an error if invalid.

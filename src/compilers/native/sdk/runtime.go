@@ -63,8 +63,7 @@ func (f *Runtime) readMemStats(gk objects.IGateKeeper, frame int, args ...object
 	ret["EnableGC"] = m.EnableGC
 	ret["DebugGC"] = m.DebugGC
 
-	out := gk.FromMap(frame, ret)
-	res := gk.NewStruct(frame, "MemStats", out)
+	res := gk.StructFromMap(frame, "MemStats", ret)
 	value := args1.Value()
 	if err := (*value).AssignValue(res); err != nil {
 		return 0, gk.UndefinedValue(), err

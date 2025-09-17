@@ -103,13 +103,13 @@ func (l *Library) doPrintf(gk objects.IGateKeeper, _ int, args ...objects.IObjec
 	return 0, nil, nil
 }
 
-func (l *Library) doIsActive(gk objects.IGateKeeper, _ int, args ...objects.IObject) (uint, objects.IObject, error) {
+func (l *Library) doIsActive(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
 	i1, err := gk.ToInt64Arg(0, args)
 	if err != nil {
 		return 0, nil, err
 	}
 	v := l.process.IsActive(int(i1))
-	return 1, gk.FromBool(v), nil
+	return 1, gk.FromInterface(frame, v), nil
 }
 
 // doKill terminates a process identified by the provided argument, which must be convertible to an int64. Returns no value.
@@ -181,23 +181,20 @@ func (l *Library) doGetScreenSize(gk objects.IGateKeeper, frame int, args ...obj
 
 // doCWDDirectoryListing returns the directory listing of the current working directory as an IObject array.
 // It expects no arguments and raises an error if arguments are provided.
-func (l *Library) doCWDDirectoryListing(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
+func (l *Library) doCWDDirectoryListing(gk objects.IGateKeeper, frame int, _ ...objects.IObject) (uint, objects.IObject, error) {
 	v := l.process.CWDDirectoryListing()
-	obj, err := gk.FromStringArray(frame, v)
-	if err != nil {
-		return 0, nil, err
-	}
+	obj := gk.FromInterface(frame, v)
 	return 1, obj, nil
 }
 
 // doCWDSet sets the current working directory (CWD) using the provided string argument. Returns a boolean as IObject.
-func (l *Library) doCWDSet(gk objects.IGateKeeper, _ int, args ...objects.IObject) (uint, objects.IObject, error) {
+func (l *Library) doCWDSet(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
 	s1, err := gk.ToStringArg(0, args)
 	if err != nil {
 		return 0, nil, err
 	}
 	v := l.process.CWDSet(s1)
-	return 1, gk.FromBool(v), nil
+	return 1, gk.FromInterface(frame, v), nil
 }
 
 // doCWDPath returns the current working directory's path as a string object or an error if arguments are provided.

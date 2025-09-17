@@ -48,7 +48,7 @@ func (j *Json) unmarshal(gk objects.IGateKeeper, frame int, args ...objects.IObj
 	if err := json.Unmarshal(data, &d); err != nil {
 		return 0, gk.NewError(frame, err.Error()), nil
 	}
-	result := gk.NewMap(frame, gk.FromMap(frame, d))
+	result := gk.FromInterface(frame, d)
 	return 1, result, nil
 }
 
