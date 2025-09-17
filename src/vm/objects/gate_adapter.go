@@ -52,7 +52,7 @@ func (ga *GateAdapter) CreateSlice(frameId int, lowObj IObject, highObj IObject,
 	case *Bytes:
 		return ga.factory.NewBytes(frameId, left.Value()[lowIdx:highIdx]), nil
 	default:
-		return nil, fmt.Errorf("invalid slice: %s[%d:%d]", left.TypeName(), lowIdx, highIdx)
+		return nil, fmt.Errorf("unsupported slice: %s", left.TypeName())
 	}
 }
 
@@ -60,11 +60,11 @@ func (ga *GateAdapter) CreateSlice(frameId int, lowObj IObject, highObj IObject,
 // It navigates through the provided selectors and performs an assignment on the target object at the final index.
 // Returns an error if any selector is invalid, the object is not indexable, or the assignment fails.
 func (ga *GateAdapter) IndexAssign(frame int, dst IObject, src IObject, selectors []IObject) error {
-	if len(selectors) == 0 {
+	sLen := len(selectors)
+	if sLen == 0 {
 		return ErrSelectorNotProvided
 	}
-	numSel := len(selectors)
-	for sIdx := numSel - 1; sIdx > 0; sIdx-- {
+	for sIdx := sLen - 1; sIdx > 0; sIdx-- {
 		next, err := dst.IndexGet(frame, selectors[sIdx])
 		if err != nil {
 			return ComputeIndexGetError(err, dst.TypeName(), selectors[sIdx].TypeName())

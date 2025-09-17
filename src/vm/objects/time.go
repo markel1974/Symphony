@@ -198,6 +198,11 @@ func (o *Time) Count() int {
 	return 1
 }
 
+// SetValue sets the internal time.Time value of the Time object to the specified value.
+func (o *Time) SetValue(value time.Time) {
+	o.data = value
+}
+
 // GobEncode serializes the Time's data into a byte slice using gob encoding and returns the result or an error.
 func (o *Time) GobEncode() ([]byte, error) {
 	var buf bytes.Buffer

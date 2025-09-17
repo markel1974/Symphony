@@ -1,7 +1,9 @@
 package objects
 
 import (
+	"encoding/binary"
 	"errors"
+	"math"
 	"strconv"
 	"time"
 )
@@ -48,6 +50,9 @@ func (gc *GateConverter) AssignInt(val int64, dstObj IObject) error {
 		return nil
 	case *String:
 		return out.SetValue(strconv.FormatInt(val, 10))
+	case *Time:
+		out.SetValue(time.Unix(val, 0))
+		return nil
 	default:
 		return ErrNotAssignable
 	}
@@ -96,12 +101,10 @@ func (gc *GateConverter) FromInterface(frame int, in interface{}) IObject {
 		return gc.gk.NewChar(frame, v)
 	case byte:
 		return gc.gk.NewChar(frame, rune(v))
-	case float64:
-		return gc.gk.NewFloat(frame, v)
 	case float32:
 		return gc.gk.NewFloat(frame, float64(v))
-	case []byte:
-		return gc.gk.NewBytes(frame, v)
+	case float64:
+		return gc.gk.NewFloat(frame, v)
 	case error:
 		return gc.gk.NewError(frame, v.Error())
 	case map[string]IObject:
@@ -109,6 +112,16 @@ func (gc *GateConverter) FromInterface(frame int, in interface{}) IObject {
 	case map[string]interface{}:
 		kv := gc.FromMap(frame, v)
 		return gc.gk.NewMap(frame, kv)
+	case []map[string]interface{}:
+		arr := make([]IObject, len(v))
+		for i, e := range v {
+			kv := gc.FromMap(frame, e)
+			vo := gc.FromInterface(frame, kv)
+			arr[i] = vo
+		}
+		return gc.gk.NewArray(frame, arr)
+	case []byte:
+		return gc.gk.NewBytes(frame, v)
 	case []bool:
 		arr := make([]IObject, len(v))
 		for i, e := range v {
@@ -125,12 +138,64 @@ func (gc *GateConverter) FromInterface(frame int, in interface{}) IObject {
 			arr[i] = gc.gk.NewInt(frame, int64(e))
 		}
 		return gc.gk.NewArray(frame, arr)
-	case []map[string]interface{}:
+	case []int8:
 		arr := make([]IObject, len(v))
 		for i, e := range v {
-			kv := gc.FromMap(frame, e)
-			vo := gc.FromInterface(frame, kv)
-			arr[i] = vo
+			arr[i] = gc.gk.NewInt(frame, int64(e))
+		}
+		return gc.gk.NewArray(frame, arr)
+	case []int16:
+		arr := make([]IObject, len(v))
+		for i, e := range v {
+			arr[i] = gc.gk.NewInt(frame, int64(e))
+		}
+		return gc.gk.NewArray(frame, arr)
+	case []int32:
+		arr := make([]IObject, len(v))
+		for i, e := range v {
+			arr[i] = gc.gk.NewInt(frame, int64(e))
+		}
+		return gc.gk.NewArray(frame, arr)
+	case []int64:
+		arr := make([]IObject, len(v))
+		for i, e := range v {
+			arr[i] = gc.gk.NewInt(frame, e)
+		}
+		return gc.gk.NewArray(frame, arr)
+	case []uint:
+		arr := make([]IObject, len(v))
+		for i, e := range v {
+			arr[i] = gc.gk.NewInt(frame, int64(e))
+		}
+		return gc.gk.NewArray(frame, arr)
+	case []uint16:
+		arr := make([]IObject, len(v))
+		for i, e := range v {
+			arr[i] = gc.gk.NewInt(frame, int64(e))
+		}
+		return gc.gk.NewArray(frame, arr)
+	case []uint32:
+		arr := make([]IObject, len(v))
+		for i, e := range v {
+			arr[i] = gc.gk.NewInt(frame, int64(e))
+		}
+		return gc.gk.NewArray(frame, arr)
+	case []uint64:
+		arr := make([]IObject, len(v))
+		for i, e := range v {
+			arr[i] = gc.gk.NewInt(frame, int64(e))
+		}
+		return gc.gk.NewArray(frame, arr)
+	case []float32:
+		arr := make([]IObject, len(v))
+		for i, e := range v {
+			arr[i] = gc.gk.NewFloat(frame, float64(e))
+		}
+		return gc.gk.NewArray(frame, arr)
+	case []float64:
+		arr := make([]IObject, len(v))
+		for i, e := range v {
+			arr[i] = gc.gk.NewFloat(frame, e)
 		}
 		return gc.gk.NewArray(frame, arr)
 	case []IObject:
@@ -147,8 +212,9 @@ func (gc *GateConverter) FromInterface(frame int, in interface{}) IObject {
 		return v
 	case FuncCallable:
 		return gc.gk.NewFuncImport(FrameStatic, "FuncCallable", 0, v)
+	default:
+		return gc.gk.UndefinedValue()
 	}
-	return gc.gk.UndefinedValue()
 }
 
 // ToMap converts an IObject to a map[string]interface{}, recursively transforming nested elements.
@@ -164,40 +230,54 @@ func (gc *GateConverter) ToMap(in IObject) (res map[string]interface{}) {
 }
 
 // ToInterface converts an IObject to its native Go interface representation, based on the underlying type of the object.
-func (gc *GateConverter) ToInterface(in IObject) (res interface{}) {
+func (gc *GateConverter) ToInterface(in IObject) interface{} {
 	switch o := in.(type) {
-	case *Int:
-		res = o.data
-	case *String:
-		res = o.data
-	case *Float:
-		res = o.data
 	case *Bool:
-		res = o == gc.gk.TrueValue()
+		return o == gc.gk.TrueValue()
 	case *Char:
-		res = o.data
-	case *Bytes:
-		res = o.data
-	case *Array:
-		res = make([]interface{}, len(o.Values()))
-		for i, val := range o.Values() {
-			res.([]interface{})[i] = gc.ToInterface(val)
-		}
-	case *Map:
-		res = make(map[string]interface{})
-		for key, v := range o.data {
-			res.(map[string]interface{})[key] = gc.ToInterface(v)
-		}
+		return o.data
+	case *Int:
+		return o.data
+	case *Float:
+		return o.data
 	case *Time:
-		res = o.data
+		return o.data
+	case *Bytes:
+		return o.data
+	case *String:
+		return o.data
+	case *Array:
+		res := make([]interface{}, len(o.Values()))
+		for i, val := range o.Values() {
+			res[i] = gc.ToInterface(val)
+		}
+		return res
+	case *Map:
+		res := make(map[string]interface{})
+		for key, v := range o.data {
+			res[key] = gc.ToInterface(v)
+		}
+		return res
+	case *Struct:
+		res := make(map[string]interface{})
+		for key, v := range o.data {
+			res[key] = gc.ToInterface(v)
+		}
+		return res
+	case *ObjectPointer:
+		if o.data == nil {
+			return nil
+		}
+		return gc.ToInterface(*o.data)
 	case *Error:
-		res = errors.New(o.AsString())
+		return errors.New(o.AsString())
 	case *Undefined:
-		res = nil
+		return nil
 	case IObject:
 		return o
+	default:
+		return nil
 	}
-	return
 }
 
 // FromMap converts a map of string keys and interface Code into a map of string keys and IObject Code.
@@ -212,17 +292,26 @@ func (gc *GateConverter) FromMap(frame int, v map[string]interface{}) map[string
 // ToInt64 converts an IObject to an int64 and returns the Code along with a boolean indicating success or failure.
 func (gc *GateConverter) ToInt64(in IObject) (int64, bool) {
 	switch o := in.(type) {
-	case *Int:
-		return o.data, true
-	case *Float:
-		return int64(o.data), true
-	case *Char:
-		return int64(o.data), true
 	case *Bool:
 		if o == gc.gk.TrueValue() {
 			return 1, true
 		}
 		return 0, true
+	case *Char:
+		return int64(o.data), true
+	case *Int:
+		return o.data, true
+	case *Float:
+		return int64(o.data), true
+	case *Time:
+		return o.data.Unix(), true
+	case *Bytes:
+		//i := int64(binary.LittleEndian.Uint64(o.data))
+		c, err := strconv.ParseInt(string(o.data), 10, 64)
+		if err == nil {
+			return c, true
+		}
+		return 0, false
 	case *String:
 		c, err := strconv.ParseInt(o.data, 10, 64)
 		if err == nil {
@@ -248,16 +337,34 @@ func (gc *GateConverter) ToInt64Arg(index int, in []IObject) (int64, error) {
 }
 
 // ToRune converts the given IObject to a rune if possible, returning the result and a success flag.
-func (gc *GateConverter) ToRune(in IObject) (v rune, ok bool) {
+func (gc *GateConverter) ToRune(in IObject) (rune, bool) {
 	switch o := in.(type) {
-	case *Int:
-		v = rune(o.data)
-		ok = true
+	case *Bool:
+		if o == gc.gk.TrueValue() {
+			return 1, true
+		}
+		return 0, true
 	case *Char:
-		v = o.data
-		ok = true
+		return o.data, true
+	case *Int:
+		return rune(o.data), true
+	case *Float:
+		return rune(o.data), true
+	case *Bytes:
+		//i := int64(binary.LittleEndian.Uint64(o.data))
+		c, err := strconv.ParseInt(string(o.data), 10, 64)
+		if err == nil {
+			return int32(c), true
+		}
+		return 0, false
+	case *String:
+		c, err := strconv.ParseInt(o.data, 10, 64)
+		if err == nil {
+			return int32(c), true
+		}
+		return 0, false
 	}
-	return
+	return 0, false
 }
 
 // ToString converts the given IObject to its string representation. It returns the string Code and a boolean for success.
@@ -284,22 +391,35 @@ func (gc *GateConverter) ToStringArg(index int, in []IObject) (string, error) {
 // ToBytes converts the provided IObject to a byte slice. Returns the byte slice and true if successful, otherwise nil and false.
 func (gc *GateConverter) ToBytes(in IObject) ([]byte, bool) {
 	switch o := in.(type) {
-	case *Int:
-		return []byte{byte(o.data)}, true
-	case *Float:
-		return []byte{byte(o.data)}, true
-	case *Char:
-		return []byte{byte(o.data)}, true
 	case *Bool:
 		if o == gc.gk.TrueValue() {
 			return []byte{1}, true
 		} else {
 			return []byte{0}, true
 		}
+	case *Char:
+		if o.data <= 0xff {
+			return []byte{byte(o.data)}, true
+		}
+		b := make([]byte, 4)
+		binary.LittleEndian.PutUint32(b, uint32(o.data))
+		return b, true
+	case *Int:
+		b := make([]byte, 8)
+		binary.LittleEndian.PutUint64(b, uint64(o.data))
+		return b, true
+	case *Float:
+		b := make([]byte, 8)
+		binary.LittleEndian.PutUint64(b, math.Float64bits(o.data))
+		return b, true
 	case *Bytes:
 		return o.data, true
 	case *String:
 		return []byte(o.data), true
+	case *Time:
+		b := make([]byte, 8)
+		binary.LittleEndian.PutUint64(b, uint64(o.data.Unix()))
+		return b, true
 	default:
 		return nil, false
 	}
@@ -321,17 +441,25 @@ func (gc *GateConverter) ToBytesArg(index int, in []IObject) ([]byte, error) {
 // ToFloat64 converts an IObject to a float64, returning the Code and a boolean indicating success or failure.
 func (gc *GateConverter) ToFloat64(in IObject) (float64, bool) {
 	switch o := in.(type) {
-	case *Int:
-		return float64(o.data), true
-	case *Float:
-		return o.data, true
-	case *Char:
-		return float64(o.data), true
 	case *Bool:
 		if o == gc.gk.TrueValue() {
 			return 1, true
 		}
 		return 0, true
+	case *Char:
+		return float64(o.data), true
+	case *Int:
+		return float64(o.data), true
+	case *Float:
+		return o.data, true
+	case *Time:
+		return float64(o.data.Unix()), true
+	case *Bytes:
+		c, err := strconv.ParseFloat(string(o.data), 64)
+		if err == nil {
+			return c, true
+		}
+		return 0, false
 	case *String:
 		c, err := strconv.ParseFloat(o.data, 64)
 		if err == nil {
@@ -359,14 +487,18 @@ func (gc *GateConverter) ToFloat64Arg(index int, in []IObject) (float64, error) 
 // ToTime converts an IObject to a time.Time Code if the conversion is possible. Returns the time and a bool indicating success.
 func (gc *GateConverter) ToTime(in IObject) (time.Time, bool) {
 	switch o := in.(type) {
-	case *Time:
-		return o.data, true
+	case *Char:
+		return time.Unix(int64(o.data), 0), true
 	case *Int:
 		return time.Unix(o.data, 0), true
 	case *Float:
 		return time.Unix(int64(o.data), 0), true
-	case *Char:
-		return time.Unix(int64(o.data), 0), true
+	case *Time:
+		return o.data, true
+	case *Bytes:
+		if v, err := strconv.ParseInt(string(o.data), 10, 64); err == nil {
+			return time.Unix(v, 0), true
+		}
 	case *String:
 		if v, err := strconv.ParseInt(o.data, 10, 64); err == nil {
 			return time.Unix(v, 0), true
