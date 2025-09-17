@@ -10,8 +10,8 @@ import (
 // FuncCompiledDef represents a constant Code for a compiled function definition.
 // FuncCompiledLabel represents a formatted label using FuncCompiledDef.
 const (
-	FuncCompiledDef   = "func_compiled"
-	FuncCompiledLabel = "<" + FuncCompiledDef + ">"
+	FuncDef   = "func"
+	FuncLabel = "<" + FuncDef + ">"
 )
 
 // init registers the Func type with the gob package to allow for serialization and deserialization.
@@ -87,7 +87,7 @@ func (o *Func) AsBytes() []byte {
 
 // AsString returns a string representation of the Func instance, specifically the constant FuncCompiledLabel.
 func (o *Func) AsString() string {
-	return FuncCompiledLabel
+	return FuncLabel
 }
 
 // AssignValue attempts to assign a Code to the instance but always returns ErrNotAssignable as it is not supported.
@@ -186,7 +186,7 @@ func (o *Func) Free() []*ObjectPointer {
 
 // TypeName returns the string identifier "func_compiled" representing the type of the Func object.
 func (o *Func) TypeName() string {
-	return FuncCompiledDef
+	return FuncDef
 }
 
 // Copy creates a deep copy of the Func object, replicating its properties and associated instructions.

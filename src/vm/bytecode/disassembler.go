@@ -3,26 +3,28 @@ package bytecode
 import (
 	"fmt"
 	"io"
-	"reflect"
+	"strings"
 
 	"github.com/markel1974/c64emu/src/vm/objects"
 	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
 
+// DisassemblerOpcode represents a single opcode with its name, start index, and associated operands.
 type DisassemblerOpcode struct {
 	name     string
 	start    int
 	operands []int
 }
 
-// Disassembler represents a utility for analyzing and processing bytecode by dissecting its constants and imports.
+// Disassembler is used to analyze and break down bytecode into readable instructions through opcode resolution.
+// It links a Bytecode object and opcode manager to interpret operations and their respective instructions.
 type Disassembler struct {
 	cd           *Bytecode
 	opcodes      opcodes.IOpcodes
 	instructions *opcodes.Instructions
 }
 
-// NewDisassembler creates a new Disassembler instance linked to the provided Bytecode object.
+// NewDisassembler creates and returns a new instance of Disassembler initialized with the provided Bytecode and IOpcodes.
 func NewDisassembler(b *Bytecode, op opcodes.IOpcodes) *Disassembler {
 	d := &Disassembler{
 		opcodes:      op,
@@ -32,52 +34,63 @@ func NewDisassembler(b *Bytecode, op opcodes.IOpcodes) *Disassembler {
 	return d
 }
 
-// Disassemble parses and logs opcode of objects, constants, and imports within the associated bytecode.
+// Disassemble writes a textual representation of the disassembled bytecode to the provided writer.
+// It processes each container and its objects, formatting their data into a readable output.
+// Returns an error if disassembling any object fails.
 func (d *Disassembler) Disassemble(writer io.Writer) error {
 	for _, container := range d.cd.Containers() {
 		_, _ = fmt.Fprintf(writer, "---- %s ----\n", container.Type())
 		count := 0
 		for cIdx, obj := range container.Objects() {
-			data, err := d.disassembleObject(cIdx, obj)
+			data, err := d.disassembleObject(obj)
 			if err != nil {
 				return err
 			}
-			_, _ = fmt.Fprintf(writer, "%04d => %s\n", cIdx, data)
 			count += obj.Count()
+			for idx, v := range data {
+				escaped := EscapeNonPrintable(v)
+				if idx == 0 {
+					_, _ = fmt.Fprintf(writer, "%04d => %s\n", cIdx, escaped)
+				} else {
+					_, _ = fmt.Fprintf(writer, "        %s\n", escaped)
+				}
+			}
 		}
 		_, _ = fmt.Fprintf(writer, "total objects: %d\n", count)
 	}
 	return nil
 }
 
-// disassembleObject generates a disassembled representation of a constant object, including detailed instructions for functions.
-func (d *Disassembler) disassembleObject(idx int, obj objects.IObject) ([]string, error) {
-	var output []string
+// disassembleObject generates a disassembly of the provided object and returns it as a slice of strings or an error.
+func (d *Disassembler) disassembleObject(obj objects.IObject) ([]string, error) {
 	if obj == nil {
-		return []string{fmt.Sprintf("<% 4d> nil", idx)}, nil
+		return []string{fmt.Sprintf("nil")}, nil
 	}
+	var output []string
 	switch cn := obj.(type) {
 	case *objects.Func:
-		result, err := d.disassembleInstructions(cn.Code())
+		header := fmt.Sprintf("%-16s '%s' (args: %d, locals: %d)", cn.TypeName(), cn.Name(), cn.NumParameters(), cn.NumLocals())
+		output = append(output, header)
+		instructions, err := d.disassembleInstructions(cn.Code())
 		if err != nil {
 			return nil, err
 		}
-		output = append(output, fmt.Sprintf("<% 4d> %s (Compiled Function|%p)\n", idx, cn.Name(), &cn))
-		for _, entry := range result {
-			header := fmt.Sprintf("%04d %-16s", entry.start, entry.name)
+		for _, entry := range instructions {
+			var operandsStr []string
 			for _, v := range entry.operands {
-				header += fmt.Sprintf(" %-5d", v)
+				operandsStr = append(operandsStr, fmt.Sprintf("%-5d", v))
 			}
-			output = append(output, header+"\n")
+			line := fmt.Sprintf("%04d %-16s %s", entry.start, entry.name, strings.Join(operandsStr, " "))
+			output = append(output, line)
 		}
 	default:
-		kind := reflect.TypeOf(cn)
-		output = append(output, fmt.Sprintf("<% 4d> %s -> '%s' (%s|%p)", idx, cn.TypeName(), cn.AsString(), kind.Elem().Name(), &cn))
+		line := fmt.Sprintf("%-16s %s", cn.TypeName(), cn.AsString())
+		output = append(output, line)
 	}
 	return output, nil
 }
 
-// disassembleInstructions parses a sequence of bytecode instructions and generates a human-readable representation of the instructions.
+// disassembleInstructions parses bytecode into a sequence of disassembled opcodes including their operands and positions.
 func (d *Disassembler) disassembleInstructions(bc []byte) ([]DisassemblerOpcode, error) {
 	var out []DisassemblerOpcode
 	var end int
