@@ -328,7 +328,7 @@ func (o *FuncInternal) sprintf(frame int, args []IObject) (IObject, error) {
 	default:
 		var ar []interface{}
 		for _, v := range args[1:] {
-			ar = append(ar, o.GateKeeper().ToInterface(v))
+			ar = append(ar, v.AsInterface())
 		}
 		return o.GateKeeper().NewString(frame, fmt.Sprintf(args[0].AsString(), ar...)), nil
 	}
@@ -347,7 +347,7 @@ func (o *FuncInternal) printf(_ int, args []IObject) (IObject, error) {
 	default:
 		var ar []interface{}
 		for _, v := range args[1:] {
-			ar = append(ar, o.GateKeeper().ToInterface(v))
+			ar = append(ar, v.AsInterface())
 		}
 		fmt.Printf(args[0].AsString(), ar...)
 		return o.GateKeeper().UndefinedValue(), nil

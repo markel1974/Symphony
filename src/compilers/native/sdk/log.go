@@ -33,7 +33,7 @@ func NewLog(factory objects.IGateKeeper) IPackage {
 func (f *Log) print(gk objects.IGateKeeper, _ int, args ...objects.IObject) (uint, objects.IObject, error) {
 	var printArgs []interface{}
 	for _, arg := range args {
-		printArgs = append(printArgs, gk.ToInterface(arg))
+		printArgs = append(printArgs, arg.AsInterface())
 	}
 	log.Print(printArgs...)
 	return 0, nil, nil
@@ -54,7 +54,7 @@ func (f *Log) printf(gk objects.IGateKeeper, _ int, args ...objects.IObject) (ui
 	}
 	var ar []interface{}
 	for _, v := range args[1:] {
-		ar = append(ar, gk.ToInterface(v))
+		ar = append(ar, v.AsInterface())
 	}
 	log.Printf(s1, ar...)
 	return 0, nil, nil
@@ -64,7 +64,7 @@ func (f *Log) printf(gk objects.IGateKeeper, _ int, args ...objects.IObject) (ui
 func (f *Log) println(gk objects.IGateKeeper, _ int, args ...objects.IObject) (uint, objects.IObject, error) {
 	var printArgs []interface{}
 	for _, arg := range args {
-		printArgs = append(printArgs, gk.ToInterface(arg))
+		printArgs = append(printArgs, arg.AsInterface())
 	}
 	log.Println(printArgs...)
 	return 0, nil, nil
@@ -83,7 +83,7 @@ func (f *Log) fatalf(gk objects.IGateKeeper, _ int, args ...objects.IObject) (ui
 	}
 	var ar []interface{}
 	for _, v := range args[1:] {
-		ar = append(ar, gk.ToInterface(v))
+		ar = append(ar, v.AsInterface())
 	}
 	log.Printf(s1, ar...)
 	return 0, nil, fmt.Errorf("fatal")

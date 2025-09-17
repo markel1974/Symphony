@@ -57,7 +57,7 @@ func (o *StructIterator) GateKeeper() IGateKeeper {
 func (o *StructIterator) AsInterface() interface{} {
 	res := make(map[string]interface{})
 	for key, v := range o.data {
-		res[key] = o.GateKeeper().ToInterface(v)
+		res[key] = v.AsInterface()
 	}
 	return res
 }

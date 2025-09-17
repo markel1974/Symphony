@@ -46,7 +46,7 @@ func (o *ObjectPointer) AsInterface() interface{} {
 	if o.data == nil {
 		return nil
 	}
-	return o.GateKeeper().ToInterface(*o.data)
+	return (*o.data).AsInterface()
 }
 
 // AsBool returns the boolean representation of the ObjectPointer, defaulting to false.

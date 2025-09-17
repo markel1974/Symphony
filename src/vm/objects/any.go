@@ -125,7 +125,7 @@ func (o *Any) IndexSet(index IObject, value IObject) error {
 	if !field.IsValid() || !field.CanSet() {
 		return fmt.Errorf("field '%s' not found or cannot be set", key)
 	}
-	valToSet := reflect.ValueOf(o.GateKeeper().ToInterface(value))
+	valToSet := reflect.ValueOf(value.AsInterface())
 	if valToSet.Type().AssignableTo(field.Type()) {
 		field.Set(valToSet)
 		return nil
@@ -210,7 +210,7 @@ func (o *Any) Count() int {
 func (o *Any) call(gk IGateKeeper, frame int, method reflect.Value, args []IObject) (uint, IObject, error) {
 	in := make([]reflect.Value, len(args))
 	for i, arg := range args {
-		in[i] = reflect.ValueOf(gk.ToInterface(arg))
+		in[i] = reflect.ValueOf(arg.AsInterface())
 	}
 	results := method.Call(in)
 	switch len(results) {

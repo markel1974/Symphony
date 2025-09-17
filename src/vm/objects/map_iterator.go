@@ -50,7 +50,7 @@ func (o *MapIterator) setAllocator(allocator IAllocator) {
 func (o *MapIterator) AsInterface() interface{} {
 	res := make(map[string]interface{})
 	for key, v := range o.data {
-		res[key] = o.GateKeeper().ToInterface(v)
+		res[key] = v.AsInterface()
 	}
 	return res
 }

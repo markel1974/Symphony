@@ -95,7 +95,7 @@ func (l *Library) doPrintf(gk objects.IGateKeeper, _ int, args ...objects.IObjec
 	} else {
 		var ar []interface{}
 		for _, v := range args[1:] {
-			ar = append(ar, gk.ToInterface(v))
+			ar = append(ar, v.AsInterface())
 		}
 		val = fmt.Sprintf(s1, ar...)
 	}

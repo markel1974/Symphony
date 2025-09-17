@@ -2,7 +2,6 @@ package objects
 
 import (
 	"encoding/binary"
-	"errors"
 	"math"
 	"strconv"
 	"time"
@@ -223,61 +222,10 @@ func (gc *GateConverter) ToMap(in IObject) (res map[string]interface{}) {
 	case *Map:
 		res = make(map[string]interface{})
 		for key, v := range o.data {
-			res[key] = gc.ToInterface(v)
+			res[key] = v.AsInterface()
 		}
 	}
 	return
-}
-
-// ToInterface converts an IObject to its native Go interface representation, based on the underlying type of the object.
-func (gc *GateConverter) ToInterface(in IObject) interface{} {
-	switch o := in.(type) {
-	case *Bool:
-		return o == gc.gk.TrueValue()
-	case *Char:
-		return o.data
-	case *Int:
-		return o.data
-	case *Float:
-		return o.data
-	case *Time:
-		return o.data
-	case *Bytes:
-		return o.data
-	case *String:
-		return o.data
-	case *Array:
-		res := make([]interface{}, len(o.Values()))
-		for i, val := range o.Values() {
-			res[i] = gc.ToInterface(val)
-		}
-		return res
-	case *Map:
-		res := make(map[string]interface{})
-		for key, v := range o.data {
-			res[key] = gc.ToInterface(v)
-		}
-		return res
-	case *Struct:
-		res := make(map[string]interface{})
-		for key, v := range o.data {
-			res[key] = gc.ToInterface(v)
-		}
-		return res
-	case *ObjectPointer:
-		if o.data == nil {
-			return nil
-		}
-		return gc.ToInterface(*o.data)
-	case *Error:
-		return errors.New(o.AsString())
-	case *Undefined:
-		return nil
-	case IObject:
-		return o
-	default:
-		return nil
-	}
 }
 
 // FromMap converts a map of string keys and interface Code into a map of string keys and IObject Code.

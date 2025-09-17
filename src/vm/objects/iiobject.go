@@ -101,7 +101,6 @@ type IGateAllocator interface {
 type IGateConverter interface {
 	ToTime(o IObject) (time.Time, bool)
 	ToBytes(o IObject) ([]byte, bool)
-	ToInterface(in IObject) (res interface{})
 	ToMap(o IObject) (res map[string]interface{})
 
 	ToBoolArg(index int, in []IObject) (bool, error)

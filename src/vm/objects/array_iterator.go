@@ -42,7 +42,7 @@ func (o *ArrayIterator) setAllocator(allocator IAllocator) {
 func (o *ArrayIterator) AsInterface() interface{} {
 	res := make([]interface{}, len(o.data))
 	for i, val := range o.data {
-		res[i] = o.GateKeeper().ToInterface(val)
+		res[i] = val.AsInterface()
 	}
 	return res
 }

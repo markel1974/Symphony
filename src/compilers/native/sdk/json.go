@@ -57,7 +57,7 @@ func (j *Json) marshal(gk objects.IGateKeeper, frame int, args ...objects.IObjec
 	if len(args) != 1 {
 		return 0, nil, objects.ErrInvalidArgumentsNumber
 	}
-	result, err := json.Marshal(gk.ToInterface(args[0]))
+	result, err := json.Marshal(args[0].AsInterface())
 	if err != nil {
 		return 0, gk.NewError(frame, err.Error()), nil
 	}

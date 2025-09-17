@@ -436,7 +436,7 @@ func (v *VM) GetReturnValue(idx int) interface{} {
 	if obj == nil {
 		return nil
 	}
-	return v.gk.ToInterface(obj)
+	return obj.AsInterface()
 }
 
 // GetReturnValues returns the values from the top of the stack as an array of interface values.

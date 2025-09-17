@@ -34,7 +34,7 @@ func NewFmt(factory objects.IGateKeeper) IPackage {
 func (f *Fmt) print(gk objects.IGateKeeper, _ int, args ...objects.IObject) (uint, objects.IObject, error) {
 	var printArgs []interface{}
 	for _, arg := range args {
-		printArgs = append(printArgs, gk.ToInterface(arg))
+		printArgs = append(printArgs, arg.AsInterface())
 	}
 	_, _ = fmt.Print(printArgs...)
 	return 0, nil, nil
@@ -55,7 +55,7 @@ func (f *Fmt) printf(gk objects.IGateKeeper, _ int, args ...objects.IObject) (ui
 	}
 	var ar []interface{}
 	for _, v := range args[1:] {
-		ar = append(ar, gk.ToInterface(v))
+		ar = append(ar, v.AsInterface())
 	}
 	fmt.Printf(s1, ar...)
 	return 0, nil, nil
@@ -65,7 +65,7 @@ func (f *Fmt) printf(gk objects.IGateKeeper, _ int, args ...objects.IObject) (ui
 func (f *Fmt) println(gk objects.IGateKeeper, _ int, args ...objects.IObject) (uint, objects.IObject, error) {
 	var printArgs []interface{}
 	for _, arg := range args {
-		printArgs = append(printArgs, gk.ToInterface(arg))
+		printArgs = append(printArgs, arg.AsInterface())
 	}
 	_, _ = fmt.Println(printArgs...)
 	return 0, nil, nil
@@ -78,7 +78,7 @@ func (f *Fmt) sprint(gk objects.IGateKeeper, frame int, args ...objects.IObject)
 	}
 	var ar []interface{}
 	for _, v := range args {
-		ar = append(ar, gk.ToInterface(v))
+		ar = append(ar, v.AsInterface())
 	}
 	return 1, gk.NewString(frame, fmt.Sprint(ar)), nil
 }
@@ -94,7 +94,7 @@ func (f *Fmt) sprintf(gk objects.IGateKeeper, frame int, args ...objects.IObject
 	}
 	var ar []interface{}
 	for _, v := range args[1:] {
-		ar = append(ar, gk.ToInterface(v))
+		ar = append(ar, v.AsInterface())
 	}
 	return 1, gk.NewString(frame, fmt.Sprintf(s1, ar...)), nil
 }
@@ -110,7 +110,7 @@ func (f *Fmt) errorf(gk objects.IGateKeeper, frame int, args ...objects.IObject)
 	}
 	var ar []interface{}
 	for _, v := range args[1:] {
-		ar = append(ar, gk.ToInterface(v))
+		ar = append(ar, v.AsInterface())
 	}
 	return 1, gk.NewError(frame, s1), nil
 }
