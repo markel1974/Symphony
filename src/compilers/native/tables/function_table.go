@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"go/ast"
 
-	objects2 "github.com/markel1974/c64emu/src/vm/objects"
+	"github.com/markel1974/c64emu/src/vm/objects"
 )
 
 const (
@@ -36,7 +36,7 @@ func NewFunctionDescription(funcDecl *ast.FuncDecl) *FunctionDescription {
 
 // FunctionTable is a type designed to manage a collection of function descriptions.
 type FunctionTable struct {
-	gk             objects2.IGateKeeper
+	gk             objects.IGateKeeper
 	scopes         *Scopes
 	structTable    *StructTable
 	interfaceTable *InterfaceTable
@@ -44,7 +44,7 @@ type FunctionTable struct {
 }
 
 // NewFunctionTable initializes and returns a new instance of FunctionTable.
-func NewFunctionTable(gk objects2.IGateKeeper, scopes *Scopes, structTable *StructTable, interfaceTable *InterfaceTable) *FunctionTable {
+func NewFunctionTable(gk objects.IGateKeeper, scopes *Scopes, structTable *StructTable, interfaceTable *InterfaceTable) *FunctionTable {
 	return &FunctionTable{
 		gk:             gk,
 		scopes:         scopes,
@@ -108,10 +108,10 @@ func (f *FunctionTable) SymbolsFromParameters(fieldList *ast.FieldList) ([]*Symb
 				symbol.SetReturnTypes([]string{typeName})
 				if isStruct {
 					f.structTable.BindSymbol(symbol, typeName)
-					symbol.SetObject(f.gk.NewString(objects2.FrameStatic, typeName+":"+symbol.Name()))
+					symbol.SetObject(f.gk.NewString(objects.FrameStatic, typeName+":"+symbol.Name()))
 				} else if isInterface {
 					symbol.SetInterface(typeName)
-					symbol.SetObject(f.gk.NewString(objects2.FrameStatic, "interface:"+symbol.Name()))
+					symbol.SetObject(f.gk.NewString(objects.FrameStatic, "interface:"+symbol.Name()))
 				}
 				symbols = append(symbols, symbol)
 			}
@@ -144,7 +144,7 @@ func (f *FunctionTable) RangeValue(node *ast.RangeStmt, typeName string) (*Symbo
 			}
 			if len(typeName) > 0 {
 				valueSymbol.SetReturnTypes([]string{typeName})
-				valueSymbol.SetObject(f.gk.NewString(objects2.FrameStatic, typeName+":"+valueSymbol.Name()))
+				valueSymbol.SetObject(f.gk.NewString(objects.FrameStatic, typeName+":"+valueSymbol.Name()))
 				f.structTable.BindSymbol(valueSymbol, typeName)
 			}
 			return valueSymbol, nil

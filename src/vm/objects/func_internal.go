@@ -8,9 +8,25 @@ import (
 	"time"
 )
 
-// CallId is a custom integer type used to represent unique identifiers for specific function calls or operations.
+// CallId represents a unique identifier for function calls or various operation types in a system.
 type CallId int
 
+// CallIdLen represents the operation identifier for determining the length.
+// CallIdCopy represents the operation identifier for copying data.
+// CallIdAppend represents the operation identifier for appending data.
+// CallIdDelete represents the operation identifier for deleting data.
+// CallIdSplice represents the operation identifier for splicing data.
+// CallIdPanic represents the operation identifier for triggering a panic.
+// CallIdRecover represents the operation identifier for recovering from a panic.
+// CallIdInt represents the operation identifier for integer operations.
+// CallIdBool represents the operation identifier for boolean operations.
+// CallIdFloat represents the operation identifier for float operations.
+// CallIdChar represents the operation identifier for character operations.
+// CallIdString represents the operation identifier for string operations.
+// CallIdTime represents the operation identifier for time-related operations.
+// CallIdPrintf represents the operation identifier for formatted output using Printf.
+// CallIdSprintf represents the operation identifier for formatted string output using Sprintf.
+// CallIdMake represents the operation identifier for creating slices, maps, or channels.
 const (
 	CallIdLen = CallId(iota)
 	CallIdCopy
@@ -25,73 +41,39 @@ const (
 	CallIdChar
 	CallIdString
 	CallIdTime
-	CallIdTypeName
-	CallIdIsInt
-	CallIdIsFloat
-	CallIdIsString
-	CallIdIsBool
-	CallIdIsChar
-	CallIdIsBytes
-	CallIdIsArray
-	CallIdIsMap
-	CallIdIsIterable
-	CallIdIsTime
-	CallIdIsError
-	CallIdIsUndefined
-	CallIdIsFunction
-	CallIdIsCallable
 	CallIdPrintf
 	CallIdSprintf
 	CallIdMake
 )
 
+// _callIdContainer maps string keys to their corresponding CallId constants for identifying various operations or types.
 var _callIdContainer = map[string]CallId{
-	"len":         CallIdLen,
-	"copy":        CallIdCopy,
-	"append":      CallIdAppend,
-	"delete":      CallIdDelete,
-	"splice":      CallIdSplice,
-	"panic":       CallIdPanic,
-	"recover":     CallIdRecover,
-	"int":         CallIdInt,
-	"int8":        CallIdInt,
-	"int32":       CallIdInt,
-	"int64":       CallIdInt,
-	"uint8":       CallIdInt,
-	"uint32":      CallIdInt,
-	"uint64":      CallIdInt,
-	"bool":        CallIdBool,
-	"float":       CallIdFloat,
-	"float32":     CallIdFloat,
-	"float64":     CallIdFloat,
-	"char":        CallIdChar,
-	"byte":        CallIdChar,
-	"string":      CallIdString,
-	"time":        CallIdTime,
-	"name":        CallIdTypeName,
-	"isInt":       CallIdIsInt,
-	"isFloat":     CallIdIsFloat,
-	"isString":    CallIdIsString,
-	"isBool":      CallIdIsBool,
-	"isChar":      CallIdIsChar,
-	"isBytes":     CallIdIsBytes,
-	"isArray":     CallIdIsArray,
-	"isMap":       CallIdIsMap,
-	"isIterable":  CallIdIsIterable,
-	"isTime":      CallIdIsTime,
-	"isError":     CallIdIsError,
-	"isUndefined": CallIdIsUndefined,
-	"isFunction":  CallIdIsFunction,
-	"isCallable":  CallIdIsCallable,
-	"printf":      CallIdPrintf,
-	"sprintf":     CallIdSprintf,
-	"make":        CallIdMake,
+	"len":     CallIdLen,
+	"copy":    CallIdCopy,
+	"append":  CallIdAppend,
+	"delete":  CallIdDelete,
+	"splice":  CallIdSplice,
+	"panic":   CallIdPanic,
+	"recover": CallIdRecover,
+	"printf":  CallIdPrintf,
+	"sprintf": CallIdSprintf,
+	"make":    CallIdMake,
+	"int":     CallIdInt, "int8": CallIdInt, "int32": CallIdInt, "int64": CallIdInt,
+	"uint": CallIdInt, "uint8": CallIdInt, "uint32": CallIdInt, "uint64": CallIdInt,
+	"float": CallIdFloat, "float32": CallIdFloat, "float64": CallIdFloat,
+	"bool":   CallIdBool,
+	"char":   CallIdChar,
+	"byte":   CallIdChar,
+	"string": CallIdString,
+	"time":   CallIdTime,
 }
 
+// init initializes the package by registering the FuncInternal type with the gob encoder/decoder.
 func init() {
 	gob.Register(&FuncInternal{})
 }
 
+// CallIdFromString converts a string key to its associated CallId from a predefined container and returns its success status.
 func CallIdFromString(in string) (CallId, bool) {
 	v, ok := _callIdContainer[in]
 	if !ok {
@@ -100,14 +82,15 @@ func CallIdFromString(in string) (CallId, bool) {
 	return v, true
 }
 
-// FuncInternal is a callable object type that encapsulates a function and provides execution context information.
+// FuncInternal is a type implementing IAllocator and storing a callable function with a unique identifier.
 type FuncInternal struct {
 	IAllocator
 	id CallId
 	fn func(frame int, args []IObject) (IObject, error)
 }
 
-// NewFuncImport creates a new FuncImport instance with the specified Id and callable function.
+// newFuncInternal initializes a new FuncInternal instance with the specified allocator and CallId, and prepares it.
+// It returns the initialized IObject.
 func newFuncInternal(allocator IAllocator, id CallId) IObject {
 	fi := &FuncInternal{
 		IAllocator: allocator,
@@ -118,43 +101,43 @@ func newFuncInternal(allocator IAllocator, id CallId) IObject {
 	return fi
 }
 
-// setAllocator sets the allocator for the instance, defining its memory management and lifecycle behavior.
+// setAllocator sets the allocator instance for the FuncInternal. It replaces the existing allocator with the provided one.
 func (i *FuncInternal) setAllocator(allocator IAllocator) {
 	i.IAllocator = allocator
 }
 
-// AsBool returns a boolean representation of the object, always returning false for FuncJit.
+// AsBool converts the internal state of the FuncInternal instance into a boolean representation and returns it.
 func (i *FuncInternal) AsBool() bool {
 	return false
 }
 
-// AsInt64 returns the len of the array as an int64 Code.
+// AsInt64 converts and returns the internal value of the receiver to an int64 type.
 func (i *FuncInternal) AsInt64() int64 {
 	return 0
 }
 
-// AsFloat64 returns the len of the array as an int64 Code.
+// AsFloat64 converts the internal value of FuncInternal to a float64 representation and returns it.
 func (i *FuncInternal) AsFloat64() float64 {
 	return 0
 }
 
-// AsString returns the string representation of a FuncImport object.
+// AsString returns the string representation of the FuncInternal instance.
 func (i *FuncInternal) AsString() string {
 	return "<FuncInternal>"
 }
 
-// AssignValue sets the current object to the provided IObject, returning ErrNotAssignable if the operation is not supported.
+// AssignValue attempts to assign a value to the object and returns an error if assignment is not possible.
 func (i *FuncInternal) AssignValue(_ IObject) error {
 	return ErrNotAssignable
 }
 
-// Nil checks if the object is nil and always returns false.
+// Nil checks whether the associated internal function is nil or not and returns false as a constant result.
 func (i *FuncInternal) Nil() bool {
 	return false
 }
 
-// LogicalOp performs a logical operation between the current object and a provided IObject using the specified operator.
-// Always returns nil and ErrInvalidOperator as logical operations are not supported for this object type.
+// LogicalOp performs a logical operation specified by the operator on the current object and the given right-hand side.
+// Returns the result as an IObject or an error if the operation is invalid.
 func (i *FuncInternal) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, error) {
 	if rhsIn.Nil() {
 		return logicalOpNil(i.GateKeeper(), op)
@@ -162,98 +145,67 @@ func (i *FuncInternal) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObj
 	return nil, ErrInvalidOperator
 }
 
-// ArithmeticOp performs an arithmetic operation using the specified operator and operand, returning the result or an error.
+// ArithmeticOp performs an arithmetic operation on the provided operands and returns the resulting object or an error.
 func (i *FuncInternal) ArithmeticOp(_ int, _ ArithmeticOperator, _ IObject) (IObject, error) {
 	return nil, ErrInvalidOperator
 }
 
-// Falsy returns false for all objects.
+// Falsy returns a boolean value indicating false. It is a utility function that always evaluates to false.
 func (i *FuncInternal) Falsy() bool {
 	return false
 }
 
-// IndexGet attempts to retrieve a Code at the given index and returns an error if the object is not indexable.
+// IndexGet retrieves an element based on an index from the object. Returns an error if the object is not indexable.
 func (i *FuncInternal) IndexGet(_ int, _ IObject) (IObject, error) {
 	return i.GateKeeper().UndefinedValue(), ErrIndexNotIndexable
 }
 
-// IndexSet attempts to assign a Code to an index in the object but always returns ErrIndexUnsupported,
-// as this operation is unsupported.
+// IndexSet attempts to set a value at a specified index but returns an error as indexing is not supported.
 func (i *FuncInternal) IndexSet(_, _ IObject) error {
 	return ErrIndexUnsupported
 }
 
-// Iterate returns an IIterator to traverse over the elements of the object. If iteration is not supported, it returns nil.
+// Iterate is a method that returns an IIterator instance with the given integer input, intended for implementing iteration logic.
 func (i *FuncInternal) Iterate(_ int) IIterator {
 	return nil
 }
 
-// Iterable determines if the object can be iterated over and returns false for this implementation.
+// Iterable determines if the current FuncInternal instance supports iteration and returns a boolean result.
 func (i *FuncInternal) Iterable() bool {
 	return false
 }
 
-// Length returns the len of the Int object.
+// Length returns the integer representing the length or size as determined by the implementation.
 func (i *FuncInternal) Length() int {
 	return 0
 }
 
-// TypeName returns the type name of the FuncImport as a string.
+// TypeName returns the type name of the FuncInternal instance as a string, including its identifier.
 func (i *FuncInternal) TypeName() string {
 	return "FuncInternal:" + strconv.Itoa(int(i.id))
 }
 
-// Copy creates and returns a new FuncImport instance with the same Value field as the original object.
+// Copy creates a new instance of FuncInternal with the specified frame and retains the original id.
 func (i *FuncInternal) Copy(frame int, _ int) IObject {
 	return i.GateKeeper().NewFuncInternal(frame, i.id)
 }
 
-// Equals checks whether the current FuncImport is equal to another object of type IObject. Always returns false.
+// Equals determine if the provided IObject is equal to the current instance. Returns true if equal, otherwise false.
 func (i *FuncInternal) Equals(_ IObject) bool {
 	return false
 }
 
-// Call executes the GateCall with the provided GateKeeper, frame, and arguments, returning an IObject or an error.
+// Call invokes the function with the given frame and arguments, returning a status code, the result, and an error if any.
 func (i *FuncInternal) Call(frame int, args ...IObject) (uint, IObject, error) {
 	v, err := i.fn(frame, args)
 	return 1, v, err
 }
 
-// prepare initializes the function pointer `fn` in GateCall based on the provided CallId.
-// It maps CallId enums to specific methods or operations within the GateCall struct.
-// Returns an error if an undefined CallId is provided.
+// prepare initializes the function pointer `fn` based on the given CallId by mapping it to the appropriate method.
 func (i *FuncInternal) prepare(id CallId) {
 	switch id {
-	case CallIdIsString:
-		i.fn = i.isString
-	case CallIdIsInt:
-		i.fn = i.isInt
-	case CallIdIsFloat:
-		i.fn = i.isFloat
-	case CallIdIsBool:
-		i.fn = i.isBool
-	case CallIdIsChar:
-		i.fn = i.isChar
-	case CallIdIsBytes:
-		i.fn = i.isBytes
-	case CallIdIsArray:
-		i.fn = i.isArray
-	case CallIdIsMap:
-		i.fn = i.isMap
-	case CallIdIsTime:
-		i.fn = i.isTime
-	case CallIdIsError:
-		i.fn = i.isError
-	case CallIdIsUndefined:
-		i.fn = i.isUndefined
-	case CallIdIsFunction:
-		i.fn = i.isFunction
-	case CallIdIsIterable:
-		i.fn = i.isIterable
-	case CallIdTypeName:
-		i.fn = i.callIdTypeName
 	case CallIdString:
-		i.fn = i.callIdString
+		i.fn = i.string
 	case CallIdInt:
 		i.fn = i.int
 	case CallIdFloat:
@@ -289,144 +241,20 @@ func (i *FuncInternal) prepare(id CallId) {
 	}
 }
 
-// undefined is a placeholder function for handling undefined arguments.
+// undefined returns an IObject representing an undefined value, leveraging the GateKeeper's UndefinedValue method.
 func (i *FuncInternal) undefined(_ int, _ []IObject) (IObject, error) {
 	return i.GateKeeper().UndefinedValue(), nil
 }
 
-// isString verifies if the first argument is of type String and returns a Boolean indicating the result.
-func (i *FuncInternal) isString(_ int, args []IObject) (IObject, error) {
-	if len(args) != 1 {
-		return nil, ErrInvalidArgumentsNumber
-	}
-	_, ok := args[0].(*String)
-	return i.GateKeeper().Boolean(ok), nil
-}
-
-// isInt checks if the first argument in the Args slice is of type Int and returns a boolean IObject indicating the result.
-func (i *FuncInternal) isInt(_ int, args []IObject) (IObject, error) {
-	if len(args) != 1 {
-		return nil, ErrInvalidArgumentsNumber
-	}
-	_, ok := args[0].(*Int)
-	return i.GateKeeper().Boolean(ok), nil
-}
-
-// isFloat checks if the first argument is of type Float and returns a Boolean result.
-func (i *FuncInternal) isFloat(_ int, args []IObject) (IObject, error) {
-	if len(args) != 1 {
-		return nil, ErrInvalidArgumentsNumber
-	}
-	_, ok := args[0].(*Float)
-	return i.GateKeeper().Boolean(ok), nil
-}
-
-// isBool checks if the first element in the Args slice is of type Bool and returns a Boolean object accordingly.
-func (i *FuncInternal) isBool(_ int, args []IObject) (IObject, error) {
-	if len(args) != 1 {
-		return nil, ErrInvalidArgumentsNumber
-	}
-	_, ok := args[0].(*Bool)
-	return i.GateKeeper().Boolean(ok), nil
-}
-
-// isChar checks if the first argument is of type *Char and returns a boolean result wrapped in an IObject.
-func (i *FuncInternal) isChar(_ int, args []IObject) (IObject, error) {
-	if len(args) != 1 {
-		return nil, ErrInvalidArgumentsNumber
-	}
-	_, ok := args[0].(*Char)
-	return i.GateKeeper().Boolean(ok), nil
-}
-
-// isBytes checks if the first argument is of type Bytes and returns a boolean result wrapped in IObject.
-func (i *FuncInternal) isBytes(_ int, args []IObject) (IObject, error) {
-	if len(args) != 1 {
-		return nil, ErrInvalidArgumentsNumber
-	}
-	_, ok := args[0].(*Bytes)
-	return i.GateKeeper().Boolean(ok), nil
-}
-
-// isArray checks if the first argument is of type Array and returns a boolean IObject accordingly.
-func (i *FuncInternal) isArray(_ int, args []IObject) (IObject, error) {
-	if len(args) != 1 {
-		return nil, ErrInvalidArgumentsNumber
-	}
-	_, ok := args[0].(*Array)
-	return i.GateKeeper().Boolean(ok), nil
-}
-
-// isMap checks if the first argument is of type *Map and returns a boolean IObject and an error if applicable.
-func (i *FuncInternal) isMap(_ int, args []IObject) (IObject, error) {
-	if len(args) != 1 {
-		return nil, ErrInvalidArgumentsNumber
-	}
-	_, ok := args[0].(*Map)
-	return i.GateKeeper().Boolean(ok), nil
-}
-
-// isTime verifies if the provided argument is of type Time and returns a boolean result or an error.
-func (i *FuncInternal) isTime(_ int, args []IObject) (IObject, error) {
-	if len(args) != 1 {
-		return nil, ErrInvalidArgumentsNumber
-	}
-	_, ok := args[0].(*Time)
-	return i.GateKeeper().Boolean(ok), nil
-}
-
-// isError determines if the given argument is of type *Error and returns a boolean result with any error encountered.
-func (i *FuncInternal) isError(_ int, args []IObject) (IObject, error) {
-	if len(args) != 1 {
-		return nil, ErrInvalidArgumentsNumber
-	}
-	_, ok := args[0].(*Error)
-	return i.GateKeeper().Boolean(ok), nil
-}
-
-// isUndefined checks if the first argument is of type Undefined and returns a boolean result or an error if invalid input.
-func (i *FuncInternal) isUndefined(_ int, args []IObject) (IObject, error) {
-	if len(args) != 1 {
-		return nil, ErrInvalidArgumentsNumber
-	}
-	_, ok := args[0].(*Undefined)
-	return i.GateKeeper().Boolean(ok), nil
-}
-
-// isFunction checks if the first argument is of type *Func and returns a boolean IObject accordingly.
-func (i *FuncInternal) isFunction(_ int, args []IObject) (IObject, error) {
-	if len(args) != 1 {
-		return nil, ErrInvalidArgumentsNumber
-	}
-	_, ok := args[0].(*Func)
-	return i.GateKeeper().Boolean(ok), nil
-}
-
-// isIterable determines if the argument is iterable and returns a boolean representation of the result.
-func (i *FuncInternal) isIterable(_ int, args []IObject) (IObject, error) {
-	if len(args) != 1 {
-		return nil, ErrInvalidArgumentsNumber
-	}
-	return i.GateKeeper().Boolean(args[0].Iterable()), nil
-}
-
-// callIdTypeName generates a string representation of the type name for the provided argument.
-func (i *FuncInternal) callIdTypeName(frame int, args []IObject) (IObject, error) {
-	if len(args) != 1 {
-		return nil, ErrInvalidArgumentsNumber
-	}
-	return i.GateKeeper().NewString(frame, args[0].TypeName()), nil
-}
-
-// callIdString generates a new string object using the provided frame and argument, ensuring exactly one argument is passed.
-func (i *FuncInternal) callIdString(frame int, args []IObject) (IObject, error) {
+// string processes a single argument, converts it to a string, and returns a new string object or an error.
+func (i *FuncInternal) string(frame int, args []IObject) (IObject, error) {
 	if len(args) != 1 {
 		return nil, ErrInvalidArgumentsNumber
 	}
 	return i.GateKeeper().NewString(frame, args[0].AsString()), nil
 }
 
-// callIdInt generates a new integer object using the provided frame and the integer Code extracted from the input argument.
+// int handles integer conversion and validation of input arguments, returning an integer object or an error if invalid.
 func (i *FuncInternal) int(frame int, args []IObject) (IObject, error) {
 	if len(args) != 1 {
 		return nil, ErrInvalidArgumentsNumber
@@ -434,7 +262,7 @@ func (i *FuncInternal) int(frame int, args []IObject) (IObject, error) {
 	return i.GateKeeper().NewInt(frame, args[0].AsInt64()), nil
 }
 
-// callIdFloat converts the first argument to a float and creates a new float object for the given frame.
+// float converts the provided argument to a floating-point object or returns an error if the conversion fails.
 func (i *FuncInternal) float(frame int, args []IObject) (IObject, error) {
 	if len(args) != 1 {
 		return nil, ErrInvalidArgumentsNumber
@@ -442,7 +270,7 @@ func (i *FuncInternal) float(frame int, args []IObject) (IObject, error) {
 	return i.GateKeeper().NewFloat(frame, args[0].AsFloat64()), nil
 }
 
-// callIdChar converts an integer argument to a character and returns the new character object, or an error if input is invalid.
+// char converts an integer argument to a character and returns it as a new IObject.
 func (i *FuncInternal) char(frame int, args []IObject) (IObject, error) {
 	if len(args) != 1 {
 		return nil, ErrInvalidArgumentsNumber
@@ -450,7 +278,7 @@ func (i *FuncInternal) char(frame int, args []IObject) (IObject, error) {
 	return i.GateKeeper().NewChar(frame, rune(args[0].AsInt64())), nil
 }
 
-// callIdBool processes a single argument and returns a Boolean object based on the argument's boolean Code or an error.
+// bool evaluates the given argument and converts it to a boolean, returning the result as an IObject or an error.
 func (i *FuncInternal) bool(_ int, args []IObject) (IObject, error) {
 	if len(args) != 1 {
 		return nil, ErrInvalidArgumentsNumber
@@ -458,9 +286,7 @@ func (i *FuncInternal) bool(_ int, args []IObject) (IObject, error) {
 	return i.GateKeeper().Boolean(args[0].AsBool()), nil
 }
 
-// callIdTime processes a method call to generate a new Time object based on the provided frame and argument.
-// It expects exactly one argument, either a Time object or a Code convertible to a timestamp.
-// Returns the newly created Time object or an error if the input is invalid.
+// time processes a frame and arguments to return a new time object or an error if arguments are invalid.
 func (i *FuncInternal) time(frame int, args []IObject) (IObject, error) {
 	if len(args) != 1 {
 		return nil, ErrInvalidArgumentsNumber
@@ -471,7 +297,7 @@ func (i *FuncInternal) time(frame int, args []IObject) (IObject, error) {
 	return i.GateKeeper().NewTime(frame, time.Unix(args[0].AsInt64(), 0)), nil
 }
 
-// copy creates a copy of the given IObject argument and returns it, ensuring only a single argument is provided.
+// copy creates a duplicate of the provided object, ensuring only one argument is passed for the operation.
 func (i *FuncInternal) copy(frame int, args []IObject) (IObject, error) {
 	if len(args) != 1 {
 		return nil, ErrInvalidArgumentsNumber
@@ -479,7 +305,7 @@ func (i *FuncInternal) copy(frame int, args []IObject) (IObject, error) {
 	return args[0].Copy(frame, 0), nil
 }
 
-// len computes the len of the provided container argument (Array, String, Bytes, or Map) and returns it as an integer.
+// len computes the length of the given argument and returns it as an integer object. Returns an error on failure.
 func (i *FuncInternal) len(frame int, args []IObject) (IObject, error) {
 	if len(args) != 1 {
 		return nil, ErrInvalidArgumentsNumber
@@ -487,9 +313,7 @@ func (i *FuncInternal) len(frame int, args []IObject) (IObject, error) {
 	return i.GateKeeper().NewInt(frame, int64(args[0].Length())), nil
 }
 
-// sprintf formats a string using the format specified in Args[0] and additional arguments provided.
-// Returns a new formatted string or an error if the argument count is invalid.
-// If Args contains only one element, it directly returns that element.
+// sprintf formats a string according to a format specifier and arguments, returning the formatted string or an error.
 func (i *FuncInternal) sprintf(frame int, args []IObject) (IObject, error) {
 	switch len(args) {
 	case 0:
@@ -505,7 +329,9 @@ func (i *FuncInternal) sprintf(frame int, args []IObject) (IObject, error) {
 	}
 }
 
-// printf formats and prints the given arguments based on the format string provided in the first argument.
+// printf formats and prints the provided arguments according to the specified format.
+// The first argument is treated as a format string, and the subsequent arguments are its values.
+// Returns an UndefinedValue and error if the number of arguments is invalid.
 func (i *FuncInternal) printf(_ int, args []IObject) (IObject, error) {
 	switch len(args) {
 	case 0:
@@ -523,7 +349,9 @@ func (i *FuncInternal) printf(_ int, args []IObject) (IObject, error) {
 	}
 }
 
-// append appends provided arguments to an array and returns a new array or an error if arguments are invalid.
+// append adds elements to an array or creates a new array with the provided arguments.
+// It requires at least two arguments: the target array and the elements to append.
+// Returns the modified or new array and an error if invalid arguments are provided.
 func (i *FuncInternal) append(frame int, args []IObject) (IObject, error) {
 	if len(args) < 2 {
 		return nil, ErrInvalidArgumentsNumber
@@ -536,7 +364,7 @@ func (i *FuncInternal) append(frame int, args []IObject) (IObject, error) {
 	}
 }
 
-// delete removes a key-Code pair from a Map object if the key exists and returns an undefined Code or an error if invalid.
+// delete removes a key-value pair from a Map object based on the provided key and returns an undefined value or an error.
 func (i *FuncInternal) delete(_ int, args []IObject) (IObject, error) {
 	if len(args) != 2 {
 		return nil, ErrInvalidArgumentsNumber
@@ -550,9 +378,7 @@ func (i *FuncInternal) delete(_ int, args []IObject) (IObject, error) {
 	}
 }
 
-// splice modifies the content of an array by removing and/or adding elements at the specified index.
-// frame specifies the execution context, Args contains arguments including the array, start index, delete count, and new elements.
-// Returns a new array containing the removed elements or an error if arguments are invalid.
+// splice removes or replaces elements in an array, starting at a specified index, and optionally inserts new elements.
 func (i *FuncInternal) splice(frame int, args []IObject) (IObject, error) {
 	argsLen := len(args)
 	if argsLen == 0 {
@@ -595,7 +421,7 @@ func (i *FuncInternal) splice(frame int, args []IObject) (IObject, error) {
 	return i.GateKeeper().NewArray(frame, deleted), nil
 }
 
-// panic triggers a runtime panic with the provided argument or a default message if no argument is given.
+// panic triggers a runtime panic by returning an error with the message from the first argument or a default "panic" message.
 func (i *FuncInternal) panic(_ int, args []IObject) (IObject, error) {
 	if len(args) > 0 {
 		return nil, fmt.Errorf("%s", args[0].AsString())
@@ -603,13 +429,12 @@ func (i *FuncInternal) panic(_ int, args []IObject) (IObject, error) {
 	return nil, fmt.Errorf("panic")
 }
 
-// recover is a method that handles logic for recovering from specific scenarios and returns an IObject and an error.
-// It takes an integer and a slice of IObject as arguments and returns a default undefined Code and nil error.
+// recover attempts to gracefully handle potential panics or errors within the function and ensures a safe fallback response.
 func (i *FuncInternal) recover(_ int, _ []IObject) (IObject, error) {
 	return i.GateKeeper().UndefinedValue(), nil
 }
 
-// make creates a new object of the specified type, with optional len and capacity, or returns an error on failure.
+// make creates and initializes objects such as slices, maps, or arrays based on the specified type and dimensions.
 func (i *FuncInternal) make(frame int, args []IObject) (IObject, error) {
 	var kind IObject
 	count := 0
@@ -646,12 +471,12 @@ func (i *FuncInternal) make(frame int, args []IObject) (IObject, error) {
 	}
 }
 
-// Count returns the total number of elements in the instance and its sub-elements.
+// Count returns an integer value typically representing the count or total computed by this method.
 func (i *FuncInternal) Count() int {
 	return 1
 }
 
-// GobEncode serializes the FuncInternal's data into a byte slice using gob encoding and returns the result or an error.
+// GobEncode serializes the receiver into a byte slice using the gob encoding format and returns the encoded data and error.
 func (i *FuncInternal) GobEncode() ([]byte, error) {
 	var buf bytes.Buffer
 	encoder := gob.NewEncoder(&buf)
@@ -664,7 +489,7 @@ func (i *FuncInternal) GobEncode() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-// GobDecode decodes the provided byte slice into the FuncInternal's data field using the gob package.
+// GobDecode decodes the provided byte slice into the FuncInternal fields using the gob package.
 func (i *FuncInternal) GobDecode(data []byte) error {
 	buf := bytes.NewBuffer(data)
 	decoder := gob.NewDecoder(buf)
