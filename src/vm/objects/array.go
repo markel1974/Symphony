@@ -213,17 +213,12 @@ func (o *Array) IndexGet(_ int, index IObject) (IObject, error) {
 
 // IndexSet assigns a given data to the specified Index in the array, returning an error if the operation is invalid.
 func (o *Array) IndexSet(index IObject, value IObject) (err error) {
-	idx, ok := o.GateKeeper().ToInt64(index)
-	if !ok {
-		err = ErrIndexInvalidType
-		return
-	}
-	intIdx := int(idx)
-	if intIdx < 0 || intIdx >= len(o.data) {
+	idx := index.AsInt64()
+	if idx < 0 || idx >= int64(len(o.data)) {
 		err = ErrIndexOutOfBounds
 		return
 	}
-	o.data[intIdx] = value
+	o.data[idx] = value
 	return nil
 }
 

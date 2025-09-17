@@ -181,10 +181,7 @@ func (o *Map) Equals(in IObject) bool {
 // IndexGet retrieves the Code associated with the given index in the map. Returns UndefinedValue if the index does not exist.
 // An error is returned if the index type is invalid.
 func (o *Map) IndexGet(_ int, index IObject) (IObject, error) {
-	strIdx, ok := o.GateKeeper().ToString(index)
-	if !ok {
-		return nil, ErrIndexInvalidType
-	}
+	strIdx := index.AsString()
 	res, ok := o.data[strIdx]
 	if !ok {
 		return o.GateKeeper().UndefinedValue(), nil
@@ -194,10 +191,7 @@ func (o *Map) IndexGet(_ int, index IObject) (IObject, error) {
 
 // IndexSet sets the specified Code at the given string-convertible index in the Map. Returns an error for invalid index types.
 func (o *Map) IndexSet(index, value IObject) error {
-	strIdx, ok := o.GateKeeper().ToString(index)
-	if !ok {
-		return ErrIndexInvalidType
-	}
+	strIdx := index.AsString()
 	o.data[strIdx] = value
 	return nil
 }

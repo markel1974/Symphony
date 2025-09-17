@@ -151,10 +151,7 @@ func (o *Struct) Falsy() bool {
 
 // IndexGet retrieves the Code associated with the given index within the Struct. Returns an error for invalid index types.
 func (o *Struct) IndexGet(_ int, index IObject) (IObject, error) {
-	strIdx, ok := o.GateKeeper().ToString(index)
-	if !ok {
-		return nil, ErrIndexInvalidType
-	}
+	strIdx := index.AsString()
 	res, ok := o.data[strIdx]
 	if !ok {
 		res = o.GateKeeper().UndefinedValue()
@@ -164,10 +161,7 @@ func (o *Struct) IndexGet(_ int, index IObject) (IObject, error) {
 
 // IndexSet updates or assigns a Code to the specified index within the Struct. Returns an error for invalid index types.
 func (o *Struct) IndexSet(index, value IObject) error {
-	strIdx, ok := o.GateKeeper().ToString(index)
-	if !ok {
-		return ErrIndexInvalidType
-	}
+	strIdx := index.AsString()
 	o.data[strIdx] = value
 	return nil
 }

@@ -289,90 +289,14 @@ func (gc *GateConverter) FromMap(frame int, v map[string]interface{}) map[string
 	return kv
 }
 
-// ToInt64 converts an IObject to an int64 and returns the Code along with a boolean indicating success or failure.
-func (gc *GateConverter) ToInt64(in IObject) (int64, bool) {
-	switch o := in.(type) {
-	case *Bool:
-		if o == gc.gk.TrueValue() {
-			return 1, true
-		}
-		return 0, true
-	case *Char:
-		return int64(o.data), true
-	case *Int:
-		return o.data, true
-	case *Float:
-		return int64(o.data), true
-	case *Time:
-		return o.data.Unix(), true
-	case *Bytes:
-		//i := int64(binary.LittleEndian.Uint64(o.data))
-		c, err := strconv.ParseInt(string(o.data), 10, 64)
-		if err == nil {
-			return c, true
-		}
-		return 0, false
-	case *String:
-		c, err := strconv.ParseInt(o.data, 10, 64)
-		if err == nil {
-			return c, true
-		}
-		return 0, false
-	default:
-		return 0, false
-	}
-}
-
 // ToInt64Arg extracts an int64 Code from the input slice at the specified index or returns an error if invalid.
 func (gc *GateConverter) ToInt64Arg(index int, in []IObject) (int64, error) {
 	if index < 0 || index >= len(in) {
 		return 0, ErrInvalidArgumentsNumber
 	}
 	o := in[index]
-	v, ok := gc.ToInt64(o)
-	if !ok {
-		return 0, NewInvalidArgumentError(index, "int", o.TypeName())
-	}
+	v := o.AsInt64()
 	return v, nil
-}
-
-// ToRune converts the given IObject to a rune if possible, returning the result and a success flag.
-func (gc *GateConverter) ToRune(in IObject) (rune, bool) {
-	switch o := in.(type) {
-	case *Bool:
-		if o == gc.gk.TrueValue() {
-			return 1, true
-		}
-		return 0, true
-	case *Char:
-		return o.data, true
-	case *Int:
-		return rune(o.data), true
-	case *Float:
-		return rune(o.data), true
-	case *Bytes:
-		//i := int64(binary.LittleEndian.Uint64(o.data))
-		c, err := strconv.ParseInt(string(o.data), 10, 64)
-		if err == nil {
-			return int32(c), true
-		}
-		return 0, false
-	case *String:
-		c, err := strconv.ParseInt(o.data, 10, 64)
-		if err == nil {
-			return int32(c), true
-		}
-		return 0, false
-	}
-	return 0, false
-}
-
-// ToString converts the given IObject to its string representation. It returns the string Code and a boolean for success.
-func (gc *GateConverter) ToString(in IObject) (string, bool) {
-	if in == nil {
-		return "", false
-	}
-	return in.AsString(), true
 }
 
 // ToStringArg converts an IObject at the given index in the slice to a string. Returns an error if conversion fails.
@@ -381,11 +305,7 @@ func (gc *GateConverter) ToStringArg(index int, in []IObject) (string, error) {
 		return "", ErrInvalidArgumentsNumber
 	}
 	o := in[index]
-	v, ok := gc.ToString(o)
-	if !ok {
-		return "", NewInvalidArgumentError(index, "string", o.TypeName())
-	}
-	return v, nil
+	return o.AsString(), nil
 }
 
 // ToBytes converts the provided IObject to a byte slice. Returns the byte slice and true if successful, otherwise nil and false.
@@ -438,49 +358,13 @@ func (gc *GateConverter) ToBytesArg(index int, in []IObject) ([]byte, error) {
 	return b, nil
 }
 
-// ToFloat64 converts an IObject to a float64, returning the Code and a boolean indicating success or failure.
-func (gc *GateConverter) ToFloat64(in IObject) (float64, bool) {
-	switch o := in.(type) {
-	case *Bool:
-		if o == gc.gk.TrueValue() {
-			return 1, true
-		}
-		return 0, true
-	case *Char:
-		return float64(o.data), true
-	case *Int:
-		return float64(o.data), true
-	case *Float:
-		return o.data, true
-	case *Time:
-		return float64(o.data.Unix()), true
-	case *Bytes:
-		c, err := strconv.ParseFloat(string(o.data), 64)
-		if err == nil {
-			return c, true
-		}
-		return 0, false
-	case *String:
-		c, err := strconv.ParseFloat(o.data, 64)
-		if err == nil {
-			return c, true
-		}
-		return 0, false
-	default:
-		return 0, false
-	}
-}
-
 // ToFloat64Arg converts an argument at the specified index from an []IObject to a float64 or returns an error if conversion fails.
 func (gc *GateConverter) ToFloat64Arg(index int, in []IObject) (float64, error) {
 	if index < 0 || index >= len(in) {
 		return 0, ErrInvalidArgumentsNumber
 	}
 	o := in[index]
-	v, ok := gc.ToFloat64(o)
-	if !ok {
-		return 0, NewInvalidArgumentError(index, "float64", o.TypeName())
-	}
+	v := o.AsFloat64()
 	return v, nil
 }
 
@@ -520,13 +404,6 @@ func (gc *GateConverter) ToTimeArg(index int, in []IObject) (time.Time, error) {
 	return v, nil
 }
 
-// ToBool converts the provided IObject to a boolean Code. Returns the computed boolean and a success flag.
-func (gc *GateConverter) ToBool(o IObject) (v bool, ok bool) {
-	ok = true
-	v = !o.Falsy()
-	return
-}
-
 // FromBool converts a boolean Code into an IObject representation based on the GateKeeper's true and false Code.
 func (gc *GateConverter) FromBool(v bool) IObject {
 	if v {
@@ -541,9 +418,6 @@ func (gc *GateConverter) ToBoolArg(index int, in []IObject) (bool, error) {
 		return false, ErrInvalidArgumentsNumber
 	}
 	o := in[index]
-	b1, ok := o.(*Bool)
-	if !ok {
-		return false, NewInvalidArgumentError(index, "bool", o.TypeName())
-	}
-	return b1.data, nil
+	b1 := o.AsBool()
+	return b1, nil
 }

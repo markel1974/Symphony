@@ -163,7 +163,7 @@ func (o *Error) Equals(x IObject) bool {
 
 // IndexGet retrieves the data associated with the "Code" index in an Error object or returns an error for invalid indices.
 func (o *Error) IndexGet(_ int, index IObject) (IObject, error) {
-	if strIdx, _ := o.GateKeeper().ToString(index); strIdx != "Code" {
+	if index.AsString() != "Code" {
 		return nil, ErrIndexInvalidValueType
 	}
 	return o.data, nil

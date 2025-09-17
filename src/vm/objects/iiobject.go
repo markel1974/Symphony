@@ -97,11 +97,6 @@ type IGateAllocator interface {
 
 // IGateConverter provides methods to convert IObject types to and from various native Go types and data structures.
 type IGateConverter interface {
-	ToBool(o IObject) (v bool, ok bool)
-	ToInt64(o IObject) (int64, bool)
-	ToFloat64(o IObject) (float64, bool)
-	ToRune(o IObject) (v rune, ok bool)
-	ToString(o IObject) (string, bool)
 	ToTime(o IObject) (time.Time, bool)
 	ToBytes(o IObject) ([]byte, bool)
 	ToInterface(in IObject) (res interface{})
