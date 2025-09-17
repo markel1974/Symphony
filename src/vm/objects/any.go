@@ -88,10 +88,7 @@ func (o *Any) Copy(frame int, _ int) IObject {
 // Returns an error if the index is not a valid key or if the field/method cannot be found.
 // If the index refers to a method, the returned IObject will be callable.
 func (o *Any) IndexGet(frame int, index IObject) (IObject, error) {
-	key, ok := o.GateKeeper().ToString(index)
-	if !ok {
-		return nil, ErrIndexInvalidType
-	}
+	key := index.AsString()
 	v := o.v
 	if v.Kind() == reflect.Ptr {
 		v = v.Elem()
@@ -102,8 +99,7 @@ func (o *Any) IndexGet(frame int, index IObject) (IObject, error) {
 			return o.GateKeeper().FromInterface(frame, field.Interface()), nil
 		}
 	}
-	fn, ok := o.buildFunc(frame, key)
-	if ok {
+	if fn, ok := o.buildFunc(frame, key); ok {
 		return fn, nil
 	}
 	return nil, fmt.Errorf("field or method '%s' not found on type '%s'", key, o.TypeName())
@@ -112,12 +108,9 @@ func (o *Any) IndexGet(frame int, index IObject) (IObject, error) {
 // IndexSet updates the value of a struct field, specified by the index, with the given value if the field is assignable.
 func (o *Any) IndexSet(index IObject, value IObject) error {
 	if o.v.Kind() != reflect.Ptr || o.v.Elem().Kind() != reflect.Struct {
-		return ErrNotAssignable // Puoi modificare solo i campi di un puntatore a struct
+		return ErrNotAssignable
 	}
-	key, ok := o.GateKeeper().ToString(index)
-	if !ok {
-		return ErrIndexInvalidType
-	}
+	key := index.AsString()
 	field := o.v.Elem().FieldByName(key)
 	if !field.IsValid() || !field.CanSet() {
 		return fmt.Errorf("field '%s' not found or cannot be set", key)
@@ -165,28 +158,27 @@ func (o *Any) Iterable() bool {
 // Call invokes a function or a method on the object with the provided arguments and returns the result or an error.
 func (o *Any) Call(frame int, args ...IObject) (uint, IObject, error) {
 	if o.v.Kind() == reflect.Func {
-		fnType := o.t
-		if fnType.NumIn() != len(args) && !fnType.IsVariadic() {
-			return 0, nil, fmt.Errorf("wrong number of arguments for %s: want %d, got %d", o.TypeName(), fnType.NumIn(), len(args))
+		if o.t.NumIn() != len(args) && !o.t.IsVariadic() {
+			return 0, nil, fmt.Errorf("wrong number of arguments for %s: want %d, got %d", o.TypeName(), o.t.NumIn(), len(args))
 		}
 		return o.call(o.v, o.GateKeeper(), frame, args)
 	}
-	if len(args) == 0 {
-		return 0, nil, nil
-	}
-	key, ok := o.GateKeeper().ToString(args[0])
-	if !ok {
+	s1, err := o.GateKeeper().ToStringArg(0, args)
+	if err != nil {
 		return 0, nil, ErrInvalidArgumentsNumber
 	}
-	method := o.v.MethodByName(key)
+	method := o.v.MethodByName(s1)
 	if !method.IsValid() {
 		return 0, nil, fmt.Errorf("function not found on type '%s'", o.TypeName())
 	}
-	arguments := args[1:]
-	if method.Type().NumIn() != len(arguments) && !method.Type().IsVariadic() {
-		return 0, nil, fmt.Errorf("wrong number of arguments for method %s: want %d, got %d", key, method.Type().NumIn(), len(args))
+	var methodArgs []IObject
+	if len(args) > 1 {
+		methodArgs = args[1:]
 	}
-	return o.call(o.v, o.GateKeeper(), frame, arguments)
+	if method.Type().NumIn() != len(methodArgs) && !method.Type().IsVariadic() {
+		return 0, nil, fmt.Errorf("wrong number of arguments for method %s: want %d, got %d", s1, method.Type().NumIn(), len(methodArgs))
+	}
+	return o.call(o.v, o.GateKeeper(), frame, methodArgs)
 }
 
 // Length returns the length of the underlying value if it is an array, channel, map, slice, or string; otherwise, 0.
@@ -211,7 +203,7 @@ func (o *Any) buildFunc(frame int, key string) (IObject, bool) {
 		return nil, false
 	}
 	return o.GateKeeper().NewFuncImport(frame, key, -1, func(gk IGateKeeper, f int, args ...IObject) (uint, IObject, error) {
-		if method.Type().NumIn() != len(args) {
+		if method.Type().NumIn() != len(args) && !method.Type().IsVariadic() {
 			return 0, nil, fmt.Errorf("wrong number of arguments for method %s: want %d, got %d", key, method.Type().NumIn(), len(args))
 		}
 		return o.call(method, gk, f, args)
