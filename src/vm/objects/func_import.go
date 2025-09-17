@@ -6,19 +6,19 @@ func init() {
 	gob.Register(&FuncImport{})
 }
 
-// FuncCallable is a type alias for a function that takes a variadic list of IObject arguments and returns an IObject and an error.
-type FuncCallable = func(gk IGateKeeper, frame int, args ...IObject) (retCount uint, ret IObject, err error)
+// Callable is a type alias for a function that takes a variadic list of IObject arguments and returns an IObject and an error.
+type Callable = func(gk IGateKeeper, frame int, args ...IObject) (retCount uint, ret IObject, err error)
 
 // FuncImport is a callable object type that encapsulates a function and provides execution context information.
 type FuncImport struct {
 	IAllocator
 	FnName string
 	Args   int
-	Data   FuncCallable
+	Data   Callable
 }
 
 // NewFuncImport creates a new FuncImport instance with the specified Id and callable function.
-func newFuncImport(allocator IAllocator, name string, args int, fn FuncCallable) IObject {
+func newFuncImport(allocator IAllocator, name string, args int, fn Callable) IObject {
 	return &FuncImport{
 		IAllocator: allocator,
 		FnName:     name,

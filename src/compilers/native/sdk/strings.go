@@ -213,7 +213,7 @@ func (s *Strings) join(gk objects.IGateKeeper, frame int, args ...objects.IObjec
 
 // FuncIsOs creates a callable function using the provided transformation function that operates on string arguments.
 // Returns a function that takes a frame and varargs, validates the input, applies the transformation, and returns the result.
-func (s *Strings) funcStringToString(fn func(string) string) objects.FuncCallable {
+func (s *Strings) funcStringToString(fn func(string) string) objects.Callable {
 	return func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
 		s1, err := gk.ToStringArg(0, args)
 		if err != nil {
@@ -224,8 +224,8 @@ func (s *Strings) funcStringToString(fn func(string) string) objects.FuncCallabl
 	}
 }
 
-// funcStringToStrings transforms a string-to-string-slice function into a FuncCallable that operates on an IObject and returns an array.
-func (s *Strings) funcStringToStrings(fn func(string) []string) objects.FuncCallable {
+// funcStringToStrings transforms a string-to-string-slice function into a Callable that operates on an IObject and returns an array.
+func (s *Strings) funcStringToStrings(fn func(string) []string) objects.Callable {
 	return func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
 		s1, err := gk.ToStringArg(0, args)
 		if err != nil {
@@ -245,9 +245,9 @@ func (s *Strings) funcStringToStrings(fn func(string) []string) objects.FuncCall
 	}
 }
 
-// funcStringToStringError converts a function with a string input and output into a FuncCallable for use in the current framework.
+// funcStringToStringError converts a function with a string input and output into a Callable for use in the current framework.
 // It validates arguments, converts inputs/outputs to/from IObject, and handles errors gracefully.
-func (s *Strings) funcStringToStringError(fn func(string) (string, error)) objects.FuncCallable {
+func (s *Strings) funcStringToStringError(fn func(string) (string, error)) objects.Callable {
 	return func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
 		s1, err := gk.ToStringArg(0, args)
 		if err != nil {
@@ -263,7 +263,7 @@ func (s *Strings) funcStringToStringError(fn func(string) (string, error)) objec
 }
 
 // funcStringStringToStrings creates a callable function wrapping a string-transforming function and returns results as an array object.
-func (s *Strings) funcStringStringToStrings(fn func(string, string) []string) objects.FuncCallable {
+func (s *Strings) funcStringStringToStrings(fn func(string, string) []string) objects.Callable {
 	return func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
 		s1, err := gk.ToStringArg(0, args)
 		if err != nil {
@@ -286,8 +286,8 @@ func (s *Strings) funcStringStringToStrings(fn func(string, string) []string) ob
 	}
 }
 
-// funcStringStringIntToStrings wraps a function of type func(string, string, int) []string into a FuncCallable compatible function.
-func (s *Strings) funcStringStringIntToStrings(fn func(string, string, int) []string) objects.FuncCallable {
+// funcStringStringIntToStrings wraps a function of type func(string, string, int) []string into a Callable compatible function.
+func (s *Strings) funcStringStringIntToStrings(fn func(string, string, int) []string) objects.Callable {
 	return func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
 		s1, err := gk.ToStringArg(0, args)
 		if err != nil {
@@ -314,8 +314,8 @@ func (s *Strings) funcStringStringIntToStrings(fn func(string, string, int) []st
 	}
 }
 
-// funcStringStringToInt wraps a function accepting two string arguments and returning an int, into a FuncCallable type function.
-func (s *Strings) funcStringStringToInt(fn func(string, string) int) objects.FuncCallable {
+// funcStringStringToInt wraps a function accepting two string arguments and returning an int, into a Callable type function.
+func (s *Strings) funcStringStringToInt(fn func(string, string) int) objects.Callable {
 	return func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
 		s1, err := gk.ToStringArg(0, args)
 		if err != nil {
@@ -329,8 +329,8 @@ func (s *Strings) funcStringStringToInt(fn func(string, string) int) objects.Fun
 	}
 }
 
-// funcStringStringToString wraps a function that takes two strings and returns a string, converting it into a FuncCallable handler.
-func (s *Strings) funcStringStringToString(fn func(string, string) string) objects.FuncCallable {
+// funcStringStringToString wraps a function that takes two strings and returns a string, converting it into a Callable handler.
+func (s *Strings) funcStringStringToString(fn func(string, string) string) objects.Callable {
 	return func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
 		s1, err := gk.ToStringArg(0, args)
 		if err != nil {
@@ -345,9 +345,9 @@ func (s *Strings) funcStringStringToString(fn func(string, string) string) objec
 	}
 }
 
-// funcStringStringToBool creates a FuncCallable that evaluates a function on two string arguments extracted from IObject inputs.
+// funcStringStringToBool creates a Callable that evaluates a function on two string arguments extracted from IObject inputs.
 // It returns an IObject representing true or false based on the function's result or an error if arguments are invalid.
-func (s *Strings) funcStringStringToBool(fn func(string, string) bool) objects.FuncCallable {
+func (s *Strings) funcStringStringToBool(fn func(string, string) bool) objects.Callable {
 	return func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
 		s1, err := gk.ToStringArg(0, args)
 		if err != nil {
@@ -364,10 +364,10 @@ func (s *Strings) funcStringStringToBool(fn func(string, string) bool) objects.F
 	}
 }
 
-// funcIntToIntError wraps a function matching func(string) (int, error) into a FuncCallable, enabling its usage with IObject arguments.
+// funcIntToIntError wraps a function matching func(string) (int, error) into a Callable, enabling its usage with IObject arguments.
 // It validates the argument count, converts the first argument to a string, applies the given function, and returns the result.
 // If an error occurs during argument conversion or function execution, it returns appropriate error objects or messages.
-func (s *Strings) funcIntToIntError(fn func(string) (int, error)) objects.FuncCallable {
+func (s *Strings) funcIntToIntError(fn func(string) (int, error)) objects.Callable {
 	return func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (retCount uint, ret objects.IObject, err error) {
 		s1, err := gk.ToStringArg(0, args)
 		if err != nil {
@@ -381,8 +381,8 @@ func (s *Strings) funcIntToIntError(fn func(string) (int, error)) objects.FuncCa
 	}
 }
 
-// funcIntToString wraps a function from int to string into a FuncCallable, ensuring compatibility with the IObject interface.
-func (s *Strings) funcIntToString(fn func(int) string) objects.FuncCallable {
+// funcIntToString wraps a function from int to string into a Callable, ensuring compatibility with the IObject interface.
+func (s *Strings) funcIntToString(fn func(int) string) objects.Callable {
 	return func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (retCount uint, ret objects.IObject, err error) {
 		i1, err := gk.ToInt64Arg(0, args)
 		if err != nil {

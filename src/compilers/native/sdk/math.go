@@ -103,10 +103,10 @@ func (m *Math) nan(gk objects.IGateKeeper, _ int, args ...objects.IObject) (uint
 	return 1, ret, err
 }
 
-// funcF64ToF64 creates a FuncCallable that applies a function transforming a float64 input to a float64 result.
+// funcF64ToF64 creates a Callable that applies a function transforming a float64 input to a float64 result.
 // It validates a single argument, converts it to float64, applies the function, and returns the result as an IObject.
 // Returns an error for invalid arguments or if the number of arguments is not exactly one.
-func (m *Math) funcF64ToF64(fn func(float64) float64) objects.FuncCallable {
+func (m *Math) funcF64ToF64(fn func(float64) float64) objects.Callable {
 	return func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
 		f1, err := gk.ToFloat64Arg(0, args)
 		if err != nil {
@@ -116,8 +116,8 @@ func (m *Math) funcF64ToF64(fn func(float64) float64) objects.FuncCallable {
 	}
 }
 
-// funcIntToF64 converts a function from int to float64 into a FuncCallable that operates on IObject arguments.
-func (m *Math) funcIntToF64(fn func(int) float64) objects.FuncCallable {
+// funcIntToF64 converts a function from int to float64 into a Callable that operates on IObject arguments.
+func (m *Math) funcIntToF64(fn func(int) float64) objects.Callable {
 	return func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
 		i1, err := gk.ToInt64Arg(0, args)
 		if err != nil {
@@ -127,10 +127,10 @@ func (m *Math) funcIntToF64(fn func(int) float64) objects.FuncCallable {
 	}
 }
 
-// funcF64F64ToF64 adapts a function taking two float64 arguments and returning a float64 to a FuncCallable.
+// funcF64F64ToF64 adapts a function taking two float64 arguments and returning a float64 to a Callable.
 // It converts IObject arguments to float64, applies the input function, and returns the result as an IObject.
 // Returns an error if the argument count is not 2 or if type conversion fails.
-func (m *Math) funcF64F64ToF64(fn func(float64, float64) float64) objects.FuncCallable {
+func (m *Math) funcF64F64ToF64(fn func(float64, float64) float64) objects.Callable {
 	return func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
 		f1, err := gk.ToFloat64Arg(0, args)
 		if err != nil {
@@ -144,8 +144,8 @@ func (m *Math) funcF64F64ToF64(fn func(float64, float64) float64) objects.FuncCa
 	}
 }
 
-// funcIntF64ToF64 adapts a function accepting an int and float64 as inputs, returning a float64, into a FuncCallable.
-func (m *Math) funcIntF64ToF64(fn func(int, float64) float64) objects.FuncCallable {
+// funcIntF64ToF64 adapts a function accepting an int and float64 as inputs, returning a float64, into a Callable.
+func (m *Math) funcIntF64ToF64(fn func(int, float64) float64) objects.Callable {
 	return func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
 		i1, err := gk.ToInt64Arg(0, args)
 		if err != nil {
@@ -159,10 +159,10 @@ func (m *Math) funcIntF64ToF64(fn func(int, float64) float64) objects.FuncCallab
 	}
 }
 
-// funcF64IntToF64 converts a function accepting (float64, int) and returning float64 into a FuncCallable type.
+// funcF64IntToF64 converts a function accepting (float64, int) and returning float64 into a Callable type.
 // It requires exactly two arguments: the first must be convertible to float64 and the second to int.
 // Returns an IObject representing the result of applying the function or an error if argument conversion fails.
-func (m *Math) funcF64IntToF64(fn func(float64, int) float64) objects.FuncCallable {
+func (m *Math) funcF64IntToF64(fn func(float64, int) float64) objects.Callable {
 	return func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
 		f1, err := gk.ToFloat64Arg(0, args)
 		if err != nil {
@@ -177,7 +177,7 @@ func (m *Math) funcF64IntToF64(fn func(float64, int) float64) objects.FuncCallab
 }
 
 // FuncIf64Oi converts a function accepting a float64 and returning an int into a callable function for GateAdapter.
-func (m *Math) funcFloat64ToInt(fn func(float64) int) objects.FuncCallable {
+func (m *Math) funcFloat64ToInt(fn func(float64) int) objects.Callable {
 	return func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
 		f1, err := gk.ToFloat64Arg(0, args)
 		if err != nil {
@@ -187,11 +187,11 @@ func (m *Math) funcFloat64ToInt(fn func(float64) int) objects.FuncCallable {
 	}
 }
 
-// funcF64IntToBool wraps a function of type func(float64, int) bool into a FuncCallable compatible with IObject arguments.
+// funcF64IntToBool wraps a function of type func(float64, int) bool into a Callable compatible with IObject arguments.
 // It converts the first argument to float64 and the second argument to int, validates their types, and applies the function.
 // Returns the system-defined TrueValue or FalseValue based on the function's result, or an error on failure.
 // Returns ErrInvalidArgumentsNumber if the number of arguments passed is not exactly two.
-func (m *Math) funcF64IntToBool(fn func(float64, int) bool) objects.FuncCallable {
+func (m *Math) funcF64IntToBool(fn func(float64, int) bool) objects.Callable {
 	return func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
 		f1, err := gk.ToFloat64Arg(0, args)
 		if err != nil {
@@ -208,10 +208,10 @@ func (m *Math) funcF64IntToBool(fn func(float64, int) bool) objects.FuncCallable
 	}
 }
 
-// funcF64ToBool wraps a given float64 predicate function and returns a FuncCallable to evaluate the predicate using IObject.
+// funcF64ToBool wraps a given float64 predicate function and returns a Callable to evaluate the predicate using IObject.
 // If the argument count is incorrect or conversion to float64 fails, it returns an error.
 // The result of the predicate determines the boolean IObject returned: TrueValue or FalseValue.
-func (m *Math) funcF64ToBool(fn func(float64) bool) objects.FuncCallable {
+func (m *Math) funcF64ToBool(fn func(float64) bool) objects.Callable {
 	return func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
 		f1, err := gk.ToFloat64Arg(0, args)
 		if err != nil {

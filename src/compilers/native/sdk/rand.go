@@ -84,17 +84,17 @@ func (z *Rand) randOptionsRead(gk objects.IGateKeeper, r *rand.Rand, frame int, 
 	return 1, gk.NewInt(frame, int64(res)), nil
 }
 
-// int63 returns a FuncCallable that generates a 63-bit non-negative integer using the provided function.
+// int63 returns a Callable that generates a 63-bit non-negative integer using the provided function.
 // It accepts no arguments and returns the generated integer as an IObject.
 // Returns an error if any arguments are provided.
-func (z *Rand) int63(fn func() int64) objects.FuncCallable {
+func (z *Rand) int63(fn func() int64) objects.Callable {
 	return func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
 		return 1, gk.NewInt(frame, fn()), nil
 	}
 }
 
-// int63n returns a FuncCallable that applies a provided int64 function to a single int64 argument and returns the result.
-func (z *Rand) int63n(fn func(int64) int64) objects.FuncCallable {
+// int63n returns a Callable that applies a provided int64 function to a single int64 argument and returns the result.
+func (z *Rand) int63n(fn func(int64) int64) objects.Callable {
 	return func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
 		i1, err := gk.ToInt64Arg(0, args)
 		if err != nil {
@@ -104,8 +104,8 @@ func (z *Rand) int63n(fn func(int64) int64) objects.FuncCallable {
 	}
 }
 
-// seed returns a FuncCallable that sets a seed using the provided function, ensuring the argument is a single int64 value.
-func (z *Rand) seed(fn func(int64)) objects.FuncCallable {
+// seed returns a Callable that sets a seed using the provided function, ensuring the argument is a single int64 value.
+func (z *Rand) seed(fn func(int64)) objects.Callable {
 	return func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
 		i1, err := gk.ToInt64Arg(0, args)
 		if err != nil {
@@ -116,17 +116,17 @@ func (z *Rand) seed(fn func(int64)) objects.FuncCallable {
 	}
 }
 
-// float64 generates a FuncCallable that produces a float64 value using the provided function and returns it as an IObject.
-func (z *Rand) float64(fn func() float64) objects.FuncCallable {
+// float64 generates a Callable that produces a float64 value using the provided function and returns it as an IObject.
+func (z *Rand) float64(fn func() float64) objects.Callable {
 	return func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
 		return 1, gk.NewFloat(frame, fn()), nil
 	}
 }
 
-// perm generates a FuncCallable that calculates permutations of size n using the provided function.
+// perm generates a Callable that calculates permutations of size n using the provided function.
 // The input is a single integer argument, and the result is an Array containing the permutation sequence.
 // Returns an error if the input is invalid or the conversion fails.
-func (z *Rand) perm(fn func(int) []int) objects.FuncCallable {
+func (z *Rand) perm(fn func(int) []int) objects.Callable {
 	return func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
 		i1, err := gk.ToInt64Arg(0, args)
 		if err != nil {
