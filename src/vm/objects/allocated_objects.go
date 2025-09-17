@@ -119,6 +119,11 @@ func (f *AllocatedObjects) NewStruct() any {
 	return f.add(newStruct(NewAllocator(f.gk, FrameStatic), make(map[string]IObject)))
 }
 
+// NewAny initializes and tracks a new object of any type using the internal allocator and static frame configuration.
+func (f *AllocatedObjects) NewAny() any {
+	return f.add(newAny(NewAllocator(f.gk, FrameStatic), nil))
+}
+
 // NewInterface attempts to allocate a new object; defaults to undefinedValue if allocation fails.
 func (f *AllocatedObjects) NewInterface() any {
 	return f.add(newInterface(NewAllocator(f.gk, FrameStatic), f.gk.UndefinedValue(), make(map[string]IObject)))

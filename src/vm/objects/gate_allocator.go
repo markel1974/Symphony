@@ -1,6 +1,7 @@
 package objects
 
 import (
+	"reflect"
 	"sync"
 	"time"
 )
@@ -37,6 +38,7 @@ type GateAllocator struct {
 	poolStringIterator sync.Pool
 	poolMapIterator    sync.Pool
 	poolStructIterator sync.Pool
+	poolAny            sync.Pool
 
 	allocatedObjects *AllocatedObjects
 }
@@ -69,6 +71,7 @@ func NewGateAllocator(gk *GateKeeper) *GateAllocator {
 	ga.poolArray.New = ga.allocatedObjects.NewArray
 	ga.poolMap.New = ga.allocatedObjects.NewMap
 	ga.poolStruct.New = ga.allocatedObjects.NewStruct
+	ga.poolAny.New = ga.allocatedObjects.NewAny
 
 	// Iterators
 	ga.poolArrayIterator.New = ga.allocatedObjects.NewArrayIterator
@@ -235,6 +238,16 @@ func (f *GateAllocator) NewStruct(frame int, name string, v map[string]IObject) 
 	obj.setFrame(frame)
 	obj.name = name
 	obj.data = v
+	return obj
+}
+
+// NewAny creates and initializes a new Any object from the pool using the given frame and value parameters.
+func (f *GateAllocator) NewAny(frame int, value interface{}) IObject {
+	obj := f.poolAny.Get().(*Any)
+	obj.setFrame(frame)
+	obj.data = value
+	obj.v = reflect.ValueOf(value)
+	obj.t = obj.v.Type()
 	return obj
 }
 
