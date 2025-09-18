@@ -9,7 +9,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/markel1974/c64emu/src/compilers"
+	_nativeCompiler "github.com/markel1974/c64emu/src/compilers/native/compiler"
+	_nativeLoader "github.com/markel1974/c64emu/src/compilers/native/sdk"
 	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/core"
 	"github.com/markel1974/c64emu/src/vm/objects"
@@ -61,62 +62,83 @@ func Launch(prefix string, debug bool) error {
 		if err := seq.Setup(); err != nil {
 			return err
 		}
-		comp, loader, err := compilers.NewCompiler(gk, seq)
+		loader, err := _nativeLoader.NewLoader(gk)
 		if err != nil {
-			return fmt.Errorf("create compiler error: %s", err)
-		}
-		var args []interface{} = nil
-		//args := []interface{}{1, 2}
-		dataFile, err := All.ReadFile(fileName)
-		if err != nil {
-			return fmt.Errorf("read file error: %s", err)
-		}
-		if err = comp.Compile(fileName, dataFile); err != nil {
-			return fmt.Errorf("compiler error: %s", err)
-		}
-		bc2 := bytecode.NewBytecode(gk, comp.Constants(), comp.Imports(), comp.Globals(), comp.FileSet())
-		if debug {
-			d := bytecode.NewDisassembler(bc2, seq)
-			_ = d.Disassemble(log.Writer())
-		}
-		buf := bytes.NewBuffer([]byte{})
-		if err = bc2.Encode(buf); err != nil {
-			return fmt.Errorf("encoding error: %s", err)
-		}
-		bc := bytecode.NewBytecodeEmpty(gk)
-		if err = bc.Decode(buf); err != nil {
-			return fmt.Errorf("decoding error: %s", err)
-		}
-		machine := core.New(gk, seq)
-		if err = seq.Bind(machine); err != nil {
 			return err
 		}
-		//rel := bytecode.NewRelocator(gk, loader, op, nil)
-		//_, _ = rel.Relocate([]*bytecode.Bytecode{bc, bc})
-
-		//machine, err := vm.NewVM(gk, seq)
-		//if err != nil {
-		//	return fmt.Errorf("vm initialize error: %s", err)
-		//}
-
-		entryPoints, err := machine.Setup(loader, seq.Executors(), bc)
+		bc, err := Compile(gk, seq, loader, fileName, debug)
 		if err != nil {
-			machine.Print(log.Writer())
-			return fmt.Errorf("vm setup error: %s", err)
+			return err
 		}
-		machine.EnableRetValues(true)
-		rv, err := machine.Run(entryPoints["main"], args...)
-		if err != nil {
-			if debug {
-				machine.Print(log.Writer())
-			}
-			return fmt.Errorf("vm runtime error: %s", err)
+		if err = Exec(gk, seq, loader, bc, debug); err != nil {
+			return err
 		}
+	}
+	return nil
+}
+
+func Compile(gk objects.IGateKeeper, seq core.ISequencer, loader bytecode.ILoader, fileName string, debug bool) (*bytecode.Bytecode, error) {
+	comp := _nativeCompiler.New(gk, loader, seq)
+	dataFile, err := All.ReadFile(fileName)
+	if err != nil {
+		return nil, fmt.Errorf("read file error: %s", err)
+	}
+	if err = comp.Compile(fileName, dataFile); err != nil {
+		return nil, fmt.Errorf("compiler error: %s", err)
+	}
+	bc := bytecode.NewBytecode(gk, comp.Constants(), comp.Imports(), comp.Globals(), comp.FileSet())
+	if debug {
+		d := bytecode.NewDisassembler(bc, seq)
+		_ = d.Disassemble(log.Writer())
+	}
+	return bc, nil
+}
+
+func Exec(gk objects.IGateKeeper, seq core.ISequencer, loader bytecode.ILoader, bc *bytecode.Bytecode, debug bool) error {
+	var args []interface{} = nil
+	//args := []interface{}{1, 2}
+	machine := core.New(gk, seq)
+	if err := seq.Bind(machine); err != nil {
+		return err
+	}
+	entryPoints, err := machine.Setup(loader, seq.Executors(), bc)
+	if err != nil {
+		machine.Print(log.Writer())
+		return fmt.Errorf("vm setup error: %s", err)
+	}
+	machine.EnableRetValues(true)
+	rv, err := machine.Run(entryPoints["main"], args...)
+	if err != nil {
 		if debug {
 			machine.Print(log.Writer())
 		}
-		//machine.GetReturnValue(0)
-		fmt.Println("RETURN VALUEs", rv)
+		return fmt.Errorf("vm runtime error: %s", err)
 	}
+	if debug {
+		machine.Print(log.Writer())
+	}
+	fmt.Println("RETURN VALUEs", rv)
 	return nil
+}
+
+func Marshal(bc *bytecode.Bytecode) ([]byte, error) {
+	buf := bytes.NewBuffer([]byte{})
+	if err := bc.Encode(buf); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+func Unmarshal(gk objects.IGateKeeper, buf *bytes.Buffer) (*bytecode.Bytecode, error) {
+	bc := bytecode.NewBytecodeEmpty(gk)
+	if err := bc.Decode(buf); err != nil {
+		return nil, err
+	}
+	return bc, nil
+}
+
+func Relocate(gk objects.IGateKeeper, seq core.ISequencer, loader bytecode.ILoader, z []*bytecode.Bytecode) (*bytecode.Bytecode, error) {
+	rel := bytecode.NewRelocator(gk, loader, seq, bytecode.PreInitFunction, bytecode.InitFunction)
+	bc, err := rel.Relocate(z)
+	return bc, err
 }
