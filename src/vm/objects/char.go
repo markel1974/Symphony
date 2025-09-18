@@ -55,9 +55,6 @@ func (o *Char) AsFloat64() float64 {
 
 // AsBytes converts the object elements into a single concatenated slice of bytes by calling AsBytes on each element.
 func (o *Char) AsBytes() []byte {
-	if o.data <= 0xff {
-		return []byte{byte(o.data)}
-	}
 	b := make([]byte, 4)
 	binary.LittleEndian.PutUint32(b, uint32(o.data))
 	return b

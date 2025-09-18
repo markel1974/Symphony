@@ -281,7 +281,7 @@ func (i *Instructions) Header(offset uint) (OpcodeId, uint8, bool) {
 	if !ok {
 		return 0, 0, false
 	}
-	return OpcodeId(opcodeId), uint8(headerBytes), true
+	return opcodeId, uint8(headerBytes), true
 }
 
 // GobEncode serializes the Instructions data into a byte slice using gob encoding and returns the result or an error.
