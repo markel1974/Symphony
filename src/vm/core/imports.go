@@ -7,7 +7,7 @@ import (
 	"github.com/markel1974/c64emu/src/vm/objects"
 )
 
-// Imports represents a structure for managing object imports in a container, utilizing a factory and error signaling.
+// Imports represent a structure for managing object imports in a container, utilizing a factory and error signaling.
 type Imports struct {
 	gk        objects.IGateKeeper
 	container []objects.IObject
