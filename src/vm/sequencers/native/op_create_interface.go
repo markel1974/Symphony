@@ -49,14 +49,7 @@ func (op *OpCreateInterface) Bind(vm core.IVM) error {
 // Execute processes an `OpCreateInterface` operation, constructing an interface by combining methods and a concrete value.
 func (op *OpCreateInterface) Execute(decoder *core.Decoder) {
 	numMethods := decoder.Operand(0)
-	iTable := make(map[string]objects.IObject, numMethods)
-	for i := 0; i < numMethods; i++ {
-		methodFunc := op.vm.StackPop()
-		methodNameObj := op.vm.StackPop()
-		iTable[methodNameObj.AsString()] = methodFunc
-	}
-	concreteValue := op.vm.StackPop()
-	interfaceObj := op.vm.Factory().NewInterface(op.vm.FrameId(), concreteValue, iTable)
+	interfaceObj := op.vm.StackPopInterface(numMethods)
 	op.vm.StackPush(interfaceObj)
 }
 

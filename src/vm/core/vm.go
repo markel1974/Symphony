@@ -178,29 +178,36 @@ func (v *VM) StackPeekSP(offset uint) objects.IObject {
 // StackPeekArray retrieves and returns an array of objects from the stack without modifying the stack.
 func (v *VM) StackPeekArray(numArgs uint) objects.IObject {
 	a := v.stack.PeekArray(numArgs)
-	arrObj := v.Factory().NewArray(v.FrameId(), a)
+	arrObj := v.Factory().NewArray(v.currFrame.Id(), a)
 	return arrObj
 }
 
 // StackPopArray pops a specified number of elements from the stack and returns them as a slice of IObject.
 func (v *VM) StackPopArray(numElements uint) objects.IObject {
 	a := v.stack.PopArray(numElements)
-	arrObj := v.Factory().NewArray(v.FrameId(), a)
+	arrObj := v.Factory().NewArray(v.currFrame.Id(), a)
 	return arrObj
 }
 
 // StackPopMap pops a specified number of key-value pairs from the stack and returns them as a map.
 func (v *VM) StackPopMap(numElements uint) objects.IObject {
 	m := v.stack.PopMap(numElements)
-	mObj := v.Factory().NewMap(v.FrameId(), m)
+	mObj := v.Factory().NewMap(v.currFrame.Id(), m)
 	return mObj
 }
 
 // StackPopStruct pops a specified number of key-value pairs from the stack and returns them as a map.
 func (v *VM) StackPopStruct(name string, numElements uint) objects.IObject {
 	s := v.stack.PopMap(numElements)
-	sObj := v.Factory().NewStruct(v.FrameId(), name, s)
+	sObj := v.Factory().NewStruct(v.currFrame.Id(), name, s)
 	return sObj
+}
+
+// StackPopInterface pops `numElements` interfaces from the stack and wraps them into a new `objects.IObject` instance.
+func (v *VM) StackPopInterface(numElements int) objects.IObject {
+	concrete, iTable := v.stack.PopInterface(numElements)
+	iObj := v.Factory().NewInterface(v.currFrame.Id(), concrete, iTable)
+	return iObj
 }
 
 // StackDecrementCount reduces the count of items on the stack by the specified decrement amount.

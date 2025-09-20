@@ -35,6 +35,7 @@ type IVMStackOnly interface {
 	StackPopArray(numElem uint) objects.IObject
 	StackPopMap(numElem uint) objects.IObject
 	StackPopStruct(name string, numElem uint) objects.IObject
+	StackPopInterface(numElements int) objects.IObject
 	Factory() objects.IGateKeeper
 	SetError(err error)
 }

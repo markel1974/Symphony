@@ -139,6 +139,19 @@ func (v *Stack) PopMap(numElements uint) map[string]objects.IObject {
 	return kv
 }
 
+// PopInterface pops a concrete value and a specified number of method-function pairs from the stack and returns them.
+// The returned map contains method names as keys and their corresponding method functions as values.
+func (v *Stack) PopInterface(numMethods int) (objects.IObject, map[string]objects.IObject) {
+	iTable := make(map[string]objects.IObject, numMethods)
+	for i := 0; i < numMethods; i++ {
+		methodFunc := v.Pop()
+		methodNameObj := v.Pop()
+		iTable[methodNameObj.AsString()] = methodFunc
+	}
+	concreteValue := v.Pop()
+	return concreteValue, iTable
+}
+
 // SetAbsolute assigns the specified object to the stack at the given absolute index.
 func (v *Stack) SetAbsolute(absolute uint, obj objects.IObject) {
 	if absolute >= v.sp {
