@@ -115,11 +115,13 @@ The path forward does not involve replacing the interpreter but augmenting it. T
 
 From that point on, every call to that function would execute native code directly, resulting in a massive performance boost, while the rest of the "cold" code continues to run safely in the interpreter.
 
-### Symmetrical Architecture: The Dual-Role Executor
+### Symmetrical Architecture: Every Instruction is the Master of its Own Destiny
 
-The foundation for Just-In-Time (JIT) or Ahead-of-Time (AOT) capability is already built into the symmetrical design of the `IOpExecutor` interface.
+A core design philosophy that sets this VM apart from more conventional architectures is the principle that **every instruction should be the master of its own destiny**. This concept is the direct answer to the complexity and scattered logic often found even in the most acclaimed virtual machines, where separate, monolithic systems handle interpretation and compilation.
 
-Each `IOpExecutor` is designed with a dual role, encapsulating the logic for both interpreting and compiling a single instruction:
+This VM elevates each instruction to be a self-contained, autonomous entity. This is achieved through the **symmetrical design of the `IOpExecutor` interface**, which serves as the foundation for Just-In-Time (JIT) or Ahead-of-Time (AOT) capabilities.
+
+Each `IOpExecutor` is designed with a dual role, making it the **single source of truth** for the instruction it represents by encapsulating its entire lifecycle:
 
 * **`Execute(...)`**: Contains the logic to *interpret* the opcode at runtime.
 * **`Compile(...)`**: Contains the logic to *transpile* the opcode into another format, such as native machine code.
@@ -127,13 +129,13 @@ Each `IOpExecutor` is designed with a dual role, encapsulating the logic for bot
 This means that the existing `Sequencer` already has everything it needs to act as a compilation orchestrator. It can operate in two distinct modes while reusing the exact same dispatch mechanism:
 
 1.  **Interpretation Mode**: When running code, the main loop fetches an opcode and directs the `Sequencer` to call the `Execute()` method on the corresponding executor.
-2.  **Compilation Mode**: When a function is identified as a "hot spot" for JIT compilation, its bytecode can be fed to the *same* `Sequencer`, which would instead be instructed to call the `Compile()` method on each executor.
+2.  **Compilation Mode**: When a function is identified as a "hot spot," its bytecode can be fed to the *same* `Sequencer`, which would instead be instructed to call the `Compile()` method on each executor.
 
-The brilliance of this design is its cohesion. All logic related to a single instruction—both for execution and compilation—resides in one place. The `Sequencer` remains a simple, agnostic dispatcher, and the VM can support both interpretation and compilation without needing a redundant architectural component.
+This architectural choice results in a system with maximum cohesion. All logic related to a single instruction resides in one place. The `Sequencer` remains a simple, agnostic dispatcher, and the VM's core loop remains elegantly simple, unaware of whether it is interpreting or compiling. Adding, modifying, or optimizing an instruction happens in one, and only one, place. This principle is the key to the system's robustness, maintainability, and profound architectural flexibility.
 
 #### Architectural Enablers
 
-This advanced evolution is not an afterthought but a natural consequence of the core design:
+This evolution is not an afterthought but a natural consequence of the core design:
 
 * **Clean Intermediate Representation (IR)**: The bytecode produced by the compiler is not an opaque binary format. It's a high-level, well-structured IR that is trivial to parse and translate into machine code, as most of the complex semantic analysis has already been done.
 * **Decoupled Execution Logic**: Because the core VM is completely agnostic to *how* a function is executed (it only calls the `IObject` interface), swapping a `FuncCompiled` object with a new `FuncJIT` object holding a pointer to native code would be a seamless operation.

@@ -126,19 +126,19 @@ func Compile(gk objects.IGateKeeper, seq core.ISequencer, loader bytecode.ILoade
 func Exec(gk objects.IGateKeeper, seq core.ISequencer, loader bytecode.ILoader, bc *bytecode.Bytecode, debug bool) ([]interface{}, error) {
 	var args []interface{} = nil
 	//args := []interface{}{1, 2}
-	machine := core.New(gk, seq)
-	if err := seq.Bind(machine); err != nil {
+	vm := core.New(gk, seq)
+	if err := seq.Bind(vm); err != nil {
 		return nil, err
 	}
-	entries, err := machine.Setup(loader, seq.Executors(), bc)
+	entries, err := vm.Setup(loader, seq.Executors(), bc)
 	if err != nil {
-		machine.Print(log.Writer())
+		vm.Print(log.Writer())
 		return nil, err
 	}
-	machine.EnableRetValues(true)
-	rv, err := machine.Run(entries["main"], args...)
+	vm.EnableRetValues(true)
+	rv, err := vm.Run(entries["main"], args...)
 	if debug {
-		machine.Print(log.Writer())
+		vm.Print(log.Writer())
 	}
 	return rv, err
 }
