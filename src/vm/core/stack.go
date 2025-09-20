@@ -118,6 +118,13 @@ func (v *Stack) PopArray(numElements uint) []objects.IObject {
 	return elements
 }
 
+// PopStruct removes multiple elements from the stack and returns a string representation and a map of objects.
+func (v *Stack) PopStruct(numElements uint) (string, map[string]objects.IObject) {
+	typeNameObj := v.Pop()
+	s := v.PopMap(numElements)
+	return typeNameObj.AsString(), s
+}
+
 // PopMap removes the specified number of key-value pairs from the stack and returns them as a map.
 func (v *Stack) PopMap(numElements uint) map[string]objects.IObject {
 	if numElements&1 == 1 {

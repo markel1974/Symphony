@@ -135,6 +135,44 @@ func (v *VM) Run(mainId uint, args ...interface{}) ([]interface{}, error) {
 	return v.exec(mainFn, v.retValues, args...)
 }
 
+// CreateObjectPointer creates an ObjectPointer instance for the provided object within the current frame context.
+// It uses the VM's factory to allocate a new ObjectPointer and associates it with the provided object.
+// Returns the created ObjectPointer and an error if the process fails.
+func (v *VM) CreateObjectPointer(obj objects.IObject) (*objects.ObjectPointer, error) {
+	freeObjPtr, err := v.Factory().CreateObjectPointer(v.currFrame.Id(), obj)
+	return freeObjPtr, err
+}
+
+// CreateClosure creates a new closure object from a function and its captured variables.
+// It verifies the input object is a function and retrieves the free variables from the stack.
+// Returns the newly created closure or an undefined value in case of errors.
+func (v *VM) CreateClosure(fnObj objects.IObject) objects.IObject {
+	fn, ok := fnObj.(*objects.Func)
+	if !ok {
+		v.SetError(fmt.Errorf("not a function: %s", fn.TypeName()))
+		return v.gk.UndefinedValue()
+	}
+	freeArgsObj := v.stack.Pop()
+	freeArgs, ok := freeArgsObj.(*objects.Array)
+	if !ok {
+		v.SetError(fmt.Errorf("not an array: %s", freeArgsObj.TypeName()))
+		return v.gk.UndefinedValue()
+	}
+	free := make([]*objects.ObjectPointer, freeArgs.Length())
+	for idx, freeObjIndex := range freeArgs.Values() {
+		index := int(freeObjIndex.AsInt64())
+		obj := v.StackPeekBP(uint(index))
+		freeObjPtr, err := v.CreateObjectPointer(obj)
+		if err != nil {
+			v.SetError(err)
+			return v.gk.UndefinedValue()
+		}
+		free[idx] = freeObjPtr
+	}
+	v.StackDecrementCount(uint(freeArgs.Length()))
+	return v.Factory().NewFunc(v.FrameId(), fn.Name(), fn.Instructions().Code(), fn.NumLocals(), fn.NumParameters(), fn.VarArgs(), nil, free)
+}
+
 // StackPeek returns the object currently at the top of the stack without removing it.
 func (v *VM) StackPeek() objects.IObject {
 	return v.stack.Peek()
@@ -175,13 +213,6 @@ func (v *VM) StackPeekSP(offset uint) objects.IObject {
 	return v.stack.PeekOffset(offset)
 }
 
-// StackPeekArray retrieves and returns an array of objects from the stack without modifying the stack.
-func (v *VM) StackPeekArray(numArgs uint) objects.IObject {
-	a := v.stack.PeekArray(numArgs)
-	arrObj := v.Factory().NewArray(v.currFrame.Id(), a)
-	return arrObj
-}
-
 // StackPopArray pops a specified number of elements from the stack and returns them as a slice of IObject.
 func (v *VM) StackPopArray(numElements uint) objects.IObject {
 	a := v.stack.PopArray(numElements)
@@ -197,8 +228,8 @@ func (v *VM) StackPopMap(numElements uint) objects.IObject {
 }
 
 // StackPopStruct pops a specified number of key-value pairs from the stack and returns them as a map.
-func (v *VM) StackPopStruct(name string, numElements uint) objects.IObject {
-	s := v.stack.PopMap(numElements)
+func (v *VM) StackPopStruct(numElements uint) objects.IObject {
+	name, s := v.stack.PopStruct(numElements)
 	sObj := v.Factory().NewStruct(v.currFrame.Id(), name, s)
 	return sObj
 }

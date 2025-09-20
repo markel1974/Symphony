@@ -48,30 +48,7 @@ func (op *OpCreateClosure) Execute(decoder *core.Decoder) {
 	closureFnIndex := decoder.Operand(0)
 	//numTotal := decoder.Operand(1)
 	closureFnObj := op.vm.Constants().Get(uint(closureFnIndex))
-	fn, ok := closureFnObj.(*objects.Func)
-	if !ok {
-		op.vm.SetError(fmt.Errorf("not a function: %s", fn.TypeName()))
-		return
-	}
-	freeArgsObj := op.vm.StackPop()
-	freeArgs, ok := freeArgsObj.(*objects.Array)
-	if !ok {
-		op.vm.SetError(fmt.Errorf("not an array: %s", freeArgsObj.TypeName()))
-		return
-	}
-	free := make([]*objects.ObjectPointer, freeArgs.Length())
-	for idx, freeObjIndex := range freeArgs.Values() {
-		index := int(freeObjIndex.AsInt64())
-		obj := op.vm.StackPeekBP(uint(index))
-		freeObjPtr, err := op.vm.Factory().CreateObjectPointer(op.vm.FrameId(), obj)
-		if err != nil {
-			op.vm.SetError(err)
-			return
-		}
-		free[idx] = freeObjPtr
-	}
-	op.vm.StackDecrementCount(uint(freeArgs.Length()))
-	cl := op.vm.Factory().NewFunc(op.vm.FrameId(), fn.Name(), fn.Instructions().Code(), fn.NumLocals(), fn.NumParameters(), fn.VarArgs(), nil, free)
+	cl := op.vm.CreateClosure(closureFnObj)
 	op.vm.StackPush(cl)
 }
 

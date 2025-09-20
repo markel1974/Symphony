@@ -49,7 +49,7 @@ func (op *OpGlobalPtrGet) Bind(vm core.IVM) error {
 func (op *OpGlobalPtrGet) Execute(decoder *core.Decoder) {
 	globalIndex := decoder.Operand(0)
 	val := op.vm.Globals().Get(uint(globalIndex))
-	ptr, err := op.vm.Factory().CreateObjectPointer(op.vm.FrameId(), val)
+	ptr, err := op.vm.CreateObjectPointer(val)
 	if err != nil {
 		op.vm.SetError(err)
 		return

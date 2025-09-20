@@ -46,8 +46,7 @@ func (op *OpCreateStruct) Bind(vm core.IVM) error {
 // Execute processes the OpCreateMap instruction, adjusts the instruction pointer, and pushes a new map object onto the stack.
 func (op *OpCreateStruct) Execute(decoder *core.Decoder) {
 	numElem := decoder.Operand(0)
-	typeNameObj := op.vm.StackPop()
-	structObj := op.vm.StackPopStruct(typeNameObj.AsString(), uint(numElem))
+	structObj := op.vm.StackPopStruct(uint(numElem))
 	op.vm.StackPush(structObj)
 }
 
