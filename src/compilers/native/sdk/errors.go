@@ -6,7 +6,7 @@ import (
 )
 
 func init() {
-	RegisterPackage(NewErrors)
+	register(NewErrors)
 }
 
 // Errors is a type that encapsulates a map of module functions accessible as objects.

@@ -8,7 +8,7 @@ import (
 )
 
 func init() {
-	RegisterPackage(NewMath)
+	register(NewMath)
 }
 
 // Math serves as a container for mathematical operations and modules, mapping module names to their respective objects.

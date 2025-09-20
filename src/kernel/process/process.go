@@ -554,7 +554,8 @@ func (t *Process) handleMessageProcessStart(msg interfaces.IMessage) {
 			}
 			t.gk = objects.NewGateKeeper()
 			t.opcodes = seq
-			t.compiler, t.loader, err = compilers.NewCompiler(t.gk, t.opcodes)
+			t.loader = bytecode.NewLoader(t.gk)
+			t.compiler, err = compilers.NewCompiler(t.gk, t.opcodes, t.loader)
 			if err != nil {
 				log.Printf("Process [%s]: error creating compiler: %s", t.cmd.Name(), err.Error())
 				return

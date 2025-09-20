@@ -9,7 +9,7 @@ import (
 )
 
 func init() {
-	RegisterPackage(NewRegexp)
+	register(NewRegexp)
 }
 
 const (

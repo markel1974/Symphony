@@ -8,9 +8,9 @@ import (
 	"github.com/markel1974/c64emu/src/vm/objects"
 )
 
-// init initializes the package by registering the NewRand package using the RegisterPackage function.
+// init initializes the package by registering the NewRand package using the register function.
 func init() {
-	RegisterPackage(NewRand)
+	register(NewRand)
 }
 
 const (

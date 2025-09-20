@@ -1,24 +1,24 @@
 package compilers
 
 import (
+	_nativeLoader "github.com/markel1974/c64emu/src/compilers/native/sdk"
 	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/objects"
 	"github.com/markel1974/c64emu/src/vm/opcodes"
 
 	_nativeCompiler "github.com/markel1974/c64emu/src/compilers/native/compiler"
-	_nativeLoader "github.com/markel1974/c64emu/src/compilers/native/sdk"
 )
 
-// NewCompiler creates a new compiler and loader based on the provided IGateKeeper, Opcodes, and identifier string.
-// It returns an ICompiler, an ILoader, and an error if the creation fails.
-func NewCompiler(gk objects.IGateKeeper, opcodes opcodes.IOpcodes) (bytecode.ICompiler, bytecode.ILoader, error) {
+// NewCompiler creates and initializes a new compiler instance, loading native packages and configuring compilation tools.
+// It accepts an IGateKeeper, IOpcodes, and ILoader to manage object allocation, opcodes, and runtime/package loading.
+// Returns a compiled ICompiler instance ready for use or an error if initialization fails.
+func NewCompiler(gk objects.IGateKeeper, opcodes opcodes.IOpcodes, loader bytecode.ILoader) (bytecode.ICompiler, error) {
 	switch opcodes.Id() {
 	default:
-		loader := bytecode.NewLoader(gk)
-		if err := loader.RegisterPackage(_nativeLoader.Packages()); err != nil {
-			return nil, nil, err
+		if err := loader.AddPackages(_nativeLoader.Packages(gk)); err != nil {
+			return nil, err
 		}
 		compiler := _nativeCompiler.New(gk, loader, opcodes)
-		return compiler, loader, nil
+		return compiler, nil
 	}
 }

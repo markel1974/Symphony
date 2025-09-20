@@ -9,7 +9,7 @@ import (
 
 // init registers the "Hex" package by appending its registration function to the internal package list.
 func init() {
-	RegisterPackage(NewHex)
+	register(NewHex)
 }
 
 // Hex represents a type that provides functionality for encoding and decoding hexadecimal strings.

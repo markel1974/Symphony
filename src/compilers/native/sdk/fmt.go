@@ -8,7 +8,7 @@ import (
 )
 
 func init() {
-	RegisterPackage(NewFmt)
+	register(NewFmt)
 }
 
 // Fmt represents a struct that provides formatted output methods using a map of predefined functions.

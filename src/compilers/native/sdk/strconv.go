@@ -9,7 +9,7 @@ import (
 
 // init registers the strconv package by appending its registration function to the internal package list.
 func init() {
-	RegisterPackage(NewStrconv)
+	register(NewStrconv)
 }
 
 // Strconv represents a container for storing string conversion-related functions in a map-like structure.

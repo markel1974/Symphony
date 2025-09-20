@@ -22,10 +22,9 @@ func NewLoader(gk objects.IGateKeeper) *Loader {
 	return loader
 }
 
-// RegisterPackage adds a list of packages to the loader using provided registration functions and returns an error if any fail.
-func (l *Loader) RegisterPackage(registerPackage []RegisterPackageFn) error {
-	for _, fn := range registerPackage {
-		pkg := fn(l.gk)
+// AddPackages adds multiple packages to the loader. Returns an error if adding any package fails.
+func (l *Loader) AddPackages(packages []IPackage) error {
+	for _, pkg := range packages {
 		if err := l.AddPackage(pkg); err != nil {
 			return err
 		}

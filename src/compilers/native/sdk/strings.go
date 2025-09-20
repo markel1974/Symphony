@@ -10,7 +10,7 @@ import (
 )
 
 func init() {
-	RegisterPackage(NewStrings)
+	register(NewStrings)
 }
 
 // Strings provides a collection of string operations and functionality wrapped in a module.

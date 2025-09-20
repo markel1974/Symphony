@@ -8,7 +8,7 @@ import (
 )
 
 func init() {
-	RegisterPackage(NewRuntime)
+	register(NewRuntime)
 }
 
 type Runtime struct {

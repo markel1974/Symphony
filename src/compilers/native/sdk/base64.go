@@ -7,9 +7,9 @@ import (
 	"github.com/markel1974/c64emu/src/vm/objects"
 )
 
-// init initializes the package by registering the Base64 package using the RegisterPackage function.
+// init initializes the package by registering the Base64 package using the register function.
 func init() {
-	RegisterPackage(NewBase64)
+	register(NewBase64)
 }
 
 // Base64 provides methods for working with Base64 encoding and decoding operations within a container of IObject mappings.

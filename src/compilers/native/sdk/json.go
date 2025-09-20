@@ -9,7 +9,7 @@ import (
 )
 
 func init() {
-	RegisterPackage(NewJson)
+	register(NewJson)
 }
 
 // Json represents a module containing JSON-related operations and utilities.

@@ -7,9 +7,9 @@ import (
 	"github.com/markel1974/c64emu/src/vm/objects"
 )
 
-// init initializes the package by registering the Os package using the RegisterPackage function.
+// init initializes the package by registering the Os package using the register function.
 func init() {
-	RegisterPackage(NewOs)
+	register(NewOs)
 }
 
 // Os represents a package that provides access to a container of IObject instances, allowing retrieval by name.

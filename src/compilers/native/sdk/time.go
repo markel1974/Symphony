@@ -8,7 +8,7 @@ import (
 )
 
 func init() {
-	RegisterPackage(NewTime)
+	register(NewTime)
 }
 
 // Time represents a structure that manages a collection of modules implementing the IObject interface.

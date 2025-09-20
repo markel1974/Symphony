@@ -9,7 +9,7 @@ import (
 )
 
 func init() {
-	RegisterPackage(NewLog)
+	register(NewLog)
 }
 
 // Log represents a struct that provides formatted output methods using a map of predefined functions.
