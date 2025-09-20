@@ -47,8 +47,7 @@ func (op *OpCreateStruct) Bind(vm core.IVM) error {
 func (op *OpCreateStruct) Execute(decoder *core.Decoder) {
 	numElem := decoder.Operand(0)
 	typeNameObj := op.vm.StackPop()
-	mElem := op.vm.StackPopStruct(uint(numElem))
-	structObj := op.vm.Factory().NewStruct(op.vm.FrameId(), typeNameObj.AsString(), mElem)
+	structObj := op.vm.StackPopStruct(typeNameObj.AsString(), uint(numElem))
 	op.vm.StackPush(structObj)
 }
 

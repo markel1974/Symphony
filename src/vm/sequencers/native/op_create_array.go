@@ -47,8 +47,7 @@ func (op *OpCreateArray) Bind(vm core.IVM) error {
 // Execute processes the OpCreateArray instruction, constructing an array from stack elements and pushing it onto the stack.
 func (op *OpCreateArray) Execute(decoder *core.Decoder) {
 	numElements := decoder.Operand(0)
-	a := op.vm.StackPopArray(uint(numElements))
-	arrObj := op.vm.Factory().NewArray(op.vm.FrameId(), a)
+	arrObj := op.vm.StackPopArray(uint(numElements))
 	op.vm.StackPush(arrObj)
 }
 
