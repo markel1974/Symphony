@@ -8,18 +8,17 @@ import (
 	"github.com/markel1974/c64emu/src/vm/objects"
 )
 
-// RegexpTextDef defines the default key for regular expression text.
-// RegexpBeginDef defines the default key for the beginning of a regular expression.
-// RegexpEndDef defines the default key for the end of a regular expression.
-const (
-	RegexpTextDef  = "Text"
-	RegexpBeginDef = "Begin"
-	RegexpEndDef   = "End"
-)
-
 func init() {
 	RegisterPackage(NewRegexp)
 }
+
+const (
+	defRegexpMatch   = "Match"
+	defRegexpFind    = "Find"
+	defRegexpReplace = "Replace"
+	defRegexpSplit   = "Split"
+	defRegexpCompile = "Compile"
+)
 
 // Regexp represents a structure providing regular expression functionality through associated operations and methods.
 type Regexp struct {
@@ -28,15 +27,14 @@ type Regexp struct {
 
 // NewRegexp creates and returns a new instance of the Regexp struct with initialized module functions.
 func NewRegexp(factory objects.IGateKeeper) bytecode.IPackage {
-	r := &Regexp{}
-	container := []objects.IObject{
-		factory.NewFuncImport(objects.FrameStatic, "Match", 2, r.match),
-		factory.NewFuncImport(objects.FrameStatic, "Find", -1, r.find),
-		factory.NewFuncImport(objects.FrameStatic, "Replace", 3, r.replace),
-		factory.NewFuncImport(objects.FrameStatic, "Split", -1, r.split),
-		factory.NewFuncImport(objects.FrameStatic, "Compile", 1, r.compile),
-	}
-	r.Package = bytecode.NewPackage("regexp", container, nil)
+	r := &Regexp{Package: bytecode.NewPackage("regexp")}
+
+	r.Add(defRegexpMatch, factory.NewFuncImport(objects.FrameStatic, defRegexpMatch, 2, r.match))
+	r.Add(defRegexpFind, factory.NewFuncImport(objects.FrameStatic, defRegexpFind, -1, r.find))
+	r.Add(defRegexpReplace, factory.NewFuncImport(objects.FrameStatic, defRegexpReplace, 3, r.replace))
+	r.Add(defRegexpSplit, factory.NewFuncImport(objects.FrameStatic, defRegexpSplit, -1, r.split))
+	r.Add(defRegexpCompile, factory.NewFuncImport(objects.FrameStatic, defRegexpCompile, 1, r.compile))
+
 	return r
 }
 
@@ -89,11 +87,7 @@ func (r *Regexp) find(gk objects.IGateKeeper, frame int, args ...objects.IObject
 			return 0, nil, fmt.Errorf("expected Array, got %T", obj)
 		}
 		for i := 0; i < len(m); i += 2 {
-			arr.Append(gk.NewMap(frame, map[string]objects.IObject{
-				RegexpTextDef:  gk.NewString(frame, s2[m[i]:m[i+1]]),
-				RegexpBeginDef: gk.NewInt(frame, int64(m[i])),
-				RegexpEndDef:   gk.NewInt(frame, int64(m[i+1])),
-			}))
+			arr.Append(r.createResult(gk, frame, s2[m[i]:m[i+1]], m[i], m[i+1]))
 		}
 		return 1, gk.NewArray(frame, []objects.IObject{arr}), nil
 	}
@@ -117,11 +111,7 @@ func (r *Regexp) find(gk objects.IGateKeeper, frame int, args ...objects.IObject
 			return 0, nil, fmt.Errorf("expected Array, got %T", obj)
 		}
 		for i := 0; i < len(m); i += 2 {
-			subMatch.Append(gk.NewMap(frame, map[string]objects.IObject{
-				RegexpTextDef:  gk.NewString(frame, s2[m[i]:m[i+1]]),
-				RegexpBeginDef: gk.NewInt(frame, int64(m[i])),
-				RegexpEndDef:   gk.NewInt(frame, int64(m[i+1])),
-			}))
+			subMatch.Append(r.createResult(gk, frame, s2[m[i]:m[i+1]], m[i], m[i+1]))
 		}
 		arr.Append(subMatch)
 	}
@@ -176,16 +166,16 @@ func (r *Regexp) compile(gk objects.IGateKeeper, frame int, args ...objects.IObj
 	obj := gk.NewMap(frame,
 		map[string]objects.IObject{
 			// match(text) => bool
-			"Match": gk.NewFuncImport(frame, "Match", 1, func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
+			defRegexpMatch: gk.NewFuncImport(frame, defRegexpMatch, 1, func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
 				return r.compileOptionMatch(gk, frame, re, args...)
 			}),
-			"Find": gk.NewFuncImport(frame, "Find", -1, func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
+			defRegexpFind: gk.NewFuncImport(frame, defRegexpFind, -1, func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
 				return r.compileOptionFind(gk, frame, re, args...)
 			}),
-			"Replace": gk.NewFuncImport(frame, "Replace", 2, func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
+			defRegexpReplace: gk.NewFuncImport(frame, defRegexpReplace, 2, func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
 				return r.compileOptionReplace(gk, frame, re, args...)
 			}),
-			"Split": gk.NewFuncImport(frame, "Split", -1, func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
+			defRegexpSplit: gk.NewFuncImport(frame, defRegexpSplit, -1, func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
 				return r.compileOptionSplit(gk, frame, re, args...)
 			}),
 		},
@@ -253,12 +243,7 @@ func (r *Regexp) compileOptionFind(gk objects.IGateKeeper, frame int, re *regexp
 			return 0, nil, fmt.Errorf("expected Array, got %T", base)
 		}
 		for i := 0; i < len(mRe); i += 2 {
-			arr.Append(gk.NewMap(frame,
-				map[string]objects.IObject{
-					RegexpTextDef:  gk.NewString(frame, s1[mRe[i]:mRe[i+1]]),
-					RegexpBeginDef: gk.NewInt(frame, int64(mRe[i])),
-					RegexpEndDef:   gk.NewInt(frame, int64(mRe[i+1])),
-				}))
+			arr.Append(r.createResult(gk, frame, s1[mRe[i]:mRe[i+1]], mRe[i], mRe[i+1]))
 		}
 		return 1, gk.NewArray(frame, []objects.IObject{arr}), nil
 	}
@@ -282,12 +267,7 @@ func (r *Regexp) compileOptionFind(gk objects.IGateKeeper, frame int, re *regexp
 			return 0, nil, fmt.Errorf("expected Array, got %T", obj)
 		}
 		for i := 0; i < len(m); i += 2 {
-			subMatch.Append(gk.NewMap(frame,
-				map[string]objects.IObject{
-					RegexpTextDef:  gk.NewString(frame, s1[m[i]:m[i+1]]),
-					RegexpBeginDef: gk.NewInt(frame, int64(m[i])),
-					RegexpEndDef:   gk.NewInt(frame, int64(m[i+1])),
-				}))
+			subMatch.Append(r.createResult(gk, frame, s1[m[i]:m[i+1]], m[i], m[i+1]))
 		}
 		arr.Append(subMatch)
 	}
@@ -348,4 +328,18 @@ func (r *Regexp) replaceInternal(re *regexp.Regexp, src, repl string) string {
 		out += src[idx:]
 	}
 	return out
+}
+
+// createResult constructs and returns a map object containing match details: the matched text, start index, and end index.
+func (r *Regexp) createResult(gk objects.IGateKeeper, frame int, data string, start int, end int) objects.IObject {
+	const (
+		defRegexpTextDef  = "Text"
+		defRegexpStartDef = "Start"
+		defRegexpEndDef   = "End"
+	)
+	return gk.NewMap(frame, map[string]objects.IObject{
+		defRegexpTextDef:  gk.NewString(frame, data),
+		defRegexpStartDef: gk.NewInt(frame, int64(start)),
+		defRegexpEndDef:   gk.NewInt(frame, int64(end)),
+	})
 }

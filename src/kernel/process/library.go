@@ -4,66 +4,102 @@ import (
 	"fmt"
 
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
+	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/objects"
 )
 
 // Library represents a collection of modules that interact with system processes and provide various functionalities.
 // It contains a reference to a Process and a map of module names to their respective objects.
 type Library struct {
-	process   *Process
-	functions []objects.IObject
+	*bytecode.Package
+	process *Process
 }
 
 // NewLibrary creates and initializes a new Library instance with the provided Process.
 func NewLibrary(factory objects.IGateKeeper, process *Process) *Library {
+	const (
+		defPrintf                   = "Printf"
+		defCreateTimer              = "CreateTimer"
+		defIsActive                 = "IsActive"
+		defKill                     = "Kill"
+		defKillForeground           = "KillForeground"
+		defKillAll                  = "KillAll"
+		defCWDSet                   = "CWDSet"
+		defCWDName                  = "CWDName"
+		defCWDPath                  = "CWDPath"
+		defCWDDirectoryListing      = "CWDDirectoryListing"
+		defGetScreenSize            = "GetScreenSize"
+		defPaintRequest             = "PaintRequest"
+		defProcessExec              = "ProcessExec"
+		defWindowsSelectionBegin    = "WindowsSelectionBegin"
+		defWindowsSelectionEnd      = "WindowsSelectionEnd"
+		defWindowsSelectionOptions  = "WindowsSelectionOptions"
+		defWindowsSelectionNext     = "WindowsSelectionNext"
+		defWindowsSelectionPrevious = "WindowsSelectionPrevious"
+		defProcessList              = "ProcessList"
+		defProcessSetForeground     = "ProcessSetForeground"
+		defProcessSetSelfForeground = "ProcessSetSelfForeground"
+		defWrite                    = "Write"
+		defWritePromptEOL           = "WritePromptEOL"
+		defWritePromptLine          = "WritePromptLine"
+		defWriteColor               = "WriteColor"
+		defWriteForeground          = "WriteForeground"
+		defMoveCursorLeft           = "MoveCursorLeft"
+		defMoveCursorRight          = "MoveCursorRight"
+		defSaveCursor               = "SaveCursor"
+		defRestoreCursor            = "RestoreCursor"
+		defClearScreen              = "ClearScreen"
+		defSetExit                  = "SetExit"
+		defSuggestion               = "Suggestion"
+		defHelp                     = "Help"
+	)
 	l := &Library{
-		process:   process,
-		functions: []objects.IObject{},
+		Package: bytecode.NewPackage("kernel"),
+		process: process,
 	}
-	l.functions = []objects.IObject{
-		factory.NewFuncImport(objects.FrameStatic, "Printf", -1, l.doPrintf),
-		factory.NewFuncImport(objects.FrameStatic, "CreateTimer", 3, l.doCreateTimer),
-		factory.NewFuncImport(objects.FrameStatic, "IsActive", 1, l.doIsActive),
-		factory.NewFuncImport(objects.FrameStatic, "Kill", 1, l.doKill),
-		factory.NewFuncImport(objects.FrameStatic, "KillForeground", 0, l.doKillForeground),
-		factory.NewFuncImport(objects.FrameStatic, "KillAll", 1, l.doKillAll),
-		factory.NewFuncImport(objects.FrameStatic, "CWDSet", 1, l.doCWDSet),
-		factory.NewFuncImport(objects.FrameStatic, "CWDName", 0, l.doCWDName),
-		factory.NewFuncImport(objects.FrameStatic, "CWDPath", 0, l.doCWDPath),
-		factory.NewFuncImport(objects.FrameStatic, "CWDDirectoryListing", 0, l.doCWDDirectoryListing),
-		factory.NewFuncImport(objects.FrameStatic, "GetScreenSize", 0, l.doGetScreenSize),
-		factory.NewFuncImport(objects.FrameStatic, "PaintRequest", 0, l.doPaintRequest),
-		factory.NewFuncImport(objects.FrameStatic, "ProcessExec", 1, l.doProcessExec),
-		factory.NewFuncImport(objects.FrameStatic, "WindowsSelectionBegin", 0, l.doWindowsSelectionBegin),
-		factory.NewFuncImport(objects.FrameStatic, "CWDSet", 0, l.doWindowsSelectionEnd),
-		factory.NewFuncImport(objects.FrameStatic, "WindowsSelectionOptions", 2, l.doWindowsSelectionOptions),
-		factory.NewFuncImport(objects.FrameStatic, "WindowsSelectionNext", 0, l.doWindowsSelectionNext),
-		factory.NewFuncImport(objects.FrameStatic, "WindowsSelectionPrevious", 0, l.doWindowsSelectionPrevious),
-		factory.NewFuncImport(objects.FrameStatic, "ProcessList", 0, l.doProcessList),
-		factory.NewFuncImport(objects.FrameStatic, "ProcessSetForeground", 1, l.doProcessSetForeground),
-		factory.NewFuncImport(objects.FrameStatic, "ProcessSetSelfForeground", 0, l.doProcessSetSelfForeground),
-		factory.NewFuncImport(objects.FrameStatic, "Write", 2, l.doWrite),
-		factory.NewFuncImport(objects.FrameStatic, "WritePromptEOL", 2, l.doWritePromptEOL),
-		factory.NewFuncImport(objects.FrameStatic, "WritePromptLine", 2, l.doWritePromptLine),
-		factory.NewFuncImport(objects.FrameStatic, "WriteColor", 5, l.doWriteColor),
-		factory.NewFuncImport(objects.FrameStatic, "WriteForeground", 3, l.doWriteForeground),
-		factory.NewFuncImport(objects.FrameStatic, "MoveCursorLeft", 0, l.doMoveCursorLeft),
-		factory.NewFuncImport(objects.FrameStatic, "MoveCursorRight", 0, l.doMoveCursorRight),
-		factory.NewFuncImport(objects.FrameStatic, "SaveCursor", 0, l.doSaveCursor),
-		factory.NewFuncImport(objects.FrameStatic, "RestoreCursor", 0, l.doRestoreCursor),
-		factory.NewFuncImport(objects.FrameStatic, "ClearScreen", 0, l.doClearScreen),
-		factory.NewFuncImport(objects.FrameStatic, "SetExit", 0, l.doSetExit),
-		factory.NewFuncImport(objects.FrameStatic, "Suggestion", 2, l.doSuggestion),
-		factory.NewFuncImport(objects.FrameStatic, "Help", 1, l.doHelp),
-	}
+
+	l.Add(defPrintf, factory.NewFuncImport(objects.FrameStatic, defPrintf, -1, l.doPrintf))
+	l.Add(defCreateTimer, factory.NewFuncImport(objects.FrameStatic, defCreateTimer, 3, l.doCreateTimer))
+	l.Add(defIsActive, factory.NewFuncImport(objects.FrameStatic, defIsActive, 1, l.doIsActive))
+	l.Add(defKill, factory.NewFuncImport(objects.FrameStatic, defKill, 1, l.doKill))
+	l.Add(defKillForeground, factory.NewFuncImport(objects.FrameStatic, defKillForeground, 0, l.doKillForeground))
+	l.Add(defKillAll, factory.NewFuncImport(objects.FrameStatic, defKillAll, 1, l.doKillAll))
+	l.Add(defCWDSet, factory.NewFuncImport(objects.FrameStatic, defCWDSet, 1, l.doCWDSet))
+	l.Add(defCWDName, factory.NewFuncImport(objects.FrameStatic, defCWDName, 0, l.doCWDName))
+	l.Add(defCWDPath, factory.NewFuncImport(objects.FrameStatic, defCWDPath, 0, l.doCWDPath))
+	l.Add(defCWDDirectoryListing, factory.NewFuncImport(objects.FrameStatic, defCWDDirectoryListing, 0, l.doCWDDirectoryListing))
+	l.Add(defGetScreenSize, factory.NewFuncImport(objects.FrameStatic, defGetScreenSize, 0, l.doGetScreenSize))
+	l.Add(defPaintRequest, factory.NewFuncImport(objects.FrameStatic, defPaintRequest, 0, l.doPaintRequest))
+	l.Add(defProcessExec, factory.NewFuncImport(objects.FrameStatic, defProcessExec, 1, l.doProcessExec))
+	l.Add(defWindowsSelectionBegin, factory.NewFuncImport(objects.FrameStatic, defWindowsSelectionBegin, 0, l.doWindowsSelectionBegin))
+	l.Add(defWindowsSelectionEnd, factory.NewFuncImport(objects.FrameStatic, defWindowsSelectionEnd, 0, l.doWindowsSelectionEnd))
+	l.Add(defWindowsSelectionOptions, factory.NewFuncImport(objects.FrameStatic, defWindowsSelectionOptions, 2, l.doWindowsSelectionOptions))
+	l.Add(defWindowsSelectionNext, factory.NewFuncImport(objects.FrameStatic, defWindowsSelectionNext, 0, l.doWindowsSelectionNext))
+	l.Add(defWindowsSelectionPrevious, factory.NewFuncImport(objects.FrameStatic, defWindowsSelectionPrevious, 0, l.doWindowsSelectionPrevious))
+	l.Add(defProcessList, factory.NewFuncImport(objects.FrameStatic, defProcessList, 0, l.doProcessList))
+	l.Add(defProcessSetForeground, factory.NewFuncImport(objects.FrameStatic, defProcessSetForeground, 1, l.doProcessSetForeground))
+	l.Add(defProcessSetSelfForeground, factory.NewFuncImport(objects.FrameStatic, defProcessSetSelfForeground, 0, l.doProcessSetSelfForeground))
+	l.Add(defWrite, factory.NewFuncImport(objects.FrameStatic, defWrite, 2, l.doWrite))
+	l.Add(defWritePromptEOL, factory.NewFuncImport(objects.FrameStatic, defWritePromptEOL, 2, l.doWritePromptEOL))
+	l.Add(defWritePromptLine, factory.NewFuncImport(objects.FrameStatic, defWritePromptLine, 2, l.doWritePromptLine))
+	l.Add(defWriteColor, factory.NewFuncImport(objects.FrameStatic, defWriteColor, 5, l.doWriteColor))
+	l.Add(defWriteForeground, factory.NewFuncImport(objects.FrameStatic, defWriteForeground, 3, l.doWriteForeground))
+	l.Add(defMoveCursorLeft, factory.NewFuncImport(objects.FrameStatic, defMoveCursorLeft, 0, l.doMoveCursorLeft))
+	l.Add(defMoveCursorRight, factory.NewFuncImport(objects.FrameStatic, defMoveCursorRight, 0, l.doMoveCursorRight))
+	l.Add(defSaveCursor, factory.NewFuncImport(objects.FrameStatic, defSaveCursor, 0, l.doSaveCursor))
+	l.Add(defRestoreCursor, factory.NewFuncImport(objects.FrameStatic, defRestoreCursor, 0, l.doRestoreCursor))
+	l.Add(defClearScreen, factory.NewFuncImport(objects.FrameStatic, defClearScreen, 0, l.doClearScreen))
+	l.Add(defSetExit, factory.NewFuncImport(objects.FrameStatic, defSetExit, 0, l.doSetExit))
+	l.Add(defSuggestion, factory.NewFuncImport(objects.FrameStatic, defSuggestion, 2, l.doSuggestion))
+	l.Add(defHelp, factory.NewFuncImport(objects.FrameStatic, defHelp, 1, l.doHelp))
 
 	return l
 }
 
 // Functions returns a slice of IObject representing the functions available in the Library.
-func (l *Library) Functions() []objects.IObject {
-	return l.functions
-}
+//func (l *Library) Functions() []objects.IObject {
+//	return l.functions
+//}
 
 // doCreateTimer validates and extracts three integer arguments, then creates a timer using these arguments. Returns nil or an error.
 func (l *Library) doCreateTimer(gk objects.IGateKeeper, _ int, args ...objects.IObject) (uint, objects.IObject, error) {

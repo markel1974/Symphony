@@ -13,6 +13,18 @@ func init() {
 	RegisterPackage(NewRand)
 }
 
+const (
+	defRandInt63       = "Int63"
+	defRandFloat64     = "Float64"
+	defRandInt63n      = "Int63n"
+	defRandExpFloat64  = "ExpFloat64"
+	defRandNormFloat64 = "NormFloat64"
+	defRandPerm        = "Perm"
+	defRandSeed        = "Seed"
+	defRandOperand     = "Operand"
+	defRandRand        = "Rand"
+)
+
 // Rand is a type that provides a container for random-related functionalities and operations.
 type Rand struct {
 	*bytecode.Package
@@ -20,19 +32,18 @@ type Rand struct {
 
 // NewRand creates and initializes a new instance of the Rand package, registering its functions with the provided IGateKeeper.
 func NewRand(gk objects.IGateKeeper) bytecode.IPackage {
-	z := &Rand{}
-	container := []objects.IObject{
-		gk.NewFuncImport(objects.FrameStatic, "Int63", 0, z.int63(rand.Int63)),
-		gk.NewFuncImport(objects.FrameStatic, "Float64", 0, z.float64(rand.Float64)),
-		gk.NewFuncImport(objects.FrameStatic, "Int63n", 1, z.int63n(rand.Int63n)),
-		gk.NewFuncImport(objects.FrameStatic, "ExpFloat64", 0, z.float64(rand.ExpFloat64)),
-		gk.NewFuncImport(objects.FrameStatic, "NormFloat64", 0, z.float64(rand.NormFloat64)),
-		gk.NewFuncImport(objects.FrameStatic, "Perm", 1, z.perm(rand.Perm)),
-		gk.NewFuncImport(objects.FrameStatic, "Seed", 1, z.seed(rand.Seed)),
-		gk.NewFuncImport(objects.FrameStatic, "Operand", 1, z.read),
-		gk.NewFuncImport(objects.FrameStatic, "Rand", 1, z.rand),
-	}
-	z.Package = bytecode.NewPackage("rand", container, nil)
+	z := &Rand{Package: bytecode.NewPackage("rand")}
+
+	z.Add(defRandInt63, gk.NewFuncImport(objects.FrameStatic, defRandInt63, 0, z.int63(rand.Int63)))
+	z.Add(defRandFloat64, gk.NewFuncImport(objects.FrameStatic, defRandFloat64, 0, z.float64(rand.Float64)))
+	z.Add(defRandInt63n, gk.NewFuncImport(objects.FrameStatic, defRandInt63n, 1, z.int63n(rand.Int63n)))
+	z.Add(defRandExpFloat64, gk.NewFuncImport(objects.FrameStatic, defRandExpFloat64, 0, z.float64(rand.ExpFloat64)))
+	z.Add(defRandNormFloat64, gk.NewFuncImport(objects.FrameStatic, defRandNormFloat64, 0, z.float64(rand.NormFloat64)))
+	z.Add(defRandPerm, gk.NewFuncImport(objects.FrameStatic, defRandPerm, 1, z.perm(rand.Perm)))
+	z.Add(defRandSeed, gk.NewFuncImport(objects.FrameStatic, defRandSeed, 1, z.seed(rand.Seed)))
+	z.Add(defRandOperand, gk.NewFuncImport(objects.FrameStatic, defRandOperand, 1, z.read))
+	z.Add(defRandRand, gk.NewFuncImport(objects.FrameStatic, defRandRand, 1, z.rand))
+
 	return z
 }
 
@@ -59,14 +70,14 @@ func (z *Rand) rand(gk objects.IGateKeeper, frame int, args ...objects.IObject) 
 	r := rand.New(src)
 	return 1, gk.NewMap(frame,
 		map[string]objects.IObject{
-			"Int63":       gk.NewFuncImport(frame, "Int63", 0, z.int63(r.Int63)),
-			"Float64":     gk.NewFuncImport(frame, "Float64", 0, z.float64(r.Float64)),
-			"Int63n":      gk.NewFuncImport(frame, "Int63n", 1, z.int63n(r.Int63n)),
-			"ExpFloat64":  gk.NewFuncImport(frame, "ExpFloat64", 0, z.float64(r.ExpFloat64)),
-			"NormFloat64": gk.NewFuncImport(frame, "NormFloat64", 0, z.float64(r.NormFloat64)),
-			"Perm":        gk.NewFuncImport(frame, "Perm", 1, z.perm(r.Perm)),
-			"Seed":        gk.NewFuncImport(frame, "Seed", 1, z.seed(r.Seed)),
-			"Operand": gk.NewFuncImport(frame, "Operand", 1, func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
+			defRandInt63:       gk.NewFuncImport(frame, defRandInt63, 0, z.int63(r.Int63)),
+			defRandFloat64:     gk.NewFuncImport(frame, defRandFloat64, 0, z.float64(r.Float64)),
+			defRandInt63n:      gk.NewFuncImport(frame, defRandInt63n, 1, z.int63n(r.Int63n)),
+			defRandExpFloat64:  gk.NewFuncImport(frame, defRandExpFloat64, 0, z.float64(r.ExpFloat64)),
+			defRandNormFloat64: gk.NewFuncImport(frame, defRandNormFloat64, 0, z.float64(r.NormFloat64)),
+			defRandPerm:        gk.NewFuncImport(frame, defRandPerm, 1, z.perm(r.Perm)),
+			defRandSeed:        gk.NewFuncImport(frame, defRandSeed, 1, z.seed(r.Seed)),
+			defRandOperand: gk.NewFuncImport(frame, defRandOperand, 1, func(gk objects.IGateKeeper, frame int, args ...objects.IObject) (uint, objects.IObject, error) {
 				return z.randOptionsRead(gk, r, frame, args...)
 			}),
 		}), nil

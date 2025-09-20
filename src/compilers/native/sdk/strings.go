@@ -21,42 +21,75 @@ type Strings struct {
 
 // NewStrings creates and returns a new instance of Strings with a preconfigured map of string utility functions.
 func NewStrings(factory objects.IGateKeeper) bytecode.IPackage {
-	s := &Strings{}
-	container := []objects.IObject{
-		factory.NewFuncImport(objects.FrameStatic, "Join", 2, s.join),
-		factory.NewFuncImport(objects.FrameStatic, "Repeat", 2, s.repeat),
-		factory.NewFuncImport(objects.FrameStatic, "Replace", 3, s.replace),
-		factory.NewFuncImport(objects.FrameStatic, "Substring", 3, s.substring),
-		factory.NewFuncImport(objects.FrameStatic, "PadLeft", -1, s.padLeft),
-		factory.NewFuncImport(objects.FrameStatic, "PadRight", -1, s.padRight),
-		factory.NewFuncImport(objects.FrameStatic, "Compare", 2, s.funcStringStringToInt(strings.Compare)),
-		factory.NewFuncImport(objects.FrameStatic, "Contains", 2, s.funcStringStringToBool(strings.Contains)),
-		factory.NewFuncImport(objects.FrameStatic, "ContainsAny", 2, s.funcStringStringToBool(strings.ContainsAny)),
-		factory.NewFuncImport(objects.FrameStatic, "Count", 2, s.funcStringStringToInt(strings.Count)),
-		factory.NewFuncImport(objects.FrameStatic, "EqualFold", 2, s.funcStringStringToBool(strings.EqualFold)),
-		factory.NewFuncImport(objects.FrameStatic, "Fields", 1, s.funcStringToStrings(strings.Fields)),
-		factory.NewFuncImport(objects.FrameStatic, "HasPrefix", 2, s.funcStringStringToBool(strings.HasPrefix)),
-		factory.NewFuncImport(objects.FrameStatic, "HasSuffix", 2, s.funcStringStringToBool(strings.HasSuffix)),
-		factory.NewFuncImport(objects.FrameStatic, "index", 2, s.funcStringStringToInt(strings.Index)),
-		factory.NewFuncImport(objects.FrameStatic, "IndexAny", 2, s.funcStringStringToInt(strings.IndexAny)),
-		factory.NewFuncImport(objects.FrameStatic, "LastIndex", 2, s.funcStringStringToInt(strings.LastIndex)),
-		factory.NewFuncImport(objects.FrameStatic, "LastIndexAny", 2, s.funcStringStringToInt(strings.LastIndexAny)),
-		factory.NewFuncImport(objects.FrameStatic, "Split", 2, s.funcStringStringToStrings(strings.Split)),
-		factory.NewFuncImport(objects.FrameStatic, "SplitAfter", 2, s.funcStringStringToStrings(strings.SplitAfter)),
-		factory.NewFuncImport(objects.FrameStatic, "SplitAfterN", 2, s.funcStringStringIntToStrings(strings.SplitAfterN)),
-		factory.NewFuncImport(objects.FrameStatic, "SplitN", 2, s.funcStringStringIntToStrings(strings.SplitN)),
-		factory.NewFuncImport(objects.FrameStatic, "Title", 1, s.funcStringToString(strings.Title)),
-		factory.NewFuncImport(objects.FrameStatic, "ToLower", 1, s.funcStringToString(strings.ToLower)),
-		factory.NewFuncImport(objects.FrameStatic, "ToTitle", 1, s.funcStringToString(strings.ToTitle)),
-		factory.NewFuncImport(objects.FrameStatic, "ToUpper", 1, s.funcStringToString(strings.ToUpper)),
-		factory.NewFuncImport(objects.FrameStatic, "Trim", 2, s.funcStringStringToString(strings.Trim)),
-		factory.NewFuncImport(objects.FrameStatic, "TrimLeft", 2, s.funcStringStringToString(strings.TrimLeft)),
-		factory.NewFuncImport(objects.FrameStatic, "TrimPrefix", 2, s.funcStringStringToString(strings.TrimPrefix)),
-		factory.NewFuncImport(objects.FrameStatic, "TrimRight", 2, s.funcStringStringToString(strings.TrimRight)),
-		factory.NewFuncImport(objects.FrameStatic, "TrimSpace", 1, s.funcStringToString(strings.TrimSpace)),
-		factory.NewFuncImport(objects.FrameStatic, "TrimSuffix", 2, s.funcStringStringToString(strings.TrimSuffix)),
-	}
-	s.Package = bytecode.NewPackage("strings", container, nil)
+	const (
+		defJoin         = "Compare"
+		defRepeat       = "Contains"
+		defReplace      = "ContainsAny"
+		defSubstring    = "Count"
+		defPadLeft      = "EqualFold"
+		defPadRight     = "Fields"
+		defCompare      = "HasPrefix"
+		defContains     = "HasSuffix"
+		defContainsAny  = "index"
+		defCount        = "IndexAny"
+		defEqualFold    = "LastIndex"
+		defFields       = "LastIndexAny"
+		defHasPrefix    = "Split"
+		defHasSuffix    = "SplitAfter"
+		defindex        = "SplitAfterN"
+		defIndexAny     = "SplitN"
+		defLastIndex    = "Title"
+		defLastIndexAny = "ToLower"
+		defSplit        = "ToTitle"
+		defSplitAfter   = "ToUpper"
+		defSplitAfterN  = "Trim"
+		defSplitN       = "TrimLeft"
+		defTitle        = "TrimPrefix"
+		defToLower      = "TrimRight"
+		defToTitle      = "TrimSpace"
+		defToUpper      = "TrimSuffix"
+		defTrim         = "Trim"
+		defTrimLeft     = "TrimLeft"
+		defTrimRight    = "TrimRight"
+		defTrimSpace    = "TrimSpace"
+		defTrimPrefix   = "TrimPrefix"
+		defTrimSuffix   = "TrimSuffix"
+	)
+	s := &Strings{Package: bytecode.NewPackage("strings")}
+
+	s.Add(defJoin, factory.NewFuncImport(objects.FrameStatic, defJoin, 2, s.join))
+	s.Add(defRepeat, factory.NewFuncImport(objects.FrameStatic, defRepeat, 2, s.repeat))
+	s.Add(defReplace, factory.NewFuncImport(objects.FrameStatic, defReplace, 3, s.replace))
+	s.Add(defSubstring, factory.NewFuncImport(objects.FrameStatic, defSubstring, 3, s.substring))
+	s.Add(defPadLeft, factory.NewFuncImport(objects.FrameStatic, defPadLeft, -1, s.padLeft))
+	s.Add(defPadRight, factory.NewFuncImport(objects.FrameStatic, defPadRight, -1, s.padRight))
+	s.Add(defCompare, factory.NewFuncImport(objects.FrameStatic, defCompare, 2, s.funcStringStringToInt(strings.Compare)))
+	s.Add(defContains, factory.NewFuncImport(objects.FrameStatic, defContains, 2, s.funcStringStringToBool(strings.Contains)))
+	s.Add(defContainsAny, factory.NewFuncImport(objects.FrameStatic, defContainsAny, 2, s.funcStringStringToBool(strings.ContainsAny)))
+	s.Add(defCount, factory.NewFuncImport(objects.FrameStatic, defCount, 2, s.funcStringStringToInt(strings.Count)))
+	s.Add(defEqualFold, factory.NewFuncImport(objects.FrameStatic, defEqualFold, 2, s.funcStringStringToBool(strings.EqualFold)))
+	s.Add(defFields, factory.NewFuncImport(objects.FrameStatic, defFields, 1, s.funcStringToStrings(strings.Fields)))
+	s.Add(defHasPrefix, factory.NewFuncImport(objects.FrameStatic, defHasPrefix, 2, s.funcStringStringToBool(strings.HasPrefix)))
+	s.Add(defHasSuffix, factory.NewFuncImport(objects.FrameStatic, defHasSuffix, 2, s.funcStringStringToBool(strings.HasSuffix)))
+	s.Add(defindex, factory.NewFuncImport(objects.FrameStatic, defindex, 2, s.funcStringStringToInt(strings.Index)))
+	s.Add(defIndexAny, factory.NewFuncImport(objects.FrameStatic, defIndexAny, 2, s.funcStringStringToInt(strings.IndexAny)))
+	s.Add(defLastIndex, factory.NewFuncImport(objects.FrameStatic, defLastIndex, 2, s.funcStringStringToInt(strings.LastIndex)))
+	s.Add(defLastIndexAny, factory.NewFuncImport(objects.FrameStatic, defLastIndexAny, 2, s.funcStringStringToInt(strings.LastIndexAny)))
+	s.Add(defSplit, factory.NewFuncImport(objects.FrameStatic, defSplit, 2, s.funcStringStringToStrings(strings.Split)))
+	s.Add(defSplitAfter, factory.NewFuncImport(objects.FrameStatic, defSplitAfter, 2, s.funcStringStringToStrings(strings.SplitAfter)))
+	s.Add(defSplitAfterN, factory.NewFuncImport(objects.FrameStatic, defSplitAfterN, 2, s.funcStringStringIntToStrings(strings.SplitAfterN)))
+	s.Add(defSplitN, factory.NewFuncImport(objects.FrameStatic, defSplitN, 2, s.funcStringStringIntToStrings(strings.SplitN)))
+	s.Add(defTitle, factory.NewFuncImport(objects.FrameStatic, defTitle, 1, s.funcStringToString(strings.Title)))
+	s.Add(defToLower, factory.NewFuncImport(objects.FrameStatic, defToLower, 1, s.funcStringToString(strings.ToLower)))
+	s.Add(defToTitle, factory.NewFuncImport(objects.FrameStatic, defToTitle, 1, s.funcStringToString(strings.ToTitle)))
+	s.Add(defToUpper, factory.NewFuncImport(objects.FrameStatic, defToUpper, 1, s.funcStringToString(strings.ToUpper)))
+	s.Add(defTrim, factory.NewFuncImport(objects.FrameStatic, defTrim, 2, s.funcStringStringToString(strings.Trim)))
+	s.Add(defTrimLeft, factory.NewFuncImport(objects.FrameStatic, defTrimLeft, 2, s.funcStringStringToString(strings.TrimLeft)))
+	s.Add(defTrimPrefix, factory.NewFuncImport(objects.FrameStatic, defTrimPrefix, 2, s.funcStringStringToString(strings.TrimPrefix)))
+	s.Add(defTrimRight, factory.NewFuncImport(objects.FrameStatic, defTrimRight, 2, s.funcStringStringToString(strings.TrimRight)))
+	s.Add(defTrimSpace, factory.NewFuncImport(objects.FrameStatic, defTrimSpace, 1, s.funcStringToString(strings.TrimSpace)))
+	s.Add(defTrimSuffix, factory.NewFuncImport(objects.FrameStatic, defTrimSuffix, 2, s.funcStringStringToString(strings.TrimSuffix)))
+
 	return s
 }
 

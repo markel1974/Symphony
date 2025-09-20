@@ -20,12 +20,13 @@ type Hex struct {
 
 // NewHex initializes a new Hex instance and returns it as an IPackage. It registers encodeToString and decodeString functions.
 func NewHex(gk objects.IGateKeeper) bytecode.IPackage {
-	h := &Hex{}
-	container := []objects.IObject{
-		gk.NewFuncImport(objects.FrameStatic, "EncodeToString", 1, h.encodeToString),
-		gk.NewFuncImport(objects.FrameStatic, "DecodeString", 1, h.decodeString),
-	}
-	h.Package = bytecode.NewPackage("hex", container, nil)
+	const (
+		defEncodeToString = "EncodeToString"
+		defDecodeString   = "DecodeString"
+	)
+	h := &Hex{Package: bytecode.NewPackage("hex")}
+	h.Add(defEncodeToString, gk.NewFuncImport(objects.FrameStatic, defEncodeToString, 1, h.encodeToString))
+	h.Add(defDecodeString, gk.NewFuncImport(objects.FrameStatic, defDecodeString, 1, h.decodeString))
 	return h
 }
 

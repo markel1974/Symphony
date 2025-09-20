@@ -19,14 +19,17 @@ type Json struct {
 
 // NewJson creates and returns a new instance of Json containing predefined JSON operation modules.
 func NewJson(factory objects.IGateKeeper) bytecode.IPackage {
-	j := &Json{}
-	container := []objects.IObject{
-		factory.NewFuncImport(objects.FrameStatic, "Unmarshal", 1, j.unmarshal),
-		factory.NewFuncImport(objects.FrameStatic, "Marshal", 1, j.marshal),
-		factory.NewFuncImport(objects.FrameStatic, "Indent", 3, j.indent),
-		factory.NewFuncImport(objects.FrameStatic, "HTMLEscape", 1, j.htmlEscape),
-	}
-	j.Package = bytecode.NewPackage("json", container, nil)
+	const (
+		defUnmarshal  = "Unmarshal"
+		defMarshal    = "Marshal"
+		defIndent     = "Indent"
+		defHTMLEscape = "HTMLEscape"
+	)
+	j := &Json{Package: bytecode.NewPackage("json")}
+	j.Add(defUnmarshal, factory.NewFuncImport(objects.FrameStatic, defUnmarshal, 1, j.unmarshal))
+	j.Add(defMarshal, factory.NewFuncImport(objects.FrameStatic, defMarshal, 1, j.marshal))
+	j.Add(defIndent, factory.NewFuncImport(objects.FrameStatic, defIndent, 3, j.indent))
+	j.Add(defHTMLEscape, factory.NewFuncImport(objects.FrameStatic, defHTMLEscape, 1, j.htmlEscape))
 	return j
 }
 

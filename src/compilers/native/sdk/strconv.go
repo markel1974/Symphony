@@ -19,21 +19,31 @@ type Strconv struct {
 
 // NewStrconv creates a new Strconv package using the provided IGateKeeper factory and initializes its container with functions.
 func NewStrconv(factory objects.IGateKeeper) bytecode.IPackage {
-	s := &Strconv{}
-	container := []objects.IObject{
-		factory.NewFuncImport(objects.FrameStatic, "Atoi", 1, s.atoi),
-		factory.NewFuncImport(objects.FrameStatic, "FormatBool", 1, s.formatBool),
-		factory.NewFuncImport(objects.FrameStatic, "FormatFloat", 3, s.formatFloat),
-		factory.NewFuncImport(objects.FrameStatic, "FormatInt", 2, s.formatInt),
-		factory.NewFuncImport(objects.FrameStatic, "Itoa", 1, s.itoa),
-		factory.NewFuncImport(objects.FrameStatic, "ParseBool", 1, s.parseBool),
-		factory.NewFuncImport(objects.FrameStatic, "ParseFloat", 2, s.parseFloat),
-		factory.NewFuncImport(objects.FrameStatic, "ParseNumber", 1, s.parseNumber),
-		factory.NewFuncImport(objects.FrameStatic, "ParseInt", 3, s.parseInt),
-		factory.NewFuncImport(objects.FrameStatic, "Quote", 1, s.quote),
-		factory.NewFuncImport(objects.FrameStatic, "Unquote", 1, s.unquote),
-	}
-	s.Package = bytecode.NewPackage("strconv", container, nil)
+	const (
+		defAtoi        = "Atoi"
+		defFormatBool  = "FormatBool"
+		defFormatFloat = "FormatFloat"
+		defFormatInt   = "FormatInt"
+		defItoa        = "Itoa"
+		defParseBool   = "ParseBool"
+		defParseFloat  = "ParseFloat"
+		defParseNumber = "ParseNumber"
+		defParseInt    = "ParseInt"
+		defQuote       = "Quote"
+		defUnquote     = "Unquote"
+	)
+	s := &Strconv{Package: bytecode.NewPackage("strconv")}
+	s.Add(defAtoi, factory.NewFuncImport(objects.FrameStatic, defAtoi, 1, s.atoi))
+	s.Add(defFormatBool, factory.NewFuncImport(objects.FrameStatic, defFormatBool, 1, s.formatBool))
+	s.Add(defFormatFloat, factory.NewFuncImport(objects.FrameStatic, defFormatFloat, 3, s.formatFloat))
+	s.Add(defFormatInt, factory.NewFuncImport(objects.FrameStatic, defFormatInt, 2, s.formatInt))
+	s.Add(defItoa, factory.NewFuncImport(objects.FrameStatic, defItoa, 1, s.itoa))
+	s.Add(defParseBool, factory.NewFuncImport(objects.FrameStatic, defParseBool, 1, s.parseBool))
+	s.Add(defParseFloat, factory.NewFuncImport(objects.FrameStatic, defParseFloat, 2, s.parseFloat))
+	s.Add(defParseNumber, factory.NewFuncImport(objects.FrameStatic, defParseNumber, 1, s.parseNumber))
+	s.Add(defParseInt, factory.NewFuncImport(objects.FrameStatic, defParseInt, 3, s.parseInt))
+	s.Add(defQuote, factory.NewFuncImport(objects.FrameStatic, defQuote, 1, s.quote))
+	s.Add(defUnquote, factory.NewFuncImport(objects.FrameStatic, defUnquote, 1, s.unquote))
 	return s
 }
 

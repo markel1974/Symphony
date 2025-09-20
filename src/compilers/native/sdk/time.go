@@ -18,80 +18,145 @@ type Time struct {
 
 // NewTime initializes and returns a new instance of Time with predefined constants and functions mapped to the module.
 func NewTime(factory objects.IGateKeeper) bytecode.IPackage {
-	t := &Time{}
-	constants := map[string]objects.IObject{
-		"ANSIC":       factory.NewString(objects.FrameStatic, time.ANSIC),
-		"UnixDate":    factory.NewString(objects.FrameStatic, time.UnixDate),
-		"RubyDate":    factory.NewString(objects.FrameStatic, time.RubyDate),
-		"RFC822":      factory.NewString(objects.FrameStatic, time.RFC822),
-		"RFC822Z":     factory.NewString(objects.FrameStatic, time.RFC822Z),
-		"RFC850":      factory.NewString(objects.FrameStatic, time.RFC850),
-		"RFC1123":     factory.NewString(objects.FrameStatic, time.RFC1123),
-		"RFC1123Z":    factory.NewString(objects.FrameStatic, time.RFC1123Z),
-		"RFC3339":     factory.NewString(objects.FrameStatic, time.RFC3339),
-		"RFC3339Nano": factory.NewString(objects.FrameStatic, time.RFC3339Nano),
-		"Kitchen":     factory.NewString(objects.FrameStatic, time.Kitchen),
-		"Stamp":       factory.NewString(objects.FrameStatic, time.Stamp),
-		"StampMilli":  factory.NewString(objects.FrameStatic, time.StampMilli),
-		"StampMicro":  factory.NewString(objects.FrameStatic, time.StampMicro),
-		"StampNano":   factory.NewString(objects.FrameStatic, time.StampNano),
-		"Nanosecond":  factory.NewInt(objects.FrameStatic, int64(time.Nanosecond)),
-		"Microsecond": factory.NewInt(objects.FrameStatic, int64(time.Microsecond)),
-		"Millisecond": factory.NewInt(objects.FrameStatic, int64(time.Millisecond)),
-		"Second":      factory.NewInt(objects.FrameStatic, int64(time.Second)),
-		"Minute":      factory.NewInt(objects.FrameStatic, int64(time.Minute)),
-		"Hour":        factory.NewInt(objects.FrameStatic, int64(time.Hour)),
-		"January":     factory.NewInt(objects.FrameStatic, int64(time.January)),
-		"February":    factory.NewInt(objects.FrameStatic, int64(time.February)),
-		"March":       factory.NewInt(objects.FrameStatic, int64(time.March)),
-		"April":       factory.NewInt(objects.FrameStatic, int64(time.April)),
-		"May":         factory.NewInt(objects.FrameStatic, int64(time.May)),
-		"June":        factory.NewInt(objects.FrameStatic, int64(time.June)),
-		"July":        factory.NewInt(objects.FrameStatic, int64(time.July)),
-		"August":      factory.NewInt(objects.FrameStatic, int64(time.August)),
-		"September":   factory.NewInt(objects.FrameStatic, int64(time.September)),
-		"October":     factory.NewInt(objects.FrameStatic, int64(time.October)),
-		"November":    factory.NewInt(objects.FrameStatic, int64(time.November)),
-		"December":    factory.NewInt(objects.FrameStatic, int64(time.December)),
-	}
-	container := []objects.IObject{
-		factory.NewFuncImport(objects.FrameStatic, "Sleep", 1, t.sleep),
-		factory.NewFuncImport(objects.FrameStatic, "ParseDuration", 1, t.parseDuration),
-		factory.NewFuncImport(objects.FrameStatic, "Since", 1, t.since),
-		factory.NewFuncImport(objects.FrameStatic, "Until", 1, t.until),
-		factory.NewFuncImport(objects.FrameStatic, "DurationHours", 1, t.durationHours),
-		factory.NewFuncImport(objects.FrameStatic, "DurationMinutes", 1, t.durationMinutes),
-		factory.NewFuncImport(objects.FrameStatic, "DurationNanoseconds", 1, t.durationNanoseconds),
-		factory.NewFuncImport(objects.FrameStatic, "DurationSeconds", 1, t.durationSeconds),
-		factory.NewFuncImport(objects.FrameStatic, "DurationString", 1, t.durationString),
-		factory.NewFuncImport(objects.FrameStatic, "MonthString", 1, t.monthString),
-		factory.NewFuncImport(objects.FrameStatic, "Date", 7, t.date),
-		factory.NewFuncImport(objects.FrameStatic, "Now", 0, t.now),
-		factory.NewFuncImport(objects.FrameStatic, "Parse", 2, t.parse),
-		factory.NewFuncImport(objects.FrameStatic, "Unix", 2, t.unix),
-		factory.NewFuncImport(objects.FrameStatic, "add", 2, t.add),
-		factory.NewFuncImport(objects.FrameStatic, "AddDate", 4, t.addDate),
-		factory.NewFuncImport(objects.FrameStatic, "Sub", 2, t.sub),
-		factory.NewFuncImport(objects.FrameStatic, "After", 2, t.after),
-		factory.NewFuncImport(objects.FrameStatic, "Before", 2, t.before),
-		factory.NewFuncImport(objects.FrameStatic, "TimeYear", 1, t.timeYear),
-		factory.NewFuncImport(objects.FrameStatic, "TimeMonth", 1, t.timeMonth),
-		factory.NewFuncImport(objects.FrameStatic, "TimeDay", 1, t.timeDay),
-		factory.NewFuncImport(objects.FrameStatic, "TimeWeekday", 1, t.timeWeekday),
-		factory.NewFuncImport(objects.FrameStatic, "TimeHour", 1, t.timeHour),
-		factory.NewFuncImport(objects.FrameStatic, "TimeMinute", 1, t.timeMinute),
-		factory.NewFuncImport(objects.FrameStatic, "TimeSecond", 1, t.timeSecond),
-		factory.NewFuncImport(objects.FrameStatic, "TimeNanosecond", 1, t.timeNanosecond),
-		factory.NewFuncImport(objects.FrameStatic, "TimeUnix", 1, t.timeUnix),
-		factory.NewFuncImport(objects.FrameStatic, "TimeUnixNano", 1, t.timeUnixNano),
-		factory.NewFuncImport(objects.FrameStatic, "TimeFormat", 2, t.timeFormat),
-		factory.NewFuncImport(objects.FrameStatic, "TimeLocation", 1, t.timeLocation),
-		factory.NewFuncImport(objects.FrameStatic, "TimeString", 1, t.timeString),
-		factory.NewFuncImport(objects.FrameStatic, "IsZero", 1, t.isZero),
-		factory.NewFuncImport(objects.FrameStatic, "ToLocal", 1, t.toLocal),
-		factory.NewFuncImport(objects.FrameStatic, "ToUTC", 1, t.toUTC),
-	}
-	t.Package = bytecode.NewPackage("time", container, constants)
+	const (
+		defANSIC               = "ANSIC"
+		defUnixDate            = "UnixDate"
+		defRubyDate            = "RubyDate"
+		defRFC822              = "RFC822"
+		defRFC822Z             = "RFC822Z"
+		defRFC850              = "RFC850"
+		defRFC1123             = "RFC1123"
+		defRFC1123Z            = "RFC1123Z"
+		defRFC3339             = "RFC3339"
+		defRFC3339Nano         = "RFC3339Nano"
+		defKitchen             = "Kitchen"
+		defStamp               = "Stamp"
+		defStampMilli          = "StampMilli"
+		defStampMicro          = "StampMicro"
+		defStampNano           = "StampNano"
+		defNanosecond          = "Nanosecond"
+		defMicrosecond         = "Microsecond"
+		defMillisecond         = "Millisecond"
+		defSecond              = "Second"
+		defMinute              = "Minute"
+		defHour                = "Hour"
+		defJanuary             = "January"
+		defFebruary            = "February"
+		defMarch               = "March"
+		defApril               = "April"
+		defMay                 = "May"
+		defJune                = "June"
+		defJuly                = "July"
+		defAugust              = "August"
+		defSeptember           = "September"
+		defOctober             = "October"
+		defNovember            = "November"
+		defDecember            = "December"
+		defSleep               = "Sleep"
+		defParseDuration       = "ParseDuration"
+		defSince               = "Since"
+		defUntil               = "Until"
+		defDurationHours       = "DurationHours"
+		defDurationMinutes     = "DurationMinutes"
+		defDurationNanoseconds = "DurationNanoseconds"
+		defDurationSeconds     = "DurationSeconds"
+		defDurationString      = "DurationString"
+		defMonthString         = "MonthString"
+		defDate                = "Date"
+		defNow                 = "Now"
+		defParse               = "Parse"
+		defUnix                = "Unix"
+		defadd                 = "add"
+		defAddDate             = "AddDate"
+		defSub                 = "Sub"
+		defAfter               = "After"
+		defBefore              = "Before"
+		defTimeYear            = "TimeYear"
+		defTimeMonth           = "TimeMonth"
+		defTimeDay             = "TimeDay"
+		defTimeWeekday         = "TimeWeekday"
+		defTimeHour            = "TimeHour"
+		defTimeMinute          = "TimeMinute"
+		defTimeSecond          = "TimeSecond"
+		defTimeNanosecond      = "TimeNanosecond"
+		defTimeUnix            = "TimeUnix"
+		defTimeUnixNano        = "TimeUnixNano"
+		defTimeFormat          = "TimeFormat"
+		defTimeLocation        = "TimeLocation"
+		defTimeString          = "TimeString"
+		defIsZero              = "IsZero"
+		defToLocal             = "ToLocal"
+		defToUTC               = "ToUTC"
+	)
+	t := &Time{Package: bytecode.NewPackage("time")}
+	t.Add(defANSIC, factory.NewString(objects.FrameStatic, time.ANSIC))
+	t.Add(defUnixDate, factory.NewString(objects.FrameStatic, time.UnixDate))
+	t.Add(defRubyDate, factory.NewString(objects.FrameStatic, time.RubyDate))
+	t.Add(defRFC822, factory.NewString(objects.FrameStatic, time.RFC822))
+	t.Add(defRFC822Z, factory.NewString(objects.FrameStatic, time.RFC822Z))
+	t.Add(defRFC850, factory.NewString(objects.FrameStatic, time.RFC850))
+	t.Add(defRFC1123, factory.NewString(objects.FrameStatic, time.RFC1123))
+	t.Add(defRFC1123Z, factory.NewString(objects.FrameStatic, time.RFC1123Z))
+	t.Add(defRFC3339, factory.NewString(objects.FrameStatic, time.RFC3339))
+	t.Add(defRFC3339Nano, factory.NewString(objects.FrameStatic, time.RFC3339Nano))
+	t.Add(defKitchen, factory.NewString(objects.FrameStatic, time.Kitchen))
+	t.Add(defStamp, factory.NewString(objects.FrameStatic, time.Stamp))
+	t.Add(defStampMilli, factory.NewString(objects.FrameStatic, time.StampMilli))
+	t.Add(defStampMicro, factory.NewString(objects.FrameStatic, time.StampMicro))
+	t.Add(defStampNano, factory.NewString(objects.FrameStatic, time.StampNano))
+	t.Add(defNanosecond, factory.NewInt(objects.FrameStatic, int64(time.Nanosecond)))
+	t.Add(defMicrosecond, factory.NewInt(objects.FrameStatic, int64(time.Microsecond)))
+	t.Add(defMillisecond, factory.NewInt(objects.FrameStatic, int64(time.Millisecond)))
+	t.Add(defSecond, factory.NewInt(objects.FrameStatic, int64(time.Second)))
+	t.Add(defMinute, factory.NewInt(objects.FrameStatic, int64(time.Minute)))
+	t.Add(defHour, factory.NewInt(objects.FrameStatic, int64(time.Hour)))
+	t.Add(defJanuary, factory.NewInt(objects.FrameStatic, int64(time.January)))
+	t.Add(defFebruary, factory.NewInt(objects.FrameStatic, int64(time.February)))
+	t.Add(defMarch, factory.NewInt(objects.FrameStatic, int64(time.March)))
+	t.Add(defApril, factory.NewInt(objects.FrameStatic, int64(time.April)))
+	t.Add(defMay, factory.NewInt(objects.FrameStatic, int64(time.May)))
+	t.Add(defJune, factory.NewInt(objects.FrameStatic, int64(time.June)))
+	t.Add(defJuly, factory.NewInt(objects.FrameStatic, int64(time.July)))
+	t.Add(defAugust, factory.NewInt(objects.FrameStatic, int64(time.August)))
+	t.Add(defSeptember, factory.NewInt(objects.FrameStatic, int64(time.September)))
+	t.Add(defOctober, factory.NewInt(objects.FrameStatic, int64(time.October)))
+	t.Add(defNovember, factory.NewInt(objects.FrameStatic, int64(time.November)))
+	t.Add(defDecember, factory.NewInt(objects.FrameStatic, int64(time.December)))
+	t.Add(defSleep, factory.NewFuncImport(objects.FrameStatic, defSleep, 1, t.sleep))
+	t.Add(defParseDuration, factory.NewFuncImport(objects.FrameStatic, defParseDuration, 1, t.parseDuration))
+	t.Add(defSince, factory.NewFuncImport(objects.FrameStatic, defSince, 1, t.since))
+	t.Add(defUntil, factory.NewFuncImport(objects.FrameStatic, defUntil, 1, t.until))
+	t.Add(defDurationHours, factory.NewFuncImport(objects.FrameStatic, defDurationHours, 1, t.durationHours))
+	t.Add(defDurationMinutes, factory.NewFuncImport(objects.FrameStatic, defDurationMinutes, 1, t.durationMinutes))
+	t.Add(defDurationNanoseconds, factory.NewFuncImport(objects.FrameStatic, defDurationNanoseconds, 1, t.durationNanoseconds))
+	t.Add(defDurationSeconds, factory.NewFuncImport(objects.FrameStatic, defDurationSeconds, 1, t.durationSeconds))
+	t.Add(defDurationString, factory.NewFuncImport(objects.FrameStatic, defDurationString, 1, t.durationString))
+	t.Add(defMonthString, factory.NewFuncImport(objects.FrameStatic, defMonthString, 1, t.monthString))
+	t.Add(defDate, factory.NewFuncImport(objects.FrameStatic, defDate, 7, t.date))
+	t.Add(defNow, factory.NewFuncImport(objects.FrameStatic, defNow, 0, t.now))
+	t.Add(defParse, factory.NewFuncImport(objects.FrameStatic, defParse, 2, t.parse))
+	t.Add(defUnix, factory.NewFuncImport(objects.FrameStatic, defUnix, 2, t.unix))
+	t.Add(defadd, factory.NewFuncImport(objects.FrameStatic, defadd, 2, t.add))
+	t.Add(defAddDate, factory.NewFuncImport(objects.FrameStatic, defAddDate, 4, t.addDate))
+	t.Add(defSub, factory.NewFuncImport(objects.FrameStatic, defSub, 2, t.sub))
+	t.Add(defAfter, factory.NewFuncImport(objects.FrameStatic, defAfter, 2, t.after))
+	t.Add(defBefore, factory.NewFuncImport(objects.FrameStatic, defBefore, 2, t.before))
+	t.Add(defTimeYear, factory.NewFuncImport(objects.FrameStatic, defTimeYear, 1, t.timeYear))
+	t.Add(defTimeMonth, factory.NewFuncImport(objects.FrameStatic, defTimeMonth, 1, t.timeMonth))
+	t.Add(defTimeDay, factory.NewFuncImport(objects.FrameStatic, defTimeDay, 1, t.timeDay))
+	t.Add(defTimeWeekday, factory.NewFuncImport(objects.FrameStatic, defTimeWeekday, 1, t.timeWeekday))
+	t.Add(defTimeHour, factory.NewFuncImport(objects.FrameStatic, defTimeHour, 1, t.timeHour))
+	t.Add(defTimeMinute, factory.NewFuncImport(objects.FrameStatic, defTimeMinute, 1, t.timeMinute))
+	t.Add(defTimeSecond, factory.NewFuncImport(objects.FrameStatic, defTimeSecond, 1, t.timeSecond))
+	t.Add(defTimeNanosecond, factory.NewFuncImport(objects.FrameStatic, defTimeNanosecond, 1, t.timeNanosecond))
+	t.Add(defTimeUnix, factory.NewFuncImport(objects.FrameStatic, defTimeUnix, 1, t.timeUnix))
+	t.Add(defTimeUnixNano, factory.NewFuncImport(objects.FrameStatic, defTimeUnixNano, 1, t.timeUnixNano))
+	t.Add(defTimeFormat, factory.NewFuncImport(objects.FrameStatic, defTimeFormat, 2, t.timeFormat))
+	t.Add(defTimeLocation, factory.NewFuncImport(objects.FrameStatic, defTimeLocation, 1, t.timeLocation))
+	t.Add(defTimeString, factory.NewFuncImport(objects.FrameStatic, defTimeString, 1, t.timeString))
+	t.Add(defIsZero, factory.NewFuncImport(objects.FrameStatic, defIsZero, 1, t.isZero))
+	t.Add(defToLocal, factory.NewFuncImport(objects.FrameStatic, defToLocal, 1, t.toLocal))
+	t.Add(defToUTC, factory.NewFuncImport(objects.FrameStatic, defToUTC, 1, t.toUTC))
 	return t
 }
 

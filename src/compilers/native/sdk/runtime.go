@@ -16,11 +16,11 @@ type Runtime struct {
 }
 
 func NewRuntime(gk objects.IGateKeeper) bytecode.IPackage {
-	h := &Runtime{}
-	container := []objects.IObject{
-		gk.NewFuncImport(objects.FrameStatic, "ReadMemStats", 1, h.readMemStats),
-	}
-	h.Package = bytecode.NewPackage("runtime", container, nil)
+	const (
+		defReadMemStats = "ReadMemStats"
+	)
+	h := &Runtime{Package: bytecode.NewPackage("runtime")}
+	h.Add(defReadMemStats, gk.NewFuncImport(objects.FrameStatic, defReadMemStats, 1, h.readMemStats))
 	return h
 }
 

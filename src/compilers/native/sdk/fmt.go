@@ -18,16 +18,23 @@ type Fmt struct {
 
 // NewFmt initializes and returns a new Fmt instance with predefined formatting functions as module properties.
 func NewFmt(factory objects.IGateKeeper) bytecode.IPackage {
-	f := &Fmt{}
-	container := []objects.IObject{
-		factory.NewFuncImport(objects.FrameStatic, "Print", -1, f.print),
-		factory.NewFuncImport(objects.FrameStatic, "Printf", -1, f.printf),
-		factory.NewFuncImport(objects.FrameStatic, "Println", -1, f.println),
-		factory.NewFuncImport(objects.FrameStatic, "Sprintf", -1, f.sprint),
-		factory.NewFuncImport(objects.FrameStatic, "Sprintf", -1, f.sprintf),
-		factory.NewFuncImport(objects.FrameStatic, "Errorf", -1, f.errorf),
+	const (
+		defPrint   = "Print"
+		defPrintf  = "Printf"
+		defPrintln = "Println"
+		defSprint  = "Sprint"
+		defSprintf = "Sprintf"
+		defErrorf  = "Errorf"
+	)
+	f := &Fmt{
+		Package: bytecode.NewPackage("fmt"),
 	}
-	f.Package = bytecode.NewPackage("fmt", container, nil)
+	f.Add(defPrint, factory.NewFuncImport(objects.FrameStatic, defPrint, -1, f.print))
+	f.Add(defPrintf, factory.NewFuncImport(objects.FrameStatic, defPrintf, -1, f.printf))
+	f.Add(defPrintln, factory.NewFuncImport(objects.FrameStatic, defPrintln, -1, f.println))
+	f.Add(defSprint, factory.NewFuncImport(objects.FrameStatic, defSprint, -1, f.sprint))
+	f.Add(defSprintf, factory.NewFuncImport(objects.FrameStatic, defSprintf, -1, f.sprintf))
+	f.Add(defErrorf, factory.NewFuncImport(objects.FrameStatic, defErrorf, -1, f.errorf))
 	return f
 }
 

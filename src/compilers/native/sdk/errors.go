@@ -16,11 +16,11 @@ type Errors struct {
 
 // NewErrors initializes and returns a new Errors instance with pre-defined function modules.
 func NewErrors(factory objects.IGateKeeper) bytecode.IPackage {
-	e := &Errors{}
-	container := []objects.IObject{
-		factory.NewFuncImport(objects.FrameStatic, "New", 1, e.New),
-	}
-	e.Package = bytecode.NewPackage("errors", container, nil)
+	const (
+		defNew = "New"
+	)
+	e := &Errors{Package: bytecode.NewPackage("errors")}
+	e.Add(defNew, factory.NewFuncImport(objects.FrameStatic, defNew, 1, e.New))
 	return e
 }
 

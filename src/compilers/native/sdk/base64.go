@@ -19,18 +19,25 @@ type Base64 struct {
 
 // NewBase64 initializes and returns a new Base64 package implementing IPackage with predefined encoding/decoding functions.
 func NewBase64(f objects.IGateKeeper) bytecode.IPackage {
-	b := &Base64{}
-	container := []objects.IObject{
-		f.NewFuncImport(objects.FrameStatic, "EncodeToString", 1, b.stdEncodeToString),
-		f.NewFuncImport(objects.FrameStatic, "EncodeToString", 1, b.stdDecodeString),
-		f.NewFuncImport(objects.FrameStatic, "RawEncode", 1, b.rawEncodeToString),
-		f.NewFuncImport(objects.FrameStatic, "RawDecode", 1, b.rawDecodeString),
-		f.NewFuncImport(objects.FrameStatic, "UrlEncode", 1, b.urlEncodeToString),
-		f.NewFuncImport(objects.FrameStatic, "UrlDecode", 1, b.urlDecodeString),
-		f.NewFuncImport(objects.FrameStatic, "RawUrlEncode", 1, b.rawUrlEncodeToString),
-		f.NewFuncImport(objects.FrameStatic, "rawUrlDecode", 1, b.rawUrlDecodeString),
-	}
-	b.Package = bytecode.NewPackage("base64", container, nil)
+	const (
+		defEncodeToString = "EncodeToString"
+		defDecodeToString = "DecodeToString"
+		defRawEncode      = "RawEncode"
+		defRawDecode      = "RawDecode"
+		defUrlEncode      = "UrlEncode"
+		defUrlDecode      = "UrlDecode"
+		defRawUrlEncode   = "RawUrlEncode"
+		defRawUrlDecode   = "RawUrlDecode"
+	)
+	b := &Base64{Package: bytecode.NewPackage("base64")}
+	b.Add(defEncodeToString, f.NewFuncImport(objects.FrameStatic, defEncodeToString, 1, b.stdEncodeToString))
+	b.Add(defDecodeToString, f.NewFuncImport(objects.FrameStatic, defDecodeToString, 1, b.stdDecodeString))
+	b.Add(defRawEncode, f.NewFuncImport(objects.FrameStatic, defRawEncode, 1, b.rawEncodeToString))
+	b.Add(defRawDecode, f.NewFuncImport(objects.FrameStatic, defRawDecode, 1, b.rawDecodeString))
+	b.Add(defUrlEncode, f.NewFuncImport(objects.FrameStatic, defUrlEncode, 1, b.urlEncodeToString))
+	b.Add(defUrlDecode, f.NewFuncImport(objects.FrameStatic, defUrlDecode, 1, b.urlDecodeString))
+	b.Add(defRawUrlEncode, f.NewFuncImport(objects.FrameStatic, defRawUrlEncode, 1, b.rawUrlEncodeToString))
+	b.Add(defRawUrlDecode, f.NewFuncImport(objects.FrameStatic, defRawUrlDecode, 1, b.rawUrlDecodeString))
 	return b
 }
 

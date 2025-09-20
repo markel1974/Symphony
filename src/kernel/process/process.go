@@ -559,7 +559,8 @@ func (t *Process) handleMessageProcessStart(msg interfaces.IMessage) {
 				log.Printf("Process [%s]: error creating compiler: %s", t.cmd.Name(), err.Error())
 				return
 			}
-			pkg := bytecode.NewPackage("kernel", NewLibrary(t.gk, t).Functions(), nil)
+			pkg := NewLibrary(t.gk, t)
+			//pkg := bytecode.NewPackage("kernel", NewLibrary(t.gk, t).Functions(), nil)
 			if err = t.loader.AddPackage(pkg); err != nil {
 				log.Printf("Process [%s]: error adding kernel package: %s", t.cmd.Name(), err.Error())
 				return

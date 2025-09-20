@@ -19,14 +19,18 @@ type Log struct {
 
 // NewLog initializes and returns a new Log instance with predefined formatting functions as module properties.
 func NewLog(factory objects.IGateKeeper) bytecode.IPackage {
-	f := &Log{}
-	container := []objects.IObject{
-		factory.NewFuncImport(objects.FrameStatic, "Print", -1, f.print),
-		factory.NewFuncImport(objects.FrameStatic, "Printf", -1, f.printf),
-		factory.NewFuncImport(objects.FrameStatic, "Println", -1, f.println),
-		factory.NewFuncImport(objects.FrameStatic, "Fatalf", -1, f.fatalf),
-	}
-	f.Package = bytecode.NewPackage("log", container, nil)
+
+	const (
+		defPrint   = "Print"
+		defPrintf  = "Printf"
+		defPrintln = "Println"
+		defFatalf  = "Fatalf"
+	)
+	f := &Log{Package: bytecode.NewPackage("log")}
+	f.Add(defPrint, factory.NewFuncImport(objects.FrameStatic, defPrint, -1, f.print))
+	f.Add(defPrintf, factory.NewFuncImport(objects.FrameStatic, defPrintf, -1, f.printf))
+	f.Add(defPrintln, factory.NewFuncImport(objects.FrameStatic, defPrintln, -1, f.println))
+	f.Add(defFatalf, factory.NewFuncImport(objects.FrameStatic, defFatalf, -1, f.fatalf))
 	return f
 }
 

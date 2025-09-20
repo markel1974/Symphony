@@ -19,77 +19,141 @@ type Math struct {
 
 // NewMath initializes and returns a new instance of Math with predefined mathematical constants and function modules.
 func NewMath(factory objects.IGateKeeper) bytecode.IPackage {
-	m := &Math{}
+	const (
+		defE         = "E"
+		defPi        = "Pi"
+		defPhi       = "Phi"
+		defSqrt2     = "Sqrt2"
+		defSqrtE     = "SqrtE"
+		defSqrtPi    = "SqrtPi"
+		defSqrtPhi   = "SqrtPhi"
+		defLn2       = "Ln2"
+		defLog2E     = "Log2E"
+		defLn10      = "Ln10"
+		defLog10E    = "Log10E"
+		defNaN       = "NaN"
+		defAbs       = "Abs"
+		defAcos      = "Acos"
+		defAcosh     = "Acosh"
+		defAsin      = "Asin"
+		defAsinh     = "Asinh"
+		defAtan      = "Atan"
+		defAtan2     = "Atan2"
+		defAtanh     = "Atanh"
+		defCbrt      = "Cbrt"
+		defCeil      = "Ceil"
+		defCopysign  = "Copysign"
+		defCos       = "Cos"
+		defCosh      = "Cosh"
+		defDim       = "Dim"
+		defErf       = "Erf"
+		defErfc      = "Erfc"
+		defExp       = "Exp"
+		defExp2      = "Exp2"
+		defExpm1     = "Expm1"
+		defFloor     = "Floor"
+		defGamma     = "Gamma"
+		defHypot     = "Hypot"
+		defIlogb     = "Ilogb"
+		defInf       = "Inf"
+		defIsInf     = "IsInf"
+		defIsNaN     = "IsNaN"
+		defJ0        = "J0"
+		defJ1        = "J1"
+		defJn        = "Jn"
+		defLdexp     = "Ldexp"
+		defLog       = "Log"
+		defLog10     = "Log10"
+		defLog1p     = "Log1p"
+		defLog2      = "Log2"
+		defLogb      = "Logb"
+		defMax       = "Max"
+		defMin       = "Min"
+		defMod       = "Mod"
+		defNextafter = "Nextafter"
+		defPow       = "Pow"
+		defPow10     = "Pow10"
+		defRemainder = "Remainder"
+		defSignbit   = "Signbit"
+		defSin       = "Sin"
+		defSinh      = "Sinh"
+		defSqrt      = "Sqrt"
+		defTan       = "Tan"
+		defTanh      = "Tanh"
+		defTrunc     = "Trunc"
+		defY0        = "Y0"
+		defY1        = "Y1"
+		defYn        = "Yn"
+	)
+
+	m := &Math{Package: bytecode.NewPackage("math")}
 	m.nanObj = factory.NewFloat(objects.FrameStatic, math.NaN())
-	constants := map[string]objects.IObject{
-		"E":       factory.NewFloat(objects.FrameStatic, math.E),
-		"Pi":      factory.NewFloat(objects.FrameStatic, math.Pi),
-		"Phi":     factory.NewFloat(objects.FrameStatic, math.Phi),
-		"Sqrt2":   factory.NewFloat(objects.FrameStatic, math.Sqrt2),
-		"SqrtE":   factory.NewFloat(objects.FrameStatic, math.SqrtE),
-		"SqrtPi":  factory.NewFloat(objects.FrameStatic, math.SqrtPi),
-		"SqrtPhi": factory.NewFloat(objects.FrameStatic, math.SqrtPhi),
-		"Ln2":     factory.NewFloat(objects.FrameStatic, math.Ln2),
-		"Log2E":   factory.NewFloat(objects.FrameStatic, math.Log2E),
-		"Ln10":    factory.NewFloat(objects.FrameStatic, math.Ln10),
-		"Log10E":  factory.NewFloat(objects.FrameStatic, math.Log10E),
-	}
-	container := []objects.IObject{
-		factory.NewFuncImport(objects.FrameStatic, "NaN", 0, m.nan),
-		factory.NewFuncImport(objects.FrameStatic, "Abs", 1, m.funcF64ToF64(math.Abs)),
-		factory.NewFuncImport(objects.FrameStatic, "Acos", 1, m.funcF64ToF64(math.Acos)),
-		factory.NewFuncImport(objects.FrameStatic, "Acosh", 1, m.funcF64ToF64(math.Acosh)),
-		factory.NewFuncImport(objects.FrameStatic, "Asin", 1, m.funcF64ToF64(math.Asin)),
-		factory.NewFuncImport(objects.FrameStatic, "Asinh", 1, m.funcF64ToF64(math.Asinh)),
-		factory.NewFuncImport(objects.FrameStatic, "Atan", 1, m.funcF64ToF64(math.Atan)),
-		factory.NewFuncImport(objects.FrameStatic, "Atan2", 2, m.funcF64F64ToF64(math.Atan2)),
-		factory.NewFuncImport(objects.FrameStatic, "Atanh", 1, m.funcF64ToF64(math.Atanh)),
-		factory.NewFuncImport(objects.FrameStatic, "Cbrt", 1, m.funcF64ToF64(math.Cbrt)),
-		factory.NewFuncImport(objects.FrameStatic, "Ceil", 1, m.funcF64ToF64(math.Ceil)),
-		factory.NewFuncImport(objects.FrameStatic, "Copysign", 2, m.funcF64F64ToF64(math.Copysign)),
-		factory.NewFuncImport(objects.FrameStatic, "Cos", 1, m.funcF64ToF64(math.Cos)),
-		factory.NewFuncImport(objects.FrameStatic, "Cosh", 1, m.funcF64ToF64(math.Cosh)),
-		factory.NewFuncImport(objects.FrameStatic, "Dim", 2, m.funcF64F64ToF64(math.Dim)),
-		factory.NewFuncImport(objects.FrameStatic, "Erf", 1, m.funcF64ToF64(math.Erf)),
-		factory.NewFuncImport(objects.FrameStatic, "Erfc", 1, m.funcF64ToF64(math.Erfc)),
-		factory.NewFuncImport(objects.FrameStatic, "Exp", 1, m.funcF64ToF64(math.Exp)),
-		factory.NewFuncImport(objects.FrameStatic, "Exp2", 1, m.funcF64ToF64(math.Exp2)),
-		factory.NewFuncImport(objects.FrameStatic, "Expm1", 1, m.funcF64ToF64(math.Expm1)),
-		factory.NewFuncImport(objects.FrameStatic, "Floor", 1, m.funcF64ToF64(math.Floor)),
-		factory.NewFuncImport(objects.FrameStatic, "Gamma", 1, m.funcF64ToF64(math.Gamma)),
-		factory.NewFuncImport(objects.FrameStatic, "Hypot", 2, m.funcF64F64ToF64(math.Hypot)),
-		factory.NewFuncImport(objects.FrameStatic, "Ilogb", 1, m.funcFloat64ToInt(math.Ilogb)),
-		factory.NewFuncImport(objects.FrameStatic, "Inf", 1, m.funcIntToF64(math.Inf)),
-		factory.NewFuncImport(objects.FrameStatic, "IsInf", 1, m.funcF64IntToBool(math.IsInf)),
-		factory.NewFuncImport(objects.FrameStatic, "IsNaN", 1, m.funcF64ToBool(math.IsNaN)),
-		factory.NewFuncImport(objects.FrameStatic, "J0", 1, m.funcF64ToF64(math.J0)),
-		factory.NewFuncImport(objects.FrameStatic, "J1", 1, m.funcF64ToF64(math.J1)),
-		factory.NewFuncImport(objects.FrameStatic, "Jn", 1, m.funcIntF64ToF64(math.Jn)),
-		factory.NewFuncImport(objects.FrameStatic, "Ldexp", 1, m.funcF64IntToF64(math.Ldexp)),
-		factory.NewFuncImport(objects.FrameStatic, "Log", 1, m.funcF64ToF64(math.Log)),
-		factory.NewFuncImport(objects.FrameStatic, "Log10", 1, m.funcF64ToF64(math.Log10)),
-		factory.NewFuncImport(objects.FrameStatic, "Log1p", 1, m.funcF64ToF64(math.Log1p)),
-		factory.NewFuncImport(objects.FrameStatic, "Log2", 1, m.funcF64ToF64(math.Log2)),
-		factory.NewFuncImport(objects.FrameStatic, "Logb", 1, m.funcF64ToF64(math.Logb)),
-		factory.NewFuncImport(objects.FrameStatic, "Max", 2, m.funcF64F64ToF64(math.Max)),
-		factory.NewFuncImport(objects.FrameStatic, "Min", 2, m.funcF64F64ToF64(math.Min)),
-		factory.NewFuncImport(objects.FrameStatic, "Mod", 2, m.funcF64F64ToF64(math.Mod)),
-		factory.NewFuncImport(objects.FrameStatic, "Nextafter", 2, m.funcF64F64ToF64(math.Nextafter)),
-		factory.NewFuncImport(objects.FrameStatic, "Pow", 2, m.funcF64F64ToF64(math.Pow)),
-		factory.NewFuncImport(objects.FrameStatic, "Pow10", 1, m.funcIntToF64(math.Pow10)),
-		factory.NewFuncImport(objects.FrameStatic, "Remainder", 2, m.funcF64F64ToF64(math.Remainder)),
-		factory.NewFuncImport(objects.FrameStatic, "Signbit", 1, m.funcF64ToBool(math.Signbit)),
-		factory.NewFuncImport(objects.FrameStatic, "Sin", 1, m.funcF64ToF64(math.Sin)),
-		factory.NewFuncImport(objects.FrameStatic, "Sinh", 1, m.funcF64ToF64(math.Sinh)),
-		factory.NewFuncImport(objects.FrameStatic, "Sqrt", 1, m.funcF64ToF64(math.Sqrt)),
-		factory.NewFuncImport(objects.FrameStatic, "Tan", 1, m.funcF64ToF64(math.Tan)),
-		factory.NewFuncImport(objects.FrameStatic, "Tanh", 1, m.funcF64ToF64(math.Tanh)),
-		factory.NewFuncImport(objects.FrameStatic, "Trunc", 1, m.funcF64ToF64(math.Trunc)),
-		factory.NewFuncImport(objects.FrameStatic, "Y0", 1, m.funcF64ToF64(math.Y0)),
-		factory.NewFuncImport(objects.FrameStatic, "Y1", 1, m.funcF64ToF64(math.Y1)),
-		factory.NewFuncImport(objects.FrameStatic, "Yn", 2, m.funcIntF64ToF64(math.Yn)),
-	}
-	m.Package = bytecode.NewPackage("math", container, constants)
+
+	m.Add(defE, factory.NewFloat(objects.FrameStatic, math.E))
+	m.Add(defPi, factory.NewFloat(objects.FrameStatic, math.Pi))
+	m.Add(defPhi, factory.NewFloat(objects.FrameStatic, math.Phi))
+	m.Add(defSqrt2, factory.NewFloat(objects.FrameStatic, math.Sqrt2))
+	m.Add(defSqrtE, factory.NewFloat(objects.FrameStatic, math.SqrtE))
+	m.Add(defSqrtPi, factory.NewFloat(objects.FrameStatic, math.SqrtPi))
+	m.Add(defSqrtPhi, factory.NewFloat(objects.FrameStatic, math.SqrtPhi))
+	m.Add(defLn2, factory.NewFloat(objects.FrameStatic, math.Ln2))
+	m.Add(defLog2E, factory.NewFloat(objects.FrameStatic, math.Log2E))
+	m.Add(defLn10, factory.NewFloat(objects.FrameStatic, math.Ln10))
+	m.Add(defLog10E, factory.NewFloat(objects.FrameStatic, math.Log10E))
+	m.Add(defNaN, factory.NewFuncImport(objects.FrameStatic, defNaN, 0, m.nan))
+	m.Add(defAbs, factory.NewFuncImport(objects.FrameStatic, defAbs, 1, m.funcF64ToF64(math.Abs)))
+	m.Add(defAcos, factory.NewFuncImport(objects.FrameStatic, defAcos, 1, m.funcF64ToF64(math.Acos)))
+	m.Add(defAcosh, factory.NewFuncImport(objects.FrameStatic, defAcosh, 1, m.funcF64ToF64(math.Acosh)))
+	m.Add(defAsin, factory.NewFuncImport(objects.FrameStatic, defAsin, 1, m.funcF64ToF64(math.Asin)))
+	m.Add(defAsinh, factory.NewFuncImport(objects.FrameStatic, defAsinh, 1, m.funcF64ToF64(math.Asinh)))
+	m.Add(defAtan, factory.NewFuncImport(objects.FrameStatic, defAtan, 1, m.funcF64ToF64(math.Atan)))
+	m.Add(defAtan2, factory.NewFuncImport(objects.FrameStatic, defAtan2, 2, m.funcF64F64ToF64(math.Atan2)))
+	m.Add(defAtanh, factory.NewFuncImport(objects.FrameStatic, defAtanh, 1, m.funcF64ToF64(math.Atanh)))
+	m.Add(defCbrt, factory.NewFuncImport(objects.FrameStatic, defCbrt, 1, m.funcF64ToF64(math.Cbrt)))
+	m.Add(defCeil, factory.NewFuncImport(objects.FrameStatic, defCeil, 1, m.funcF64ToF64(math.Ceil)))
+	m.Add(defCopysign, factory.NewFuncImport(objects.FrameStatic, defCopysign, 2, m.funcF64F64ToF64(math.Copysign)))
+	m.Add(defCos, factory.NewFuncImport(objects.FrameStatic, defCos, 1, m.funcF64ToF64(math.Cos)))
+	m.Add(defCosh, factory.NewFuncImport(objects.FrameStatic, defCosh, 1, m.funcF64ToF64(math.Cosh)))
+	m.Add(defDim, factory.NewFuncImport(objects.FrameStatic, defDim, 2, m.funcF64F64ToF64(math.Dim)))
+	m.Add(defErf, factory.NewFuncImport(objects.FrameStatic, defErf, 1, m.funcF64ToF64(math.Erf)))
+	m.Add(defErfc, factory.NewFuncImport(objects.FrameStatic, defErfc, 1, m.funcF64ToF64(math.Erfc)))
+	m.Add(defExp, factory.NewFuncImport(objects.FrameStatic, defExp, 1, m.funcF64ToF64(math.Exp)))
+	m.Add(defExp2, factory.NewFuncImport(objects.FrameStatic, defExp2, 1, m.funcF64ToF64(math.Exp2)))
+	m.Add(defExpm1, factory.NewFuncImport(objects.FrameStatic, defExpm1, 1, m.funcF64ToF64(math.Expm1)))
+	m.Add(defFloor, factory.NewFuncImport(objects.FrameStatic, defFloor, 1, m.funcF64ToF64(math.Floor)))
+	m.Add(defGamma, factory.NewFuncImport(objects.FrameStatic, defGamma, 1, m.funcF64ToF64(math.Gamma)))
+	m.Add(defHypot, factory.NewFuncImport(objects.FrameStatic, defHypot, 2, m.funcF64F64ToF64(math.Hypot)))
+	m.Add(defIlogb, factory.NewFuncImport(objects.FrameStatic, defIlogb, 1, m.funcFloat64ToInt(math.Ilogb)))
+	m.Add(defInf, factory.NewFuncImport(objects.FrameStatic, defInf, 1, m.funcIntToF64(math.Inf)))
+	m.Add(defIsInf, factory.NewFuncImport(objects.FrameStatic, defIsInf, 1, m.funcF64IntToBool(math.IsInf)))
+	m.Add(defIsNaN, factory.NewFuncImport(objects.FrameStatic, defIsNaN, 1, m.funcF64ToBool(math.IsNaN)))
+	m.Add(defJ0, factory.NewFuncImport(objects.FrameStatic, defJ0, 1, m.funcF64ToF64(math.J0)))
+	m.Add(defJ1, factory.NewFuncImport(objects.FrameStatic, defJ1, 1, m.funcF64ToF64(math.J1)))
+	m.Add(defJn, factory.NewFuncImport(objects.FrameStatic, defJn, 1, m.funcIntF64ToF64(math.Jn)))
+	m.Add(defLdexp, factory.NewFuncImport(objects.FrameStatic, defLdexp, 1, m.funcF64IntToF64(math.Ldexp)))
+	m.Add(defLog, factory.NewFuncImport(objects.FrameStatic, defLog, 1, m.funcF64ToF64(math.Log)))
+	m.Add(defLog10, factory.NewFuncImport(objects.FrameStatic, defLog10, 1, m.funcF64ToF64(math.Log10)))
+	m.Add(defLog1p, factory.NewFuncImport(objects.FrameStatic, defLog1p, 1, m.funcF64ToF64(math.Log1p)))
+	m.Add(defLog2, factory.NewFuncImport(objects.FrameStatic, defLog2, 1, m.funcF64ToF64(math.Log2)))
+	m.Add(defLogb, factory.NewFuncImport(objects.FrameStatic, defLogb, 1, m.funcF64ToF64(math.Logb)))
+	m.Add(defMax, factory.NewFuncImport(objects.FrameStatic, defMax, 2, m.funcF64F64ToF64(math.Max)))
+	m.Add(defMin, factory.NewFuncImport(objects.FrameStatic, defMin, 2, m.funcF64F64ToF64(math.Min)))
+	m.Add(defMod, factory.NewFuncImport(objects.FrameStatic, defMod, 2, m.funcF64F64ToF64(math.Mod)))
+	m.Add(defNextafter, factory.NewFuncImport(objects.FrameStatic, defNextafter, 2, m.funcF64F64ToF64(math.Nextafter)))
+	m.Add(defPow, factory.NewFuncImport(objects.FrameStatic, defPow, 2, m.funcF64F64ToF64(math.Pow)))
+	m.Add(defPow10, factory.NewFuncImport(objects.FrameStatic, defPow10, 1, m.funcIntToF64(math.Pow10)))
+	m.Add(defRemainder, factory.NewFuncImport(objects.FrameStatic, defRemainder, 2, m.funcF64F64ToF64(math.Remainder)))
+	m.Add(defSignbit, factory.NewFuncImport(objects.FrameStatic, defSignbit, 1, m.funcF64ToBool(math.Signbit)))
+	m.Add(defSin, factory.NewFuncImport(objects.FrameStatic, defSin, 1, m.funcF64ToF64(math.Sin)))
+	m.Add(defSinh, factory.NewFuncImport(objects.FrameStatic, defSinh, 1, m.funcF64ToF64(math.Sinh)))
+	m.Add(defSqrt, factory.NewFuncImport(objects.FrameStatic, defSqrt, 1, m.funcF64ToF64(math.Sqrt)))
+	m.Add(defTan, factory.NewFuncImport(objects.FrameStatic, defTan, 1, m.funcF64ToF64(math.Tan)))
+	m.Add(defTanh, factory.NewFuncImport(objects.FrameStatic, defTanh, 1, m.funcF64ToF64(math.Tanh)))
+	m.Add(defTrunc, factory.NewFuncImport(objects.FrameStatic, defTrunc, 1, m.funcF64ToF64(math.Trunc)))
+	m.Add(defY0, factory.NewFuncImport(objects.FrameStatic, defY0, 1, m.funcF64ToF64(math.Y0)))
+	m.Add(defY1, factory.NewFuncImport(objects.FrameStatic, defY1, 1, m.funcF64ToF64(math.Y1)))
+	m.Add(defYn, factory.NewFuncImport(objects.FrameStatic, defYn, 2, m.funcIntF64ToF64(math.Yn)))
+
 	return m
 }
 

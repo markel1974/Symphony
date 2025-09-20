@@ -9,25 +9,16 @@ type Package struct {
 }
 
 // NewPackage creates and returns a new Package instance with the specified name and attribute mapping.
-func NewPackage(name string, functions []objects.IObject, constants map[string]objects.IObject) *Package {
+func NewPackage(name string) *Package {
 	pkg := &Package{
 		name:      name,
 		container: make(map[string]objects.IObject),
 	}
-	for _, obj := range functions {
-		switch fn := obj.(type) {
-		case *objects.Func:
-			pkg.add(fn.Name(), fn)
-		case *objects.FuncImport:
-			pkg.add(fn.Name(), fn)
-		case *objects.FuncJit:
-			pkg.add(fn.Name(), fn)
-		}
-	}
-	for id, c := range constants {
-		pkg.add(id, c)
-	}
 	return pkg
+}
+
+func (p *Package) Add(id string, obj objects.IObject) {
+	p.container[id] = obj
 }
 
 // Name returns the name of the Package as a string.
@@ -39,8 +30,4 @@ func (p *Package) Name() string {
 func (p *Package) Get(id string) (objects.IObject, bool) {
 	v, ok := p.container[id]
 	return v, ok
-}
-
-func (p *Package) add(id string, obj objects.IObject) {
-	p.container[id] = obj
 }

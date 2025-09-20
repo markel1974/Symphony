@@ -19,11 +19,11 @@ type Os struct {
 
 // NewOs initializes a new instance of the Os package with provided gatekeeper functionalities and returns it as IPackage.
 func NewOs(factory objects.IGateKeeper) bytecode.IPackage {
-	f := &Os{}
-	container := []objects.IObject{
-		factory.NewFuncImport(objects.FrameStatic, "Exit", 1, f.exit),
-	}
-	f.Package = bytecode.NewPackage("os", container, nil)
+	const (
+		defExit = "Exit"
+	)
+	f := &Os{Package: bytecode.NewPackage("os")}
+	f.Add(defExit, factory.NewFuncImport(objects.FrameStatic, defExit, 1, f.exit))
 	return f
 }
 
