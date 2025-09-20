@@ -6,8 +6,7 @@ import (
 )
 
 const (
-	MapIteratorType  = "map_iterator"
-	MapIteratorLabel = "<" + MapIteratorType + ">"
+	MapIteratorType = "map_iterator"
 )
 
 func init() {
@@ -81,7 +80,7 @@ func (o *MapIterator) AsBytes() []byte {
 
 // AsString returns the string representation of the MapIterator.
 func (o *MapIterator) AsString() string {
-	return MapIteratorLabel
+	return ""
 }
 
 // AssignValue sets the current object to the provided IObject, returning ErrNotAssignable if the operation is not supported.

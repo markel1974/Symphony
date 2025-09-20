@@ -7,11 +7,8 @@ import (
 	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
 
-// FuncCompiledDef represents a constant Code for a compiled function definition.
-// FuncCompiledLabel represents a formatted label using FuncCompiledDef.
 const (
-	FuncDef   = "func"
-	FuncLabel = "<" + FuncDef + ">"
+	FuncDef = "func"
 )
 
 // init registers the Func type with the gob package to allow for serialization and deserialization.
@@ -87,7 +84,7 @@ func (o *Func) AsBytes() []byte {
 
 // AsString returns a string representation of the Func instance, specifically the constant FuncCompiledLabel.
 func (o *Func) AsString() string {
-	return FuncLabel
+	return ""
 }
 
 // AssignValue attempts to assign a Code to the instance but always returns ErrNotAssignable as it is not supported.

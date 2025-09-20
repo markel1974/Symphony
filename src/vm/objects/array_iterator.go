@@ -6,8 +6,7 @@ import (
 )
 
 const (
-	ArrayIteratorType  = "array_iterator"
-	ArrayIteratorLabel = "<" + ArrayIteratorType + ">"
+	ArrayIteratorType = "array_iterator"
 )
 
 func init() {
@@ -73,7 +72,7 @@ func (o *ArrayIterator) AsBytes() []byte {
 
 // AsString returns a string representation of the ArrayIterator instance.
 func (o *ArrayIterator) AsString() string {
-	return ArrayIteratorLabel
+	return ""
 }
 
 // AssignValue assigns the elements of another Array to the current Array if the input is of type *Array, otherwise returns an error.

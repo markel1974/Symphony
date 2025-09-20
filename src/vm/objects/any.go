@@ -42,7 +42,7 @@ func (o *Any) AsInterface() interface{} {
 // AsString returns the string representation of the wrapped data. If the data is nil, it returns "<nil>".
 func (o *Any) AsString() string {
 	if o.data == nil {
-		return "<nil>"
+		return ""
 	}
 	return fmt.Sprintf("%v", o.data)
 }

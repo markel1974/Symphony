@@ -146,22 +146,14 @@ func (v *VM) CreateObjectPointer(obj objects.IObject) objects.IObject {
 }
 
 // CreateClosure creates and returns a new closure object from the given function object and its free variables.
-func (v *VM) CreateClosure(fnObj objects.IObject) objects.IObject {
+func (v *VM) CreateClosure(fnObj objects.IObject, objRequired []objects.IObject) objects.IObject {
 	fn, ok := fnObj.(*objects.Func)
 	if !ok {
 		v.SetError(fmt.Errorf("not a function: %s", fn.TypeName()))
 		return v.gk.UndefinedValue()
 	}
-	freeArgsObj := v.stack.Pop()
-	freeArgs, ok := freeArgsObj.(*objects.Array)
-	if !ok {
-		v.SetError(fmt.Errorf("not an array: %s", freeArgsObj.TypeName()))
-		return v.gk.UndefinedValue()
-	}
-	free := make([]*objects.ObjectPointer, freeArgs.Length())
-	for idx, freeObjIndex := range freeArgs.Values() {
-		index := int(freeObjIndex.AsInt64())
-		obj := v.StackPeekBP(uint(index))
+	free := make([]*objects.ObjectPointer, len(objRequired))
+	for idx, obj := range objRequired {
 		freeObjPtr, err := v.Factory().CreateObjectPointer(v.currFrame.Id(), obj)
 		if err != nil {
 			v.SetError(err)
@@ -169,7 +161,6 @@ func (v *VM) CreateClosure(fnObj objects.IObject) objects.IObject {
 		}
 		free[idx] = freeObjPtr
 	}
-	v.stack.DecrementCount(uint(freeArgs.Length()))
 	return v.Factory().NewFunc(v.currFrame.Id(), fn.Name(), fn.Instructions().Code(), fn.NumLocals(), fn.NumParameters(), fn.VarArgs(), nil, free)
 }
 
@@ -177,6 +168,17 @@ func (v *VM) CreateClosure(fnObj objects.IObject) objects.IObject {
 func (v *VM) CreateError(src objects.IObject) objects.IObject {
 	errObj := v.Factory().NewError(v.currFrame.Id(), src.AsString())
 	return errObj
+}
+
+// CreateSlice creates a slice using the provided high, low, and target objects and returns the resulting IObject.
+// If an error occurs during slice creation, it sets the error on the VM and returns an undefined value.
+func (v *VM) CreateSlice(highIdx int, lowIdx int, targetObj objects.IObject) objects.IObject {
+	ret, err := v.Factory().CreateSlice(v.currFrame.Id(), highIdx, lowIdx, targetObj)
+	if err != nil {
+		v.SetError(err)
+		return v.gk.UndefinedValue()
+	}
+	return ret
 }
 
 // StackPeek returns the object currently at the top of the stack without removing it.
@@ -238,17 +240,6 @@ func (v *VM) StackPopStruct(numElements uint) objects.IObject {
 	name, s := v.stack.PopStruct(numElements)
 	sObj := v.Factory().NewStruct(v.currFrame.Id(), name, s)
 	return sObj
-}
-
-// StackPopSlice removes elements from the stack to create a slice and returns the resulting object or an undefined value on error.
-func (v *VM) StackPopSlice() objects.IObject {
-	lowObj, highObj, targetObj := v.stack.PopSlice()
-	ret, err := v.Factory().CreateSlice(v.currFrame.Id(), lowObj, highObj, targetObj)
-	if err != nil {
-		v.SetError(err)
-		return v.gk.UndefinedValue()
-	}
-	return ret
 }
 
 // StackPopInterface pops `numElements` interfaces from the stack and wraps them into a new `objects.IObject` instance.

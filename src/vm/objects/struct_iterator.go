@@ -8,8 +8,7 @@ import (
 // StructIteratorType represents the type for a struct iterator, used as a constant string identifier.
 // StructIteratorLabel is a formatted label that includes the StructIteratorType constant within angle brackets.
 const (
-	StructIteratorType  = "struct_iterator"
-	StructIteratorLabel = "<" + StructIteratorType + ">"
+	StructIteratorType = "struct_iterator"
 )
 
 func init() {
@@ -88,7 +87,7 @@ func (o *StructIterator) AsBytes() []byte {
 
 // AsString returns the string representation of the StructIterator instance.
 func (o *StructIterator) AsString() string {
-	return StructIteratorLabel
+	return ""
 }
 
 // Nil checks if the object is nil and always returns false.

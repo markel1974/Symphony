@@ -27,10 +27,8 @@ func (ga *GateAdapter) LogicalOpInt64(op LogicalOperator, lhs int64, rhs int64) 
 
 // CreateSlice generates a slice of a target object using the given low and high indices and returns the resulting object.
 // The method supports slicing Arrays, Strings, and Bytes, returning an error if the target type is unsupported.
-func (ga *GateAdapter) CreateSlice(frameId int, lowObj IObject, highObj IObject, target IObject) (IObject, error) {
+func (ga *GateAdapter) CreateSlice(frameId int, highIdx int, lowIdx int, target IObject) (IObject, error) {
 	numElem := target.Length()
-	lowIdx := int(lowObj.AsInt64())
-	highIdx := int(highObj.AsInt64())
 	if lowIdx > highIdx {
 		lowIdx = highIdx
 	}

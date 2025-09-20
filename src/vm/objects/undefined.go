@@ -5,8 +5,7 @@ import (
 )
 
 const (
-	UndefinedType  = "undefined"
-	UndefinedLabel = "<" + UndefinedType + ">"
+	UndefinedType = "undefined"
 )
 
 func init() {

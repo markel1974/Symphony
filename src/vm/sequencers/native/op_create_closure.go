@@ -48,7 +48,19 @@ func (op *OpCreateClosure) Execute(decoder *core.Decoder) {
 	closureFnIndex := decoder.Operand(0)
 	//numTotal := decoder.Operand(1)
 	closureFnObj := op.vm.Constants().Get(uint(closureFnIndex))
-	cl := op.vm.CreateClosure(closureFnObj)
+	freeArgsObj := op.vm.StackPop()
+	freeArgs, ok := freeArgsObj.(*objects.Array)
+	if !ok {
+		op.vm.SetError(fmt.Errorf("not an array: %s", freeArgsObj.TypeName()))
+		return
+	}
+	required := make([]objects.IObject, freeArgs.Length())
+	for idx, freeObjIndex := range freeArgs.Values() {
+		obj := op.vm.StackPeekBP(uint(freeObjIndex.AsInt64()))
+		required[idx] = obj
+	}
+	op.vm.StackDecrementCount(uint(freeArgs.Length()))
+	cl := op.vm.CreateClosure(closureFnObj, required)
 	op.vm.StackPush(cl)
 }
 

@@ -146,14 +146,6 @@ func (v *Stack) PopMap(numElements uint) map[string]objects.IObject {
 	return kv
 }
 
-// PopSlice removes and returns the top three objects from the stack in the order of lowObj, highObj, and targetObj.
-func (v *Stack) PopSlice() (objects.IObject, objects.IObject, objects.IObject) {
-	highObj := v.Pop()
-	lowObj := v.Pop()
-	targetObj := v.Pop()
-	return lowObj, highObj, targetObj
-}
-
 // PopInterface pops a concrete value and a number of method-function pairs from the stack, returning them as an interface table.
 // It constructs a map where method names are keys and their corresponding functions are values, along with the concrete value.
 // The parameter numMethods specifies the number of method-function pairs to pop from the stack.

@@ -6,8 +6,7 @@ import (
 )
 
 const (
-	StringIteratorType  = "string_iterator"
-	StringIteratorLabel = "<" + StringIteratorType + ">"
+	StringIteratorType = "string_iterator"
 )
 
 func init() {
@@ -64,7 +63,7 @@ func (o *StringIterator) AsBytes() []byte {
 
 // AsString returns the string representation of the StringIterator, useful for debugging or logging.
 func (o *StringIterator) AsString() string {
-	return StringIteratorLabel
+	return ""
 }
 
 // AssignValue sets the current object to the provided IObject, returning ErrNotAssignable if the operation is not supported.

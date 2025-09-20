@@ -5,11 +5,6 @@ import (
 	"encoding/gob"
 )
 
-const (
-	ObjectPointerType  = "object_pointer"
-	ObjectPointerLabel = "<" + ObjectPointerType + ">"
-)
-
 func init() {
 	gob.Register(&ObjectPointer{})
 }
@@ -43,9 +38,6 @@ func (o *ObjectPointer) setAllocator(allocator IAllocator) {
 
 // AsInterface converts the object into a generic interface{} type and returns the underlying data.
 func (o *ObjectPointer) AsInterface() interface{} {
-	if o.data == nil {
-		return nil
-	}
 	return (*o.data).AsInterface()
 }
 
@@ -66,9 +58,6 @@ func (o *ObjectPointer) AsFloat64() float64 {
 
 // AsBytes converts the object elements into a single concatenated slice of bytes by calling AsBytes on each element.
 func (o *ObjectPointer) AsBytes() []byte {
-	if o.data == nil {
-		return nil
-	}
 	return (*o.data).AsBytes()
 }
 

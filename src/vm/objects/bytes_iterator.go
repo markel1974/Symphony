@@ -6,8 +6,7 @@ import (
 )
 
 const (
-	BytesIteratorType  = "bytes_iterator"
-	BytesIteratorLabel = "<" + BytesIteratorType + ">"
+	BytesIteratorType = "bytes_iterator"
 )
 
 func init() {
@@ -64,7 +63,7 @@ func (o *BytesIterator) AsBytes() []byte {
 
 // AsString returns the string representation of the BytesIterator.
 func (o *BytesIterator) AsString() string {
-	return BytesIteratorLabel
+	return ""
 }
 
 // AssignValue sets the current object to the provided IObject, returning ErrNotAssignable if the operation is not supported.

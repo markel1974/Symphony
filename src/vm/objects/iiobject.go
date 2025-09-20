@@ -121,7 +121,7 @@ type IGateAdapter interface {
 	LogicalOpInt64(op LogicalOperator, lhs int64, rhs int64) (bool, error)
 	ArithmeticOpInt64(op ArithmeticOperator, lhs int64, rhs int64) (int64, error)
 	CreateObjectPointer(frame int, objSrc IObject) (*ObjectPointer, error)
-	CreateSlice(frameId int, lowObj IObject, highObj IObject, target IObject) (IObject, error)
+	CreateSlice(frameId int, highIdx int, lowIdx int, target IObject) (IObject, error)
 	IndexAssign(frame int, dst IObject, src IObject, selectors []IObject) error
 	Concrete(src IObject) IObject
 }

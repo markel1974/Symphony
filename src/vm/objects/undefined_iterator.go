@@ -7,8 +7,7 @@ import (
 // UndefinedIteratorType represents a type label for an undefined iterator.
 // UndefinedIteratorLabel represents a label used when the iterator type is undefined.
 const (
-	UndefinedIteratorType  = "undefined_iterator"
-	UndefinedIteratorLabel = "<" + UndefinedIteratorType + ">"
+	UndefinedIteratorType = "undefined_iterator"
 )
 
 func init() {

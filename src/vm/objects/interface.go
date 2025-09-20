@@ -10,9 +10,6 @@ func init() {
 	gob.Register(&Interface{})
 }
 
-//*Allocator
-//Allocator: NewAllocator(gk, frame),
-
 // Interface represents an object with contextual execution information and dynamic properties managed within a frame.
 type Interface struct {
 	IAllocator
