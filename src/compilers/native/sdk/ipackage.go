@@ -27,7 +27,7 @@ func NewExternalPackage(name string, functions []objects.IObject, constants map[
 		name:      name,
 		functions: functions,
 		constants: constants,
-		container: BuildContainer2(functions, constants),
+		container: BuildImporter(functions, constants),
 	}
 }
 
