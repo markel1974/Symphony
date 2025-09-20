@@ -559,7 +559,11 @@ func (t *Process) handleMessageProcessStart(msg interfaces.IMessage) {
 				log.Printf("Process [%s]: error creating compiler: %s", t.cmd.Name(), err.Error())
 				return
 			}
-			t.loader.AddPackage("kernel", NewLibrary(t.gk, t).Functions(), nil)
+			pkg := bytecode.NewPackage("kernel", NewLibrary(t.gk, t).Functions(), nil)
+			if err = t.loader.AddPackage(pkg); err != nil {
+				log.Printf("Process [%s]: error adding kernel package: %s", t.cmd.Name(), err.Error())
+				return
+			}
 			t.vm = core.New(t.gk, t.opcodes)
 			if err = seq.Bind(t.vm); err != nil {
 				log.Printf("Process [%s]: error setting up sequencer: %s", t.cmd.Name(), err.Error())
