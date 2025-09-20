@@ -47,11 +47,7 @@ func (op *OpLocalPtrGet) Bind(vm core.IVM) error {
 func (op *OpLocalPtrGet) Execute(decoder *core.Decoder) {
 	localIndex := decoder.Operand(0)
 	val := op.vm.StackPeekBP(uint(localIndex))
-	ptr, err := op.vm.CreateObjectPointer(val)
-	if err != nil {
-		op.vm.SetError(err)
-		return
-	}
+	ptr := op.vm.CreateObjectPointer(val)
 	op.vm.StackPush(ptr)
 }
 

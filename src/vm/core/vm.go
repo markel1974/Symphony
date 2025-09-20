@@ -135,17 +135,17 @@ func (v *VM) Run(mainId uint, args ...interface{}) ([]interface{}, error) {
 	return v.exec(mainFn, v.retValues, args...)
 }
 
-// CreateObjectPointer creates an ObjectPointer instance for the provided object within the current frame context.
-// It uses the VM's factory to allocate a new ObjectPointer and associates it with the provided object.
-// Returns the created ObjectPointer and an error if the process fails.
-func (v *VM) CreateObjectPointer(obj objects.IObject) (*objects.ObjectPointer, error) {
+// CreateObjectPointer creates an object pointer within the current frame and returns it, or an undefined value if an error occurs.
+func (v *VM) CreateObjectPointer(obj objects.IObject) objects.IObject {
 	freeObjPtr, err := v.Factory().CreateObjectPointer(v.currFrame.Id(), obj)
-	return freeObjPtr, err
+	if err != nil {
+		v.SetError(err)
+		return v.gk.UndefinedValue()
+	}
+	return freeObjPtr
 }
 
-// CreateClosure creates a new closure object from a function and its captured variables.
-// It verifies the input object is a function and retrieves the free variables from the stack.
-// Returns the newly created closure or an undefined value in case of errors.
+// CreateClosure creates and returns a new closure object from the given function object and its free variables.
 func (v *VM) CreateClosure(fnObj objects.IObject) objects.IObject {
 	fn, ok := fnObj.(*objects.Func)
 	if !ok {
@@ -162,15 +162,21 @@ func (v *VM) CreateClosure(fnObj objects.IObject) objects.IObject {
 	for idx, freeObjIndex := range freeArgs.Values() {
 		index := int(freeObjIndex.AsInt64())
 		obj := v.StackPeekBP(uint(index))
-		freeObjPtr, err := v.CreateObjectPointer(obj)
+		freeObjPtr, err := v.Factory().CreateObjectPointer(v.currFrame.Id(), obj)
 		if err != nil {
 			v.SetError(err)
 			return v.gk.UndefinedValue()
 		}
 		free[idx] = freeObjPtr
 	}
-	v.StackDecrementCount(uint(freeArgs.Length()))
-	return v.Factory().NewFunc(v.FrameId(), fn.Name(), fn.Instructions().Code(), fn.NumLocals(), fn.NumParameters(), fn.VarArgs(), nil, free)
+	v.stack.DecrementCount(uint(freeArgs.Length()))
+	return v.Factory().NewFunc(v.currFrame.Id(), fn.Name(), fn.Instructions().Code(), fn.NumLocals(), fn.NumParameters(), fn.VarArgs(), nil, free)
+}
+
+// CreateError generates a new error object using the provided IObject as a source and assigns it to the current frame.
+func (v *VM) CreateError(src objects.IObject) objects.IObject {
+	errObj := v.Factory().NewError(v.currFrame.Id(), src.AsString())
+	return errObj
 }
 
 // StackPeek returns the object currently at the top of the stack without removing it.
@@ -232,6 +238,17 @@ func (v *VM) StackPopStruct(numElements uint) objects.IObject {
 	name, s := v.stack.PopStruct(numElements)
 	sObj := v.Factory().NewStruct(v.currFrame.Id(), name, s)
 	return sObj
+}
+
+// StackPopSlice removes elements from the stack to create a slice and returns the resulting object or an undefined value on error.
+func (v *VM) StackPopSlice() objects.IObject {
+	lowObj, highObj, targetObj := v.stack.PopSlice()
+	ret, err := v.Factory().CreateSlice(v.currFrame.Id(), lowObj, highObj, targetObj)
+	if err != nil {
+		v.SetError(err)
+		return v.gk.UndefinedValue()
+	}
+	return ret
 }
 
 // StackPopInterface pops `numElements` interfaces from the stack and wraps them into a new `objects.IObject` instance.

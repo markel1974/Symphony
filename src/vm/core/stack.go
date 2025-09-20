@@ -120,9 +120,9 @@ func (v *Stack) PopArray(numElements uint) []objects.IObject {
 
 // PopStruct removes multiple elements from the stack and returns a string representation and a map of objects.
 func (v *Stack) PopStruct(numElements uint) (string, map[string]objects.IObject) {
-	typeNameObj := v.Pop()
+	nameObj := v.Pop()
 	s := v.PopMap(numElements)
-	return typeNameObj.AsString(), s
+	return nameObj.AsString(), s
 }
 
 // PopMap removes the specified number of key-value pairs from the stack and returns them as a map.
@@ -146,8 +146,17 @@ func (v *Stack) PopMap(numElements uint) map[string]objects.IObject {
 	return kv
 }
 
-// PopInterface pops a concrete value and a specified number of method-function pairs from the stack and returns them.
-// The returned map contains method names as keys and their corresponding method functions as values.
+// PopSlice removes and returns the top three objects from the stack in the order of lowObj, highObj, and targetObj.
+func (v *Stack) PopSlice() (objects.IObject, objects.IObject, objects.IObject) {
+	highObj := v.Pop()
+	lowObj := v.Pop()
+	targetObj := v.Pop()
+	return lowObj, highObj, targetObj
+}
+
+// PopInterface pops a concrete value and a number of method-function pairs from the stack, returning them as an interface table.
+// It constructs a map where method names are keys and their corresponding functions are values, along with the concrete value.
+// The parameter numMethods specifies the number of method-function pairs to pop from the stack.
 func (v *Stack) PopInterface(numMethods int) (objects.IObject, map[string]objects.IObject) {
 	iTable := make(map[string]objects.IObject, numMethods)
 	for i := 0; i < numMethods; i++ {

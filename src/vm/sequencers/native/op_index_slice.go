@@ -46,15 +46,8 @@ func (op *OpIndexSlice) Bind(vm core.IVM) error {
 
 // Execute processes the slice operation on the stack, adjusting bounds and supporting various object types like arrays and strings.
 func (op *OpIndexSlice) Execute(_ *core.Decoder) {
-	highObj := op.vm.StackPop()
-	lowObj := op.vm.StackPop()
-	targetObj := op.vm.StackPop()
-	ret, err := op.vm.Factory().CreateSlice(op.vm.FrameId(), lowObj, highObj, targetObj)
-	if err != nil {
-		op.vm.SetError(err)
-		return
-	}
-	op.vm.StackPush(ret)
+	slice := op.vm.StackPopSlice()
+	op.vm.StackPush(slice)
 }
 
 // Compile generates the compiled representation of the OpIndexSlice operation or returns an unimplemented error.
