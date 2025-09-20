@@ -109,6 +109,8 @@ type IGateConverter interface {
 
 	FromInterface(frame int, in interface{}) IObject
 	StructFromMap(frame int, name string, v map[string]interface{}) IObject
+	ToAny(frame int, i interface{}) IObject
+	FromAny(obj IObject) (interface{}, error)
 
 	AssignInt(val int64, dstObj IObject) error
 	AssignBool(val bool, dstObj IObject) error

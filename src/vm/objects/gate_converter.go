@@ -55,6 +55,20 @@ func (gc *GateConverter) AssignInt(val int64, dstObj IObject) error {
 	}
 }
 
+// ToAny converts a given interface{} into an IObject using the specified frame as context.
+func (gc *GateConverter) ToAny(frame int, i interface{}) IObject {
+	return gc.gk.NewAny(frame, i)
+}
+
+// FromAny converts an IObject into its underlying data if it is of type *Any. Returns an error if not assignable.
+func (gc *GateConverter) FromAny(obj IObject) (interface{}, error) {
+	i, ok := obj.(*Any)
+	if !ok {
+		return nil, ErrNotAssignable
+	}
+	return i.data, nil
+}
+
 // StructFromMap converts a map of key-value pairs to an IObject representation of a structured data entity.
 func (gc *GateConverter) StructFromMap(frame int, name string, v map[string]interface{}) IObject {
 	base := gc.createObjectMap(frame, v)
