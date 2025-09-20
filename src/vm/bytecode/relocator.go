@@ -15,6 +15,7 @@ type Relocator struct {
 	instructions *opcodes.Instructions
 	loader       ILoader
 	preserveFunc map[string]bool
+	relocator    *Bytecode
 }
 
 // NewRelocator creates and returns a new instance of Relocator initialized with the provided IGateKeeper, ILoader, and Opcodes.
@@ -29,9 +30,29 @@ func NewRelocator(gk objects.IGateKeeper, loader ILoader, op opcodes.IOpcodes, p
 		opcodes:      op,
 		instructions: opcodes.NewInstructions(nil),
 		preserveFunc: p,
+		relocator:    NewBytecodeEmpty(gk),
 	}
 }
 
+func (c *Relocator) Add(bc *Bytecode) {
+	c.relocator.Append(ConstantsType, bc.Constants())
+	c.relocator.Append(ImportsType, bc.Imports())
+	c.relocator.Append(GlobalsType, bc.Globals())
+	c.relocator.AddFiles(bc.Files())
+}
+
+func (c *Relocator) Relocate() (*Bytecode, error) {
+	for _, r := range c.relocator.Containers() {
+		data, err := c.relocateObjects(r.Objects())
+		if err != nil {
+			return nil, err
+		}
+		c.relocator.Assign(r.kind, data)
+	}
+	return c.relocator, nil
+}
+
+/*
 // Relocate processes a slice of Bytecode instances, ensuring each bytecode is fixed and reconstructed correctly.
 // Returns a new Bytecode instance or an error if the fixing process fails.
 func (c *Relocator) Relocate(codes []*Bytecode) (*Bytecode, error) {
@@ -51,6 +72,8 @@ func (c *Relocator) Relocate(codes []*Bytecode) (*Bytecode, error) {
 	}
 	return relocator, nil
 }
+
+*/
 
 // RelocateObjects modifies a slice of IObject instances by deduplicating input and updating bytecode constant indexes accordingly.
 func (c *Relocator) relocateObjects(inObj []objects.IObject) ([]objects.IObject, error) {

@@ -79,9 +79,10 @@ func (v *VM) Setup(loader bytecode.ILoader, sequencer []IOpExecutor, codes ...*b
 		v.bc = codes[0]
 	default:
 		relocator := bytecode.NewRelocator(v.gk, loader, v.op, bytecode.PreInitFunction, bytecode.InitFunction)
-		if v.bc, err = relocator.Relocate(codes); err != nil {
-			return nil, err
+		for _, code := range codes {
+			relocator.Add(code)
 		}
+		v.bc, err = relocator.Relocate()
 	}
 	if v.bc == nil {
 		return nil, fmt.Errorf("no bytecode provided")
