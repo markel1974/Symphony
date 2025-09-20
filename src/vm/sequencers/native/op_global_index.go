@@ -45,13 +45,9 @@ func (op *OpGlobalIndex) Bind(vm core.IVM) error {
 
 // Execute performs the operation defined by OpGlobalIndex, updating the VM state and handling global index assignment.
 func (op *OpGlobalIndex) Execute(decoder *core.Decoder) {
-	// Operands Offset 3 (8-bit | 16bit)
 	globalIndex := decoder.Operand(0)
 	selCount := decoder.Operand(1)
 	dstObj := op.vm.Globals().Get(uint(globalIndex))
-	//if obj, ok := dstObj.(*objects.ObjectPointer); ok {
-	//	dstObj = *obj.Value()
-	//}
 	selectors := make([]objects.IObject, selCount)
 	for i := 0; i < selCount; i++ {
 		offset := selCount - i

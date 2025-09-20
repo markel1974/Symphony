@@ -56,7 +56,7 @@ func (op *OpCreateClosure) Execute(decoder *core.Decoder) {
 	freeArgsObj := op.vm.StackPop()
 	freeArgs, ok := freeArgsObj.(*objects.Array)
 	if !ok {
-		op.vm.SetError(fmt.Errorf("can't create closure without arguments"))
+		op.vm.SetError(fmt.Errorf("not an array: %s", freeArgsObj.TypeName()))
 		return
 	}
 	free := make([]*objects.ObjectPointer, freeArgs.Length())

@@ -211,8 +211,8 @@ func (v *VM) FrameId() int {
 }
 
 // FrameDeferredAdd appends the given compiled function to the deferred call stack of the current frame.
-func (v *VM) FrameDeferredAdd(fc *objects.Func) {
-	v.currFrame.DeferredAdd(fc)
+func (v *VM) FrameDeferredAdd(obj objects.IObject) {
+	v.currFrame.DeferredAdd(obj)
 }
 
 // FrameFreeVarsIndex retrieves the object pointer for the specified index from the current frame's free variables.

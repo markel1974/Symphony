@@ -44,13 +44,7 @@ func (op *OpDefer) Bind(vm core.IVM) error {
 // Execute processes the top stack item, deferring its execution if it is a compiled function, otherwise sets an error.
 func (op *OpDefer) Execute(_ *core.Decoder) {
 	obj := op.vm.StackPop()
-	switch objT := obj.(type) {
-	case *objects.Func:
-		op.vm.FrameDeferredAdd(objT)
-	default:
-		op.vm.SetError(fmt.Errorf("invalid operation: defer %s", obj.TypeName()))
-		return
-	}
+	op.vm.FrameDeferredAdd(obj)
 }
 
 // Compile generates the compiled representation of the OpDefer operation or returns an unimplemented error.

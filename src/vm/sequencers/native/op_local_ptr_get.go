@@ -47,12 +47,12 @@ func (op *OpLocalPtrGet) Bind(vm core.IVM) error {
 func (op *OpLocalPtrGet) Execute(decoder *core.Decoder) {
 	localIndex := decoder.Operand(0)
 	val := op.vm.StackPeekBP(uint(localIndex))
-	if obj, ok := val.(*objects.ObjectPointer); ok {
-		op.vm.StackPush(obj)
+	ptr, err := op.vm.Factory().CreateObjectPointer(op.vm.FrameId(), val)
+	if err != nil {
+		op.vm.SetError(err)
 		return
 	}
-	freeVar := op.vm.Factory().NewObjectPointer(op.vm.FrameId(), &val)
-	op.vm.StackPush(freeVar)
+	op.vm.StackPush(ptr)
 }
 
 // Compile generates the compiled representation of the OpLocalPtrGet operation or returns an unimplemented error.

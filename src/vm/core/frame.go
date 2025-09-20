@@ -142,8 +142,13 @@ func (f *Frame) NumParameters() int {
 }
 
 // DeferredAdd appends a deferred call object to the frame's deferred calls queue for later execution.
-func (f *Frame) DeferredAdd(call *objects.Func) {
-	f.deferredCalls = append(f.deferredCalls, call)
+func (f *Frame) DeferredAdd(obj objects.IObject) {
+	switch objT := obj.(type) {
+	case *objects.Func:
+		f.deferredCalls = append(f.deferredCalls, objT)
+	default:
+		f.errSignal(fmt.Errorf("invalid operation: defer %s", obj.TypeName()))
+	}
 }
 
 // DeferredPop removes and returns the last deferred call object from the frame's deferred calls queue.

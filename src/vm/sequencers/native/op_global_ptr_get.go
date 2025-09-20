@@ -49,12 +49,12 @@ func (op *OpGlobalPtrGet) Bind(vm core.IVM) error {
 func (op *OpGlobalPtrGet) Execute(decoder *core.Decoder) {
 	globalIndex := decoder.Operand(0)
 	val := op.vm.Globals().Get(uint(globalIndex))
-	if obj, ok := val.(*objects.ObjectPointer); ok {
-		op.vm.StackPush(obj)
-	} else {
-		freeVar := op.vm.Factory().NewObjectPointer(op.vm.FrameId(), &val)
-		op.vm.StackPush(freeVar)
+	ptr, err := op.vm.Factory().CreateObjectPointer(op.vm.FrameId(), val)
+	if err != nil {
+		op.vm.SetError(err)
+		return
 	}
+	op.vm.StackPush(ptr)
 }
 
 // Compile generates the compiled representation of the OpGlobalPtrGet operation or returns an unimplemented error.
