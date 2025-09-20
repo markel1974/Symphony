@@ -3,6 +3,7 @@ package sdk
 import (
 	"strconv"
 
+	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/objects"
 )
 
@@ -13,11 +14,11 @@ func init() {
 
 // Strconv represents a container for storing string conversion-related functions in a map-like structure.
 type Strconv struct {
-	*Package
+	*bytecode.Package
 }
 
 // NewStrconv creates a new Strconv package using the provided IGateKeeper factory and initializes its container with functions.
-func NewStrconv(factory objects.IGateKeeper) IPackage {
+func NewStrconv(factory objects.IGateKeeper) bytecode.IPackage {
 	s := &Strconv{}
 	container := []objects.IObject{
 		factory.NewFuncImport(objects.FrameStatic, "Atoi", 1, s.atoi),
@@ -32,7 +33,7 @@ func NewStrconv(factory objects.IGateKeeper) IPackage {
 		factory.NewFuncImport(objects.FrameStatic, "Quote", 1, s.quote),
 		factory.NewFuncImport(objects.FrameStatic, "Unquote", 1, s.unquote),
 	}
-	s.Package = NewExternalPackage("strconv", container, nil)
+	s.Package = bytecode.NewPackage("strconv", container, nil)
 	return s
 }
 

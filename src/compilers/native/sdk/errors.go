@@ -1,6 +1,7 @@
 package sdk
 
 import (
+	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/objects"
 )
 
@@ -10,16 +11,16 @@ func init() {
 
 // Errors is a type that encapsulates a map of module functions accessible as objects.
 type Errors struct {
-	*Package
+	*bytecode.Package
 }
 
 // NewErrors initializes and returns a new Errors instance with pre-defined function modules.
-func NewErrors(factory objects.IGateKeeper) IPackage {
+func NewErrors(factory objects.IGateKeeper) bytecode.IPackage {
 	e := &Errors{}
 	container := []objects.IObject{
 		factory.NewFuncImport(objects.FrameStatic, "New", 1, e.New),
 	}
-	e.Package = NewExternalPackage("errors", container, nil)
+	e.Package = bytecode.NewPackage("errors", container, nil)
 	return e
 }
 

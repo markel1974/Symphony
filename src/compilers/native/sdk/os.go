@@ -3,6 +3,7 @@ package sdk
 import (
 	"fmt"
 
+	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/objects"
 )
 
@@ -13,16 +14,16 @@ func init() {
 
 // Os represents a package that provides access to a container of IObject instances, allowing retrieval by name.
 type Os struct {
-	*Package
+	*bytecode.Package
 }
 
 // NewOs initializes a new instance of the Os package with provided gatekeeper functionalities and returns it as IPackage.
-func NewOs(factory objects.IGateKeeper) IPackage {
+func NewOs(factory objects.IGateKeeper) bytecode.IPackage {
 	f := &Os{}
 	container := []objects.IObject{
 		factory.NewFuncImport(objects.FrameStatic, "Exit", 1, f.exit),
 	}
-	f.Package = NewExternalPackage("os", container, nil)
+	f.Package = bytecode.NewPackage("os", container, nil)
 	return f
 }
 

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"regexp"
 
+	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/objects"
 )
 
@@ -22,11 +23,11 @@ func init() {
 
 // Regexp represents a structure providing regular expression functionality through associated operations and methods.
 type Regexp struct {
-	*Package
+	*bytecode.Package
 }
 
 // NewRegexp creates and returns a new instance of the Regexp struct with initialized module functions.
-func NewRegexp(factory objects.IGateKeeper) IPackage {
+func NewRegexp(factory objects.IGateKeeper) bytecode.IPackage {
 	r := &Regexp{}
 	container := []objects.IObject{
 		factory.NewFuncImport(objects.FrameStatic, "Match", 2, r.match),
@@ -35,7 +36,7 @@ func NewRegexp(factory objects.IGateKeeper) IPackage {
 		factory.NewFuncImport(objects.FrameStatic, "Split", -1, r.split),
 		factory.NewFuncImport(objects.FrameStatic, "Compile", 1, r.compile),
 	}
-	r.Package = NewExternalPackage("regexp", container, nil)
+	r.Package = bytecode.NewPackage("regexp", container, nil)
 	return r
 }
 

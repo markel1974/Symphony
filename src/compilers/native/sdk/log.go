@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/objects"
 )
 
@@ -13,11 +14,11 @@ func init() {
 
 // Log represents a struct that provides formatted output methods using a map of predefined functions.
 type Log struct {
-	*Package
+	*bytecode.Package
 }
 
 // NewLog initializes and returns a new Log instance with predefined formatting functions as module properties.
-func NewLog(factory objects.IGateKeeper) IPackage {
+func NewLog(factory objects.IGateKeeper) bytecode.IPackage {
 	f := &Log{}
 	container := []objects.IObject{
 		factory.NewFuncImport(objects.FrameStatic, "Print", -1, f.print),
@@ -25,7 +26,7 @@ func NewLog(factory objects.IGateKeeper) IPackage {
 		factory.NewFuncImport(objects.FrameStatic, "Println", -1, f.println),
 		factory.NewFuncImport(objects.FrameStatic, "Fatalf", -1, f.fatalf),
 	}
-	f.Package = NewExternalPackage("log", container, nil)
+	f.Package = bytecode.NewPackage("log", container, nil)
 	return f
 }
 

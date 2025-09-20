@@ -3,6 +3,7 @@ package sdk
 import (
 	"time"
 
+	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/objects"
 )
 
@@ -12,11 +13,11 @@ func init() {
 
 // Time represents a structure that manages a collection of modules implementing the IObject interface.
 type Time struct {
-	*Package
+	*bytecode.Package
 }
 
 // NewTime initializes and returns a new instance of Time with predefined constants and functions mapped to the module.
-func NewTime(factory objects.IGateKeeper) IPackage {
+func NewTime(factory objects.IGateKeeper) bytecode.IPackage {
 	t := &Time{}
 	constants := map[string]objects.IObject{
 		"ANSIC":       factory.NewString(objects.FrameStatic, time.ANSIC),
@@ -90,7 +91,7 @@ func NewTime(factory objects.IGateKeeper) IPackage {
 		factory.NewFuncImport(objects.FrameStatic, "ToLocal", 1, t.toLocal),
 		factory.NewFuncImport(objects.FrameStatic, "ToUTC", 1, t.toUTC),
 	}
-	t.Package = NewExternalPackage("time", container, constants)
+	t.Package = bytecode.NewPackage("time", container, constants)
 	return t
 }
 

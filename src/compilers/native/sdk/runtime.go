@@ -3,6 +3,7 @@ package sdk
 import (
 	"runtime"
 
+	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/objects"
 )
 
@@ -11,15 +12,15 @@ func init() {
 }
 
 type Runtime struct {
-	*Package
+	*bytecode.Package
 }
 
-func NewRuntime(gk objects.IGateKeeper) IPackage {
+func NewRuntime(gk objects.IGateKeeper) bytecode.IPackage {
 	h := &Runtime{}
 	container := []objects.IObject{
 		gk.NewFuncImport(objects.FrameStatic, "ReadMemStats", 1, h.readMemStats),
 	}
-	h.Package = NewExternalPackage("runtime", container, nil)
+	h.Package = bytecode.NewPackage("runtime", container, nil)
 	return h
 }
 

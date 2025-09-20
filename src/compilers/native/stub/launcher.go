@@ -77,8 +77,8 @@ func Launch(prefix string, debug bool) error {
 		if err = seq.Setup(); err != nil {
 			return err
 		}
-		loader, err := _nativeLoader.NewLoader(gk)
-		if err != nil {
+		loader := bytecode.NewLoader(gk)
+		if err = loader.RegisterPackage(_nativeLoader.Packages()); err != nil {
 			return err
 		}
 		bc, err := Compile(gk, seq, loader, []*FileInfo{fi})

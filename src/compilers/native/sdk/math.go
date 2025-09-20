@@ -3,6 +3,7 @@ package sdk
 import (
 	"math"
 
+	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/objects"
 )
 
@@ -12,12 +13,12 @@ func init() {
 
 // Math serves as a container for mathematical operations and modules, mapping module names to their respective objects.
 type Math struct {
-	*Package
+	*bytecode.Package
 	nanObj objects.IObject
 }
 
 // NewMath initializes and returns a new instance of Math with predefined mathematical constants and function modules.
-func NewMath(factory objects.IGateKeeper) IPackage {
+func NewMath(factory objects.IGateKeeper) bytecode.IPackage {
 	m := &Math{}
 	m.nanObj = factory.NewFloat(objects.FrameStatic, math.NaN())
 	constants := map[string]objects.IObject{
@@ -88,7 +89,7 @@ func NewMath(factory objects.IGateKeeper) IPackage {
 		factory.NewFuncImport(objects.FrameStatic, "Y1", 1, m.funcF64ToF64(math.Y1)),
 		factory.NewFuncImport(objects.FrameStatic, "Yn", 2, m.funcIntF64ToF64(math.Yn)),
 	}
-	m.Package = NewExternalPackage("math", container, constants)
+	m.Package = bytecode.NewPackage("math", container, constants)
 	return m
 }
 

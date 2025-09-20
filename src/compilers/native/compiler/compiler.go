@@ -90,11 +90,6 @@ func New(gk objects.IGateKeeper, loader bytecode.ILoader, opcodes opcodes.IOpcod
 	return c
 }
 
-// Id returns the unique identifier of the compiler as defined in the common package.
-func (c *Compiler) Id() string {
-	return tables.Identifier
-}
-
 // FileSet returns the token file set associated with the compiler.
 func (c *Compiler) FileSet() *bytecode.FileSet {
 	return bytecode.NewFileSet(c.fileSet)

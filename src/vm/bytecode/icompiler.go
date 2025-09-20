@@ -6,8 +6,6 @@ import (
 
 // ICompiler defines an interface for compiling source code and managing constants, imports, and globals objects.
 type ICompiler interface {
-	Id() string
-
 	Compile(filename string, source any) error
 
 	FileSet() *FileSet

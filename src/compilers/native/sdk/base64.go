@@ -3,6 +3,7 @@ package sdk
 import (
 	"encoding/base64"
 
+	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/objects"
 )
 
@@ -13,11 +14,11 @@ func init() {
 
 // Base64 provides methods for working with Base64 encoding and decoding operations within a container of IObject mappings.
 type Base64 struct {
-	*Package
+	*bytecode.Package
 }
 
 // NewBase64 initializes and returns a new Base64 package implementing IPackage with predefined encoding/decoding functions.
-func NewBase64(f objects.IGateKeeper) IPackage {
+func NewBase64(f objects.IGateKeeper) bytecode.IPackage {
 	b := &Base64{}
 	container := []objects.IObject{
 		f.NewFuncImport(objects.FrameStatic, "EncodeToString", 1, b.stdEncodeToString),
@@ -29,7 +30,7 @@ func NewBase64(f objects.IGateKeeper) IPackage {
 		f.NewFuncImport(objects.FrameStatic, "RawUrlEncode", 1, b.rawUrlEncodeToString),
 		f.NewFuncImport(objects.FrameStatic, "rawUrlDecode", 1, b.rawUrlDecodeString),
 	}
-	b.Package = NewExternalPackage("base64", container, nil)
+	b.Package = bytecode.NewPackage("base64", container, nil)
 	return b
 }
 

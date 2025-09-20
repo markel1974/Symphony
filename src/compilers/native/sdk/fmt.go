@@ -3,6 +3,7 @@ package sdk
 import (
 	"fmt"
 
+	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/objects"
 )
 
@@ -12,11 +13,11 @@ func init() {
 
 // Fmt represents a struct that provides formatted output methods using a map of predefined functions.
 type Fmt struct {
-	*Package
+	*bytecode.Package
 }
 
 // NewFmt initializes and returns a new Fmt instance with predefined formatting functions as module properties.
-func NewFmt(factory objects.IGateKeeper) IPackage {
+func NewFmt(factory objects.IGateKeeper) bytecode.IPackage {
 	f := &Fmt{}
 	container := []objects.IObject{
 		factory.NewFuncImport(objects.FrameStatic, "Print", -1, f.print),
@@ -26,7 +27,7 @@ func NewFmt(factory objects.IGateKeeper) IPackage {
 		factory.NewFuncImport(objects.FrameStatic, "Sprintf", -1, f.sprintf),
 		factory.NewFuncImport(objects.FrameStatic, "Errorf", -1, f.errorf),
 	}
-	f.Package = NewExternalPackage("fmt", container, nil)
+	f.Package = bytecode.NewPackage("fmt", container, nil)
 	return f
 }
 

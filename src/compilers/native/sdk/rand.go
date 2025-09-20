@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/rand"
 
+	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/objects"
 )
 
@@ -14,11 +15,11 @@ func init() {
 
 // Rand is a type that provides a container for random-related functionalities and operations.
 type Rand struct {
-	*Package
+	*bytecode.Package
 }
 
 // NewRand creates and initializes a new instance of the Rand package, registering its functions with the provided IGateKeeper.
-func NewRand(gk objects.IGateKeeper) IPackage {
+func NewRand(gk objects.IGateKeeper) bytecode.IPackage {
 	z := &Rand{}
 	container := []objects.IObject{
 		gk.NewFuncImport(objects.FrameStatic, "Int63", 0, z.int63(rand.Int63)),
@@ -31,7 +32,7 @@ func NewRand(gk objects.IGateKeeper) IPackage {
 		gk.NewFuncImport(objects.FrameStatic, "Operand", 1, z.read),
 		gk.NewFuncImport(objects.FrameStatic, "Rand", 1, z.rand),
 	}
-	z.Package = NewExternalPackage("rand", container, nil)
+	z.Package = bytecode.NewPackage("rand", container, nil)
 	return z
 }
 

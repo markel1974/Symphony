@@ -3,6 +3,7 @@ package sdk
 import (
 	"encoding/hex"
 
+	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/objects"
 )
 
@@ -14,17 +15,17 @@ func init() {
 // Hex represents a type that provides functionality for encoding and decoding hexadecimal strings.
 // It contains a map-based container for managing associated objects and functions.
 type Hex struct {
-	*Package
+	*bytecode.Package
 }
 
 // NewHex initializes a new Hex instance and returns it as an IPackage. It registers encodeToString and decodeString functions.
-func NewHex(gk objects.IGateKeeper) IPackage {
+func NewHex(gk objects.IGateKeeper) bytecode.IPackage {
 	h := &Hex{}
 	container := []objects.IObject{
 		gk.NewFuncImport(objects.FrameStatic, "EncodeToString", 1, h.encodeToString),
 		gk.NewFuncImport(objects.FrameStatic, "DecodeString", 1, h.decodeString),
 	}
-	h.Package = NewExternalPackage("hex", container, nil)
+	h.Package = bytecode.NewPackage("hex", container, nil)
 	return h
 }
 

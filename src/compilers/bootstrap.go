@@ -1,12 +1,12 @@
 package compilers
 
 import (
+	_nativeLoader "github.com/markel1974/c64emu/src/compilers/native/sdk"
 	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/objects"
 	"github.com/markel1974/c64emu/src/vm/opcodes"
 
 	_nativeCompiler "github.com/markel1974/c64emu/src/compilers/native/compiler"
-	_nativeLoader "github.com/markel1974/c64emu/src/compilers/native/sdk"
 )
 
 // NewCompiler creates a new compiler and loader based on the provided IGateKeeper, Opcodes, and identifier string.
@@ -14,8 +14,8 @@ import (
 func NewCompiler(gk objects.IGateKeeper, opcodes opcodes.IOpcodes) (bytecode.ICompiler, bytecode.ILoader, error) {
 	switch opcodes.Id() {
 	default:
-		loader, err := _nativeLoader.NewLoader(gk)
-		if err != nil {
+		loader := bytecode.NewLoader(gk)
+		if err := loader.RegisterPackage(_nativeLoader.Packages()); err != nil {
 			return nil, nil, err
 		}
 		compiler := _nativeCompiler.New(gk, loader, opcodes)

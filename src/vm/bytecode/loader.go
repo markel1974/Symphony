@@ -1,23 +1,11 @@
-package sdk
+package bytecode
 
 import (
 	"fmt"
 	"strings"
 
-	"github.com/markel1974/c64emu/src/compilers/native/tables"
 	"github.com/markel1974/c64emu/src/vm/objects"
 )
-
-// registerPackageFn is a function type defining a method that registers a package using IGateKeeper and returns an IPackage.
-type registerPackageFn func(f objects.IGateKeeper) IPackage
-
-// _registerPackage holds a list of functions for registering packages, allowing dynamic addition of IPackage instances.
-var _registerPackage []registerPackageFn
-
-// RegisterPackage registers a package by appending the provided package registration function to the internal list.
-func RegisterPackage(f registerPackageFn) {
-	_registerPackage = append(_registerPackage, f)
-}
 
 // Loader represents a mechanism to manage and load packages and built-in objects in the system.
 type Loader struct {
@@ -26,29 +14,31 @@ type Loader struct {
 }
 
 // NewLoader initializes and returns a new Loader instance with predefined standard packages and built-in functions.
-func NewLoader(gk objects.IGateKeeper) (*Loader, error) {
-	container := make([]IPackage, len(_registerPackage))
-	for i, fn := range _registerPackage {
-		container[i] = fn(gk)
-	}
+func NewLoader(gk objects.IGateKeeper) *Loader {
 	loader := &Loader{
 		gk:       gk,
 		packages: make(map[string]IPackage),
 	}
-	for _, p := range container {
-		loader.packages[p.Name()] = p
-	}
-	return loader, nil
+	return loader
 }
 
-// Id returns the unique identifier of the loader as defined in the common package.
-func (l *Loader) Id() string {
-	return tables.Identifier
+func (l *Loader) RegisterPackage(registerPackage []RegisterPackageFn) error {
+	container := make([]IPackage, len(registerPackage))
+	for i, fn := range registerPackage {
+		container[i] = fn(l.gk)
+	}
+	for _, p := range container {
+		if z, ok := l.packages[p.Name()]; ok {
+			return fmt.Errorf("package %s => %s already exists", z.Name(), p.Name())
+		}
+		l.packages[p.Name()] = p
+	}
+	return nil
 }
 
 // AddPackage adds a package with the given Id and attributes to the Loader's packages map.
 func (l *Loader) AddPackage(id string, functions []objects.IObject, constants map[string]objects.IObject) {
-	l.packages[id] = NewExternalPackage(id, functions, constants)
+	l.packages[id] = NewPackage(id, functions, constants)
 }
 
 // Resolve resolves a list of symbol references into concrete objects within the loader's context.

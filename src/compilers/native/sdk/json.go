@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 
+	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/objects"
 )
 
@@ -13,11 +14,11 @@ func init() {
 
 // Json represents a module containing JSON-related operations and utilities.
 type Json struct {
-	*Package
+	*bytecode.Package
 }
 
 // NewJson creates and returns a new instance of Json containing predefined JSON operation modules.
-func NewJson(factory objects.IGateKeeper) IPackage {
+func NewJson(factory objects.IGateKeeper) bytecode.IPackage {
 	j := &Json{}
 	container := []objects.IObject{
 		factory.NewFuncImport(objects.FrameStatic, "Unmarshal", 1, j.unmarshal),
@@ -25,7 +26,7 @@ func NewJson(factory objects.IGateKeeper) IPackage {
 		factory.NewFuncImport(objects.FrameStatic, "Indent", 3, j.indent),
 		factory.NewFuncImport(objects.FrameStatic, "HTMLEscape", 1, j.htmlEscape),
 	}
-	j.Package = NewExternalPackage("json", container, nil)
+	j.Package = bytecode.NewPackage("json", container, nil)
 	return j
 }
 

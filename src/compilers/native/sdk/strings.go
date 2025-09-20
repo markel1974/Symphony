@@ -5,6 +5,7 @@ import (
 	"strings"
 	//"unicode/utf8"
 
+	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/objects"
 )
 
@@ -15,11 +16,11 @@ func init() {
 // Strings provides a collection of string operations and functionality wrapped in a module.
 // It includes functions for manipulation, comparison, trimming, padding, splitting, and other string-related utilities.
 type Strings struct {
-	*Package
+	*bytecode.Package
 }
 
 // NewStrings creates and returns a new instance of Strings with a preconfigured map of string utility functions.
-func NewStrings(factory objects.IGateKeeper) IPackage {
+func NewStrings(factory objects.IGateKeeper) bytecode.IPackage {
 	s := &Strings{}
 	container := []objects.IObject{
 		factory.NewFuncImport(objects.FrameStatic, "Join", 2, s.join),
@@ -55,7 +56,7 @@ func NewStrings(factory objects.IGateKeeper) IPackage {
 		factory.NewFuncImport(objects.FrameStatic, "TrimSpace", 1, s.funcStringToString(strings.TrimSpace)),
 		factory.NewFuncImport(objects.FrameStatic, "TrimSuffix", 2, s.funcStringStringToString(strings.TrimSuffix)),
 	}
-	s.Package = NewExternalPackage("strings", container, nil)
+	s.Package = bytecode.NewPackage("strings", container, nil)
 	return s
 }
 
