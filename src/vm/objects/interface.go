@@ -144,9 +144,12 @@ func (o *Interface) Value() IObject {
 	return o.data
 }
 
-// ITable returns the internal map representation `iTable` of the Interface instance.
-func (o *Interface) ITable() map[string]IObject {
-	return o.iTable
+func (o *Interface) Method(name string) (IObject, bool) {
+	m, ok := o.iTable[name]
+	if !ok || m == nil {
+		return o.GateKeeper().UndefinedValue(), false
+	}
+	return m, ok
 }
 
 // Count returns the total number of elements in the instance and its sub-elements.

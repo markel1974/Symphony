@@ -123,7 +123,7 @@ type IGateAdapter interface {
 	CreateObjectPointer(frame int, objSrc IObject) (*ObjectPointer, error)
 	CreateSlice(frameId int, lowObj IObject, highObj IObject, target IObject) (IObject, error)
 	IndexAssign(frame int, dst IObject, src IObject, selectors []IObject) error
-	Concrete(src IObject) (IObject, bool)
+	Concrete(src IObject) IObject
 }
 
 // IGateKeeper combines IGateAllocator, IGateConverter, and IGateAdapter to manage object creation, conversion, and adaptation.

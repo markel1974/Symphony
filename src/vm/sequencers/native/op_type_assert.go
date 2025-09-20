@@ -54,18 +54,9 @@ func (op *OpTypeAssert) Execute(decoder *core.Decoder) {
 	typeNameIndex := decoder.Operand(0)
 	interfaceObj := op.vm.StackPop()
 	targetTypeObj := op.vm.Constants().Get(uint(typeNameIndex))
-	targetTypeName, ok := targetTypeObj.(*objects.String)
-	if !ok {
-		op.vm.SetError(fmt.Errorf("constant for type assertion is not a string"))
-		return
-	}
-	concreteValue, ok := op.vm.Factory().Concrete(interfaceObj)
-	if !ok {
-		op.vm.StackPush(op.vm.Factory().UndefinedValue())
-		op.vm.StackPush(op.vm.Factory().FalseValue())
-		return
-	}
-	if concreteValue.TypeName() == targetTypeName.Value() {
+	concreteValue := op.vm.Factory().Concrete(interfaceObj)
+	targetTypeName := targetTypeObj.AsString()
+	if concreteValue.TypeName() == targetTypeName {
 		op.vm.StackPush(concreteValue)
 		op.vm.StackPush(op.vm.Factory().TrueValue())
 	} else {

@@ -52,12 +52,8 @@ func (op *OpAsType) Bind(vm core.IVM) error {
 // If the popped object is not an interface, it sets an error in the virtual machine.
 func (op *OpAsType) Execute(_ *core.Decoder) {
 	interfaceObj := op.vm.StackPop()
-	io, ok := interfaceObj.(*objects.Interface)
-	if !ok {
-		op.vm.SetError(fmt.Errorf("cannot perform unchecked cast on a non-interface type: %s", interfaceObj.TypeName()))
-		return
-	}
-	op.vm.StackPush(io.Value())
+	concrete := op.vm.Factory().Concrete(interfaceObj)
+	op.vm.StackPush(concrete)
 }
 
 // Compile generates the compiled representation of the OpAsType operation or returns an unimplemented error.

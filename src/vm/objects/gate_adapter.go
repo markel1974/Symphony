@@ -93,15 +93,15 @@ func (ga *GateAdapter) CreateObjectPointer(frame int, objSrc IObject) (*ObjectPo
 }
 
 // Concrete resolves the provided IObject to a concrete implementation and returns whether the resolution was successful.
-func (ga *GateAdapter) Concrete(src IObject) (IObject, bool) {
+func (ga *GateAdapter) Concrete(src IObject) IObject {
 	switch io := src.(type) {
-	case *Interface:
-		return io.Value(), true
 	case *Struct:
-		return io, true
-	case *ObjectPointer:
-		return ga.Concrete(*io.Value())
+		return io
+	case *Interface:
+		return ga.Concrete(io.Value())
+	//case *ObjectPointer:
+	//	return ga.Concrete(*io.Value())
 	default:
-		return ga.factory.UndefinedValue(), false
+		return src
 	}
 }

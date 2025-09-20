@@ -48,11 +48,7 @@ func (op *OpCallMethod) Execute(decoder *core.Decoder) {
 	numArgs := decoder.Operand(0)
 	methodNameIndex := decoder.Operand(1)
 	methodNameObj := op.vm.Constants().Get(uint(methodNameIndex))
-	methodName, ok := methodNameObj.(*objects.String)
-	if !ok {
-		op.vm.SetError(fmt.Errorf("invalid method name constant: not a string"))
-		return
-	}
+	methodName := methodNameObj.AsString()
 	offset := numArgs + 1
 	interfaceObj := op.vm.StackPeekSP(uint(offset))
 	io, ok := interfaceObj.(*objects.Interface)
@@ -60,19 +56,13 @@ func (op *OpCallMethod) Execute(decoder *core.Decoder) {
 		op.vm.SetError(fmt.Errorf("method call on non-interface object type: %s", interfaceObj.TypeName()))
 		return
 	}
-	method, found := io.ITable()[methodName.Value()]
+	callee, found := io.Method(methodName)
 	if !found {
-		op.vm.SetError(fmt.Errorf("undefined method '%s' for type '%s'", methodName.Value(), io.Value().TypeName()))
-		return
-	}
-	callee, ok := method.(objects.IObject)
-	if !ok {
-		op.vm.SetError(fmt.Errorf("method '%s' is not a callable function", methodName.Value()))
+		op.vm.SetError(fmt.Errorf("undefined method '%s' for type '%s'", methodName, io.Value().TypeName()))
 		return
 	}
 	target := numArgs + 1
 	op.vm.StackSetSP(uint(target), io.Value())
-	//op.vm.Stack().SetAbsolute(op.vm.Stack().StackPointer()-1-numArgs, io.Value())
 	op.vm.Call(callee, false, target)
 }
 
