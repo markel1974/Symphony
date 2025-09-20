@@ -76,3 +76,32 @@ func (ga *GateAdapter) IndexAssign(frame int, dst IObject, src IObject, selector
 	}
 	return nil
 }
+
+// CreateObjectPointer creates an object pointer for a given source object and frame, returning an error if the operation fails.
+func (ga *GateAdapter) CreateObjectPointer(frame int, objSrc IObject) (*ObjectPointer, error) {
+	switch objType := objSrc.(type) {
+	case *ObjectPointer:
+		return objType, nil
+	default:
+		obj := ga.factory.NewObjectPointer(frame, &objSrc)
+		objPtr, ok := obj.(*ObjectPointer)
+		if !ok {
+			return nil, fmt.Errorf("not a pointer: %s", obj.TypeName())
+		}
+		return objPtr, nil
+	}
+}
+
+// Concrete resolves the provided IObject to a concrete implementation and returns whether the resolution was successful.
+func (ga *GateAdapter) Concrete(src IObject) (IObject, bool) {
+	switch io := src.(type) {
+	case *Interface:
+		return io.Value(), true
+	case *Struct:
+		return io, true
+	case *ObjectPointer:
+		return ga.Concrete(*io.Value())
+	default:
+		return ga.factory.UndefinedValue(), false
+	}
+}

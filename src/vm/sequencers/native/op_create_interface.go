@@ -53,12 +53,7 @@ func (op *OpCreateInterface) Execute(decoder *core.Decoder) {
 	for i := 0; i < numMethods; i++ {
 		methodFunc := op.vm.StackPop()
 		methodNameObj := op.vm.StackPop()
-		methodName, ok := methodNameObj.(*objects.String)
-		if !ok {
-			op.vm.SetError(fmt.Errorf("interface method name must be a string, got %s", methodNameObj.TypeName()))
-			return
-		}
-		iTable[methodName.Value()] = methodFunc
+		iTable[methodNameObj.AsString()] = methodFunc
 	}
 	concreteValue := op.vm.StackPop()
 	interfaceObj := op.vm.Factory().NewInterface(op.vm.FrameId(), concreteValue, iTable)

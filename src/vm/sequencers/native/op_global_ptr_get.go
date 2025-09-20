@@ -51,10 +51,10 @@ func (op *OpGlobalPtrGet) Execute(decoder *core.Decoder) {
 	val := op.vm.Globals().Get(uint(globalIndex))
 	if obj, ok := val.(*objects.ObjectPointer); ok {
 		op.vm.StackPush(obj)
-		return
+	} else {
+		freeVar := op.vm.Factory().NewObjectPointer(op.vm.FrameId(), &val)
+		op.vm.StackPush(freeVar)
 	}
-	freeVar := op.vm.Factory().NewObjectPointer(op.vm.FrameId(), &val)
-	op.vm.StackPush(freeVar)
 }
 
 // Compile generates the compiled representation of the OpGlobalPtrGet operation or returns an unimplemented error.

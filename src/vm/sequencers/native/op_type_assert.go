@@ -59,15 +59,8 @@ func (op *OpTypeAssert) Execute(decoder *core.Decoder) {
 		op.vm.SetError(fmt.Errorf("constant for type assertion is not a string"))
 		return
 	}
-	concreteValue := op.vm.Factory().UndefinedValue()
-	switch io := interfaceObj.(type) {
-	case *objects.Interface:
-		concreteValue = io.Value()
-	case *objects.Struct:
-		concreteValue = io
-	case *objects.ObjectPointer:
-		concreteValue = *io.Value()
-	default:
+	concreteValue, ok := op.vm.Factory().Concrete(interfaceObj)
+	if !ok {
 		op.vm.StackPush(op.vm.Factory().UndefinedValue())
 		op.vm.StackPush(op.vm.Factory().FalseValue())
 		return

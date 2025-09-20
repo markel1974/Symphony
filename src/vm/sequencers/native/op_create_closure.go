@@ -45,43 +45,32 @@ func (op *OpCreateClosure) Bind(vm core.IVM) error {
 
 // Execute performs the operation associated with the OpCreateClosure opcode, creating a closure and pushing it onto the stack.
 func (op *OpCreateClosure) Execute(decoder *core.Decoder) {
-	closureIndex := decoder.Operand(0)
+	closureFnIndex := decoder.Operand(0)
 	//numTotal := decoder.Operand(1)
-	closureObj := op.vm.Constants().Get(uint(closureIndex))
-	fn, ok := closureObj.(*objects.Func)
+	closureFnObj := op.vm.Constants().Get(uint(closureFnIndex))
+	fn, ok := closureFnObj.(*objects.Func)
 	if !ok {
 		op.vm.SetError(fmt.Errorf("not a function: %s", fn.TypeName()))
 		return
 	}
-	freeArgs := op.vm.StackPop()
-	freeIndices, ok := freeArgs.(*objects.Array)
+	freeArgsObj := op.vm.StackPop()
+	freeArgs, ok := freeArgsObj.(*objects.Array)
 	if !ok {
-		op.vm.SetError(fmt.Errorf("invalid operation: cannot create closure without arguments"))
+		op.vm.SetError(fmt.Errorf("can't create closure without arguments"))
 		return
 	}
-	free := make([]*objects.ObjectPointer, freeIndices.Length())
-	for idx, freeObjIndex := range freeIndices.Values() {
-		freeIndex, ok := freeObjIndex.(*objects.Int)
-		if !ok {
-			op.vm.SetError(fmt.Errorf("invalid operation: cannot create closure without arguments"))
+	free := make([]*objects.ObjectPointer, freeArgs.Length())
+	for idx, freeObjIndex := range freeArgs.Values() {
+		index := int(freeObjIndex.AsInt64())
+		obj := op.vm.StackPeekBP(uint(index))
+		freeObjPtr, err := op.vm.Factory().CreateObjectPointer(op.vm.FrameId(), obj)
+		if err != nil {
+			op.vm.SetError(err)
 			return
 		}
-		index := int(freeIndex.Value())
-		objOffset := op.vm.StackPeekBP(uint(index))
-		switch objType := objOffset.(type) {
-		case *objects.ObjectPointer:
-			free[idx] = objType
-		default:
-			obj := op.vm.Factory().NewObjectPointer(op.vm.FrameId(), &objOffset)
-			freeObjPtr, ok := obj.(*objects.ObjectPointer)
-			if !ok {
-				op.vm.SetError(fmt.Errorf("not a pointer: %s", obj.TypeName()))
-				return
-			}
-			free[idx] = freeObjPtr
-		}
+		free[idx] = freeObjPtr
 	}
-	op.vm.StackDecrementCount(uint(freeIndices.Length()))
+	op.vm.StackDecrementCount(uint(freeArgs.Length()))
 	cl := op.vm.Factory().NewFunc(op.vm.FrameId(), fn.Name(), fn.Instructions().Code(), fn.NumLocals(), fn.NumParameters(), fn.VarArgs(), nil, free)
 	op.vm.StackPush(cl)
 }
