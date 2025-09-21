@@ -28,7 +28,7 @@ type OpIsType struct {
 // It associates the executor with the OpIsType opcode.
 // Returns an error when the vm does not support the IVMFullAccess interface.
 func NewOpIsType() core.IOpExecutor {
-	operands := []opcodes.OperandFeature{opcodes.SzUint16}
+	operands := []opcodes.OperandFeature{opcodes.Relocatable}
 	return &OpIsType{
 		opcode: opcodes.NewOpcode(OpIsTypeId, operands, "OpIsType"),
 		vm:     nil,

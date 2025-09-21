@@ -20,7 +20,7 @@ type OpCreateClosure struct {
 
 // NewOpCreateClosure returns a new instance of OpCreateClosure initialized with the details of the OpCreateClosure opcode.
 func NewOpCreateClosure() core.IOpExecutor {
-	operands := []opcodes.OperandFeature{opcodes.SzUint8, opcodes.Relocatable}
+	operands := []opcodes.OperandFeature{opcodes.Relocatable}
 	return &OpCreateClosure{
 		opcode: opcodes.NewOpcode(OpCreateClosureId, operands, "OpCreateClosure"),
 		vm:     nil,
@@ -46,7 +46,6 @@ func (op *OpCreateClosure) Bind(vm core.IVM) error {
 // Execute performs the operation associated with the OpCreateClosure opcode, creating a closure and pushing it onto the stack.
 func (op *OpCreateClosure) Execute(decoder *core.Decoder) {
 	closureFnIndex := decoder.Operand(0)
-	//numTotal := decoder.Operand(1)
 	closureFnObj := op.vm.Constants().Get(uint(closureFnIndex))
 	freeArgsObj := op.vm.StackPop()
 	freeArgs, ok := freeArgsObj.(*objects.Array)

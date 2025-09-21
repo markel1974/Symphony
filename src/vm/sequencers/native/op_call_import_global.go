@@ -24,13 +24,13 @@ type OpCallImportGlobal struct {
 // Returns the new OpCallImportGlobal instance or an error if VM type assertion fails.
 func NewOpCallImportGlobal() core.IOpExecutor {
 	operands := []opcodes.OperandFeature{
-		opcodes.SzUint16,
-		opcodes.SzUint16,
-		opcodes.SzUint16,
-		opcodes.SzUint16,
-		opcodes.SzUint16,
-		opcodes.SzUint16,
-		opcodes.SzUint16,
+		opcodes.Relocatable,
+		opcodes.Relocatable,
+		opcodes.Relocatable,
+		opcodes.Relocatable,
+		opcodes.Relocatable,
+		opcodes.Relocatable,
+		opcodes.Relocatable,
 		opcodes.Relocatable,
 	}
 	return &OpCallImportGlobal{

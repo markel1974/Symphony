@@ -24,7 +24,7 @@ type OpTypeAssert struct {
 
 // NewOpTypeAssert creates a new instance of OpTypeAssert, ensuring the provided IVM implements IVMFullAccess.
 func NewOpTypeAssert() core.IOpExecutor {
-	operands := []opcodes.OperandFeature{opcodes.SzUint16}
+	operands := []opcodes.OperandFeature{opcodes.Relocatable}
 	return &OpTypeAssert{
 		opcode: opcodes.NewOpcode(OpTypeAssertId, operands, "OpTypeAssert"),
 		vm:     nil,
@@ -55,8 +55,7 @@ func (op *OpTypeAssert) Execute(decoder *core.Decoder) {
 	interfaceObj := op.vm.StackPop()
 	targetTypeObj := op.vm.Constants().Get(uint(typeNameIndex))
 	concreteValue := op.vm.Factory().Concrete(interfaceObj)
-	targetTypeName := targetTypeObj.AsString()
-	if concreteValue.TypeName() == targetTypeName {
+	if concreteValue.TypeName() == targetTypeObj.AsString() {
 		op.vm.StackPush(concreteValue)
 		op.vm.StackPush(op.vm.Factory().TrueValue())
 	} else {

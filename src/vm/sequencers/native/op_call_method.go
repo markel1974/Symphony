@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/markel1974/c64emu/src/vm/core"
-	objects "github.com/markel1974/c64emu/src/vm/objects"
+	"github.com/markel1974/c64emu/src/vm/objects"
 	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
 
@@ -20,7 +20,7 @@ type OpCallMethod struct {
 
 // NewOpCallMethod creates and returns a new instance of OpCallMethod with initialized Opcode for the OpCallMethod opcode.
 func NewOpCallMethod() core.IOpExecutor {
-	operands := []opcodes.OperandFeature{opcodes.SzUint16, opcodes.SzUint8}
+	operands := []opcodes.OperandFeature{opcodes.SzUint8, opcodes.Relocatable}
 	return &OpCallMethod{
 		opcode: opcodes.NewOpcode(OpCallMethodId, operands, "OpCallMethod"),
 		vm:     nil,
@@ -45,10 +45,9 @@ func (op *OpCallMethod) Bind(vm core.IVM) error {
 
 // Execute performs the dynamic dispatch logic.
 func (op *OpCallMethod) Execute(decoder *core.Decoder) {
-	numArgs := decoder.Operand(0)
-	methodNameIndex := decoder.Operand(1)
+	methodNameIndex := decoder.Operand(0)
+	numArgs := decoder.Operand(1)
 	methodNameObj := op.vm.Constants().Get(uint(methodNameIndex))
-	methodName := methodNameObj.AsString()
 	offset := numArgs + 1
 	interfaceObj := op.vm.StackPeekSP(uint(offset))
 	io, ok := interfaceObj.(*objects.Interface)
@@ -56,9 +55,9 @@ func (op *OpCallMethod) Execute(decoder *core.Decoder) {
 		op.vm.SetError(fmt.Errorf("method call on non-interface object type: %s", interfaceObj.TypeName()))
 		return
 	}
-	callee, found := io.Method(methodName)
-	if !found {
-		op.vm.SetError(fmt.Errorf("undefined method '%s' for type '%s'", methodName, io.Value().TypeName()))
+	callee, ok := io.Method(methodNameObj.AsString())
+	if !ok {
+		op.vm.SetError(fmt.Errorf("undefined method '%s' for type '%s'", methodNameObj.AsString(), io.Value().TypeName()))
 		return
 	}
 	target := numArgs + 1

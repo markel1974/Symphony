@@ -166,7 +166,6 @@ func (c *Functions) funcBodyCompile(fd *tables.FunctionDescription) error {
 	}
 	//only closure has free symbols
 	var freeObj []*objects.ObjectPointer = nil
-	freeNum := 0
 	nLocals := c.scopes.SymbolCount()
 	code, source, err := c.scopes.Leave()
 	if err != nil {
@@ -190,7 +189,7 @@ func (c *Functions) funcBodyCompile(fd *tables.FunctionDescription) error {
 	fnSymbol.SetReturnTypes(fd.ReturnTypes)
 
 	if node.Recv == nil && !c.scopes.IsRootScope() {
-		if _, err = c.scopes.Emit(node.Pos(), native.OpCreateClosureId, freeNum, constIndex); err != nil {
+		if _, err = c.scopes.Emit(node.Pos(), native.OpCreateClosureId, constIndex); err != nil {
 			return err
 		}
 		symbol, _ := c.scopes.SymbolResolve(node.Name.Name)
@@ -293,7 +292,7 @@ func (c *Functions) CallExpr(node *ast.CallExpr) error {
 			numArgs := len(node.Args)
 
 			// TODO 2
-			if _, err := c.scopes.Emit(node.Pos(), native.OpCallMethodId, methodNameConstIndex, numArgs); err != nil {
+			if _, err := c.scopes.Emit(node.Pos(), native.OpCallMethodId, numArgs, methodNameConstIndex); err != nil {
 				return err
 			}
 			// We're done for this case, no need to do anything else.
@@ -488,8 +487,8 @@ func (c *Functions) handleClosure(node *ast.FuncLit) error {
 	}
 	compiledFn := c.gk.NewFunc(objects.FrameStatic, "", code, nLocals, nParams, false, source, freeObj)
 	constIndex := c.constants.Add("", compiledFn)
-	freeNum := c.scopes.SymbolCount()
-	if _, err = c.scopes.Emit(node.Pos(), native.OpCreateClosureId, freeNum, constIndex); err != nil {
+	//freeNum := c.scopes.SymbolCount()
+	if _, err = c.scopes.Emit(node.Pos(), native.OpCreateClosureId, constIndex); err != nil {
 		return err
 	}
 	return nil

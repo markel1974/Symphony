@@ -14,8 +14,8 @@ func init() {
 // Struct is a composite object that implements the IObject interface and stores a collection of key-Code pairs.
 type Struct struct {
 	IAllocator
-	name string
-	data map[string]IObject
+	typeName string
+	data     map[string]IObject
 }
 
 // NewStruct creates a new instance of MapImmutable with the provided map of string keys and IObject Code.
@@ -32,7 +32,7 @@ func newStruct(allocator IAllocator, value map[string]IObject) IObject {
 	}
 	return &Struct{
 		IAllocator: allocator,
-		name:       "",
+		typeName:   "",
 		data:       value,
 	}
 }
@@ -147,7 +147,7 @@ func (o *Struct) GetValue(k string) (IObject, bool) {
 
 // TypeName returns the type name of the object as a string.
 func (o *Struct) TypeName() string {
-	return o.name
+	return o.typeName
 }
 
 // Copy creates and returns a new IObject by duplicating the internal state of the Struct instance.
@@ -159,7 +159,7 @@ func (o *Struct) Copy(frame int, depth int) IObject {
 		}
 		c[k] = v.Copy(frame, depth+1)
 	}
-	return o.GateKeeper().NewStruct(frame, o.name, c)
+	return o.GateKeeper().NewStruct(frame, o.typeName, c)
 }
 
 // Falsy returns true if the Struct contains no Code, otherwise false.
@@ -228,7 +228,7 @@ func (o *Struct) Count() int {
 func (o *Struct) GobEncode() ([]byte, error) {
 	var buf bytes.Buffer
 	encoder := gob.NewEncoder(&buf)
-	if err := encoder.Encode(o.name); err != nil {
+	if err := encoder.Encode(o.typeName); err != nil {
 		return nil, err
 	}
 	if err := encoder.Encode(o.data); err != nil {
@@ -241,7 +241,7 @@ func (o *Struct) GobEncode() ([]byte, error) {
 func (o *Struct) GobDecode(data []byte) error {
 	buf := bytes.NewBuffer(data)
 	decoder := gob.NewDecoder(buf)
-	if err := decoder.Decode(&o.name); err != nil {
+	if err := decoder.Decode(&o.typeName); err != nil {
 		return err
 	}
 	if err := decoder.Decode(&o.data); err != nil {

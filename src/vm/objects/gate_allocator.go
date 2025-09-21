@@ -230,13 +230,13 @@ func (f *GateAllocator) NewMap(frame int, v map[string]IObject) IObject {
 }
 
 // NewStruct creates and initializes a new Struct object with a specified frame, type name, and key-Code pair map.
-func (f *GateAllocator) NewStruct(frame int, name string, v map[string]IObject) IObject {
+func (f *GateAllocator) NewStruct(frame int, typeName string, v map[string]IObject) IObject {
 	if len(v) > maxStructLen {
 		// todo truncate struct
 	}
 	obj := f.poolStruct.Get().(*Struct)
 	obj.setFrame(frame)
-	obj.name = name
+	obj.typeName = typeName
 	obj.data = v
 	return obj
 }
