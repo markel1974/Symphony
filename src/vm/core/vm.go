@@ -156,10 +156,9 @@ func (v *VM) CreateClosure(fn *objects.Func, objRequired []objects.IObject) obje
 		}
 		free[idx] = freeObjPtr
 	}
-	z := fn.Copy(v.currFrame.Id(), 0)
-	cl, ok := z.(*objects.Func)
+	cl, ok := fn.Copy(v.currFrame.Id(), 0).(*objects.Func)
 	if !ok {
-		v.SetError(fmt.Errorf("not a function: %s", z.TypeName()))
+		v.SetError(fmt.Errorf("not a function: %s", fn.TypeName()))
 		return v.gk.UndefinedValue()
 	}
 	if err := cl.FreeSet(free); err != nil {

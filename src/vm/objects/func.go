@@ -180,12 +180,12 @@ func (o *Func) TypeName() string {
 
 // Copy creates a deep copy of the Func object, replicating its properties and associated instructions.
 func (o *Func) Copy(frame int, _ int) IObject {
-	obj := o.GateKeeper().NewFunc(frame, o.name, nil, o.numLocals, o.numParameters, o.varArgs, nil)
+	obj := o.GateKeeper().NewFunc(frame, o.name, o.instructions.Code(), o.numLocals, o.numParameters, o.varArgs, o.source)
 	ret, ok := obj.(*Func)
 	if !ok {
 		return o.GateKeeper().UndefinedValue()
 	}
-	ret.instructions = o.instructions.Copy()
+	//ret.instructions = o.instructions.Copy()
 	ret.free = append([]*ObjectPointer{}, o.free...)
 	ret.freeIndices = append([]int{}, o.freeIndices...)
 	return ret
