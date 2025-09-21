@@ -125,8 +125,8 @@ func (f *GateAllocator) UndefinedValue() IObject {
 // NewFunc creates a new compiled function object with the given frame, name, instructions, locals, parameters, and settings.
 // It initializes the object, acquires resources if available, and returns an IObject instance.
 // If resource acquisition fails, it returns the undefined object from the allocator.
-func (f *GateAllocator) NewFunc(frame int, name string, instructions []byte, numLocals int, numParameters int, varArgs bool, source map[int]int, free []*ObjectPointer) IObject {
-	return newFunc(NewAllocator(f.gk, frame), name, instructions, numLocals, numParameters, varArgs, source, free)
+func (f *GateAllocator) NewFunc(frame int, name string, instructions []byte, numLocals int, numParameters int, varArgs bool, source map[int]int) IObject {
+	return newFunc(NewAllocator(f.gk, frame), name, instructions, numLocals, numParameters, varArgs, source)
 }
 
 // NewFuncInternal creates a new IObject using the provided frame and CallId, ensuring proper allocation and preparation.

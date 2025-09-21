@@ -164,8 +164,6 @@ func (c *Functions) funcBodyCompile(fd *tables.FunctionDescription) error {
 			return err
 		}
 	}
-	//only closure has free symbols
-	var freeObj []*objects.ObjectPointer = nil
 	nLocals := c.scopes.SymbolCount()
 	code, source, err := c.scopes.Leave()
 	if err != nil {
@@ -179,7 +177,7 @@ func (c *Functions) funcBodyCompile(fd *tables.FunctionDescription) error {
 	if !ok {
 		return tables.NewCompilerError(c.fileSet, node, "undefined function: %s", fd.Name)
 	}
-	compiledFn := c.gk.NewFunc(objects.FrameStatic, fd.Name, code, nLocals, nParams, false, source, freeObj)
+	compiledFn := c.gk.NewFunc(objects.FrameStatic, fd.Name, code, nLocals, nParams, false, source)
 	//fnSymbol.SetObject(compiledFn)
 	if err = c.constants.SetIndex(fnSymbol.Index(), compiledFn); err != nil {
 		return tables.NewCompilerError(c.fileSet, node, err.Error())
@@ -464,30 +462,19 @@ func (c *Functions) handleClosure(node *ast.FuncLit) error {
 	}
 	//prepare free symbols
 	freeSymbols := c.scopes.SymbolFree()
-	freeObj := make([]*objects.ObjectPointer, len(freeSymbols))
-	for idx := range freeSymbols {
-		v := c.gk.UndefinedValue()
-		ptr, _ := c.gk.NewObjectPointer(objects.FrameStatic, &v).(*objects.ObjectPointer)
-		freeObj[idx] = ptr
-	}
 	nParams := c.functionTable.CountParams(node.Type.Params)
 	nLocals := c.scopes.SymbolCount()
 	code, source, err := c.scopes.Leave()
 	if err != nil {
 		return err
 	}
-	freeData := make([]objects.IObject, len(freeSymbols))
-	for idx, freeIndex := range freeSymbols {
-		freeData[idx] = c.gk.NewInt(objects.FrameStatic, int64(freeIndex))
+	compiledFn := c.gk.NewFunc(objects.FrameStatic, "", code, nLocals, nParams, false, source)
+	fn, ok := compiledFn.(*objects.Func)
+	if !ok {
+		return fmt.Errorf("unexpected function type")
 	}
-	freeContainer := c.gk.NewArray(objects.FrameStatic, freeData)
-	freeContainerIdx := c.constants.Add(closureName+"_free", freeContainer)
-	if _, err = c.scopes.Emit(node.Pos(), native.OpConstantId, freeContainerIdx); err != nil {
-		return err
-	}
-	compiledFn := c.gk.NewFunc(objects.FrameStatic, "", code, nLocals, nParams, false, source, freeObj)
+	fn.FreeInitialize(freeSymbols)
 	constIndex := c.constants.Add("", compiledFn)
-	//freeNum := c.scopes.SymbolCount()
 	if _, err = c.scopes.Emit(node.Pos(), native.OpCreateClosureId, constIndex); err != nil {
 		return err
 	}

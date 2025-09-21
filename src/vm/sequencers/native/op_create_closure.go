@@ -47,19 +47,18 @@ func (op *OpCreateClosure) Bind(vm core.IVM) error {
 func (op *OpCreateClosure) Execute(decoder *core.Decoder) {
 	closureFnIndex := decoder.Operand(0)
 	closureFnObj := op.vm.Constants().Get(uint(closureFnIndex))
-	freeArgsObj := op.vm.StackPop()
-	freeArgs, ok := freeArgsObj.(*objects.Array)
+	fn, ok := closureFnObj.(*objects.Func)
 	if !ok {
-		op.vm.SetError(fmt.Errorf("not an array: %s", freeArgsObj.TypeName()))
+		op.vm.SetError(fmt.Errorf("not a function: %s", closureFnObj.TypeName()))
 		return
 	}
-	required := make([]objects.IObject, freeArgs.Length())
-	for idx, freeObjIndex := range freeArgs.Values() {
-		obj := op.vm.StackPeekBP(uint(freeObjIndex.AsInt64()))
+	reqIndices := fn.FreeIndices()
+	required := make([]objects.IObject, len(reqIndices))
+	for idx, freeObjIndex := range reqIndices {
+		obj := op.vm.StackPeekBP(uint(freeObjIndex))
 		required[idx] = obj
 	}
-	op.vm.StackDecrementCount(uint(freeArgs.Length()))
-	cl := op.vm.CreateClosure(closureFnObj, required)
+	cl := op.vm.CreateClosure(fn, required)
 	op.vm.StackPush(cl)
 }
 

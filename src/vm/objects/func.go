@@ -3,6 +3,7 @@ package objects
 import (
 	"bytes"
 	"encoding/gob"
+	"fmt"
 
 	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
@@ -27,6 +28,7 @@ type Func struct {
 	varArgs       bool
 	source        map[int]int
 	free          []*ObjectPointer
+	freeIndices   []int
 }
 
 // newFunc creates and returns a new instance of Func using provided parameters and default initializations.
@@ -36,7 +38,7 @@ type Func struct {
 // varArgs indicates if the function accepts a variable number of arguments.
 // source maps instruction indices to source code, defaulting to an empty map if nil is provided.
 // free holds externally closed variables as object pointers for use within the function's scope.
-func newFunc(allocator IAllocator, name string, data []byte, numLocals int, numParameters int, varArgs bool, source map[int]int, free []*ObjectPointer) IObject {
+func newFunc(allocator IAllocator, name string, data []byte, numLocals int, numParameters int, varArgs bool, source map[int]int) IObject {
 	if source == nil {
 		source = make(map[int]int)
 	}
@@ -48,7 +50,7 @@ func newFunc(allocator IAllocator, name string, data []byte, numLocals int, numP
 		numParameters: numParameters,
 		varArgs:       varArgs,
 		source:        source,
-		free:          free,
+		free:          nil,
 	}
 }
 
@@ -171,16 +173,6 @@ func (o *Func) NumParameters() int {
 	return o.numParameters
 }
 
-// VarArgs returns true if the function is variadic, allowing it to accept a variable number of arguments.
-func (o *Func) VarArgs() bool {
-	return o.varArgs
-}
-
-// Free returns the slice of ObjectPointer instances that represent the free variables of the compiled function.
-func (o *Func) Free() []*ObjectPointer {
-	return o.free
-}
-
 // TypeName returns the string identifier "func_compiled" representing the type of the Func object.
 func (o *Func) TypeName() string {
 	return FuncDef
@@ -188,13 +180,14 @@ func (o *Func) TypeName() string {
 
 // Copy creates a deep copy of the Func object, replicating its properties and associated instructions.
 func (o *Func) Copy(frame int, _ int) IObject {
-	obj := o.GateKeeper().NewFunc(frame, o.name, nil, o.numLocals, o.numParameters, o.varArgs, nil, nil)
+	obj := o.GateKeeper().NewFunc(frame, o.name, nil, o.numLocals, o.numParameters, o.varArgs, nil)
 	ret, ok := obj.(*Func)
 	if !ok {
 		return o.GateKeeper().UndefinedValue()
 	}
 	ret.instructions = o.instructions.Copy()
 	ret.free = append([]*ObjectPointer{}, o.free...)
+	ret.freeIndices = append([]int{}, o.freeIndices...)
 	return ret
 }
 
@@ -217,6 +210,43 @@ func (o *Func) SourcePos(ip int) int {
 // Count returns the total number of elements in the instance and its sub-elements.
 func (o *Func) Count() int {
 	return 1
+}
+
+// VarArgs returns true if the function is variadic, allowing it to accept a variable number of arguments.
+func (o *Func) VarArgs() bool {
+	return o.varArgs
+}
+
+// Free returns the slice of ObjectPointer instances that represent the free variables of the compiled function.
+func (o *Func) Free() []*ObjectPointer {
+	return o.free
+}
+
+// FreeIndices returns a slice of integers representing the indexes of free variables within the compiled function.
+func (o *Func) FreeIndices() []int {
+	return o.freeIndices
+}
+
+// FreeInitialize initializes free variables with provided indices and assigns default undefined values to their object pointers.
+func (o *Func) FreeInitialize(freeIdx []int) {
+	o.freeIndices = make([]int, len(freeIdx))
+	copy(o.freeIndices, freeIdx)
+	u := o.GateKeeper().UndefinedValue()
+	o.free = make([]*ObjectPointer, len(o.freeIndices))
+	for idx := range o.freeIndices {
+		ptr, _ := o.GateKeeper().NewObjectPointer(FrameStatic, &u).(*ObjectPointer)
+		o.free[idx] = ptr
+	}
+}
+
+// FreeSet sets the free variable pointers for a Func instance, ensuring the count matches the expected free variable indices.
+func (o *Func) FreeSet(free []*ObjectPointer) error {
+	if len(free) != len(o.freeIndices) {
+		return fmt.Errorf("invalid free variable count: %d != %d", len(free), len(o.freeIndices))
+	}
+	o.free = make([]*ObjectPointer, len(free))
+	copy(o.free, free)
+	return nil
 }
 
 // GobEncode serializes the Func's data into a byte slice using gob encoding and returns the result or an error.
@@ -242,6 +272,9 @@ func (o *Func) GobEncode() ([]byte, error) {
 		return nil, err
 	}
 	if err := encoder.Encode(o.free); err != nil {
+		return nil, err
+	}
+	if err := encoder.Encode(o.freeIndices); err != nil {
 		return nil, err
 	}
 	return buf.Bytes(), nil
@@ -270,6 +303,9 @@ func (o *Func) GobDecode(data []byte) error {
 		return err
 	}
 	if err := decoder.Decode(&o.free); err != nil {
+		return err
+	}
+	if err := decoder.Decode(&o.freeIndices); err != nil {
 		return err
 	}
 	return nil

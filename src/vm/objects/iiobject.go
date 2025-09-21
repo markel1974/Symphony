@@ -74,7 +74,7 @@ type IGateAllocator interface {
 	AssignAllocator(object IObject)
 	SetPointer(ptr *ObjectPointer, value IObject)
 	NewFuncInternal(frame int, id CallId) IObject
-	NewFunc(frame int, name string, instructions []byte, numLocals int, numParameters int, varArgs bool, sourceMap map[int]int, free []*ObjectPointer) IObject
+	NewFunc(frame int, name string, instructions []byte, numLocals int, numParameters int, varArgs bool, sourceMap map[int]int) IObject
 	NewFuncImport(frame int, name string, args int, fn Invocable) IObject
 	NewFuncJit(frame int, name string, data []byte) IObject
 	NewArray(frame int, values []IObject) IObject

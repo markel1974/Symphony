@@ -38,7 +38,7 @@ type IVMStackOnly interface {
 	StackPopInterface(numElem int) objects.IObject
 
 	CreateError(obj objects.IObject) objects.IObject
-	CreateClosure(fnObj objects.IObject, objRequired []objects.IObject) objects.IObject
+	CreateClosure(fn *objects.Func, objRequired []objects.IObject) objects.IObject
 	CreateObjectPointer(obj objects.IObject) objects.IObject
 	CreateSlice(highIdx int, lowIdx int, targetObj objects.IObject) objects.IObject
 
