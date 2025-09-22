@@ -233,6 +233,16 @@ func (o *Any) Count() int {
 	return 1
 }
 
+// GobDecode implements the gob.GobDecoder interface, decoding the Allocator state from a byte slice representation.
+func (o *Any) GobDecode(_ []byte) (err error) {
+	return nil
+}
+
+// GobEncode encodes the Allocator instance into a byte slice for use with the gob package and returns it along with any error.
+func (o *Any) GobEncode() ([]byte, error) {
+	return nil, nil
+}
+
 // call invokes a reflect.Value method with arguments, handles results, and converts to/from IObject representation.
 func (o *Any) call(gk IGateKeeper, frame int, method reflect.Value, args []IObject) (uint, IObject, error) {
 	in := make([]reflect.Value, len(args))

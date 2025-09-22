@@ -55,13 +55,3 @@ func (a *Allocator) Frame() int {
 func (a *Allocator) SetStatic() {
 	a.frame = FrameStatic
 }
-
-// GobDecode implements the gob.GobDecoder interface, decoding the Allocator state from a byte slice representation.
-func (a *Allocator) GobDecode(_ []byte) (err error) {
-	return nil
-}
-
-// GobEncode encodes the Allocator instance into a byte slice for use with the gob package and returns it along with any error.
-func (a *Allocator) GobEncode() ([]byte, error) {
-	return nil, nil
-}
