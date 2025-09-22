@@ -108,6 +108,7 @@ type IGateConverter interface {
 	ToStringArg(index int, in []IObject) (string, error)
 	ToBytesArg(index int, in []IObject) ([]byte, error)
 
+	FromBoolError(val bool, err error) (IObject, error)
 	FromInterface(frame int, in interface{}) IObject
 	StructFromMap(frame int, name string, v map[string]interface{}) IObject
 	ToAny(frame int, i interface{}) IObject

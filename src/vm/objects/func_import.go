@@ -71,7 +71,8 @@ func (o *FuncImport) Nil() bool {
 // Returns the resulting object or an ErrInvalidOperator error if the operation is not valid.
 func (o *FuncImport) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, error) {
 	if rhsIn.Nil() {
-		return logicalOpNil(o.GateKeeper(), op)
+		ret, err := logicalOpNil(op)
+		return o.GateKeeper().FromBoolError(ret, err)
 	}
 	return nil, ErrInvalidOperator
 }

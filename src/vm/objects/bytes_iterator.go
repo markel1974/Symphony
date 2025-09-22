@@ -79,7 +79,8 @@ func (o *BytesIterator) Nil() bool {
 // LogicalOp performs a logical operation on the BytesIterator object, always returning an error for invalid operations.
 func (o *BytesIterator) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, error) {
 	if rhsIn.Nil() {
-		return logicalOpNil(o.GateKeeper(), op)
+		ret, err := logicalOpNil(op)
+		return o.GateKeeper().FromBoolError(ret, err)
 	}
 	return nil, ErrInvalidOperator
 }

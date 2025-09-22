@@ -87,7 +87,8 @@ func (o *Error) Nil() bool {
 // LogicalOp performs a logical operation on the Error object with the provided operator and operand, returning an error.
 func (o *Error) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, error) {
 	if rhsIn.Nil() {
-		return logicalOpNil(o.GateKeeper(), op)
+		ret, err := logicalOpNil(op)
+		return o.GateKeeper().FromBoolError(ret, err)
 	}
 	rhs, ok := rhsIn.(*Error)
 	if !ok {

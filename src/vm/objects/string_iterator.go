@@ -79,7 +79,8 @@ func (o *StringIterator) Nil() bool {
 // LogicalOp performs a logical operation using a specified operator and right-hand operand, but always returns an error.
 func (o *StringIterator) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, error) {
 	if rhsIn.Nil() {
-		return logicalOpNil(o.GateKeeper(), op)
+		ret, err := logicalOpNil(op)
+		return o.GateKeeper().FromBoolError(ret, err)
 	}
 	return nil, ErrInvalidOperator
 }

@@ -103,7 +103,8 @@ func (o *Func) Nil() bool {
 // Returns the result of the logical operation or an error if the operator is invalid or unsupported.
 func (o *Func) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, error) {
 	if rhsIn.Nil() {
-		return logicalOpNil(o.GateKeeper(), op)
+		ret, err := logicalOpNil(op)
+		return o.GateKeeper().FromBoolError(ret, err)
 	}
 	return nil, ErrInvalidOperator
 }

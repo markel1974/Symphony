@@ -2,14 +2,14 @@ package objects
 
 // logicalOpNil evaluates logical operations when the right-hand operand is Nil.
 // It supports equality and inequality operators; others return false and ErrInvalidOperator.
-func logicalOpNil(gk IGateAllocator, op LogicalOperator) (IObject, error) {
+func logicalOpNil(op LogicalOperator) (bool, error) {
 	switch op {
 	case OperatorLogicalEq:
-		return gk.FalseValue(), nil
+		return false, nil
 	case OperatorLogicalNotEq:
-		return gk.TrueValue(), nil
+		return true, nil
 	default:
-		return gk.FalseValue(), ErrInvalidOperator
+		return false, ErrInvalidOperator
 	}
 }
 

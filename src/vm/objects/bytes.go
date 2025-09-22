@@ -133,7 +133,8 @@ func (o *Bytes) ArithmeticOp(frame int, op ArithmeticOperator, in IObject) (IObj
 // LogicalOp performs a logical operation on the Bytes object using the specified operator and operand, returning an error.
 func (o *Bytes) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, error) {
 	if rhsIn.Nil() {
-		return logicalOpNil(o.GateKeeper(), op)
+		ret, err := logicalOpNil(op)
+		return o.GateKeeper().FromBoolError(ret, err)
 	}
 	return nil, ErrInvalidOperator
 }

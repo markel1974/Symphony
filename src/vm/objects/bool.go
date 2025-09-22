@@ -96,20 +96,15 @@ func (o *Bool) Nil() bool {
 // Returns the result of the operation as an IObject or an error if the operation is invalid.
 func (o *Bool) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, error) {
 	if rhsIn.Nil() {
-		return logicalOpNil(o.GateKeeper(), op)
+		ret, err := logicalOpNil(op)
+		return o.GateKeeper().FromBoolError(ret, err)
 	}
 	lhsValue := int64(0)
 	if o.data {
 		lhsValue = 1
 	}
 	ret, err := logicalOpInt64(lhsValue, op, rhsIn.AsInt64())
-	if err != nil {
-		return nil, err
-	}
-	if ret {
-		return o.GateKeeper().TrueValue(), nil
-	}
-	return o.GateKeeper().FalseValue(), nil
+	return o.GateKeeper().FromBoolError(ret, err)
 }
 
 // ArithmeticOp performs an arithmetic operation between the Bool object and a given IObject using the specified operator.
@@ -132,13 +127,7 @@ func (o *Bool) ArithmeticOp(_ int, op ArithmeticOperator, rhsIn IObject) (IObjec
 // UnaryOp performs a unary operation using the specified UnaryOperator. Returns a new object or an error.
 func (o *Bool) UnaryOp(_ int, op UnaryOperator) (IObject, error) {
 	ret, err := unaryOpBool(op, o.data)
-	if err != nil {
-		return nil, err
-	}
-	if ret {
-		return o.GateKeeper().TrueValue(), nil
-	}
-	return o.GateKeeper().FalseValue(), nil
+	return o.GateKeeper().FromBoolError(ret, err)
 }
 
 // IndexGet retrieves the data at a given index from the Bool object, but always returns an error as Bool is not indexable.

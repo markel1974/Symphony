@@ -93,7 +93,8 @@ func (o *ArrayIterator) Call(_ int, _ ...IObject) (retCount uint, ret IObject, e
 // LogicalOp attempts to perform a logical operation, returning an error as this operation is not supported.
 func (o *ArrayIterator) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, error) {
 	if rhsIn.Nil() {
-		return logicalOpNil(o.GateKeeper(), op)
+		ret, err := logicalOpNil(op)
+		return o.GateKeeper().FromBoolError(ret, err)
 	}
 	return nil, ErrInvalidOperator
 }

@@ -130,16 +130,11 @@ func (o *Int) TypeName() string {
 // LogicalOp performs a logical operation between the object's Code and a given operand, using the specified operator.
 func (o *Int) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, error) {
 	if rhsIn.Nil() {
-		return logicalOpNil(o.GateKeeper(), op)
+		ret, err := logicalOpNil(op)
+		return o.GateKeeper().FromBoolError(ret, err)
 	}
 	ret, err := logicalOpInt64(o.data, op, rhsIn.AsInt64())
-	if err != nil {
-		return nil, err
-	}
-	if ret {
-		return o.GateKeeper().TrueValue(), nil
-	}
-	return o.GateKeeper().FalseValue(), nil
+	return o.GateKeeper().FromBoolError(ret, err)
 }
 
 // ArithmeticOp performs a binary arithmetic operation on the Int object using the specified operator and right-hand operand.

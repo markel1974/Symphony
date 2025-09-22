@@ -95,7 +95,8 @@ func (o *Interface) Copy(frame int, depth int) IObject {
 // It returns the result of the operation or an error if the operation cannot be performed.
 func (o *Interface) LogicalOp(frame int, op LogicalOperator, rhsIn IObject) (IObject, error) {
 	if rhsIn.Nil() {
-		return logicalOpNil(o.GateKeeper(), op)
+		ret, err := logicalOpNil(op)
+		return o.GateKeeper().FromBoolError(ret, err)
 	}
 	return o.data.LogicalOp(frame, op, rhsIn)
 }

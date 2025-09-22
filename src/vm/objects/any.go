@@ -147,17 +147,11 @@ func (o *Any) Nil() bool {
 // It returns the result of the operation if the operator is valid, otherwise it returns an ErrInvalidOperator error.
 func (o *Any) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, error) {
 	if rhsIn.Nil() {
-		return logicalOpNil(o.GateKeeper(), op)
+		v, err := logicalOpNil(op)
+		return o.GateKeeper().FromBoolError(v, err)
 	}
-	val := o.AsInt64()
-	ret, err := logicalOpInt64(val, op, rhsIn.AsInt64())
-	if err != nil {
-		return nil, err
-	}
-	if ret {
-		return o.GateKeeper().TrueValue(), nil
-	}
-	return o.GateKeeper().FalseValue(), nil
+	v, err := logicalOpInt64(o.AsInt64(), op, rhsIn.AsInt64())
+	return o.GateKeeper().FromBoolError(v, err)
 }
 
 // ArithmeticOp performs an arithmetic operation on the current object and the provided IObject using the specified operator.

@@ -124,16 +124,11 @@ func (o *Char) TypeName() string {
 // LogicalOp performs a logical operation between the current Char object and another IObject using the specified operator.
 func (o *Char) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, error) {
 	if rhsIn.Nil() {
-		return logicalOpNil(o.GateKeeper(), op)
+		ret, err := logicalOpNil(op)
+		return o.GateKeeper().FromBoolError(ret, err)
 	}
 	ret, err := logicalOpInt64(int64(o.data), op, rhsIn.AsInt64())
-	if err != nil {
-		return nil, err
-	}
-	if ret {
-		return o.GateKeeper().TrueValue(), nil
-	}
-	return o.GateKeeper().FalseValue(), nil
+	return o.GateKeeper().FromBoolError(ret, err)
 }
 
 // ArithmeticOp applies the specified arithmetic operation between a Char object and another IObject, returning the result.

@@ -97,7 +97,8 @@ func (o *MapIterator) Nil() bool {
 // Returns nil and ErrInvalidOperator as logical operations are unsupported for MapIterator.
 func (o *MapIterator) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, error) {
 	if rhsIn.Nil() {
-		return logicalOpNil(o.GateKeeper(), op)
+		ret, err := logicalOpNil(op)
+		return o.GateKeeper().FromBoolError(ret, err)
 	}
 	return nil, ErrInvalidOperator
 }

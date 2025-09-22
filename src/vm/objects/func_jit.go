@@ -74,7 +74,8 @@ func (o *FuncJit) Nil() bool {
 // Always returns nil and ErrInvalidOperator as logical operations are not supported for this object type.
 func (o *FuncJit) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, error) {
 	if rhsIn.Nil() {
-		return logicalOpNil(o.GateKeeper(), op)
+		ret, err := logicalOpNil(op)
+		return o.GateKeeper().FromBoolError(ret, err)
 	}
 	return nil, ErrInvalidOperator
 }

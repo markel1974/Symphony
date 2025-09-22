@@ -128,16 +128,11 @@ func (o *Float) TypeName() string {
 // Returns a boolean IObject representing the result or an error if the operation is invalid.
 func (o *Float) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, error) {
 	if rhsIn.Nil() {
-		return logicalOpNil(o.GateKeeper(), op)
+		ret, err := logicalOpNil(op)
+		return o.GateKeeper().FromBoolError(ret, err)
 	}
 	ret, err := logicalOpFloat64(o.data, op, rhsIn.AsFloat64())
-	if err != nil {
-		return nil, err
-	}
-	if ret {
-		return o.GateKeeper().TrueValue(), nil
-	}
-	return o.GateKeeper().FalseValue(), nil
+	return o.GateKeeper().FromBoolError(ret, err)
 }
 
 // ArithmeticOp performs an arithmetic operation with the specified operator and returns the result or an error.

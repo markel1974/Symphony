@@ -125,7 +125,8 @@ func (o *Time) TypeName() string {
 // LogicalOp performs logical comparison operations (e.g., <, >, <=, >=) between the Time object and another Time object.
 func (o *Time) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, error) {
 	if rhsIn.Nil() {
-		return logicalOpNil(o.GateKeeper(), op)
+		ret, err := logicalOpNil(op)
+		return o.GateKeeper().FromBoolError(ret, err)
 	}
 	switch rhs := rhsIn.(type) {
 	case *Time:

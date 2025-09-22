@@ -60,6 +60,17 @@ func (gc *GateConverter) ToAny(frame int, i interface{}) IObject {
 	return gc.gk.NewAny(frame, i)
 }
 
+// FromBoolError converts a boolean value and error into an IObject representation, returning an error if provided.
+func (gc *GateConverter) FromBoolError(val bool, err error) (IObject, error) {
+	if err != nil {
+		return gc.gk.UndefinedValue(), err
+	}
+	if val {
+		return gc.gk.TrueValue(), nil
+	}
+	return gc.gk.FalseValue(), nil
+}
+
 // FromAny converts an IObject into its underlying data if it is of type *Any. Returns an error if not assignable.
 func (gc *GateConverter) FromAny(obj IObject) (interface{}, error) {
 	i, ok := obj.(*Any)

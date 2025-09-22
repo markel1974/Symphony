@@ -148,7 +148,8 @@ func (o *Array) Assign(v []IObject) {
 // LogicalOp performs a logical operation on the array using the given operator and operand, returning an error if invalid.
 func (o *Array) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, error) {
 	if rhsIn.Nil() {
-		return logicalOpNil(o.GateKeeper(), op)
+		ret, err := logicalOpNil(op)
+		return o.GateKeeper().FromBoolError(ret, err)
 	}
 	return nil, ErrInvalidOperator
 }

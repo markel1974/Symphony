@@ -104,7 +104,8 @@ func (o *StructIterator) AssignValue(_ IObject) error {
 // It returns ErrInvalidOperator as logical operations are unsupported for StructIterator.
 func (o *StructIterator) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, error) {
 	if rhsIn.Nil() {
-		return logicalOpNil(o.GateKeeper(), op)
+		ret, err := logicalOpNil(op)
+		return o.GateKeeper().FromBoolError(ret, err)
 	}
 	return nil, ErrInvalidOperator
 }
