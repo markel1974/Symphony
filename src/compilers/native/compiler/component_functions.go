@@ -289,8 +289,8 @@ func (c *Functions) CallExpr(node *ast.CallExpr) error {
 			methodNameConstIndex := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, methodName))
 			numArgs := len(node.Args)
 
-			// TODO 2
-			if _, err := c.scopes.Emit(node.Pos(), native.OpCallMethodId, numArgs, methodNameConstIndex); err != nil {
+			spread := 0
+			if _, err := c.scopes.Emit(node.Pos(), native.OpCallMethodId, numArgs, spread, methodNameConstIndex); err != nil {
 				return err
 			}
 			// We're done for this case, no need to do anything else.
@@ -316,7 +316,6 @@ func (c *Functions) CallExpr(node *ast.CallExpr) error {
 		return tables.NewCompilerError(c.fileSet, node, "unsupported function call type: %T", node.Fun)
 	}
 
-	// Step 3 & 4 for simple functions and struct methods
 	for _, arg := range finalArgs {
 		if tempSymbol, ok := tempSymbolMap[arg]; ok {
 			if err := c.scopes.EmitSymbolGet(node.Pos(), tempSymbol); err != nil {
@@ -328,7 +327,8 @@ func (c *Functions) CallExpr(node *ast.CallExpr) error {
 			}
 		}
 	}
-	if _, err := c.scopes.Emit(node.Pos(), native.OpCallId, len(finalArgs), 0); err != nil {
+	spread := 0
+	if _, err := c.scopes.Emit(node.Pos(), native.OpCallId, len(finalArgs), spread); err != nil {
 		return err
 	}
 	return nil
@@ -431,7 +431,9 @@ func (c *Functions) handleBuiltinInterface(pos token.Pos, receiverSymbol *tables
 	//		return err
 	//	}
 	//}
-	if _, err := c.scopes.Emit(pos, native.OpCallId, 1, 0); err != nil {
+	spread := 0
+	numArgs := 1
+	if _, err := c.scopes.Emit(pos, native.OpCallId, numArgs, spread); err != nil {
 		return err
 	}
 	return nil

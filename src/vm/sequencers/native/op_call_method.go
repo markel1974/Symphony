@@ -20,7 +20,7 @@ type OpCallMethod struct {
 
 // NewOpCallMethod creates and returns a new instance of OpCallMethod with initialized Opcode for the OpCallMethod opcode.
 func NewOpCallMethod() core.IOpExecutor {
-	operands := []opcodes.OperandFeature{opcodes.SzUint8, opcodes.Relocatable}
+	operands := []opcodes.OperandFeature{opcodes.SzUint8, opcodes.SzUint8, opcodes.Relocatable}
 	return &OpCallMethod{
 		opcode: opcodes.NewOpcode(OpCallMethodId, operands, "OpCallMethod"),
 		vm:     nil,
@@ -46,7 +46,8 @@ func (op *OpCallMethod) Bind(vm core.IVM) error {
 // Execute performs the dynamic dispatch logic.
 func (op *OpCallMethod) Execute(decoder *core.Decoder) {
 	methodNameIndex := decoder.Operand(0)
-	numArgs := decoder.Operand(1)
+	spread := decoder.Operand(1)
+	numArgs := decoder.Operand(2)
 	methodNameObj := op.vm.Constants().Get(uint(methodNameIndex))
 	offset := numArgs + 1
 	interfaceObj := op.vm.StackPeekSP(uint(offset))
@@ -60,9 +61,10 @@ func (op *OpCallMethod) Execute(decoder *core.Decoder) {
 		op.vm.SetError(fmt.Errorf("undefined method '%s' for type '%s'", methodNameObj.AsString(), io.Value().TypeName()))
 		return
 	}
-	target := numArgs + 1
-	op.vm.StackSetSP(uint(target), io.Value())
-	op.vm.Call(callee, false, target)
+	op.vm.StackSetSP(uint(offset), io.Value())
+	hasSpread := spread > 0
+	totalArgs := numArgs + 1 //receiver
+	op.vm.Call(callee, hasSpread, totalArgs)
 }
 
 // Compile generates the compiled representation of the OpCallMethod operation or returns an unimplemented error.

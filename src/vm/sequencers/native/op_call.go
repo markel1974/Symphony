@@ -47,9 +47,10 @@ func (op *OpCall) Bind(vm core.IVM) error {
 func (op *OpCall) Execute(decoder *core.Decoder) {
 	spread := decoder.Operand(0)
 	numArgs := decoder.Operand(1)
+	hasSpread := spread > 0
 	offset := numArgs + 1
 	value := op.vm.StackPeekSP(uint(offset))
-	op.vm.Call(value, spread == 1, numArgs)
+	op.vm.Call(value, hasSpread, numArgs)
 }
 
 // Compile generates the compiled representation of the OpCall operation or returns an unimplemented error.
