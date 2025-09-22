@@ -52,11 +52,13 @@ func (op *OpCreateClosure) Execute(decoder *core.Decoder) {
 		op.vm.SetError(fmt.Errorf("not a function: %s", closureFnObj.TypeName()))
 		return
 	}
-	reqIndices := fn.FreeIndices()
-	required := make([]objects.IObject, len(reqIndices))
-	for idx, freeObjIndex := range reqIndices {
-		obj := op.vm.StackPeekBP(uint(freeObjIndex))
-		required[idx] = obj
+	var required []objects.IObject
+	if reqIndices := fn.FreeIndices(); len(reqIndices) > 0 {
+		required = make([]objects.IObject, len(reqIndices))
+		for idx, freeObjIndex := range reqIndices {
+			obj := op.vm.StackPeekBP(uint(freeObjIndex))
+			required[idx] = obj
+		}
 	}
 	cl := op.vm.CreateClosure(fn, required)
 	op.vm.StackPush(cl)
