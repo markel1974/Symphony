@@ -78,7 +78,7 @@ func (s *Files) search(x int) int {
 	}) - 1
 }
 
-// Encode serializes the Files structure including its base, files, and lastFile properties using the provided gob.Encoder.
+// Encode serializes the Files structure, including its base, files, and lastFile properties using the provided gob.Encoder.
 func (s *Files) Encode(enc *gob.Encoder) error {
 	if err := enc.Encode(s.lastFile); err != nil {
 		return err

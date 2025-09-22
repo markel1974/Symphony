@@ -225,7 +225,7 @@ func (gc *GateConverter) FromInterface(frame int, in interface{}) IObject {
 	case Invocable:
 		return gc.gk.NewFuncImport(FrameStatic, "Invocable", 0, v)
 	default:
-		return gc.gk.UndefinedValue()
+		return gc.gk.NewAny(frame, v)
 	}
 }
 

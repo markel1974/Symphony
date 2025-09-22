@@ -58,7 +58,7 @@ func (b *Bytecode) AddFiles(data []*FileSet) {
 }
 
 // Position returns the file position (FilePos) corresponding to a given bytecode offset (p).
-// It translates the offset into filename, line, and column information, or returns an error if invalid.
+// It translates the offset into filename, line, and column information or returns an error if invalid.
 func (b *Bytecode) Position(p int) (token.Position, error) {
 	return b.fileHandler.Position(p)
 }
@@ -88,7 +88,7 @@ func (b *Bytecode) Constants() []objects.IObject {
 	return b.containers[ConstantsType].data
 }
 
-// Imports returns the list of imported objects stored in the Bytecode instance.
+// Imports return the list of imported objects stored in the Bytecode instance.
 func (b *Bytecode) Imports() []objects.IObject {
 	return b.containers[ImportsType].data
 }

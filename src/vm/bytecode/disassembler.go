@@ -35,7 +35,7 @@ func NewDisassembler(b *Bytecode, op opcodes.IOpcodes) *Disassembler {
 }
 
 // Disassemble writes a textual representation of the disassembled bytecode to the provided writer.
-// It processes each container and its objects, formatting their data into a readable output.
+// It processes each container and its objects, formatting their data into readable output.
 // Returns an error if disassembling any object fails.
 func (d *Disassembler) Disassemble(writer io.Writer) error {
 	for _, container := range d.cd.Containers() {
