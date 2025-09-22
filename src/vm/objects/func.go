@@ -186,8 +186,12 @@ func (o *Func) Copy(frame int, _ int) IObject {
 		return o.GateKeeper().UndefinedValue()
 	}
 	//ret.instructions = o.instructions.Copy()
-	ret.free = append([]*ObjectPointer{}, o.free...)
-	ret.freeIndices = append([]int{}, o.freeIndices...)
+	if len(o.freeIndices) > 0 {
+		ret.freeIndices = append([]int{}, o.freeIndices...)
+	}
+	if len(o.free) > 0 {
+		ret.free = append([]*ObjectPointer{}, o.free...)
+	}
 	return ret
 }
 
@@ -231,21 +235,21 @@ func (o *Func) FreeIndices() []int {
 func (o *Func) FreeInitialize(freeIdx []int) {
 	o.freeIndices = make([]int, len(freeIdx))
 	copy(o.freeIndices, freeIdx)
-	u := o.GateKeeper().UndefinedValue()
-	o.free = make([]*ObjectPointer, len(o.freeIndices))
-	for idx := range o.freeIndices {
-		ptr, _ := o.GateKeeper().NewObjectPointer(FrameStatic, &u).(*ObjectPointer)
-		o.free[idx] = ptr
-	}
 }
 
 // FreeSet sets the free variable pointers for a Func instance, ensuring the count matches the expected free variable indices.
-func (o *Func) FreeSet(free []*ObjectPointer) error {
-	if len(free) != len(o.freeIndices) {
-		return fmt.Errorf("invalid free variable count: %d != %d", len(free), len(o.freeIndices))
+func (o *Func) FreeSet(frameId int, required []IObject) error {
+	if len(required) != len(o.freeIndices) {
+		return fmt.Errorf("invalid free variable count: %d != %d", len(required), len(o.freeIndices))
 	}
-	o.free = make([]*ObjectPointer, len(free))
-	copy(o.free, free)
+	o.free = make([]*ObjectPointer, len(required))
+	for idx, obj := range required {
+		freeObjPtr, err := o.GateKeeper().CreateObjectPointer(frameId, obj)
+		if err != nil {
+			return err
+		}
+		o.free[idx] = freeObjPtr
+	}
 	return nil
 }
 
@@ -271,9 +275,9 @@ func (o *Func) GobEncode() ([]byte, error) {
 	if err := encoder.Encode(o.source); err != nil {
 		return nil, err
 	}
-	if err := encoder.Encode(o.free); err != nil {
-		return nil, err
-	}
+	//if err := encoder.Encode(o.free); err != nil {
+	//	return nil, err
+	//}
 	if err := encoder.Encode(o.freeIndices); err != nil {
 		return nil, err
 	}
@@ -302,9 +306,9 @@ func (o *Func) GobDecode(data []byte) error {
 	if err := decoder.Decode(&o.source); err != nil {
 		return err
 	}
-	if err := decoder.Decode(&o.free); err != nil {
-		return err
-	}
+	//if err := decoder.Decode(&o.free); err != nil {
+	//	return err
+	//}
 	if err := decoder.Decode(&o.freeIndices); err != nil {
 		return err
 	}

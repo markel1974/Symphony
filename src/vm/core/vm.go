@@ -147,22 +147,14 @@ func (v *VM) CreateObjectPointer(obj objects.IObject) objects.IObject {
 
 // CreateClosure creates and returns a new closure object from the given function object and its free variables.
 func (v *VM) CreateClosure(fn *objects.Func, objRequired []objects.IObject) objects.IObject {
-	free := make([]*objects.ObjectPointer, len(objRequired))
-	for idx, obj := range objRequired {
-		freeObjPtr, err := v.Factory().CreateObjectPointer(v.currFrame.Id(), obj)
-		if err != nil {
-			v.SetError(err)
-			return v.gk.UndefinedValue()
-		}
-		free[idx] = freeObjPtr
-	}
 	cl, ok := fn.Copy(v.currFrame.Id(), 0).(*objects.Func)
 	if !ok {
 		v.SetError(fmt.Errorf("not a function: %s", fn.TypeName()))
 		return v.gk.UndefinedValue()
 	}
-	if err := cl.FreeSet(free); err != nil {
+	if err := cl.FreeSet(v.currFrame.Id(), objRequired); err != nil {
 		v.SetError(err)
+		return v.gk.UndefinedValue()
 	}
 	return cl
 }
