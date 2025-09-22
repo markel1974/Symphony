@@ -106,6 +106,12 @@ func (o *Interface) ArithmeticOp(frame int, op ArithmeticOperator, rightHandSide
 	return o.data.ArithmeticOp(frame, op, rightHandSide)
 }
 
+// UnaryOp applies a unary operation specified by the operator to the current object using the given execution frame.
+// It returns the result of the operation or an error if the operation is not supported.
+func (o *Interface) UnaryOp(frame int, op UnaryOperator) (IObject, error) {
+	return o.data.UnaryOp(frame, op)
+}
+
 // IndexGet retrieves the Code at the specified index from the object, using the provided execution frame and index.
 func (o *Interface) IndexGet(frame int, index IObject) (IObject, error) {
 	return o.data.IndexGet(frame, index)

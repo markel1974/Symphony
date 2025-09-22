@@ -154,6 +154,15 @@ func (o *Int) ArithmeticOp(frame int, op ArithmeticOperator, rhsIn IObject) (IOb
 	return o.GateKeeper().NewInt(frame, ret), nil
 }
 
+// UnaryOp performs a unary operation on the Int object using the specified UnaryOperator. Returns a new object or an error.
+func (o *Int) UnaryOp(frame int, op UnaryOperator) (IObject, error) {
+	val, err := unaryOpInt64(op, o.data)
+	if err != nil {
+		return nil, err
+	}
+	return o.GateKeeper().NewInt(frame, val), nil
+}
+
 // Copy creates and returns a new instance of the Int object with the same Code as the current instance.
 func (o *Int) Copy(frame int, _ int) IObject {
 	return o.GateKeeper().NewInt(frame, o.data)

@@ -81,6 +81,11 @@ func (o *FuncImport) ArithmeticOp(_ int, _ ArithmeticOperator, _ IObject) (IObje
 	return nil, ErrInvalidOperator
 }
 
+// UnaryOp performs a unary operation on the FuncImport object and always returns ErrInvalidOperator.
+func (o *FuncImport) UnaryOp(_ int, _ UnaryOperator) (IObject, error) {
+	return nil, ErrInvalidOperator
+}
+
 // Falsy returns false for all objects.
 func (o *FuncImport) Falsy() bool {
 	return false

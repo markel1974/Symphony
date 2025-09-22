@@ -170,6 +170,11 @@ func (o *String) ArithmeticOp(frame int, op ArithmeticOperator, rhsIn IObject) (
 	}
 }
 
+// UnaryOp performs a unary operation on the String object and always returns ErrInvalidOperator.
+func (o *String) UnaryOp(_ int, _ UnaryOperator) (IObject, error) {
+	return nil, ErrInvalidOperator
+}
+
 // Falsy returns true if the String's data is an empty string, indicating it is considered falsy in a boolean context.
 func (o *String) Falsy() bool {
 	return len(o.data) == 0

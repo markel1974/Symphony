@@ -77,7 +77,7 @@ func (o *ObjectPointer) AssignValue(v IObject) error {
 }
 
 // LogicalOp performs a logical operation with the given operator and RHS object, returning the result or an error.
-func (o *ObjectPointer) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, error) {
+func (o *ObjectPointer) LogicalOp(frame int, op LogicalOperator, rhsIn IObject) (IObject, error) {
 	if rhsIn.Nil() {
 		switch op {
 		case OperatorLogicalEq:
@@ -96,13 +96,18 @@ func (o *ObjectPointer) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IOb
 			return o.GateKeeper().UndefinedValue(), ErrInvalidOperator
 		}
 	}
-	return o.GateKeeper().UndefinedValue(), ErrInvalidOperator
+	return (*o.data).LogicalOp(frame, op, rhsIn)
 }
 
 // ArithmeticOp performs an arithmetic operation with the given operator and right-hand-side operand and returns the result.
 // Returns an error if the operation is invalid.
 func (o *ObjectPointer) ArithmeticOp(frame int, obj ArithmeticOperator, rhs IObject) (IObject, error) {
 	return (*o.data).ArithmeticOp(frame, obj, rhs)
+}
+
+// UnaryOp applies the given unary operator to the ObjectPointer's wrapped data and returns the resulting IObject or an error.
+func (o *ObjectPointer) UnaryOp(frame int, op UnaryOperator) (IObject, error) {
+	return (*o.data).UnaryOp(frame, op)
 }
 
 // IndexGet attempts to retrieve a Code at the given index and returns an error if the object is not indexable.

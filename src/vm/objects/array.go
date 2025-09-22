@@ -178,6 +178,11 @@ func (o *Array) ArithmeticOp(frame int, op ArithmeticOperator, rhsIn IObject) (I
 	return nil, ErrInvalidOperator
 }
 
+// UnaryOp applies a unary operation on the Array and returns an error indicating an invalid operation.
+func (o *Array) UnaryOp(_ int, _ UnaryOperator) (IObject, error) {
+	return nil, ErrInvalidOperator
+}
+
 // Copy creates and returns a deep copy of the Array and its elements.
 func (o *Array) Copy(frame int, depth int) IObject {
 	var c []IObject

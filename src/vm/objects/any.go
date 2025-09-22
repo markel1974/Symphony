@@ -41,31 +41,29 @@ func (o *Any) AsInterface() interface{} {
 
 // AsString returns the string representation of the wrapped data. If the data is nil, it returns "<nil>".
 func (o *Any) AsString() string {
-	if o.data == nil {
-		return ""
-	}
 	return fmt.Sprintf("%v", o.data)
 }
 
 // AsBool returns the boolean representation of the Any object by negating its Falsy status.
 func (o *Any) AsBool() bool {
-	return !o.Falsy()
+	return o.bool()
 }
 
 // AsInt64 converts the underlying value to an int64 if possible, otherwise returns 0.
 func (o *Any) AsInt64() int64 {
-	if o.valueOf.CanInt() {
-		return o.valueOf.Int()
+	if v, ok := o.int64(); ok {
+		return v
+	}
+	if o.bool() {
+		return 1
 	}
 	return 0
 }
 
 // AsFloat64 returns the value of `Any` as a float64 if convertible, otherwise returns 0.
 func (o *Any) AsFloat64() float64 {
-	if o.valueOf.CanFloat() {
-		return o.valueOf.Float()
-	}
-	return 0
+	v, _ := o.float64()
+	return v
 }
 
 // AsBytes converts the object elements into a single concatenated slice of bytes by calling AsBytes on each element.
@@ -75,9 +73,6 @@ func (o *Any) AsBytes() []byte {
 
 // Falsy checks if the underlying data is nil or if the value is considered zero, returning true in those cases.
 func (o *Any) Falsy() bool {
-	if o.data == nil {
-		return true
-	}
 	return o.valueOf.IsZero()
 }
 
@@ -145,19 +140,52 @@ func (o *Any) AssignValue(_ IObject) error {
 
 // Nil checks if the `data` field of the `Any` object is nil and returns true if it is, otherwise false.
 func (o *Any) Nil() bool {
-	return o.data == nil
+	return o.valueOf.IsNil() || o.valueOf.IsZero()
 }
 
 // LogicalOp performs a logical operation on the current object with the provided operator and right-hand side object.
 // It returns the result of the operation if the operator is valid, otherwise it returns an ErrInvalidOperator error.
-func (o *Any) LogicalOp(_ int, _ LogicalOperator, _ IObject) (IObject, error) {
-	return nil, ErrInvalidOperator
+func (o *Any) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, error) {
+	if rhsIn.Nil() {
+		return logicalOpNil(o.GateKeeper(), op)
+	}
+	val := o.AsInt64()
+	ret, err := logicalOpInt64(val, op, rhsIn.AsInt64())
+	if err != nil {
+		return nil, err
+	}
+	if ret {
+		return o.GateKeeper().TrueValue(), nil
+	}
+	return o.GateKeeper().FalseValue(), nil
 }
 
 // ArithmeticOp performs an arithmetic operation on the current object and the provided IObject using the specified operator.
 // Returns the result as an IObject or an error if the operation is invalid.
-func (o *Any) ArithmeticOp(_ int, _ ArithmeticOperator, _ IObject) (IObject, error) {
-	return nil, ErrInvalidOperator
+func (o *Any) ArithmeticOp(frame int, op ArithmeticOperator, rhsIn IObject) (IObject, error) {
+	val := o.AsInt64()
+	ret, err := arithmeticOpInt64(val, op, rhsIn.AsInt64())
+	if err != nil {
+		return nil, err
+	}
+	return o.GateKeeper().NewInt(frame, ret), nil
+}
+
+// UnaryOp performs a unary operation using the specified UnaryOperator. Returns a new object or an error.
+func (o *Any) UnaryOp(frame int, op UnaryOperator) (IObject, error) {
+	if val, ok := o.float64(); ok {
+		r, err := unaryOpFloat64(op, val)
+		if err != nil {
+			return nil, err
+		}
+		return o.GateKeeper().NewFloat(frame, r), nil
+	}
+	val := o.AsInt64()
+	r, err := unaryOpInt64(op, val)
+	if err != nil {
+		return nil, err
+	}
+	return o.GateKeeper().NewInt(frame, r), nil
 }
 
 // Iterate returns an iterator (IIterator) that traverses the object's data. Returns nil if the object is not iterable.
@@ -237,4 +265,30 @@ func (o *Any) call(gk IGateKeeper, frame int, method reflect.Value, args []IObje
 		}
 		return 1, gk.NewArray(frame, retArray), nil
 	}
+}
+
+// int64 attempts to convert the underlying value of Any to int64 and returns the result along with a success flag.
+func (o *Any) int64() (int64, bool) {
+	if o.valueOf.CanInt() {
+		return o.valueOf.Int(), true
+	} else if o.valueOf.CanUint() {
+		return int64(o.valueOf.Uint()), true
+	}
+	return 0, false
+}
+
+// float64 attempts to convert the internal value of Any to a float64 and returns the value along with a success flag.
+func (o *Any) float64() (float64, bool) {
+	if o.valueOf.CanFloat() {
+		return o.valueOf.Float(), true
+	}
+	return 0, false
+}
+
+// bool returns a boolean value indicating whether the data in the Any object is nil or represents a zero value.
+func (o *Any) bool() bool {
+	if o.valueOf.IsZero() || o.valueOf.IsNil() {
+		return false
+	}
+	return true
 }

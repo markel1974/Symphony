@@ -113,6 +113,11 @@ func (o *Func) ArithmeticOp(_ int, _ ArithmeticOperator, _ IObject) (IObject, er
 	return nil, ErrInvalidOperator
 }
 
+// UnaryOp performs a unary operation on the Func object and always returns ErrInvalidOperator.
+func (o *Func) UnaryOp(_ int, _ UnaryOperator) (IObject, error) {
+	return nil, ErrInvalidOperator
+}
+
 // Falsy returns false, indicating the object is considered falsy in boolean contexts.
 func (o *Func) Falsy() bool {
 	return false

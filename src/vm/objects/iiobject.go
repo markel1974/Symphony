@@ -49,6 +49,7 @@ type IObject interface {
 	Nil() bool
 	LogicalOp(frame int, op LogicalOperator, rightHandSide IObject) (IObject, error)
 	ArithmeticOp(frame int, op ArithmeticOperator, rightHandSide IObject) (IObject, error)
+	UnaryOp(frame int, op UnaryOperator) (IObject, error)
 	Falsy() bool
 	Equals(other IObject) bool
 	Copy(frame int, depth int) IObject

@@ -89,6 +89,11 @@ func (o *StringIterator) ArithmeticOp(_ int, _ ArithmeticOperator, _ IObject) (I
 	return nil, ErrInvalidOperator
 }
 
+// UnaryOp performs a unary operation on the StringIterator object and always returns ErrInvalidOperator.
+func (o *StringIterator) UnaryOp(_ int, _ UnaryOperator) (IObject, error) {
+	return nil, ErrInvalidOperator
+}
+
 // IndexGet attempts to retrieve a Code at the given index and returns an error if the object is not indexable.
 func (o *StringIterator) IndexGet(_ int, _ IObject) (IObject, error) {
 	return o.GateKeeper().UndefinedValue(), ErrIndexNotIndexable

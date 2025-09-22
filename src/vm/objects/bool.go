@@ -129,6 +129,18 @@ func (o *Bool) ArithmeticOp(_ int, op ArithmeticOperator, rhsIn IObject) (IObjec
 	return o.GateKeeper().FalseValue(), nil
 }
 
+// UnaryOp performs a unary operation using the specified UnaryOperator. Returns a new object or an error.
+func (o *Bool) UnaryOp(_ int, op UnaryOperator) (IObject, error) {
+	ret, err := unaryOpBool(op, o.data)
+	if err != nil {
+		return nil, err
+	}
+	if ret {
+		return o.GateKeeper().TrueValue(), nil
+	}
+	return o.GateKeeper().FalseValue(), nil
+}
+
 // IndexGet retrieves the data at a given index from the Bool object, but always returns an error as Bool is not indexable.
 func (o *Bool) IndexGet(_ int, _ IObject) (IObject, error) {
 	return o.GateKeeper().UndefinedValue(), ErrIndexNotIndexable

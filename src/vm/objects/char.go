@@ -149,6 +149,16 @@ func (o *Char) ArithmeticOp(frame int, op ArithmeticOperator, rhsIn IObject) (IO
 	return o.GateKeeper().NewChar(frame, rune(ret)), nil
 }
 
+// UnaryOp applies a unary operator to the data in the Char object and returns a new IObject or an error if unsupported.
+func (o *Char) UnaryOp(frame int, op UnaryOperator) (IObject, error) {
+	val := o.AsInt64()
+	r, err := unaryOpInt64(op, val)
+	if err != nil {
+		return nil, err
+	}
+	return o.GateKeeper().NewChar(frame, rune(r)), nil
+}
+
 // Copy creates and returns a new instance of the Char object with the same data.
 func (o *Char) Copy(frame int, _ int) IObject {
 	return o.GateKeeper().NewChar(frame, o.data)

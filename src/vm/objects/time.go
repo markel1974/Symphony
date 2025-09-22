@@ -187,6 +187,15 @@ func (o *Time) ArithmeticOp(frame int, op ArithmeticOperator, in IObject) (IObje
 	return nil, ErrInvalidOperator
 }
 
+// UnaryOp performs a unary operation on the Time object using the specified UnaryOperator. Returns a new object or an error.
+func (o *Time) UnaryOp(frame int, op UnaryOperator) (IObject, error) {
+	val, err := unaryOpInt64(op, o.AsInt64())
+	if err != nil {
+		return nil, err
+	}
+	return o.GateKeeper().NewTime(frame, time.Unix(val, 0)), nil
+}
+
 // Copy returns a new instance of the Time object with the same internal time Code, duplicating its state.
 func (o *Time) Copy(frame int, _ int) IObject {
 	return o.GateKeeper().NewTime(frame, o.data)

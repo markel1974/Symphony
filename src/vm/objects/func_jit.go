@@ -84,6 +84,11 @@ func (o *FuncJit) ArithmeticOp(_ int, _ ArithmeticOperator, _ IObject) (IObject,
 	return nil, ErrInvalidOperator
 }
 
+// UnaryOp performs a unary operation on the FuncJit object and always returns ErrInvalidOperator.
+func (o *FuncJit) UnaryOp(_ int, _ UnaryOperator) (IObject, error) {
+	return nil, ErrInvalidOperator
+}
+
 // Falsy returns false for all objects.
 func (o *FuncJit) Falsy() bool {
 	return false

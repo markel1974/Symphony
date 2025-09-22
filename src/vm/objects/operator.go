@@ -48,3 +48,14 @@ const (
 	OperatorLogicalLessEq
 	OperatorLogicalGreaterEq
 )
+
+// UnaryOperator represents an enumerated type for unary operators.
+type UnaryOperator int
+
+// OperatorUnary... represents the unary operators.
+const (
+	OperatorUnaryAdd UnaryOperator = iota // +
+	OperatorUnarySub                      // -
+	OperatorUnaryNot
+	OperatorUnaryBitwiseComplement
+)

@@ -152,6 +152,15 @@ func (o *Float) ArithmeticOp(frame int, op ArithmeticOperator, rhsIn IObject) (I
 	return o.GateKeeper().NewFloat(frame, ret), nil
 }
 
+// UnaryOp performs a unary operation on the Float object using the specified UnaryOperator. Returns a new object or an error.
+func (o *Float) UnaryOp(frame int, op UnaryOperator) (IObject, error) {
+	val, err := unaryOpFloat64(op, o.data)
+	if err != nil {
+		return nil, err
+	}
+	return o.GateKeeper().NewFloat(frame, val), nil
+}
+
 // Copy creates and returns a new instance of the Float object, duplicating its current state.
 func (o *Float) Copy(frame int, _ int) IObject {
 	return o.GateKeeper().NewFloat(frame, o.data)

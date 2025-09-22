@@ -103,6 +103,11 @@ func (o *ArrayIterator) ArithmeticOp(_ int, _ ArithmeticOperator, _ IObject) (IO
 	return nil, ErrInvalidOperator
 }
 
+// UnaryOp applies a unary operation and returns an error indicating an invalid operation.
+func (o *ArrayIterator) UnaryOp(_ int, _ UnaryOperator) (IObject, error) {
+	return nil, ErrInvalidOperator
+}
+
 // IndexGet retrieves an element at a specific index from the array but always returns ErrIndexNotIndexable for this implementation.
 func (o *ArrayIterator) IndexGet(_ int, _ IObject) (IObject, error) {
 	return o.GateKeeper().UndefinedValue(), ErrIndexNotIndexable

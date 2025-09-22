@@ -114,6 +114,11 @@ func (o *Error) ArithmeticOp(_ int, _ ArithmeticOperator, _ IObject) (IObject, e
 	return nil, ErrInvalidOperator
 }
 
+// UnaryOp performs a unary operation on the Error object and always returns ErrInvalidOperator.
+func (o *Error) UnaryOp(_ int, _ UnaryOperator) (IObject, error) {
+	return nil, ErrInvalidOperator
+}
+
 // IndexSet attempts to assign a data to an index in the object but always returns ErrIndexUnsupported,
 // as this operation is unsupported.
 func (o *Error) IndexSet(_, _ IObject) (err error) {

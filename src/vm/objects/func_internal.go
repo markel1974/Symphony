@@ -160,6 +160,11 @@ func (o *FuncInternal) ArithmeticOp(_ int, _ ArithmeticOperator, _ IObject) (IOb
 	return nil, ErrInvalidOperator
 }
 
+// UnaryOp performs a unary operation on the FuncInternal object and always returns ErrInvalidOperator.
+func (o *FuncInternal) UnaryOp(_ int, _ UnaryOperator) (IObject, error) {
+	return nil, ErrInvalidOperator
+}
+
 // Falsy returns a boolean value indicating false. It is a utility function that always evaluates to false.
 func (o *FuncInternal) Falsy() bool {
 	return false

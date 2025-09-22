@@ -138,6 +138,11 @@ func (o *Bytes) LogicalOp(_ int, op LogicalOperator, rhsIn IObject) (IObject, er
 	return nil, ErrInvalidOperator
 }
 
+// UnaryOp applies a unary operation and returns an error indicating an invalid operation.
+func (o *Bytes) UnaryOp(_ int, _ UnaryOperator) (IObject, error) {
+	return nil, ErrInvalidOperator
+}
+
 // Copy creates and returns a new `Bytes` object with a duplicated data slice, ensuring no reference sharing.
 func (o *Bytes) Copy(frame int, _ int) IObject {
 	return o.GateKeeper().NewBytes(frame, append([]byte{}, o.data...))

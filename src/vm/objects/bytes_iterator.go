@@ -89,6 +89,11 @@ func (o *BytesIterator) ArithmeticOp(_ int, _ ArithmeticOperator, _ IObject) (IO
 	return nil, ErrInvalidOperator
 }
 
+// UnaryOp applies a unary operation and returns an error indicating an invalid operation.
+func (o *BytesIterator) UnaryOp(_ int, _ UnaryOperator) (IObject, error) {
+	return nil, ErrInvalidOperator
+}
+
 // Falsy returns false for all objects.
 func (o *BytesIterator) Falsy() bool {
 	return false

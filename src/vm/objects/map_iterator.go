@@ -108,6 +108,11 @@ func (o *MapIterator) ArithmeticOp(_ int, _ ArithmeticOperator, _ IObject) (IObj
 	return nil, ErrInvalidOperator
 }
 
+// UnaryOp performs a unary operation on the MapIterator and always returns ErrInvalidOperator.
+func (o *MapIterator) UnaryOp(_ int, _ UnaryOperator) (IObject, error) {
+	return nil, ErrInvalidOperator
+}
+
 // IndexGet attempts to retrieve a Code at the given index and returns an error if the object is not indexable.
 func (o *MapIterator) IndexGet(_ int, _ IObject) (IObject, error) {
 	return o.GateKeeper().UndefinedValue(), ErrIndexNotIndexable

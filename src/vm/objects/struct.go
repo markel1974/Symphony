@@ -116,6 +116,11 @@ func (o *Struct) ArithmeticOp(_ int, _ ArithmeticOperator, _ IObject) (IObject, 
 	return nil, ErrInvalidOperator
 }
 
+// UnaryOp performs a unary operation on the Struct object and always returns ErrInvalidOperator.
+func (o *Struct) UnaryOp(_ int, _ UnaryOperator) (IObject, error) {
+	return nil, ErrInvalidOperator
+}
+
 // Call invokes the Object with the provided arguments, returning a result object and an error, if any.
 func (o *Struct) Call(_ int, _ ...IObject) (retCount uint, ret IObject, err error) {
 	return 0, nil, nil

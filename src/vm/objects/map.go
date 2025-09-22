@@ -114,6 +114,11 @@ func (o *Map) ArithmeticOp(_ int, _ ArithmeticOperator, _ IObject) (IObject, err
 	return nil, ErrInvalidOperator
 }
 
+// UnaryOp performs a unary operation on the Map object and always returns ErrInvalidOperator.
+func (o *Map) UnaryOp(_ int, _ UnaryOperator) (IObject, error) {
+	return nil, ErrInvalidOperator
+}
+
 // Call invokes the Object with the provided arguments, returning a result object and an error, if any.
 func (o *Map) Call(_ int, _ ...IObject) (uint, IObject, error) {
 	return 0, nil, nil
