@@ -239,7 +239,7 @@ func (o *Func) FreeInitialize(freeIdx []int) {
 
 // FreeSet sets the free variable pointers for a Func instance, ensuring the count matches the expected free variable indices.
 func (o *Func) FreeSet(frameId int, required []IObject) error {
-	if len(required) != len(o.freeIndices) {
+	if len(o.freeIndices) != len(required) {
 		return fmt.Errorf("invalid free variable count: %d != %d", len(required), len(o.freeIndices))
 	}
 	o.free = make([]*ObjectPointer, len(required))
