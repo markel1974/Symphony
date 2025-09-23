@@ -120,16 +120,13 @@ func (c *Declarations) TypeSpec(node *ast.TypeSpec) error {
 		}
 		symbol.SetStruct(typeName, nil)
 	case *ast.InterfaceType:
-		// Aggiungi la definizione dell'interfaccia alla nostra nuova tabella
 		if err := c.interfaceTable.Add(typeName, t); err != nil {
 			return tables.NewCompilerError(c.fileSet, node, err.Error())
 		}
-		// Aggiungi un simbolo per il tipo interfaccia
 		symbol, err := c.scopes.SymbolDefineType(typeName)
 		if err != nil {
 			return err
 		}
-		// Passa il nome del tipo
 		symbol.SetInterface(typeName)
 		symbol.SetObject(c.gk.NewString(objects.FrameStatic, "interface:"+symbol.Name()))
 	}
@@ -152,37 +149,53 @@ func (c *Declarations) ValueSpec(node *ast.ValueSpec) error {
 			if err != nil {
 				return err
 			}
-			var assignedStructSymbol *tables.Symbol
+
+			var definedSymbol *tables.Symbol
 			isInterfaceAssignment := false
 			if node.Type != nil {
-				if typeIdent, ok := node.Type.(*ast.Ident); ok {
-					if typeSymbol, ok := c.scopes.SymbolResolve(typeIdent.Name); ok && typeSymbol.IsInterface() {
-						isInterfaceAssignment = true // Only in the first block
-						// Pass the type name (e.g. "Printer")
-						symbol.SetInterface(typeIdent.Name)
-						symbol.SetObject(c.gk.NewString(objects.FrameStatic, "interface:"+symbol.Name()))
+				if typeIdent := tables.GetIdent(node.Type); typeIdent != nil {
+					typeSymbol, ok := c.scopes.SymbolResolve(typeIdent.Name)
+					if ok {
+						definedSymbol = typeSymbol
+						if definedSymbol.IsInterface() {
+							isInterfaceAssignment = true
+							symbol.SetInterface(typeIdent.Name) // Pass the type name (e.g. "Printer")
+							symbol.SetObject(c.gk.NewString(objects.FrameStatic, "interface:"+symbol.Name()))
+						}
 					}
 				}
 			}
-			if rhsIdent, ok := node.Values[i].(*ast.Ident); ok {
-				assignedStructSymbol, _ = c.scopes.SymbolResolve(rhsIdent.Name)
-			} else if compLit, ok := node.Values[i].(*ast.CompositeLit); ok {
-				if ident, ok := compLit.Type.(*ast.Ident); ok {
-					assignedStructSymbol, _ = c.scopes.SymbolResolve(ident.Name)
+
+			if definedSymbol == nil {
+				if rhsIdent := tables.GetIdent(node.Values[i]); rhsIdent != nil {
+					if ass, ok := c.scopes.SymbolResolve(rhsIdent.Name); ok {
+						definedSymbol = ass
+					}
+				} else if compLit, ok := node.Values[i].(*ast.CompositeLit); ok {
+					if ident := tables.GetIdent(compLit.Type); ident != nil {
+						if ass, ok := c.scopes.SymbolResolve(ident.Name); ok {
+							definedSymbol = ass
+						}
+					}
 				}
 			}
-			if isInterfaceAssignment && assignedStructSymbol != nil && assignedStructSymbol.IsStruct() {
-				if err := c.handleInterfaceAssignment(node.Pos(), symbol, assignedStructSymbol); err != nil {
-					return tables.NewCompilerError(c.fileSet, node, err.Error())
-				}
-			} else {
-				if inferredTypeName, _ := c.structTable.TypeInference(node.Values[i]); len(inferredTypeName) > 0 {
-					symbol.SetReturnTypes([]string{inferredTypeName})
-					symbol.SetObject(c.gk.NewString(objects.FrameStatic, inferredTypeName+":"+symbol.Name()))
-					c.structTable.BindSymbol(symbol, inferredTypeName)
+
+			if definedSymbol != nil && definedSymbol.IsStruct() {
+				if isInterfaceAssignment {
+					if err = c.handleInterfaceAssignment(node.Pos(), symbol, definedSymbol); err != nil {
+						return tables.NewCompilerError(c.fileSet, node, err.Error())
+					}
 				} else {
-					symbol.SetObject(c.gk.NewString(objects.FrameStatic, symbol.Name()))
+					symbol.SetReturnTypes([]string{definedSymbol.StructName()})
+					symbol.SetObject(c.gk.NewString(objects.FrameStatic, definedSymbol.StructName()+":"+symbol.Name()))
+					c.structTable.BindSymbol(symbol, definedSymbol.StructName())
 				}
+			} else if inferredTypeName, _ := c.structTable.TypeInference(node.Values[i]); len(inferredTypeName) > 0 {
+				symbol.SetReturnTypes([]string{inferredTypeName})
+				symbol.SetObject(c.gk.NewString(objects.FrameStatic, inferredTypeName+":"+symbol.Name()))
+				c.structTable.BindSymbol(symbol, inferredTypeName)
+			} else {
+				symbol.SetObject(c.gk.NewString(objects.FrameStatic, symbol.Name()))
 			}
 			if err = c.scopes.EmitSymbolDefineAndPop(node.Pos(), symbol); err != nil {
 				return err
@@ -198,7 +211,7 @@ func (c *Declarations) ValueSpec(node *ast.ValueSpec) error {
 			return err
 		}
 		if node.Type != nil {
-			if typeIdent, ok := node.Type.(*ast.Ident); ok {
+			if typeIdent := tables.GetIdent(node.Type); typeIdent != nil {
 				if typeSymbol, ok := c.scopes.SymbolResolve(typeIdent.Name); ok {
 					if typeSymbol.IsInterface() {
 						symbol.SetInterface(typeIdent.Name)
@@ -212,11 +225,9 @@ func (c *Declarations) ValueSpec(node *ast.ValueSpec) error {
 			}
 		}
 		// Emit zero value for the type. For interfaces, pointers, slices and maps, the zero value is 'nil'
-		// OpNull opcode does exactly this
 		if _, err = c.scopes.Emit(node.Pos(), native.OpNullId); err != nil {
 			return err
 		}
-		// Define the variable and initialize it with 'nil'
 		if err = c.scopes.EmitSymbolDefineAndPop(node.Pos(), symbol); err != nil {
 			return err
 		}
