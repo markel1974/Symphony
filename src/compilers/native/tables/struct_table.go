@@ -68,13 +68,19 @@ func (st *StructTable) AddExternal(name string) {
 	}
 }
 
-// Add adds a new field description to a struct in the StructTable. If the struct does not exist, it creates it.
-func (st *StructTable) Add(name string, fieldName string, baseStruct string, kind string, node ast.Node) {
+// AddStruct retrieves or creates a new Struct with the given name in the StructTable and returns it.
+func (st *StructTable) AddStruct(name string) *Struct {
 	sd, ok := st.container[name]
 	if !ok {
 		sd = NewStruct(name, StructTypeDefined)
 		st.container[name] = sd
 	}
+	return sd
+}
+
+// AddField adds a new field description to a struct in the StructTable. If the struct does not exist, it creates it.
+func (st *StructTable) AddField(name string, fieldName string, baseStruct string, kind string, node ast.Node) {
+	sd := st.AddStruct(name)
 	sd.AddField(fieldName, baseStruct, kind, node)
 }
 

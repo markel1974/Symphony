@@ -87,7 +87,7 @@ func (tc *TypeCompatibility) checkStructImplementsInterface(structName string, i
 		if len(requiredMethod.InputParams) != numStructParams {
 			return false, nil
 		}
-		if !reflect.DeepEqual(requiredMethod.InputParams, structMethod.InputNames) {
+		if !reflect.DeepEqual(requiredMethod.InputParams, structMethod.InputTypes) {
 			return false, nil
 		}
 		if !reflect.DeepEqual(requiredMethod.ReturnTypes, structMethod.ReturnTypes) {

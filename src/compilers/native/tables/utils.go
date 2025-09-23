@@ -6,13 +6,12 @@ import (
 	"go/token"
 )
 
-// GetIdentFromField extracts and returns the identifier of the type from the given AST field node, or nil if not found.
-func GetIdentFromField(field *ast.Field) *ast.Ident {
-	if field == nil {
-		return nil
-	}
-	return GetIdent(field.Type)
-}
+const (
+	FuncDefinition      = "func"
+	ArrayDefinition     = "[]"
+	MapDefinition       = "map"
+	InterfaceDefinition = "interface{}"
+)
 
 // GetIdent traverses an AST expression and returns the identifier (*ast.Ident) of the type, if found.
 // It handles identifiers, pointers, arrays/slices, and maps, returning the type's identifier or nil if not applicable.
@@ -30,29 +29,58 @@ func GetIdent(expr ast.Expr) *ast.Ident {
 	case *ast.MapType:
 		// Map case (map[KeyType]ValueType): we are interested in the value type
 		return GetIdent(t.Value)
+	case *ast.CompositeLit:
+		// Composite literal case (MyStruct{...}): continue searching on the type identifier
+		return GetIdent(t.Type)
 	case *ast.SelectorExpr:
 		// Qualified type case (package.Type): return the type identifier
 		return t.Sel
+	case *ast.CallExpr:
+		return GetIdent(t.Fun)
+	case *ast.UnaryExpr:
+		return GetIdent(t.X)
+	case *ast.ParenExpr:
+		// Parenthesized expression ((MyType)): continue search on the inner expression
+		return GetIdent(t.X)
 	}
 	return nil
 }
 
-// GetIdentName extracts and returns the name of the identifier from a given ast.Expr.
-// It supports *ast.Ident, *ast.StarExpr, and *ast.SelectorExpr types.
-func GetIdentName(expr ast.Expr) string {
-	switch t := expr.(type) {
+// GetReceiver extracts the type name from the given AST Field's Type and returns it as a string or an error for unsupported types.
+func GetReceiver(result *ast.Field) (string, error) {
+	switch v := result.Type.(type) {
 	case *ast.Ident:
-		return t.Name
+		return v.Name, nil
 	case *ast.StarExpr:
-		if ident, ok := t.X.(*ast.Ident); ok {
-			return ident.Name
+		z := GetIdent(v.X)
+		if z == nil {
+			return "", fmt.Errorf("unsupported pointer return type: *%T", v.X)
 		}
-	case *ast.SelectorExpr:
-		if receiverIdent, ok := t.X.(*ast.Ident); ok {
-			return receiverIdent.Name
+		return z.Name, nil
+	case *ast.FuncType:
+		return FuncDefinition, nil
+	case *ast.InterfaceType:
+		if len(v.Methods.List) == 0 {
+			return InterfaceDefinition, nil
+		} else {
+			return "", fmt.Errorf("unsupported non-empty interface return type")
 		}
+	case *ast.ArrayType:
+		z := GetIdent(v.Elt)
+		if z == nil {
+			return "", fmt.Errorf("unsupported array return type: %T", v.Elt)
+		}
+		return ArrayDefinition + z.Name, nil
+	case *ast.MapType:
+		key := GetIdent(v.Key)
+		value := GetIdent(v.Value)
+		if key == nil || value == nil {
+			return "", fmt.Errorf("unsupported map return type: %T", v)
+		}
+		return MapDefinition + "[" + key.Name + "]" + value.Name, nil
+	default:
+		return "", fmt.Errorf("unsupported return type %T", v)
 	}
-	return ""
 }
 
 // GetReceivers extracts and returns the list of type names from the given AST FieldList result.
@@ -66,37 +94,11 @@ func GetReceivers(result *ast.FieldList) ([]string, error) {
 	}
 	var ret []string
 	for _, res := range result.List {
-		switch v := res.Type.(type) {
-		case *ast.Ident:
-			ret = append(ret, v.Name)
-		case *ast.StarExpr:
-			name := GetIdentName(v.X)
-			ret = append(ret, name)
-			//if ident, ok := v.X.(*ast.Ident); ok {
-			//	ret = append(ret, ident.Name)
-			//} else {
-			// This case would handle more complex types like '*[]Home'
-			//	return nil, fmt.Errorf("unsupported pointer return type: *%T", v.X)
-			//}
-		case *ast.FuncType:
-			ret = append(ret, "func")
-		case *ast.InterfaceType:
-			// Handles the case of `interface{}` as return type
-			if len(v.Methods.List) == 0 {
-				ret = append(ret, "interface{}")
-			} else {
-				return nil, fmt.Errorf("unsupported non-empty interface return type")
-			}
-		case *ast.ArrayType:
-			name := GetIdentName(v.Elt)
-			ret = append(ret, "[]"+name)
-		case *ast.MapType:
-			key := GetIdentName(v.Key)
-			value := GetIdentName(v.Value)
-			ret = append(ret, "map["+key+"]"+value)
-		default:
-			return nil, fmt.Errorf("unsupported return type %T", v)
+		rec, err := GetReceiver(res)
+		if err != nil {
+			return nil, err
 		}
+		ret = append(ret, rec)
 	}
 	return ret, nil
 }

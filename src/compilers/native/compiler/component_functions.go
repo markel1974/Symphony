@@ -90,13 +90,13 @@ func (c *Functions) funcBodyPrepare(fd *tables.FunctionDescription) error {
 		return err
 	}
 	for _, p := range node.Type.Params.List {
-		kind := tables.GetIdentFromField(p)
-		if kind == nil {
-			return tables.NewCompilerError(c.fileSet, p, "unsupported parameter type: %T", p.Type)
+		kind, err := tables.GetReceiver(p)
+		if err != nil {
+			return tables.NewCompilerError(c.fileSet, p, err.Error())
 		}
 		for _, name := range p.Names {
 			fd.InputNames = append(fd.InputNames, name.Name)
-			fd.InputTypes = append(fd.InputTypes, kind.Name)
+			fd.InputTypes = append(fd.InputTypes, kind)
 		}
 	}
 	if node.Recv != nil && len(node.Recv.List) > 0 {
@@ -105,15 +105,15 @@ func (c *Functions) funcBodyPrepare(fd *tables.FunctionDescription) error {
 				fd.StructReceivers = append(fd.StructReceivers, name.Name)
 			}
 		}
-		recvTypeIdent := tables.GetIdentFromField(node.Recv.List[0])
-		if recvTypeIdent == nil {
-			return tables.NewCompilerError(c.fileSet, node, "unsupported method receiver type")
+		recvTypeIdent, err := tables.GetReceiver(node.Recv.List[0])
+		if err != nil {
+			return tables.NewCompilerError(c.fileSet, node, err.Error())
 		}
-		if !c.structTable.Has(recvTypeIdent.Name) {
-			return tables.NewCompilerError(c.fileSet, node, "undefined type '%s' for method receiver", recvTypeIdent.Name)
+		if !c.structTable.Has(recvTypeIdent) {
+			return tables.NewCompilerError(c.fileSet, node, "undefined type '%s' for method receiver", recvTypeIdent)
 		}
-		fd.Name = tables.GetMangledName(recvTypeIdent.Name, node.Name.Name)
-		fd.StructName = recvTypeIdent.Name
+		fd.Name = tables.GetMangledName(recvTypeIdent, node.Name.Name)
+		fd.StructName = recvTypeIdent
 	} else {
 		fd.Name = node.Name.Name
 		fd.StructName = ""
@@ -128,7 +128,7 @@ func (c *Functions) funcBodyPrepare(fd *tables.FunctionDescription) error {
 	if len(fd.StructName) > 0 {
 		placeHolder.SetObject(c.gk.NewString(objects.FrameStatic, fd.StructName+":"+placeHolder.Name()))
 		c.structTable.BindSymbol(placeHolder, fd.StructName)
-		c.structTable.Add(fd.StructName, node.Name.Name, "", "func", node)
+		c.structTable.AddField(fd.StructName, node.Name.Name, "", "func", node)
 	}
 	//placeHolder.SetStruct(fd.StructName)
 	return nil

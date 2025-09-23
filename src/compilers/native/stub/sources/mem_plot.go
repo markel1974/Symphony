@@ -1,6 +1,5 @@
-//go:build no_compile
-
-package scripts
+// //go:build no_compile
+package sources
 
 import (
 	"math"
@@ -16,8 +15,19 @@ type ISurface interface {
 	DrawSeries(data []float64, rows int, columns int, min float64, max float64)
 }
 
+type Surface struct {
+}
+
+func NewSurface() *Surface {
+	return &Surface{}
+}
+
+func (s *Surface) DrawSeries(data []float64, rows int, columns int, min float64, max float64) {
+	fmt.Println("Drawing series:", data, rows, columns, min, max)
+}
+
 // bToMb converts a given size in bytes (b) to megabytes as a float64.
-func bToMb(b uint64) float64 {
+func byteToMegaByte(b uint64) float64 {
 	return float64(b) / 1024 / 1024
 }
 
@@ -63,20 +73,23 @@ func (plt *MemPlot) onKey(_ int, key rune) {
 // onTimer is a method that periodically collects memory statistics, updates the MemPlot data, and triggers a repaint.
 func (plt *MemPlot) onTimer() {
 	var m runtime.MemStats
+	fmt.Println("Step 1")
 	runtime.ReadMemStats(&m)
+
 	var val float64
 	switch plt.kind {
 	case 0:
-		val = bToMb(m.Alloc)
+		val = byteToMegaByte(m.Alloc)
 	case 1:
-		val = bToMb(m.TotalAlloc)
+		val = byteToMegaByte(m.TotalAlloc)
 	case 2:
-		val = bToMb(m.Sys)
+		val = byteToMegaByte(m.Sys)
 	case 3:
 		val = float64(m.NumGC)
 	default:
-		val = bToMb(m.Alloc)
+		val = byteToMegaByte(m.Alloc)
 	}
+
 	if val < plt.minVal {
 		plt.minVal = val
 	}
@@ -101,20 +114,23 @@ func (plt *MemPlot) onPaint(surface ISurface) {
 		minPlot = plt.minVal
 		maxPlot = plt.maxVal
 	}
+	fmt.Println("Painting:", minPlot, maxPlot)
 	surface.DrawSeries(plt.data, -1, -1, minPlot, maxPlot)
 }
 
 // _instance is a singleton instance of the MemPlot structure, used for memory plotting and rendering operations.
-var _instance *MemPlot = nil //NewMemPlot(0)
+var _instanceMemPlot *MemPlot = nil //NewMemPlot(0)
 
 // onPaint handles the repaint event for the current graphical instance by delegating the operation to the _instance object.
-func onPaint() {
-	_instance.onPaint()
+func onPaintEntry() {
+	var i ISurface
+	i = &Surface{}
+	_instanceMemPlot.onPaint(i)
 }
 
 // onTimer triggers the onTimer method of the _instance object, typically used for handling periodic actions or events.
-func onTimer() {
-	_instance.onTimer()
+func onTimerEntry() {
+	_instanceMemPlot.onTimer()
 }
 
 // main is the entry point of the program that initializes a MemPlot instance based on the first argument and sets up a timer.
@@ -132,8 +148,12 @@ func main(args []string) {
 			kind = 3
 		}
 	}
-	_instance = NewMemPlot(kind)
-	fmt.Println(kind)
-	fmt.Println(_instance)
+	_instanceMemPlot = NewMemPlot(kind)
+	fmt.Println("KIND", kind)
+	fmt.Println("INSTANCE", _instance)
+
+	onPaintEntry()
+
+	onTimerEntry()
 	//kernel.CreateTimer(0, 300, -1)
 }

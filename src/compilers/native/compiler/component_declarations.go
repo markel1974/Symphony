@@ -101,6 +101,7 @@ func (c *Declarations) TypeSpec(node *ast.TypeSpec) error {
 
 	switch t := node.Type.(type) {
 	case *ast.StructType:
+		c.structTable.AddStruct(typeName)
 		if t.Fields != nil {
 			for _, field := range t.Fields.List {
 				var typeNameBuf bytes.Buffer
@@ -110,7 +111,7 @@ func (c *Declarations) TypeSpec(node *ast.TypeSpec) error {
 				}
 				fieldType := typeNameBuf.String()
 				for _, name := range field.Names {
-					c.structTable.Add(typeName, name.Name, base, fieldType, field)
+					c.structTable.AddField(typeName, name.Name, base, fieldType, field)
 				}
 			}
 		}
@@ -320,17 +321,15 @@ func (c *Declarations) AssignStmt(node *ast.AssignStmt) error {
 		if err := c.compile(node.Rhs[0]); err != nil {
 			return err
 		}
-		//var targetName string
-
-		targetName := tables.GetIdentName(rhsType.Fun)
-		if len(targetName) == 0 {
+		targetIdent := tables.GetIdent(rhsType.Fun)
+		if targetIdent == nil {
 			return tables.NewCompilerError(c.fileSet, node, "function type not found")
 		}
 		var returnTypes []string
-		if symbol, ok := c.scopes.SymbolResolve(targetName); ok {
+		if symbol, ok := c.scopes.SymbolResolve(targetIdent.Name); ok {
 			returnTypes = symbol.ReturnTypes()
 		} else {
-			returnTypes = []string{"interface"}
+			returnTypes = []string{tables.InterfaceDefinition}
 		}
 		rhsContainer = make([]*rhs, len(returnTypes))
 		for idx := range rhsContainer {
@@ -632,14 +631,17 @@ func (c *Declarations) handleVariableDeclaration(pos token.Pos, tok token.Token,
 			}
 			if symbol.IsInterface() {
 				var rhsName string
-				switch rhs := rhsIn.(type) {
-				case *ast.Ident:
-					rhsName = rhs.Name
-				case *ast.CompositeLit:
-					if ident, ok := rhs.Type.(*ast.Ident); ok {
-						rhsName = ident.Name
-					}
+				if ident := tables.GetIdent(rhsIn); ident != nil {
+					rhsName = ident.Name
 				}
+				//switch rhs := rhsIn.(type) {
+				//case *ast.Ident:
+				//	rhsName = rhs.Name
+				//case *ast.CompositeLit:
+				//	if ident, ok := rhs.Type.(*ast.Ident); ok {
+				//		rhsName = ident.Name
+				//	}
+				//}
 				if len(rhsName) > 0 {
 					if assignedStructSymbol, ok := c.scopes.SymbolResolve(rhsName); ok && assignedStructSymbol.IsStruct() {
 						if err := c.handleInterfaceAssignment(pos, symbol, assignedStructSymbol); err != nil {

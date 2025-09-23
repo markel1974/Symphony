@@ -2,7 +2,7 @@ package tests
 
 import "fmt"
 
-type Shape interface {
+type IShape interface {
 	Area() int
 }
 
@@ -23,7 +23,7 @@ func (cs CircleShape) Area() int {
 	return 3 * cs.radius * cs.radius
 }
 
-func getTotalArea(s Shape) int {
+func getTotalArea(s IShape) int {
 	return s.Area()
 }
 
@@ -33,14 +33,14 @@ func main() {
 	rShape := RectangleShape{width: 10, height: 4}
 	c := CircleShape{radius: 5}
 
-	var s Shape
+	var s IShape
 	s = rShape
 	total := getTotalArea(s)
 
 	s = c
 	total = total + getTotalArea(s)
 
-	var shapeVar Shape = RectangleShape{width: 3, height: 3}
+	var shapeVar IShape = RectangleShape{width: 3, height: 3}
 	rect, ok := shapeVar.(RectangleShape)
 
 	finalValue := 0
