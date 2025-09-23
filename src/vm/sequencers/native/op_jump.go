@@ -46,7 +46,7 @@ func (op *OpJump) Bind(vm core.IVM) error {
 // Execute updates the instruction pointer (`ip`) in the virtual machine (`VM`) to a calculated position in the frame.
 func (op *OpJump) Execute(decoder *core.Decoder) {
 	pos := decoder.Operand(0)
-	op.vm.SetIp(pos - 1)
+	op.vm.SetIp(pos)
 }
 
 // Compile generates the compiled representation of the OpJump operation or returns an unimplemented error.

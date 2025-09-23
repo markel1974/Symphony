@@ -50,13 +50,12 @@ func (f *Frame) Bind(startIp int, compiledFunction *objects.Func, basePointer in
 	f.freeVars = f.compiledFunction.Free()
 }
 
-// Fetch retrieves the next instruction pointer and its corresponding OpcodeId from the frame's instructions.
+// Fetch retrieves the next operation's instruction pointer and opcode ID from the bytecode sequence.
 func (f *Frame) Fetch(ip int) (int, opcodes.OpcodeId) {
-	offset := uint(ip + opcodes.HeaderSizeBytes)
-	headerBytes := f.Get8Reverse(offset)
-	offset += opcodes.HeaderOpcodeIdBytes
-	opcode := f.Get16Reverse(offset)
-	ip += int(headerBytes)
+	ip++ // move to the next instruction in the bytecode sequence
+	headerBytes := f.Get8Reverse(uint(ip))
+	opcode := f.Get16Reverse(uint(ip) + opcodes.HeaderOpcodeIdBytes)
+	ip += int(headerBytes) - 1 // subtracts 1 to balance the initial ip++ increment
 	return ip, opcodes.OpcodeId(opcode)
 }
 

@@ -51,7 +51,7 @@ func (op *OpJumpIndirect) Bind(vm core.IVM) error {
 func (op *OpJumpIndirect) Execute(_ *core.Decoder) {
 	addrObj := op.vm.StackPop()
 	addr := addrObj.AsInt64()
-	op.vm.SetIp(int(addr) - 1)
+	op.vm.SetIp(int(addr))
 }
 
 // Compile generates the compiled representation of the OpJumpIndirect operation or returns an unimplemented error.

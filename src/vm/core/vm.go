@@ -291,7 +291,7 @@ func (v *VM) Factory() objects.IGateKeeper {
 
 // SetIp sets the virtual machine's instruction pointer to the specified value.
 func (v *VM) SetIp(ip int) {
-	v.ip = ip
+	v.ip = ip - 1 // -1 because the instruction pointer is incremented after each instruction.
 }
 
 // GetIp retrieves the current instruction pointer value from the virtual machine.
@@ -445,7 +445,7 @@ func (v *VM) returnApply(returnValues []objects.IObject) {
 	if v.frames.CanMovePrevious() {
 		v.frames.MovePrevious()
 		v.currFrame = v.frames.Previous()
-		v.SetIp(prevIp)
+		v.ip = prevIp
 	} else {
 		shutdown = true
 	}

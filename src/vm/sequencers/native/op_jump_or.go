@@ -50,7 +50,7 @@ func (op *OpJumpOr) Execute(decoder *core.Decoder) {
 		op.vm.StackDecrement()
 	} else {
 		pos := decoder.Operand(0)
-		op.vm.SetIp(pos - 1)
+		op.vm.SetIp(pos)
 	}
 }
 
