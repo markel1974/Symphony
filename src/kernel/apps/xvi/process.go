@@ -6,9 +6,12 @@ import (
 
 // XVI is a text editor type that integrates a text user interface (Tui), a text buffer, and a user process manager.
 type XVI struct {
-	tui     *Tui
-	buffer  *Buffer
-	process interfaces.IUserProcess
+	tui                    *Tui
+	buffer                 *Buffer
+	process                interfaces.IUserProcess
+	yankBuffer             string
+	lastChar               rune
+	isWelcomeMessageActive bool
 }
 
 // NewXVI creates and initializes a new instance of the XVI structure with default settings.
@@ -31,36 +34,43 @@ func (p *XVI) Start() {
 	p.buffer = NewBuffer("/home/user/welcome.txt", "Benvenuto in xvi!\nPremi 'i' per entrare in modalità inserimento.\nPremi 'Esc' per tornare in modalità normale.")
 	p.tui = NewTui(p.buffer)
 	p.process.PaintRequest()
+	p.isWelcomeMessageActive = true
 }
 
 // onPaint handles the painting of the user interface by delegating drawing operations to the Tui instance.
-// It renders the buffer content and the status bar on the provided ISurface.
 func (p *XVI) onPaint(surface interfaces.ISurface) {
 	p.tui.Draw(p.process, surface)
 }
 
-// onError handles errors encountered during the execution of the process and triggers appropriate error-handling logic.
+// onError handles errors encountered during the execution of the process.
 func (p *XVI) onError(err error) {
 	p.tui.SetError(err)
 }
 
-// activateHandler handles the activation event for the process, setting up initial state or responding to reactivation.
+// onActivate handles the activation event for the process.
 func (p *XVI) onActivate() {
 	//TODO
 }
 
-// keyHandler processes keyboard input based on the current mode (normal or insert) and updates the buffer or mode accordingly.
+// onKey processes keyboard input based on the current mode.
 func (p *XVI) onKey(code int, key rune) {
+	if p.isWelcomeMessageActive {
+		p.buffer.Clear()
+		p.isWelcomeMessageActive = false
+	}
+
 	switch p.tui.GetMode() {
 	case "normal":
 		p.doNormalMode(code, key)
 	case "insert":
 		p.doInsertMode(code, key)
+	case "command":
+		p.doCommandMode(code, key)
 	}
 	p.process.PaintRequest()
 }
 
-// doInsertMode processes key input in insert mode, modifying the buffer or changing the mode based on the key type.
+// doInsertMode processes key input in insert mode.
 func (p *XVI) doInsertMode(code int, key rune) {
 	if p.doCursor(code, key) {
 		return
@@ -72,36 +82,76 @@ func (p *XVI) doInsertMode(code int, key rune) {
 	case interfaces.KeyTypeCancel:
 		p.buffer.DeleteChar()
 	default:
-		if key < 32 {
-			if key == '\n' {
-				p.buffer.InsertRow()
-			}
-			//nothing for now
-		} else {
+		if key == '\n' {
+			p.buffer.InsertRow()
+		} else if key >= 32 {
 			p.buffer.InsertChar(key)
 		}
 	}
 }
 
-// doNormalMode processes input in normal mode, handling cursor movements and switching to insert mode when 'i' is pressed.
+// doNormalMode processes input in normal mode.
 func (p *XVI) doNormalMode(code int, key rune) {
 	if p.doCursor(code, key) {
+		p.lastChar = 0 // Reset sequence on cursor movement
 		return
 	}
+
+	// Handle command sequences like 'dd' and 'yy'
+	if p.lastChar != 0 {
+		if p.lastChar == 'd' && key == 'd' {
+			_, y := p.buffer.Cursor()
+			p.yankBuffer = p.buffer.DeleteLine(y)
+			p.lastChar = 0
+			return
+		}
+		if p.lastChar == 'y' && key == 'y' {
+			_, y := p.buffer.Cursor()
+			p.yankBuffer = p.buffer.GetLine(y)
+			p.tui.SetError(nil)
+			p.lastChar = 0
+			return
+		}
+		p.lastChar = 0
+	}
+
 	switch key {
 	case 'i':
 		p.tui.SetMode("insert")
+	case ':':
+		p.tui.SetMode("command")
 	case 'h':
-		//p.buffer.MoveCursor(-1, 0)
+		p.buffer.MoveCursor(-1, 0)
 	case 'j':
-		//p.buffer.MoveCursor(0, 1)
+		p.buffer.MoveCursor(0, 1)
 	case 'k':
-		//p.buffer.MoveCursor(0, -1)
+		p.buffer.MoveCursor(0, -1)
 	case 'l':
-		//p.buffer.MoveCursor(1, 0)
+		p.buffer.MoveCursor(1, 0)
+	case 'd':
+		p.lastChar = 'd'
+	case 'y':
+		p.lastChar = 'y'
+	case 'p':
+		if p.yankBuffer != "" {
+			_, y := p.buffer.Cursor()
+			p.buffer.InsertLineBelow(y, p.yankBuffer)
+		}
+	default:
+		p.lastChar = 0
 	}
 }
 
+// doCommandMode processes input in command mode.
+func (p *XVI) doCommandMode(code int, key rune) {
+	kind := interfaces.KeyType(code)
+	if kind == interfaces.KeyTypeTab {
+		p.tui.SetMode("normal")
+		return
+	}
+}
+
+// doCursor handles universal cursor movement keys.
 func (p *XVI) doCursor(code int, key rune) bool {
 	kind := interfaces.KeyType(code)
 	if kind == interfaces.KeyTypeCursor {
