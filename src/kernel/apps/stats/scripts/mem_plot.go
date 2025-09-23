@@ -9,12 +9,18 @@ import (
 	"kernel"
 )
 
-// bToMb converts a byte value (uint64) to megabytes (float64) by dividing the input by 1024 twice.
+// ISurface represents an abstraction for rendering data-driven graphical series onto a surface.
+// DrawSeries renders a series of data points within specified boundaries and dimensions.
+type ISurface interface {
+	DrawSeries(data []float64, rows int, columns int, min float64, max float64)
+}
+
+// bToMb converts a given size in bytes (b) to megabytes as a float64.
 func bToMb(b uint64) float64 {
 	return float64(b) / 1024 / 1024
 }
 
-// MemPlot represents a memory plotting utility for capturing and visualizing runtime memory statistics in real-time.
+// MemPlot is a structure that tracks memory statistics over time for visualization and analysis.
 type MemPlot struct {
 	data   []float64
 	kind   int
@@ -23,7 +29,7 @@ type MemPlot struct {
 	auto   bool
 }
 
-// NewMemPlot creates a new instance of MemPlot with the specified kind, initializing its fields with default values.
+// NewMemPlot initializes a new MemPlot instance of the specified kind, with auto scaling enabled and empty data.
 func NewMemPlot(kind int) *MemPlot {
 	plt := &MemPlot{
 		kind:   kind,
@@ -35,9 +41,7 @@ func NewMemPlot(kind int) *MemPlot {
 	return plt
 }
 
-// Start initializes the timer for the MemPlot instance with a 300 millisecond interval and an infinite execution count.
-
-// onKey handles keyboard input events, allowing adjustments to plot scaling or toggling the auto-scaling feature.
+// onKey handles keyboard input to modify the plot's value range or toggle the auto-scaling mode.
 func (plt *MemPlot) onKey(_ int, key rune) {
 	interval := math.Abs(plt.maxVal - plt.minVal)
 	scale := (interval * 10) / 100
@@ -55,7 +59,7 @@ func (plt *MemPlot) onKey(_ int, key rune) {
 	}
 }
 
-// onTimer is invoked periodically based on the timer to collect and track memory statistics and update the plot data.
+// onTimer is a method that periodically collects memory statistics, updates the MemPlot data, and triggers a repaint.
 func (plt *MemPlot) onTimer() {
 	var m runtime.MemStats
 	runtime.ReadMemStats(&m)
@@ -85,56 +89,47 @@ func (plt *MemPlot) onTimer() {
 	kernel.PaintRequest()
 }
 
-// onPaint renders the graph data on the provided surface, using custom or automatic plot range values.
-func (plt *MemPlot) onPaint() {
+// onPaint handles the rendering of the plot on the given surface using the current data and value range.
+// It adjusts the minimum and maximum plot values if auto-scaling is disabled.
+// The method invokes the DrawSeries function of the provided ISurface to display the data.
+func (plt *MemPlot) onPaint(surface ISurface) {
 	var minPlot float64 = 0
 	var maxPlot float64 = 0
 	if !plt.auto {
 		minPlot = plt.minVal
 		maxPlot = plt.maxVal
 	}
-	kernel.DrawSeries(plt.data, -1, -1, minPlot, maxPlot)
-	//surface.DrawSeries(plt.data, -1, -1, minPlot, maxPlot)
+	surface.DrawSeries(plt.data, -1, -1, minPlot, maxPlot)
 }
 
-var _instance = NewMemPlot(0)
+// _instance is a singleton instance of the MemPlot structure, used for memory plotting and rendering operations.
+var _instance *MemPlot
 
+// onPaint handles the repaint event for the current graphical instance by delegating the operation to the _instance object.
 func onPaint() {
 	_instance.onPaint()
 }
 
+// onTimer triggers the onTimer method of the _instance object, typically used for handling periodic actions or events.
 func onTimer() {
 	_instance.onTimer()
 }
 
-func main() {
+// main is the entry point of the program that initializes a MemPlot instance based on the first argument and sets up a timer.
+func main(args []string) {
+	kind := 0
+	if len(args) > 0 {
+		switch args[0] {
+		case "alloc":
+			kind = 0
+		case "total":
+			kind = 1
+		case "os":
+			kind = 2
+		case "gc":
+			kind = 3
+		}
+	}
+	_instance = NewMemPlot(kind)
 	kernel.CreateTimer(0, 300, -1)
 }
-
-/*
-// CreateMemPlot creates a new runtime memory plotting command, initializing its setup and starting the memory monitoring process.
-func CreateMemPlot() interfaces.ICommand {
-	run := func(process interfaces.IUserProcess, args []string) error {
-		kind := 0
-		if len(args) > 0 {
-			switch args[0] {
-			case "alloc":
-				kind = 0
-			case "total":
-				kind = 1
-			case "os":
-				kind = 2
-			case "gc":
-				kind = 3
-			}
-		}
-		plt := NewMemPlot(kind)
-		plt.Setup(process)
-		plt.Start()
-		return nil
-	}
-	root := process.NewCommand("rtplot", interfaces.CommandTypeFile, nil, true, run)
-	root.SetHelp("Runtime Plot", "Runtime Plot")
-	return root
-}
-*/

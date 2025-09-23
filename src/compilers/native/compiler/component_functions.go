@@ -90,7 +90,7 @@ func (c *Functions) funcBodyPrepare(fd *tables.FunctionDescription) error {
 		return err
 	}
 	for _, p := range node.Type.Params.List {
-		kind := tables.GetIdent(p)
+		kind := tables.GetIdentFromField(p)
 		if kind == nil {
 			return tables.NewCompilerError(c.fileSet, p, "unsupported parameter type: %T", p.Type)
 		}
@@ -105,7 +105,7 @@ func (c *Functions) funcBodyPrepare(fd *tables.FunctionDescription) error {
 				fd.StructReceivers = append(fd.StructReceivers, name.Name)
 			}
 		}
-		recvTypeIdent := tables.GetIdent(node.Recv.List[0])
+		recvTypeIdent := tables.GetIdentFromField(node.Recv.List[0])
 		if recvTypeIdent == nil {
 			return tables.NewCompilerError(c.fileSet, node, "unsupported method receiver type")
 		}

@@ -6,15 +6,33 @@ import (
 	"go/token"
 )
 
-// GetIdent retrieves the *ast.Ident type from an *ast.Field's Type if it exists, including handling pointer types.
-func GetIdent(expr *ast.Field) *ast.Ident {
-	switch t := expr.Type.(type) {
+// GetIdentFromField extracts and returns the identifier of the type from the given AST field node, or nil if not found.
+func GetIdentFromField(field *ast.Field) *ast.Ident {
+	if field == nil {
+		return nil
+	}
+	return GetIdent(field.Type)
+}
+
+// GetIdent traverses an AST expression and returns the identifier (*ast.Ident) of the type, if found.
+// It handles identifiers, pointers, arrays/slices, and maps, returning the type's identifier or nil if not applicable.
+func GetIdent(expr ast.Expr) *ast.Ident {
+	switch t := expr.(type) {
 	case *ast.Ident:
+		// Base case: we found the identifier (e.g. "MyStruct")
 		return t
 	case *ast.StarExpr:
-		if ident, ok := t.X.(*ast.Ident); ok {
-			return ident
-		}
+		// Pointer case (*MyType): continue searching on the pointed type
+		return GetIdent(t.X)
+	case *ast.ArrayType:
+		// Array/slice case ([]MyType): continue searching on the element type
+		return GetIdent(t.Elt)
+	case *ast.MapType:
+		// Map case (map[KeyType]ValueType): we are interested in the value type
+		return GetIdent(t.Value)
+	case *ast.SelectorExpr:
+		// Qualified type case (package.Type): return the type identifier
+		return t.Sel
 	}
 	return nil
 }

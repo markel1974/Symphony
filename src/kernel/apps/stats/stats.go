@@ -19,6 +19,7 @@ func Create() (*process.Command, []interfaces.ICommand) {
 	apps = append(apps, CreateMemProfile())
 	apps = append(apps, CreateMemStatus())
 	apps = append(apps, CreateMemPlot())
+	apps = append(apps, CreateMemPlotScript())
 	apps = append(apps, CreateCPUStatus())
 	for _, app := range apps {
 		_ = root.AddCommand(app)

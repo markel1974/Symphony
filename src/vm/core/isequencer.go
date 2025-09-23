@@ -10,6 +10,8 @@ import (
 type ISequencer interface {
 	opcodes.IOpcodes
 
+	Setup() error
+
 	Bind(vm *VM) error
 
 	Executors() []IOpExecutor

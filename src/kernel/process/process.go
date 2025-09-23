@@ -5,14 +5,8 @@ import (
 	"log"
 	"time"
 
-	"github.com/markel1974/c64emu/src/compilers"
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
 	"github.com/markel1974/c64emu/src/kernel/messages"
-	"github.com/markel1974/c64emu/src/vm/bytecode"
-	"github.com/markel1974/c64emu/src/vm/core"
-	"github.com/markel1974/c64emu/src/vm/objects"
-	"github.com/markel1974/c64emu/src/vm/opcodes"
-	"github.com/markel1974/c64emu/src/vm/sequencers/native"
 )
 
 const (
@@ -33,36 +27,25 @@ type Process struct {
 	executorChan     chan interfaces.IMessage
 	executorWaitChan chan bool
 	timeout          time.Duration
-	gk               objects.IGateKeeper
-	loader           bytecode.ILoader
-	opcodes          opcodes.IOpcodes
-	compiler         bytecode.ICompiler
-	executors        []core.IOpExecutor
-	vm               *core.VM
 	onError          interfaces.OnError
 	onTimer          interfaces.OnTimer
 	onKey            interfaces.OnKey
 	onKeyBroadcast   interfaces.OnKey
 	onPaint          interfaces.OnPaint
 	onActivate       interfaces.OnActivate
-	vmInitialized    bool
+	script           *Script
 }
 
 // NewProcess initializes and returns a new Process instance with the provided kRouter, command, and command line data.
 func NewProcess(cmd interfaces.ICommand) *Process {
 	t := &Process{
 		cmd:              cmd,
-		opcodes:          nil,
-		loader:           nil,
-		compiler:         nil,
-		vm:               nil,
-		gk:               nil,
+		script:           NewScript(),
 		state:            interfaces.ProcessStateSetup,
 		gatekeeperChan:   make(chan interfaces.IMessage, gatekeeperQueueLen),
 		executorChan:     make(chan interfaces.IMessage, executorQueueLen),
 		executorWaitChan: make(chan bool, 1),
 		timeout:          10 * time.Second,
-		vmInitialized:    false,
 	}
 	return t
 }
@@ -542,50 +525,25 @@ func (t *Process) handleMessageRead(msg interfaces.IMessage) {
 func (t *Process) handleMessageProcessStart(msg interfaces.IMessage) {
 	mt, ok := msg.(*messages.MessageProcessStart)
 	if !ok {
+		log.Printf("Process [%s]: invalid message type: %T", t.cmd.Name(), msg)
+		t.kRouter.PostKernelRequest(messages.NewMessageMessageProcessExit(-1, -1))
 		return
 	}
 	if t.cmd.HasScript() {
-		if !t.vmInitialized {
-			var err error
-			seq := native.NewSequencer()
-			if err = seq.Setup(); err != nil {
-				log.Printf("Process [%s]: error creating compiler: %s", t.cmd.Name(), err.Error())
-				return
-			}
-			t.gk = objects.NewGateKeeper()
-			t.opcodes = seq
-			t.loader = bytecode.NewLoader(t.gk)
-			t.compiler, err = compilers.NewCompiler(t.gk, t.opcodes, t.loader)
-			if err != nil {
-				log.Printf("Process [%s]: error creating compiler: %s", t.cmd.Name(), err.Error())
-				return
-			}
-			pkg := NewLibrary(t.gk, t)
-			//pkg := bytecode.NewPackage("kernel", NewLibrary(t.gk, t).Functions(), nil)
-			if err = t.loader.AddPackage(pkg); err != nil {
-				log.Printf("Process [%s]: error adding kernel package: %s", t.cmd.Name(), err.Error())
-				return
-			}
-			t.vm = core.New(t.gk, t.opcodes)
-			if err = seq.Bind(t.vm); err != nil {
-				log.Printf("Process [%s]: error setting up sequencer: %s", t.cmd.Name(), err.Error())
-				return
-			}
-			t.executors = seq.Executors()
-			t.vmInitialized = true
-		}
-		if err := t.compiler.Compile(t.cmd.Name(), t.cmd.Script()); err != nil {
-			log.Printf("Process [%s]: error compiling script: %s", t.cmd.Name(), err.Error())
+		if err := t.script.Setup(t); err != nil {
+			log.Printf("Process [%s]: error setting up script: %s", t.cmd.Name(), err.Error())
+			t.kRouter.PostKernelRequest(messages.NewMessageMessageProcessExit(-1, -1))
 			return
 		}
-		bc := bytecode.NewBytecode(t.gk, t.compiler.Constants(), t.compiler.Imports(), t.compiler.Globals(), t.compiler.FileSet())
-		entryPoints, err := t.vm.Setup(t.loader, t.executors, bc)
-		if err != nil {
-			log.Printf("Process [%s]: error setting up VM: %s", t.cmd.Name(), err.Error())
+		if err := t.script.Compile(t.cmd.Name(), t.cmd.Script()); err != nil {
+			log.Printf("Process [%s]: error compilinig script: %s", t.cmd.Name(), err.Error())
+			t.kRouter.PostKernelRequest(messages.NewMessageMessageProcessExit(-1, -1))
+			return
 		}
-		_, err = t.vm.Run(entryPoints["main"], mt.Args())
-		if err != nil {
-			log.Printf("Process [%s]: error running script: %s", t.cmd.Name(), err.Error())
+		if _, err := t.script.Exec("main", false, mt.Args()); err != nil {
+			log.Printf("Process [%s]: error running script [main]: %s", t.cmd.Name(), err.Error())
+			t.kRouter.PostKernelRequest(messages.NewMessageMessageProcessExit(-1, -1))
+			return
 		}
 	} else {
 		_ = t.cmd.Execute(t, mt.Args())
