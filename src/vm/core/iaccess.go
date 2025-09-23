@@ -66,8 +66,8 @@ type IVMReadWrite interface {
 type IVMControlFlow interface {
 	IVMStackOnly
 	IVMFrameOnly
-	SetIp(ip int)
-	GetIp() int
+	SetIp(ip uint)
+	GetIp() uint
 }
 
 // IVMFullAccess is an interface that merges IVMReadWrite and IVMControlFlow functionalities with additional execution controls.

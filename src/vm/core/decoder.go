@@ -24,7 +24,7 @@ type Decoder struct {
 	executor        IOpExecutor
 	name            string
 	execute         func(data *Decoder)
-	fullWidth       int
+	operandsSize    uint
 	decodedOperands []int
 	operands        []*OperandsDecoderData
 	operandsMask    int
@@ -44,7 +44,7 @@ func NewDecoder(executor IOpExecutor) (*Decoder, error) {
 		execute:         executor.Execute,
 		name:            executor.Opcode().Name(),
 		operandsMask:    operandsMask,
-		fullWidth:       0,
+		operandsSize:    0,
 		decodedOperands: make([]int, operandsMask+1),
 	}
 
@@ -64,8 +64,8 @@ func NewDecoder(executor IOpExecutor) (*Decoder, error) {
 		default:
 			return nil, fmt.Errorf("invalid operand width: %d", width)
 		}
-		sd.operands = append(sd.operands, &OperandsDecoderData{offset: uint(sd.fullWidth), retrieve: retrieve})
-		sd.fullWidth += int(width)
+		sd.operands = append(sd.operands, &OperandsDecoderData{offset: uint(sd.operandsSize), retrieve: retrieve})
+		sd.operandsSize += uint(width)
 		idx++
 	}
 	if len(sd.operands) > operandsMask {
@@ -79,16 +79,19 @@ func (d *Decoder) Name() string {
 	return d.name
 }
 
-// Decode processes and decodes operands from the instruction pointer, updating decodedOperands and returning new ip.
-func (d *Decoder) Decode(frame *Frame, ip int) int {
-	if d.fullWidth == 0 {
-		return ip
+// OperandsSize returns the total size of the operands for the current instruction decoder instance.
+func (d *Decoder) OperandsSize() uint {
+	return d.operandsSize
+}
+
+// DecodeReverse processes and decodes operands from the instruction pointer, updating decodedOperands and returning new ip.
+func (d *Decoder) DecodeReverse(frame *Frame, ip uint) {
+	if d.operandsSize == 0 {
+		return
 	}
-	ip += d.fullWidth
 	for idx, dd := range d.operands {
-		d.decodedOperands[idx] = dd.retrieve(frame, uint(ip)-dd.offset)
+		d.decodedOperands[idx] = dd.retrieve(frame, ip-dd.offset)
 	}
-	return ip
 }
 
 // Execute runs the logic associated with the current instruction using the provided virtual machine instance.

@@ -48,7 +48,7 @@ func (op *OpJumpFalsy) Execute(decoder *core.Decoder) {
 	obj := op.vm.StackPop()
 	if obj.Falsy() {
 		pos := decoder.Operand(0)
-		op.vm.SetIp(pos)
+		op.vm.SetIp(uint(pos))
 	}
 }
 

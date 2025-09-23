@@ -54,7 +54,7 @@ func (op *OpJumpNotError) Execute(decoder *core.Decoder) {
 	err, isErr := obj.(*objects.Error)
 	if !isErr || !err.Falsy() {
 		pos := decoder.Operand(0)
-		op.vm.SetIp(pos)
+		op.vm.SetIp(uint(pos))
 	}
 }
 

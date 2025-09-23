@@ -14,7 +14,7 @@ const Version = "0.1"
 
 // resetIp is the instruction pointer value used to reset the VM's instruction pointer to the beginning of the main function.'
 const (
-	resetIp = -1
+	resetIp = 0 //
 )
 
 // stackSize specifies the size limit of the stack for function execution.
@@ -32,7 +32,7 @@ type VM struct {
 	stack             *Stack
 	frames            *Frames
 	currFrame         *Frame
-	ip                int
+	ip                uint
 	shutdown          bool
 	err               error
 	sequencer         []*Decoder
@@ -290,12 +290,12 @@ func (v *VM) Factory() objects.IGateKeeper {
 }
 
 // SetIp sets the virtual machine's instruction pointer to the specified value.
-func (v *VM) SetIp(ip int) {
-	v.ip = ip - 1 // -1 because the instruction pointer is incremented after each instruction.
+func (v *VM) SetIp(ip uint) {
+	v.ip = ip
 }
 
 // GetIp retrieves the current instruction pointer value from the virtual machine.
-func (v *VM) GetIp() int {
+func (v *VM) GetIp() uint {
 	return v.ip
 }
 
@@ -543,10 +543,10 @@ func (v *VM) exec(mainFn *objects.Func, ret bool, args ...interface{}) ([]interf
 	v.loop()
 
 	if v.err != nil {
-		filePos, _ := v.bc.Position(v.currFrame.SourcePos(v.ip - 1))
+		filePos, _ := v.bc.Position(v.currFrame.SourcePos(int(v.ip) - 1))
 		err := fmt.Errorf("%w at %s", v.err, filePos)
 		for _, frame := range v.frames.Unroll() {
-			filePos, _ = v.bc.Position(frame.SourcePos(frame.SavedIP() - 1))
+			filePos, _ = v.bc.Position(frame.SourcePos(int(frame.SavedIP()) - 1))
 			err = fmt.Errorf("%w at %s", err, filePos)
 		}
 		return nil, err
@@ -559,17 +559,19 @@ func (v *VM) exec(mainFn *objects.Func, ret bool, args ...interface{}) ([]interf
 
 // loop executes the main instruction loop for the virtual machine, updating the instruction pointer and processing opcodes.
 func (v *VM) loop() {
-	//log.Printf("starting......")
 	var opcode opcodes.OpcodeId
 	var decoder *Decoder
 	v.counterIterations = 0
 	v.counterStart = uint64(time.Now().UnixMilli())
+	headerSize := uint(0)
 	for {
 		v.counterIterations++
-		v.ip, opcode = v.currFrame.Fetch(v.ip)
+		opcode, headerSize = v.currFrame.Fetch(v.ip)
 		decoder = v.sequencer[opcode&v.sequencerMask]
-		v.ip = decoder.Decode(v.currFrame, v.ip)
-		//log.Printf("Executing instruction opcode: %d name: %s ip: %d decoded: %v", opcode, decoder.Name(), v.ip, decoder.decodedOperands[:decoder.fullWidth])
+		v.ip += headerSize + decoder.OperandsSize() - 1 //zero-based index
+		decoder.DecodeReverse(v.currFrame, v.ip)
+		v.ip++ //next instruction
+		//log.Printf("Executing instruction opcode: %d name: %s ip: %d decoded: %v", opcode, decoder.Name(), v.ip, decoder.decodedOperands[:decoder.operandsSize])
 		decoder.Execute()
 		if v.shutdown {
 			break

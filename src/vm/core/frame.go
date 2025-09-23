@@ -14,7 +14,7 @@ type Frame struct {
 	id                   int
 	compiledFunction     *objects.Func
 	freeVars             []*objects.ObjectPointer
-	savedIp              int
+	savedIp              uint
 	basePointer          int
 	instructions         *opcodes.Instructions
 	deferredCalls        []*objects.Func
@@ -42,7 +42,7 @@ func (f *Frame) Id() int {
 }
 
 // Bind initializes the frame with the given instruction pointer, compiled function, and base pointer values.
-func (f *Frame) Bind(startIp int, compiledFunction *objects.Func, basePointer int) {
+func (f *Frame) Bind(startIp uint, compiledFunction *objects.Func, basePointer int) {
 	f.savedIp = startIp
 	f.basePointer = basePointer
 	f.compiledFunction = compiledFunction
@@ -51,12 +51,10 @@ func (f *Frame) Bind(startIp int, compiledFunction *objects.Func, basePointer in
 }
 
 // Fetch retrieves the next operation's instruction pointer and opcode ID from the bytecode sequence.
-func (f *Frame) Fetch(ip int) (int, opcodes.OpcodeId) {
-	ip++ // move to the next instruction in the bytecode sequence
-	headerBytes := f.Get8Reverse(uint(ip))
-	opcode := f.Get16Reverse(uint(ip) + opcodes.HeaderOpcodeIdBytes)
-	ip += int(headerBytes) - 1 // subtracts 1 to balance the initial ip++ increment
-	return ip, opcodes.OpcodeId(opcode)
+func (f *Frame) Fetch(ip uint) (opcodes.OpcodeId, uint) {
+	headerBytes := f.Get8Reverse(ip)
+	opcode := f.Get16Reverse(ip + opcodes.HeaderOpcodeIdBytes)
+	return opcodes.OpcodeId(opcode), uint(headerBytes)
 }
 
 // Get8Reverse retrieves an 8-bit unsigned integer from the instructions at the specified index in the current frame.
@@ -111,7 +109,7 @@ func (f *Frame) FreeVarsIndex(idx uint) *objects.ObjectPointer {
 }
 
 // SavedIP retrieves the current instruction pointer (ip) of the frame, indicating the execution position in bytecode.
-func (f *Frame) SavedIP() int {
+func (f *Frame) SavedIP() uint {
 	return f.savedIp
 }
 
