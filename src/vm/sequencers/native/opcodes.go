@@ -174,9 +174,6 @@ const (
 	// OpDerefSetId represents an operation that assigns a value to the memory location pointed to by a dereferenced pointer.
 	OpDerefSetId
 
-	// OpSuspendId represents an opcode used to pause the execution of a process or coroutine until it is resumed.
-	OpSuspendId
-
 	// OpCreateErrorId is a constant OpcodeId representing an error operation in the instruction set.
 	OpCreateErrorId
 

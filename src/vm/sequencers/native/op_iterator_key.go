@@ -45,8 +45,8 @@ func (op *OpIteratorKey) Bind(vm core.IVM) error {
 
 // Execute processes the "iterator key" operation, retrieves the iterator key, and pushes it onto the VM stack.
 func (op *OpIteratorKey) Execute(decoder *core.Decoder) {
-	localIndex := decoder.Operand(0)
-	itObj := op.vm.StackPeekBP(uint(localIndex))
+	stableIdx := decoder.Operand(0)
+	itObj := op.vm.StackPeekBP(uint(stableIdx))
 	it, ok := itObj.(objects.IIterator)
 	if !ok {
 		op.vm.SetError(objects.ComputeIteratorError(objects.ErrNotIterator, itObj.TypeName()))
