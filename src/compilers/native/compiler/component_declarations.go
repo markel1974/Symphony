@@ -223,9 +223,7 @@ func (c *Declarations) ValueSpec(node *ast.ValueSpec) error {
 
 		// Check if the node type is a selector expression and extract its data
 		if selName, selId, ok := tables.GetSelectorData(node.Type); ok {
-			// Attempt to emit the value specification with selector data through imports
-			if ok := c.imports.EmitValueSpec(node.Pos(), symbol, selName, selId); ok {
-				// If successfully emitted, continue to the next iteration
+			if ok := c.imports.EmitPackage(node.Pos(), selName, selId); ok {
 				continue
 			}
 		}

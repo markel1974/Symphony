@@ -67,9 +67,8 @@ func (plt *MemPlot) onKey(_ int, key rune) {
 // onTimer is a method that periodically collects memory statistics, updates the MemPlot data, and triggers a repaint.
 func (plt *MemPlot) onTimer() {
 	var ms runtime.MemStats
-	z := &ms
-	runtime.ReadMemStats(z)
-	fmt.Println(z)
+	runtime.ReadMemStats(&ms)
+	fmt.Println(ms)
 	fmt.Println("Plotting:", plt)
 	//kernel.PaintRequest()
 }

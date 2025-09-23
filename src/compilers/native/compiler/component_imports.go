@@ -67,32 +67,8 @@ func (i *Imports) Declare(decls ast.Decl) {
 	i.container = append(i.container, decls)
 }
 
-// EmitValueSpec emits a value specification by defining a symbol and creating a struct reference from the provided names.
-// Returns false if the names are empty, module not found, or any emission step fails.
-func (i *Imports) EmitValueSpec(pos token.Pos, symbol *tables.Symbol, name string, selName string) bool {
-	if len(name) == 0 || len(selName) == 0 {
-		return false
-	}
-	_, ok := i.modules[name]
-	if !ok {
-		return false
-	}
-	selData := tables.GetMangledName(name, selName)
-	structNameIdx := i.constants.AddOrGet(selData, i.gk.NewString(objects.FrameStatic, selData))
-	if _, err := i.scopes.Emit(pos, native.OpConstantId, structNameIdx); err != nil {
-		return false
-	}
-	if _, err := i.scopes.Emit(pos, native.OpCreateStructId, 0); err != nil {
-		return false
-	}
-	if err := i.scopes.EmitSymbolDefineAndPop(pos, symbol); err != nil {
-		return false
-	}
-	return true
-}
-
-// EmitFuncInternal emits a positional import reference for a given name, adding it to the index if not already registered.
-func (i *Imports) EmitFuncInternal(pos token.Pos, name string) bool {
+// EmitInternal emits a positional import reference for a given name, adding it to the index if not already registered.
+func (i *Imports) EmitInternal(pos token.Pos, name string) bool {
 	if len(name) == 0 {
 		return false
 	}
@@ -109,21 +85,16 @@ func (i *Imports) EmitFuncInternal(pos token.Pos, name string) bool {
 	return true
 }
 
-// EmitFuncPackage emits an import directive for a package, resolving and mangling the provided names into the target index.
-func (i *Imports) EmitFuncPackage(pos token.Pos, name string, selName string) bool {
+// EmitPackage emits an import directive for a package, resolving and mangling the provided names into the target index.
+func (i *Imports) EmitPackage(pos token.Pos, name string, selName string) bool {
 	if len(name) == 0 || len(selName) == 0 {
 		return false
 	}
-	var target string
-	if len(selName) > 0 {
-		_, ok := i.modules[name]
-		if !ok {
-			return false
-		}
-		target = tables.GetMangledName(name, selName)
-	} else {
-		target = name
+	_, ok := i.modules[name]
+	if !ok {
+		return false
 	}
+	target := tables.GetMangledName(name, selName)
 	var index int
 	if v, ok := i.helper[target]; ok {
 		index = v
