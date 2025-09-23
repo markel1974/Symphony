@@ -60,7 +60,7 @@ func walk(baseDir string, prefix string, files *[]string) error {
 // - debug: Boolean flag to enable debug logs when compiling and executing bytecode.
 // Returns:
 // - error: An error object if any compilation or execution step fails, otherwise nil.
-func Launch(prefix string, debug bool) error {
+func Launch(prefix string, args []interface{}, debug bool) error {
 	var files []string
 	err := walk(".", prefix, &files)
 	if err != nil {
@@ -85,7 +85,7 @@ func Launch(prefix string, debug bool) error {
 			d := bytecode.NewDisassembler(bc, seq)
 			_ = d.Disassemble(log.Writer())
 		}
-		rv, err := Exec(gk, seq, loader, bc, debug)
+		rv, err := Exec(gk, seq, loader, bc, args, debug)
 		if err != nil {
 			return err
 		}
@@ -123,8 +123,8 @@ func Compile(gk objects.IGateKeeper, seq core.ISequencer, loader bytecode.ILoade
 // Exec initializes and runs a virtual machine instance with the given gatekeeper, sequencer, loader, bytecode, and debug mode.
 // It binds the sequencer to the virtual machine, sets up entry points, and executes the "main" entry point.
 // Returns an error if setup or execution fails, optionally logging debug information during runtime errors.
-func Exec(gk objects.IGateKeeper, seq core.ISequencer, loader bytecode.ILoader, bc *bytecode.Bytecode, debug bool) ([]interface{}, error) {
-	var args []interface{} = nil
+func Exec(gk objects.IGateKeeper, seq core.ISequencer, loader bytecode.ILoader, bc *bytecode.Bytecode, args []interface{}, debug bool) ([]interface{}, error) {
+	//var args []interface{} = nil
 	//args := []interface{}{1, 2}
 	vm := core.New(gk, seq)
 	if err := seq.Bind(vm); err != nil {
