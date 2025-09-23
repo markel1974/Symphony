@@ -1,11 +1,12 @@
-// //go:build no_compile
-package sources
+//go:build no_compile
+
+package scripts
 
 import (
-	"fmt"
 	"math"
 	"runtime"
-	//"kernel"
+
+	"kernel"
 )
 
 // ISurface represents an abstraction for rendering data-driven graphical series onto a surface.
@@ -14,15 +15,8 @@ type ISurface interface {
 	DrawSeries(data []float64, rows int, columns int, min float64, max float64)
 }
 
-type Surface struct {
-}
-
-func (s *Surface) DrawSeries(data []float64, rows int, columns int, min float64, max float64) {
-	fmt.Println("Drawing series:", data, rows, columns, min, max)
-}
-
 // bToMb converts a given size in bytes (b) to megabytes as a float64.
-func byteToMegaByte(b uint64) float64 {
+func bToMb(b uint64) float64 {
 	return float64(b) / 1024 / 1024
 }
 
@@ -40,6 +34,7 @@ func NewMemPlot(kind int) *MemPlot {
 	plt := &MemPlot{
 		kind:   kind,
 		auto:   true,
+		data:   nil,
 		minVal: math.Inf(1),
 		maxVal: math.Inf(-1),
 	}
@@ -66,11 +61,32 @@ func (plt *MemPlot) onKey(_ int, key rune) {
 
 // onTimer is a method that periodically collects memory statistics, updates the MemPlot data, and triggers a repaint.
 func (plt *MemPlot) onTimer() {
-	var ms runtime.MemStats
-	runtime.ReadMemStats(&ms)
-	fmt.Println(ms)
-	fmt.Println("Plotting:", plt)
-	//kernel.PaintRequest()
+	var m runtime.MemStats
+	runtime.ReadMemStats(&m)
+	var val float64
+	switch plt.kind {
+	case 0:
+		val = bToMb(m.Alloc)
+	case 1:
+		val = bToMb(m.TotalAlloc)
+	case 2:
+		val = bToMb(m.Sys)
+	case 3:
+		val = float64(m.NumGC)
+	default:
+		val = bToMb(m.Alloc)
+	}
+	if val < plt.minVal {
+		plt.minVal = val
+	}
+	if val > plt.maxVal {
+		plt.maxVal = val
+	}
+	plt.data = append(plt.data, val)
+	if len(plt.data) > 10 {
+		plt.data = plt.data[1:]
+	}
+	kernel.PaintRequest()
 }
 
 // onPaint handles the rendering of the plot on the given surface using the current data and value range.
@@ -83,23 +99,20 @@ func (plt *MemPlot) onPaint(surface ISurface) {
 		minPlot = plt.minVal
 		maxPlot = plt.maxVal
 	}
-	fmt.Println("Painting:", minPlot, maxPlot)
 	surface.DrawSeries(plt.data, -1, -1, minPlot, maxPlot)
 }
 
 // _instance is a singleton instance of the MemPlot structure, used for memory plotting and rendering operations.
-var _instanceMemPlot *MemPlot //NewMemPlot(0)
+var _instance *MemPlot
 
 // onPaint handles the repaint event for the current graphical instance by delegating the operation to the _instance object.
-func onPaintEntry() {
-	var i ISurface
-	i = &Surface{}
-	_instanceMemPlot.onPaint(i)
+func onPaint() {
+	_instance.onPaint()
 }
 
 // onTimer triggers the onTimer method of the _instance object, typically used for handling periodic actions or events.
-func onTimerEntry() {
-	_instanceMemPlot.onTimer()
+func onTimer() {
+	_instance.onTimer()
 }
 
 // main is the entry point of the program that initializes a MemPlot instance based on the first argument and sets up a timer.
@@ -117,12 +130,6 @@ func main(args []string) {
 			kind = 3
 		}
 	}
-	_instanceMemPlot = NewMemPlot(kind)
-	//fmt.Println("KIND", kind)
-	//fmt.Println("INSTANCE", _instance)
-
-	//onPaintEntry()
-
-	onTimerEntry()
-	//kernel.CreateTimer(0, 300, -1)
+	_instance = NewMemPlot(kind)
+	kernel.CreateTimer(0, 300, -1)
 }
