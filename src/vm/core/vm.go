@@ -128,7 +128,10 @@ func (v *VM) EnableRetValues(retValues bool) {
 
 // Run executes the main function identified by mainId with the provided arguments in the virtual machine context.
 func (v *VM) Run(mainId uint, args ...interface{}) ([]interface{}, error) {
-	obj := v.constants.Get(mainId)
+	obj, err := v.constants.Retrieve(mainId)
+	if err != nil {
+		return nil, err
+	}
 	mainFn, ok := obj.(*objects.Func)
 	if !ok {
 		return nil, fmt.Errorf("entry point not found: %d", mainId)
@@ -253,6 +256,26 @@ func (v *VM) StackDecrementCount(decrement uint) {
 // StackDecrement decreases the size of the stack by calling the Decrement method on the stack instance.
 func (v *VM) StackDecrement() {
 	v.stack.Decrement()
+}
+
+// ImportsGet fetches an imported object from the current frame using the specified index and returns it as an IObject.
+func (v *VM) ImportsGet(idx uint) objects.IObject {
+	return v.imports.Get(v.currFrame.Id(), idx)
+}
+
+// ConstantsGet fetches an imported object from the current frame using the specified index and returns it as an IObject.
+func (v *VM) ConstantsGet(idx uint) objects.IObject {
+	return v.constants.Get(v.currFrame.Id(), idx)
+}
+
+// GlobalsGet retrieves a global object by index from the VM's global container and returns it as an IObject.
+func (v *VM) GlobalsGet(idx uint) objects.IObject {
+	return v.globals.Get(idx)
+}
+
+// GlobalsSet assigns an object to the global store at the specified index.
+func (v *VM) GlobalsSet(idx uint, obj objects.IObject) {
+	v.globals.Set(idx, obj)
 }
 
 // FrameId returns the identifier of the current frame in the virtual machine.

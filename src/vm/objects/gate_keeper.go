@@ -1,12 +1,12 @@
 package objects
 
 const (
-	maxDepth     = 256
-	maxBytesLen  = 268435455
+	MaxDepth     = 256
+	MaxBytesLen  = 268435455
 	MaxStringLen = 268435455
-	maxMapLen    = 100000
-	maxArrayLen  = 100000
-	maxStructLen = 100000
+	MaxMapLen    = 100000
+	MaxArrayLen  = 100000
+	MaxStructLen = 100000
 )
 
 // GateKeeper is a type responsible for creating and managing IObject instances, including primitive and complex types.

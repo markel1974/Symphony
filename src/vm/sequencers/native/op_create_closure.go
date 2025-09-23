@@ -46,7 +46,7 @@ func (op *OpCreateClosure) Bind(vm core.IVM) error {
 // Execute performs the operation associated with the OpCreateClosure opcode, creating a closure and pushing it onto the stack.
 func (op *OpCreateClosure) Execute(decoder *core.Decoder) {
 	closureFnIndex := decoder.Operand(0)
-	closureFnObj := op.vm.Constants().Get(uint(closureFnIndex))
+	closureFnObj := op.vm.ConstantsGet(uint(closureFnIndex))
 	fn, ok := closureFnObj.(*objects.Func)
 	if !ok {
 		op.vm.SetError(fmt.Errorf("not a function: %s", closureFnObj.TypeName()))

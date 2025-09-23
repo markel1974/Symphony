@@ -22,8 +22,8 @@ type Bytes struct {
 
 // NewBytes creates and returns a new Bytes object initialized with the provided byte slice.
 func newBytes(allocator IAllocator, value []byte) IObject {
-	if len(value) > maxBytesLen {
-		value = value[0:maxBytesLen]
+	if len(value) > MaxBytesLen {
+		value = value[0:MaxBytesLen]
 	}
 	return &Bytes{
 		IAllocator: allocator,
@@ -114,12 +114,12 @@ func (o *Bytes) ArithmeticOp(frame int, op ArithmeticOperator, in IObject) (IObj
 	case OperatorAdd:
 		switch rhs := in.(type) {
 		case *Bytes:
-			if len(o.data)+len(rhs.data) > maxBytesLen {
+			if len(o.data)+len(rhs.data) > MaxBytesLen {
 				return nil, ErrLimitExceed
 			}
 			return o.GateKeeper().NewBytes(frame, append(o.data, rhs.data...)), nil
 		default:
-			if len(o.data)+1 > maxBytesLen {
+			if len(o.data)+1 > MaxBytesLen {
 				return nil, ErrLimitExceed
 			}
 			v := byte(in.AsInt64())

@@ -47,7 +47,7 @@ func (op *OpGlobalIndex) Bind(vm core.IVM) error {
 func (op *OpGlobalIndex) Execute(decoder *core.Decoder) {
 	globalIndex := decoder.Operand(0)
 	selCount := decoder.Operand(1)
-	dstObj := op.vm.Globals().Get(uint(globalIndex))
+	dstObj := op.vm.GlobalsGet(uint(globalIndex))
 	selectors := make([]objects.IObject, selCount)
 	for i := 0; i < selCount; i++ {
 		offset := selCount - i

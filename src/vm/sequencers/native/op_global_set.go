@@ -47,7 +47,7 @@ func (op *OpGlobalSet) Bind(vm core.IVM) error {
 func (op *OpGlobalSet) Execute(decoder *core.Decoder) {
 	index := decoder.Operand(0)
 	val := op.vm.StackPeek()
-	op.vm.Globals().Set(uint(index), val)
+	op.vm.GlobalsSet(uint(index), val)
 }
 
 // Compile generates the compiled representation of the OpGlobalSet operation or returns an unimplemented error.

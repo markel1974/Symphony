@@ -23,10 +23,10 @@ type Map struct {
 
 // NewMap creates and returns a new instance of Map initialized with the provided map of string keys to IObject Code.
 func newMap(allocator IAllocator, value map[string]IObject) IObject {
-	if len(value) > maxMapLen {
+	if len(value) > MaxMapLen {
 		nv := make(map[string]IObject)
 		for k, v := range value {
-			if len(nv) > maxMapLen {
+			if len(nv) > MaxMapLen {
 				break
 			}
 			nv[k] = v
@@ -132,7 +132,7 @@ func (o *Map) Get(key string) IObject {
 
 // Set assigns the specified Code to the given key in the Map. Overrides the Code if the key already exists.
 func (o *Map) Set(key string, value IObject) {
-	if len(o.data) > maxMapLen {
+	if len(o.data) > MaxMapLen {
 		return
 	}
 	o.data[key] = value
@@ -168,7 +168,7 @@ func (o *Map) TypeName() string {
 func (o *Map) Copy(frame int, depth int) IObject {
 	c := make(map[string]IObject)
 	for k, v := range o.data {
-		if depth > maxDepth {
+		if depth > MaxDepth {
 			break
 		}
 		c[k] = v.Copy(frame, depth+1)

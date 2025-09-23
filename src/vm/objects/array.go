@@ -22,8 +22,8 @@ type Array struct {
 
 // NewArray creates and returns a new Array object initialized with the provided slice of IObject elements.
 func newArray(allocator IAllocator, value []IObject) IObject {
-	if len(value) > maxArrayLen {
-		value = value[0:maxArrayLen]
+	if len(value) > MaxArrayLen {
+		value = value[0:MaxArrayLen]
 	}
 	return &Array{
 		IAllocator: allocator,
@@ -131,7 +131,7 @@ func (o *Array) SetValue(idx int, value IObject) {
 
 // Append adds an element to the end of the Array.
 func (o *Array) Append(elem IObject) {
-	if len(o.data) >= maxArrayLen {
+	if len(o.data) >= MaxArrayLen {
 		return
 	}
 	o.data = append(o.data, elem)
@@ -139,8 +139,8 @@ func (o *Array) Append(elem IObject) {
 
 // Assign replaces the current slice of elements with the provided slice.
 func (o *Array) Assign(v []IObject) {
-	if len(v) > maxArrayLen {
-		v = v[0:maxArrayLen]
+	if len(v) > MaxArrayLen {
+		v = v[0:MaxArrayLen]
 	}
 	o.data = v
 }
@@ -160,7 +160,7 @@ func (o *Array) ArithmeticOp(frame int, op ArithmeticOperator, rhsIn IObject) (I
 	case OperatorAdd:
 		switch rhs := rhsIn.(type) {
 		case *Bool, *Int, *Float, *Char, *String:
-			if len(o.data)+rhsIn.Length() > maxArrayLen {
+			if len(o.data)+rhsIn.Length() > MaxArrayLen {
 				return nil, ErrLimitExceed
 			}
 			return o.GateKeeper().NewArray(frame, append(o.data, rhsIn)), nil
@@ -168,7 +168,7 @@ func (o *Array) ArithmeticOp(frame int, op ArithmeticOperator, rhsIn IObject) (I
 			if len(rhs.data) == 0 {
 				return o, nil
 			}
-			if len(o.data)+len(rhs.data) > maxArrayLen {
+			if len(o.data)+len(rhs.data) > MaxArrayLen {
 				return nil, ErrLimitExceed
 			}
 			return o.GateKeeper().NewArray(frame, append(o.data, rhs.data...)), nil
@@ -188,7 +188,7 @@ func (o *Array) UnaryOp(_ int, _ UnaryOperator) (IObject, error) {
 func (o *Array) Copy(frame int, depth int) IObject {
 	var c []IObject
 	for _, elem := range o.data {
-		if depth >= maxDepth {
+		if depth >= MaxDepth {
 			break
 		}
 		c = append(c, elem.Copy(frame, depth+1))

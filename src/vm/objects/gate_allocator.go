@@ -195,8 +195,8 @@ func (f *GateAllocator) NewTime(frame int, value time.Time) IObject {
 
 // NewBytes creates and returns a new Bytes object with the specified frame and byte slice, truncating if it exceeds maxBytesLen.
 func (f *GateAllocator) NewBytes(frame int, v []byte) IObject {
-	if len(v) > maxBytesLen {
-		v = v[0:maxBytesLen]
+	if len(v) > MaxBytesLen {
+		v = v[0:MaxBytesLen]
 	}
 	obj := f.poolBytes.Get().(*Bytes)
 	obj.setFrame(frame)
@@ -206,8 +206,8 @@ func (f *GateAllocator) NewBytes(frame int, v []byte) IObject {
 
 // NewArray creates a new array IObject with the specified frame and elements, truncating elements if exceeding maxArrayLen.
 func (f *GateAllocator) NewArray(frame int, v []IObject) IObject {
-	if len(v) > maxArrayLen {
-		v = v[0:maxArrayLen]
+	if len(v) > MaxArrayLen {
+		v = v[0:MaxArrayLen]
 	}
 	obj := f.poolArray.Get().(*Array)
 	obj.setFrame(frame)
@@ -220,7 +220,7 @@ func (f *GateAllocator) NewArray(frame int, v []IObject) IObject {
 // If the provided map exceeds the maximum allowed len, it may truncate the map.
 // Returns the newly created IObject.
 func (f *GateAllocator) NewMap(frame int, v map[string]IObject) IObject {
-	if len(v) > maxMapLen {
+	if len(v) > MaxMapLen {
 		// todo truncate map
 	}
 	obj := f.poolMap.Get().(*Map)
@@ -231,7 +231,7 @@ func (f *GateAllocator) NewMap(frame int, v map[string]IObject) IObject {
 
 // NewStruct creates and initializes a new Struct object with a specified frame, type name, and key-Code pair map.
 func (f *GateAllocator) NewStruct(frame int, typeName string, v map[string]IObject) IObject {
-	if len(v) > maxStructLen {
+	if len(v) > MaxStructLen {
 		// todo truncate struct
 	}
 	obj := f.poolStruct.Get().(*Struct)

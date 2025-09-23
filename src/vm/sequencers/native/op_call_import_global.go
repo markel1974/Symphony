@@ -59,27 +59,27 @@ func (op *OpCallImportGlobal) Bind(vm core.IVM) error {
 func (op *OpCallImportGlobal) Execute(decoder *core.Decoder) {
 	funcImportIndex := decoder.Operand(0)
 	numArgs := decoder.Operand(1)
-	callee := op.vm.Imports().Get(uint(funcImportIndex))
+	callee := op.vm.ImportsGet(uint(funcImportIndex))
 	switch numArgs {
 	case 0:
 		op.vm.CallObject(callee, 0)
 	case 1:
-		i2 := op.vm.Globals().Get(uint(decoder.Operand(2)))
+		i2 := op.vm.GlobalsGet(uint(decoder.Operand(2)))
 		op.vm.CallObject(callee, numArgs, i2)
 	case 2:
-		i2 := op.vm.Globals().Get(uint(decoder.Operand(2)))
-		i3 := op.vm.Globals().Get(uint(decoder.Operand(3)))
+		i2 := op.vm.GlobalsGet(uint(decoder.Operand(2)))
+		i3 := op.vm.GlobalsGet(uint(decoder.Operand(3)))
 		op.vm.CallObject(callee, numArgs, i2, i3)
 	case 3:
-		i2 := op.vm.Globals().Get(uint(decoder.Operand(2)))
-		i3 := op.vm.Globals().Get(uint(decoder.Operand(3)))
-		i4 := op.vm.Globals().Get(uint(decoder.Operand(4)))
+		i2 := op.vm.GlobalsGet(uint(decoder.Operand(2)))
+		i3 := op.vm.GlobalsGet(uint(decoder.Operand(3)))
+		i4 := op.vm.GlobalsGet(uint(decoder.Operand(4)))
 		op.vm.CallObject(callee, numArgs, i2, i3, i4)
 	default:
 		args := make([]objects.IObject, numArgs)
 		for i := 0; i < numArgs; i++ {
 			globalIndex := uint(decoder.Operand(2 + i))
-			args[i] = op.vm.Globals().Get(globalIndex)
+			args[i] = op.vm.GlobalsGet(globalIndex)
 		}
 		op.vm.CallObject(callee, len(args), args...)
 	}

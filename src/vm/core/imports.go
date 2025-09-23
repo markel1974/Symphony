@@ -49,10 +49,11 @@ func (g *Imports) Setup(loader bytecode.ILoader, references []objects.IObject) e
 }
 
 // Get retrieves the `IObject` at the specified index from the container or returns an undefined value if the index is invalid.
-func (g *Imports) Get(index uint) objects.IObject {
+func (g *Imports) Get(frame int, index uint) objects.IObject {
 	if index >= uint(len(g.container)) {
 		g.errSignal(fmt.Errorf("invalid reference index: %d", index))
 		return g.gk.UndefinedValue()
 	}
-	return g.container[index]
+	obj := g.container[index]
+	return obj.Copy(frame, objects.MaxDepth)
 }

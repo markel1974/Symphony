@@ -20,10 +20,10 @@ type Struct struct {
 
 // NewStruct creates a new instance of MapImmutable with the provided map of string keys and IObject Code.
 func newStruct(allocator IAllocator, value map[string]IObject) IObject {
-	if len(value) > maxStructLen {
+	if len(value) > MaxStructLen {
 		nv := make(map[string]IObject)
 		for k, v := range value {
-			if len(nv) > maxStructLen {
+			if len(nv) > MaxStructLen {
 				break
 			}
 			nv[k] = v
@@ -139,7 +139,7 @@ func (o *Struct) Length() int {
 
 // SetValue sets the specified key to the given Code in the Code map of the Struct.
 func (o *Struct) SetValue(k string, v IObject) {
-	if len(o.data) > maxStructLen {
+	if len(o.data) > MaxStructLen {
 		return
 	}
 	o.data[k] = v
@@ -160,7 +160,7 @@ func (o *Struct) TypeName() string {
 func (o *Struct) Copy(frame int, depth int) IObject {
 	c := make(map[string]IObject)
 	for k, v := range o.data {
-		if depth >= maxDepth {
+		if depth >= MaxDepth {
 			break
 		}
 		c[k] = v.Copy(frame, depth+1)

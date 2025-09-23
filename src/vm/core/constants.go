@@ -55,11 +55,20 @@ func (g *Constants) InitFuncs() []*objects.Func {
 	return g.init
 }
 
-// Get retrieves the object from the constants pool at the specified index. Returns UndefinedValue if the index is invalid.
-func (g *Constants) Get(index uint) objects.IObject {
+func (g *Constants) Retrieve(index uint) (objects.IObject, error) {
+	if index >= uint(len(g.container)) {
+		return g.gk.UndefinedValue(), fmt.Errorf("invalid constant index: %d", index)
+	}
+	return g.container[index], nil
+}
+
+// Get retrieves the object at the specified index in the constant pool and creates a deep copy with a specific frameId.
+// If the index is invalid, it signals an error and returns an undefined value.
+func (g *Constants) Get(frameId int, index uint) objects.IObject {
 	if index >= uint(len(g.container)) {
 		g.errSignal(fmt.Errorf("invalid constant index: %d", index))
 		return g.gk.UndefinedValue()
 	}
-	return g.container[index]
+	z := g.container[index]
+	return z.Copy(frameId, objects.MaxDepth)
 }
