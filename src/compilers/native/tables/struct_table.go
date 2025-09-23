@@ -107,10 +107,7 @@ func (st *StructTable) TypeInference(expr ast.Expr) (string, bool) {
 		//nothing to do
 		return "", false
 	case *ast.CompositeLit: // es. MyStruct{...}
-		ret = st.ExtractBaseName(rhs.Type)
-		//if baseName := st.ExtractBaseName(rhs.Type); len(baseName) > 0 {
-		//	return baseName, []string{baseName}, true
-		//}
+		ret = GetBaseName(rhs.Type)
 	case *ast.CallExpr: // es. NewStruct()
 		if ident, ok := rhs.Fun.(*ast.Ident); ok {
 			if funcSymbol, ok := st.scopes.SymbolResolve(ident.Name); ok && len(funcSymbol.ReturnTypes()) > 0 {
@@ -246,36 +243,4 @@ func (st *StructTable) IsBuiltin(name string) bool {
 		return false
 	}
 	return fd.IsBuiltin()
-}
-
-// ExtractBaseName extracts the base type name from an AST expression, handling pointers, arrays, maps, and selectors.
-func (st *StructTable) ExtractBaseName(expr ast.Expr) string {
-	switch t := expr.(type) {
-	case *ast.Ident:
-		// Base case: we found the type identifier (e.g. "MyStruct")
-		return t.Name
-	case *ast.StarExpr:
-		// Pointer case (*MyType): continue search on pointed type
-		return st.ExtractBaseName(t.X)
-	case *ast.ArrayType:
-		// Array/slice case ([]MyType): continue search on element type
-		return st.ExtractBaseName(t.Elt)
-	case *ast.MapType:
-		// Map case (map[KeyType]ValueType): we care about the value type
-		return st.ExtractBaseName(t.Value)
-	case *ast.SelectorExpr:
-		// Qualified type case (e.g. package.Type): return the type name
-		// More advanced logic could return "package.Type"
-		return t.Sel.Name
-	case *ast.InterfaceType:
-		// Interface case: treat empty interface as its own type
-		if len(t.Methods.List) == 0 {
-			return "interface{}"
-		}
-		// Non-empty interfaces are not currently supported for extraction
-		return ""
-	default:
-		// Other complex types are not handled
-		return ""
-	}
 }

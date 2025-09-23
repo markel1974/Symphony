@@ -83,6 +83,38 @@ func GetReceiver(result *ast.Field) (string, error) {
 	}
 }
 
+// GetBaseName extracts the base type name from an AST expression, handling pointers, arrays, maps, and selectors.
+func GetBaseName(expr ast.Expr) string {
+	switch t := expr.(type) {
+	case *ast.Ident:
+		// Base case: we found the type identifier (e.g. "MyStruct")
+		return t.Name
+	case *ast.StarExpr:
+		// Pointer case (*MyType): continue search on pointed type
+		return GetBaseName(t.X)
+	case *ast.ArrayType:
+		// Array/slice case ([]MyType): continue search on element type
+		return GetBaseName(t.Elt)
+	case *ast.MapType:
+		// Map case (map[KeyType]ValueType): we care about the value type
+		return GetBaseName(t.Value)
+	case *ast.SelectorExpr:
+		// Qualified type case (e.g. package.Type): return the type name
+		// More advanced logic could return "package.Type"
+		return t.Sel.Name
+	case *ast.InterfaceType:
+		// Interface case: treat empty interface as its own type
+		if len(t.Methods.List) == 0 {
+			return InterfaceDefinition
+		}
+		// Non-empty interfaces are not currently supported for extraction
+		return ""
+	default:
+		// Other complex types are not handled
+		return ""
+	}
+}
+
 // GetReceivers extracts and returns the list of type names from the given AST FieldList result.
 // It handles both non-pointer and pointer type fields and returns an error for unsupported types.
 func GetReceivers(result *ast.FieldList) ([]string, error) {
