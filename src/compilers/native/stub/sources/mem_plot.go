@@ -1,6 +1,6 @@
 //go:build no_compile
 
-package scripts
+package sources
 
 import (
 	"math"
@@ -103,16 +103,16 @@ func (plt *MemPlot) onPaint(surface ISurface) {
 }
 
 // _instance is a singleton instance of the MemPlot structure, used for memory plotting and rendering operations.
-var _instance *MemPlot
+var _instanceMemPlot *MemPlot
 
 // onPaint handles the repaint event for the current graphical instance by delegating the operation to the _instance object.
-func onPaint() {
-	_instance.onPaint()
+func onPaint(surface ISurface) {
+	_instanceMemPlot.onPaint(surface)
 }
 
 // onTimer triggers the onTimer method of the _instance object, typically used for handling periodic actions or events.
 func onTimer() {
-	_instance.onTimer()
+	_instanceMemPlot.onTimer()
 }
 
 // main is the entry point of the program that initializes a MemPlot instance based on the first argument and sets up a timer.
@@ -130,6 +130,6 @@ func main(args []string) {
 			kind = 3
 		}
 	}
-	_instance = NewMemPlot(kind)
+	_instanceMemPlot = NewMemPlot(kind)
 	kernel.CreateTimer(0, 300, -1)
 }
