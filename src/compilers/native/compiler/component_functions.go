@@ -229,7 +229,7 @@ func (c *Functions) CallExpr(node *ast.CallExpr) error {
 		// Handle a simple function call (unchanged)
 		symbol, ok := c.scopes.SymbolResolve(fun.Name)
 		if !ok {
-			if c.imports.Emit(node.Pos(), fun.Name, "") {
+			if c.imports.EmitFuncInternal(node.Pos(), fun.Name) {
 				finalArgs = node.Args
 				break
 			}
@@ -247,7 +247,7 @@ func (c *Functions) CallExpr(node *ast.CallExpr) error {
 		}
 
 		// Path 1: Package function (e.g., fmt.Println)
-		if c.imports.Emit(node.Pos(), receiverIdent.Name, fun.Sel.Name) {
+		if c.imports.EmitFuncPackage(node.Pos(), receiverIdent.Name, fun.Sel.Name) {
 			finalArgs = node.Args
 			break
 		}

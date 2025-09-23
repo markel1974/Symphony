@@ -16,6 +16,7 @@ type Imports struct {
 	gk        objects.IGateKeeper
 	loader    bytecode.ILoader
 	imports   *tables.Constants
+	constants *tables.Constants
 	scopes    *tables.Scopes
 	modules   map[string]bool
 	helper    map[string]int
@@ -25,15 +26,16 @@ type Imports struct {
 }
 
 // NewImports creates and initializes a new Imports instance with provided GateKeeper, Constants, and Scopes references.
-func NewImports(gk objects.IGateKeeper, loader bytecode.ILoader, imports *tables.Constants, scopes *tables.Scopes) *Imports {
+func NewImports(gk objects.IGateKeeper, loader bytecode.ILoader, imports *tables.Constants, constants *tables.Constants, scopes *tables.Scopes) *Imports {
 	i := &Imports{
-		gk:      gk,
-		loader:  loader,
-		imports: imports,
-		scopes:  scopes,
-		modules: make(map[string]bool),
-		helper:  make(map[string]int),
-		compile: nil,
+		gk:        gk,
+		loader:    loader,
+		imports:   imports,
+		constants: constants,
+		scopes:    scopes,
+		modules:   make(map[string]bool),
+		helper:    make(map[string]int),
+		compile:   nil,
 	}
 	return i
 }
@@ -65,9 +67,51 @@ func (i *Imports) Declare(decls ast.Decl) {
 	i.container = append(i.container, decls)
 }
 
-// Emit attempts to attach a function reference or emit a builtin reference, returning true if successful.
-func (i *Imports) Emit(pos token.Pos, name string, selName string) bool {
+// EmitValueSpec emits a value specification by defining a symbol and creating a struct reference from the provided names.
+// Returns false if the names are empty, module not found, or any emission step fails.
+func (i *Imports) EmitValueSpec(pos token.Pos, symbol *tables.Symbol, name string, selName string) bool {
+	if len(name) == 0 || len(selName) == 0 {
+		return false
+	}
+	_, ok := i.modules[name]
+	if !ok {
+		return false
+	}
+	selData := tables.GetMangledName(name, selName)
+	structNameIdx := i.constants.AddOrGet(selData, i.gk.NewString(objects.FrameStatic, selData))
+	if _, err := i.scopes.Emit(pos, native.OpConstantId, structNameIdx); err != nil {
+		return false
+	}
+	if _, err := i.scopes.Emit(pos, native.OpCreateStructId, 0); err != nil {
+		return false
+	}
+	if err := i.scopes.EmitSymbolDefineAndPop(pos, symbol); err != nil {
+		return false
+	}
+	return true
+}
+
+// EmitFuncInternal emits a positional import reference for a given name, adding it to the index if not already registered.
+func (i *Imports) EmitFuncInternal(pos token.Pos, name string) bool {
 	if len(name) == 0 {
+		return false
+	}
+	var index int
+	if v, ok := i.helper[name]; ok {
+		index = v
+	} else {
+		index = i.imports.Add(name, i.gk.NewString(objects.FrameStatic, name))
+		i.helper[name] = index
+	}
+	if _, err := i.scopes.Emit(pos, native.OpImportId, index); err != nil {
+		return false
+	}
+	return true
+}
+
+// EmitFuncPackage emits an import directive for a package, resolving and mangling the provided names into the target index.
+func (i *Imports) EmitFuncPackage(pos token.Pos, name string, selName string) bool {
+	if len(name) == 0 || len(selName) == 0 {
 		return false
 	}
 	var target string

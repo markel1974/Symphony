@@ -13,6 +13,18 @@ const (
 	InterfaceDefinition = "interface{}"
 )
 
+func GetSelectorData(expr ast.Expr) (string, string, bool) {
+	switch t := expr.(type) {
+	case *ast.SelectorExpr:
+		name := GetIdent(t.X)
+		if name == nil {
+			return "", "", false
+		}
+		return name.Name, t.Sel.Name, true
+	}
+	return "", "", false
+}
+
 // GetIdent traverses an AST expression and returns the identifier (*ast.Ident) of the type, if found.
 // It handles identifiers, pointers, arrays/slices, and maps, returning the type's identifier or nil if not applicable.
 func GetIdent(expr ast.Expr) *ast.Ident {

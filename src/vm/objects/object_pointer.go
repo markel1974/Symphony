@@ -179,6 +179,10 @@ func (o *ObjectPointer) Count() int {
 	return 1
 }
 
+func (o *ObjectPointer) SetObject(i IObject) {
+	o.data = &i
+}
+
 // GobEncode serializes the ObjectPointer's data into a byte slice using gob encoding and returns the result or an error.
 func (o *ObjectPointer) GobEncode() ([]byte, error) {
 	var buf bytes.Buffer

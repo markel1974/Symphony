@@ -164,7 +164,7 @@ func (c *Expression) SelectorExpr(node *ast.SelectorExpr) error {
 		// currently not handling complex cases like a[0].field
 		return tables.NewCompilerError(c.fileSet, node, "[SelectorExpr] unsupported receiver for selector expression: %T", node.X)
 	}
-	if c.imports.Emit(node.Pos(), receiverIdent.Name, node.Sel.Name) {
+	if c.imports.EmitFuncPackage(node.Pos(), receiverIdent.Name, node.Sel.Name) {
 		return nil
 	}
 	receiverSymbol, ok := c.scopes.SymbolResolve(receiverIdent.Name)

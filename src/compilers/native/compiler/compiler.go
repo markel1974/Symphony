@@ -47,7 +47,7 @@ func New(gk objects.IGateKeeper, loader bytecode.ILoader, opcodes opcodes.IOpcod
 	interfaceTable := tables.NewInterfaceTable(gk, scopes)
 	functionTable := tables.NewFunctionTable(gk, scopes, structTable, interfaceTable)
 	importConstants := tables.NewConstants()
-	imports := NewImports(gk, loader, importConstants, scopes)
+	imports := NewImports(gk, loader, importConstants, constants, scopes)
 	components = append(components, imports)
 	declarations := NewDeclarations(gk, importConstants, constants, scopes, imports, structTable, functionTable, interfaceTable)
 	components = append(components, declarations)

@@ -2,10 +2,9 @@
 package sources
 
 import (
+	"fmt"
 	"math"
 	"runtime"
-
-	"fmt"
 	//"kernel"
 )
 
@@ -16,10 +15,6 @@ type ISurface interface {
 }
 
 type Surface struct {
-}
-
-func NewSurface() *Surface {
-	return &Surface{}
 }
 
 func (s *Surface) DrawSeries(data []float64, rows int, columns int, min float64, max float64) {
@@ -45,7 +40,6 @@ func NewMemPlot(kind int) *MemPlot {
 	plt := &MemPlot{
 		kind:   kind,
 		auto:   true,
-		data:   nil,
 		minVal: math.Inf(1),
 		maxVal: math.Inf(-1),
 	}
@@ -72,35 +66,11 @@ func (plt *MemPlot) onKey(_ int, key rune) {
 
 // onTimer is a method that periodically collects memory statistics, updates the MemPlot data, and triggers a repaint.
 func (plt *MemPlot) onTimer() {
-	var m runtime.MemStats
-	fmt.Println("Step 1")
-	runtime.ReadMemStats(&m)
-
-	var val float64
-	switch plt.kind {
-	case 0:
-		val = byteToMegaByte(m.Alloc)
-	case 1:
-		val = byteToMegaByte(m.TotalAlloc)
-	case 2:
-		val = byteToMegaByte(m.Sys)
-	case 3:
-		val = float64(m.NumGC)
-	default:
-		val = byteToMegaByte(m.Alloc)
-	}
-
-	if val < plt.minVal {
-		plt.minVal = val
-	}
-	if val > plt.maxVal {
-		plt.maxVal = val
-	}
-	plt.data = append(plt.data, val)
-	if len(plt.data) > 10 {
-		plt.data = plt.data[1:]
-	}
-	fmt.Println("Plotting:", plt.data, plt.minVal, plt.maxVal)
+	var ms runtime.MemStats
+	z := &ms
+	runtime.ReadMemStats(z)
+	fmt.Println(z)
+	fmt.Println("Plotting:", plt)
 	//kernel.PaintRequest()
 }
 
@@ -119,7 +89,7 @@ func (plt *MemPlot) onPaint(surface ISurface) {
 }
 
 // _instance is a singleton instance of the MemPlot structure, used for memory plotting and rendering operations.
-var _instanceMemPlot *MemPlot = nil //NewMemPlot(0)
+var _instanceMemPlot *MemPlot //NewMemPlot(0)
 
 // onPaint handles the repaint event for the current graphical instance by delegating the operation to the _instance object.
 func onPaintEntry() {
@@ -149,10 +119,10 @@ func main(args []string) {
 		}
 	}
 	_instanceMemPlot = NewMemPlot(kind)
-	fmt.Println("KIND", kind)
-	fmt.Println("INSTANCE", _instance)
+	//fmt.Println("KIND", kind)
+	//fmt.Println("INSTANCE", _instance)
 
-	onPaintEntry()
+	//onPaintEntry()
 
 	onTimerEntry()
 	//kernel.CreateTimer(0, 300, -1)

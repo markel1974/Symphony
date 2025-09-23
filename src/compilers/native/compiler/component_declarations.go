@@ -211,20 +211,38 @@ func (c *Declarations) ValueSpec(node *ast.ValueSpec) error {
 		if err != nil {
 			return err
 		}
-		if node.Type != nil {
-			if typeIdent := tables.GetIdent(node.Type); typeIdent != nil {
-				if typeSymbol, ok := c.scopes.SymbolResolve(typeIdent.Name); ok {
-					if typeSymbol.IsInterface() {
-						symbol.SetInterface(typeIdent.Name)
-						symbol.SetObject(c.gk.NewString(objects.FrameStatic, "interface:"+symbol.Name()))
-					} else if typeSymbol.IsStruct() {
-						symbol.SetReturnTypes([]string{typeSymbol.StructName()})
-						symbol.SetObject(c.gk.NewString(objects.FrameStatic, typeSymbol.StructName()+":"+symbol.Name()))
-						c.structTable.BindSymbol(symbol, typeSymbol.StructName())
-					}
+		if node.Type == nil {
+			if _, err = c.scopes.Emit(node.Pos(), native.OpNullId); err != nil {
+				return err
+			}
+			if err = c.scopes.EmitSymbolDefineAndPop(node.Pos(), symbol); err != nil {
+				return err
+			}
+			continue
+		}
+
+		// Check if the node type is a selector expression and extract its data
+		if selName, selId, ok := tables.GetSelectorData(node.Type); ok {
+			// Attempt to emit the value specification with selector data through imports
+			if ok := c.imports.EmitValueSpec(node.Pos(), symbol, selName, selId); ok {
+				// If successfully emitted, continue to the next iteration
+				continue
+			}
+		}
+
+		if typeIdent := tables.GetIdent(node.Type); typeIdent != nil {
+			if typeSymbol, ok := c.scopes.SymbolResolve(typeIdent.Name); ok {
+				if typeSymbol.IsInterface() {
+					symbol.SetInterface(typeIdent.Name)
+					symbol.SetObject(c.gk.NewString(objects.FrameStatic, "interface:"+symbol.Name()))
+				} else if typeSymbol.IsStruct() {
+					symbol.SetReturnTypes([]string{typeSymbol.StructName()})
+					symbol.SetObject(c.gk.NewString(objects.FrameStatic, typeSymbol.StructName()+":"+symbol.Name()))
+					c.structTable.BindSymbol(symbol, typeSymbol.StructName())
 				}
 			}
 		}
+
 		// Emit zero value for the type. For interfaces, pointers, slices and maps, the zero value is 'nil'
 		if _, err = c.scopes.Emit(node.Pos(), native.OpNullId); err != nil {
 			return err
