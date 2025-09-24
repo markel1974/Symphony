@@ -204,28 +204,26 @@ func (c *Functions) funcBodyCompile(fd *tables.FunctionDescription) error {
 // Returns an error if the call expression contains invalid or unresolved references.
 func (c *Functions) CallExpr(node *ast.CallExpr) error {
 	// Step 1: Pre-evaluate nested function calls
-	/*
-		emitArgs := func(args []ast.Expr, definedSymbols map[ast.Expr]*tables.Symbol) error {
-			for _, arg := range args {
-				if tempSymbol, ok := definedSymbols[arg]; ok {
-					if err := c.scopes.EmitSymbolGet(node.Pos(), tempSymbol); err != nil {
-						return err
-					}
-				} else {
-					if err := c.compile(arg); err != nil {
-						return err
-					}
+
+	emitArgs := func(args []ast.Expr, definedSymbols map[ast.Expr]*tables.Symbol) error {
+		for _, arg := range args {
+			if tempSymbol, ok := definedSymbols[arg]; ok {
+				if err := c.scopes.EmitSymbolGet(node.Pos(), tempSymbol); err != nil {
+					return err
+				}
+			} else {
+				if err := c.compile(arg); err != nil {
+					return err
 				}
 			}
-			return nil
 		}
-
-	*/
+		return nil
+	}
 
 	funcName, _ := tables.GetFuncName(node.Fun)
 	funcDef := c.functionTable.GetByName(funcName)
-
 	tempSymbolMap := make(map[ast.Expr]*tables.Symbol)
+
 	for idx, arg := range node.Args {
 		var argSymbol *tables.Symbol
 		if argIdent := tables.GetIdent(arg); argIdent != nil {
@@ -244,8 +242,8 @@ func (c *Functions) CallExpr(node *ast.CallExpr) error {
 			if err = c.scopes.EmitSymbolSetAndPop(node.Pos(), tempSymbol); err != nil {
 				return err
 			}
-		} else if funcDef != nil && argSymbol != nil {
-			if idx < len(funcDef.InputTypes) {
+		} else if funcDef != nil && idx < len(funcDef.InputTypes) {
+			if argSymbol != nil && !argSymbol.IsInterface() {
 				val := funcDef.InputTypes[idx]
 				if iSymbol, ok := c.scopes.SymbolResolve(val); ok {
 					if iSymbol.IsInterface() {
@@ -266,78 +264,80 @@ func (c *Functions) CallExpr(node *ast.CallExpr) error {
 		}
 	}
 
-	var finalArgs []ast.Expr
-
 	switch fun := node.Fun.(type) {
 	case *ast.Ident:
-		// Handle a simple function call (unchanged)
-		symbol, ok := c.scopes.SymbolResolve(fun.Name)
+		// Handle a simple function call
+		funcSymbol, ok := c.scopes.SymbolResolve(fun.Name)
 		if !ok {
-			if c.imports.EmitInternal(node.Pos(), fun.Name) {
-				finalArgs = node.Args
-				break
+			//all unknown func are internal by default
+			if err := c.imports.EmitInternal(node.Pos(), fun.Name); err != nil {
+				return tables.NewCompilerError(c.fileSet, node, "can't emit internal %s: ", fun.Name, err.Error())
 			}
-			return tables.NewCompilerError(c.fileSet, node, "undefined function: %s", fun.Name)
+			if err := emitArgs(node.Args, tempSymbolMap); err != nil {
+				return err
+			}
+			spread := 0
+			if _, err := c.scopes.Emit(node.Pos(), native.OpCallId, len(node.Args), spread); err != nil {
+				return err
+			}
+			return nil
 		}
-		if err := c.scopes.EmitSymbolGet(node.Pos(), symbol); err != nil {
+		if err := c.scopes.EmitSymbolGet(node.Pos(), funcSymbol); err != nil {
 			return err
 		}
-		finalArgs = node.Args
-
+		if err := emitArgs(node.Args, tempSymbolMap); err != nil {
+			return err
+		}
+		spread := 0
+		if _, err := c.scopes.Emit(node.Pos(), native.OpCallId, len(node.Args), spread); err != nil {
+			return err
+		}
+		return nil
 	case *ast.SelectorExpr:
 		receiverIdent, ok := fun.X.(*ast.Ident)
 		if !ok {
 			return tables.NewCompilerError(c.fileSet, node, "unsupported receiver for selector expression: %T", fun.X)
 		}
-
 		// Path 1: Package function (e.g., fmt.Println)
-		if c.imports.EmitPackage(node.Pos(), receiverIdent.Name, fun.Sel.Name) {
-			finalArgs = node.Args
-			break
+		if c.imports.HasPackage(receiverIdent.Name) {
+			if c.imports.EmitPackage(node.Pos(), receiverIdent.Name, fun.Sel.Name) {
+				if err := emitArgs(node.Args, tempSymbolMap); err != nil {
+					return err
+				}
+				spread := 0
+				if _, err := c.scopes.Emit(node.Pos(), native.OpCallId, len(node.Args), spread); err != nil {
+					return err
+				}
+				return nil
+			}
 		}
-
 		receiverSymbol, ok := c.scopes.SymbolResolve(receiverIdent.Name)
 		if !ok {
 			return tables.NewCompilerError(c.fileSet, node, "undefined variable: %s", receiverIdent.Name)
 		}
-
 		if c.structTable.IsBuiltin(receiverSymbol.StructName()) {
 			if err := c.handleBuiltinInterface(node.Pos(), receiverSymbol, fun.Sel.Name, node.Args); err != nil {
 				return err
 			}
 			return nil
 		}
-
 		// Path 2: Method call on an interface
 		if receiverSymbol.IsInterface() {
-			// 2a. Load the interface variable (the receiver) onto the stack.
-			// The VM will use this object to find the iTable.
+			// 2a. Load the interface variable (the receiver) onto the stack. The VM will use this object to find the iTable.
 			if err := c.compile(fun.X); err != nil {
 				return err
 			}
 			// 2b. Load all call arguments onto the stack.
-			for _, arg := range node.Args {
-				if tempSymbol, ok := tempSymbolMap[arg]; ok {
-					if err := c.scopes.EmitSymbolGet(node.Pos(), tempSymbol); err != nil {
-						return err
-					}
-				} else {
-					if err := c.compile(arg); err != nil {
-						return err
-					}
-				}
-			}
-			// 2c. Emit OpCallInterface.
-			// The opcode needs the method name index and number of arguments.
-			methodName := fun.Sel.Name
-			methodNameConstIndex := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, methodName))
-			numArgs := len(node.Args)
-
-			spread := 0
-			if _, err := c.scopes.Emit(node.Pos(), native.OpCallInterfaceId, numArgs, spread, methodNameConstIndex); err != nil {
+			if err := emitArgs(node.Args, tempSymbolMap); err != nil {
 				return err
 			}
-			// We're done for this case, no need to do anything else.
+			// 2c. Emit OpCallInterface. The opcode needs the method name index and number of arguments.
+			methodName := fun.Sel.Name
+			methodNameConstIndex := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, methodName))
+			spread := 0
+			if _, err := c.scopes.Emit(node.Pos(), native.OpCallInterfaceId, len(node.Args), spread, methodNameConstIndex); err != nil {
+				return err
+			}
 			return nil
 		}
 
@@ -351,31 +351,20 @@ func (c *Functions) CallExpr(node *ast.CallExpr) error {
 			if err := c.scopes.EmitSymbolGet(node.Pos(), methodSymbol); err != nil {
 				return err
 			}
-			finalArgs = append([]ast.Expr{fun.X}, node.Args...)
-		} else {
-			return tables.NewCompilerError(c.fileSet, node, "cannot call method on non-struct/non-interface type for '%s'", receiverSymbol.Name())
+			finalArgs := append([]ast.Expr{fun.X}, node.Args...)
+			if err := emitArgs(finalArgs, tempSymbolMap); err != nil {
+				return err
+			}
+			spread := 0
+			if _, err := c.scopes.Emit(node.Pos(), native.OpCallId, len(finalArgs), spread); err != nil {
+				return err
+			}
+			return nil
 		}
-
+		return tables.NewCompilerError(c.fileSet, node, "cannot call method on non-struct/non-interface type for '%s'", receiverSymbol.Name())
 	default:
 		return tables.NewCompilerError(c.fileSet, node, "unsupported function call type: %T", node.Fun)
 	}
-
-	for _, arg := range finalArgs {
-		if tempSymbol, ok := tempSymbolMap[arg]; ok {
-			if err := c.scopes.EmitSymbolGet(node.Pos(), tempSymbol); err != nil {
-				return err
-			}
-		} else {
-			if err := c.compile(arg); err != nil {
-				return err
-			}
-		}
-	}
-	spread := 0
-	if _, err := c.scopes.Emit(node.Pos(), native.OpCallId, len(finalArgs), spread); err != nil {
-		return err
-	}
-	return nil
 }
 
 // BlockStmt compiles each statement in the provided block and returns an error if any compilation step fails.

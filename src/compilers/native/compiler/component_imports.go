@@ -1,6 +1,7 @@
 package compiler
 
 import (
+	"fmt"
 	"go/ast"
 	"go/token"
 	"strings"
@@ -68,9 +69,9 @@ func (i *Imports) Declare(decls ast.Decl) {
 }
 
 // EmitInternal emits a positional import reference for a given name, adding it to the index if not already registered.
-func (i *Imports) EmitInternal(pos token.Pos, name string) bool {
+func (i *Imports) EmitInternal(pos token.Pos, name string) error {
 	if len(name) == 0 {
-		return false
+		return fmt.Errorf("empty name")
 	}
 	var index int
 	if v, ok := i.helper[name]; ok {
@@ -80,9 +81,15 @@ func (i *Imports) EmitInternal(pos token.Pos, name string) bool {
 		i.helper[name] = index
 	}
 	if _, err := i.scopes.Emit(pos, native.OpImportId, index); err != nil {
-		return false
+		return err
 	}
-	return true
+	return nil
+}
+
+// HasPackage checks if the specified package name exists in the modules map and returns true if it does, false otherwise.
+func (i *Imports) HasPackage(name string) bool {
+	_, ok := i.modules[name]
+	return ok
 }
 
 // EmitPackage emits an import directive for a package, resolving and mangling the provided names into the target index.
