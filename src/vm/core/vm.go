@@ -3,7 +3,6 @@ package core
 import (
 	"fmt"
 	"io"
-	"log"
 	"time"
 
 	"github.com/markel1974/c64emu/src/vm/bytecode"
@@ -595,7 +594,7 @@ func (v *VM) loop() {
 		v.ip += headerSize + decoder.OperandsSize() - 1 //zero-based index
 		decoder.DecodeReverse(v.currFrame, v.ip)
 		v.ip++ //next instruction
-		log.Printf("Executing instruction opcode: %d name: %s ip: %d decoded: %v", opcode, decoder.Name(), v.ip, decoder.decodedOperands[:decoder.operandsSize])
+		//log.Printf("Executing instruction opcode: %d name: %s ip: %d decoded: %v", opcode, decoder.Name(), v.ip, decoder.decodedOperands[:decoder.operandsSize])
 		decoder.Execute()
 		if v.shutdown {
 			break

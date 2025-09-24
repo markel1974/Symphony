@@ -21,7 +21,7 @@ type Surface struct {
 }
 
 func (s *Surface) DrawSeries(data []float64, rows int, columns int, min float64, max float64) {
-	fmt.Println("Surface", data, rows, columns, min, max)
+	//fmt.Println("Surface", data, rows, columns, min, max)
 }
 
 // bToMb converts a given size in bytes (b) to megabytes as a float64.
@@ -95,7 +95,7 @@ func (plt *MemPlot) onTimer() {
 	if len(plt.data) > 10 {
 		plt.data = plt.data[1:]
 	}
-	fmt.Println("onTimer - kernel.PaintRequest()", plt)
+	//fmt.Println("onTimer - kernel.PaintRequest()", plt)
 	//kernel.PaintRequest()
 }
 
@@ -160,15 +160,13 @@ func main(args []string) {
 	//ok
 	//var iSurface ISurface
 	//iSurface = &Surface{k: 1000}
-	surface := &Surface{k: 1000}
-	for x := 0; x < 50; x++ {
+	surface := &Surface{k: 500000}
+	for x := 0; x < 500000; x++ {
 		onTimer()
-	}
-	for x := 0; x < 50; x++ {
 		onPaint(surface)
 	}
 	//onTimer()
-	onPaint(surface)
+	//onPaint(surface)
 
 	fmt.Println("kernel.CreateTimer(0, 300, -1)", _instanceMemPlot)
 	//kernel.CreateTimer(0, 300, -1)

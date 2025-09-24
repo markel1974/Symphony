@@ -397,7 +397,7 @@ func (c *Declarations) AssignStmt(node *ast.AssignStmt) error {
 
 	// Handle multiple assignments (e.g. x, y := 1, 2)
 	for i := len(node.Lhs) - 1; i >= 0; i-- {
-		if err := c.handleVariableDeclaration(node.Pos(), node.Tok, rhsContainer[i].node, node.Lhs[i], rhsContainer[i].returnType); err != nil {
+		if err := c.handleVariableAssign(node.Pos(), node.Tok, rhsContainer[i].node, node.Lhs[i], rhsContainer[i].returnType); err != nil {
 			return tables.NewCompilerError(c.fileSet, node, err.Error())
 		}
 	}
@@ -569,11 +569,11 @@ func (c *Declarations) ArrayType(node *ast.ArrayType) error {
 }
 
 // handleInterfaceDefine handles the process of defining an interface, ensuring proper symbol emission and assignment.
-func (c *Declarations) handleInterfaceDefine(pos token.Pos, iSymbol *tables.Symbol, structSymbol *tables.Symbol) error {
-	if err := c.scopes.EmitSymbolGet(pos, structSymbol); err != nil {
+func (c *Declarations) handleInterfaceDefine(pos token.Pos, iSymbol *tables.Symbol, concreteSymbol *tables.Symbol) error {
+	if err := c.scopes.EmitSymbolGet(pos, concreteSymbol); err != nil {
 		return err
 	}
-	if err := c.handleInterfaceAssign(pos, iSymbol, structSymbol); err != nil {
+	if err := c.handleInterfaceAssign(pos, iSymbol, concreteSymbol); err != nil {
 		return err
 	}
 	return nil
@@ -582,9 +582,9 @@ func (c *Declarations) handleInterfaceDefine(pos token.Pos, iSymbol *tables.Symb
 // handleInterfaceAssign validates and assigns a struct to a variable with an interface type, ensuring compatibility.
 // It emits appropriate bytecode for the interface table setup and method bindings required for the variable's interface type.
 // Returns an error if the struct does not implement the interface or if bytecode generation fails.
-func (c *Declarations) handleInterfaceAssign(pos token.Pos, iSymbol *tables.Symbol, structSymbol *tables.Symbol) error {
+func (c *Declarations) handleInterfaceAssign(pos token.Pos, iSymbol *tables.Symbol, concreteSymbol *tables.Symbol) error {
 	interfaceName := iSymbol.InterfaceName()
-	structName := structSymbol.StructName()
+	structName := concreteSymbol.StructName()
 	// Compatibility check
 	if !c.structTable.Implements(structName, interfaceName) {
 		return fmt.Errorf("cannot use value of type %s as type %s: %s does not implement %s", structName, interfaceName, structName, interfaceName)
@@ -618,10 +618,10 @@ func (c *Declarations) handleInterfaceAssign(pos token.Pos, iSymbol *tables.Symb
 	return nil
 }
 
-// handleVariableDeclaration processes variable declarations and assignments, handling various cases like ':=' and '='.
+// handleVariableAssign processes variable declarations and assignments, handling various cases like ':=' and '='.
 // It resolves symbols, infers types, and manages scope and structure assignments based on the given token and expressions.
 // Returns an error if the operation fails or if invalid assignments are attempted.
-func (c *Declarations) handleVariableDeclaration(pos token.Pos, tok token.Token, rhsIn ast.Expr, lhsIn ast.Expr, inferredTypeName string) error {
+func (c *Declarations) handleVariableAssign(pos token.Pos, tok token.Token, rhsIn ast.Expr, lhsIn ast.Expr, inferredTypeName string) error {
 	switch lhs := lhsIn.(type) {
 	case *ast.Ident:
 		if lhs.Name == tables.UndefinedSymbol {

@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/markel1974/c64emu/src/compilers"
 	"github.com/markel1974/c64emu/src/vm/bytecode"
@@ -70,6 +71,7 @@ func Launch(prefix string, args []interface{}, debug bool) error {
 
 	gk := objects.NewGateKeeper()
 	for _, fileName := range files {
+
 		fmt.Printf("\n\n------------------ %s ------------------\n", fileName)
 		fi := NewFileInfo(fileName)
 		seq, err := sequencers.NewSequencers("native")
@@ -85,11 +87,13 @@ func Launch(prefix string, args []interface{}, debug bool) error {
 			d := bytecode.NewDisassembler(bc, seq)
 			_ = d.Disassemble(log.Writer())
 		}
+		start := time.Now()
 		rv, err := Exec(gk, seq, loader, bc, args, debug)
 		if err != nil {
 			return err
 		}
-		fmt.Println("RETURN VALUEs", rv)
+		end := time.Since(start)
+		fmt.Printf("---- elaspsed %v RETURN VALUEs:%v\n", end, rv)
 	}
 	return nil
 }
