@@ -16,6 +16,14 @@ type ISurface interface {
 	DrawSeries(data []float64, rows int, columns int, min float64, max float64)
 }
 
+type Surface struct {
+	k int
+}
+
+func (s *Surface) DrawSeries(data []float64, rows int, columns int, min float64, max float64) {
+	fmt.Println("Surface", data, rows, columns, min, max)
+}
+
 // bToMb converts a given size in bytes (b) to megabytes as a float64.
 func bToMb(b uint64) float64 {
 	return float64(b) / 1024 / 1024
@@ -134,7 +142,18 @@ func main(args []string) {
 	}
 	_instanceMemPlot = NewMemPlot(kind)
 
-	onTimer()
+	//onTimer()
+	//ok
+	//var iSurfaceSymbol ISurface = &Surface{}
+	//ok
+	//var iSurfaceSymbol ISurface
+	//iSurfaceSymbol = &Surface{}
+	//nok
+	iSurfaceSymbol := &Surface{k: 1000}
+	//is = surface
+
+	fmt.Println("HERE1", iSurfaceSymbol)
+	onPaint(iSurfaceSymbol)
 
 	fmt.Println("kernel.CreateTimer(0, 300, -1)", _instanceMemPlot)
 	//kernel.CreateTimer(0, 300, -1)

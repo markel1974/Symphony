@@ -152,14 +152,12 @@ func (c *Declarations) ValueSpec(node *ast.ValueSpec) error {
 			}
 
 			var definedSymbol *tables.Symbol
-			isInterfaceAssignment := false
 			if node.Type != nil {
 				if typeIdent := tables.GetIdent(node.Type); typeIdent != nil {
 					typeSymbol, ok := c.scopes.SymbolResolve(typeIdent.Name)
 					if ok {
 						definedSymbol = typeSymbol
 						if definedSymbol.IsInterface() {
-							isInterfaceAssignment = true
 							symbol.SetInterface(typeIdent.Name) // Pass the type name (e.g. "Printer")
 							symbol.SetObject(c.gk.NewString(objects.FrameStatic, "interface:"+symbol.Name()))
 						}
@@ -182,14 +180,20 @@ func (c *Declarations) ValueSpec(node *ast.ValueSpec) error {
 			}
 
 			if definedSymbol != nil && definedSymbol.IsStruct() {
-				if isInterfaceAssignment {
-					if err = c.handleInterfaceAssignment(node.Pos(), symbol, definedSymbol); err != nil {
-						return tables.NewCompilerError(c.fileSet, node, err.Error())
-					}
-				} else {
-					symbol.SetReturnTypes([]string{definedSymbol.StructName()})
-					symbol.SetObject(c.gk.NewString(objects.FrameStatic, definedSymbol.StructName()+":"+symbol.Name()))
-					c.structTable.BindSymbol(symbol, definedSymbol.StructName())
+				symbol.SetReturnTypes([]string{definedSymbol.StructName()})
+				symbol.SetObject(c.gk.NewString(objects.FrameStatic, definedSymbol.StructName()+":"+symbol.Name()))
+				c.structTable.BindSymbol(symbol, definedSymbol.StructName())
+			} else if definedSymbol != nil && definedSymbol.IsInterface() {
+				inferredTypeName, _ := c.structTable.TypeInference(node.Values[i])
+				if len(inferredTypeName) == 0 {
+					return tables.NewCompilerError(c.fileSet, node, fmt.Sprintf("cat't infer struct: %s", node.Values[i]))
+				}
+				structSymbol, ok := c.scopes.SymbolResolve(inferredTypeName)
+				if !ok {
+					return tables.NewCompilerError(c.fileSet, node, fmt.Sprintf("cat't resolve struct: %s", inferredTypeName))
+				}
+				if err = c.handleInterfaceAssignment(node.Pos(), symbol, structSymbol); err != nil {
+					return tables.NewCompilerError(c.fileSet, node, err.Error())
 				}
 			} else if inferredTypeName, _ := c.structTable.TypeInference(node.Values[i]); len(inferredTypeName) > 0 {
 				symbol.SetReturnTypes([]string{inferredTypeName})
@@ -572,8 +576,7 @@ func (c *Declarations) handleInterfaceAssignment(pos token.Pos, variableSymbol *
 	structName := assignedStructSymbol.StructName()
 	// Compatibility check
 	if !c.structTable.Implements(structName, interfaceName) {
-		return fmt.Errorf("cannot use value of type %s as type %s: %s does not implement %s",
-			structName, interfaceName, structName, interfaceName)
+		return fmt.Errorf("cannot use value of type %s as type %s: %s does not implement %s", structName, interfaceName, structName, interfaceName)
 	}
 	interfaceDesc, ok := c.interfaceTable.Get(interfaceName)
 	if !ok {
@@ -682,6 +685,7 @@ func (c *Declarations) handleVariableDeclaration(pos token.Pos, tok token.Token,
 		if tok == token.DEFINE {
 			return fmt.Errorf("cannot define variable with index assignment using :=")
 		}
+
 		tempSymbol, err := c.scopes.SymbolDefineUnique("__temp_assign_rhs")
 		if err != nil {
 			return err
