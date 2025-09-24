@@ -35,6 +35,31 @@ Symphony's power stems from its carefully designed architecture:
 4.  **Sockets (`ISocket` & Implementations):** Lightweight structs that act as typed intermediaries, primarily used during the connection phase. They implement `ISocket`'s `Wire` method.
 5.  **3-Phase Connection (`RestoreAll` -> `Board.Setup` -> `Board.Connect` -> Socket `Wire`):** Initialization occurs in distinct phases after `RestoreAll` builds the tree: `Board.Setup` orchestrates the `socket.Wire()` call for all relevant sockets. Inside `Mount`, the socket finds its dependencies by navigating the tree via its parent (`IComponent`) reference, stores the required interfaces, and calls the component's final `Setup` (`IHardware.Setup`) or `Bind` method to establish the connection. *(Self-correction on phases needed here)* -> *Correction*: **Revised 3-Phase:** 1. `RestoreAll` (Create Tree + Restore State). 2. `Board.Setup` orchestrates `socket.Mount` (which finds dependencies AND likely calls component `Setup`/`Bind`). 3. `Board.Connect` (if still needed, maybe just calls component `Connect`?). [**TODO:** Re-verify exact final sequence of Setup/Connect/Mount calls based on latest code].
 
+#### The Virtual Machine: An Abstract Execution Platform
+
+Symphony's VM is not a simple bytecode interpreter but an abstract execution engine, designed for maximum flexibility and performance. Its architecture is driven by pragmatic academic principles:
+
+* **Pluggable Instruction Set Architecture (ISA)**: The core of the design is the complete separation of the execution engine from the instruction set. Through the `ISequencer` interface, the VM can dynamically load different execution "cores". This allows Symphony to act as both a high-fidelity hardware emulator (by loading a sequencer for the 6502 CPU) and a runtime for high-level userspace processes.
+
+* **Architectural Symmetry (`IOpExecutor`)**: Every single instruction is a self-contained, complete entity. The logic for its **definition** (opcode, operands), **interpretation** (`Execute`), and potential **JIT/AOT compilation** (`Compile`) resides in a single, cohesive object. This elegant design eliminates redundancy and makes the system incredibly robust and easy to extend.
+
+* **Microkernel Model**: Each instance of the VM operates as an **isolated userspace process**. It communicates with the outside world (the Symphony "kernel") exclusively through an asynchronous messaging API, effectively performing "system calls" for privileged operations like timer management or I/O.
+
+#### The Go-Native Compiler: A Bridge to High-Level Scripting
+
+To provide a powerful and familiar scripting environment, Symphony includes a compiler that translates a large and complex subset of the Go language into the VM's native bytecode.
+
+* **Fidelity to Go's Semantics**: The compiler does not just parse a "Go-like" syntax. Through a multi-pass analysis and a robust type management system, it correctly understands and compiles the most powerful and distinctive features of Go, including:
+    * **Interfaces and Type Switching**: With compile-time compatibility checking and handling of implicit conversions.
+    * **Pointers, Methods, and Receivers**: Correctly handles `&` and `*` syntax and method calls on both structs and pointers to structs.
+    * **Closures and `defer`**: Properly implements the capture of free variables and the semantics of `defer` statements.
+
+* **Standard Library (SDK)**: To make scripts immediately useful, the compiler integrates with an SDK that safely exposes the functionality of Go's native packages to the code running inside the VM.
+
+This VM+Compiler ecosystem is what enables Symphony to fulfill its vision: not just to emulate machines of the past, but to provide the tools to **create, inspect, and interact with them** in new and powerful ways.
+
+
+
 ## Current Implementation: Commodore 64 / 1541
 
 [... as before ...]
