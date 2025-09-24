@@ -204,8 +204,33 @@ func (c *Functions) funcBodyCompile(fd *tables.FunctionDescription) error {
 // Returns an error if the call expression contains invalid or unresolved references.
 func (c *Functions) CallExpr(node *ast.CallExpr) error {
 	// Step 1: Pre-evaluate nested function calls
+	/*
+		emitArgs := func(args []ast.Expr, definedSymbols map[ast.Expr]*tables.Symbol) error {
+			for _, arg := range args {
+				if tempSymbol, ok := definedSymbols[arg]; ok {
+					if err := c.scopes.EmitSymbolGet(node.Pos(), tempSymbol); err != nil {
+						return err
+					}
+				} else {
+					if err := c.compile(arg); err != nil {
+						return err
+					}
+				}
+			}
+			return nil
+		}
+
+	*/
+
+	funcName, _ := tables.GetFuncName(node.Fun)
+	funcDef := c.functionTable.GetByName(funcName)
+
 	tempSymbolMap := make(map[ast.Expr]*tables.Symbol)
-	for _, arg := range node.Args {
+	for idx, arg := range node.Args {
+		var argSymbol *tables.Symbol
+		if argIdent := tables.GetIdent(arg); argIdent != nil {
+			argSymbol, _ = c.scopes.SymbolResolve(argIdent.Name)
+		}
 		if call, isCall := arg.(*ast.CallExpr); isCall {
 			if err := c.compile(call); err != nil {
 				return err
@@ -214,10 +239,29 @@ func (c *Functions) CallExpr(node *ast.CallExpr) error {
 			if err != nil {
 				return err
 			}
-			tempSymbol.SetScope(tables.LocalScope)
+			//tempSymbol.SetScope(tables.LocalScope)
 			tempSymbolMap[arg] = tempSymbol
 			if err = c.scopes.EmitSymbolSetAndPop(node.Pos(), tempSymbol); err != nil {
 				return err
+			}
+		} else if funcDef != nil && argSymbol != nil {
+			if idx < len(funcDef.InputTypes) {
+				val := funcDef.InputTypes[idx]
+				if iSymbol, ok := c.scopes.SymbolResolve(val); ok {
+					if iSymbol.IsInterface() {
+						if err := c.declarations.handleInterfaceAssignment(node.Pos(), iSymbol, argSymbol); err != nil {
+							return err
+						}
+						tempSymbol, err := c.scopes.SymbolDefineUnique("__temp_interface")
+						if err != nil {
+							return err
+						}
+						tempSymbolMap[arg] = tempSymbol
+						if err = c.scopes.EmitSymbolSetAndPop(node.Pos(), tempSymbol); err != nil {
+							return err
+						}
+					}
+				}
 			}
 		}
 	}
@@ -283,14 +327,14 @@ func (c *Functions) CallExpr(node *ast.CallExpr) error {
 					}
 				}
 			}
-			// 2c. Emit OpCallMethod.
+			// 2c. Emit OpCallInterface.
 			// The opcode needs the method name index and number of arguments.
 			methodName := fun.Sel.Name
 			methodNameConstIndex := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, methodName))
 			numArgs := len(node.Args)
 
 			spread := 0
-			if _, err := c.scopes.Emit(node.Pos(), native.OpCallMethodId, numArgs, spread, methodNameConstIndex); err != nil {
+			if _, err := c.scopes.Emit(node.Pos(), native.OpCallInterfaceId, numArgs, spread, methodNameConstIndex); err != nil {
 				return err
 			}
 			// We're done for this case, no need to do anything else.

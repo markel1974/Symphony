@@ -147,6 +147,22 @@ func GetReceivers(result *ast.FieldList) ([]string, error) {
 	return ret, nil
 }
 
+// GetFuncName extracts the name of a function from an ast.Expr. It returns the name and a bool indicating success or failure.
+func GetFuncName(expr ast.Expr) (string, bool) {
+	switch fun := expr.(type) {
+	case *ast.Ident:
+		return fun.Name, true
+	case *ast.SelectorExpr:
+		receiverIdent, ok := fun.X.(*ast.Ident)
+		if !ok {
+			return "", false
+		}
+		return GetMangledName(receiverIdent.Name, fun.Sel.Name), true
+	default:
+		return "", false
+	}
+}
+
 // GetMangledName combines an identifier and function name to generate a mangled name in the format "identifier.function".
 func GetMangledName(identId string, fnName string) string {
 	m := fmt.Sprintf("%s.%s", identId, fnName)

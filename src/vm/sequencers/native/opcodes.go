@@ -84,8 +84,8 @@ const (
 	// OpCallId represents the opcode for function or method invocation with specified argument and receiver counts.
 	OpCallId
 
-	// OpCallMethodId represents an opcode for invoking a method directly on an object with specified arguments.
-	OpCallMethodId
+	// OpCallInterfaceId represents an opcode for invoking a method directly on an object with specified arguments.
+	OpCallInterfaceId
 
 	// OpCallImportGlobalId represents an opcode for invoking a global function imported from another module.
 	OpCallImportGlobalId

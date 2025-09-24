@@ -72,6 +72,16 @@ func (f *FunctionTable) Get(index int) (*FunctionDescription, error) {
 	return f.container[index], nil
 }
 
+// GetByName retrieves a FunctionDescription from the container by its name. Returns nil if no match is found.
+func (f *FunctionTable) GetByName(name string) *FunctionDescription {
+	for _, v := range f.container {
+		if name == v.Name {
+			return v
+		}
+	}
+	return nil
+}
+
 // CountParams correctly counts the number of parameters in a field list,
 // handling both named (e.g., a, b int) and unnamed (e.g., int) parameters.
 func (f *FunctionTable) CountParams(fieldList *ast.FieldList) int {
