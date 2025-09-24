@@ -223,7 +223,10 @@ func (c *Declarations) ValueSpec(node *ast.ValueSpec) error {
 
 		// Check if the node type is a selector expression and extract its data
 		if selName, selId, ok := tables.GetSelectorData(node.Type); ok {
-			if ok := c.imports.EmitPackage(node.Pos(), selName, selId); ok {
+			if ok = c.imports.EmitPackage(node.Pos(), selName, selId); ok {
+				if err = c.scopes.EmitSymbolDefineAndPop(node.Pos(), symbol); err != nil {
+					return err
+				}
 				continue
 			}
 		}
@@ -484,15 +487,7 @@ func (c *Declarations) CompositeLit(node *ast.CompositeLit) error {
 		return nil
 	case *ast.SelectorExpr:
 		if receiverIdent, ok := val.X.(*ast.Ident); ok {
-			c.structTable.AddExternal(val.Sel.Name)
-			mangledName := tables.GetMangledName(receiverIdent.Name, val.Sel.Name)
-			structNameIdx := c.constants.AddOrGet(mangledName, c.gk.NewString(objects.FrameStatic, mangledName))
-			if _, err := c.scopes.Emit(node.Pos(), native.OpConstantId, structNameIdx); err != nil {
-				return tables.NewCompilerError(c.fileSet, node, err.Error())
-			}
-			if _, err := c.scopes.Emit(node.Pos(), native.OpCreateStructId, 0); err != nil {
-				return err
-			}
+			c.imports.EmitPackage(node.Pos(), receiverIdent.Name, val.Sel.Name)
 		}
 		return nil
 	default:

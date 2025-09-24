@@ -1,4 +1,4 @@
-//go:build no_compile
+////go:build no_compile
 
 package sources
 
@@ -6,7 +6,8 @@ import (
 	"math"
 	"runtime"
 
-	"kernel"
+	"fmt"
+	//"kernel"
 )
 
 // ISurface represents an abstraction for rendering data-driven graphical series onto a surface.
@@ -86,7 +87,8 @@ func (plt *MemPlot) onTimer() {
 	if len(plt.data) > 10 {
 		plt.data = plt.data[1:]
 	}
-	kernel.PaintRequest()
+	fmt.Println("onTimer - kernel.PaintRequest()", plt)
+	//kernel.PaintRequest()
 }
 
 // onPaint handles the rendering of the plot on the given surface using the current data and value range.
@@ -131,5 +133,9 @@ func main(args []string) {
 		}
 	}
 	_instanceMemPlot = NewMemPlot(kind)
-	kernel.CreateTimer(0, 300, -1)
+
+	onTimer()
+
+	fmt.Println("kernel.CreateTimer(0, 300, -1)", _instanceMemPlot)
+	//kernel.CreateTimer(0, 300, -1)
 }
