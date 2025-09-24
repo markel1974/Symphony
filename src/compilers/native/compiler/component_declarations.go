@@ -192,7 +192,7 @@ func (c *Declarations) ValueSpec(node *ast.ValueSpec) error {
 				if !ok {
 					return tables.NewCompilerError(c.fileSet, node, fmt.Sprintf("cat't resolve struct: %s", inferredTypeName))
 				}
-				if err = c.handleInterfaceAssignment(node.Pos(), symbol, structSymbol); err != nil {
+				if err = c.handleInterfaceAssign(node.Pos(), symbol, structSymbol); err != nil {
 					return tables.NewCompilerError(c.fileSet, node, err.Error())
 				}
 			} else if inferredTypeName, _ := c.structTable.TypeInference(node.Values[i]); len(inferredTypeName) > 0 {
@@ -568,12 +568,23 @@ func (c *Declarations) ArrayType(node *ast.ArrayType) error {
 	return nil
 }
 
-// handleInterfaceAssignment validates and assigns a struct to a variable with an interface type, ensuring compatibility.
+// handleInterfaceDefine handles the process of defining an interface, ensuring proper symbol emission and assignment.
+func (c *Declarations) handleInterfaceDefine(pos token.Pos, iSymbol *tables.Symbol, structSymbol *tables.Symbol) error {
+	if err := c.scopes.EmitSymbolGet(pos, structSymbol); err != nil {
+		return err
+	}
+	if err := c.handleInterfaceAssign(pos, iSymbol, structSymbol); err != nil {
+		return err
+	}
+	return nil
+}
+
+// handleInterfaceAssign validates and assigns a struct to a variable with an interface type, ensuring compatibility.
 // It emits appropriate bytecode for the interface table setup and method bindings required for the variable's interface type.
 // Returns an error if the struct does not implement the interface or if bytecode generation fails.
-func (c *Declarations) handleInterfaceAssignment(pos token.Pos, variableSymbol *tables.Symbol, assignedStructSymbol *tables.Symbol) error {
-	interfaceName := variableSymbol.InterfaceName()
-	structName := assignedStructSymbol.StructName()
+func (c *Declarations) handleInterfaceAssign(pos token.Pos, iSymbol *tables.Symbol, structSymbol *tables.Symbol) error {
+	interfaceName := iSymbol.InterfaceName()
+	structName := structSymbol.StructName()
 	// Compatibility check
 	if !c.structTable.Implements(structName, interfaceName) {
 		return fmt.Errorf("cannot use value of type %s as type %s: %s does not implement %s", structName, interfaceName, structName, interfaceName)
@@ -648,22 +659,13 @@ func (c *Declarations) handleVariableDeclaration(pos token.Pos, tok token.Token,
 				if ident := tables.GetIdent(rhsIn); ident != nil {
 					rhsName = ident.Name
 				}
-				//switch rhs := rhsIn.(type) {
-				//case *ast.Ident:
-				//	rhsName = rhs.Name
-				//case *ast.CompositeLit:
-				//	if ident, ok := rhs.Type.(*ast.Ident); ok {
-				//		rhsName = ident.Name
-				//	}
-				//}
-				if len(rhsName) > 0 {
-					if assignedStructSymbol, ok := c.scopes.SymbolResolve(rhsName); ok && assignedStructSymbol.IsStruct() {
-						if err := c.handleInterfaceAssignment(pos, symbol, assignedStructSymbol); err != nil {
-							return err
-						}
-					}
-				} else {
+				if len(rhsName) == 0 {
 					return fmt.Errorf("cannot assign interface to interface")
+				}
+				if assignedStructSymbol, ok := c.scopes.SymbolResolve(rhsName); ok && assignedStructSymbol.IsStruct() {
+					if err := c.handleInterfaceAssign(pos, symbol, assignedStructSymbol); err != nil {
+						return err
+					}
 				}
 			} else {
 				if len(inferredTypeName) == 0 {

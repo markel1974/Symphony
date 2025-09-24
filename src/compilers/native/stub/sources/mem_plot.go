@@ -127,33 +127,48 @@ func onTimer() {
 
 // main is the entry point of the program that initializes a MemPlot instance based on the first argument and sets up a timer.
 func main(args []string) {
-	kind := 0
-	if len(args) > 0 {
-		switch args[0] {
-		case "alloc":
-			kind = 0
-		case "total":
-			kind = 1
-		case "os":
-			kind = 2
-		case "gc":
-			kind = 3
-		}
-	}
-	_instanceMemPlot = NewMemPlot(kind)
-
-	//onTimer()
-	//ok
-	//var iSurfaceSymbol ISurface = &Surface{}
-	//ok
-	//var iSurfaceSymbol ISurface
-	//iSurfaceSymbol = &Surface{}
 	//nok
-	iSurfaceSymbol := &Surface{k: 1000}
-	//is = surface
 
-	fmt.Println("HERE1", iSurfaceSymbol)
-	onPaint(iSurfaceSymbol)
+	/*
+		kind := 0
+		if len(args) > 0 {
+			switch args[0] {
+			case "alloc":
+				kind = 0
+			case "total":
+				kind = 1
+			case "os":
+				kind = 2
+			case "gc":
+				kind = 3
+			}
+		}
+
+	*/
+	_instanceMemPlot = NewMemPlot(0)
+
+	//for x := 0; x < 50; x++ {
+	//	onTimer()
+	//}
+
+	//nok
+	//surface := &Surface{k: 1000}
+	//for x := 0; x < 50; x++ {
+	//	onPaint(surface)
+	//}
+
+	//ok
+	//var iSurface ISurface
+	//iSurface = &Surface{k: 1000}
+	surface := &Surface{k: 1000}
+	for x := 0; x < 50; x++ {
+		onTimer()
+	}
+	for x := 0; x < 50; x++ {
+		onPaint(surface)
+	}
+	//onTimer()
+	onPaint(surface)
 
 	fmt.Println("kernel.CreateTimer(0, 300, -1)", _instanceMemPlot)
 	//kernel.CreateTimer(0, 300, -1)

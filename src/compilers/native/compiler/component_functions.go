@@ -252,7 +252,7 @@ func (c *Functions) CallExpr(node *ast.CallExpr) error {
 				val := funcDef.InputTypes[idx]
 				if iSymbol, ok := c.scopes.SymbolResolve(val); ok {
 					if iSymbol.IsInterface() {
-						if err := c.declarations.handleInterfaceAssignment(node.Pos(), iSymbol, argSymbol); err != nil {
+						if err := c.declarations.handleInterfaceDefine(node.Pos(), iSymbol, argSymbol); err != nil {
 							return err
 						}
 						if err := createTmpSymbol(arg, "__temp_interface", tmpSymbolMap); err != nil {

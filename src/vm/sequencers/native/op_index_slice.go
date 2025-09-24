@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/markel1974/c64emu/src/vm/core"
-	objects "github.com/markel1974/c64emu/src/vm/objects"
+	"github.com/markel1974/c64emu/src/vm/objects"
 	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
 
@@ -49,7 +49,19 @@ func (op *OpIndexSlice) Execute(_ *core.Decoder) {
 	highObj := op.vm.StackPop()
 	lowObj := op.vm.StackPop()
 	targetObj := op.vm.StackPop()
-	slice := op.vm.CreateSlice(int(highObj.AsInt64()), int(lowObj.AsInt64()), targetObj)
+	var high int
+	var low int
+	if _, ok := highObj.(*objects.Undefined); ok {
+		high = targetObj.Length()
+	} else {
+		high = int(highObj.AsInt64())
+	}
+	if _, ok := lowObj.(*objects.Undefined); ok {
+		low = 0
+	} else {
+		low = int(lowObj.AsInt64())
+	}
+	slice := op.vm.CreateSlice(high, low, targetObj)
 	op.vm.StackPush(slice)
 }
 
