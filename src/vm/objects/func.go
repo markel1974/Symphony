@@ -275,6 +275,7 @@ func (o *Func) FreeSet(frameId int, required []IObject) error {
 	return nil
 }
 
+// GobEncode encodes the receiver into a byte slice using the Gob encoding scheme and returns the result or an error.
 func (o *Func) GobEncode() ([]byte, error) {
 	var buf bytes.Buffer
 	encoder := gob.NewEncoder(&buf)
@@ -286,6 +287,7 @@ func (o *Func) GobEncode() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+// GobDecode decodes the provided byte slice into the receiver using the gob package.
 func (o *Func) GobDecode(data []byte) error {
 	buf := bytes.NewBuffer(data)
 	decoder := gob.NewDecoder(buf)
