@@ -98,14 +98,9 @@ func (st *StructTable) TypeInference(expr ast.Expr) (string, bool) {
 	var ret string
 	switch rhs := expr.(type) {
 	case *ast.Ident:
-		//nothing to do
-		return "", false
-	case *ast.BinaryExpr:
-		//nothing to do
-		return "", false
-	case *ast.BasicLit:
-		//nothing to do
-		return "", false
+		if v, ok := st.scopes.SymbolResolve(rhs.Name); ok {
+			ret = v.StructName()
+		}
 	case *ast.CompositeLit: // es. MyStruct{...}
 		ret = GetBaseName(rhs.Type)
 	case *ast.CallExpr: // es. NewStruct()
@@ -116,7 +111,6 @@ func (st *StructTable) TypeInference(expr ast.Expr) (string, bool) {
 				// Verify if the returned type is a struct
 				if typeSymbol, ok := st.scopes.SymbolResolve(returnType); ok && typeSymbol.IsStruct() {
 					ret = returnType
-					//return returnType, []string{returnType}, true
 				}
 			}
 		}
@@ -126,7 +120,6 @@ func (st *StructTable) TypeInference(expr ast.Expr) (string, bool) {
 				if ident, ok := compLit.Type.(*ast.Ident); ok {
 					if returnSymbol, ok := st.scopes.SymbolResolve(ident.Name); ok && returnSymbol.IsStruct() {
 						ret = returnSymbol.Name()
-						//return returnSymbol.Name(), []string{returnSymbol.Name()}, true
 					}
 				}
 			}
@@ -135,7 +128,6 @@ func (st *StructTable) TypeInference(expr ast.Expr) (string, bool) {
 		targetTypeName := rhs.Type.(*ast.Ident).Name
 		if returnSymbol, ok := st.scopes.SymbolResolve(targetTypeName); ok && returnSymbol.IsStruct() {
 			ret = returnSymbol.Name()
-			//return returnSymbol.Name(), []string{returnSymbol.Name()}, true
 		}
 	}
 	if len(ret) == 0 {

@@ -608,6 +608,9 @@ func (v *VM) loop() {
 func (v *VM) prepareForCall(callee *objects.Func, numArgs int) *Frame {
 	// 1. Calculate the new basePointer safely, anchoring it to the caller's frame.
 	//	The new "floor" begins exactly where the caller's local variable space ends.
+
+	//TODO handle here async calle
+	//if callee.Async() {}
 	bp := v.currFrame.BasePointer() + v.currFrame.NumLocals()
 
 	v.stack.CopyOffset(uint(bp), uint(numArgs))

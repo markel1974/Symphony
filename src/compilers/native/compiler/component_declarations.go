@@ -186,7 +186,7 @@ func (c *Declarations) ValueSpec(node *ast.ValueSpec) error {
 			} else if definedSymbol != nil && definedSymbol.IsInterface() {
 				inferredTypeName, _ := c.structTable.TypeInference(node.Values[i])
 				if len(inferredTypeName) == 0 {
-					return tables.NewCompilerError(c.fileSet, node, fmt.Sprintf("cat't infer struct: %s", node.Values[i]))
+					return tables.NewCompilerError(c.fileSet, node, fmt.Sprintf("can't infer struct: %s", node.Values[i]))
 				}
 				structSymbol, ok := c.scopes.SymbolResolve(inferredTypeName)
 				if !ok {

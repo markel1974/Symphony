@@ -88,12 +88,15 @@ func Launch(prefix string, args []interface{}, debug bool) error {
 			_ = d.Disassemble(log.Writer())
 		}
 		start := time.Now()
-		rv, err := Exec(gk, seq, loader, bc, args, debug)
+		vm, rv, err := Exec(gk, seq, loader, bc, args, debug)
 		if err != nil {
 			return err
 		}
 		end := time.Since(start)
-		fmt.Printf("---- elaspsed %v RETURN VALUEs:%v\n", end, rv)
+		_, allocatedObjects, iterations, maxFrames := vm.Statistics()
+		fmt.Println("------------- Result -------------")
+		fmt.Printf("elapsed: %v, allocatedObjects: %d, iterations: %d, frames: %d\n", end, allocatedObjects, iterations, maxFrames)
+		fmt.Printf("return values:%v\n", rv)
 	}
 	return nil
 }
@@ -127,24 +130,24 @@ func Compile(gk objects.IGateKeeper, seq core.ISequencer, loader bytecode.ILoade
 // Exec initializes and runs a virtual machine instance with the given gatekeeper, sequencer, loader, bytecode, and debug mode.
 // It binds the sequencer to the virtual machine, sets up entry points, and executes the "main" entry point.
 // Returns an error if setup or execution fails, optionally logging debug information during runtime errors.
-func Exec(gk objects.IGateKeeper, seq core.ISequencer, loader bytecode.ILoader, bc *bytecode.Bytecode, args []interface{}, debug bool) ([]interface{}, error) {
+func Exec(gk objects.IGateKeeper, seq core.ISequencer, loader bytecode.ILoader, bc *bytecode.Bytecode, args []interface{}, debug bool) (*core.VM, []interface{}, error) {
 	//var args []interface{} = nil
 	//args := []interface{}{1, 2}
 	vm := core.New(gk, seq)
 	if err := seq.Bind(vm); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	entries, err := vm.Setup(loader, seq.Executors(), bc)
 	if err != nil {
 		vm.Print(log.Writer())
-		return nil, err
+		return nil, nil, err
 	}
 	vm.EnableRetValues(true)
 	rv, err := vm.Run(entries["main"], args...)
 	if debug {
 		vm.Print(log.Writer())
 	}
-	return rv, err
+	return vm, rv, err
 }
 
 // Marshal serializes the provided Bytecode into a byte slice, returning an error if the encoding process fails.

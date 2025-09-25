@@ -71,7 +71,7 @@ func (plt *MemPlot) onKey(_ int, key rune) {
 // onTimer is a method that periodically collects memory statistics, updates the MemPlot data, and triggers a repaint.
 func (plt *MemPlot) onTimer() {
 	var m runtime.MemStats
-	runtime.ReadMemStats(&m)
+	//runtime.ReadMemStats(&m)
 	var val float64
 	switch plt.kind {
 	case 0:
@@ -161,10 +161,11 @@ func main(args []string) {
 	//var iSurface ISurface
 	//iSurface = &Surface{k: 1000}
 	surface := &Surface{k: 500000}
-	//for x := 0; x < 500000; x++ {
-	onTimer()
-	onPaint(surface)
-	//}
+	var iSurface ISurface = surface
+	for x := 0; x < 500000; x++ {
+		onTimer()
+		onPaint(iSurface)
+	}
 	//onTimer()
 	//onPaint(surface)
 
