@@ -29,6 +29,8 @@ type Func struct {
 	source        map[int]int
 	free          []*ObjectPointer
 	freeIndices   []int
+	async         bool
+	serializer    []any
 }
 
 // newFunc creates and returns a new instance of Func using provided parameters and default initializations.
@@ -42,7 +44,7 @@ func newFunc(allocator IAllocator, name string, data []byte, numLocals int, numP
 	if source == nil {
 		source = make(map[int]int)
 	}
-	return &Func{
+	f := &Func{
 		IAllocator:    allocator,
 		name:          name,
 		instructions:  opcodes.NewInstructions(data),
@@ -51,7 +53,10 @@ func newFunc(allocator IAllocator, name string, data []byte, numLocals int, numP
 		varArgs:       varArgs,
 		source:        source,
 		free:          nil,
+		async:         false,
 	}
+	f.serializer = []any{&f.name, &f.instructions, &f.numLocals, &f.numParameters, &f.varArgs, &f.source, &f.freeIndices, &f.async}
+	return f
 }
 
 // setAllocator sets the allocator for the instance, defining its memory management and lifecycle behavior.
@@ -227,6 +232,17 @@ func (o *Func) VarArgs() bool {
 	return o.varArgs
 }
 
+// Async returns the async state of the Func, indicating whether it is set to operate asynchronously.
+func (o *Func) Async() bool {
+	return o.async
+}
+
+// SetAsync sets the async flag for the Func instance.
+// Pass true to enable async operation or false to disable it.
+func (o *Func) SetAsync(async bool) {
+	o.async = async
+}
+
 // Free returns the slice of ObjectPointer instances that represent the free variables of the compiled function.
 func (o *Func) Free() []*ObjectPointer {
 	return o.free
@@ -259,64 +275,24 @@ func (o *Func) FreeSet(frameId int, required []IObject) error {
 	return nil
 }
 
-// GobEncode serializes the Func's data into a byte slice using gob encoding and returns the result or an error.
 func (o *Func) GobEncode() ([]byte, error) {
 	var buf bytes.Buffer
 	encoder := gob.NewEncoder(&buf)
-	if err := encoder.Encode(o.name); err != nil {
-		return nil, err
-	}
-	if err := encoder.Encode(o.instructions); err != nil {
-		return nil, err
-	}
-	if err := encoder.Encode(o.numLocals); err != nil {
-		return nil, err
-	}
-	if err := encoder.Encode(o.numParameters); err != nil {
-		return nil, err
-	}
-	if err := encoder.Encode(o.varArgs); err != nil {
-		return nil, err
-	}
-	if err := encoder.Encode(o.source); err != nil {
-		return nil, err
-	}
-	//if err := encoder.Encode(o.free); err != nil {
-	//	return nil, err
-	//}
-	if err := encoder.Encode(o.freeIndices); err != nil {
-		return nil, err
+	for _, v := range o.serializer {
+		if err := encoder.Encode(v); err != nil {
+			return nil, err
+		}
 	}
 	return buf.Bytes(), nil
 }
 
-// GobDecode decodes the provided byte slice into the Func's data field using the gob package.
 func (o *Func) GobDecode(data []byte) error {
 	buf := bytes.NewBuffer(data)
 	decoder := gob.NewDecoder(buf)
-	if err := decoder.Decode(&o.name); err != nil {
-		return err
-	}
-	if err := decoder.Decode(&o.instructions); err != nil {
-		return err
-	}
-	if err := decoder.Decode(&o.numLocals); err != nil {
-		return err
-	}
-	if err := decoder.Decode(&o.numParameters); err != nil {
-		return err
-	}
-	if err := decoder.Decode(&o.varArgs); err != nil {
-		return err
-	}
-	if err := decoder.Decode(&o.source); err != nil {
-		return err
-	}
-	//if err := decoder.Decode(&o.free); err != nil {
-	//	return err
-	//}
-	if err := decoder.Decode(&o.freeIndices); err != nil {
-		return err
+	for _, v := range o.serializer {
+		if err := decoder.Decode(v); err != nil {
+			return err
+		}
 	}
 	return nil
 }

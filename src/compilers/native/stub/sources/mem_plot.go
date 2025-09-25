@@ -161,12 +161,16 @@ func main(args []string) {
 	//var iSurface ISurface
 	//iSurface = &Surface{k: 1000}
 	surface := &Surface{k: 500000}
-	for x := 0; x < 500000; x++ {
-		onTimer()
-		onPaint(surface)
-	}
+	//for x := 0; x < 500000; x++ {
+	onTimer()
+	onPaint(surface)
+	//}
 	//onTimer()
 	//onPaint(surface)
+
+	go func(a int, b string, c int) {
+		fmt.Println("closure test", a, b, c)
+	}(1, "beta", 3)
 
 	fmt.Println("kernel.CreateTimer(0, 300, -1)", _instanceMemPlot)
 	//kernel.CreateTimer(0, 300, -1)

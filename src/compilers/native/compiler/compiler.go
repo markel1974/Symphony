@@ -201,6 +201,8 @@ func (c *Compiler) compile(in ast.Node) error {
 		err = c.functions.ReturnStmt(node)
 	case *ast.DeferStmt:
 		err = c.functions.DeferStmt(node)
+	case *ast.GoStmt:
+		err = c.functions.GoStmt(node)
 	case *ast.IfStmt:
 		err = c.controlFlow.IfStmt(node)
 	case *ast.BranchStmt:

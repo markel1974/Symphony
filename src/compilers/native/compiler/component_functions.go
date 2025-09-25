@@ -411,7 +411,37 @@ func (c *Functions) FuncDecl(_ *ast.FuncDecl) error {
 // It creates a new scope, compiles the function body, and emits an OpCreateClosure
 // instruction to create the closure object at runtime.
 func (c *Functions) FuncLit(node *ast.FuncLit) error {
-	return c.handleClosure(node)
+	_, err := c.handleClosure(node, false)
+	return err
+}
+
+// GoStmt compiles a go statement, processing the function or closure call asynchronously and emitting corresponding bytecode.
+func (c *Functions) GoStmt(node *ast.GoStmt) error {
+	//TODO complete: missing arguments handling
+
+	switch t := node.Call.Fun.(type) {
+	case *ast.FuncLit:
+		closureIdx, err := c.handleClosure(t, true)
+		if err != nil {
+			return err
+		}
+		if _, err = c.scopes.Emit(node.Pos(), native.OpConstantId, closureIdx); err != nil {
+			return err
+		}
+		for _, arg := range node.Call.Args {
+			if err = c.compile(arg); err != nil {
+				return err
+			}
+		}
+		spread := 0
+		args := len(node.Call.Args)
+		if _, err = c.scopes.Emit(node.Pos(), native.OpCallId, args, spread); err != nil {
+			return err
+		}
+	default:
+		return tables.NewCompilerError(c.fileSet, node, "unsupported function call type: %T", node.Call.Fun)
+	}
+	return nil
 }
 
 // DeferStmt processes a defer statement by wrapping the deferred call in an anonymous function and emitting a defer opcode.
@@ -435,7 +465,7 @@ func (c *Functions) DeferStmt(node *ast.DeferStmt) error {
 			List: []ast.Stmt{&ast.ExprStmt{X: node.Call}},
 		},
 	}
-	if err := c.handleClosure(closure); err != nil {
+	if _, err := c.handleClosure(closure, false); err != nil {
 		return err
 	}
 	if _, err := c.scopes.Emit(node.Pos(), native.OpDeferId); err != nil {
@@ -444,6 +474,8 @@ func (c *Functions) DeferStmt(node *ast.DeferStmt) error {
 	return nil
 }
 
+// handleBuiltinInterface emits bytecode to handle the invocation of a method on a built-in interface symbol.
+// It resolves the receiver, method name, passes arguments, and emits a method call instruction.
 func (c *Functions) handleBuiltinInterface(pos token.Pos, receiverSymbol *tables.Symbol, methodName string, args []ast.Expr) error {
 	if err := c.scopes.EmitSymbolGet(pos, receiverSymbol); err != nil {
 		return err
@@ -469,25 +501,25 @@ func (c *Functions) handleBuiltinInterface(pos token.Pos, receiverSymbol *tables
 
 // handleClosure processes an anonymous function literal and compiles it into a closure with references to free variables.
 // It creates a new scope, defines parameters, compiles the body, and emits bytecode to assemble the closure object.
-func (c *Functions) handleClosure(node *ast.FuncLit) error {
+func (c *Functions) handleClosure(node *ast.FuncLit, async bool) (int, error) {
 	closureName := fmt.Sprintf("__closure_%d", c.closureCounter)
 	if err := c.scopes.Enter(tables.UnknownScope, closureName); err != nil { // No struct or func name
-		return err
+		return -1, err
 	}
 	c.closureCounter++
 	if _, err := c.functionTable.SymbolsFromParameters(node.Type.Params); err != nil {
-		return err
+		return -1, err
 	}
 	if err := c.compile(node.Body); err != nil {
-		return err
+		return -1, err
 	}
 	scope, err := c.scopes.Current()
 	if err != nil {
-		return err
+		return -1, err
 	}
 	if scope.LastInstruction() == nil || scope.LastInstruction().Opcode() != native.OpReturnId {
 		if _, err = c.scopes.Emit(node.Pos(), native.OpReturnId, 0); err != nil {
-			return err
+			return -1, err
 		}
 	}
 	//prepare free symbols
@@ -496,17 +528,18 @@ func (c *Functions) handleClosure(node *ast.FuncLit) error {
 	nLocals := c.scopes.SymbolCount()
 	code, source, err := c.scopes.Leave()
 	if err != nil {
-		return err
+		return -1, err
 	}
-	compiledFn := c.gk.NewFunc(objects.FrameStatic, "", code, nLocals, nParams, false, source)
+	compiledFn := c.gk.NewFunc(objects.FrameStatic, closureName, code, nLocals, nParams, false, source)
 	fn, ok := compiledFn.(*objects.Func)
 	if !ok {
-		return fmt.Errorf("unexpected function type")
+		return -1, fmt.Errorf("unexpected function type")
 	}
+	fn.SetAsync(async)
 	fn.FreeInitialize(freeSymbols)
 	constIndex := c.constants.Add("", compiledFn)
 	if _, err = c.scopes.Emit(node.Pos(), native.OpCreateClosureId, constIndex); err != nil {
-		return err
+		return -1, err
 	}
-	return nil
+	return constIndex, nil
 }
