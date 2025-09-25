@@ -417,8 +417,6 @@ func (c *Functions) FuncLit(node *ast.FuncLit) error {
 
 // GoStmt compiles a go statement, processing the function or closure call asynchronously and emitting corresponding bytecode.
 func (c *Functions) GoStmt(node *ast.GoStmt) error {
-	//TODO complete: missing arguments handling
-
 	switch t := node.Call.Fun.(type) {
 	case *ast.FuncLit:
 		closureIdx, err := c.handleClosure(t, true)

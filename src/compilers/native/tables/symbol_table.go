@@ -153,6 +153,7 @@ func (s *SymbolTable) RebuildScope(name string, scope SymbolScope) (*Symbol, boo
 	return symbol, true
 }
 
+// computeScope determines the appropriate scope for a symbol based on the given scope and the presence of an outer table.
 func (s *SymbolTable) computeScope(scope SymbolScope) SymbolScope {
 	if scope == UnknownScope {
 		if s.outer == nil {
