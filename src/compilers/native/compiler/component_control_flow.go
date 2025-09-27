@@ -12,21 +12,21 @@ import (
 // ControlFlow is a structure used to manage and compile AST nodes with the associated file sets and scope information.
 // It leverages an IGateKeeper for managing object interactions during the compilation process.
 type ControlFlow struct {
-	gk          objects.IGateKeeper
-	fileSet     *token.FileSet
-	scopes      *tables.Scopes
-	structTable *tables.StructTable
-	constants   *tables.Constants
-	compile     func(node ast.Node) error
+	gk              objects.IGateKeeper
+	fileSet         *token.FileSet
+	scopes          *tables.Scopes
+	definitionTable *tables.DefinitionTable
+	constants       *tables.Constants
+	compile         func(node ast.Node) error
 }
 
 // NewControlFlow creates and returns a new instance of ControlFlow with the specified gatekeeper and scope parameters.
-func NewControlFlow(gk objects.IGateKeeper, constants *tables.Constants, scopes *tables.Scopes, structTable *tables.StructTable) *ControlFlow {
+func NewControlFlow(gk objects.IGateKeeper, constants *tables.Constants, scopes *tables.Scopes, definitionTable *tables.DefinitionTable) *ControlFlow {
 	return &ControlFlow{
-		gk:          gk,
-		constants:   constants,
-		scopes:      scopes,
-		structTable: structTable,
+		gk:              gk,
+		constants:       constants,
+		scopes:          scopes,
+		definitionTable: definitionTable,
 	}
 }
 
@@ -296,9 +296,10 @@ func (c *ControlFlow) TypeSwitchStmt(node *ast.TypeSwitchStmt) error {
 		if err != nil {
 			return err
 		}
-		caseVarSymbol.SetReturnTypes([]string{targetTypeName})
-		caseVarSymbol.SetObject(c.gk.NewString(objects.FrameStatic, targetTypeName+":"+caseVarSymbol.Name()))
-		c.structTable.BindSymbol(caseVarSymbol, targetTypeName)
+		c.definitionTable.SymbolTypeAssign(caseVarSymbol, targetTypeName)
+		//caseVarSymbol.SetReturnTypes([]string{targetTypeName})
+		//caseVarSymbol.SetObject(c.gk.NewString(objects.FrameStatic, targetTypeName+":"+caseVarSymbol.Name()))
+		//c.structTable.BindSymbol(caseVarSymbol, targetTypeName)
 
 		if err = c.scopes.EmitSymbolSetAndPop(node.Pos(), caseVarSymbol); err != nil {
 			return err

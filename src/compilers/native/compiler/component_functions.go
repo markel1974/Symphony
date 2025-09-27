@@ -12,32 +12,30 @@ import (
 
 // Functions is a collection that manages a list of function descriptions.
 type Functions struct {
-	gk             objects.IGateKeeper
-	constants      *tables.Constants
-	scopes         *tables.Scopes
-	imports        *Imports
-	declarations   *Declarations
-	functionTable  *tables.FunctionTable
-	structTable    *tables.StructTable
-	interfaceTable *tables.InterfaceTable
-	fileSet        *token.FileSet
-	closureCounter int
-	compile        func(node ast.Node) error
+	gk              objects.IGateKeeper
+	constants       *tables.Constants
+	scopes          *tables.Scopes
+	imports         *Imports
+	declarations    *Declarations
+	functionTable   *tables.FunctionTable
+	definitionTable *tables.DefinitionTable
+	fileSet         *token.FileSet
+	closureCounter  int
+	compile         func(node ast.Node) error
 }
 
 // NewFunctions initializes and returns a new Functions instance.
-func NewFunctions(gk objects.IGateKeeper, constants *tables.Constants, scopes *tables.Scopes, imports *Imports, declarations *Declarations, structTable *tables.StructTable, interfaceTable *tables.InterfaceTable, functionTable *tables.FunctionTable) *Functions {
+func NewFunctions(gk objects.IGateKeeper, constants *tables.Constants, scopes *tables.Scopes, imports *Imports, declarations *Declarations, definitionTable *tables.DefinitionTable, functionTable *tables.FunctionTable) *Functions {
 	return &Functions{
-		gk:             gk,
-		constants:      constants,
-		scopes:         scopes,
-		imports:        imports,
-		declarations:   declarations,
-		structTable:    structTable,
-		functionTable:  functionTable,
-		interfaceTable: interfaceTable,
-		closureCounter: 0,
-		compile:        nil,
+		gk:              gk,
+		constants:       constants,
+		scopes:          scopes,
+		imports:         imports,
+		declarations:    declarations,
+		definitionTable: definitionTable,
+		functionTable:   functionTable,
+		closureCounter:  0,
+		compile:         nil,
 	}
 }
 
@@ -109,7 +107,7 @@ func (c *Functions) funcBodyPrepare(fd *tables.FunctionDescription) error {
 		if err != nil {
 			return tables.NewCompilerError(c.fileSet, node, err.Error())
 		}
-		if !c.structTable.Has(recvTypeIdent) {
+		if !c.definitionTable.StructHas(recvTypeIdent) {
 			return tables.NewCompilerError(c.fileSet, node, "undefined type '%s' for method receiver", recvTypeIdent)
 		}
 		fd.Name = tables.GetMangledName(recvTypeIdent, node.Name.Name)
@@ -126,11 +124,9 @@ func (c *Functions) funcBodyPrepare(fd *tables.FunctionDescription) error {
 	placeHolder.SetInputTypes(fd.InputNames, fd.InputTypes)
 	placeHolder.SetReturnTypes(fd.ReturnTypes)
 	if len(fd.StructName) > 0 {
-		placeHolder.SetObject(c.gk.NewString(objects.FrameStatic, fd.StructName+":"+placeHolder.Name()))
-		c.structTable.BindSymbol(placeHolder, fd.StructName)
-		c.structTable.AddField(fd.StructName, node.Name.Name, "", "func", node)
+		c.definitionTable.StructBindSymbol(placeHolder, fd.StructName)
+		c.definitionTable.StructAddField(fd.StructName, node.Name.Name, "", "func", node)
 	}
-	//placeHolder.SetStruct(fd.StructName)
 	return nil
 }
 
@@ -315,7 +311,7 @@ func (c *Functions) CallExpr(node *ast.CallExpr) error {
 		if !ok {
 			return tables.NewCompilerError(c.fileSet, node, "undefined variable: %s", receiverIdent.Name)
 		}
-		if c.structTable.IsBuiltin(receiverSymbol.StructName()) {
+		if c.definitionTable.StructIsBuiltin(receiverSymbol.StructName()) {
 			if err := c.handleBuiltinInterface(node.Pos(), receiverSymbol, fun.Sel.Name, node.Args); err != nil {
 				return err
 			}

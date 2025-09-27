@@ -10,20 +10,20 @@ import (
 )
 
 type Loops struct {
-	gk            objects.IGateKeeper
-	fileSet       *token.FileSet
-	scopes        *tables.Scopes
-	structTable   *tables.StructTable
-	functionTable *tables.FunctionTable
-	compile       func(node ast.Node) error
+	gk              objects.IGateKeeper
+	fileSet         *token.FileSet
+	scopes          *tables.Scopes
+	definitionTable *tables.DefinitionTable
+	functionTable   *tables.FunctionTable
+	compile         func(node ast.Node) error
 }
 
-func NewLoops(gk objects.IGateKeeper, scopes *tables.Scopes, structTable *tables.StructTable, functionTable *tables.FunctionTable) *Loops {
+func NewLoops(gk objects.IGateKeeper, scopes *tables.Scopes, definitionTable *tables.DefinitionTable, functionTable *tables.FunctionTable) *Loops {
 	return &Loops{
-		gk:            gk,
-		scopes:        scopes,
-		structTable:   structTable,
-		functionTable: functionTable,
+		gk:              gk,
+		scopes:          scopes,
+		definitionTable: definitionTable,
+		functionTable:   functionTable,
 	}
 }
 
@@ -148,16 +148,16 @@ func (c *Loops) RangeStmt(node *ast.RangeStmt) error {
 	var returnTypeName string
 	switch expr := node.X.(type) {
 	case *ast.Ident:
-		returnTypeName, _ = c.structTable.ReturnTypeFromSymbol(expr.Name)
+		returnTypeName, _ = c.definitionTable.StructReturnTypeFromSymbol(expr.Name)
 	case *ast.CallExpr:
 		if ident, ok := expr.Fun.(*ast.Ident); ok {
-			returnTypeName, _ = c.structTable.ReturnTypeFromSymbol(ident.Name)
+			returnTypeName, _ = c.definitionTable.StructReturnTypeFromSymbol(ident.Name)
 		}
 	case *ast.SelectorExpr:
 		// Case: for _, v := range myVar.Items
 		if receiverIdent, ok := expr.X.(*ast.Ident); ok {
 			//1. Resolve the receiver symbol (myVar)
-			returnTypeName, _ = c.structTable.TypeNameFromSymbolField(receiverIdent.Name, expr.Sel.Name)
+			returnTypeName, _ = c.definitionTable.StructTypeNameFromSymbolField(receiverIdent.Name, expr.Sel.Name)
 		}
 	default:
 		return tables.NewCompilerError(c.fileSet, node, "unsupported range expression: %T", node.X)

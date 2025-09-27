@@ -12,17 +12,15 @@ import (
 // It includes tables for structs, interfaces, and functions, and tracks implementations of interfaces by structs.
 type TypeCompatibility struct {
 	fileSet         *token.FileSet
-	structTable     *tables.StructTable
-	interfaceTable  *tables.InterfaceTable
+	definitionTable *tables.DefinitionTable
 	functionTable   *tables.FunctionTable
 	implementations map[string][]string
 }
 
 // NewTypeCompatibility initializes a TypeCompatibility instance with provided struct, interface, and function tables.
-func NewTypeCompatibility(structTable *tables.StructTable, interfaceTable *tables.InterfaceTable, functionTable *tables.FunctionTable) *TypeCompatibility {
+func NewTypeCompatibility(definitionTable *tables.DefinitionTable, functionTable *tables.FunctionTable) *TypeCompatibility {
 	return &TypeCompatibility{
-		structTable:     structTable,
-		interfaceTable:  interfaceTable,
+		definitionTable: definitionTable,
 		functionTable:   functionTable,
 		implementations: make(map[string][]string),
 	}
@@ -38,9 +36,9 @@ func (tc *TypeCompatibility) Setup(fileSet *token.FileSet, _ func(node ast.Node)
 func (tc *TypeCompatibility) Prepare() error {
 	//fmt.Println("Running interface implementation check...")
 	// Iterate over each defined struct
-	for _, structName := range tc.structTable.Keys() { //tc.structTable.Container() {
+	for _, structName := range tc.definitionTable.StructKeys() { //tc.structTable.Container() {
 		// Iterate over each defined interface
-		for interfaceName, interfaceDesc := range tc.interfaceTable.Container() {
+		for interfaceName, interfaceDesc := range tc.definitionTable.InterfaceContainer() {
 			implements, err := tc.checkStructImplementsInterface(structName, interfaceDesc)
 			if err != nil {
 				// TODO collect all errors
@@ -54,7 +52,7 @@ func (tc *TypeCompatibility) Prepare() error {
 		}
 	}
 	// add found implementations to StructTable for centralized access
-	tc.structTable.SetImplementations(tc.implementations)
+	tc.definitionTable.StructSetImplementations(tc.implementations)
 	return nil
 }
 

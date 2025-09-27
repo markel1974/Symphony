@@ -31,8 +31,6 @@ type Compiler struct {
 	declarations      *Declarations
 	controlFlow       *ControlFlow
 	loops             *Loops
-	structsTable      *tables.StructTable
-	interfaceTable    *tables.InterfaceTable
 	definitionTables  *tables.DefinitionTable
 	functionTable     *tables.FunctionTable
 	typeCompatibility *TypeCompatibility
@@ -44,28 +42,26 @@ func New(gk objects.IGateKeeper, loader bytecode.ILoader, opcodes opcodes.IOpcod
 	var components []IComponent
 	constants := tables.NewConstants()
 	scopes := tables.NewScopes(gk, opcodes, constants)
-	structTable := tables.NewStructTable(gk, scopes)
-	interfaceTable := tables.NewInterfaceTable(gk, scopes)
-	definitionTable := tables.NewDefinitionTable(gk, scopes, structTable, interfaceTable)
+	definitionTable := tables.NewDefinitionTable(gk, scopes)
 	functionTable := tables.NewFunctionTable(gk, scopes, definitionTable)
 	importConstants := tables.NewConstants()
 	imports := NewImports(gk, loader, importConstants, constants, scopes)
 	components = append(components, imports)
-	declarations := NewDeclarations(gk, importConstants, constants, scopes, imports, structTable, interfaceTable, functionTable)
+	declarations := NewDeclarations(gk, importConstants, constants, scopes, imports, definitionTable, functionTable)
 	components = append(components, declarations)
 	expressions := NewExpression(gk, constants, scopes, imports)
 	components = append(components, expressions)
-	functions := NewFunctions(gk, constants, scopes, imports, declarations, structTable, interfaceTable, functionTable)
+	functions := NewFunctions(gk, constants, scopes, imports, declarations, definitionTable, functionTable)
 	components = append(components, functions)
-	controlFlow := NewControlFlow(gk, constants, scopes, structTable)
+	controlFlow := NewControlFlow(gk, constants, scopes, definitionTable)
 	components = append(components, controlFlow)
-	loops := NewLoops(gk, scopes, structTable, functionTable)
+	loops := NewLoops(gk, scopes, definitionTable, functionTable)
 	components = append(components, loops)
 	types := NewTypes(declarations)
 	components = append(components, types)
 	others := NewOthers(declarations)
 	components = append(components, others)
-	typeCompatibility := NewTypeCompatibility(structTable, interfaceTable, functionTable)
+	typeCompatibility := NewTypeCompatibility(definitionTable, functionTable)
 	components = append(components, typeCompatibility)
 
 	c := &Compiler{
@@ -75,8 +71,6 @@ func New(gk objects.IGateKeeper, loader bytecode.ILoader, opcodes opcodes.IOpcod
 		scopes:            scopes,
 		constants:         constants,
 		importConstants:   importConstants,
-		structsTable:      structTable,
-		interfaceTable:    interfaceTable,
 		definitionTables:  definitionTable,
 		functionTable:     functionTable,
 		imports:           imports,

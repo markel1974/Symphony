@@ -18,28 +18,26 @@ import (
 // It holds references to constants, scopes, structs, and a gatekeeper for managing object lifecycle and interactions.
 // The fileSet tracks source file information, and the compile function is used for compiling AST nodes.
 type Declarations struct {
-	gk             objects.IGateKeeper
-	references     *tables.Constants
-	constants      *tables.Constants
-	scopes         *tables.Scopes
-	fileSet        *token.FileSet
-	imports        *Imports
-	structTable    *tables.StructTable
-	functionTables *tables.FunctionTable
-	interfaceTable *tables.InterfaceTable
-	initRef        map[string]int
-	compile        func(node ast.Node) error
+	gk              objects.IGateKeeper
+	references      *tables.Constants
+	constants       *tables.Constants
+	scopes          *tables.Scopes
+	fileSet         *token.FileSet
+	imports         *Imports
+	definitionTable *tables.DefinitionTable
+	functionTables  *tables.FunctionTable
+	initRef         map[string]int
+	compile         func(node ast.Node) error
 }
 
 // NewDeclarations creates and initializes a new Declarations instance with gatekeeper, constants, scopes, and structs table.
-func NewDeclarations(gk objects.IGateKeeper, references *tables.Constants, constants *tables.Constants, scopes *tables.Scopes, imports *Imports, structsTable *tables.StructTable, interfaceTable *tables.InterfaceTable, functionTables *tables.FunctionTable) *Declarations {
+func NewDeclarations(gk objects.IGateKeeper, references *tables.Constants, constants *tables.Constants, scopes *tables.Scopes, imports *Imports, definitionTable *tables.DefinitionTable, functionTables *tables.FunctionTable) *Declarations {
 	return &Declarations{
 		gk: gk, references: references, constants: constants, scopes: scopes,
-		compile:        nil,
-		structTable:    structsTable,
-		functionTables: functionTables,
-		interfaceTable: interfaceTable,
-		imports:        imports,
+		compile:         nil,
+		definitionTable: definitionTable,
+		functionTables:  functionTables,
+		imports:         imports,
 	}
 }
 
@@ -101,7 +99,7 @@ func (c *Declarations) TypeSpec(node *ast.TypeSpec) error {
 
 	switch t := node.Type.(type) {
 	case *ast.StructType:
-		c.structTable.AddStruct(typeName)
+		c.definitionTable.StructAdd(typeName)
 		if t.Fields != nil {
 			for _, field := range t.Fields.List {
 				var typeNameBuf bytes.Buffer
@@ -111,7 +109,7 @@ func (c *Declarations) TypeSpec(node *ast.TypeSpec) error {
 				}
 				fieldType := typeNameBuf.String()
 				for _, name := range field.Names {
-					c.structTable.AddField(typeName, name.Name, base, fieldType, field)
+					c.definitionTable.StructAddField(typeName, name.Name, base, fieldType, field)
 				}
 			}
 		}
@@ -121,7 +119,7 @@ func (c *Declarations) TypeSpec(node *ast.TypeSpec) error {
 		}
 		symbol.SetStruct(typeName, nil)
 	case *ast.InterfaceType:
-		if err := c.interfaceTable.Add(typeName, t); err != nil {
+		if err := c.definitionTable.InterfaceAdd(typeName, t); err != nil {
 			return tables.NewCompilerError(c.fileSet, node, err.Error())
 		}
 		symbol, err := c.scopes.SymbolDefineType(typeName)
@@ -180,11 +178,9 @@ func (c *Declarations) ValueSpec(node *ast.ValueSpec) error {
 			}
 
 			if definedSymbol != nil && definedSymbol.IsStruct() {
-				symbol.SetReturnTypes([]string{definedSymbol.StructName()})
-				symbol.SetObject(c.gk.NewString(objects.FrameStatic, definedSymbol.StructName()+":"+symbol.Name()))
-				c.structTable.BindSymbol(symbol, definedSymbol.StructName())
+				c.definitionTable.SymbolTypeAssign(symbol, definedSymbol.StructName())
 			} else if definedSymbol != nil && definedSymbol.IsInterface() {
-				inferredTypeName, _ := c.structTable.TypeInference(node.Values[i])
+				inferredTypeName, _ := c.definitionTable.StructTypeInference(node.Values[i])
 				if len(inferredTypeName) == 0 {
 					return tables.NewCompilerError(c.fileSet, node, fmt.Sprintf("can't infer struct: %s", node.Values[i]))
 				}
@@ -195,10 +191,8 @@ func (c *Declarations) ValueSpec(node *ast.ValueSpec) error {
 				if err = c.handleInterfaceAssign(node.Pos(), symbol, structSymbol); err != nil {
 					return tables.NewCompilerError(c.fileSet, node, err.Error())
 				}
-			} else if inferredTypeName, _ := c.structTable.TypeInference(node.Values[i]); len(inferredTypeName) > 0 {
-				symbol.SetReturnTypes([]string{inferredTypeName})
-				symbol.SetObject(c.gk.NewString(objects.FrameStatic, inferredTypeName+":"+symbol.Name()))
-				c.structTable.BindSymbol(symbol, inferredTypeName)
+			} else if inferredTypeName, _ := c.definitionTable.StructTypeInference(node.Values[i]); len(inferredTypeName) > 0 {
+				c.definitionTable.SymbolTypeAssign(symbol, inferredTypeName)
 			} else {
 				symbol.SetObject(c.gk.NewString(objects.FrameStatic, symbol.Name()))
 			}
@@ -238,12 +232,9 @@ func (c *Declarations) ValueSpec(node *ast.ValueSpec) error {
 		if typeIdent := tables.GetIdent(node.Type); typeIdent != nil {
 			if typeSymbol, ok := c.scopes.SymbolResolve(typeIdent.Name); ok {
 				if typeSymbol.IsInterface() {
-					symbol.SetInterface(typeIdent.Name)
-					symbol.SetObject(c.gk.NewString(objects.FrameStatic, "interface:"+symbol.Name()))
+					c.definitionTable.SymbolInterfaceAssign(symbol, typeIdent.Name)
 				} else if typeSymbol.IsStruct() {
-					symbol.SetReturnTypes([]string{typeSymbol.StructName()})
-					symbol.SetObject(c.gk.NewString(objects.FrameStatic, typeSymbol.StructName()+":"+symbol.Name()))
-					c.structTable.BindSymbol(symbol, typeSymbol.StructName())
+					c.definitionTable.SymbolTypeAssign(symbol, typeIdent.Name)
 				}
 			}
 		}
@@ -430,7 +421,7 @@ func (c *Declarations) CompositeLit(node *ast.CompositeLit) error {
 			return tables.NewCompilerError(c.fileSet, node, "unsupported composite literal type: %T", node)
 		}
 		structName := t.Name
-		structFields, err := c.structTable.FieldsFromLiteral(structName, node.Elts)
+		structFields, err := c.definitionTable.StructFieldsFromLiteral(structName, node.Elts)
 		if err != nil {
 			return err
 		}
@@ -586,10 +577,10 @@ func (c *Declarations) handleInterfaceAssign(pos token.Pos, iSymbol *tables.Symb
 	interfaceName := iSymbol.InterfaceName()
 	structName := concreteSymbol.StructName()
 	// Compatibility check
-	if !c.structTable.Implements(structName, interfaceName) {
+	if !c.definitionTable.StructImplements(structName, interfaceName) {
 		return fmt.Errorf("cannot use value of type %s as type %s: %s does not implement %s", structName, interfaceName, structName, interfaceName)
 	}
-	interfaceDesc, ok := c.interfaceTable.Get(interfaceName)
+	interfaceDesc, ok := c.definitionTable.InterfaceGet(interfaceName)
 	if !ok {
 		return fmt.Errorf("internal compiler error: unknown interface %s", interfaceName)
 	}
@@ -637,14 +628,8 @@ func (c *Declarations) handleVariableAssign(pos token.Pos, tok token.Token, rhsI
 			if err != nil {
 				return err
 			}
-			if len(inferredTypeName) == 0 {
-				inferredTypeName, _ = c.structTable.TypeInference(rhsIn)
-			}
-			if len(inferredTypeName) > 0 {
-				symbol.SetReturnTypes([]string{inferredTypeName})
-				symbol.SetObject(c.gk.NewString(objects.FrameStatic, inferredTypeName+":"+symbol.Name()))
-				c.structTable.BindSymbol(symbol, inferredTypeName)
-			}
+			//must be a concrete value
+			c.definitionTable.SymbolInferAssign(symbol, inferredTypeName, rhsIn)
 			if err = c.scopes.EmitSymbolDefineAndPop(pos, symbol); err != nil {
 				return err
 			}
@@ -668,14 +653,7 @@ func (c *Declarations) handleVariableAssign(pos token.Pos, tok token.Token, rhsI
 					}
 				}
 			} else {
-				if len(inferredTypeName) == 0 {
-					inferredTypeName, _ = c.structTable.TypeInference(rhsIn)
-				}
-				if len(inferredTypeName) > 0 {
-					symbol.SetReturnTypes([]string{inferredTypeName})
-					symbol.SetObject(c.gk.NewString(objects.FrameStatic, inferredTypeName+":"+symbol.Name()))
-					c.structTable.BindSymbol(symbol, inferredTypeName)
-				}
+				c.definitionTable.SymbolInferAssign(symbol, inferredTypeName, rhsIn)
 			}
 			if err := c.scopes.EmitSymbolSetAndPop(pos, symbol); err != nil {
 				return err
@@ -687,7 +665,6 @@ func (c *Declarations) handleVariableAssign(pos token.Pos, tok token.Token, rhsI
 		if tok == token.DEFINE {
 			return fmt.Errorf("cannot define variable with index assignment using :=")
 		}
-
 		tempSymbol, err := c.scopes.SymbolDefineUnique("__temp_assign_rhs")
 		if err != nil {
 			return err
