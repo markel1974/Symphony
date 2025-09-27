@@ -29,7 +29,6 @@ type Func struct {
 	source        map[int]int
 	free          []*ObjectPointer
 	freeIndices   []int
-	async         bool
 	serializer    []any
 }
 
@@ -53,9 +52,8 @@ func newFunc(allocator IAllocator, name string, data []byte, numLocals int, numP
 		varArgs:       varArgs,
 		source:        source,
 		free:          nil,
-		async:         false,
 	}
-	f.serializer = []any{&f.name, &f.instructions, &f.numLocals, &f.numParameters, &f.varArgs, &f.source, &f.freeIndices, &f.async}
+	f.serializer = []any{&f.name, &f.instructions, &f.numLocals, &f.numParameters, &f.varArgs, &f.source, &f.freeIndices}
 	return f
 }
 
@@ -230,17 +228,6 @@ func (o *Func) Count() int {
 // VarArgs returns true if the function is variadic, allowing it to accept a variable number of arguments.
 func (o *Func) VarArgs() bool {
 	return o.varArgs
-}
-
-// Async returns the async state of the Func, indicating whether it is set to operate asynchronously.
-func (o *Func) Async() bool {
-	return o.async
-}
-
-// SetAsync sets the async flag for the Func instance.
-// Pass true to enable async operation or false to disable it.
-func (o *Func) SetAsync(async bool) {
-	o.async = async
 }
 
 // Free returns the slice of ObjectPointer instances that represent the free variables of the compiled function.

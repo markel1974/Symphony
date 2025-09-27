@@ -411,7 +411,7 @@ func (c *Functions) FuncDecl(_ *ast.FuncDecl) error {
 // It creates a new scope, compiles the function body, and emits an OpCreateClosure
 // instruction to create the closure object at runtime.
 func (c *Functions) FuncLit(node *ast.FuncLit) error {
-	_, err := c.handleClosure(node, false)
+	_, err := c.handleClosure(node)
 	return err
 }
 
@@ -419,7 +419,7 @@ func (c *Functions) FuncLit(node *ast.FuncLit) error {
 func (c *Functions) GoStmt(node *ast.GoStmt) error {
 	switch t := node.Call.Fun.(type) {
 	case *ast.FuncLit:
-		closureIdx, err := c.handleClosure(t, true)
+		closureIdx, err := c.handleClosure(t)
 		if err != nil {
 			return err
 		}
@@ -433,7 +433,7 @@ func (c *Functions) GoStmt(node *ast.GoStmt) error {
 		}
 		spread := 0
 		args := len(node.Call.Args)
-		if _, err = c.scopes.Emit(node.Pos(), native.OpCallId, args, spread); err != nil {
+		if _, err = c.scopes.Emit(node.Pos(), native.OpCallAsyncId, args, spread); err != nil {
 			return err
 		}
 	default:
@@ -451,19 +451,13 @@ func (c *Functions) DeferStmt(node *ast.DeferStmt) error {
 		if err := c.compile(arg); err != nil {
 			return err
 		}
-		fieldList.List[i] = &ast.Field{
-			Type: arg,
-		}
+		fieldList.List[i] = &ast.Field{Type: arg}
 	}
 	closure := &ast.FuncLit{
-		Type: &ast.FuncType{
-			Params: fieldList,
-		},
-		Body: &ast.BlockStmt{
-			List: []ast.Stmt{&ast.ExprStmt{X: node.Call}},
-		},
+		Type: &ast.FuncType{Params: fieldList},
+		Body: &ast.BlockStmt{List: []ast.Stmt{&ast.ExprStmt{X: node.Call}}},
 	}
-	if _, err := c.handleClosure(closure, false); err != nil {
+	if _, err := c.handleClosure(closure); err != nil {
 		return err
 	}
 	if _, err := c.scopes.Emit(node.Pos(), native.OpDeferId); err != nil {
@@ -499,7 +493,7 @@ func (c *Functions) handleBuiltinInterface(pos token.Pos, receiverSymbol *tables
 
 // handleClosure processes an anonymous function literal and compiles it into a closure with references to free variables.
 // It creates a new scope, defines parameters, compiles the body, and emits bytecode to assemble the closure object.
-func (c *Functions) handleClosure(node *ast.FuncLit, async bool) (int, error) {
+func (c *Functions) handleClosure(node *ast.FuncLit) (int, error) {
 	closureName := fmt.Sprintf("__closure_%d", c.closureCounter)
 	if err := c.scopes.Enter(tables.UnknownScope, closureName); err != nil { // No struct or func name
 		return -1, err
@@ -533,7 +527,6 @@ func (c *Functions) handleClosure(node *ast.FuncLit, async bool) (int, error) {
 	if !ok {
 		return -1, fmt.Errorf("unexpected function type")
 	}
-	fn.SetAsync(async)
 	fn.FreeInitialize(freeSymbols)
 	constIndex := c.constants.Add("", compiledFn)
 	if _, err = c.scopes.Emit(node.Pos(), native.OpCreateClosureId, constIndex); err != nil {

@@ -322,6 +322,11 @@ func (v *VM) GetIp() uint {
 	return v.ip
 }
 
+// CallAsync performs an asynchronous call on the provided IObject with optional argument spreading and a given argument count.
+func (v *VM) CallAsync(value objects.IObject, spread bool, numArgs int) {
+	v.Call(value, spread, numArgs)
+}
+
 // Call executes a function or method with the specified number of arguments and handles variadic functions if applicable.
 func (v *VM) Call(value objects.IObject, spread bool, numArgs int) {
 	if numArgs < 0 {

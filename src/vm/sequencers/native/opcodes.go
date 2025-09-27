@@ -84,6 +84,9 @@ const (
 	// OpCallId represents the opcode for function or method invocation with specified argument and receiver counts.
 	OpCallId
 
+	// OpCallAsyncId represents the opcode for invoking asynchronous function calls in the instruction set.
+	OpCallAsyncId
+
 	// OpCallInterfaceId represents an opcode for invoking a method directly on an object with specified arguments.
 	OpCallInterfaceId
 
