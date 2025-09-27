@@ -32,8 +32,9 @@ type Compiler struct {
 	controlFlow       *ControlFlow
 	loops             *Loops
 	structsTable      *tables.StructTable
-	functionTable     *tables.FunctionTable
 	interfaceTable    *tables.InterfaceTable
+	definitionTables  *tables.DefinitionTable
+	functionTable     *tables.FunctionTable
 	typeCompatibility *TypeCompatibility
 	rootNode          *ast.File
 }
@@ -45,15 +46,16 @@ func New(gk objects.IGateKeeper, loader bytecode.ILoader, opcodes opcodes.IOpcod
 	scopes := tables.NewScopes(gk, opcodes, constants)
 	structTable := tables.NewStructTable(gk, scopes)
 	interfaceTable := tables.NewInterfaceTable(gk, scopes)
-	functionTable := tables.NewFunctionTable(gk, scopes, structTable, interfaceTable)
+	definitionTable := tables.NewDefinitionTable(gk, scopes, structTable, interfaceTable)
+	functionTable := tables.NewFunctionTable(gk, scopes, definitionTable)
 	importConstants := tables.NewConstants()
 	imports := NewImports(gk, loader, importConstants, constants, scopes)
 	components = append(components, imports)
-	declarations := NewDeclarations(gk, importConstants, constants, scopes, imports, structTable, functionTable, interfaceTable)
+	declarations := NewDeclarations(gk, importConstants, constants, scopes, imports, structTable, interfaceTable, functionTable)
 	components = append(components, declarations)
 	expressions := NewExpression(gk, constants, scopes, imports)
 	components = append(components, expressions)
-	functions := NewFunctions(gk, constants, scopes, imports, declarations, structTable, functionTable, interfaceTable)
+	functions := NewFunctions(gk, constants, scopes, imports, declarations, structTable, interfaceTable, functionTable)
 	components = append(components, functions)
 	controlFlow := NewControlFlow(gk, constants, scopes, structTable)
 	components = append(components, controlFlow)
@@ -74,8 +76,9 @@ func New(gk objects.IGateKeeper, loader bytecode.ILoader, opcodes opcodes.IOpcod
 		constants:         constants,
 		importConstants:   importConstants,
 		structsTable:      structTable,
-		functionTable:     functionTable,
 		interfaceTable:    interfaceTable,
+		definitionTables:  definitionTable,
+		functionTable:     functionTable,
 		imports:           imports,
 		functions:         functions,
 		declarations:      declarations,

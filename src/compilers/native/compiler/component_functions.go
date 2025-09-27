@@ -26,7 +26,7 @@ type Functions struct {
 }
 
 // NewFunctions initializes and returns a new Functions instance.
-func NewFunctions(gk objects.IGateKeeper, constants *tables.Constants, scopes *tables.Scopes, imports *Imports, declarations *Declarations, structTable *tables.StructTable, functionTable *tables.FunctionTable, interfaceTable *tables.InterfaceTable) *Functions {
+func NewFunctions(gk objects.IGateKeeper, constants *tables.Constants, scopes *tables.Scopes, imports *Imports, declarations *Declarations, structTable *tables.StructTable, interfaceTable *tables.InterfaceTable, functionTable *tables.FunctionTable) *Functions {
 	return &Functions{
 		gk:             gk,
 		constants:      constants,
@@ -144,12 +144,12 @@ func (c *Functions) funcBodyCompile(fd *tables.FunctionDescription) error {
 	}
 	// Define symbols for method receivers (if present)
 	if node.Recv != nil && len(node.Recv.List) > 0 {
-		if _, err := c.functionTable.SymbolsFromParameters(node.Recv); err != nil {
+		if _, err := c.functionTable.SymbolsFromFields(node.Recv); err != nil {
 			return err
 		}
 	}
 	// Define symbols for input parameters
-	if _, err := c.functionTable.SymbolsFromParameters(node.Type.Params); err != nil {
+	if _, err := c.functionTable.SymbolsFromFields(node.Type.Params); err != nil {
 		return err
 	}
 	if err := c.compile(node.Body); err != nil {
@@ -499,7 +499,7 @@ func (c *Functions) handleClosure(node *ast.FuncLit) (int, error) {
 		return -1, err
 	}
 	c.closureCounter++
-	if _, err := c.functionTable.SymbolsFromParameters(node.Type.Params); err != nil {
+	if _, err := c.functionTable.SymbolsFromFields(node.Type.Params); err != nil {
 		return -1, err
 	}
 	if err := c.compile(node.Body); err != nil {

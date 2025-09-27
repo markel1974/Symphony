@@ -36,20 +36,18 @@ func NewFunctionDescription(funcDecl *ast.FuncDecl) *FunctionDescription {
 
 // FunctionTable is a type designed to manage a collection of function descriptions.
 type FunctionTable struct {
-	gk             objects.IGateKeeper
-	scopes         *Scopes
-	structTable    *StructTable
-	interfaceTable *InterfaceTable
-	container      []*FunctionDescription
+	gk              objects.IGateKeeper
+	scopes          *Scopes
+	definitionTable *DefinitionTable
+	container       []*FunctionDescription
 }
 
 // NewFunctionTable initializes and returns a new instance of FunctionTable.
-func NewFunctionTable(gk objects.IGateKeeper, scopes *Scopes, structTable *StructTable, interfaceTable *InterfaceTable) *FunctionTable {
+func NewFunctionTable(gk objects.IGateKeeper, scopes *Scopes, definitionTable *DefinitionTable) *FunctionTable {
 	return &FunctionTable{
-		gk:             gk,
-		scopes:         scopes,
-		structTable:    structTable,
-		interfaceTable: interfaceTable,
+		gk:              gk,
+		scopes:          scopes,
+		definitionTable: definitionTable,
 	}
 }
 
@@ -101,30 +99,20 @@ func (f *FunctionTable) CountParams(fieldList *ast.FieldList) int {
 	return count
 }
 
-// SymbolsFromParameters creates and returns a slice of Symbols for the function parameters.
-func (f *FunctionTable) SymbolsFromParameters(fieldList *ast.FieldList) ([]*Symbol, error) {
+// SymbolsFromFields creates and returns a slice of Symbols for the function parameters.
+func (f *FunctionTable) SymbolsFromFields(fieldList *ast.FieldList) ([]*Symbol, error) {
+	if fieldList == nil {
+		return nil, nil
+	}
 	var symbols []*Symbol
-	if fieldList != nil {
-		for _, p := range fieldList.List {
-			typeName := f.TypeName(p.Type)
-			isStruct := f.structTable.Has(typeName)
-			isInterface := f.interfaceTable.Has(typeName)
-			for _, name := range p.Names {
-				symbol, err := f.scopes.SymbolDefine(name.Name)
-				if err != nil {
-					return nil, err
-				}
-				symbol.SetScope(LocalScope)
-				symbol.SetReturnTypes([]string{typeName})
-				if isStruct {
-					f.structTable.BindSymbol(symbol, typeName)
-					symbol.SetObject(f.gk.NewString(objects.FrameStatic, typeName+":"+symbol.Name()))
-				} else if isInterface {
-					symbol.SetInterface(typeName)
-					symbol.SetObject(f.gk.NewString(objects.FrameStatic, "interface:"+symbol.Name()))
-				}
-				symbols = append(symbols, symbol)
+	for _, p := range fieldList.List {
+		typeName := GetBaseName(p.Type)
+		for _, name := range p.Names {
+			sd, err := f.definitionTable.SymbolDefine(name.Name, typeName)
+			if err != nil {
+				return nil, err
 			}
+			symbols = append(symbols, sd)
 		}
 	}
 	return symbols, nil
@@ -132,43 +120,40 @@ func (f *FunctionTable) SymbolsFromParameters(fieldList *ast.FieldList) ([]*Symb
 
 // RangeKey returns the symbol for the range key, if any.
 func (f *FunctionTable) RangeKey(node *ast.RangeStmt) (*Symbol, error) {
-	if node.Key != nil {
-		if ident, ok := node.Key.(*ast.Ident); ok && ident.Name != UndefinedSymbol {
-			keySymbol, err := f.scopes.SymbolDefine(ident.Name)
-			if err != nil {
-				return nil, err
-			}
-			return keySymbol, nil
-		}
+	if node.Key == nil {
+		return nil, nil
 	}
-	return nil, nil
+	switch k := node.Key.(type) {
+	case *ast.Ident:
+		if k.Name == UndefinedSymbol {
+			return nil, nil
+		}
+		keySymbol, err := f.scopes.SymbolDefine(k.Name)
+		if err != nil {
+			return nil, err
+		}
+		return keySymbol, nil
+	default:
+		return nil, nil
+	}
 }
 
 // RangeValue resolves and defines a symbol for the `Value` in a range statement, assigning it a type if specified.
 func (f *FunctionTable) RangeValue(node *ast.RangeStmt, typeName string) (*Symbol, error) {
-	if node.Value != nil {
-		if ident, ok := node.Value.(*ast.Ident); ok && ident.Name != UndefinedSymbol {
-			valueSymbol, err := f.scopes.SymbolDefine(ident.Name)
-			if err != nil {
-				return nil, err
-			}
-			if len(typeName) > 0 {
-				valueSymbol.SetReturnTypes([]string{typeName})
-				valueSymbol.SetObject(f.gk.NewString(objects.FrameStatic, typeName+":"+valueSymbol.Name()))
-				f.structTable.BindSymbol(valueSymbol, typeName)
-			}
-			return valueSymbol, nil
-		}
+	if node.Value == nil {
+		return nil, nil
 	}
-	return nil, nil
-}
-
-func (f *FunctionTable) TypeName(expr ast.Expr) string {
-	switch t := expr.(type) {
+	switch k := node.Value.(type) {
 	case *ast.Ident:
-		return t.Name
-	case *ast.StarExpr:
-		return f.TypeName(t.X)
+		if k.Name == UndefinedSymbol {
+			return nil, nil
+		}
+		sd, err := f.definitionTable.SymbolDefine(k.Name, typeName)
+		if err != nil {
+			return nil, err
+		}
+		return sd, nil
+	default:
+		return nil, nil
 	}
-	return ""
 }

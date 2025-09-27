@@ -32,7 +32,7 @@ type Declarations struct {
 }
 
 // NewDeclarations creates and initializes a new Declarations instance with gatekeeper, constants, scopes, and structs table.
-func NewDeclarations(gk objects.IGateKeeper, references *tables.Constants, constants *tables.Constants, scopes *tables.Scopes, imports *Imports, structsTable *tables.StructTable, functionTables *tables.FunctionTable, interfaceTable *tables.InterfaceTable) *Declarations {
+func NewDeclarations(gk objects.IGateKeeper, references *tables.Constants, constants *tables.Constants, scopes *tables.Scopes, imports *Imports, structsTable *tables.StructTable, interfaceTable *tables.InterfaceTable, functionTables *tables.FunctionTable) *Declarations {
 	return &Declarations{
 		gk: gk, references: references, constants: constants, scopes: scopes,
 		compile:        nil,

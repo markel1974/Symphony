@@ -148,8 +148,8 @@ func (s *SymbolTable) RebuildScope(name string, scope SymbolScope) (*Symbol, boo
 	if !ok {
 		return nil, false
 	}
-	scope = s.computeScope(scope)
-	symbol.SetScope(scope)
+	computedScope := s.computeScope(scope)
+	symbol.SetScope(computedScope)
 	return symbol, true
 }
 

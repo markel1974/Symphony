@@ -95,6 +95,18 @@ func GetReceiver(result *ast.Field) (string, error) {
 	}
 }
 
+/*
+func TypeName(expr ast.Expr) string {
+	switch t := expr.(type) {
+	case *ast.Ident:
+		return t.Name
+	case *ast.StarExpr:
+		return TypeName(t.X)
+	}
+	return ""
+}
+*/
+
 // GetBaseName extracts the base type name from an AST expression, handling pointers, arrays, maps, and selectors.
 func GetBaseName(expr ast.Expr) string {
 	switch t := expr.(type) {
