@@ -9,6 +9,10 @@ import (
 	"github.com/markel1974/c64emu/src/vm/sequencers/native"
 )
 
+// Loops represents a compilation unit that processes AST nodes and maintains scope and function information.
+// It stores references to the file set, scopes, and symbol tables necessary for code compilation and processing.
+// The gk field is used to manage object gatekeeping, including allocation, conversion, and adaptation.
+// The compile field defines a custom function to compile individual AST nodes within the context of this instance.
 type Loops struct {
 	gk              objects.IGateKeeper
 	fileSet         *token.FileSet
@@ -18,6 +22,7 @@ type Loops struct {
 	compile         func(node ast.Node) error
 }
 
+// NewLoops creates and returns a new instance of Loops, initialized with the provided gatekeeper, scopes, and tables.
 func NewLoops(gk objects.IGateKeeper, scopes *tables.Scopes, definitionTable *tables.DefinitionTable, functionTable *tables.FunctionTable) *Loops {
 	return &Loops{
 		gk:              gk,
@@ -27,24 +32,24 @@ func NewLoops(gk objects.IGateKeeper, scopes *tables.Scopes, definitionTable *ta
 	}
 }
 
-// Setup initializes the Declarations object with a file set and a compile function, returning an error if any occur.
+// Setup initializes the Loops instance with the provided fileSet and compile function.
 func (c *Loops) Setup(fileSet *token.FileSet, compile func(node ast.Node) error) error {
 	c.fileSet = fileSet
 	c.compile = compile
 	return nil
 }
 
-// Prepare initializes the ControlFlow structure, ensuring it is ready for subsequent compilation tasks and operations.
+// Prepare initializes internal structures and performs prerequisites required before the `Compile` method is invoked.
 func (c *Loops) Prepare() error {
 	return nil
 }
 
-// Compile compiles the AST nodes using the configured compile function and returns an error if the process fails.
+// Compile processes the given AST node to perform compilation tasks and returns an error if the process fails.
 func (c *Loops) Compile() error {
 	return nil
 }
 
-// ForStmt compiles a for loop statement, including initialization, condition, post-iteration, and body execution.
+// ForStmt compiles an AST for-loop statement by handling initialization, condition, body, post-iteration step, and loop structure.
 func (c *Loops) ForStmt(node *ast.ForStmt) error {
 	if node.Init != nil {
 		if err := c.compile(node.Init); err != nil {
@@ -127,7 +132,10 @@ func (c *Loops) ForStmt(node *ast.ForStmt) error {
 	return nil
 }
 
-// RangeStmt compiles a RangeStmt node into bytecode, handling iterator initialization, key/value assignment, and looping logic.
+// RangeStmt processes an AST RangeStmt, emits relevant bytecode, and handles iterator initialization and loop logic.
+// It supports range expressions such as identifiers, function calls, and selector expressions.
+// Errors are returned for unsupported or invalid range expressions and during bytecode generation.
+// It manages loop scope, including `break` and `continue` handling, with back-patching for jump instructions.
 func (c *Loops) RangeStmt(node *ast.RangeStmt) error {
 	if err := c.compile(node.X); err != nil {
 		return err
