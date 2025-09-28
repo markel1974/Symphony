@@ -88,7 +88,7 @@ func (c *Functions) funcBodyPrepare(fd *tables.FunctionDescription) error {
 		return err
 	}
 	for _, p := range node.Type.Params.List {
-		kind, err := tables.GetReceiver(p)
+		kind, err := tables.GetReceiver(p.Type)
 		if err != nil {
 			return tables.NewCompilerError(c.fileSet, p, err.Error())
 		}
@@ -103,7 +103,7 @@ func (c *Functions) funcBodyPrepare(fd *tables.FunctionDescription) error {
 				fd.StructReceivers = append(fd.StructReceivers, name.Name)
 			}
 		}
-		recvTypeIdent, err := tables.GetReceiver(node.Recv.List[0])
+		recvTypeIdent, err := tables.GetReceiver(node.Recv.List[0].Type)
 		if err != nil {
 			return tables.NewCompilerError(c.fileSet, node, err.Error())
 		}

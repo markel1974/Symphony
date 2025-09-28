@@ -59,8 +59,8 @@ func GetIdent(expr ast.Expr) *ast.Ident {
 }
 
 // GetReceiver extracts the type name from the given AST Field's Type and returns it as a string or an error for unsupported types.
-func GetReceiver(result *ast.Field) (string, error) {
-	switch v := result.Type.(type) {
+func GetReceiver(result ast.Expr) (string, error) {
+	switch v := result.(type) {
 	case *ast.Ident:
 		return v.Name, nil
 	case *ast.StarExpr:
@@ -150,7 +150,7 @@ func GetReceivers(result *ast.FieldList) ([]string, error) {
 	}
 	var ret []string
 	for _, res := range result.List {
-		rec, err := GetReceiver(res)
+		rec, err := GetReceiver(res.Type)
 		if err != nil {
 			return nil, err
 		}
