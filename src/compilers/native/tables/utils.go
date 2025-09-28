@@ -6,13 +6,41 @@ import (
 	"go/token"
 )
 
+// CharDefinition represents the keyword for character data type.
+// IntDefinition represents the keyword for integer data type.
+// FloatDefinition represents the keyword for floating point data type.
+// StringDefinition represents the keyword for string data type.
+// FuncDefinition represents the keyword for function type.
+// ArrayDefinition represents the keyword for array type syntax.
+// MapDefinition represents the keyword for map type syntax.
+// InterfaceDefinition represents the keyword for empty interface type syntax.
 const (
+	CharDefinition      = "char"
+	IntDefinition       = "int"
+	FloatDefinition     = "float"
+	StringDefinition    = "string"
 	FuncDefinition      = "func"
 	ArrayDefinition     = "[]"
 	MapDefinition       = "map"
 	InterfaceDefinition = "interface{}"
 )
 
+// _charDefinition holds a reference to an identifier representing the char type constant definition.
+var _charDefinition = &ast.Ident{NamePos: 0, Name: CharDefinition, Obj: nil}
+
+// _intDefinition is a pre-defined identifier representing the "int" type for use in AST manipulation or type matching.
+var _intDefinition = &ast.Ident{NamePos: 0, Name: IntDefinition, Obj: nil}
+
+// _floatDefinition is an identifier representing the "float" type used in AST type handling.
+var _floatDefinition = &ast.Ident{NamePos: 0, Name: FloatDefinition, Obj: nil}
+
+// _stringDefinition is a predefined ast.Ident representing the "string" type definition in the abstract syntax tree.
+var _stringDefinition = &ast.Ident{NamePos: 0, Name: StringDefinition, Obj: nil}
+
+// _interfaceDefinition represents the identifier for the empty interface type ("interface{}") in the abstract syntax tree.
+var _interfaceDefinition = &ast.Ident{NamePos: 0, Name: InterfaceDefinition, Obj: nil}
+
+// GetSelectorData extracts the package and selector names from a selector expression, returning them with a success flag.
 func GetSelectorData(expr ast.Expr) (string, string, bool) {
 	switch t := expr.(type) {
 	case *ast.SelectorExpr:
@@ -21,19 +49,45 @@ func GetSelectorData(expr ast.Expr) (string, string, bool) {
 			return "", "", false
 		}
 		return name.Name, t.Sel.Name, true
+	default:
+		return "", "", false
 	}
-	return "", "", false
 }
 
-// GetIdent traverses an AST expression and returns the identifier (*ast.Ident) of the type, if found.
-// It handles identifiers, pointers, arrays/slices, and maps, returning the type's identifier or nil if not applicable.
+// GetIdentName returns the name of the identifier from the given AST expression, or an empty string if no identifier is found.
+func GetIdentName(expr ast.Expr) string {
+	ident := GetIdent(expr)
+	if ident == nil {
+		return ""
+	}
+	return ident.Name
+}
+
+// GetIdent extracts and returns the *ast.Ident representing a type or identifier within an ast.Expr.
+// It traverses various expression types such as pointers, arrays, slices, maps, and composite literals.
+// If no valid identifier is found, the function returns nil.
 func GetIdent(expr ast.Expr) *ast.Ident {
 	switch t := expr.(type) {
+	case *ast.BasicLit:
+		switch t.Kind {
+		case token.INT:
+			return _intDefinition
+		case token.FLOAT:
+			return _floatDefinition
+		case token.CHAR:
+			return _charDefinition
+		case token.STRING:
+			return _stringDefinition
+		default:
+			return nil
+		}
 	case *ast.Ident:
 		// Base case: we found the identifier (e.g. "MyStruct")
 		return t
 	case *ast.StarExpr:
 		// Pointer case (*MyType): continue searching on the pointed type
+		return GetIdent(t.X)
+	case *ast.SliceExpr:
 		return GetIdent(t.X)
 	case *ast.ArrayType:
 		// Array/slice case ([]MyType): continue searching on the element type
@@ -51,16 +105,26 @@ func GetIdent(expr ast.Expr) *ast.Ident {
 		return GetIdent(t.Fun)
 	case *ast.UnaryExpr:
 		return GetIdent(t.X)
+	case *ast.BinaryExpr:
+		return GetIdent(t.X) // or GetIdent(t.Y)
 	case *ast.ParenExpr:
 		// Parenthesized expression ((MyType)): continue search on the inner expression
-		return GetIdent(t.X)
+		return GetIdent(t.X) // or GetIdent(t.Y)
+	case *ast.InterfaceType:
+		// Interface case: treat empty interface as its own type
+		if len(t.Methods.List) == 0 {
+			return _interfaceDefinition
+		}
+		return nil
+	default:
+		return nil
 	}
-	return nil
 }
 
-// GetReceiver extracts the type name from the given AST Field's Type and returns it as a string or an error for unsupported types.
-func GetReceiver(result ast.Expr) (string, error) {
-	switch v := result.(type) {
+// GetReceiver determines the string representation of a receiver type based on its AST expression node.
+// It returns the type name as a string or an error for unsupported types.
+func GetReceiver(expr ast.Expr) (string, error) {
+	switch v := expr.(type) {
 	case *ast.Ident:
 		return v.Name, nil
 	case *ast.StarExpr:
@@ -95,52 +159,8 @@ func GetReceiver(result ast.Expr) (string, error) {
 	}
 }
 
-/*
-func TypeName(expr ast.Expr) string {
-	switch t := expr.(type) {
-	case *ast.Ident:
-		return t.Name
-	case *ast.StarExpr:
-		return TypeName(t.X)
-	}
-	return ""
-}
-*/
-
-// GetBaseName extracts the base type name from an AST expression, handling pointers, arrays, maps, and selectors.
-func GetBaseName(expr ast.Expr) string {
-	switch t := expr.(type) {
-	case *ast.Ident:
-		// Base case: we found the type identifier (e.g. "MyStruct")
-		return t.Name
-	case *ast.StarExpr:
-		// Pointer case (*MyType): continue search on pointed type
-		return GetBaseName(t.X)
-	case *ast.ArrayType:
-		// Array/slice case ([]MyType): continue search on element type
-		return GetBaseName(t.Elt)
-	case *ast.MapType:
-		// Map case (map[KeyType]ValueType): we care about the value type
-		return GetBaseName(t.Value)
-	case *ast.SelectorExpr:
-		// Qualified type case (e.g. package.Type): return the type name
-		// More advanced logic could return "package.Type"
-		return t.Sel.Name
-	case *ast.InterfaceType:
-		// Interface case: treat empty interface as its own type
-		if len(t.Methods.List) == 0 {
-			return InterfaceDefinition
-		}
-		// Non-empty interfaces are not currently supported for extraction
-		return ""
-	default:
-		// Other complex types are not handled
-		return ""
-	}
-}
-
-// GetReceivers extracts and returns the list of type names from the given AST FieldList result.
-// It handles both non-pointer and pointer type fields and returns an error for unsupported types.
+// GetReceivers extracts the names of types from a given *ast.FieldList and returns them as a slice of strings.
+// Returns an error if type extraction encounters an issue.
 func GetReceivers(result *ast.FieldList) ([]string, error) {
 	if result == nil {
 		return nil, nil
@@ -159,7 +179,7 @@ func GetReceivers(result *ast.FieldList) ([]string, error) {
 	return ret, nil
 }
 
-// GetFuncName extracts the name of a function from an ast.Expr. It returns the name and a bool indicating success or failure.
+// GetFuncName extracts the function name or mangled name from an ast.Expr and returns it with a boolean indicating success.
 func GetFuncName(expr ast.Expr) (string, bool) {
 	switch fun := expr.(type) {
 	case *ast.Ident:
@@ -175,12 +195,13 @@ func GetFuncName(expr ast.Expr) (string, bool) {
 	}
 }
 
-// GetMangledName combines an identifier and function name to generate a mangled name in the format "identifier.function".
+// GetMangledName returns a string combining an identifier and a function name in the format "Identifier.FunctionName".
 func GetMangledName(identId string, fnName string) string {
 	m := fmt.Sprintf("%s.%s", identId, fnName)
 	return m
 }
 
+// NewCompilerError creates a compile-time error message with the file and node position, formatted with the given string and arguments.
 func NewCompilerError(fileSet *token.FileSet, node ast.Node, format string, args ...interface{}) error {
 	// fileSet.Position() ci dà la posizione esatta del nodo nel file sorgente
 	position := fileSet.Position(node.Pos())

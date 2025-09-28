@@ -106,7 +106,7 @@ func (f *FunctionTable) SymbolsFromFields(fieldList *ast.FieldList) ([]*Symbol, 
 	}
 	var symbols []*Symbol
 	for _, p := range fieldList.List {
-		typeName := GetBaseName(p.Type)
+		typeName := GetIdentName(p.Type)
 		for _, name := range p.Names {
 			sd, err := f.definitionTable.SymbolDefine(name.Name, typeName)
 			if err != nil {
