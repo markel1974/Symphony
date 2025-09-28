@@ -40,27 +40,44 @@ var _stringDefinition = &ast.Ident{NamePos: 0, Name: StringDefinition, Obj: nil}
 // _interfaceDefinition represents the identifier for the empty interface type ("interface{}") in the abstract syntax tree.
 var _interfaceDefinition = &ast.Ident{NamePos: 0, Name: InterfaceDefinition, Obj: nil}
 
-// GetSelectorData extracts the package and selector names from a selector expression, returning them with a success flag.
-func GetSelectorData(expr ast.Expr) (string, string, bool) {
-	switch t := expr.(type) {
+// GetMangledName returns a string combining an identifier and a function name in the format "Identifier.FunctionName".
+func GetMangledName(identId string, fnName string) string {
+	m := fmt.Sprintf("%s.%s", identId, fnName)
+	return m
+}
+
+// GetFuncName extracts the function name or mangled name from an ast.Expr and returns it with a boolean indicating success.
+func GetFuncName(expr ast.Expr) (string, bool) {
+	switch fun := expr.(type) {
+	case *ast.Ident:
+		return fun.Name, true
+	case *ast.StarExpr:
+		return GetFuncName(fun.X)
 	case *ast.SelectorExpr:
-		name := GetIdent(t.X)
-		if name == nil {
-			return "", "", false
+		ident := GetIdent(fun.X)
+		if ident == nil {
+			return "", false
 		}
-		return name.Name, t.Sel.Name, true
+		return GetMangledName(ident.Name, fun.Sel.Name), true
 	default:
-		return "", "", false
+		return "", false
 	}
 }
 
-// GetIdentName returns the name of the identifier from the given AST expression, or an empty string if no identifier is found.
-func GetIdentName(expr ast.Expr) string {
-	ident := GetIdent(expr)
-	if ident == nil {
-		return ""
+// GetSelectorData extracts the package and selector names from a selector expression, returning them with a success flag.
+func GetSelectorData(expr ast.Expr) (string, string, bool) {
+	switch t := expr.(type) {
+	case *ast.StarExpr:
+		return GetSelectorData(t.X)
+	case *ast.SelectorExpr:
+		ident := GetIdent(t.X)
+		if ident == nil {
+			return "", "", false
+		}
+		return ident.Name, t.Sel.Name, true
+	default:
+		return "", "", false
 	}
-	return ident.Name
 }
 
 // GetIdent extracts and returns the *ast.Ident representing a type or identifier within an ast.Expr.
@@ -177,28 +194,6 @@ func GetReceivers(result *ast.FieldList) ([]string, error) {
 		ret = append(ret, rec)
 	}
 	return ret, nil
-}
-
-// GetFuncName extracts the function name or mangled name from an ast.Expr and returns it with a boolean indicating success.
-func GetFuncName(expr ast.Expr) (string, bool) {
-	switch fun := expr.(type) {
-	case *ast.Ident:
-		return fun.Name, true
-	case *ast.SelectorExpr:
-		receiverIdent, ok := fun.X.(*ast.Ident)
-		if !ok {
-			return "", false
-		}
-		return GetMangledName(receiverIdent.Name, fun.Sel.Name), true
-	default:
-		return "", false
-	}
-}
-
-// GetMangledName returns a string combining an identifier and a function name in the format "Identifier.FunctionName".
-func GetMangledName(identId string, fnName string) string {
-	m := fmt.Sprintf("%s.%s", identId, fnName)
-	return m
 }
 
 // NewCompilerError creates a compile-time error message with the file and node position, formatted with the given string and arguments.

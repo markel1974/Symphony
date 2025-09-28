@@ -102,7 +102,9 @@ func (st *StructTable) TypeInference(expr ast.Expr) (string, bool) {
 			ret = v.StructName()
 		}
 	case *ast.CompositeLit: // es. MyStruct{...}
-		ret = GetIdentName(rhs.Type)
+		if ident := GetIdent(rhs.Type); ident != nil {
+			ret = ident.Name
+		}
 	case *ast.CallExpr: // es. NewStruct()
 		if ident, ok := rhs.Fun.(*ast.Ident); ok {
 			if funcSymbol, ok := st.scopes.SymbolResolve(ident.Name); ok && len(funcSymbol.ReturnTypes()) > 0 {
