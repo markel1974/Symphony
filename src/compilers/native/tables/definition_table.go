@@ -7,7 +7,7 @@ import (
 )
 
 // DefinitionTable represents a container for managing the scopes, structures, and interfaces in a type system.
-// It utilizes a gatekeeper interface to handle object-related operations such as creation, conversion, and adaptation.
+// It uses a gatekeeper interface to handle object-related operations such as creation, conversion, and adaptation.
 // The struct facilitates the organization and resolution of types within a given context or environment.
 type DefinitionTable struct {
 	gk             objects.IGateKeeper
@@ -106,7 +106,7 @@ func (f *DefinitionTable) StructImplements(structName string, interfaceName stri
 	return f.structTable.Implements(structName, interfaceName)
 }
 
-// StructTypeInference infers the type of a struct from the provided AST expression and returns the type name and success flag.
+// StructTypeInference infers the type of struct from the provided AST expression and returns the type name and success flag.
 func (f *DefinitionTable) StructTypeInference(expr ast.Expr) (string, bool) {
 	return f.structTable.TypeInference(expr)
 }
