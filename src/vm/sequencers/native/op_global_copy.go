@@ -49,8 +49,15 @@ func (op *OpGlobalCopy) Bind(vm handler.IVM) error {
 func (op *OpGlobalCopy) Execute(decoder *handler.Decoder) {
 	sourceIndex := decoder.Operand(1)
 	destIndex := decoder.Operand(0)
-	value := op.vm.GlobalsGet(uint(sourceIndex))
-	op.vm.GlobalsSet(uint(destIndex), value)
+	value, err := op.vm.GlobalsGet(uint(sourceIndex))
+	if err != nil {
+		op.vm.Shutdown(err)
+		return
+	}
+	if err = op.vm.GlobalsSet(uint(destIndex), value); err != nil {
+		op.vm.Shutdown(err)
+		return
+	}
 }
 
 // Compile generates the compiled representation of the OpGlobalCopy operation or returns an unimplemented error.

@@ -8,17 +8,15 @@ import (
 
 // Globals encapsulates shared system-wide data like objects, kind, and error signals for centralized management.
 type Globals struct {
-	gk             objects.IGateKeeper
-	container      []objects.IObject
-	shutdownSignal func(err error)
+	gk        objects.IGateKeeper
+	container []objects.IObject
 }
 
 // NewGlobals initializes and returns a new Globals instance with the provided factory, kind, and error signal handler.
-func NewGlobals(gk objects.IGateKeeper, shutdownSignal func(err error)) *Globals {
+func NewGlobals(gk objects.IGateKeeper) *Globals {
 	return &Globals{
-		gk:             gk,
-		container:      []objects.IObject{},
-		shutdownSignal: shutdownSignal,
+		gk:        gk,
+		container: []objects.IObject{},
 	}
 }
 
@@ -30,20 +28,19 @@ func (g *Globals) Setup(constants []objects.IObject) error {
 
 // Get retrieves the object at the specified index from the container.
 // If the index is out of bounds, it triggers an error signal and returns an undefined value.
-func (g *Globals) Get(index uint) objects.IObject {
+func (g *Globals) Get(index uint) (objects.IObject, error) {
 	if index >= uint(len(g.container)) {
-		g.shutdownSignal(fmt.Errorf("invalid global index: %d", index))
-		return g.gk.UndefinedValue()
+		return g.gk.UndefinedValue(), fmt.Errorf("invalid global index: %d", index)
 	}
-	return g.container[index]
+	return g.container[index], nil
 }
 
 // Set updates the value at the specified index in the container. Emits an error signal if the index is invalid.
-func (g *Globals) Set(index uint, value objects.IObject) {
+func (g *Globals) Set(index uint, value objects.IObject) error {
 	if index >= uint(len(g.container)) {
-		g.shutdownSignal(fmt.Errorf("invalid constant index: %d", index))
-		return
+		return fmt.Errorf("invalid global index: %d", index)
 	}
 	value.SetStatic()
 	g.container[index] = value
+	return nil
 }

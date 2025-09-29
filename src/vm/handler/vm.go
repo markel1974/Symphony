@@ -39,9 +39,9 @@ func NewVM(gk objects.IGateKeeper, seq ISequencer, op opcodes.IOpcodes) *VM {
 		coreError: nil,
 		retValues: false,
 	}
-	v.imports = NewImports(gk, v.shutdownAll)
-	v.constants = NewConstants(gk, v.shutdownAll)
-	v.globals = NewGlobals(gk, v.shutdownAll)
+	v.imports = NewImports(gk)
+	v.constants = NewConstants(gk)
+	v.globals = NewGlobals(gk)
 	return v
 }
 
@@ -202,12 +202,4 @@ func (v *VM) coreShutdown(id uint, err error) {
 		return
 	}
 	v.cores = append(v.cores[:id], v.cores[id+1:]...)
-}
-
-// ShutdownGlobal sets the virtual machine's error state and initiates a global shutdown sequence.
-func (v *VM) shutdownAll(err error) {
-	v.shutdown = true
-	if err != nil {
-		v.coreError = &Error{err, 0}
-	}
 }

@@ -9,17 +9,15 @@ import (
 
 // Imports represent a structure for managing object imports in a container, utilizing a factory and error signaling.
 type Imports struct {
-	gk             objects.IGateKeeper
-	container      []objects.IObject
-	shutdownSignal func(err error)
+	gk        objects.IGateKeeper
+	container []objects.IObject
 }
 
 // NewImports creates and initializes a Imports instance with the provided IGateKeeper factory and error signaling function.
-func NewImports(gk objects.IGateKeeper, shutdownSignal func(err error)) *Imports {
+func NewImports(gk objects.IGateKeeper) *Imports {
 	return &Imports{
-		gk:             gk,
-		container:      nil,
-		shutdownSignal: shutdownSignal,
+		gk:        gk,
+		container: nil,
 	}
 }
 
@@ -40,7 +38,7 @@ func (g *Imports) Setup(loader bytecode.ILoader, references []objects.IObject) e
 			internal := references[idx].AsString()
 			callId, ok := objects.CallIdFromString(references[idx].AsString())
 			if !ok {
-				return fmt.Errorf("invalid internal reference: %s", internal)
+				return fmt.Errorf("invalid internal import: %s", internal)
 			}
 			g.container[idx] = g.gk.NewFuncInternal(objects.FrameStatic, callId)
 		}
@@ -49,11 +47,10 @@ func (g *Imports) Setup(loader bytecode.ILoader, references []objects.IObject) e
 }
 
 // Get retrieves an object from the container at the specified index, validates the index, and returns a copied object.
-func (g *Imports) Get(frame int, index uint) objects.IObject {
+func (g *Imports) Get(frame int, index uint) (objects.IObject, error) {
 	if index >= uint(len(g.container)) {
-		g.shutdownSignal(fmt.Errorf("invalid reference index: %d", index))
-		return g.gk.UndefinedValue()
+		return g.gk.UndefinedValue(), fmt.Errorf("invalid import index: %d", index)
 	}
 	obj := g.container[index]
-	return obj.Copy(frame, objects.MaxDepth)
+	return obj.Copy(frame, objects.MaxDepth), nil
 }

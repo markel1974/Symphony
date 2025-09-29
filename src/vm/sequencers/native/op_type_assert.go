@@ -53,7 +53,11 @@ func (op *OpTypeAssert) Bind(vm handler.IVM) error {
 func (op *OpTypeAssert) Execute(decoder *handler.Decoder) {
 	typeNameIndex := decoder.Operand(0)
 	interfaceObj := op.vm.StackPop()
-	targetTypeObj := op.vm.ConstantsGet(uint(typeNameIndex))
+	targetTypeObj, err := op.vm.ConstantsGet(uint(typeNameIndex))
+	if err != nil {
+		op.vm.Shutdown(err)
+		return
+	}
 	concreteValue := op.vm.Factory().Concrete(interfaceObj)
 	if concreteValue.TypeName() == targetTypeObj.AsString() {
 		op.vm.StackPush(concreteValue)

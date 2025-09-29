@@ -47,7 +47,11 @@ func (op *OpGlobalIndex) Bind(vm handler.IVM) error {
 func (op *OpGlobalIndex) Execute(decoder *handler.Decoder) {
 	globalIndex := decoder.Operand(0)
 	selCount := decoder.Operand(1)
-	dstObj := op.vm.GlobalsGet(uint(globalIndex))
+	dstObj, err := op.vm.GlobalsGet(uint(globalIndex))
+	if err != nil {
+		op.vm.Shutdown(err)
+		return
+	}
 	selectors := make([]objects.IObject, selCount)
 	for i := 0; i < selCount; i++ {
 		offset := selCount - i

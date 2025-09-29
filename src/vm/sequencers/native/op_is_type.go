@@ -57,7 +57,11 @@ func (op *OpIsType) Execute(decoder *handler.Decoder) {
 	switch io := interfaceObj.(type) {
 	case *objects.Interface:
 		typeNameIndex := decoder.Operand(0)
-		targetTypeObj := op.vm.ConstantsGet(uint(typeNameIndex))
+		targetTypeObj, err := op.vm.ConstantsGet(uint(typeNameIndex))
+		if err != nil {
+			op.vm.Shutdown(err)
+			return
+		}
 		if io.Value().TypeName() == targetTypeObj.AsString() {
 			op.vm.StackPush(op.vm.Factory().TrueValue())
 		} else {

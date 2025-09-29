@@ -46,7 +46,11 @@ func (op *OpImport) Bind(vm handler.IVM) error {
 // Execute processes the specified Core instruction, adjusts the instruction pointer, and pushes a reference onto the stack.
 func (op *OpImport) Execute(decoder *handler.Decoder) {
 	importIdx := decoder.Operand(0)
-	importObj := op.vm.ImportsGet(uint(importIdx))
+	importObj, err := op.vm.ImportsGet(uint(importIdx))
+	if err != nil {
+		op.vm.Shutdown(err)
+		return
+	}
 	op.vm.StackPush(importObj)
 }
 

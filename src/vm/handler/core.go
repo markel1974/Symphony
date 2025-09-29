@@ -208,23 +208,23 @@ func (v *Core) StackDecrement() {
 }
 
 // ImportsGet fetches an imported object from the current frame using the specified index and returns it as an IObject.
-func (v *Core) ImportsGet(idx uint) objects.IObject {
+func (v *Core) ImportsGet(idx uint) (objects.IObject, error) {
 	return v.imports.Get(v.currFrame.Id(), idx)
 }
 
 // ConstantsGet fetches an imported object from the current frame using the specified index and returns it as an IObject.
-func (v *Core) ConstantsGet(idx uint) objects.IObject {
+func (v *Core) ConstantsGet(idx uint) (objects.IObject, error) {
 	return v.constants.Get(v.currFrame.Id(), idx)
 }
 
 // GlobalsGet retrieves a global object by index from the Core's global container and returns it as an IObject.
-func (v *Core) GlobalsGet(idx uint) objects.IObject {
+func (v *Core) GlobalsGet(idx uint) (objects.IObject, error) {
 	return v.globals.Get(idx)
 }
 
 // GlobalsSet assigns an object to the global store at the specified index.
-func (v *Core) GlobalsSet(idx uint, obj objects.IObject) {
-	v.globals.Set(idx, obj)
+func (v *Core) GlobalsSet(idx uint, obj objects.IObject) error {
+	return v.globals.Set(idx, obj)
 }
 
 // FrameId returns the identifier of the current frame in the virtual machine.

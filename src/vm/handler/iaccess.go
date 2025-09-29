@@ -50,17 +50,17 @@ type IVMStackOnly interface {
 type IVMReadOnly interface {
 	IVM
 	IVMStackOnly
-	GlobalsGet(idx uint) objects.IObject
-	GlobalsSet(idx uint, obj objects.IObject)
-	ImportsGet(idx uint) objects.IObject
-	ConstantsGet(idx uint) objects.IObject
+	GlobalsGet(idx uint) (objects.IObject, error)
+	GlobalsSet(idx uint, obj objects.IObject) error
+	ImportsGet(idx uint) (objects.IObject, error)
+	ConstantsGet(idx uint) (objects.IObject, error)
 }
 
 // IVMReadWrite represents an interface extending IVMReadOnly with additional write capabilities for Core global state.
 type IVMReadWrite interface {
 	IVMReadOnly
-	GlobalsGet(idx uint) objects.IObject
-	GlobalsSet(idx uint, obj objects.IObject)
+	GlobalsGet(idx uint) (objects.IObject, error)
+	GlobalsSet(idx uint, obj objects.IObject) error
 }
 
 // IVMControlFlow defines an interface for managing instruction pointers and control flow within a virtual machine.

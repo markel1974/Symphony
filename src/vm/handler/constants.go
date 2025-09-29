@@ -8,21 +8,19 @@ import (
 
 // Constants is a structure that manages global objects and handles error signaling through a callback function.
 type Constants struct {
-	gk             objects.IGateKeeper
-	container      []objects.IObject
-	preInitFuncs   []*objects.Func
-	init           []*objects.Func
-	shutdownSignal func(err error)
+	gk           objects.IGateKeeper
+	container    []objects.IObject
+	preInitFuncs []*objects.Func
+	init         []*objects.Func
 }
 
 // NewConstants initializes and returns a new Constants instance with provided global objects and error signaling function.
-func NewConstants(gk objects.IGateKeeper, shutdownSignal func(err error)) *Constants {
+func NewConstants(gk objects.IGateKeeper) *Constants {
 	return &Constants{
-		gk:             gk,
-		container:      nil,
-		preInitFuncs:   []*objects.Func{},
-		init:           []*objects.Func{},
-		shutdownSignal: shutdownSignal,
+		gk:           gk,
+		container:    nil,
+		preInitFuncs: []*objects.Func{},
+		init:         []*objects.Func{},
 	}
 }
 
@@ -63,11 +61,10 @@ func (g *Constants) Retrieve(index uint) (objects.IObject, error) {
 }
 
 // Get retrieves a constant object by its index and returns a copy adjusted for the specified frame and maximum depth.
-func (g *Constants) Get(frameId int, index uint) objects.IObject {
+func (g *Constants) Get(frameId int, index uint) (objects.IObject, error) {
 	if index >= uint(len(g.container)) {
-		g.shutdownSignal(fmt.Errorf("invalid constant index: %d", index))
-		return g.gk.UndefinedValue()
+		return g.gk.UndefinedValue(), fmt.Errorf("invalid constant index: %d", index)
 	}
 	obj := g.container[index]
-	return obj.Copy(frameId, objects.MaxDepth)
+	return obj.Copy(frameId, objects.MaxDepth), nil
 }

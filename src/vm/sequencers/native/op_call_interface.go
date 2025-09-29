@@ -48,7 +48,11 @@ func (op *OpCallInterface) Execute(decoder *handler.Decoder) {
 	methodNameIndex := decoder.Operand(0)
 	spread := decoder.Operand(1)
 	numArgs := decoder.Operand(2)
-	methodNameObj := op.vm.ConstantsGet(uint(methodNameIndex))
+	methodNameObj, err := op.vm.ConstantsGet(uint(methodNameIndex))
+	if err != nil {
+		op.vm.Shutdown(err)
+		return
+	}
 	offset := numArgs + 1
 	interfaceObj := op.vm.StackPeekSP(uint(offset))
 	io, ok := interfaceObj.(*objects.Interface)

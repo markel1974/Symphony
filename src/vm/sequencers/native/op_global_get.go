@@ -47,7 +47,11 @@ func (op *OpGlobalGet) Bind(vm handler.IVM) error {
 // Execute retrieves a global object using its index, pushes it onto the stack, and advances the instruction pointer.
 func (op *OpGlobalGet) Execute(decoder *handler.Decoder) {
 	index := decoder.Operand(0)
-	obj := op.vm.GlobalsGet(uint(index))
+	obj, err := op.vm.GlobalsGet(uint(index))
+	if err != nil {
+		op.vm.Shutdown(err)
+		return
+	}
 	op.vm.StackPush(obj)
 }
 

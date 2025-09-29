@@ -46,7 +46,11 @@ func (op *OpConstant) Bind(vm handler.IVM) error {
 // Execute executes the OpConstant instruction in the virtual machine, pushing a global constant onto the stack.
 func (op *OpConstant) Execute(decoder *handler.Decoder) {
 	cIdx := decoder.Operand(0)
-	glObj := op.vm.ConstantsGet(uint(cIdx))
+	glObj, err := op.vm.ConstantsGet(uint(cIdx))
+	if err != nil {
+		op.vm.Shutdown(err)
+		return
+	}
 	op.vm.StackPush(glObj)
 }
 

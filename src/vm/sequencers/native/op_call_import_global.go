@@ -59,27 +59,58 @@ func (op *OpCallImportGlobal) Bind(vm handler.IVM) error {
 func (op *OpCallImportGlobal) Execute(decoder *handler.Decoder) {
 	funcImportIndex := decoder.Operand(0)
 	numArgs := decoder.Operand(1)
-	callee := op.vm.ImportsGet(uint(funcImportIndex))
+	callee, err := op.vm.ImportsGet(uint(funcImportIndex))
+	if err != nil {
+		op.vm.Shutdown(err)
+		return
+	}
 	switch numArgs {
 	case 0:
 		op.vm.CallObject(callee, 0)
 	case 1:
-		i2 := op.vm.GlobalsGet(uint(decoder.Operand(2)))
+		var i2 objects.IObject
+		if i2, err = op.vm.GlobalsGet(uint(decoder.Operand(2))); err != nil {
+			op.vm.Shutdown(err)
+			return
+		}
 		op.vm.CallObject(callee, numArgs, i2)
 	case 2:
-		i2 := op.vm.GlobalsGet(uint(decoder.Operand(2)))
-		i3 := op.vm.GlobalsGet(uint(decoder.Operand(3)))
+		var i2 objects.IObject
+		var i3 objects.IObject
+		if i2, err = op.vm.GlobalsGet(uint(decoder.Operand(2))); err != nil {
+			op.vm.Shutdown(err)
+			return
+		}
+		if i3, err = op.vm.GlobalsGet(uint(decoder.Operand(3))); err != nil {
+			op.vm.Shutdown(err)
+			return
+		}
 		op.vm.CallObject(callee, numArgs, i2, i3)
 	case 3:
-		i2 := op.vm.GlobalsGet(uint(decoder.Operand(2)))
-		i3 := op.vm.GlobalsGet(uint(decoder.Operand(3)))
-		i4 := op.vm.GlobalsGet(uint(decoder.Operand(4)))
+		var i2 objects.IObject
+		var i3 objects.IObject
+		var i4 objects.IObject
+		if i2, err = op.vm.GlobalsGet(uint(decoder.Operand(2))); err != nil {
+			op.vm.Shutdown(err)
+			return
+		}
+		if i3, err = op.vm.GlobalsGet(uint(decoder.Operand(3))); err != nil {
+			op.vm.Shutdown(err)
+			return
+		}
+		if i4, err = op.vm.GlobalsGet(uint(decoder.Operand(4))); err != nil {
+			op.vm.Shutdown(err)
+			return
+		}
 		op.vm.CallObject(callee, numArgs, i2, i3, i4)
 	default:
 		args := make([]objects.IObject, numArgs)
 		for i := 0; i < numArgs; i++ {
 			globalIndex := uint(decoder.Operand(2 + i))
-			args[i] = op.vm.GlobalsGet(globalIndex)
+			if args[i], err = op.vm.GlobalsGet(globalIndex); err != nil {
+				op.vm.Shutdown(err)
+				return
+			}
 		}
 		op.vm.CallObject(callee, len(args), args...)
 	}
