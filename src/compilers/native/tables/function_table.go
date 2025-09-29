@@ -115,7 +115,7 @@ func (f *FunctionTable) SymbolsFromFields(fieldList *ast.FieldList) ([]*Symbol, 
 			if err != nil {
 				return nil, err
 			}
-			if err = f.definitionTable.SymbolAssign(symbol, typeName); err != nil {
+			if err = f.definitionTable.Assign(symbol, typeName); err != nil {
 				return nil, err
 			}
 			symbols = append(symbols, symbol)
@@ -158,7 +158,7 @@ func (f *FunctionTable) RangeValue(node *ast.RangeStmt, typeName string) (*Symbo
 		if err != nil {
 			return nil, err
 		}
-		if err = f.definitionTable.SymbolAssign(symbol, typeName); err != nil {
+		if err = f.definitionTable.Assign(symbol, typeName); err != nil {
 			return nil, err
 		}
 		return symbol, nil

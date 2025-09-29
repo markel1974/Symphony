@@ -29,36 +29,36 @@ func NewDefinitionTable(gk objects.IGateKeeper, scopes *Scopes) *DefinitionTable
 	}
 }
 
-// SymbolAssign assigns a type or interface to the given symbol based on its presence in the interface or struct table.
-func (f *DefinitionTable) SymbolAssign(symbol *Symbol, typeName string) error {
+// Assign assigns a type or interface to the given symbol based on its presence in the interface or struct table.
+func (f *DefinitionTable) Assign(symbol *Symbol, typeName string) error {
 	isInterface := f.interfaceTable.Has(typeName)
 	if isInterface {
-		f.SymbolInterfaceAssign(symbol, typeName)
+		f.InterfaceAssign(symbol, typeName)
 	} else {
-		f.SymbolTypeAssign(symbol, typeName)
+		f.TypeAssign(symbol, typeName)
 	}
 	return nil
 }
 
-// SymbolInferAssign assigns a type to a symbol by inferring the type from the provided expression or using the given type name.
-func (f *DefinitionTable) SymbolInferAssign(symbol *Symbol, inferredTypeName string, rhsIn ast.Expr) {
+// InferAssign assigns a type to a symbol by inferring the type from the provided expression or using the given type name.
+func (f *DefinitionTable) InferAssign(symbol *Symbol, inferredTypeName string, rhsIn ast.Expr) {
 	if len(inferredTypeName) == 0 {
 		if inferredTypeName, _ = f.TypeInference(rhsIn); len(inferredTypeName) == 0 {
 			return
 		}
 	}
-	f.SymbolTypeAssign(symbol, inferredTypeName)
+	f.TypeAssign(symbol, inferredTypeName)
 }
 
-// SymbolInterfaceAssign assigns an interface to the given symbol and configures its return types and related object.
-func (f *DefinitionTable) SymbolInterfaceAssign(symbol *Symbol, interfaceName string) {
+// InterfaceAssign assigns an interface to the given symbol and configures its return types and related object.
+func (f *DefinitionTable) InterfaceAssign(symbol *Symbol, interfaceName string) {
 	symbol.SetReturnTypes([]string{interfaceName})
 	symbol.SetInterface(interfaceName)
 	symbol.SetObject(f.gk.NewString(objects.FrameStatic, interfaceName+":"+symbol.Name()))
 }
 
-// SymbolTypeAssign assigns a type to the provided symbol, sets its return types, and binds it to a struct if applicable.
-func (f *DefinitionTable) SymbolTypeAssign(symbol *Symbol, typeName string) {
+// TypeAssign assigns a type to the provided symbol, sets its return types, and binds it to a struct if applicable.
+func (f *DefinitionTable) TypeAssign(symbol *Symbol, typeName string) {
 	symbol.SetReturnTypes([]string{typeName})
 	symbol.SetObject(f.gk.NewString(objects.FrameStatic, typeName+":"+symbol.Name()))
 	//assign struct if present in struct table

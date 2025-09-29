@@ -296,10 +296,7 @@ func (c *ControlFlow) TypeSwitchStmt(node *ast.TypeSwitchStmt) error {
 		if err != nil {
 			return err
 		}
-		c.definitionTable.SymbolTypeAssign(caseVarSymbol, targetTypeName)
-		//caseVarSymbol.SetReturnTypes([]string{targetTypeName})
-		//caseVarSymbol.SetObject(c.gk.NewString(objects.FrameStatic, targetTypeName+":"+caseVarSymbol.Name()))
-		//c.structTable.BindSymbol(caseVarSymbol, targetTypeName)
+		c.definitionTable.TypeAssign(caseVarSymbol, targetTypeName)
 
 		if err = c.scopes.EmitSymbolSetAndPop(node.Pos(), caseVarSymbol); err != nil {
 			return err

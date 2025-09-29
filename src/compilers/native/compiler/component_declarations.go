@@ -181,7 +181,7 @@ func (c *Declarations) ValueSpec(node *ast.ValueSpec) error {
 			}
 
 			if definedSymbol != nil && definedSymbol.IsStruct() {
-				c.definitionTable.SymbolTypeAssign(symbol, definedSymbol.StructName())
+				c.definitionTable.TypeAssign(symbol, definedSymbol.StructName())
 			} else if definedSymbol != nil && definedSymbol.IsInterface() {
 				inferredTypeName, _ := c.definitionTable.TypeInference(node.Values[i])
 				if len(inferredTypeName) == 0 {
@@ -195,7 +195,7 @@ func (c *Declarations) ValueSpec(node *ast.ValueSpec) error {
 					return tables.NewCompilerError(c.fileSet, node, err.Error())
 				}
 			} else if inferredTypeName, _ := c.definitionTable.TypeInference(node.Values[i]); len(inferredTypeName) > 0 {
-				c.definitionTable.SymbolTypeAssign(symbol, inferredTypeName)
+				c.definitionTable.TypeAssign(symbol, inferredTypeName)
 			} else {
 				symbol.SetObject(c.gk.NewString(objects.FrameStatic, symbol.Name()))
 			}
@@ -235,9 +235,9 @@ func (c *Declarations) ValueSpec(node *ast.ValueSpec) error {
 		if typeIdent := tables.GetIdent(node.Type); typeIdent != nil {
 			if typeSymbol, ok := c.scopes.SymbolResolve(typeIdent.Name); ok {
 				if typeSymbol.IsInterface() {
-					c.definitionTable.SymbolInterfaceAssign(symbol, typeIdent.Name)
+					c.definitionTable.InterfaceAssign(symbol, typeIdent.Name)
 				} else if typeSymbol.IsStruct() {
-					c.definitionTable.SymbolTypeAssign(symbol, typeIdent.Name)
+					c.definitionTable.TypeAssign(symbol, typeIdent.Name)
 				}
 			}
 		}
@@ -424,7 +424,7 @@ func (c *Declarations) CompositeLit(node *ast.CompositeLit) error {
 		if err != nil {
 			return tables.NewCompilerError(c.fileSet, node, fmt.Sprintf("can't resolve struct name %s: %s", structName, err.Error()))
 		}
-		c.definitionTable.SymbolTypeAssign(symbol, structName)
+		c.definitionTable.TypeAssign(symbol, structName)
 		structFields, err := c.definitionTable.StructFieldsFromLiteral(structName, node.Elts)
 		if err != nil {
 			return err
@@ -633,7 +633,7 @@ func (c *Declarations) handleVariableAssign(pos token.Pos, tok token.Token, rhsI
 				return err
 			}
 			//must be a concrete value
-			c.definitionTable.SymbolInferAssign(symbol, inferredTypeName, rhsIn)
+			c.definitionTable.InferAssign(symbol, inferredTypeName, rhsIn)
 			if err = c.scopes.EmitSymbolDefineAndPop(pos, symbol); err != nil {
 				return err
 			}
@@ -657,7 +657,7 @@ func (c *Declarations) handleVariableAssign(pos token.Pos, tok token.Token, rhsI
 					}
 				}
 			} else {
-				c.definitionTable.SymbolInferAssign(symbol, inferredTypeName, rhsIn)
+				c.definitionTable.InferAssign(symbol, inferredTypeName, rhsIn)
 			}
 			if err := c.scopes.EmitSymbolSetAndPop(pos, symbol); err != nil {
 				return err
