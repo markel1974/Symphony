@@ -146,7 +146,7 @@ func (f *DefinitionTable) TypeInference(expr ast.Expr) (string, bool) {
 			ret = ident.Name
 		}
 	case *ast.CallExpr: // es. NewStruct()
-		if ident, ok := rhs.Fun.(*ast.Ident); ok {
+		if ident := GetIdent(rhs.Fun); ident != nil {
 			if funcSymbol, ok := f.scopes.SymbolResolve(ident.Name); ok && len(funcSymbol.ReturnTypes()) > 0 {
 				// We assume the first return type
 				returnType := funcSymbol.ReturnTypes()[0]
@@ -159,7 +159,7 @@ func (f *DefinitionTable) TypeInference(expr ast.Expr) (string, bool) {
 	case *ast.UnaryExpr: // es. &MyStruct{}
 		if rhs.Op == token.AND {
 			if compLit, ok := rhs.X.(*ast.CompositeLit); ok {
-				if ident, ok := compLit.Type.(*ast.Ident); ok {
+				if ident := GetIdent(compLit.Type); ident != nil {
 					if returnSymbol, ok := f.scopes.SymbolResolve(ident.Name); ok && returnSymbol.IsStruct() {
 						ret = returnSymbol.Name()
 					}
@@ -167,9 +167,10 @@ func (f *DefinitionTable) TypeInference(expr ast.Expr) (string, bool) {
 			}
 		}
 	case *ast.TypeAssertExpr:
-		targetTypeName := rhs.Type.(*ast.Ident).Name
-		if returnSymbol, ok := f.scopes.SymbolResolve(targetTypeName); ok && returnSymbol.IsStruct() {
-			ret = returnSymbol.Name()
+		if ident := GetIdent(rhs.Type); ident != nil {
+			if returnSymbol, ok := f.scopes.SymbolResolve(ident.Name); ok && returnSymbol.IsStruct() {
+				ret = returnSymbol.Name()
+			}
 		}
 	}
 	if len(ret) == 0 {
