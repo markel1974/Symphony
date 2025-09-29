@@ -110,6 +110,7 @@ type IGateConverter interface {
 
 	FromBoolError(val bool, err error) (IObject, error)
 	FromInterface(frame int, in interface{}) IObject
+	FromArrayInterfaces(frame int, in []interface{}) []IObject
 	StructFromMap(frame int, name string, v map[string]interface{}) IObject
 	ToAny(frame int, i interface{}) IObject
 	FromAny(obj IObject) (interface{}, error)

@@ -240,6 +240,20 @@ func (gc *GateConverter) FromInterface(frame int, in interface{}) IObject {
 	}
 }
 
+// FromArrayInterfaces converts a slice of interface{} into a slice of IObject using the specified frame for context.
+func (gc *GateConverter) FromArrayInterfaces(frame int, in []interface{}) []IObject {
+	if len(in) == 0 {
+		return nil
+	}
+	argsObj := make([]IObject, len(in))
+	for idx, arg := range in {
+		argObj := gc.gk.FromInterface(frame, arg)
+		argsObj[idx] = argObj
+	}
+	return argsObj
+
+}
+
 // CreateObjectMap converts a map of string-interface pairs into a map of string-IObject pairs using the provided frame.
 func (gc *GateConverter) createObjectMap(frame int, v map[string]interface{}) map[string]IObject {
 	kv := make(map[string]IObject)

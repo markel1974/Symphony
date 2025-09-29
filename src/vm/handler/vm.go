@@ -11,8 +11,12 @@ import (
 
 const version = "0.1"
 
+type Error struct {
+	error
+	id uint
+}
+
 type VM struct {
-	rootCore  *Core
 	gk        objects.IGateKeeper
 	seq       ISequencer
 	op        opcodes.IOpcodes
@@ -21,8 +25,10 @@ type VM struct {
 	constants *Constants
 	globals   *Globals
 	retValues bool
-	err       error
+	coreError *Error
 	shutdown  bool
+	rootCore  *Core
+	cores     []*Core
 }
 
 func NewVM(gk objects.IGateKeeper, seq ISequencer, op opcodes.IOpcodes) *VM {
@@ -30,7 +36,7 @@ func NewVM(gk objects.IGateKeeper, seq ISequencer, op opcodes.IOpcodes) *VM {
 		seq:       seq,
 		gk:        gk,
 		op:        op,
-		err:       nil,
+		coreError: nil,
 		retValues: false,
 	}
 	v.imports = NewImports(gk, v.shutdownAll)
@@ -74,7 +80,7 @@ func (v *VM) Setup(loader bytecode.ILoader, codes ...*bytecode.Bytecode) (map[st
 	if err != nil {
 		return nil, err
 	}
-	v.rootCore = NewCore(v.gk, 0, v.shutdownCore)
+	v.rootCore = NewCore(v.gk, 0, v.coreShutdown, v.coreCreate)
 	if err = v.rootCore.Setup(v.imports, v.constants, v.globals, v.seq); err != nil {
 		return nil, err
 	}
@@ -132,18 +138,28 @@ func (v *VM) Run(mainId uint, args ...interface{}) ([]interface{}, error) {
 // Run executes the virtual machine's bytecode, managing the stack, frames, and instruction pointer state.
 func (v *VM) exec(mainFn *objects.Func, ret bool, args ...interface{}) ([]interface{}, error) {
 	v.shutdown = false
-	v.err = nil
-	if err := v.rootCore.Initialize(mainFn, args...); err != nil {
+	v.coreError = nil
+	v.cores = []*Core{v.rootCore}
+	argsObj := v.gk.FromArrayInterfaces(objects.FrameStatic, args)
+	if err := v.rootCore.Initialize(mainFn, argsObj); err != nil {
 		return nil, err
 	}
 	for v.shutdown == false {
-		v.rootCore.Execute()
+		for _, core := range v.cores {
+			core.Execute()
+		}
 	}
-	v.rootCore.Finalize()
-	if v.err != nil {
-		filePos, _ := v.bc.Position(v.rootCore.SourcePos())
-		err := fmt.Errorf("%w at %s", v.err, filePos)
-		for _, frame := range v.rootCore.FramesUnroll() {
+	for _, core := range v.cores {
+		core.Finalize()
+	}
+	if v.coreError != nil {
+		if v.coreError.id >= uint(len(v.cores)) {
+			return nil, fmt.Errorf("invalid core index: %d", v.coreError.id)
+		}
+		core := v.cores[v.coreError.id]
+		filePos, _ := v.bc.Position(core.SourcePos())
+		err := fmt.Errorf("%w at %s", v.coreError, filePos)
+		for _, frame := range core.FramesUnroll() {
 			filePos, _ = v.bc.Position(frame.SourcePos(int(frame.SavedIP()) - 1))
 			err = fmt.Errorf("%w at %s", err, filePos)
 		}
@@ -155,20 +171,43 @@ func (v *VM) exec(mainFn *objects.Func, ret bool, args ...interface{}) ([]interf
 	return nil, nil
 }
 
-// ShutdownGlobal sets the virtual machine's error state and initiates a global shutdown sequence.
-func (v *VM) shutdownAll(err error) {
-	v.err = err
-	v.shutdown = true
+// coreCreate initializes and adds a new Core instance to the VM, setting it up and handling errors during initialization.
+func (v *VM) coreCreate(id uint, callee *objects.Func, args []objects.IObject) {
+	core := NewCore(v.gk, uint(len(v.cores)), v.coreShutdown, v.coreCreate)
+	if err := core.Setup(v.imports, v.constants, v.globals, v.seq); err != nil {
+		v.coreShutdown(id, err)
+		return
+	}
+	if err := core.Initialize(callee, args); err != nil {
+		v.coreShutdown(id, err)
+		return
+	}
+	v.cores = append(v.cores, core)
 }
 
 // Shutdown sets the error state and marks the virtual machine as shut down.
-func (v *VM) shutdownCore(idx int, err error) {
+func (v *VM) coreShutdown(id uint, err error) {
 	if err != nil {
 		v.shutdown = true
-		v.err = err
+		v.coreError = &Error{err, id}
 		return
 	}
-	if idx == 0 {
+	if id == 0 {
 		v.shutdown = true
+		return
+	}
+	if id >= uint(len(v.cores)) {
+		v.shutdown = true
+		v.coreError = &Error{fmt.Errorf("invalid core index: %d", id), id}
+		return
+	}
+	v.cores = append(v.cores[:id], v.cores[id+1:]...)
+}
+
+// ShutdownGlobal sets the virtual machine's error state and initiates a global shutdown sequence.
+func (v *VM) shutdownAll(err error) {
+	v.shutdown = true
+	if err != nil {
+		v.coreError = &Error{err, 0}
 	}
 }

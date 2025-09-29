@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/markel1974/c64emu/src/vm/objects"
-	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
 
 // resetIp is the instruction pointer value used to reset the Core's instruction pointer to the beginning of the main function.'
@@ -24,9 +23,9 @@ const (
 // Core represents a virtual machine that executes bytecode instructions, handles stack, and manages execution frames.
 type Core struct {
 	gk                objects.IGateKeeper
-	id                int
-	op                opcodes.IOpcodes
-	shutdownSignal    func(id int, err error)
+	id                uint
+	shutdownSignal    func(id uint, err error)
+	createCoreSignal  func(id uint, callee *objects.Func, args []objects.IObject)
 	stack             *Stack
 	frames            *Frames
 	currFrame         *Frame
@@ -38,25 +37,30 @@ type Core struct {
 	globals           *Globals
 	counterStart      uint64
 	counterIterations uint64
-	seq               ISequencer
 }
 
 // NewCore initializes and returns a new virtual machine instance configured with the provided components and settings.
-func NewCore(gk objects.IGateKeeper, id int, shutdownSignal func(id int, err error)) *Core {
+func NewCore(gk objects.IGateKeeper, id uint, shutdownSignal func(id uint, err error), createCoreSignal func(id uint, callee *objects.Func, args []objects.IObject)) *Core {
 	v := &Core{
-		gk:             gk,
-		id:             id,
-		shutdownSignal: shutdownSignal,
-		ip:             resetIp,
+		gk:               gk,
+		id:               id,
+		shutdownSignal:   shutdownSignal,
+		createCoreSignal: createCoreSignal,
+		ip:               resetIp,
 	}
 	v.stack = NewStack(gk, stackSize, v.Shutdown)
 	v.frames = NewFrames(gk, maxFrames, v.Shutdown)
 	return v
 }
 
-// Version returns the current version of the Core as an integer.
+// Version returns the current version number of the Core instance as an integer.
 func (v *Core) Version() int {
 	return 1
+}
+
+// Id returns the unique identifier of the Core instance.
+func (v *Core) Id() uint {
+	return v.id
 }
 
 // Setup initializes the virtual machine with the provided bytecode and loader components.
@@ -238,21 +242,6 @@ func (v *Core) FrameFreeVarsIndex(index uint) *objects.ObjectPointer {
 	return v.currFrame.FreeVarsIndex(index)
 }
 
-// Constants returns a pointer to the Constants associated with the Core instance.
-func (v *Core) Constants() *Constants {
-	return v.constants
-}
-
-// Globals returns the global variables associated with the Core instance.
-func (v *Core) Globals() *Globals {
-	return v.globals
-}
-
-// Imports return a pointer to the Imports object associated with the Core instance.
-func (v *Core) Imports() *Imports {
-	return v.imports
-}
-
 // Factory returns the IGateKeeper instance associated with the Core.
 func (v *Core) Factory() objects.IGateKeeper {
 	return v.gk
@@ -268,13 +257,8 @@ func (v *Core) GetIp() uint {
 	return v.ip
 }
 
-// CallAsync performs an asynchronous call on the provided IObject with optional argument spreading and a given argument count.
-func (v *Core) CallAsync(value objects.IObject, spread bool, numArgs int) {
-	v.Call(value, spread, numArgs)
-}
-
 // Call executes a function or method with the specified number of arguments and handles variadic functions if applicable.
-func (v *Core) Call(value objects.IObject, spread bool, numArgs int) {
+func (v *Core) Call(value objects.IObject, async bool, spread bool, numArgs int) {
 	if numArgs < 0 {
 		v.Shutdown(fmt.Errorf("invalid number of arguments: %d", numArgs))
 		return
@@ -315,10 +299,14 @@ func (v *Core) Call(value objects.IObject, spread bool, numArgs int) {
 				return
 			}
 		}
-		v.prepareForCall(ce, numArgs)
+		if async {
+			args := v.stack.PeekArray(uint(numArgs))
+			v.createCoreSignal(v.id, ce, args)
+		} else {
+			v.prepareForCall(ce, numArgs)
+		}
 	default:
-		var args []objects.IObject
-		args = append(args, v.stack.PeekArray(uint(numArgs))...)
+		args := v.stack.PeekArray(uint(numArgs))
 		v.CallObject(value, numArgs, args...)
 	}
 }
@@ -472,14 +460,11 @@ func (v *Core) Rewrite(id uint, jit *objects.FuncJit) {
 }
 
 // Initialize sets up the initial state of the virtual machine and prepares it to execute the given main function.
-func (v *Core) Initialize(mainFn *objects.Func, args ...interface{}) error {
+func (v *Core) Initialize(mainFn *objects.Func, args []objects.IObject) error {
 	v.ip = resetIp
 	v.gk.Reset()
 	v.stack.Reset()
 	v.frames.Reset()
-	//v.err = nil
-	//v.shutdown = false
-
 	v.currFrame = v.frames.Head()
 	v.currFrame.Bind(v.ip, mainFn, 0)
 	v.stack.SetStackPointer(uint(v.currFrame.NumLocals()))
@@ -487,8 +472,7 @@ func (v *Core) Initialize(mainFn *objects.Func, args ...interface{}) error {
 		return fmt.Errorf("[%s] wrong number of arguments provided: want=%d, got=%d", mainFn.Name(), v.currFrame.NumParameters(), len(args))
 	}
 	for idx, arg := range args {
-		argObj := v.gk.FromInterface(objects.FrameStatic, arg)
-		v.stack.SetAbsolute(uint(idx), argObj)
+		v.stack.SetAbsolute(uint(idx), arg)
 	}
 	v.counterIterations = 0
 	v.counterStart = uint64(time.Now().UnixMilli())
@@ -518,9 +502,6 @@ func (v *Core) Execute() {
 func (v *Core) prepareForCall(callee *objects.Func, numArgs int) *Frame {
 	// 1. Calculate the new basePointer safely, anchoring it to the caller's frame.
 	//	The new "floor" begins exactly where the caller's local variable space ends.
-
-	//TODO handle here async calle
-	//if callee.Async() {}
 	bp := v.currFrame.BasePointer() + v.currFrame.NumLocals()
 
 	v.stack.CopyOffset(uint(bp), uint(numArgs))

@@ -50,7 +50,7 @@ func (op *OpCall) Execute(decoder *handler.Decoder) {
 	hasSpread := spread > 0
 	offset := numArgs + 1
 	value := op.vm.StackPeekSP(uint(offset))
-	op.vm.Call(value, hasSpread, numArgs)
+	op.vm.Call(value, false, hasSpread, numArgs)
 }
 
 // Compile generates the compiled representation of the OpCall operation or returns an unimplemented error.

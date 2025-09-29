@@ -64,7 +64,7 @@ func (op *OpCallInterface) Execute(decoder *handler.Decoder) {
 	op.vm.StackSetSP(uint(offset), io.Value())
 	hasSpread := spread > 0
 	totalArgs := numArgs + 1 //receiver
-	op.vm.Call(callee, hasSpread, totalArgs)
+	op.vm.Call(callee, false, hasSpread, totalArgs)
 }
 
 // Compile generates the compiled representation of the OpCallInterface operation or returns an unimplemented error.

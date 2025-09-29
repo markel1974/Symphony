@@ -78,8 +78,7 @@ type IVMFullAccess interface {
 	IVMReadWrite
 	IVMControlFlow
 
-	Call(value objects.IObject, spread bool, numArgs int)
-	CallAsync(value objects.IObject, spread bool, numArgs int)
+	Call(value objects.IObject, async bool, spread bool, numArgs int)
 	CallObject(value objects.IObject, numArgs int, args ...objects.IObject)
 	Return(returnValues []objects.IObject)
 	Shutdown(err error)

@@ -133,10 +133,10 @@ func vmTest() {
 	//const prefix = "rt"
 	//const prefix = "simple3"
 	//const baseDir = "../src/compilers/native/stub/sources"
-	const prefix = "test_"
-	var args []interface{} = nil
-	//args := []interface{}{[]string{"os"}}
-	//const prefix = "mem_"
+	//const prefix = "test_"
+	//var args []interface{} = nil
+	args := []interface{}{[]string{"os"}}
+	const prefix = "mem_"
 	if err := stub.Launch(prefix, args, true); err != nil {
 		log.Fatal(err)
 	}

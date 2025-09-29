@@ -52,7 +52,7 @@ func (op *OpCallAsync) Execute(decoder *handler.Decoder) {
 	hasSpread := spread > 0
 	offset := numArgs + 1
 	value := op.vm.StackPeekSP(uint(offset))
-	op.vm.CallAsync(value, hasSpread, numArgs)
+	op.vm.Call(value, true, hasSpread, numArgs)
 }
 
 // Compile generates a bytecode sequence for the operation or signals it's unimplemented by returning an error.
