@@ -16,6 +16,13 @@ type Error struct {
 	id uint
 }
 
+func NewError(err error, id uint) *Error {
+	return &Error{
+		error: err,
+		id:    id,
+	}
+}
+
 type VM struct {
 	gk        objects.IGateKeeper
 	seq       ISequencer
@@ -25,9 +32,9 @@ type VM struct {
 	constants *Constants
 	globals   *Globals
 	retValues bool
-	coreError *Error
+	error     *Error
 	shutdown  bool
-	rootCore  *Core
+	mainCore  *Core
 	cores     []*Core
 }
 
@@ -36,7 +43,7 @@ func NewVM(gk objects.IGateKeeper, seq ISequencer, op opcodes.IOpcodes) *VM {
 		seq:       seq,
 		gk:        gk,
 		op:        op,
-		coreError: nil,
+		error:     nil,
 		retValues: false,
 	}
 	v.imports = NewImports(gk)
@@ -80,8 +87,8 @@ func (v *VM) Setup(loader bytecode.ILoader, codes ...*bytecode.Bytecode) (map[st
 	if err != nil {
 		return nil, err
 	}
-	v.rootCore = NewCore(v.gk, 0, v.coreShutdown, v.coreCreate)
-	if err = v.rootCore.Setup(v.imports, v.constants, v.globals, v.seq); err != nil {
+	v.mainCore = NewCore(v.gk, 0, v.coreShutdown, v.coreCreate)
+	if err = v.mainCore.Setup(v.imports, v.constants, v.globals, v.seq); err != nil {
 		return nil, err
 	}
 	for _, fn := range v.constants.PreInitFuncs() {
@@ -99,7 +106,7 @@ func (v *VM) Setup(loader bytecode.ILoader, codes ...*bytecode.Bytecode) (map[st
 
 // Statistics returns three uint64 values: start, allocated objects, and a counter from the Core instance.
 func (v *VM) Statistics() (uint64, uint64, uint64, uint64) {
-	return v.rootCore.Statistics()
+	return v.mainCore.Statistics()
 }
 
 // EnableRetValues sets the flag to enable or disable returning multiple values from the virtual machine's execution.
@@ -109,17 +116,17 @@ func (v *VM) EnableRetValues(retValues bool) {
 
 // Print prints the current state of the virtual machine's stack to the console.'
 func (v *VM) Print(writer io.Writer) {
-	v.rootCore.Print(writer)
+	v.mainCore.Print(writer)
 }
 
 // GetReturnValue returns the value from the top of the stack as an interface value.
 func (v *VM) GetReturnValue(idx int) interface{} {
-	return v.rootCore.GetReturnValue(idx)
+	return v.mainCore.GetReturnValue(idx)
 }
 
 // GetReturnValues returns the values from the top of the stack as an array of interface values.
 func (v *VM) GetReturnValues() []interface{} {
-	return v.rootCore.GetReturnValues()
+	return v.mainCore.GetReturnValues()
 }
 
 // Run executes the main function identified by mainId with the provided arguments in the virtual machine context.
@@ -138,10 +145,10 @@ func (v *VM) Run(mainId uint, args ...interface{}) ([]interface{}, error) {
 // Run executes the virtual machine's bytecode, managing the stack, frames, and instruction pointer state.
 func (v *VM) exec(mainFn *objects.Func, ret bool, args ...interface{}) ([]interface{}, error) {
 	v.shutdown = false
-	v.coreError = nil
-	v.cores = []*Core{v.rootCore}
+	v.error = nil
+	v.cores = []*Core{v.mainCore}
 	argsObj := v.gk.FromArrayInterfaces(objects.FrameStatic, args)
-	if err := v.rootCore.Initialize(mainFn, argsObj); err != nil {
+	if err := v.mainCore.Initialize(mainFn, argsObj); err != nil {
 		return nil, err
 	}
 	for v.shutdown == false {
@@ -152,13 +159,13 @@ func (v *VM) exec(mainFn *objects.Func, ret bool, args ...interface{}) ([]interf
 	for _, core := range v.cores {
 		core.Finalize()
 	}
-	if v.coreError != nil {
-		if v.coreError.id >= uint(len(v.cores)) {
-			return nil, fmt.Errorf("invalid core index: %d", v.coreError.id)
+	if v.error != nil {
+		if v.error.id >= uint(len(v.cores)) {
+			return nil, fmt.Errorf("invalid core index: %d", v.error.id)
 		}
-		core := v.cores[v.coreError.id]
+		core := v.cores[v.error.id]
 		filePos, _ := v.bc.Position(core.SourcePos())
-		err := fmt.Errorf("%w at %s", v.coreError, filePos)
+		err := fmt.Errorf("%w at %s", v.error, filePos)
 		for _, frame := range core.FramesUnroll() {
 			filePos, _ = v.bc.Position(frame.SourcePos(int(frame.SavedIP()) - 1))
 			err = fmt.Errorf("%w at %s", err, filePos)
@@ -189,7 +196,7 @@ func (v *VM) coreCreate(id uint, callee *objects.Func, args []objects.IObject) {
 func (v *VM) coreShutdown(id uint, err error) {
 	if err != nil {
 		v.shutdown = true
-		v.coreError = &Error{err, id}
+		v.error = NewError(err, id)
 		return
 	}
 	if id == 0 {
@@ -198,8 +205,10 @@ func (v *VM) coreShutdown(id uint, err error) {
 	}
 	if id >= uint(len(v.cores)) {
 		v.shutdown = true
-		v.coreError = &Error{fmt.Errorf("invalid core index: %d", id), id}
+		v.error = NewError(fmt.Errorf("invalid core index: %d", id), id)
 		return
 	}
+	core := v.cores[id]
+	core.Finalize()
 	v.cores = append(v.cores[:id], v.cores[id+1:]...)
 }
