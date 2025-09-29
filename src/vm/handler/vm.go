@@ -179,17 +179,17 @@ func (v *VM) exec(mainFn *objects.Func, ret bool, args ...interface{}) ([]interf
 }
 
 // coreCreate initializes and adds a new Core instance to the VM, setting it up and handling errors during initialization.
-func (v *VM) coreCreate(id uint, callee *objects.Func, args []objects.IObject) {
+func (v *VM) coreCreate(_ uint, callee *objects.Func, args []objects.IObject) {
 	core := NewCore(v.gk, uint(len(v.cores)), v.coreShutdown, v.coreCreate)
+	v.cores = append(v.cores, core)
 	if err := core.Setup(v.imports, v.constants, v.globals, v.seq); err != nil {
-		v.coreShutdown(id, err)
+		v.coreShutdown(core.Id(), err)
 		return
 	}
 	if err := core.Initialize(callee, args); err != nil {
-		v.coreShutdown(id, err)
+		v.coreShutdown(core.Id(), err)
 		return
 	}
-	v.cores = append(v.cores, core)
 }
 
 // Shutdown sets the error state and marks the virtual machine as shut down.
