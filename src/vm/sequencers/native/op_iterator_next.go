@@ -49,7 +49,7 @@ func (op *OpIteratorNext) Execute(decoder *handler.Decoder) {
 	itObj := op.vm.StackPeekBP(uint(stableIdx))
 	it, ok := itObj.(objects.IIterator)
 	if !ok {
-		op.vm.SetError(objects.ComputeIteratorError(objects.ErrNotIterator, itObj.TypeName()))
+		op.vm.Shutdown(objects.ComputeIteratorError(objects.ErrNotIterator, itObj.TypeName()))
 		return
 	}
 	if it.Next() {

@@ -23,16 +23,19 @@ func SequencerRegister(fn registerFunc) {
 
 // Sequencer is responsible for managing and resolving opcode executors within a virtual machine execution context.
 type Sequencer struct {
-	mask      int
-	executors []handler.IOpExecutor
-	unknownId opcodes.OpcodeId
+	mask            int
+	defaultExecutor []handler.IOpExecutor
+	unknown         handler.IOpExecutor
+	unknownId       opcodes.OpcodeId
 }
 
 // NewSequencer initializes and returns a new instance of the Sequencer struct.
 // It sets up opcode executors, calculates mask bits, and registers executors based on available opcodes.
 func NewSequencer() *Sequencer {
+	unknown := NewOpUnknown()
 	seq := &Sequencer{
-		unknownId: -1,
+		unknown:   unknown,
+		unknownId: unknown.Opcode().OpcodeId(),
 		mask:      0,
 	}
 	return seq
@@ -40,49 +43,37 @@ func NewSequencer() *Sequencer {
 
 // Setup initializes the Sequencer by registering and configuring opcode executors, ensuring no duplicate opcodes exist.
 func (ds *Sequencer) Setup() error {
-	var container []handler.IOpExecutor
 	maxId := -1
-	for _, fn := range _registerContainer {
+	container := make([]handler.IOpExecutor, len(_registerContainer))
+	for idx, fn := range _registerContainer {
 		executor := fn()
 		if opcodeId := executor.Opcode().OpcodeId(); opcodeId > maxId {
 			maxId = opcodeId
 		}
-		container = append(container, executor)
+		container[idx] = executor
 	}
 	maskBits := 0
 	for (1 << maskBits) <= maxId {
 		maskBits++
 	}
-	unknown := NewOpUnknown()
-	ds.unknownId = unknown.Opcode().OpcodeId()
 	ds.mask = (1 << maskBits) - 1
-	ds.executors = make([]handler.IOpExecutor, ds.mask+1)
-	for idx := range ds.executors {
-		ds.executors[idx] = unknown
+	ds.defaultExecutor = make([]handler.IOpExecutor, ds.mask+1)
+	for idx := range ds.defaultExecutor {
+		ds.defaultExecutor[idx] = ds.unknown
 	}
 	for _, executor := range container {
-		target := ds.executors[executor.Opcode().OpcodeId()]
+		target := ds.defaultExecutor[executor.Opcode().OpcodeId()]
 		if target.Opcode().OpcodeId() != OpUnknownId {
 			return fmt.Errorf("duplicate opcode registration: %s", target.Opcode().Name())
 		}
-		ds.executors[executor.Opcode().OpcodeId()] = executor
-	}
-	return nil
-}
-
-// Bind links all opcode executors within the Sequencer to the provided virtual machine instance, returning an error if any fail.
-func (ds *Sequencer) Bind(vm *handler.Core) error {
-	for _, executor := range ds.executors {
-		if err := executor.Bind(vm); err != nil {
-			return err
-		}
+		ds.defaultExecutor[executor.Opcode().OpcodeId()] = executor
 	}
 	return nil
 }
 
 // Opcode retrieves the Opcode instance corresponding to the given opcodeId from the Sequencer's executors list.
 func (ds *Sequencer) Opcode(opcodeId opcodes.OpcodeId) *opcodes.Opcode {
-	return ds.executors[opcodeId&ds.mask].Opcode()
+	return ds.defaultExecutor[opcodeId&ds.mask].Opcode()
 }
 
 // Bytecode generates a bytecode representation for a given opcode and its operands, or returns an error if compilation fails.
@@ -105,12 +96,20 @@ func (ds *Sequencer) Mask() int {
 
 // Len returns the total number of executors available in the Sequencer.
 func (ds *Sequencer) Len() int {
-	return len(ds.executors)
+	return len(ds.defaultExecutor)
 }
 
-// Executors returns the slice of IOpExecutor instances managed by the Sequencer.
-func (ds *Sequencer) Executors() []handler.IOpExecutor {
-	return ds.executors
+// Executors retrieves a list of opcode executors and the bitmask used to index them in the Sequencer.
+func (ds *Sequencer) Executors() ([]handler.IOpExecutor, int) {
+	executors := make([]handler.IOpExecutor, len(ds.defaultExecutor))
+	for idx := range executors {
+		executors[idx] = ds.unknown
+	}
+	for _, fn := range _registerContainer {
+		executor := fn()
+		executors[executor.Opcode().OpcodeId()] = executor
+	}
+	return executors, ds.mask
 }
 
 // Id returns the identifier string for the Sequencer instance, typically used to describe its type or implementation.

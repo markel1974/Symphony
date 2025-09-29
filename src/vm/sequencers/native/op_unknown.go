@@ -45,7 +45,7 @@ func (op *OpUnknown) Bind(vm handler.IVM) error {
 
 // Execute handles the execution of an unknown opcode, sets an error state, and stops the virtual machine.
 func (op *OpUnknown) Execute(_ *handler.Decoder) {
-	op.vm.SetError(fmt.Errorf("unknown opcode at: %d", op.vm.GetIp()))
+	op.vm.Shutdown(fmt.Errorf("unknown opcode at: %d", op.vm.GetIp()))
 }
 
 // Compile generates the compiled representation of the OpUnknown operation or returns an unimplemented error.

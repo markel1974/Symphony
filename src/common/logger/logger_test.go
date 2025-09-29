@@ -10,7 +10,7 @@ func TestSetLogSeverity(t *testing.T) {
 		severity int
 	}{
 		{name: "SetFatal", severity: LogFatal},
-		{name: "SetError", severity: LogError},
+		{name: "Shutdown", severity: LogError},
 		{name: "SetInfo", severity: LogInfo},
 		{name: "SetWarning", severity: LogWarning},
 		{name: "SetDebug", severity: LogDebug},

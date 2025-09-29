@@ -52,7 +52,7 @@ func (op *OpIndexSet) Execute(_ *handler.Decoder) {
 	index := op.vm.StackPop()
 	container := op.vm.StackPop()
 	if err := container.IndexSet(index, value); err != nil {
-		op.vm.SetError(objects.ComputeIndexSetError(err, container.TypeName(), index.TypeName()))
+		op.vm.Shutdown(objects.ComputeIndexSetError(err, container.TypeName(), index.TypeName()))
 		return
 	}
 }

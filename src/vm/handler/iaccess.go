@@ -43,7 +43,7 @@ type IVMStackOnly interface {
 	CreateSlice(highIdx int, lowIdx int, targetObj objects.IObject) objects.IObject
 
 	Factory() objects.IGateKeeper
-	SetError(err error)
+	Shutdown(err error)
 }
 
 // IVMReadOnly is an interface providing read-only access to Core components like constants, globals, imports, and frame.
@@ -82,5 +82,5 @@ type IVMFullAccess interface {
 	CallAsync(value objects.IObject, spread bool, numArgs int)
 	CallObject(value objects.IObject, numArgs int, args ...objects.IObject)
 	Return(returnValues []objects.IObject)
-	Shutdown()
+	Shutdown(err error)
 }

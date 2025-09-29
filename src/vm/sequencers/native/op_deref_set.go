@@ -50,11 +50,11 @@ func (op *OpDerefSet) Execute(_ *handler.Decoder) {
 	valueToSet := op.vm.StackPop()
 	ptr, ok := pointerObj.(*objects.ObjectPointer)
 	if !ok {
-		op.vm.SetError(fmt.Errorf("invalid operation: cannot assign to a non-pointer type %s", pointerObj.TypeName()))
+		op.vm.Shutdown(fmt.Errorf("invalid operation: cannot assign to a non-pointer type %s", pointerObj.TypeName()))
 		return
 	}
 	if err := ptr.AssignValue(valueToSet); err != nil {
-		op.vm.SetError(err)
+		op.vm.Shutdown(err)
 		return
 	}
 	op.vm.StackPush(valueToSet)

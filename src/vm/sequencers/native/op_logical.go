@@ -53,7 +53,7 @@ func (op *OpLogical) Execute(decoder *handler.Decoder) {
 	operator := objects.LogicalOperator(opcode)
 	res, err := lhs.LogicalOp(op.vm.FrameId(), operator, rhs)
 	if err != nil {
-		op.vm.SetError(err)
+		op.vm.Shutdown(err)
 		return
 	}
 	op.vm.StackPush(res)

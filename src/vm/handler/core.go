@@ -24,8 +24,9 @@ const (
 // Core represents a virtual machine that executes bytecode instructions, handles stack, and manages execution frames.
 type Core struct {
 	gk                objects.IGateKeeper
+	id                int
 	op                opcodes.IOpcodes
-	errSignal         func(err error)
+	shutdownSignal    func(id int, err error)
 	stack             *Stack
 	frames            *Frames
 	currFrame         *Frame
@@ -37,17 +38,19 @@ type Core struct {
 	globals           *Globals
 	counterStart      uint64
 	counterIterations uint64
+	seq               ISequencer
 }
 
 // NewCore initializes and returns a new virtual machine instance configured with the provided components and settings.
-func NewCore(gk objects.IGateKeeper, errSignal func(err error)) *Core {
+func NewCore(gk objects.IGateKeeper, id int, shutdownSignal func(id int, err error)) *Core {
 	v := &Core{
-		errSignal: errSignal,
-		gk:        gk,
-		ip:        resetIp,
+		gk:             gk,
+		id:             id,
+		shutdownSignal: shutdownSignal,
+		ip:             resetIp,
 	}
-	v.stack = NewStack(gk, stackSize, errSignal)
-	v.frames = NewFrames(gk, maxFrames, errSignal)
+	v.stack = NewStack(gk, stackSize, v.Shutdown)
+	v.frames = NewFrames(gk, maxFrames, v.Shutdown)
 	return v
 }
 
@@ -57,24 +60,35 @@ func (v *Core) Version() int {
 }
 
 // Setup initializes the virtual machine with the provided bytecode and loader components.
-func (v *Core) Setup(imports *Imports, constants *Constants, globals *Globals, sequencer []*Decoder, sequencerMask int) error {
+func (v *Core) Setup(imports *Imports, constants *Constants, globals *Globals, seq ISequencer) error {
+	executors, mask := seq.Executors()
+	v.sequencerMask = mask
+	v.sequencer = make([]*Decoder, len(executors))
+	for i, s := range executors {
+		err := s.Bind(v)
+		if err != nil {
+			return err
+		}
+		if v.sequencer[i], err = NewDecoder(s); err != nil {
+			return err
+		}
+	}
 	v.imports = imports
 	v.constants = constants
 	v.globals = globals
-	v.sequencer = sequencer
-	v.sequencerMask = sequencerMask
 	return nil
 }
 
-func (v *Core) SetError(err error) {
-	v.errSignal(err)
+// Shutdown gracefully terminates the execution of the Core, signaling an error if provided.
+func (v *Core) Shutdown(err error) {
+	v.shutdownSignal(v.id, err)
 }
 
 // CreateObjectPointer creates an object pointer within the current frame and returns it, or an undefined value if an error occurs.
 func (v *Core) CreateObjectPointer(obj objects.IObject) objects.IObject {
 	freeObjPtr, err := v.Factory().CreateObjectPointer(v.currFrame.Id(), obj)
 	if err != nil {
-		v.errSignal(err)
+		v.Shutdown(err)
 		return v.gk.UndefinedValue()
 	}
 	return freeObjPtr
@@ -84,11 +98,11 @@ func (v *Core) CreateObjectPointer(obj objects.IObject) objects.IObject {
 func (v *Core) CreateClosure(fn *objects.Func, objRequired []objects.IObject) objects.IObject {
 	cl, ok := fn.Copy(v.currFrame.Id(), 0).(*objects.Func)
 	if !ok {
-		v.errSignal(fmt.Errorf("not a function: %s", fn.TypeName()))
+		v.Shutdown(fmt.Errorf("not a function: %s", fn.TypeName()))
 		return v.gk.UndefinedValue()
 	}
 	if err := cl.FreeSet(v.currFrame.Id(), objRequired); err != nil {
-		v.errSignal(err)
+		v.Shutdown(err)
 		return v.gk.UndefinedValue()
 	}
 	return cl
@@ -105,7 +119,7 @@ func (v *Core) CreateError(src objects.IObject) objects.IObject {
 func (v *Core) CreateSlice(highIdx int, lowIdx int, targetObj objects.IObject) objects.IObject {
 	ret, err := v.Factory().CreateSlice(v.currFrame.Id(), highIdx, lowIdx, targetObj)
 	if err != nil {
-		v.errSignal(err)
+		v.Shutdown(err)
 		return v.gk.UndefinedValue()
 	}
 	return ret
@@ -262,7 +276,7 @@ func (v *Core) CallAsync(value objects.IObject, spread bool, numArgs int) {
 // Call executes a function or method with the specified number of arguments and handles variadic functions if applicable.
 func (v *Core) Call(value objects.IObject, spread bool, numArgs int) {
 	if numArgs < 0 {
-		v.errSignal(fmt.Errorf("invalid number of arguments: %d", numArgs))
+		v.Shutdown(fmt.Errorf("invalid number of arguments: %d", numArgs))
 		return
 	}
 
@@ -273,7 +287,7 @@ func (v *Core) Call(value objects.IObject, spread bool, numArgs int) {
 		case *objects.Array:
 			args = z.Values()
 		default:
-			v.errSignal(fmt.Errorf("unexpected type (array required): %s", obj.TypeName()))
+			v.Shutdown(fmt.Errorf("unexpected type (array required): %s", obj.TypeName()))
 			return
 		}
 		if argsLen := len(args); argsLen > 0 {
@@ -297,7 +311,7 @@ func (v *Core) Call(value objects.IObject, spread bool, numArgs int) {
 			}
 		} else {
 			if np := ce.NumParameters(); numArgs != np {
-				v.errSignal(fmt.Errorf("%s invalid arguments [vargs: %v] : want>=%d, got=%d", ce.Name(), ce.VarArgs(), np, numArgs))
+				v.Shutdown(fmt.Errorf("%s invalid arguments [vargs: %v] : want>=%d, got=%d", ce.Name(), ce.VarArgs(), np, numArgs))
 				return
 			}
 		}
@@ -314,7 +328,7 @@ func (v *Core) CallObject(value objects.IObject, numArgs int, args ...objects.IO
 	retCount, ret, err := value.Call(v.currFrame.Id(), args...)
 	v.stack.DecrementCount(uint(numArgs) + 1)
 	if err != nil {
-		v.errSignal(objects.ComputeCallError(err, value.TypeName()))
+		v.Shutdown(objects.ComputeCallError(err, value.TypeName()))
 		return
 	}
 	switch retCount {
@@ -331,7 +345,7 @@ func (v *Core) CallObject(value objects.IObject, numArgs int, args ...objects.IO
 	default:
 		container, ok := ret.(*objects.Array)
 		if !ok {
-			v.errSignal(fmt.Errorf("invalid return count: %d", retCount))
+			v.Shutdown(fmt.Errorf("invalid return count: %d", retCount))
 			return
 		}
 		for _, item := range container.Values() {
@@ -421,19 +435,13 @@ func (v *Core) returnApply(returnValues []objects.IObject) {
 	}
 
 	if shutdown {
-		v.Shutdown()
+		v.Shutdown(nil)
 	}
 }
 
 // ReseIp resets the instruction pointer of the virtual machine to its initial reset state defined by `resetIp`.
 func (v *Core) ReseIp() {
 	v.ip = resetIp
-}
-
-// Shutdown gracefully shuts down the virtual machine by setting its internal state to signify termination.
-func (v *Core) Shutdown() {
-	v.errSignal(nil)
-	//v.shutdown = true
 }
 
 // GetReturnValue returns the value from the top of the stack as an interface value.
@@ -488,9 +496,8 @@ func (v *Core) Initialize(mainFn *objects.Func, args ...interface{}) error {
 }
 
 // Finalize releases all resources held by the stack and prepares the Core for termination. Returns an error if unsuccessful.
-func (v *Core) Finalize() error {
+func (v *Core) Finalize() {
 	v.stack.ReleaseAll()
-	return nil
 }
 
 // Execute processes the current instruction in the Core, updating the instruction pointer and executing the decoded operation.

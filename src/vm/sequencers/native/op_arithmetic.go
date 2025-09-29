@@ -56,7 +56,7 @@ func (op *OpArithmetic) Execute(decoder *handler.Decoder) {
 	operator := objects.ArithmeticOperator(opcode)
 	res, err := left.ArithmeticOp(op.vm.FrameId(), operator, right)
 	if err != nil {
-		op.vm.SetError(err)
+		op.vm.Shutdown(err)
 		return
 	}
 	op.vm.StackPush(res)

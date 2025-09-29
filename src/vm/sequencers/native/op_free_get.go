@@ -48,7 +48,7 @@ func (op *OpFreeGet) Execute(decoder *handler.Decoder) {
 	freeIndex := decoder.Operand(0)
 	freeVar := op.vm.FrameFreeVarsIndex(uint(freeIndex))
 	if freeVar == nil {
-		op.vm.SetError(fmt.Errorf("free variable %d not found", freeIndex))
+		op.vm.Shutdown(fmt.Errorf("free variable %d not found", freeIndex))
 		return
 	}
 	z := *freeVar.Value()

@@ -11,24 +11,24 @@ const (
 // Frames is a structure that manages function call frames in a virtual machine execution context.
 // It maintains a stack of frames and tracks the current frame index for managing execution state.
 type Frames struct {
-	gk          objects.IGateKeeper
-	frames      []*Frame
-	framesIndex uint
-	frameMax    uint
-	errSignal   func(err error)
+	gk             objects.IGateKeeper
+	frames         []*Frame
+	framesIndex    uint
+	frameMax       uint
+	shutdownSignal func(err error)
 }
 
 // NewFrames initializes and returns a new Frames instance with the specified main function and maximum frame count.
-func NewFrames(gk objects.IGateKeeper, maxFrames int, errSignal func(err error)) *Frames {
+func NewFrames(gk objects.IGateKeeper, maxFrames int, shutdownSignal func(err error)) *Frames {
 	f := &Frames{
-		gk:          gk,
-		frames:      make([]*Frame, maxFrames),
-		framesIndex: RootFrame,
-		errSignal:   errSignal,
-		frameMax:    0,
+		gk:             gk,
+		frames:         make([]*Frame, maxFrames),
+		framesIndex:    RootFrame,
+		shutdownSignal: shutdownSignal,
+		frameMax:       0,
 	}
 	for i := range f.frames {
-		f.frames[i] = NewFrame(gk, i, errSignal)
+		f.frames[i] = NewFrame(gk, i, shutdownSignal)
 	}
 	return f
 }
@@ -62,7 +62,7 @@ func (f *Frames) Previous() *Frame {
 func (f *Frames) MoveNext() {
 	f.framesIndex++
 	if f.framesIndex >= uint(len(f.frames)) {
-		f.errSignal(objects.ErrStackOverflow)
+		f.shutdownSignal(objects.ErrStackOverflow)
 		return
 	}
 	if f.framesIndex > f.frameMax {
@@ -73,7 +73,7 @@ func (f *Frames) MoveNext() {
 // MovePrevious decrements the framesIndex and returns an error if it goes below zero, indicating a stack underflow.
 func (f *Frames) MovePrevious() {
 	if f.framesIndex <= RootFrame {
-		f.errSignal(objects.ErrStackOverflow)
+		f.shutdownSignal(objects.ErrStackOverflow)
 		return
 	}
 	f.framesIndex--

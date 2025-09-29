@@ -124,7 +124,7 @@ func (c *Channels) CommandExec(cmd []uint8) (int, error) {
 			data, err := c.adapter.ReadFile(oldFile)
 			if err != nil {
 				return 0, err
-				//channels[errChannel].SetError(adapters.Error(adapters.ErrFileNotFound))
+				//channels[errChannel].Shutdown(adapters.Error(adapters.ErrFileNotFound))
 			}
 			combinedData = append(combinedData, data...)
 		}

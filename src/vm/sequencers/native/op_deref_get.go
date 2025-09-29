@@ -49,7 +49,7 @@ func (op *OpDerefGet) Execute(_ *handler.Decoder) {
 	operand := op.vm.StackPop()
 	ptr, ok := operand.(*objects.ObjectPointer)
 	if !ok {
-		op.vm.SetError(fmt.Errorf("invalid operation: cannot dereference non-pointer type %s", operand.TypeName()))
+		op.vm.Shutdown(fmt.Errorf("invalid operation: cannot dereference non-pointer type %s", operand.TypeName()))
 		return
 	}
 	op.vm.StackPush(*ptr.Value())

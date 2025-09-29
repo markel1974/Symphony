@@ -20,16 +20,16 @@ type Frame struct {
 	deferredCalls        []*objects.Func
 	savedReturnValues    []objects.IObject
 	hasSavedReturnValues bool
-	errSignal            func(err error)
+	shutdownSignal       func(err error)
 }
 
 // NewFrame creates and returns a new Frame instance with its instruction pointer initialized to -1.
-func NewFrame(gk objects.IGateKeeper, id int, errSignal func(err error)) *Frame {
+func NewFrame(gk objects.IGateKeeper, id int, shutdownSignal func(err error)) *Frame {
 	return &Frame{
 		gk:                   gk,
 		id:                   id,
 		savedIp:              resetIp,
-		errSignal:            errSignal,
+		shutdownSignal:       shutdownSignal,
 		savedReturnValues:    []objects.IObject{},
 		hasSavedReturnValues: false,
 		deferredCalls:        []*objects.Func{},
@@ -62,7 +62,7 @@ func (f *Frame) Fetch(ip uint) (opcodes.OpcodeId, uint) {
 func (f *Frame) Get8Reverse(low uint) uint8 {
 	v, ok := f.instructions.Get8Reverse(low)
 	if !ok {
-		f.errSignal(fmt.Errorf("invalid instruction 8 pointer: %d", low))
+		f.shutdownSignal(fmt.Errorf("invalid instruction 8 pointer: %d", low))
 		return 0
 	}
 	return v
@@ -73,7 +73,7 @@ func (f *Frame) Get8Reverse(low uint) uint8 {
 func (f *Frame) Get16Reverse(low uint) uint16 {
 	v, ok := f.instructions.Get16Reverse(low)
 	if !ok {
-		f.errSignal(fmt.Errorf("invalid instruction 16 pointer: %d", low))
+		f.shutdownSignal(fmt.Errorf("invalid instruction 16 pointer: %d", low))
 		return 0
 	}
 	return v
@@ -83,7 +83,7 @@ func (f *Frame) Get16Reverse(low uint) uint16 {
 func (f *Frame) Get32Reverse(low uint) uint32 {
 	v, ok := f.instructions.Get32Reverse(low)
 	if !ok {
-		f.errSignal(fmt.Errorf("invalid instruction 32 pointer: %d", low))
+		f.shutdownSignal(fmt.Errorf("invalid instruction 32 pointer: %d", low))
 		return 0
 	}
 	return v
@@ -94,7 +94,7 @@ func (f *Frame) Get32Reverse(low uint) uint32 {
 func (f *Frame) Get64Reverse(low uint) uint64 {
 	v, ok := f.instructions.Get64Reverse(low)
 	if !ok {
-		f.errSignal(fmt.Errorf("invalid instruction 32 pointer: %d", low))
+		f.shutdownSignal(fmt.Errorf("invalid instruction 32 pointer: %d", low))
 		return 0
 	}
 	return v
@@ -144,7 +144,7 @@ func (f *Frame) DeferredAdd(obj objects.IObject) {
 	case *objects.Func:
 		f.deferredCalls = append(f.deferredCalls, objT)
 	default:
-		f.errSignal(fmt.Errorf("invalid operation: defer %s", obj.TypeName()))
+		f.shutdownSignal(fmt.Errorf("invalid operation: defer %s", obj.TypeName()))
 	}
 }
 
@@ -152,7 +152,7 @@ func (f *Frame) DeferredAdd(obj objects.IObject) {
 func (f *Frame) DeferredPop() *objects.Func {
 	numDeferred := len(f.deferredCalls)
 	if numDeferred == 0 {
-		f.errSignal(fmt.Errorf("no deferred calls in frame %d", f.id))
+		f.shutdownSignal(fmt.Errorf("no deferred calls in frame %d", f.id))
 		return nil
 	}
 	target := numDeferred - 1

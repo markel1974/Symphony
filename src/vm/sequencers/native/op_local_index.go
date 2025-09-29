@@ -58,7 +58,7 @@ func (op *OpLocalIndex) Execute(decoder *handler.Decoder) {
 	srcObj := op.vm.StackPeekSP(uint(offset))
 	op.vm.StackDecrementCount(uint(offset))
 	if err := op.vm.Factory().IndexAssign(op.vm.FrameId(), dstObj, srcObj, selectors); err != nil {
-		op.vm.SetError(err)
+		op.vm.Shutdown(err)
 		return
 	}
 }

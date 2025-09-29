@@ -58,12 +58,12 @@ func (op *OpIntArithmetic) Execute(decoder *handler.Decoder) {
 	dstObj := op.vm.StackPeekBP(uint(dst))
 	out, ok := dstObj.(*objects.Int)
 	if !ok {
-		op.vm.SetError(fmt.Errorf("dst expected int, got %s", dstObj.TypeName()))
+		op.vm.Shutdown(fmt.Errorf("dst expected int, got %s", dstObj.TypeName()))
 		return
 	}
 	result, err := op.vm.Factory().ArithmeticOpInt64(arithmeticOp, lhsObj.AsInt64(), rhsObj.AsInt64())
 	if err != nil {
-		op.vm.SetError(err)
+		op.vm.Shutdown(err)
 	}
 	out.SetValue(result)
 }

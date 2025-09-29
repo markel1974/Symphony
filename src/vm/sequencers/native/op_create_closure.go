@@ -49,7 +49,7 @@ func (op *OpCreateClosure) Execute(decoder *handler.Decoder) {
 	closureFnObj := op.vm.ConstantsGet(uint(closureFnIndex))
 	fn, ok := closureFnObj.(*objects.Func)
 	if !ok {
-		op.vm.SetError(fmt.Errorf("not a function: %s", closureFnObj.TypeName()))
+		op.vm.Shutdown(fmt.Errorf("not a function: %s", closureFnObj.TypeName()))
 		return
 	}
 	var required []objects.IObject

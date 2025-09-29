@@ -12,9 +12,7 @@ type ISequencer interface {
 
 	Setup() error
 
-	Bind(vm *Core) error
-
-	Executors() []IOpExecutor
+	Executors() ([]IOpExecutor, int)
 }
 
 // IOpExecutor defines an interface for executing operations in a virtual machine, including binding, decoding, and compiling tasks.

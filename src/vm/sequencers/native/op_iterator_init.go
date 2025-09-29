@@ -49,7 +49,7 @@ func (op *OpIteratorInit) Execute(decoder *handler.Decoder) {
 	stableIdx := decoder.Operand(0)
 	obj := op.vm.StackPop()
 	if !obj.Iterable() {
-		op.vm.SetError(objects.ComputeIteratorError(objects.ErrNotIterable, obj.TypeName()))
+		op.vm.Shutdown(objects.ComputeIteratorError(objects.ErrNotIterable, obj.TypeName()))
 		return
 	}
 	itObj := obj.Iterate(op.vm.FrameId())

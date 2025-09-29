@@ -53,12 +53,12 @@ func (op *OpCallInterface) Execute(decoder *handler.Decoder) {
 	interfaceObj := op.vm.StackPeekSP(uint(offset))
 	io, ok := interfaceObj.(*objects.Interface)
 	if !ok {
-		op.vm.SetError(fmt.Errorf("method call on non-interface object type: %s", interfaceObj.TypeName()))
+		op.vm.Shutdown(fmt.Errorf("method call on non-interface object type: %s", interfaceObj.TypeName()))
 		return
 	}
 	callee, ok := io.Method(methodNameObj.AsString())
 	if !ok {
-		op.vm.SetError(fmt.Errorf("undefined method '%s' for type '%s'", methodNameObj.AsString(), io.Value().TypeName()))
+		op.vm.Shutdown(fmt.Errorf("undefined method '%s' for type '%s'", methodNameObj.AsString(), io.Value().TypeName()))
 		return
 	}
 	op.vm.StackSetSP(uint(offset), io.Value())

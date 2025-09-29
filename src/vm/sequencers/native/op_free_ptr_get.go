@@ -49,7 +49,7 @@ func (op *OpFreePtrGet) Execute(decoder *handler.Decoder) {
 	freeIndex := decoder.Operand(0)
 	val := op.vm.FrameFreeVarsIndex(uint(freeIndex))
 	if val == nil {
-		op.vm.SetError(fmt.Errorf("free variable %d not found", freeIndex))
+		op.vm.Shutdown(fmt.Errorf("free variable %d not found", freeIndex))
 		return
 	}
 	op.vm.StackPush(val)

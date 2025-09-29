@@ -10,19 +10,19 @@ import (
 // Stack represents a data structure that operates on a LIFO (Last In, First Out) principle.
 // It manages a slice of objects implementing the IObject interface and tracks the stack pointer.
 type Stack struct {
-	gk        objects.IGateKeeper
-	stack     []objects.IObject
-	sp        uint
-	errSignal func(err error)
+	gk             objects.IGateKeeper
+	stack          []objects.IObject
+	sp             uint
+	shutdownSignal func(err error)
 }
 
 // NewStack creates and initializes a new Stack with the specified size and returns a pointer to it.
-func NewStack(gk objects.IGateKeeper, size int, errSignal func(err error)) *Stack {
+func NewStack(gk objects.IGateKeeper, size int, shutdownSignal func(err error)) *Stack {
 	s := &Stack{
-		gk:        gk,
-		sp:        0,
-		stack:     make([]objects.IObject, size),
-		errSignal: errSignal,
+		gk:             gk,
+		sp:             0,
+		stack:          make([]objects.IObject, size),
+		shutdownSignal: shutdownSignal,
 	}
 	for i := range s.stack {
 		s.stack[i] = gk.UndefinedValue()
@@ -38,7 +38,7 @@ func (v *Stack) StackPointer() uint {
 // SetStackPointer sets the stack pointer to the specified value.
 func (v *Stack) SetStackPointer(sp uint) {
 	if sp >= uint(len(v.stack)) {
-		v.errSignal(objects.ErrIndexOutOfBounds)
+		v.shutdownSignal(objects.ErrIndexOutOfBounds)
 		return
 	}
 	v.sp = sp
@@ -52,7 +52,7 @@ func (v *Stack) Reset() {
 // Decrement decreases the stack pointer (sp) by one, effectively moving the pointer to the previous stack position.
 func (v *Stack) Decrement() {
 	if v.sp == 0 {
-		v.errSignal(objects.ErrIndexOutOfBounds)
+		v.shutdownSignal(objects.ErrIndexOutOfBounds)
 		return
 	}
 	v.sp--
@@ -61,7 +61,7 @@ func (v *Stack) Decrement() {
 // DecrementCount reduces the stack pointer (sp) by the specified count, effectively moving it down the stack.
 func (v *Stack) DecrementCount(count uint) {
 	if count > v.sp {
-		v.errSignal(objects.ErrIndexOutOfBounds)
+		v.shutdownSignal(objects.ErrIndexOutOfBounds)
 		return
 	}
 	v.sp -= count
@@ -70,7 +70,7 @@ func (v *Stack) DecrementCount(count uint) {
 // Set assigns the given object to the position indicated by the current stack pointer minus one.
 func (v *Stack) Set(obj objects.IObject) {
 	if v.sp == 0 {
-		v.errSignal(objects.ErrIndexOutOfBounds)
+		v.shutdownSignal(objects.ErrIndexOutOfBounds)
 		return
 	}
 	if obj == nil {
@@ -82,7 +82,7 @@ func (v *Stack) Set(obj objects.IObject) {
 // Push adds the provided object to the top of the stack and increments the stack pointer.
 func (v *Stack) Push(obj objects.IObject) {
 	if v.sp+1 >= uint(len(v.stack)) {
-		v.errSignal(objects.ErrIndexOutOfBounds)
+		v.shutdownSignal(objects.ErrIndexOutOfBounds)
 		return
 	}
 	if obj == nil {
@@ -96,7 +96,7 @@ func (v *Stack) Push(obj objects.IObject) {
 // It returns UndefinedValue if the stack is empty (stack underflow).
 func (v *Stack) Pop() objects.IObject {
 	if v.sp == 0 {
-		v.errSignal(objects.ErrIndexOutOfBounds)
+		v.shutdownSignal(objects.ErrIndexOutOfBounds)
 		return v.gk.UndefinedValue()
 	}
 	v.sp--
@@ -106,7 +106,7 @@ func (v *Stack) Pop() objects.IObject {
 // PopArray removes and returns a specified number of elements from the stack as a slice of IObject.
 func (v *Stack) PopArray(numElements uint) []objects.IObject {
 	if numElements > v.sp {
-		v.errSignal(objects.ErrIndexOutOfBounds)
+		v.shutdownSignal(objects.ErrIndexOutOfBounds)
 		return []objects.IObject{}
 	}
 	elements := make([]objects.IObject, numElements)
@@ -128,12 +128,12 @@ func (v *Stack) PopStruct(numElements uint) (string, map[string]objects.IObject)
 // PopMap removes the specified number of key-value pairs from the stack and returns them as a map.
 func (v *Stack) PopMap(numElements uint) map[string]objects.IObject {
 	if numElements&1 == 1 {
-		v.errSignal(objects.ErrIndexOutOfBounds)
+		v.shutdownSignal(objects.ErrIndexOutOfBounds)
 		return nil
 	}
 	kv := make(map[string]objects.IObject, numElements)
 	if numElements > v.sp {
-		v.errSignal(objects.ErrIndexOutOfBounds)
+		v.shutdownSignal(objects.ErrIndexOutOfBounds)
 		return kv
 	}
 	target := v.sp - numElements
@@ -163,7 +163,7 @@ func (v *Stack) PopInterface(numMethods int) (objects.IObject, map[string]object
 // SetAbsolute assigns the specified object to the stack at the given absolute index.
 func (v *Stack) SetAbsolute(absolute uint, obj objects.IObject) {
 	if absolute >= v.sp {
-		v.errSignal(objects.ErrIndexOutOfBounds)
+		v.shutdownSignal(objects.ErrIndexOutOfBounds)
 		return
 	}
 	if obj == nil {
@@ -175,7 +175,7 @@ func (v *Stack) SetAbsolute(absolute uint, obj objects.IObject) {
 // PeekAbsolute retrieves the object at the specified absolute index in the stack without modifying the stack pointer.
 func (v *Stack) PeekAbsolute(absolute uint) objects.IObject {
 	if absolute >= v.sp {
-		v.errSignal(objects.ErrIndexOutOfBounds)
+		v.shutdownSignal(objects.ErrIndexOutOfBounds)
 		return v.gk.UndefinedValue()
 	}
 	return v.stack[absolute]
@@ -185,7 +185,7 @@ func (v *Stack) PeekAbsolute(absolute uint) objects.IObject {
 // Returns UndefinedValue if the resolved index is out of stack bounds.
 func (v *Stack) PeekOffset(offset uint) objects.IObject {
 	if offset == 0 || offset > v.sp {
-		v.errSignal(objects.ErrIndexOutOfBounds)
+		v.shutdownSignal(objects.ErrIndexOutOfBounds)
 		return v.gk.UndefinedValue()
 	}
 	ret := v.stack[v.sp-offset]
@@ -196,7 +196,7 @@ func (v *Stack) PeekOffset(offset uint) objects.IObject {
 // If the resolved index is out of bounds, an error signal is triggered.
 func (v *Stack) SetOffset(offset uint, obj objects.IObject) {
 	if offset == 0 || offset > v.sp {
-		v.errSignal(objects.ErrIndexOutOfBounds)
+		v.shutdownSignal(objects.ErrIndexOutOfBounds)
 		return
 	}
 	v.stack[v.sp-offset] = obj
@@ -205,7 +205,7 @@ func (v *Stack) SetOffset(offset uint, obj objects.IObject) {
 // Peek returns the object at the top of the stack.
 func (v *Stack) Peek() objects.IObject {
 	if v.sp == 0 {
-		v.errSignal(objects.ErrIndexOutOfBounds)
+		v.shutdownSignal(objects.ErrIndexOutOfBounds)
 		return v.gk.UndefinedValue()
 	}
 	ret := v.stack[v.sp-1]
@@ -215,11 +215,11 @@ func (v *Stack) Peek() objects.IObject {
 // PeekInterval returns a slice of objects from the stack within the specified range [start:end). Returns nil for invalid ranges.
 func (v *Stack) PeekInterval(start uint, end uint) []objects.IObject {
 	if start == end {
-		v.errSignal(objects.ErrIndexOutOfBounds)
+		v.shutdownSignal(objects.ErrIndexOutOfBounds)
 		return []objects.IObject{}
 	}
 	if end > v.sp || start > end {
-		v.errSignal(objects.ErrIndexOutOfBounds)
+		v.shutdownSignal(objects.ErrIndexOutOfBounds)
 		return []objects.IObject{}
 	}
 	return v.stack[start:end]
@@ -228,7 +228,7 @@ func (v *Stack) PeekInterval(start uint, end uint) []objects.IObject {
 // PeekArray retrieves a slice of IObject elements from the stack, based on the specified number of arguments.
 func (v *Stack) PeekArray(numArgs uint) []objects.IObject {
 	if numArgs > v.sp {
-		v.errSignal(objects.ErrIndexOutOfBounds)
+		v.shutdownSignal(objects.ErrIndexOutOfBounds)
 		return nil
 	}
 	start := v.sp - numArgs
@@ -243,7 +243,7 @@ func (v *Stack) CopyOffset(start uint, count uint) {
 		return
 	}
 	if count > v.sp || start > v.sp-count {
-		v.errSignal(objects.ErrIndexOutOfBounds)
+		v.shutdownSignal(objects.ErrIndexOutOfBounds)
 		return
 	}
 	destinationEnd := start + count

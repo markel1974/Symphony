@@ -49,7 +49,7 @@ func (op *OpIndexGet) Execute(_ *handler.Decoder) {
 	left := op.vm.StackPop()
 	val, err := left.IndexGet(op.vm.FrameId(), index)
 	if err != nil {
-		op.vm.SetError(objects.ComputeIndexGetError(err, index.TypeName(), index.TypeName()))
+		op.vm.Shutdown(objects.ComputeIndexGetError(err, index.TypeName(), index.TypeName()))
 		return
 	}
 	if val == nil {

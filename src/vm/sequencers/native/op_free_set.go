@@ -49,7 +49,7 @@ func (op *OpFreeSet) Execute(decoder *handler.Decoder) {
 	o := op.vm.StackPop()
 	freeObj := op.vm.FrameFreeVarsIndex(uint(freeIndex))
 	if freeObj == nil {
-		op.vm.SetError(fmt.Errorf("free variable %d not found", freeIndex))
+		op.vm.Shutdown(fmt.Errorf("free variable %d not found", freeIndex))
 		return
 	}
 	op.vm.Factory().SetPointer(freeObj, o)

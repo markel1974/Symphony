@@ -56,11 +56,11 @@ func (op *OpIntLogical) Execute(decoder *handler.Decoder) {
 	dstObj := op.vm.StackPeekBP(uint(dstIndex))
 	result, err := op.vm.Factory().LogicalOpInt64(logicalOp, lhsObj.AsInt64(), rhsObj.AsInt64())
 	if err != nil {
-		op.vm.SetError(err)
+		op.vm.Shutdown(err)
 		return
 	}
 	if err = op.vm.Factory().AssignBool(result, dstObj); err != nil {
-		op.vm.SetError(err)
+		op.vm.Shutdown(err)
 		return
 	}
 }
