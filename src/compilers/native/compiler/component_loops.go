@@ -156,10 +156,15 @@ func (c *Loops) RangeStmt(node *ast.RangeStmt) error {
 	var returnTypeName string
 	switch expr := node.X.(type) {
 	case *ast.Ident:
-		returnTypeName, _ = c.definitionTable.StructReturnTypeFromSymbol(expr.Name)
+		// ReturnTypeFromSymbol resolves the return type of a symbol by its name and returns it along with a success flag.
+		if symbol, ok := c.scopes.SymbolResolve(expr.Name); ok {
+			returnTypeName, _ = symbol.ReturnTypeFirst()
+		}
 	case *ast.CallExpr:
 		if ident, ok := expr.Fun.(*ast.Ident); ok {
-			returnTypeName, _ = c.definitionTable.StructReturnTypeFromSymbol(ident.Name)
+			if symbol, ok := c.scopes.SymbolResolve(ident.Name); ok {
+				returnTypeName, _ = symbol.ReturnTypeFirst()
+			}
 		}
 	case *ast.SelectorExpr:
 		// Case: for _, v := range myVar.Items

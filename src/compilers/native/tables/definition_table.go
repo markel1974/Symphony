@@ -2,6 +2,7 @@ package tables
 
 import (
 	"go/ast"
+	"go/token"
 
 	"github.com/markel1974/c64emu/src/vm/objects"
 )
@@ -28,26 +29,21 @@ func NewDefinitionTable(gk objects.IGateKeeper, scopes *Scopes) *DefinitionTable
 	}
 }
 
-// SymbolDefine defines a new symbol with the given name and type, assigning it to a struct or interface as appropriate.
-// Returns the created symbol or an error if the symbol could not be defined.
-func (f *DefinitionTable) SymbolDefine(name string, typeName string) (*Symbol, error) {
-	symbol, err := f.scopes.SymbolDefine(name)
-	if err != nil {
-		return nil, err
-	}
+// SymbolAssign assigns a type or interface to the given symbol based on its presence in the interface or struct table.
+func (f *DefinitionTable) SymbolAssign(symbol *Symbol, typeName string) error {
 	isInterface := f.interfaceTable.Has(typeName)
 	if isInterface {
 		f.SymbolInterfaceAssign(symbol, typeName)
 	} else {
 		f.SymbolTypeAssign(symbol, typeName)
 	}
-	return symbol, nil
+	return nil
 }
 
 // SymbolInferAssign assigns a type to a symbol by inferring the type from the provided expression or using the given type name.
 func (f *DefinitionTable) SymbolInferAssign(symbol *Symbol, inferredTypeName string, rhsIn ast.Expr) {
 	if len(inferredTypeName) == 0 {
-		if inferredTypeName, _ = f.structTable.TypeInference(rhsIn); len(inferredTypeName) == 0 {
+		if inferredTypeName, _ = f.TypeInference(rhsIn); len(inferredTypeName) == 0 {
 			return
 		}
 	}
@@ -95,16 +91,6 @@ func (f *DefinitionTable) StructAddField(name string, fieldName string, baseStru
 	f.structTable.AddField(name, fieldName, baseStruct, kind, node)
 }
 
-// StructImplements checks whether a struct implements a specific interface by delegating to the underlying struct table.
-func (f *DefinitionTable) StructImplements(structName string, interfaceName string) bool {
-	return f.structTable.Implements(structName, interfaceName)
-}
-
-// StructTypeInference infers the type of struct from the provided AST expression and returns the type name and success flag.
-func (f *DefinitionTable) StructTypeInference(expr ast.Expr) (string, bool) {
-	return f.structTable.TypeInference(expr)
-}
-
 // StructKeys retrieves the list of struct names from the StructTable associated with the DefinitionTable.
 func (f *DefinitionTable) StructKeys() []string {
 	return f.structTable.Keys()
@@ -113,11 +99,6 @@ func (f *DefinitionTable) StructKeys() []string {
 // StructSetImplementations sets the implementation mappings for structs to interfaces in the DefinitionTable.
 func (f *DefinitionTable) StructSetImplementations(impls map[string][]string) {
 	f.structTable.SetImplementations(impls)
-}
-
-// StructReturnTypeFromSymbol retrieves the return type of a symbol as a string and a success flag based on its name.
-func (f *DefinitionTable) StructReturnTypeFromSymbol(name string) (string, bool) {
-	return f.structTable.ReturnTypeFromSymbol(name)
 }
 
 // StructFieldsFromLiteral extracts struct fields from a list of AST expressions for a given struct name, returning them or an error.
@@ -129,6 +110,11 @@ func (f *DefinitionTable) StructFieldsFromLiteral(structName string, eltS []ast.
 // Returns the type as a string and a boolean indicating success.
 func (f *DefinitionTable) StructTypeNameFromSymbolField(name string, fieldName string) (string, bool) {
 	return f.structTable.TypeNameFromSymbolField(name, fieldName)
+}
+
+// StructImplements checks whether a struct implements a specific interface by delegating to the underlying struct table.
+func (f *DefinitionTable) StructImplements(structName string, interfaceName string) bool {
+	return f.structTable.Implements(structName, interfaceName)
 }
 
 // InterfaceAdd registers a new interface in the interface table using its name and ast.InterfaceType node, returning an error if the addition fails.
@@ -144,4 +130,51 @@ func (f *DefinitionTable) InterfaceGet(name string) (*InterfaceDescription, bool
 // InterfaceContainer retrieves the map of all interface descriptions indexed by their names from the interface table.
 func (f *DefinitionTable) InterfaceContainer() map[string]*InterfaceDescription {
 	return f.interfaceTable.Container()
+}
+
+// TypeInference infers struct type information from the given AST expression and scope context.
+// It returns a generated struct name, a list of associated base type names, and a boolean indicating success.
+func (f *DefinitionTable) TypeInference(expr ast.Expr) (string, bool) {
+	var ret string
+	switch rhs := expr.(type) {
+	case *ast.Ident:
+		if v, ok := f.scopes.SymbolResolve(rhs.Name); ok {
+			ret = v.StructName()
+		}
+	case *ast.CompositeLit: // es. MyStruct{...}
+		if ident := GetIdent(rhs.Type); ident != nil {
+			ret = ident.Name
+		}
+	case *ast.CallExpr: // es. NewStruct()
+		if ident, ok := rhs.Fun.(*ast.Ident); ok {
+			if funcSymbol, ok := f.scopes.SymbolResolve(ident.Name); ok && len(funcSymbol.ReturnTypes()) > 0 {
+				// We assume the first return type
+				returnType := funcSymbol.ReturnTypes()[0]
+				// Verify if the returned type is a struct
+				if typeSymbol, ok := f.scopes.SymbolResolve(returnType); ok && typeSymbol.IsStruct() {
+					ret = returnType
+				}
+			}
+		}
+	case *ast.UnaryExpr: // es. &MyStruct{}
+		if rhs.Op == token.AND {
+			if compLit, ok := rhs.X.(*ast.CompositeLit); ok {
+				if ident, ok := compLit.Type.(*ast.Ident); ok {
+					if returnSymbol, ok := f.scopes.SymbolResolve(ident.Name); ok && returnSymbol.IsStruct() {
+						ret = returnSymbol.Name()
+					}
+				}
+			}
+		}
+	case *ast.TypeAssertExpr:
+		targetTypeName := rhs.Type.(*ast.Ident).Name
+		if returnSymbol, ok := f.scopes.SymbolResolve(targetTypeName); ok && returnSymbol.IsStruct() {
+			ret = returnSymbol.Name()
+		}
+	}
+	if len(ret) == 0 {
+		return "", false
+	}
+	return ret, true
+	//return "", nil, false
 }

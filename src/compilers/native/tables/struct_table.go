@@ -3,7 +3,6 @@ package tables
 import (
 	"fmt"
 	"go/ast"
-	"go/token"
 
 	"github.com/markel1974/c64emu/src/vm/objects"
 )
@@ -92,53 +91,6 @@ func (st *StructTable) Has(name string) bool {
 	return false
 }
 
-// TypeInference infers struct type information from the given AST expression and scope context.
-// It returns a generated struct name, a list of associated base type names, and a boolean indicating success.
-func (st *StructTable) TypeInference(expr ast.Expr) (string, bool) {
-	var ret string
-	switch rhs := expr.(type) {
-	case *ast.Ident:
-		if v, ok := st.scopes.SymbolResolve(rhs.Name); ok {
-			ret = v.StructName()
-		}
-	case *ast.CompositeLit: // es. MyStruct{...}
-		if ident := GetIdent(rhs.Type); ident != nil {
-			ret = ident.Name
-		}
-	case *ast.CallExpr: // es. NewStruct()
-		if ident, ok := rhs.Fun.(*ast.Ident); ok {
-			if funcSymbol, ok := st.scopes.SymbolResolve(ident.Name); ok && len(funcSymbol.ReturnTypes()) > 0 {
-				// We assume the first return type
-				returnType := funcSymbol.ReturnTypes()[0]
-				// Verify if the returned type is a struct
-				if typeSymbol, ok := st.scopes.SymbolResolve(returnType); ok && typeSymbol.IsStruct() {
-					ret = returnType
-				}
-			}
-		}
-	case *ast.UnaryExpr: // es. &MyStruct{}
-		if rhs.Op == token.AND {
-			if compLit, ok := rhs.X.(*ast.CompositeLit); ok {
-				if ident, ok := compLit.Type.(*ast.Ident); ok {
-					if returnSymbol, ok := st.scopes.SymbolResolve(ident.Name); ok && returnSymbol.IsStruct() {
-						ret = returnSymbol.Name()
-					}
-				}
-			}
-		}
-	case *ast.TypeAssertExpr:
-		targetTypeName := rhs.Type.(*ast.Ident).Name
-		if returnSymbol, ok := st.scopes.SymbolResolve(targetTypeName); ok && returnSymbol.IsStruct() {
-			ret = returnSymbol.Name()
-		}
-	}
-	if len(ret) == 0 {
-		return "", false
-	}
-	return ret, true
-	//return "", nil, false
-}
-
 // FieldsFromLiteral extracts and assigns struct fields from a given composite literal node, handling both keyed and positional formats.
 func (st *StructTable) FieldsFromLiteral(structName string, eltS []ast.Expr) ([]*StructField, error) {
 	sd, ok := st.container[structName]
@@ -181,15 +133,6 @@ func (st *StructTable) FieldsFromLiteral(structName string, eltS []ast.Expr) ([]
 		}
 	}
 	return structFields, nil
-}
-
-// ReturnTypeFromSymbol resolves the return type of a symbol by its name and returns it along with a success flag.
-func (st *StructTable) ReturnTypeFromSymbol(name string) (string, bool) {
-	symbol, ok := st.scopes.SymbolResolve(name)
-	if ok && len(symbol.ReturnTypes()) > 0 {
-		return symbol.ReturnTypes()[0], true
-	}
-	return "", false
 }
 
 // TypeNameFromSymbolField retrieves the base type of a field within a struct using its name and returns it with a success flag.

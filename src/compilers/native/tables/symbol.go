@@ -129,6 +129,14 @@ func (s *Symbol) ReturnTypes() []string {
 	return s.returnTypes
 }
 
+// ReturnTypeFirst retrieves the first return type of the Symbol and a boolean indicating its presence or absence.
+func (s *Symbol) ReturnTypeFirst() (string, bool) {
+	if len(s.ReturnTypes()) == 0 {
+		return "", false
+	}
+	return s.ReturnTypes()[0], true
+}
+
 // Scope returns the scope of the current symbol as a SymbolScope.
 func (s *Symbol) Scope() SymbolScope {
 	return s.scope

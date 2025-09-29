@@ -183,7 +183,7 @@ func (c *Declarations) ValueSpec(node *ast.ValueSpec) error {
 			if definedSymbol != nil && definedSymbol.IsStruct() {
 				c.definitionTable.SymbolTypeAssign(symbol, definedSymbol.StructName())
 			} else if definedSymbol != nil && definedSymbol.IsInterface() {
-				inferredTypeName, _ := c.definitionTable.StructTypeInference(node.Values[i])
+				inferredTypeName, _ := c.definitionTable.TypeInference(node.Values[i])
 				if len(inferredTypeName) == 0 {
 					return tables.NewCompilerError(c.fileSet, node, fmt.Sprintf("can't infer struct: %s", node.Values[i]))
 				}
@@ -194,7 +194,7 @@ func (c *Declarations) ValueSpec(node *ast.ValueSpec) error {
 				if err = c.handleInterfaceAssign(node.Pos(), symbol, structSymbol); err != nil {
 					return tables.NewCompilerError(c.fileSet, node, err.Error())
 				}
-			} else if inferredTypeName, _ := c.definitionTable.StructTypeInference(node.Values[i]); len(inferredTypeName) > 0 {
+			} else if inferredTypeName, _ := c.definitionTable.TypeInference(node.Values[i]); len(inferredTypeName) > 0 {
 				c.definitionTable.SymbolTypeAssign(symbol, inferredTypeName)
 			} else {
 				symbol.SetObject(c.gk.NewString(objects.FrameStatic, symbol.Name()))

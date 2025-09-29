@@ -111,11 +111,14 @@ func (f *FunctionTable) SymbolsFromFields(fieldList *ast.FieldList) ([]*Symbol, 
 			typeName = ident.Name
 		}
 		for _, name := range p.Names {
-			sd, err := f.definitionTable.SymbolDefine(name.Name, typeName)
+			symbol, err := f.scopes.SymbolDefine(name.Name)
 			if err != nil {
 				return nil, err
 			}
-			symbols = append(symbols, sd)
+			if err = f.definitionTable.SymbolAssign(symbol, typeName); err != nil {
+				return nil, err
+			}
+			symbols = append(symbols, symbol)
 		}
 	}
 	return symbols, nil
@@ -151,11 +154,14 @@ func (f *FunctionTable) RangeValue(node *ast.RangeStmt, typeName string) (*Symbo
 		if k.Name == UndefinedSymbol {
 			return nil, nil
 		}
-		sd, err := f.definitionTable.SymbolDefine(k.Name, typeName)
+		symbol, err := f.scopes.SymbolDefine(k.Name)
 		if err != nil {
 			return nil, err
 		}
-		return sd, nil
+		if err = f.definitionTable.SymbolAssign(symbol, typeName); err != nil {
+			return nil, err
+		}
+		return symbol, nil
 	default:
 		return nil, nil
 	}
