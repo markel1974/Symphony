@@ -1,18 +1,15 @@
-package core
+package handler
 
 import (
 	"fmt"
 	"io"
 	"time"
 
-	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/objects"
 	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
 
-const Version = "0.1"
-
-// resetIp is the instruction pointer value used to reset the VM's instruction pointer to the beginning of the main function.'
+// resetIp is the instruction pointer value used to reset the Core's instruction pointer to the beginning of the main function.'
 const (
 	resetIp = 0 //
 )
@@ -24,17 +21,15 @@ const (
 	maxFrames = 1024
 )
 
-// VM represents a virtual machine that executes bytecode instructions, handles stack, and manages execution frames.
-type VM struct {
+// Core represents a virtual machine that executes bytecode instructions, handles stack, and manages execution frames.
+type Core struct {
 	gk                objects.IGateKeeper
 	op                opcodes.IOpcodes
-	bc                *bytecode.Bytecode
+	errSignal         func(err error)
 	stack             *Stack
 	frames            *Frames
 	currFrame         *Frame
 	ip                uint
-	shutdown          bool
-	err               error
 	sequencer         []*Decoder
 	sequencerMask     int
 	imports           *Imports
@@ -42,295 +37,232 @@ type VM struct {
 	globals           *Globals
 	counterStart      uint64
 	counterIterations uint64
-	retValues         bool
 }
 
-// New initializes and returns a new virtual machine instance configured with the provided components and settings.
-func New(gk objects.IGateKeeper, op opcodes.IOpcodes) *VM {
-	v := &VM{
+// NewCore initializes and returns a new virtual machine instance configured with the provided components and settings.
+func NewCore(gk objects.IGateKeeper, errSignal func(err error)) *Core {
+	v := &Core{
+		errSignal: errSignal,
 		gk:        gk,
-		op:        op,
 		ip:        resetIp,
-		imports:   nil,
-		retValues: false,
 	}
-	v.constants = NewConstants(gk, v.SetError)
-	v.imports = NewImports(gk, v.SetError)
-	v.globals = NewGlobals(gk, v.SetError)
-	v.stack = NewStack(gk, stackSize, v.SetError)
-	v.frames = NewFrames(gk, maxFrames, v.SetError)
+	v.stack = NewStack(gk, stackSize, errSignal)
+	v.frames = NewFrames(gk, maxFrames, errSignal)
 	return v
 }
 
+// Version returns the current version of the Core as an integer.
+func (v *Core) Version() int {
+	return 1
+}
+
 // Setup initializes the virtual machine with the provided bytecode and loader components.
-func (v *VM) Setup(loader bytecode.ILoader, sequencer []IOpExecutor, codes ...*bytecode.Bytecode) (map[string]uint, error) {
-	//var test IVMFullAccess = v
-	//fmt.Println("VM.Setup", test)
-	var err error
-	v.sequencerMask = len(sequencer) - 1
-	v.sequencer = make([]*Decoder, len(sequencer))
-	for i, s := range sequencer {
-		if v.sequencer[i], err = NewDecoder(s); err != nil {
-			return nil, err
-		}
-	}
-	switch len(codes) {
-	case 1:
-		v.bc = codes[0]
-	default:
-		relocator := bytecode.NewRelocator(v.gk, loader, v.op, bytecode.PreInitFunction, bytecode.InitFunction)
-		for _, code := range codes {
-			relocator.Add(code)
-		}
-		v.bc, err = relocator.Relocate()
-	}
-	if v.bc == nil {
-		return nil, fmt.Errorf("no bytecode provided")
-	}
-	if err = v.imports.Setup(loader, v.bc.Imports()); err != nil {
-		return nil, err
-	}
-	if err = v.globals.Setup(v.bc.Globals()); err != nil {
-		return nil, err
-	}
-	entryPoints, err := v.constants.Setup(v.bc.Constants(), bytecode.PreInitFunction, bytecode.InitFunction)
-	if err != nil {
-		return nil, err
-	}
-	for _, fn := range v.constants.PreInitFuncs() {
-		if _, err = v.exec(fn, false); err != nil {
-			return nil, err
-		}
-	}
-	for _, fn := range v.constants.InitFuncs() {
-		if _, err = v.exec(fn, false); err != nil {
-			return nil, err
-		}
-	}
-	return entryPoints, nil
+func (v *Core) Setup(imports *Imports, constants *Constants, globals *Globals, sequencer []*Decoder, sequencerMask int) error {
+	v.imports = imports
+	v.constants = constants
+	v.globals = globals
+	v.sequencer = sequencer
+	v.sequencerMask = sequencerMask
+	return nil
 }
 
-// Version returns the version of the virtual machine.
-func (v *VM) Version() string {
-	return Version
-}
-
-// Statistics returns three uint64 values: start, allocated objects, and a counter from the VM instance.
-func (v *VM) Statistics() (uint64, uint64, uint64, uint64) {
-	return v.counterStart, v.gk.AllocatedObjects(), v.counterIterations, uint64(v.frames.Max())
-}
-
-// EnableRetValues sets the flag to enable or disable returning multiple values from the virtual machine's execution.
-func (v *VM) EnableRetValues(retValues bool) {
-	v.retValues = retValues
-}
-
-// Run executes the main function identified by mainId with the provided arguments in the virtual machine context.
-func (v *VM) Run(mainId uint, args ...interface{}) ([]interface{}, error) {
-	obj, err := v.constants.Retrieve(mainId)
-	if err != nil {
-		return nil, err
-	}
-	mainFn, ok := obj.(*objects.Func)
-	if !ok {
-		return nil, fmt.Errorf("entry point not found: %d", mainId)
-	}
-	return v.exec(mainFn, v.retValues, args...)
+func (v *Core) SetError(err error) {
+	v.errSignal(err)
 }
 
 // CreateObjectPointer creates an object pointer within the current frame and returns it, or an undefined value if an error occurs.
-func (v *VM) CreateObjectPointer(obj objects.IObject) objects.IObject {
+func (v *Core) CreateObjectPointer(obj objects.IObject) objects.IObject {
 	freeObjPtr, err := v.Factory().CreateObjectPointer(v.currFrame.Id(), obj)
 	if err != nil {
-		v.SetError(err)
+		v.errSignal(err)
 		return v.gk.UndefinedValue()
 	}
 	return freeObjPtr
 }
 
 // CreateClosure creates and returns a new closure object from the given function object and its free variables.
-func (v *VM) CreateClosure(fn *objects.Func, objRequired []objects.IObject) objects.IObject {
+func (v *Core) CreateClosure(fn *objects.Func, objRequired []objects.IObject) objects.IObject {
 	cl, ok := fn.Copy(v.currFrame.Id(), 0).(*objects.Func)
 	if !ok {
-		v.SetError(fmt.Errorf("not a function: %s", fn.TypeName()))
+		v.errSignal(fmt.Errorf("not a function: %s", fn.TypeName()))
 		return v.gk.UndefinedValue()
 	}
 	if err := cl.FreeSet(v.currFrame.Id(), objRequired); err != nil {
-		v.SetError(err)
+		v.errSignal(err)
 		return v.gk.UndefinedValue()
 	}
 	return cl
 }
 
 // CreateError generates a new error object using the provided IObject as a source and assigns it to the current frame.
-func (v *VM) CreateError(src objects.IObject) objects.IObject {
+func (v *Core) CreateError(src objects.IObject) objects.IObject {
 	errObj := v.Factory().NewError(v.currFrame.Id(), src.AsString())
 	return errObj
 }
 
 // CreateSlice creates a slice using the provided high, low, and target objects and returns the resulting IObject.
-// If an error occurs during slice creation, it sets the error on the VM and returns an undefined value.
-func (v *VM) CreateSlice(highIdx int, lowIdx int, targetObj objects.IObject) objects.IObject {
+// If an error occurs during slice creation, it sets the error on the Core and returns an undefined value.
+func (v *Core) CreateSlice(highIdx int, lowIdx int, targetObj objects.IObject) objects.IObject {
 	ret, err := v.Factory().CreateSlice(v.currFrame.Id(), highIdx, lowIdx, targetObj)
 	if err != nil {
-		v.SetError(err)
+		v.errSignal(err)
 		return v.gk.UndefinedValue()
 	}
 	return ret
 }
 
 // StackPeek returns the object currently at the top of the stack without removing it.
-func (v *VM) StackPeek() objects.IObject {
+func (v *Core) StackPeek() objects.IObject {
 	return v.stack.Peek()
 }
 
-// StackPop removes and returns the top element from the VM's execution stack. It delegates the operation to the stack's Pop method.
-func (v *VM) StackPop() objects.IObject {
+// StackPop removes and returns the top element from the Core's execution stack. It delegates the operation to the stack's Pop method.
+func (v *Core) StackPop() objects.IObject {
 	return v.stack.Pop()
 }
 
-// StackPush pushes the given IObject value onto the VM's stack.
-func (v *VM) StackPush(value objects.IObject) {
+// StackPush pushes the given IObject value onto the Core's stack.
+func (v *Core) StackPush(value objects.IObject) {
 	v.stack.Push(value)
 }
 
 // StackSet sets a value in the virtual machine's stack to the provided object.
-func (v *VM) StackSet(value objects.IObject) {
+func (v *Core) StackSet(value objects.IObject) {
 	v.stack.Set(value)
 }
 
 // StackPeekBP retrieves an object from the stack at the given offset relative to the base pointer of the current frame.
-func (v *VM) StackPeekBP(offset uint) objects.IObject {
+func (v *Core) StackPeekBP(offset uint) objects.IObject {
 	return v.stack.PeekAbsolute(uint(v.currFrame.BasePointer()) + offset)
 }
 
 // StackSetBP sets a value in the stack at the specified offset from the current frame's base pointer.
-func (v *VM) StackSetBP(offset uint, value objects.IObject) {
+func (v *Core) StackSetBP(offset uint, value objects.IObject) {
 	v.stack.SetAbsolute(uint(v.currFrame.BasePointer())+offset, value)
 }
 
 // StackSetSP sets the value of a stack element at the specified offset from the stack pointer (SP).
-func (v *VM) StackSetSP(offset uint, value objects.IObject) {
+func (v *Core) StackSetSP(offset uint, value objects.IObject) {
 	v.stack.SetOffset(offset, value)
 }
 
 // StackPeekSP retrieves the item at the specified offset from the stack, relative to the stack pointer.
-func (v *VM) StackPeekSP(offset uint) objects.IObject {
+func (v *Core) StackPeekSP(offset uint) objects.IObject {
 	return v.stack.PeekOffset(offset)
 }
 
 // StackPopArray pops a specified number of elements from the stack and returns them as a slice of IObject.
-func (v *VM) StackPopArray(numElements uint) objects.IObject {
+func (v *Core) StackPopArray(numElements uint) objects.IObject {
 	a := v.stack.PopArray(numElements)
 	arrObj := v.Factory().NewArray(v.currFrame.Id(), a)
 	return arrObj
 }
 
 // StackPopMap pops a specified number of key-value pairs from the stack and returns them as a map.
-func (v *VM) StackPopMap(numElements uint) objects.IObject {
+func (v *Core) StackPopMap(numElements uint) objects.IObject {
 	m := v.stack.PopMap(numElements)
 	mObj := v.Factory().NewMap(v.currFrame.Id(), m)
 	return mObj
 }
 
 // StackPopStruct pops a specified number of key-value pairs from the stack and returns them as a map.
-func (v *VM) StackPopStruct(numElements uint) objects.IObject {
+func (v *Core) StackPopStruct(numElements uint) objects.IObject {
 	name, s := v.stack.PopStruct(numElements)
 	sObj := v.Factory().NewStruct(v.currFrame.Id(), name, s)
 	return sObj
 }
 
 // StackPopInterface pops `numElements` interfaces from the stack and wraps them into a new `objects.IObject` instance.
-func (v *VM) StackPopInterface(numElements int) objects.IObject {
+func (v *Core) StackPopInterface(numElements int) objects.IObject {
 	concrete, iTable := v.stack.PopInterface(numElements)
 	iObj := v.Factory().NewInterface(v.currFrame.Id(), concrete, iTable)
 	return iObj
 }
 
 // StackDecrementCount reduces the count of items on the stack by the specified decrement amount.
-func (v *VM) StackDecrementCount(decrement uint) {
+func (v *Core) StackDecrementCount(decrement uint) {
 	v.stack.DecrementCount(decrement)
 }
 
 // StackDecrement decreases the size of the stack by calling the Decrement method on the stack instance.
-func (v *VM) StackDecrement() {
+func (v *Core) StackDecrement() {
 	v.stack.Decrement()
 }
 
 // ImportsGet fetches an imported object from the current frame using the specified index and returns it as an IObject.
-func (v *VM) ImportsGet(idx uint) objects.IObject {
+func (v *Core) ImportsGet(idx uint) objects.IObject {
 	return v.imports.Get(v.currFrame.Id(), idx)
 }
 
 // ConstantsGet fetches an imported object from the current frame using the specified index and returns it as an IObject.
-func (v *VM) ConstantsGet(idx uint) objects.IObject {
+func (v *Core) ConstantsGet(idx uint) objects.IObject {
 	return v.constants.Get(v.currFrame.Id(), idx)
 }
 
-// GlobalsGet retrieves a global object by index from the VM's global container and returns it as an IObject.
-func (v *VM) GlobalsGet(idx uint) objects.IObject {
+// GlobalsGet retrieves a global object by index from the Core's global container and returns it as an IObject.
+func (v *Core) GlobalsGet(idx uint) objects.IObject {
 	return v.globals.Get(idx)
 }
 
 // GlobalsSet assigns an object to the global store at the specified index.
-func (v *VM) GlobalsSet(idx uint, obj objects.IObject) {
+func (v *Core) GlobalsSet(idx uint, obj objects.IObject) {
 	v.globals.Set(idx, obj)
 }
 
 // FrameId returns the identifier of the current frame in the virtual machine.
-func (v *VM) FrameId() int {
+func (v *Core) FrameId() int {
 	return v.currFrame.Id()
 }
 
 // FrameDeferredAdd appends the given compiled function to the deferred call stack of the current frame.
-func (v *VM) FrameDeferredAdd(obj objects.IObject) {
+func (v *Core) FrameDeferredAdd(obj objects.IObject) {
 	v.currFrame.DeferredAdd(obj)
 }
 
 // FrameFreeVarsIndex retrieves the object pointer for the specified index from the current frame's free variables.
-func (v *VM) FrameFreeVarsIndex(index uint) *objects.ObjectPointer {
+func (v *Core) FrameFreeVarsIndex(index uint) *objects.ObjectPointer {
 	return v.currFrame.FreeVarsIndex(index)
 }
 
-// Constants returns a pointer to the Constants associated with the VM instance.
-func (v *VM) Constants() *Constants {
+// Constants returns a pointer to the Constants associated with the Core instance.
+func (v *Core) Constants() *Constants {
 	return v.constants
 }
 
-// Globals returns the global variables associated with the VM instance.
-func (v *VM) Globals() *Globals {
+// Globals returns the global variables associated with the Core instance.
+func (v *Core) Globals() *Globals {
 	return v.globals
 }
 
-// Imports return a pointer to the Imports object associated with the VM instance.
-func (v *VM) Imports() *Imports {
+// Imports return a pointer to the Imports object associated with the Core instance.
+func (v *Core) Imports() *Imports {
 	return v.imports
 }
 
-// Factory returns the IGateKeeper instance associated with the VM.
-func (v *VM) Factory() objects.IGateKeeper {
+// Factory returns the IGateKeeper instance associated with the Core.
+func (v *Core) Factory() objects.IGateKeeper {
 	return v.gk
 }
 
 // SetIp sets the virtual machine's instruction pointer to the specified value.
-func (v *VM) SetIp(ip uint) {
+func (v *Core) SetIp(ip uint) {
 	v.ip = ip
 }
 
 // GetIp retrieves the current instruction pointer value from the virtual machine.
-func (v *VM) GetIp() uint {
+func (v *Core) GetIp() uint {
 	return v.ip
 }
 
 // CallAsync performs an asynchronous call on the provided IObject with optional argument spreading and a given argument count.
-func (v *VM) CallAsync(value objects.IObject, spread bool, numArgs int) {
+func (v *Core) CallAsync(value objects.IObject, spread bool, numArgs int) {
 	v.Call(value, spread, numArgs)
 }
 
 // Call executes a function or method with the specified number of arguments and handles variadic functions if applicable.
-func (v *VM) Call(value objects.IObject, spread bool, numArgs int) {
+func (v *Core) Call(value objects.IObject, spread bool, numArgs int) {
 	if numArgs < 0 {
-		v.SetError(fmt.Errorf("invalid number of arguments: %d", numArgs))
+		v.errSignal(fmt.Errorf("invalid number of arguments: %d", numArgs))
 		return
 	}
 
@@ -341,7 +273,7 @@ func (v *VM) Call(value objects.IObject, spread bool, numArgs int) {
 		case *objects.Array:
 			args = z.Values()
 		default:
-			v.SetError(fmt.Errorf("unexpected type (array required): %s", obj.TypeName()))
+			v.errSignal(fmt.Errorf("unexpected type (array required): %s", obj.TypeName()))
 			return
 		}
 		if argsLen := len(args); argsLen > 0 {
@@ -365,7 +297,7 @@ func (v *VM) Call(value objects.IObject, spread bool, numArgs int) {
 			}
 		} else {
 			if np := ce.NumParameters(); numArgs != np {
-				v.SetError(fmt.Errorf("%s invalid arguments [vargs: %v] : want>=%d, got=%d", ce.Name(), ce.VarArgs(), np, numArgs))
+				v.errSignal(fmt.Errorf("%s invalid arguments [vargs: %v] : want>=%d, got=%d", ce.Name(), ce.VarArgs(), np, numArgs))
 				return
 			}
 		}
@@ -378,11 +310,11 @@ func (v *VM) Call(value objects.IObject, spread bool, numArgs int) {
 }
 
 // CallObject invokes a callable object with the given arguments and handles stack cleanup and error management.
-func (v *VM) CallObject(value objects.IObject, numArgs int, args ...objects.IObject) {
+func (v *Core) CallObject(value objects.IObject, numArgs int, args ...objects.IObject) {
 	retCount, ret, err := value.Call(v.currFrame.Id(), args...)
 	v.stack.DecrementCount(uint(numArgs) + 1)
 	if err != nil {
-		v.SetError(objects.ComputeCallError(err, value.TypeName()))
+		v.errSignal(objects.ComputeCallError(err, value.TypeName()))
 		return
 	}
 	switch retCount {
@@ -399,7 +331,7 @@ func (v *VM) CallObject(value objects.IObject, numArgs int, args ...objects.IObj
 	default:
 		container, ok := ret.(*objects.Array)
 		if !ok {
-			v.SetError(fmt.Errorf("invalid return count: %d", retCount))
+			v.errSignal(fmt.Errorf("invalid return count: %d", retCount))
 			return
 		}
 		for _, item := range container.Values() {
@@ -413,7 +345,7 @@ func (v *VM) CallObject(value objects.IObject, numArgs int, args ...objects.IObj
 // If deferred calls are present, prepares the frame for execution of the first deferred call without immediate execution.
 // Saves return values in the parent frame during 'defer' execution chains and recursively processes parent returns.
 // Defaults to standard frame return if no deferred calls or chaining is present.
-func (v *VM) Return(returnValues []objects.IObject) {
+func (v *Core) Return(returnValues []objects.IObject) {
 	// CASE 1: We are in a frame that is ending AND has pending 'defer' calls.
 	if v.currFrame.HasDeferredCalls() {
 		if deferredCall := v.currFrame.DeferredPop(); deferredCall != nil {
@@ -421,7 +353,7 @@ func (v *VM) Return(returnValues []objects.IObject) {
 			deferredFrame := v.prepareForCall(deferredCall, 0)
 			// Save return values of the current frame (parent) in a new 'defer' call frame. This creates the chain link.
 			deferredFrame.SaveParentReturnValues(returnValues)
-			// Break function. VM will execute the 'defer' call in the next cycle.
+			// Break function. Core will execute the 'defer' call in the next cycle.
 			return
 		}
 	}
@@ -440,7 +372,7 @@ func (v *VM) Return(returnValues []objects.IObject) {
 	}
 }
 
-func (v *VM) returnApply(returnValues []objects.IObject) {
+func (v *Core) returnApply(returnValues []objects.IObject) {
 	shutdown := false
 	prevIp := v.currFrame.SavedIP()
 	leavingFrameBasePointer := v.currFrame.BasePointer()
@@ -494,22 +426,18 @@ func (v *VM) returnApply(returnValues []objects.IObject) {
 }
 
 // ReseIp resets the instruction pointer of the virtual machine to its initial reset state defined by `resetIp`.
-func (v *VM) ReseIp() {
+func (v *Core) ReseIp() {
 	v.ip = resetIp
 }
 
 // Shutdown gracefully shuts down the virtual machine by setting its internal state to signify termination.
-func (v *VM) Shutdown() {
-	v.shutdown = true
-}
-
-// Print prints the current state of the virtual machine's stack to the console.'
-func (v *VM) Print(writer io.Writer) {
-	v.stack.Print(writer)
+func (v *Core) Shutdown() {
+	v.errSignal(nil)
+	//v.shutdown = true
 }
 
 // GetReturnValue returns the value from the top of the stack as an interface value.
-func (v *VM) GetReturnValue(idx int) interface{} {
+func (v *Core) GetReturnValue(idx int) interface{} {
 	obj := v.stack.PeekAbsolute(uint(idx))
 	if obj == nil {
 		return nil
@@ -518,7 +446,7 @@ func (v *VM) GetReturnValue(idx int) interface{} {
 }
 
 // GetReturnValues returns the values from the top of the stack as an array of interface values.
-func (v *VM) GetReturnValues() []interface{} {
+func (v *Core) GetReturnValues() []interface{} {
 	values := v.stack.StackPointer()
 	if values == 0 {
 		return nil
@@ -530,87 +458,57 @@ func (v *VM) GetReturnValues() []interface{} {
 	return out
 }
 
-// SetError sets the internal error state of the VM and marks it for shutdown.
-func (v *VM) SetError(err error) {
-	v.err = err
-	v.shutdown = true
-}
-
 // Rewrite updates the global function mapping with the given JIT-compiled function for the specified identifier.
-func (v *VM) Rewrite(id uint, jit *objects.FuncJit) {
+func (v *Core) Rewrite(id uint, jit *objects.FuncJit) {
 	v.globals.Set(id, jit)
 }
 
-// Reset reinitializes the virtual machine's state, clears the stack and frames, and resets execution-related variables.
-func (v *VM) prepare() {
+// Initialize sets up the initial state of the virtual machine and prepares it to execute the given main function.
+func (v *Core) Initialize(mainFn *objects.Func, args ...interface{}) error {
 	v.ip = resetIp
 	v.gk.Reset()
 	v.stack.Reset()
 	v.frames.Reset()
-	v.err = nil
-	v.shutdown = false
-}
+	//v.err = nil
+	//v.shutdown = false
 
-// Run executes the virtual machine's bytecode, managing the stack, frames, and instruction pointer state.
-func (v *VM) exec(mainFn *objects.Func, ret bool, args ...interface{}) ([]interface{}, error) {
-	v.prepare()
-	defer func() {
-		v.stack.ReleaseAll()
-	}()
 	v.currFrame = v.frames.Head()
 	v.currFrame.Bind(v.ip, mainFn, 0)
 	v.stack.SetStackPointer(uint(v.currFrame.NumLocals()))
 	if v.currFrame.NumParameters() != len(args) {
-		return nil, fmt.Errorf("[%s] wrong number of arguments provided: want=%d, got=%d", mainFn.Name(), v.currFrame.NumParameters(), len(args))
+		return fmt.Errorf("[%s] wrong number of arguments provided: want=%d, got=%d", mainFn.Name(), v.currFrame.NumParameters(), len(args))
 	}
 	for idx, arg := range args {
 		argObj := v.gk.FromInterface(objects.FrameStatic, arg)
 		v.stack.SetAbsolute(uint(idx), argObj)
 	}
-
-	v.loop()
-
-	if v.err != nil {
-		filePos, _ := v.bc.Position(v.currFrame.SourcePos(int(v.ip) - 1))
-		err := fmt.Errorf("%w at %s", v.err, filePos)
-		for _, frame := range v.frames.Unroll() {
-			filePos, _ = v.bc.Position(frame.SourcePos(int(frame.SavedIP()) - 1))
-			err = fmt.Errorf("%w at %s", err, filePos)
-		}
-		return nil, err
-	}
-	if ret {
-		return v.GetReturnValues(), nil
-	}
-	return nil, nil
-}
-
-// loop executes the main instruction loop for the virtual machine, updating the instruction pointer and processing opcodes.
-func (v *VM) loop() {
-	var opcode opcodes.OpcodeId
-	var decoder *Decoder
 	v.counterIterations = 0
 	v.counterStart = uint64(time.Now().UnixMilli())
-	headerSize := uint(0)
-	for {
-		v.counterIterations++
-		opcode, headerSize = v.currFrame.Fetch(v.ip)
-		decoder = v.sequencer[opcode&v.sequencerMask]
-		v.ip += headerSize + decoder.OperandsSize() - 1 //zero-based index
-		decoder.DecodeReverse(v.currFrame, v.ip)
-		v.ip++ //next instruction
-		//log.Printf("Executing instruction opcode: %d name: %s ip: %d decoded: %v", opcode, decoder.Name(), v.ip, decoder.decodedOperands[:decoder.operandsSize])
-		decoder.Execute()
-		if v.shutdown {
-			break
-		}
-	}
+	return nil
+}
+
+// Finalize releases all resources held by the stack and prepares the Core for termination. Returns an error if unsuccessful.
+func (v *Core) Finalize() error {
+	v.stack.ReleaseAll()
+	return nil
+}
+
+// Execute processes the current instruction in the Core, updating the instruction pointer and executing the decoded operation.
+func (v *Core) Execute() {
+	v.counterIterations++
+	opcode, headerSize := v.currFrame.Fetch(v.ip)
+	decoder := v.sequencer[opcode&v.sequencerMask]
+	v.ip += headerSize + decoder.OperandsSize() - 1 //zero-based index
+	decoder.DecodeReverse(v.currFrame, v.ip)
+	v.ip++ //next instruction
+	//log.Printf("Executing instruction opcode: %d name: %s ip: %d decoded: %v", opcode, decoder.Name(), v.ip, decoder.decodedOperands[:decoder.operandsSize])
+	decoder.Execute()
 }
 
 // callCompiled sets up a new execution frame for a compiled function and manages stack allocation for local variables.
 // Callee specifies the compiled function to be executed, and numArgs determines the number of arguments passed.
 // It reserves stack space for all local variables and adjusts the instruction pointer accordingly.
-func (v *VM) prepareForCall(callee *objects.Func, numArgs int) *Frame {
+func (v *Core) prepareForCall(callee *objects.Func, numArgs int) *Frame {
 	// 1. Calculate the new basePointer safely, anchoring it to the caller's frame.
 	//	The new "floor" begins exactly where the caller's local variable space ends.
 
@@ -632,4 +530,24 @@ func (v *VM) prepareForCall(callee *objects.Func, numArgs int) *Frame {
 	v.ReseIp()
 
 	return v.currFrame
+}
+
+// SourcePos returns the source code position corresponding to the current instruction pointer in the execution frame.
+func (v *Core) SourcePos() int {
+	return v.currFrame.SourcePos(int(v.ip) - 1)
+}
+
+// FramesUnroll retrieves and returns all the frames in the current execution context as a slice of Frame pointers.
+func (v *Core) FramesUnroll() []*Frame {
+	return v.frames.Unroll()
+}
+
+// Statistics returns four uint64 values: the counter start, the number of allocated objects, iteration counter, and max frames.
+func (v *Core) Statistics() (uint64, uint64, uint64, uint64) {
+	return v.counterStart, v.gk.AllocatedObjects(), v.counterIterations, uint64(v.frames.Max())
+}
+
+// Print writes the representation of the stack to the provided io.Writer.
+func (v *Core) Print(writer io.Writer) {
+	v.stack.Print(writer)
 }

@@ -5,7 +5,7 @@ package native
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/vm/core"
+	"github.com/markel1974/c64emu/src/vm/handler"
 	"github.com/markel1974/c64emu/src/vm/objects"
 	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
@@ -16,18 +16,18 @@ func init() {
 }
 
 // OpIsType represents an operation that checks if a given object matches a specific type.
-// It integrates with bytecode and provides full VM access for execution.
+// It integrates with bytecode and provides full Core access for execution.
 // The Opcode field provides details about the operation from the bytecode perspective.
 // The vm field is used to interact with the virtual machine environment, providing complete execution control.
 type OpIsType struct {
 	opcode *opcodes.Opcode
-	vm     core.IVMFullAccess
+	vm     handler.IVMFullAccess
 }
 
-// NewOpIsType creates a new instance of OpIsType executor if the provided VM implements IVMFullAccess.
+// NewOpIsType creates a new instance of OpIsType executor if the provided Core implements IVMFullAccess.
 // It associates the executor with the OpIsType opcode.
 // Returns an error when the vm does not support the IVMFullAccess interface.
-func NewOpIsType() core.IOpExecutor {
+func NewOpIsType() handler.IOpExecutor {
 	operands := []opcodes.OperandFeature{opcodes.Relocatable}
 	return &OpIsType{
 		opcode: opcodes.NewOpcode(OpIsTypeId, operands, "OpIsType"),
@@ -40,10 +40,10 @@ func (op *OpIsType) Opcode() *opcodes.Opcode {
 	return op.opcode
 }
 
-// Bind initializes the instance by casting the provided VM to IVMFullAccess and storing it.
-// Returns an error if the VM does not implement the required interface.
-func (op *OpIsType) Bind(vm core.IVM) error {
-	vmT, ok := vm.(core.IVMFullAccess)
+// Bind initializes the instance by casting the provided Core to IVMFullAccess and storing it.
+// Returns an error if the Core does not implement the required interface.
+func (op *OpIsType) Bind(vm handler.IVM) error {
+	vmT, ok := vm.(handler.IVMFullAccess)
 	if !ok {
 		return fmt.Errorf("vm does not implement IVMFullAccess")
 	}
@@ -52,7 +52,7 @@ func (op *OpIsType) Bind(vm core.IVM) error {
 }
 
 // Execute performs the runtime logic for the `OpIsType` operation, checking if the interface value matches the target type.
-func (op *OpIsType) Execute(decoder *core.Decoder) {
+func (op *OpIsType) Execute(decoder *handler.Decoder) {
 	interfaceObj := op.vm.StackPeek()
 	switch io := interfaceObj.(type) {
 	case *objects.Interface:

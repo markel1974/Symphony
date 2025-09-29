@@ -3,7 +3,7 @@ package native
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/vm/core"
+	"github.com/markel1974/c64emu/src/vm/handler"
 	"github.com/markel1974/c64emu/src/vm/objects"
 	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
@@ -16,11 +16,11 @@ func init() {
 // It embeds Opcode for detailed opcode information.
 type OpGlobalGet struct {
 	opcode *opcodes.Opcode
-	vm     core.IVMFullAccess
+	vm     handler.IVMFullAccess
 }
 
 // NewOpGlobalGet creates a new instance of OpGlobalGet with its associated opcode details.
-func NewOpGlobalGet() core.IOpExecutor {
+func NewOpGlobalGet() handler.IOpExecutor {
 	operands := []opcodes.OperandFeature{opcodes.Relocatable}
 	return &OpGlobalGet{
 		opcode: opcodes.NewOpcode(OpGlobalGetId, operands, "OpGlobalGet"),
@@ -33,10 +33,10 @@ func (op *OpGlobalGet) Opcode() *opcodes.Opcode {
 	return op.opcode
 }
 
-// Bind initializes the instance by casting the provided VM to IVMFullAccess and storing it.
-// Returns an error if the VM does not implement the required interface.
-func (op *OpGlobalGet) Bind(vm core.IVM) error {
-	vmT, ok := vm.(core.IVMFullAccess)
+// Bind initializes the instance by casting the provided Core to IVMFullAccess and storing it.
+// Returns an error if the Core does not implement the required interface.
+func (op *OpGlobalGet) Bind(vm handler.IVM) error {
+	vmT, ok := vm.(handler.IVMFullAccess)
 	if !ok {
 		return fmt.Errorf("vm does not implement IVMFullAccess")
 	}
@@ -45,7 +45,7 @@ func (op *OpGlobalGet) Bind(vm core.IVM) error {
 }
 
 // Execute retrieves a global object using its index, pushes it onto the stack, and advances the instruction pointer.
-func (op *OpGlobalGet) Execute(decoder *core.Decoder) {
+func (op *OpGlobalGet) Execute(decoder *handler.Decoder) {
 	index := decoder.Operand(0)
 	obj := op.vm.GlobalsGet(uint(index))
 	op.vm.StackPush(obj)

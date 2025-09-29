@@ -3,7 +3,7 @@ package native
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/vm/core"
+	"github.com/markel1974/c64emu/src/vm/handler"
 	"github.com/markel1974/c64emu/src/vm/objects"
 	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
@@ -16,11 +16,11 @@ func init() {
 // It embeds Opcode, providing details such as the opcode, operands, and name.
 type OpUnarySub struct {
 	opcode *opcodes.Opcode
-	vm     core.IVMFullAccess
+	vm     handler.IVMFullAccess
 }
 
 // NewOpUnarySub creates and returns a new OpMinus instance, initializing it with the details of the OpMinus bytecode.
-func NewOpUnarySub() core.IOpExecutor {
+func NewOpUnarySub() handler.IOpExecutor {
 	operands := _noOperands
 	return &OpUnarySub{
 		opcode: opcodes.NewOpcode(OpUnarySubId, operands, "OpUnarySub"),
@@ -33,10 +33,10 @@ func (op *OpUnarySub) Opcode() *opcodes.Opcode {
 	return op.opcode
 }
 
-// Bind initializes the instance by casting the provided VM to IVMFullAccess and storing it.
-// Returns an error if the VM does not implement the required interface.
-func (op *OpUnarySub) Bind(vm core.IVM) error {
-	vmT, ok := vm.(core.IVMFullAccess)
+// Bind initializes the instance by casting the provided Core to IVMFullAccess and storing it.
+// Returns an error if the Core does not implement the required interface.
+func (op *OpUnarySub) Bind(vm handler.IVM) error {
+	vmT, ok := vm.(handler.IVMFullAccess)
 	if !ok {
 		return fmt.Errorf("vm does not implement IVMFullAccess")
 	}
@@ -46,7 +46,7 @@ func (op *OpUnarySub) Bind(vm core.IVM) error {
 
 // Execute performs a subtraction operation by negating the top stack element, supporting integers and floats.
 // Pushes the result back to the stack or sets an error for unsupported types.
-func (op *OpUnarySub) Execute(_ *core.Decoder) {
+func (op *OpUnarySub) Execute(_ *handler.Decoder) {
 	obj := op.vm.StackPop()
 	switch x := obj.(type) {
 	case *objects.Float:

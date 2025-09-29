@@ -3,7 +3,7 @@ package native
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/vm/core"
+	"github.com/markel1974/c64emu/src/vm/handler"
 	"github.com/markel1974/c64emu/src/vm/objects"
 	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
@@ -15,11 +15,11 @@ func init() {
 // OpReturn represents a specialized operation that extends the behavior of bytecode.Opcode.
 type OpReturn struct {
 	opcode *opcodes.Opcode
-	vm     core.IVMFullAccess
+	vm     handler.IVMFullAccess
 }
 
 // NewOpReturn creates a new instance of OpReturn with its Opcode initialized for the OpReturn operation.
-func NewOpReturn() core.IOpExecutor {
+func NewOpReturn() handler.IOpExecutor {
 	operands := []opcodes.OperandFeature{opcodes.SzUint8}
 	return &OpReturn{
 		opcode: opcodes.NewOpcode(OpReturnId, operands, "OpReturn"),
@@ -32,10 +32,10 @@ func (op *OpReturn) Opcode() *opcodes.Opcode {
 	return op.opcode
 }
 
-// Bind initializes the instance by casting the provided VM to IVMFullAccess and storing it.
-// Returns an error if the VM does not implement the required interface.
-func (op *OpReturn) Bind(vm core.IVM) error {
-	vmT, ok := vm.(core.IVMFullAccess)
+// Bind initializes the instance by casting the provided Core to IVMFullAccess and storing it.
+// Returns an error if the Core does not implement the required interface.
+func (op *OpReturn) Bind(vm handler.IVM) error {
+	vmT, ok := vm.(handler.IVMFullAccess)
 	if !ok {
 		return fmt.Errorf("vm does not implement IVMFullAccess")
 	}
@@ -43,8 +43,8 @@ func (op *OpReturn) Bind(vm core.IVM) error {
 	return nil
 }
 
-// Execute performs the return operation for the current frame, manages the stack, and transitions between frames in the VM.
-func (op *OpReturn) Execute(decoder *core.Decoder) {
+// Execute performs the return operation for the current frame, manages the stack, and transitions between frames in the Core.
+func (op *OpReturn) Execute(decoder *handler.Decoder) {
 	var ret []objects.IObject
 	if nRet := decoder.Operand(0); nRet > 0 {
 		ret = make([]objects.IObject, nRet)

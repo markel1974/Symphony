@@ -3,7 +3,7 @@ package native
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/vm/core"
+	"github.com/markel1974/c64emu/src/vm/handler"
 	"github.com/markel1974/c64emu/src/vm/objects"
 	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
@@ -15,11 +15,11 @@ func init() {
 // OpGlobalSet represents a bytecode operation for setting a global variable's value in the virtual machine.
 type OpGlobalSet struct {
 	opcode *opcodes.Opcode
-	vm     core.IVMFullAccess
+	vm     handler.IVMFullAccess
 }
 
 // NewOpGlobalSet creates and returns a new instance of OpGlobalSet with initialized Opcode.
-func NewOpGlobalSet() core.IOpExecutor {
+func NewOpGlobalSet() handler.IOpExecutor {
 	operands := []opcodes.OperandFeature{opcodes.Relocatable}
 	return &OpGlobalSet{
 		opcode: opcodes.NewOpcode(OpGlobalSetId, operands, "OpGlobalSet"),
@@ -32,10 +32,10 @@ func (op *OpGlobalSet) Opcode() *opcodes.Opcode {
 	return op.opcode
 }
 
-// Bind initializes the instance by casting the provided VM to IVMFullAccess and storing it.
-// Returns an error if the VM does not implement the required interface.
-func (op *OpGlobalSet) Bind(vm core.IVM) error {
-	vmT, ok := vm.(core.IVMFullAccess)
+// Bind initializes the instance by casting the provided Core to IVMFullAccess and storing it.
+// Returns an error if the Core does not implement the required interface.
+func (op *OpGlobalSet) Bind(vm handler.IVM) error {
+	vmT, ok := vm.(handler.IVMFullAccess)
 	if !ok {
 		return fmt.Errorf("vm does not implement IVMFullAccess")
 	}
@@ -44,7 +44,7 @@ func (op *OpGlobalSet) Bind(vm core.IVM) error {
 }
 
 // Execute updates the instruction pointer, calculates a global variable position, and sets its value from the stack.
-func (op *OpGlobalSet) Execute(decoder *core.Decoder) {
+func (op *OpGlobalSet) Execute(decoder *handler.Decoder) {
 	index := decoder.Operand(0)
 	val := op.vm.StackPeek()
 	op.vm.GlobalsSet(uint(index), val)

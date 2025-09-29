@@ -3,7 +3,7 @@ package native
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/vm/core"
+	"github.com/markel1974/c64emu/src/vm/handler"
 	"github.com/markel1974/c64emu/src/vm/objects"
 	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
@@ -15,11 +15,11 @@ func init() {
 // OpDerefGet represents an operation for dereferencing a pointer.
 type OpDerefGet struct {
 	opcode *opcodes.Opcode
-	vm     core.IVMFullAccess
+	vm     handler.IVMFullAccess
 }
 
 // NewOpDerefGet creates a new OpDerefGet instance.
-func NewOpDerefGet() core.IOpExecutor {
+func NewOpDerefGet() handler.IOpExecutor {
 	operands := _noOperands
 	return &OpDerefGet{
 		opcode: opcodes.NewOpcode(OpDerefGetId, operands, "OpDerefGet"),
@@ -32,10 +32,10 @@ func (op *OpDerefGet) Opcode() *opcodes.Opcode {
 	return op.opcode
 }
 
-// Bind initializes the instance by casting the provided VM to IVMFullAccess and storing it.
-// Returns an error if the VM does not implement the required interface.
-func (op *OpDerefGet) Bind(vm core.IVM) error {
-	vmT, ok := vm.(core.IVMFullAccess)
+// Bind initializes the instance by casting the provided Core to IVMFullAccess and storing it.
+// Returns an error if the Core does not implement the required interface.
+func (op *OpDerefGet) Bind(vm handler.IVM) error {
+	vmT, ok := vm.(handler.IVMFullAccess)
 	if !ok {
 		return fmt.Errorf("vm does not implement IVMFullAccess")
 	}
@@ -45,7 +45,7 @@ func (op *OpDerefGet) Bind(vm core.IVM) error {
 
 // Execute performs the dereference operation. It takes a pointer from the
 // stack and replaces it with the value it points to.
-func (op *OpDerefGet) Execute(_ *core.Decoder) {
+func (op *OpDerefGet) Execute(_ *handler.Decoder) {
 	operand := op.vm.StackPop()
 	ptr, ok := operand.(*objects.ObjectPointer)
 	if !ok {

@@ -3,7 +3,7 @@ package native
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/vm/core"
+	"github.com/markel1974/c64emu/src/vm/handler"
 	"github.com/markel1974/c64emu/src/vm/objects"
 	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
@@ -13,15 +13,15 @@ func init() {
 	SequencerRegister(NewOpGlobalCopy)
 }
 
-// OpGlobalCopy represents an operation that copies a value from one global variable index to another in the VM's global state.
-// It embeds the bytecode.Opcode for opcode-related metadata and uses core.IVMFullAccess for VM interactions.
+// OpGlobalCopy represents an operation that copies a value from one global variable index to another in the Core's global state.
+// It embeds the bytecode.Opcode for opcode-related metadata and uses handler.IVMFullAccess for Core interactions.
 type OpGlobalCopy struct {
 	opcode *opcodes.Opcode
-	vm     core.IVMFullAccess
+	vm     handler.IVMFullAccess
 }
 
-// NewOpGlobalCopy initializes an OpGlobalCopy executor with the provided VM and Opcodes instance or returns an error.
-func NewOpGlobalCopy() core.IOpExecutor {
+// NewOpGlobalCopy initializes an OpGlobalCopy executor with the provided Core and Opcodes instance or returns an error.
+func NewOpGlobalCopy() handler.IOpExecutor {
 	operands := []opcodes.OperandFeature{opcodes.Relocatable, opcodes.Relocatable}
 	return &OpGlobalCopy{
 		opcode: opcodes.NewOpcode(OpGlobalCopyId, operands, "OpGlobalCopy"),
@@ -34,10 +34,10 @@ func (op *OpGlobalCopy) Opcode() *opcodes.Opcode {
 	return op.opcode
 }
 
-// Bind initializes the instance by casting the provided VM to IVMFullAccess and storing it.
-// Returns an error if the VM does not implement the required interface.
-func (op *OpGlobalCopy) Bind(vm core.IVM) error {
-	vmT, ok := vm.(core.IVMFullAccess)
+// Bind initializes the instance by casting the provided Core to IVMFullAccess and storing it.
+// Returns an error if the Core does not implement the required interface.
+func (op *OpGlobalCopy) Bind(vm handler.IVM) error {
+	vmT, ok := vm.(handler.IVMFullAccess)
 	if !ok {
 		return fmt.Errorf("vm does not implement IVMFullAccess")
 	}
@@ -46,7 +46,7 @@ func (op *OpGlobalCopy) Bind(vm core.IVM) error {
 }
 
 // Execute performs the operation to copy a global variable from sourceIndex to destIndex in the virtual machine.
-func (op *OpGlobalCopy) Execute(decoder *core.Decoder) {
+func (op *OpGlobalCopy) Execute(decoder *handler.Decoder) {
 	sourceIndex := decoder.Operand(1)
 	destIndex := decoder.Operand(0)
 	value := op.vm.GlobalsGet(uint(sourceIndex))

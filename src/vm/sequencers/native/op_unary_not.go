@@ -3,7 +3,7 @@ package native
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/vm/core"
+	"github.com/markel1974/c64emu/src/vm/handler"
 	"github.com/markel1974/c64emu/src/vm/objects"
 	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
@@ -15,11 +15,11 @@ func init() {
 // OpUnaryNot represents the logical NOT (!) operation opcode in the virtual machine's instruction set.
 type OpUnaryNot struct {
 	opcode *opcodes.Opcode
-	vm     core.IVMFullAccess
+	vm     handler.IVMFullAccess
 }
 
 // NewOpUnaryNot creates a new instance of OpUnaryNot, representing a logical NOT operation (!).
-func NewOpUnaryNot() core.IOpExecutor {
+func NewOpUnaryNot() handler.IOpExecutor {
 	operands := _noOperands
 	return &OpUnaryNot{
 		opcode: opcodes.NewOpcode(OpUnaryNotId, operands, "OpUnaryNot"),
@@ -32,10 +32,10 @@ func (op *OpUnaryNot) Opcode() *opcodes.Opcode {
 	return op.opcode
 }
 
-// Bind initializes the instance by casting the provided VM to IVMFullAccess and storing it.
-// Returns an error if the VM does not implement the required interface.
-func (op *OpUnaryNot) Bind(vm core.IVM) error {
-	vmT, ok := vm.(core.IVMFullAccess)
+// Bind initializes the instance by casting the provided Core to IVMFullAccess and storing it.
+// Returns an error if the Core does not implement the required interface.
+func (op *OpUnaryNot) Bind(vm handler.IVM) error {
+	vmT, ok := vm.(handler.IVMFullAccess)
 	if !ok {
 		return fmt.Errorf("vm does not implement IVMFullAccess")
 	}
@@ -44,7 +44,7 @@ func (op *OpUnaryNot) Bind(vm core.IVM) error {
 }
 
 // Execute performs a logical NOT operation on the operand at the top of the stack, pushing the result back onto the stack.
-func (op *OpUnaryNot) Execute(_ *core.Decoder) {
+func (op *OpUnaryNot) Execute(_ *handler.Decoder) {
 	operand := op.vm.StackPop()
 	var val objects.IObject
 	if operand.Falsy() {

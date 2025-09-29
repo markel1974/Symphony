@@ -3,7 +3,7 @@ package native
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/vm/core"
+	"github.com/markel1974/c64emu/src/vm/handler"
 	"github.com/markel1974/c64emu/src/vm/objects"
 	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
@@ -15,11 +15,11 @@ func init() {
 // OpJumpFalsy represents an instruction that performs a conditional jump if the stack's top value evaluates to falsy.
 type OpJumpFalsy struct {
 	opcode *opcodes.Opcode
-	vm     core.IVMFullAccess
+	vm     handler.IVMFullAccess
 }
 
 // NewOpJumpFalsy creates and returns a new instance of OpJumpFalsy initialized with its corresponding Opcode.
-func NewOpJumpFalsy() core.IOpExecutor {
+func NewOpJumpFalsy() handler.IOpExecutor {
 	operands := []opcodes.OperandFeature{opcodes.SzUint16}
 	return &OpJumpFalsy{
 		opcode: opcodes.NewOpcode(OpJumpFalsyId, operands, "OpJumpFalsy"),
@@ -32,10 +32,10 @@ func (op *OpJumpFalsy) Opcode() *opcodes.Opcode {
 	return op.opcode
 }
 
-// Bind initializes the instance by casting the provided VM to IVMFullAccess and storing it.
-// Returns an error if the VM does not implement the required interface.
-func (op *OpJumpFalsy) Bind(vm core.IVM) error {
-	vmT, ok := vm.(core.IVMFullAccess)
+// Bind initializes the instance by casting the provided Core to IVMFullAccess and storing it.
+// Returns an error if the Core does not implement the required interface.
+func (op *OpJumpFalsy) Bind(vm handler.IVM) error {
+	vmT, ok := vm.(handler.IVMFullAccess)
 	if !ok {
 		return fmt.Errorf("vm does not implement IVMFullAccess")
 	}
@@ -44,7 +44,7 @@ func (op *OpJumpFalsy) Bind(vm core.IVM) error {
 }
 
 // Execute advances the instruction pointer, evaluates the stack's top element, and updates the pointer if false.
-func (op *OpJumpFalsy) Execute(decoder *core.Decoder) {
+func (op *OpJumpFalsy) Execute(decoder *handler.Decoder) {
 	obj := op.vm.StackPop()
 	if obj.Falsy() {
 		pos := decoder.Operand(0)

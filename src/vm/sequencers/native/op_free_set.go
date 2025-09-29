@@ -3,7 +3,7 @@ package native
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/vm/core"
+	"github.com/markel1974/c64emu/src/vm/handler"
 	"github.com/markel1974/c64emu/src/vm/objects"
 	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
@@ -15,11 +15,11 @@ func init() {
 // OpFreeSet represents an operation to set the value of a free variable within a closure's environment.
 type OpFreeSet struct {
 	opcode *opcodes.Opcode
-	vm     core.IVMFullAccess
+	vm     handler.IVMFullAccess
 }
 
 // NewOpFreeSet creates and returns a new instance of OpFreeSet initialized with its corresponding Opcode.
-func NewOpFreeSet() core.IOpExecutor {
+func NewOpFreeSet() handler.IOpExecutor {
 	operands := []opcodes.OperandFeature{opcodes.SzUint16}
 	return &OpFreeSet{
 		opcode: opcodes.NewOpcode(OpFreeSetId, operands, "OpFreeSet"),
@@ -32,10 +32,10 @@ func (op *OpFreeSet) Opcode() *opcodes.Opcode {
 	return op.opcode
 }
 
-// Bind initializes the instance by casting the provided VM to IVMFullAccess and storing it.
-// Returns an error if the VM does not implement the required interface.
-func (op *OpFreeSet) Bind(vm core.IVM) error {
-	vmT, ok := vm.(core.IVMFullAccess)
+// Bind initializes the instance by casting the provided Core to IVMFullAccess and storing it.
+// Returns an error if the Core does not implement the required interface.
+func (op *OpFreeSet) Bind(vm handler.IVM) error {
+	vmT, ok := vm.(handler.IVMFullAccess)
 	if !ok {
 		return fmt.Errorf("vm does not implement IVMFullAccess")
 	}
@@ -44,7 +44,7 @@ func (op *OpFreeSet) Bind(vm core.IVM) error {
 }
 
 // Execute increments the instruction pointer, retrieves a free variable index, and sets its value from the stack.
-func (op *OpFreeSet) Execute(decoder *core.Decoder) {
+func (op *OpFreeSet) Execute(decoder *handler.Decoder) {
 	freeIndex := decoder.Operand(0)
 	o := op.vm.StackPop()
 	freeObj := op.vm.FrameFreeVarsIndex(uint(freeIndex))

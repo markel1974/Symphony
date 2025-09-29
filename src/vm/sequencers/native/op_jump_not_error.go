@@ -5,7 +5,7 @@ package native
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/vm/core"
+	"github.com/markel1974/c64emu/src/vm/handler"
 	"github.com/markel1974/c64emu/src/vm/objects"
 	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
@@ -16,15 +16,15 @@ func init() {
 }
 
 // OpJumpNotError represents an operation that conditionally jumps if the top stack value is not a valid error.
-// It uses VM control flow and stack operations to determine execution flow based on error type validity.
+// It uses Core control flow and stack operations to determine execution flow based on error type validity.
 type OpJumpNotError struct {
 	opcode *opcodes.Opcode
-	vm     core.IVMFullAccess
+	vm     handler.IVMFullAccess
 }
 
-// NewOpJumpNotError creates a new OpJumpNotError executor, verifying that the provided VM implements IVMFullAccess.
-// It returns an instance of IOpExecutor or an error if the VM does not support full access functionality.
-func NewOpJumpNotError() core.IOpExecutor {
+// NewOpJumpNotError creates a new OpJumpNotError executor, verifying that the provided Core implements IVMFullAccess.
+// It returns an instance of IOpExecutor or an error if the Core does not support full access functionality.
+func NewOpJumpNotError() handler.IOpExecutor {
 	operands := []opcodes.OperandFeature{opcodes.SzUint16}
 	return &OpJumpNotError{
 		opcode: opcodes.NewOpcode(OpJumpNotErrorId, operands, "OpJumpNotError"),
@@ -37,10 +37,10 @@ func (op *OpJumpNotError) Opcode() *opcodes.Opcode {
 	return op.opcode
 }
 
-// Bind initializes the instance by casting the provided VM to IVMFullAccess and storing it.
-// Returns an error if the VM does not implement the required interface.
-func (op *OpJumpNotError) Bind(vm core.IVM) error {
-	vmT, ok := vm.(core.IVMFullAccess)
+// Bind initializes the instance by casting the provided Core to IVMFullAccess and storing it.
+// Returns an error if the Core does not implement the required interface.
+func (op *OpJumpNotError) Bind(vm handler.IVM) error {
+	vmT, ok := vm.(handler.IVMFullAccess)
 	if !ok {
 		return fmt.Errorf("vm does not implement IVMFullAccess")
 	}
@@ -49,7 +49,7 @@ func (op *OpJumpNotError) Bind(vm core.IVM) error {
 }
 
 // Execute evaluates the top stack element and conditionally updates the instruction pointer if it is not a valid error.
-func (op *OpJumpNotError) Execute(decoder *core.Decoder) {
+func (op *OpJumpNotError) Execute(decoder *handler.Decoder) {
 	obj := op.vm.StackPeek()
 	err, isErr := obj.(*objects.Error)
 	if !isErr || !err.Falsy() {

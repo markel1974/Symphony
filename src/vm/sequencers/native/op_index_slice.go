@@ -3,7 +3,7 @@ package native
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/vm/core"
+	"github.com/markel1974/c64emu/src/vm/handler"
 	"github.com/markel1974/c64emu/src/vm/objects"
 	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
@@ -16,11 +16,11 @@ func init() {
 // It embeds Opcode to inherit opcode, operand, and name information for execution and identification.
 type OpIndexSlice struct {
 	opcode *opcodes.Opcode
-	vm     core.IVMFullAccess
+	vm     handler.IVMFullAccess
 }
 
 // NewOpIndexSlice creates a new instance of OpIndexSlice containing details for the slice indexing bytecode operation.
-func NewOpIndexSlice() core.IOpExecutor {
+func NewOpIndexSlice() handler.IOpExecutor {
 	operands := _noOperands
 	return &OpIndexSlice{
 		opcode: opcodes.NewOpcode(OpIndexSliceId, operands, "OpIndexSlice"),
@@ -33,10 +33,10 @@ func (op *OpIndexSlice) Opcode() *opcodes.Opcode {
 	return op.opcode
 }
 
-// Bind initializes the instance by casting the provided VM to IVMFullAccess and storing it.
-// Returns an error if the VM does not implement the required interface.
-func (op *OpIndexSlice) Bind(vm core.IVM) error {
-	vmT, ok := vm.(core.IVMFullAccess)
+// Bind initializes the instance by casting the provided Core to IVMFullAccess and storing it.
+// Returns an error if the Core does not implement the required interface.
+func (op *OpIndexSlice) Bind(vm handler.IVM) error {
+	vmT, ok := vm.(handler.IVMFullAccess)
 	if !ok {
 		return fmt.Errorf("vm does not implement IVMFullAccess")
 	}
@@ -45,7 +45,7 @@ func (op *OpIndexSlice) Bind(vm core.IVM) error {
 }
 
 // Execute processes the slice operation on the stack, adjusting bounds and supporting various object types like arrays and strings.
-func (op *OpIndexSlice) Execute(_ *core.Decoder) {
+func (op *OpIndexSlice) Execute(_ *handler.Decoder) {
 	highObj := op.vm.StackPop()
 	lowObj := op.vm.StackPop()
 	targetObj := op.vm.StackPop()

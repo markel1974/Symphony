@@ -3,7 +3,7 @@ package native
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/vm/core"
+	"github.com/markel1974/c64emu/src/vm/handler"
 	"github.com/markel1974/c64emu/src/vm/objects"
 	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
@@ -16,11 +16,11 @@ func init() {
 // It extends Opcode, inheriting its metadata and behaviors.
 type OpUnaryBitwiseComplement struct {
 	opcode *opcodes.Opcode
-	vm     core.IVMFullAccess
+	vm     handler.IVMFullAccess
 }
 
 // NewOpUnaryBitwiseComplement initializes and returns an OpUnaryBitwiseComplement instance with the corresponding Opcode configuration.
-func NewOpUnaryBitwiseComplement() core.IOpExecutor {
+func NewOpUnaryBitwiseComplement() handler.IOpExecutor {
 	operands := _noOperands
 	return &OpUnaryBitwiseComplement{
 		opcode: opcodes.NewOpcode(OpUnaryBitwiseComplementId, operands, "OpUnaryBitwiseComplement"),
@@ -33,10 +33,10 @@ func (op *OpUnaryBitwiseComplement) Opcode() *opcodes.Opcode {
 	return op.opcode
 }
 
-// Bind initializes the instance by casting the provided VM to IVMFullAccess and storing it.
-// Returns an error if the VM does not implement the required interface.
-func (op *OpUnaryBitwiseComplement) Bind(vm core.IVM) error {
-	vmT, ok := vm.(core.IVMFullAccess)
+// Bind initializes the instance by casting the provided Core to IVMFullAccess and storing it.
+// Returns an error if the Core does not implement the required interface.
+func (op *OpUnaryBitwiseComplement) Bind(vm handler.IVM) error {
+	vmT, ok := vm.(handler.IVMFullAccess)
 	if !ok {
 		return fmt.Errorf("vm does not implement IVMFullAccess")
 	}
@@ -45,7 +45,7 @@ func (op *OpUnaryBitwiseComplement) Bind(vm core.IVM) error {
 }
 
 // Execute performs the bitwise complement operation on the top stack value. Sets an error if the value is not an integer.
-func (op *OpUnaryBitwiseComplement) Execute(_ *core.Decoder) {
+func (op *OpUnaryBitwiseComplement) Execute(_ *handler.Decoder) {
 	obj := op.vm.StackPop()
 	res := op.vm.Factory().NewInt(op.vm.FrameId(), ^obj.AsInt64())
 	op.vm.StackPush(res)

@@ -3,7 +3,7 @@ package native
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/vm/core"
+	"github.com/markel1974/c64emu/src/vm/handler"
 	"github.com/markel1974/c64emu/src/vm/objects"
 	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
@@ -16,12 +16,12 @@ func init() {
 // OpGlobalPtrGet represents an executable opcode for retrieving a global pointer in the virtual machine context.
 type OpGlobalPtrGet struct {
 	opcode *opcodes.Opcode
-	vm     core.IVMFullAccess
+	vm     handler.IVMFullAccess
 }
 
-// NewOpGlobalPtrGet creates a new OpGlobalPtrGet executor, verifying the VM implements IVMFullAccess and initializing its Opcode.
-// It returns the created core.IOpExecutor or an error if the VM check fails.
-func NewOpGlobalPtrGet() core.IOpExecutor {
+// NewOpGlobalPtrGet creates a new OpGlobalPtrGet executor, verifying the Core implements IVMFullAccess and initializing its Opcode.
+// It returns the created handler.IOpExecutor or an error if the Core check fails.
+func NewOpGlobalPtrGet() handler.IOpExecutor {
 	operands := []opcodes.OperandFeature{opcodes.Relocatable}
 	return &OpGlobalPtrGet{
 		opcode: opcodes.NewOpcode(OpGlobalPtrGetId, operands, "OpGlobalPtrGet"),
@@ -34,10 +34,10 @@ func (op *OpGlobalPtrGet) Opcode() *opcodes.Opcode {
 	return op.opcode
 }
 
-// Bind initializes the instance by casting the provided VM to IVMFullAccess and storing it.
-// Returns an error if the VM does not implement the required interface.
-func (op *OpGlobalPtrGet) Bind(vm core.IVM) error {
-	vmT, ok := vm.(core.IVMFullAccess)
+// Bind initializes the instance by casting the provided Core to IVMFullAccess and storing it.
+// Returns an error if the Core does not implement the required interface.
+func (op *OpGlobalPtrGet) Bind(vm handler.IVM) error {
+	vmT, ok := vm.(handler.IVMFullAccess)
 	if !ok {
 		return fmt.Errorf("vm does not implement IVMFullAccess")
 	}
@@ -46,7 +46,7 @@ func (op *OpGlobalPtrGet) Bind(vm core.IVM) error {
 }
 
 // Execute retrieves a global value by its index, checks its type, and pushes a pointer object onto the stack.
-func (op *OpGlobalPtrGet) Execute(decoder *core.Decoder) {
+func (op *OpGlobalPtrGet) Execute(decoder *handler.Decoder) {
 	globalIndex := decoder.Operand(0)
 	val := op.vm.GlobalsGet(uint(globalIndex))
 	ptr := op.vm.CreateObjectPointer(val)

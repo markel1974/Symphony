@@ -3,7 +3,7 @@ package native
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/vm/core"
+	"github.com/markel1974/c64emu/src/vm/handler"
 	"github.com/markel1974/c64emu/src/vm/objects"
 	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
@@ -15,11 +15,11 @@ func init() {
 // OpGlobalIndex represents an operation for setting a global variable's value using selectors for indexing or access.
 type OpGlobalIndex struct {
 	opcode *opcodes.Opcode
-	vm     core.IVMFullAccess
+	vm     handler.IVMFullAccess
 }
 
 // NewOpGlobalIndex creates a new instance of OpGlobalIndex with its corresponding Opcode initialized.
-func NewOpGlobalIndex() core.IOpExecutor {
+func NewOpGlobalIndex() handler.IOpExecutor {
 	operands := []opcodes.OperandFeature{opcodes.SzUint8, opcodes.Relocatable}
 	return &OpGlobalIndex{
 		opcode: opcodes.NewOpcode(OpGlobalIndexId, operands, "OpGlobalIndex"),
@@ -32,10 +32,10 @@ func (op *OpGlobalIndex) Opcode() *opcodes.Opcode {
 	return op.opcode
 }
 
-// Bind initializes the instance by casting the provided VM to IVMFullAccess and storing it.
-// Returns an error if the VM does not implement the required interface.
-func (op *OpGlobalIndex) Bind(vm core.IVM) error {
-	vmT, ok := vm.(core.IVMFullAccess)
+// Bind initializes the instance by casting the provided Core to IVMFullAccess and storing it.
+// Returns an error if the Core does not implement the required interface.
+func (op *OpGlobalIndex) Bind(vm handler.IVM) error {
+	vmT, ok := vm.(handler.IVMFullAccess)
 	if !ok {
 		return fmt.Errorf("vm does not implement IVMFullAccess")
 	}
@@ -43,8 +43,8 @@ func (op *OpGlobalIndex) Bind(vm core.IVM) error {
 	return nil
 }
 
-// Execute performs the operation defined by OpGlobalIndex, updating the VM state and handling global index assignment.
-func (op *OpGlobalIndex) Execute(decoder *core.Decoder) {
+// Execute performs the operation defined by OpGlobalIndex, updating the Core state and handling global index assignment.
+func (op *OpGlobalIndex) Execute(decoder *handler.Decoder) {
 	globalIndex := decoder.Operand(0)
 	selCount := decoder.Operand(1)
 	dstObj := op.vm.GlobalsGet(uint(globalIndex))

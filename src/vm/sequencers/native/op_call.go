@@ -3,7 +3,7 @@ package native
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/vm/core"
+	"github.com/markel1974/c64emu/src/vm/handler"
 	"github.com/markel1974/c64emu/src/vm/objects"
 	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
@@ -15,11 +15,11 @@ func init() {
 // OpCall represents an operation code for invoking a function call in the virtual machine.
 type OpCall struct {
 	opcode *opcodes.Opcode
-	vm     core.IVMFullAccess
+	vm     handler.IVMFullAccess
 }
 
 // NewOpCall creates and returns a new instance of OpCall with initialized Opcode for the OpCall opcode.
-func NewOpCall() core.IOpExecutor {
+func NewOpCall() handler.IOpExecutor {
 	operands := []opcodes.OperandFeature{opcodes.SzUint8, opcodes.SzUint8}
 	return &OpCall{
 		opcode: opcodes.NewOpcode(OpCallId, operands, "OpCall"),
@@ -32,10 +32,10 @@ func (op *OpCall) Opcode() *opcodes.Opcode {
 	return op.opcode
 }
 
-// Bind initializes the instance by casting the provided VM to IVMFullAccess and storing it.
-// Returns an error if the VM does not implement the required interface.
-func (op *OpCall) Bind(vm core.IVM) error {
-	vmT, ok := vm.(core.IVMFullAccess)
+// Bind initializes the instance by casting the provided Core to IVMFullAccess and storing it.
+// Returns an error if the Core does not implement the required interface.
+func (op *OpCall) Bind(vm handler.IVM) error {
+	vmT, ok := vm.(handler.IVMFullAccess)
 	if !ok {
 		return fmt.Errorf("vm does not implement IVMFullAccess")
 	}
@@ -44,7 +44,7 @@ func (op *OpCall) Bind(vm core.IVM) error {
 }
 
 // Execute processes the OpCall instruction, invoking the callable or handling array spreads, and manages the stack state.
-func (op *OpCall) Execute(decoder *core.Decoder) {
+func (op *OpCall) Execute(decoder *handler.Decoder) {
 	spread := decoder.Operand(0)
 	numArgs := decoder.Operand(1)
 	hasSpread := spread > 0

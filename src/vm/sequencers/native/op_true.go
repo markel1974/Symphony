@@ -3,7 +3,7 @@ package native
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/vm/core"
+	"github.com/markel1974/c64emu/src/vm/handler"
 	"github.com/markel1974/c64emu/src/vm/objects"
 	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
@@ -15,11 +15,11 @@ func init() {
 // OpTrue represents the opcode for pushing the boolean value true onto the stack.
 type OpTrue struct {
 	opcode *opcodes.Opcode
-	vm     core.IVMFullAccess
+	vm     handler.IVMFullAccess
 }
 
 // NewOpTrue initializes a new instance of OpTrue, representing the opcode that pushes the boolean value true onto the stack.
-func NewOpTrue() core.IOpExecutor {
+func NewOpTrue() handler.IOpExecutor {
 	operands := _noOperands
 	return &OpTrue{
 		opcode: opcodes.NewOpcode(OpTrueId, operands, "OpTrue"),
@@ -32,10 +32,10 @@ func (op *OpTrue) Opcode() *opcodes.Opcode {
 	return op.opcode
 }
 
-// Bind initializes the instance by casting the provided VM to IVMFullAccess and storing it.
-// Returns an error if the VM does not implement the required interface.
-func (op *OpTrue) Bind(vm core.IVM) error {
-	vmT, ok := vm.(core.IVMFullAccess)
+// Bind initializes the instance by casting the provided Core to IVMFullAccess and storing it.
+// Returns an error if the Core does not implement the required interface.
+func (op *OpTrue) Bind(vm handler.IVM) error {
+	vmT, ok := vm.(handler.IVMFullAccess)
 	if !ok {
 		return fmt.Errorf("vm does not implement IVMFullAccess")
 	}
@@ -44,7 +44,7 @@ func (op *OpTrue) Bind(vm core.IVM) error {
 }
 
 // Execute pushes the constant true value onto the virtual machine's stack.
-func (op *OpTrue) Execute(_ *core.Decoder) {
+func (op *OpTrue) Execute(_ *handler.Decoder) {
 	val := op.vm.Factory().TrueValue()
 	op.vm.StackPush(val)
 }

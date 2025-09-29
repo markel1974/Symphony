@@ -3,7 +3,7 @@ package native
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/vm/core"
+	"github.com/markel1974/c64emu/src/vm/handler"
 	"github.com/markel1974/c64emu/src/vm/objects"
 	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
@@ -16,12 +16,12 @@ func init() {
 // OpLogical represents a logical operation bytecode execution handler within the virtual machine context.
 type OpLogical struct {
 	opcode *opcodes.Opcode
-	vm     core.IVMFullAccess
+	vm     handler.IVMFullAccess
 }
 
-// NewOpLogical creates a new instance of OpLogical executor for logical bytecode operations using the provided VM and opcode.
-// It returns an IOpExecutor implementation or an error if the VM does not support IVMFullAccess.
-func NewOpLogical() core.IOpExecutor {
+// NewOpLogical creates a new instance of OpLogical executor for logical bytecode operations using the provided Core and opcode.
+// It returns an IOpExecutor implementation or an error if the Core does not support IVMFullAccess.
+func NewOpLogical() handler.IOpExecutor {
 	operands := []opcodes.OperandFeature{opcodes.SzUint8}
 	return &OpLogical{
 		opcode: opcodes.NewOpcode(OpLogicalId, operands, "OpLogical"),
@@ -34,10 +34,10 @@ func (op *OpLogical) Opcode() *opcodes.Opcode {
 	return op.opcode
 }
 
-// Bind initializes the instance by casting the provided VM to IVMFullAccess and storing it.
-// Returns an error if the VM does not implement the required interface.
-func (op *OpLogical) Bind(vm core.IVM) error {
-	vmT, ok := vm.(core.IVMFullAccess)
+// Bind initializes the instance by casting the provided Core to IVMFullAccess and storing it.
+// Returns an error if the Core does not implement the required interface.
+func (op *OpLogical) Bind(vm handler.IVM) error {
+	vmT, ok := vm.(handler.IVMFullAccess)
 	if !ok {
 		return fmt.Errorf("vm does not implement IVMFullAccess")
 	}
@@ -46,7 +46,7 @@ func (op *OpLogical) Bind(vm core.IVM) error {
 }
 
 // Execute processes the logical operation by decoding the opcode, applying the binary operation, and updating the stack.
-func (op *OpLogical) Execute(decoder *core.Decoder) {
+func (op *OpLogical) Execute(decoder *handler.Decoder) {
 	opcode := decoder.Operand(0)
 	rhs := op.vm.StackPop()
 	lhs := op.vm.StackPop()

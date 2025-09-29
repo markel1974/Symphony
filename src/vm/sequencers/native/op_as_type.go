@@ -5,7 +5,7 @@ package native
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/vm/core"
+	"github.com/markel1974/c64emu/src/vm/handler"
 	"github.com/markel1974/c64emu/src/vm/objects"
 	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
@@ -15,16 +15,16 @@ func init() {
 	SequencerRegister(NewOpAsType)
 }
 
-// OpAsType represents an executor linked to the bytecode opcode OpAsType for handling unchecked casts in the VM.
-// It embeds a bytecode.Opcode and uses core.IVMFullAccess for full VM functionality.
+// OpAsType represents an executor linked to the bytecode opcode OpAsType for handling unchecked casts in the Core.
+// It embeds a bytecode.Opcode and uses handler.IVMFullAccess for full Core functionality.
 type OpAsType struct {
 	opcode *opcodes.Opcode
-	vm     core.IVMFullAccess
+	vm     handler.IVMFullAccess
 }
 
 // NewOpAsType creates a new instance of OpAsType executor for the given virtual machine and opcode.
-// Returns an error if the provided VM does not implement IVMFullAccess.
-func NewOpAsType() core.IOpExecutor {
+// Returns an error if the provided Core does not implement IVMFullAccess.
+func NewOpAsType() handler.IOpExecutor {
 	operands := []opcodes.OperandFeature{opcodes.SzUint16}
 	return &OpAsType{
 		opcode: opcodes.NewOpcode(OpAsTypeId, operands, "OpAsType"),
@@ -37,10 +37,10 @@ func (op *OpAsType) Opcode() *opcodes.Opcode {
 	return op.opcode
 }
 
-// Bind initializes the OpAsType instance by casting the provided VM to IVMFullAccess and storing it.
-// Returns an error if the VM does not implement the required interface.
-func (op *OpAsType) Bind(vm core.IVM) error {
-	vmT, ok := vm.(core.IVMFullAccess)
+// Bind initializes the OpAsType instance by casting the provided Core to IVMFullAccess and storing it.
+// Returns an error if the Core does not implement the required interface.
+func (op *OpAsType) Bind(vm handler.IVM) error {
+	vmT, ok := vm.(handler.IVMFullAccess)
 	if !ok {
 		return fmt.Errorf("vm does not implement IVMFullAccess")
 	}
@@ -50,7 +50,7 @@ func (op *OpAsType) Bind(vm core.IVM) error {
 
 // Execute performs the operation by popping an interface from the stack and pushing its concrete value back.
 // If the popped object is not an interface, it sets an error in the virtual machine.
-func (op *OpAsType) Execute(_ *core.Decoder) {
+func (op *OpAsType) Execute(_ *handler.Decoder) {
 	interfaceObj := op.vm.StackPop()
 	concrete := op.vm.Factory().Concrete(interfaceObj)
 	op.vm.StackPush(concrete)

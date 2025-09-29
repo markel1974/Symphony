@@ -3,7 +3,7 @@ package native
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/vm/core"
+	"github.com/markel1974/c64emu/src/vm/handler"
 	"github.com/markel1974/c64emu/src/vm/objects"
 	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
@@ -15,11 +15,11 @@ func init() {
 // OpIndexGet represents the operation for performing an indexing operation on a value.
 type OpIndexGet struct {
 	opcode *opcodes.Opcode
-	vm     core.IVMFullAccess
+	vm     handler.IVMFullAccess
 }
 
 // NewOpIndexGet creates and returns a new instance of OpIndexGet initialized with its associated Opcode.
-func NewOpIndexGet() core.IOpExecutor {
+func NewOpIndexGet() handler.IOpExecutor {
 	operands := _noOperands
 	return &OpIndexGet{
 		opcode: opcodes.NewOpcode(OpIndexGetId, operands, "OpIndexGet"),
@@ -27,10 +27,10 @@ func NewOpIndexGet() core.IOpExecutor {
 	}
 }
 
-// Bind initializes the instance by casting the provided VM to IVMFullAccess and storing it.
-// Returns an error if the VM does not implement the required interface.
-func (op *OpIndexGet) Bind(vm core.IVM) error {
-	vmT, ok := vm.(core.IVMFullAccess)
+// Bind initializes the instance by casting the provided Core to IVMFullAccess and storing it.
+// Returns an error if the Core does not implement the required interface.
+func (op *OpIndexGet) Bind(vm handler.IVM) error {
+	vmT, ok := vm.(handler.IVMFullAccess)
 	if !ok {
 		return fmt.Errorf("vm does not implement IVMFullAccess")
 	}
@@ -44,7 +44,7 @@ func (op *OpIndexGet) Opcode() *opcodes.Opcode {
 }
 
 // Execute processes the index operation on the stack, retrieving a value or setting an error if indexing is invalid.
-func (op *OpIndexGet) Execute(_ *core.Decoder) {
+func (op *OpIndexGet) Execute(_ *handler.Decoder) {
 	index := op.vm.StackPop()
 	left := op.vm.StackPop()
 	val, err := left.IndexGet(op.vm.FrameId(), index)

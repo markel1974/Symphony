@@ -3,7 +3,7 @@ package native
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/vm/core"
+	"github.com/markel1974/c64emu/src/vm/handler"
 	"github.com/markel1974/c64emu/src/vm/objects"
 	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
@@ -13,17 +13,17 @@ func init() {
 	SequencerRegister(NewOpGlobalDefine)
 }
 
-// OpGlobalDefine represents an operation to define a global variable in the VM environment.
+// OpGlobalDefine represents an operation to define a global variable in the Core environment.
 // It binds a value from the stack to a global index specified by the decoder.
-// Embeds `bytecode.Opcode` for opcode-related operations and uses `core.IVMFullAccess` for VM interactions.
+// Embeds `bytecode.Opcode` for opcode-related operations and uses `handler.IVMFullAccess` for Core interactions.
 type OpGlobalDefine struct {
 	opcode *opcodes.Opcode
-	vm     core.IVMFullAccess
+	vm     handler.IVMFullAccess
 }
 
 // NewOpGlobalDefine creates a new OpGlobalDefine executor for the given virtual machine and opcode configuration.
-// Returns an IOpExecutor instance or an error if the VM does not implement IVMFullAccess.
-func NewOpGlobalDefine() core.IOpExecutor {
+// Returns an IOpExecutor instance or an error if the Core does not implement IVMFullAccess.
+func NewOpGlobalDefine() handler.IOpExecutor {
 	operands := []opcodes.OperandFeature{opcodes.Relocatable}
 	return &OpGlobalDefine{
 		opcode: opcodes.NewOpcode(OpGlobalDefineId, operands, "OpGlobalDefine"),
@@ -36,10 +36,10 @@ func (op *OpGlobalDefine) Opcode() *opcodes.Opcode {
 	return op.opcode
 }
 
-// Bind initializes the instance by casting the provided VM to IVMFullAccess and storing it.
-// Returns an error if the VM does not implement the required interface.
-func (op *OpGlobalDefine) Bind(vm core.IVM) error {
-	vmT, ok := vm.(core.IVMFullAccess)
+// Bind initializes the instance by casting the provided Core to IVMFullAccess and storing it.
+// Returns an error if the Core does not implement the required interface.
+func (op *OpGlobalDefine) Bind(vm handler.IVM) error {
+	vmT, ok := vm.(handler.IVMFullAccess)
 	if !ok {
 		return fmt.Errorf("vm does not implement IVMFullAccess")
 	}
@@ -48,7 +48,7 @@ func (op *OpGlobalDefine) Bind(vm core.IVM) error {
 }
 
 // Execute sets a value from the stack into the global variables using the operand index from the decoder.
-func (op *OpGlobalDefine) Execute(decoder *core.Decoder) {
+func (op *OpGlobalDefine) Execute(decoder *handler.Decoder) {
 	index := decoder.Operand(0)
 	val := op.vm.StackPeek()
 	op.vm.GlobalsSet(uint(index), val)

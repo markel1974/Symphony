@@ -1,4 +1,4 @@
-package core
+package handler
 
 import (
 	"github.com/markel1974/c64emu/src/vm/objects"
@@ -6,7 +6,7 @@ import (
 
 // IVM defines an interface for managing a virtual machine with functionalities for version retrieval.
 type IVM interface {
-	Version() string
+	Version() int
 }
 
 type IVMFrameOnly interface {
@@ -46,7 +46,7 @@ type IVMStackOnly interface {
 	SetError(err error)
 }
 
-// IVMReadOnly is an interface providing read-only access to VM components like constants, globals, imports, and frame.
+// IVMReadOnly is an interface providing read-only access to Core components like constants, globals, imports, and frame.
 type IVMReadOnly interface {
 	IVM
 	IVMStackOnly
@@ -56,7 +56,7 @@ type IVMReadOnly interface {
 	ConstantsGet(idx uint) objects.IObject
 }
 
-// IVMReadWrite represents an interface extending IVMReadOnly with additional write capabilities for VM global state.
+// IVMReadWrite represents an interface extending IVMReadOnly with additional write capabilities for Core global state.
 type IVMReadWrite interface {
 	IVMReadOnly
 	GlobalsGet(idx uint) objects.IObject

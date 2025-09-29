@@ -5,7 +5,7 @@ package native
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/vm/core"
+	"github.com/markel1974/c64emu/src/vm/handler"
 	"github.com/markel1974/c64emu/src/vm/objects"
 	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
@@ -16,14 +16,14 @@ func init() {
 }
 
 // OpTypeAssert represents a bytecode operation for performing type assertions in a virtual machine.
-// It embeds bytecode.Opcode to utilize opcode-related functionalities and operates on a core.IVMFullAccess instance.
+// It embeds bytecode.Opcode to utilize opcode-related functionalities and operates on a handler.IVMFullAccess instance.
 type OpTypeAssert struct {
 	opcode *opcodes.Opcode
-	vm     core.IVMFullAccess
+	vm     handler.IVMFullAccess
 }
 
 // NewOpTypeAssert creates a new instance of OpTypeAssert, ensuring the provided IVM implements IVMFullAccess.
-func NewOpTypeAssert() core.IOpExecutor {
+func NewOpTypeAssert() handler.IOpExecutor {
 	operands := []opcodes.OperandFeature{opcodes.Relocatable}
 	return &OpTypeAssert{
 		opcode: opcodes.NewOpcode(OpTypeAssertId, operands, "OpTypeAssert"),
@@ -36,10 +36,10 @@ func (op *OpTypeAssert) Opcode() *opcodes.Opcode {
 	return op.opcode
 }
 
-// Bind initializes the instance by casting the provided VM to IVMFullAccess and storing it.
-// Returns an error if the VM does not implement the required interface.
-func (op *OpTypeAssert) Bind(vm core.IVM) error {
-	vmT, ok := vm.(core.IVMFullAccess)
+// Bind initializes the instance by casting the provided Core to IVMFullAccess and storing it.
+// Returns an error if the Core does not implement the required interface.
+func (op *OpTypeAssert) Bind(vm handler.IVM) error {
+	vmT, ok := vm.(handler.IVMFullAccess)
 	if !ok {
 		return fmt.Errorf("vm does not implement IVMFullAccess")
 	}
@@ -50,7 +50,7 @@ func (op *OpTypeAssert) Bind(vm core.IVM) error {
 // Execute processes the type assertion operation. It attempts to assert if the top stack object matches the desired type.
 // It decodes the target type from the constant pool using the provided decoder and validates against the interface object.
 // On success, the concrete value and a boolean 'true' are pushed onto the stack. On failure, undefined and 'false' are pushed.
-func (op *OpTypeAssert) Execute(decoder *core.Decoder) {
+func (op *OpTypeAssert) Execute(decoder *handler.Decoder) {
 	typeNameIndex := decoder.Operand(0)
 	interfaceObj := op.vm.StackPop()
 	targetTypeObj := op.vm.ConstantsGet(uint(typeNameIndex))

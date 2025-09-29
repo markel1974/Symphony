@@ -3,15 +3,15 @@ package native
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/vm/core"
+	"github.com/markel1974/c64emu/src/vm/handler"
 	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
 
 // _noOperands is a predefined empty slice of OperandFeature used for opcodes that do not require any operands.
 var _noOperands []opcodes.OperandFeature
 
-// registerFunc defines a function type that returns a core.IOpExecutor instance used to register operation executors.
-type registerFunc = func() core.IOpExecutor
+// registerFunc defines a function type that returns a handler.IOpExecutor instance used to register operation executors.
+type registerFunc = func() handler.IOpExecutor
 
 // _registerContainer is a slice of registerFunc used to store functions that register IOpExecutor instances.
 var _registerContainer []registerFunc
@@ -24,7 +24,7 @@ func SequencerRegister(fn registerFunc) {
 // Sequencer is responsible for managing and resolving opcode executors within a virtual machine execution context.
 type Sequencer struct {
 	mask      int
-	executors []core.IOpExecutor
+	executors []handler.IOpExecutor
 	unknownId opcodes.OpcodeId
 }
 
@@ -40,7 +40,7 @@ func NewSequencer() *Sequencer {
 
 // Setup initializes the Sequencer by registering and configuring opcode executors, ensuring no duplicate opcodes exist.
 func (ds *Sequencer) Setup() error {
-	var container []core.IOpExecutor
+	var container []handler.IOpExecutor
 	maxId := -1
 	for _, fn := range _registerContainer {
 		executor := fn()
@@ -56,7 +56,7 @@ func (ds *Sequencer) Setup() error {
 	unknown := NewOpUnknown()
 	ds.unknownId = unknown.Opcode().OpcodeId()
 	ds.mask = (1 << maskBits) - 1
-	ds.executors = make([]core.IOpExecutor, ds.mask+1)
+	ds.executors = make([]handler.IOpExecutor, ds.mask+1)
 	for idx := range ds.executors {
 		ds.executors[idx] = unknown
 	}
@@ -71,7 +71,7 @@ func (ds *Sequencer) Setup() error {
 }
 
 // Bind links all opcode executors within the Sequencer to the provided virtual machine instance, returning an error if any fail.
-func (ds *Sequencer) Bind(vm *core.VM) error {
+func (ds *Sequencer) Bind(vm *handler.Core) error {
 	for _, executor := range ds.executors {
 		if err := executor.Bind(vm); err != nil {
 			return err
@@ -109,7 +109,7 @@ func (ds *Sequencer) Len() int {
 }
 
 // Executors returns the slice of IOpExecutor instances managed by the Sequencer.
-func (ds *Sequencer) Executors() []core.IOpExecutor {
+func (ds *Sequencer) Executors() []handler.IOpExecutor {
 	return ds.executors
 }
 

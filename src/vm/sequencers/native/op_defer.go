@@ -3,7 +3,7 @@ package native
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/vm/core"
+	"github.com/markel1974/c64emu/src/vm/handler"
 	"github.com/markel1974/c64emu/src/vm/objects"
 	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
@@ -14,10 +14,10 @@ func init() {
 
 type OpDefer struct {
 	opcode *opcodes.Opcode
-	vm     core.IVMFullAccess
+	vm     handler.IVMFullAccess
 }
 
-func NewOpDefer() core.IOpExecutor {
+func NewOpDefer() handler.IOpExecutor {
 	operands := _noOperands
 	return &OpDefer{
 		opcode: opcodes.NewOpcode(OpDeferId, operands, "OpDefer"),
@@ -30,10 +30,10 @@ func (op *OpDefer) Opcode() *opcodes.Opcode {
 	return op.opcode
 }
 
-// Bind initializes the instance by casting the provided VM to IVMFullAccess and storing it.
-// Returns an error if the VM does not implement the required interface.
-func (op *OpDefer) Bind(vm core.IVM) error {
-	vmT, ok := vm.(core.IVMFullAccess)
+// Bind initializes the instance by casting the provided Core to IVMFullAccess and storing it.
+// Returns an error if the Core does not implement the required interface.
+func (op *OpDefer) Bind(vm handler.IVM) error {
+	vmT, ok := vm.(handler.IVMFullAccess)
 	if !ok {
 		return fmt.Errorf("vm does not implement IVMFullAccess")
 	}
@@ -42,7 +42,7 @@ func (op *OpDefer) Bind(vm core.IVM) error {
 }
 
 // Execute processes the top stack item, deferring its execution if it is a compiled function, otherwise sets an error.
-func (op *OpDefer) Execute(_ *core.Decoder) {
+func (op *OpDefer) Execute(_ *handler.Decoder) {
 	obj := op.vm.StackPop()
 	op.vm.FrameDeferredAdd(obj)
 }

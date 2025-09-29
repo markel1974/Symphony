@@ -5,7 +5,7 @@ import (
 
 	"github.com/markel1974/c64emu/src/compilers"
 	"github.com/markel1974/c64emu/src/vm/bytecode"
-	"github.com/markel1974/c64emu/src/vm/core"
+	"github.com/markel1974/c64emu/src/vm/handler"
 	"github.com/markel1974/c64emu/src/vm/objects"
 	"github.com/markel1974/c64emu/src/vm/sequencers/native"
 )
@@ -14,9 +14,9 @@ import (
 type Script struct {
 	gk          objects.IGateKeeper
 	loader      bytecode.ILoader
-	seq         core.ISequencer
+	seq         handler.ISequencer
 	compiler    bytecode.ICompiler
-	vm          *core.VM
+	vm          *handler.VM
 	entryPoints map[string]uint
 	initialized bool
 }
@@ -49,10 +49,10 @@ func (v *Script) Setup(p *Process) error {
 	if err = v.loader.AddPackage(pkg); err != nil {
 		return err
 	}
-	v.vm = core.New(v.gk, v.seq)
-	if err = v.seq.Bind(v.vm); err != nil {
-		return err
-	}
+	v.vm = handler.NewVM(v.gk, v.seq, v.seq)
+	//if err = v.seq.Bind(v.vm); err != nil {
+	//	return err
+	//}
 	v.initialized = true
 	return nil
 }
@@ -66,7 +66,7 @@ func (v *Script) Compile(name string, code string) error {
 		return err
 	}
 	bc := bytecode.NewBytecode(v.gk, v.compiler.Constants(), v.compiler.Imports(), v.compiler.Globals(), v.compiler.FileSet())
-	entryPoints, err := v.vm.Setup(v.loader, v.seq.Executors(), bc)
+	entryPoints, err := v.vm.Setup(v.loader, bc)
 	if err != nil {
 		return err
 	}

@@ -3,7 +3,7 @@ package native
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/vm/core"
+	"github.com/markel1974/c64emu/src/vm/handler"
 	"github.com/markel1974/c64emu/src/vm/objects"
 	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
@@ -15,11 +15,11 @@ func init() {
 // OpLocalGet represents an operation to retrieve a local variable from the stack using its index.
 type OpLocalGet struct {
 	opcode *opcodes.Opcode
-	vm     core.IVMFullAccess
+	vm     handler.IVMFullAccess
 }
 
 // NewOpLocalGet creates a new OpLocalGet instance and initializes it with details for the OpLocalGet opcode.
-func NewOpLocalGet() core.IOpExecutor {
+func NewOpLocalGet() handler.IOpExecutor {
 	operands := []opcodes.OperandFeature{opcodes.SzUint16}
 	return &OpLocalGet{
 		opcode: opcodes.NewOpcode(OpLocalGetId, operands, "OpLocalGet"),
@@ -32,10 +32,10 @@ func (op *OpLocalGet) Opcode() *opcodes.Opcode {
 	return op.opcode
 }
 
-// Bind initializes the instance by casting the provided VM to IVMFullAccess and storing it.
-// Returns an error if the VM does not implement the required interface.
-func (op *OpLocalGet) Bind(vm core.IVM) error {
-	vmT, ok := vm.(core.IVMFullAccess)
+// Bind initializes the instance by casting the provided Core to IVMFullAccess and storing it.
+// Returns an error if the Core does not implement the required interface.
+func (op *OpLocalGet) Bind(vm handler.IVM) error {
+	vmT, ok := vm.(handler.IVMFullAccess)
 	if !ok {
 		return fmt.Errorf("vm does not implement IVMFullAccess")
 	}
@@ -44,7 +44,7 @@ func (op *OpLocalGet) Bind(vm core.IVM) error {
 }
 
 // Execute retrieves a local variable from the current frame's base pointer and pushes it onto the stack.
-func (op *OpLocalGet) Execute(decoder *core.Decoder) {
+func (op *OpLocalGet) Execute(decoder *handler.Decoder) {
 	localIndex := decoder.Operand(0)
 	val := op.vm.StackPeekBP(uint(localIndex))
 	op.vm.StackPush(val)

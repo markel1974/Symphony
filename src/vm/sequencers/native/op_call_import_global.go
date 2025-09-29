@@ -3,7 +3,7 @@ package native
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/vm/core"
+	"github.com/markel1974/c64emu/src/vm/handler"
 	"github.com/markel1974/c64emu/src/vm/objects"
 	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
@@ -14,15 +14,15 @@ func init() {
 }
 
 // OpCallImportGlobal represents an operation to call a function from the global import table within the virtual machine.
-// It uses a VM with full access permissions and an associated opcode for execution configuration.
+// It uses a Core with full access permissions and an associated opcode for execution configuration.
 type OpCallImportGlobal struct {
 	opcode *opcodes.Opcode
-	vm     core.IVMFullAccess
+	vm     handler.IVMFullAccess
 }
 
-// NewOpCallImportGlobal creates a new instance of OpCallImportGlobal, ensuring the VM implements IVMFullAccess.
-// Returns the new OpCallImportGlobal instance or an error if VM type assertion fails.
-func NewOpCallImportGlobal() core.IOpExecutor {
+// NewOpCallImportGlobal creates a new instance of OpCallImportGlobal, ensuring the Core implements IVMFullAccess.
+// Returns the new OpCallImportGlobal instance or an error if Core type assertion fails.
+func NewOpCallImportGlobal() handler.IOpExecutor {
 	operands := []opcodes.OperandFeature{
 		opcodes.Relocatable,
 		opcodes.Relocatable,
@@ -44,10 +44,10 @@ func (op *OpCallImportGlobal) Opcode() *opcodes.Opcode {
 	return op.opcode
 }
 
-// Bind initializes the instance by casting the provided VM to IVMFullAccess and storing it.
-// Returns an error if the VM does not implement the required interface.
-func (op *OpCallImportGlobal) Bind(vm core.IVM) error {
-	vmT, ok := vm.(core.IVMFullAccess)
+// Bind initializes the instance by casting the provided Core to IVMFullAccess and storing it.
+// Returns an error if the Core does not implement the required interface.
+func (op *OpCallImportGlobal) Bind(vm handler.IVM) error {
+	vmT, ok := vm.(handler.IVMFullAccess)
 	if !ok {
 		return fmt.Errorf("vm does not implement IVMFullAccess")
 	}
@@ -56,7 +56,7 @@ func (op *OpCallImportGlobal) Bind(vm core.IVM) error {
 }
 
 // Execute decodes and executes the current import-global call instruction using the provided decoder.
-func (op *OpCallImportGlobal) Execute(decoder *core.Decoder) {
+func (op *OpCallImportGlobal) Execute(decoder *handler.Decoder) {
 	funcImportIndex := decoder.Operand(0)
 	numArgs := decoder.Operand(1)
 	callee := op.vm.ImportsGet(uint(funcImportIndex))

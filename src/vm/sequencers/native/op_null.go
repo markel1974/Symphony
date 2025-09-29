@@ -3,7 +3,7 @@ package native
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/vm/core"
+	"github.com/markel1974/c64emu/src/vm/handler"
 	"github.com/markel1974/c64emu/src/vm/objects"
 	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
@@ -15,11 +15,11 @@ func init() {
 // OpNull represents a virtual machine operation to push a null value onto the stack.
 type OpNull struct {
 	opcode *opcodes.Opcode
-	vm     core.IVMFullAccess
+	vm     handler.IVMFullAccess
 }
 
 // NewOpNull creates a new OpNull instance with details mapped from the OpNull opcode.
-func NewOpNull() core.IOpExecutor {
+func NewOpNull() handler.IOpExecutor {
 	operands := _noOperands
 	return &OpNull{
 		opcode: opcodes.NewOpcode(OpNullId, operands, "OpNull"),
@@ -32,10 +32,10 @@ func (op *OpNull) Opcode() *opcodes.Opcode {
 	return op.opcode
 }
 
-// Bind initializes the instance by casting the provided VM to IVMFullAccess and storing it.
-// Returns an error if the VM does not implement the required interface.
-func (op *OpNull) Bind(vm core.IVM) error {
-	vmT, ok := vm.(core.IVMFullAccess)
+// Bind initializes the instance by casting the provided Core to IVMFullAccess and storing it.
+// Returns an error if the Core does not implement the required interface.
+func (op *OpNull) Bind(vm handler.IVM) error {
+	vmT, ok := vm.(handler.IVMFullAccess)
 	if !ok {
 		return fmt.Errorf("vm does not implement IVMFullAccess")
 	}
@@ -44,7 +44,7 @@ func (op *OpNull) Bind(vm core.IVM) error {
 }
 
 // Execute pushes an undefined value onto the virtual machine's stack.
-func (op *OpNull) Execute(_ *core.Decoder) {
+func (op *OpNull) Execute(_ *handler.Decoder) {
 	op.vm.StackPush(op.vm.Factory().UndefinedValue())
 }
 

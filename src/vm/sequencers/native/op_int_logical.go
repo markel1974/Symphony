@@ -3,7 +3,7 @@ package native
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/vm/core"
+	"github.com/markel1974/c64emu/src/vm/handler"
 	"github.com/markel1974/c64emu/src/vm/objects"
 	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
@@ -14,14 +14,14 @@ func init() {
 }
 
 // OpIntLogical represents an executor for performing logical operations on integer operands within a virtual machine.
-// It extends bytecode.Opcode to utilize its opcode properties and depends on the IVMFullAccess interface for VM interactions.
+// It extends bytecode.Opcode to utilize its opcode properties and depends on the IVMFullAccess interface for Core interactions.
 type OpIntLogical struct {
 	opcode *opcodes.Opcode
-	vm     core.IVMFullAccess
+	vm     handler.IVMFullAccess
 }
 
 // NewOpIntLogical creates a new instance of OpIntLogical, validating the provided virtual machine and opcode inputs.
-func NewOpIntLogical() core.IOpExecutor {
+func NewOpIntLogical() handler.IOpExecutor {
 	operands := []opcodes.OperandFeature{opcodes.SzUint16, opcodes.SzUint16, opcodes.SzUint16, opcodes.SzUint8}
 	return &OpIntLogical{
 		opcode: opcodes.NewOpcode(OpIntLogicalId, operands, "OpIntLogical"),
@@ -34,10 +34,10 @@ func (op *OpIntLogical) Opcode() *opcodes.Opcode {
 	return op.opcode
 }
 
-// Bind initializes the instance by casting the provided VM to IVMFullAccess and storing it.
-// Returns an error if the VM does not implement the required interface.
-func (op *OpIntLogical) Bind(vm core.IVM) error {
-	vmT, ok := vm.(core.IVMFullAccess)
+// Bind initializes the instance by casting the provided Core to IVMFullAccess and storing it.
+// Returns an error if the Core does not implement the required interface.
+func (op *OpIntLogical) Bind(vm handler.IVM) error {
+	vmT, ok := vm.(handler.IVMFullAccess)
 	if !ok {
 		return fmt.Errorf("vm does not implement IVMFullAccess")
 	}
@@ -46,7 +46,7 @@ func (op *OpIntLogical) Bind(vm core.IVM) error {
 }
 
 // Execute performs the logical operation between two integers on the stack and stores the result in the destination object.
-func (op *OpIntLogical) Execute(decoder *core.Decoder) {
+func (op *OpIntLogical) Execute(decoder *handler.Decoder) {
 	logicalOp := objects.LogicalOperator(decoder.Operand(0))
 	lhsIndex := decoder.Operand(1)
 	rhsIndex := decoder.Operand(2)

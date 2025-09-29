@@ -3,7 +3,7 @@ package native
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/vm/core"
+	"github.com/markel1974/c64emu/src/vm/handler"
 	"github.com/markel1974/c64emu/src/vm/objects"
 	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
@@ -15,11 +15,11 @@ func init() {
 // OpIteratorKey wraps bytecode.Opcode to represent the iterator key retrieval operation in a virtual machine.
 type OpIteratorKey struct {
 	opcode *opcodes.Opcode
-	vm     core.IVMFullAccess
+	vm     handler.IVMFullAccess
 }
 
 // NewOpIteratorKey creates a new instance of OpIteratorKey with associated opcode details.
-func NewOpIteratorKey() core.IOpExecutor {
+func NewOpIteratorKey() handler.IOpExecutor {
 	operands := []opcodes.OperandFeature{opcodes.SzUint8}
 	return &OpIteratorKey{
 		opcode: opcodes.NewOpcode(OpIteratorKeyId, operands, "OpIteratorKey"),
@@ -32,10 +32,10 @@ func (op *OpIteratorKey) Opcode() *opcodes.Opcode {
 	return op.opcode
 }
 
-// Bind initializes the instance by casting the provided VM to IVMFullAccess and storing it.
-// Returns an error if the VM does not implement the required interface.
-func (op *OpIteratorKey) Bind(vm core.IVM) error {
-	vmT, ok := vm.(core.IVMFullAccess)
+// Bind initializes the instance by casting the provided Core to IVMFullAccess and storing it.
+// Returns an error if the Core does not implement the required interface.
+func (op *OpIteratorKey) Bind(vm handler.IVM) error {
+	vmT, ok := vm.(handler.IVMFullAccess)
 	if !ok {
 		return fmt.Errorf("vm does not implement IVMFullAccess")
 	}
@@ -43,8 +43,8 @@ func (op *OpIteratorKey) Bind(vm core.IVM) error {
 	return nil
 }
 
-// Execute processes the "iterator key" operation, retrieves the iterator key, and pushes it onto the VM stack.
-func (op *OpIteratorKey) Execute(decoder *core.Decoder) {
+// Execute processes the "iterator key" operation, retrieves the iterator key, and pushes it onto the Core stack.
+func (op *OpIteratorKey) Execute(decoder *handler.Decoder) {
 	stableIdx := decoder.Operand(0)
 	itObj := op.vm.StackPeekBP(uint(stableIdx))
 	it, ok := itObj.(objects.IIterator)

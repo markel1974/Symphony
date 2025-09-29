@@ -3,7 +3,7 @@ package native
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/vm/core"
+	"github.com/markel1974/c64emu/src/vm/handler"
 	"github.com/markel1974/c64emu/src/vm/objects"
 	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
@@ -16,11 +16,11 @@ func init() {
 // This type embeds Opcode, which provides opcode metadata such as identifier, operands, and name.
 type OpFreePtrGet struct {
 	opcode *opcodes.Opcode
-	vm     core.IVMFullAccess
+	vm     handler.IVMFullAccess
 }
 
 // NewOpFreeGetPtr creates a new instance of OpFreePtrGet initialized with the corresponding Opcode.
-func NewOpFreeGetPtr() core.IOpExecutor {
+func NewOpFreeGetPtr() handler.IOpExecutor {
 	operands := []opcodes.OperandFeature{opcodes.SzUint16}
 	return &OpFreePtrGet{
 		opcode: opcodes.NewOpcode(OpFreePtrGetId, operands, "OpFreePtrGet"),
@@ -33,10 +33,10 @@ func (op *OpFreePtrGet) Opcode() *opcodes.Opcode {
 	return op.opcode
 }
 
-// Bind initializes the instance by casting the provided VM to IVMFullAccess and storing it.
-// Returns an error if the VM does not implement the required interface.
-func (op *OpFreePtrGet) Bind(vm core.IVM) error {
-	vmT, ok := vm.(core.IVMFullAccess)
+// Bind initializes the instance by casting the provided Core to IVMFullAccess and storing it.
+// Returns an error if the Core does not implement the required interface.
+func (op *OpFreePtrGet) Bind(vm handler.IVM) error {
+	vmT, ok := vm.(handler.IVMFullAccess)
 	if !ok {
 		return fmt.Errorf("vm does not implement IVMFullAccess")
 	}
@@ -45,7 +45,7 @@ func (op *OpFreePtrGet) Bind(vm core.IVM) error {
 }
 
 // Execute executes the OpFreePtrGet operation, pushing a free variable onto the stack based on the current instruction pointer.
-func (op *OpFreePtrGet) Execute(decoder *core.Decoder) {
+func (op *OpFreePtrGet) Execute(decoder *handler.Decoder) {
 	freeIndex := decoder.Operand(0)
 	val := op.vm.FrameFreeVarsIndex(uint(freeIndex))
 	if val == nil {

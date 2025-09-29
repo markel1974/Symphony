@@ -3,7 +3,7 @@ package native
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/vm/core"
+	"github.com/markel1974/c64emu/src/vm/handler"
 	"github.com/markel1974/c64emu/src/vm/objects"
 	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
@@ -15,11 +15,11 @@ func init() {
 // OpNoOp represents a no-operation opcode, typically used as a placeholder or for alignment purposes.
 type OpNoOp struct {
 	opcode *opcodes.Opcode
-	vm     core.IVMFullAccess
+	vm     handler.IVMFullAccess
 }
 
 // NewOpNoOp initializes and returns a new OpNoOp instance using the given Opcodes configuration.
-func NewOpNoOp() core.IOpExecutor {
+func NewOpNoOp() handler.IOpExecutor {
 	operands := _noOperands
 	return &OpNoOp{
 		opcode: opcodes.NewOpcode(OpNoOpId, operands, "OpNoOp"),
@@ -32,10 +32,10 @@ func (op *OpNoOp) Opcode() *opcodes.Opcode {
 	return op.opcode
 }
 
-// Bind initializes the instance by casting the provided VM to IVMFullAccess and storing it.
-// Returns an error if the VM does not implement the required interface.
-func (op *OpNoOp) Bind(vm core.IVM) error {
-	vmT, ok := vm.(core.IVMFullAccess)
+// Bind initializes the instance by casting the provided Core to IVMFullAccess and storing it.
+// Returns an error if the Core does not implement the required interface.
+func (op *OpNoOp) Bind(vm handler.IVM) error {
+	vmT, ok := vm.(handler.IVMFullAccess)
 	if !ok {
 		return fmt.Errorf("vm does not implement IVMFullAccess")
 	}
@@ -44,7 +44,7 @@ func (op *OpNoOp) Bind(vm core.IVM) error {
 }
 
 // Execute performs a no-operation (NOP) for the virtual machine, advancing the instruction pointer without side effects.
-func (op *OpNoOp) Execute(_ *core.Decoder) {
+func (op *OpNoOp) Execute(_ *handler.Decoder) {
 	// Operands Offset 0
 }
 

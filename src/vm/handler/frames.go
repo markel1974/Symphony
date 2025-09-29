@@ -1,4 +1,4 @@
-package core
+package handler
 
 import (
 	"github.com/markel1974/c64emu/src/vm/objects"

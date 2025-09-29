@@ -3,7 +3,7 @@ package native
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/vm/core"
+	"github.com/markel1974/c64emu/src/vm/handler"
 	"github.com/markel1974/c64emu/src/vm/objects"
 	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
@@ -17,11 +17,11 @@ func init() {
 // It requires a compatible implementation of IVMFullAccess to bind and execute the operation.
 type OpCallAsync struct {
 	opcode *opcodes.Opcode
-	vm     core.IVMFullAccess
+	vm     handler.IVMFullAccess
 }
 
 // NewOpCallAsync creates and returns a new instance of OpCallAsync as an IOpExecutor implementation.
-func NewOpCallAsync() core.IOpExecutor {
+func NewOpCallAsync() handler.IOpExecutor {
 	operands := []opcodes.OperandFeature{opcodes.SzUint8, opcodes.SzUint8}
 	return &OpCallAsync{
 		opcode: opcodes.NewOpcode(OpCallAsyncId, operands, "OpCallAsync"),
@@ -35,9 +35,9 @@ func (op *OpCallAsync) Opcode() *opcodes.Opcode {
 }
 
 // Bind assigns a virtual machine instance to the OpCallAsync object, ensuring it implements the IVMFullAccess interface.
-// Returns an error if the provided VM does not meet the required interface implementation.
-func (op *OpCallAsync) Bind(vm core.IVM) error {
-	vmT, ok := vm.(core.IVMFullAccess)
+// Returns an error if the provided Core does not meet the required interface implementation.
+func (op *OpCallAsync) Bind(vm handler.IVM) error {
+	vmT, ok := vm.(handler.IVMFullAccess)
 	if !ok {
 		return fmt.Errorf("vm does not implement IVMFullAccess")
 	}
@@ -46,7 +46,7 @@ func (op *OpCallAsync) Bind(vm core.IVM) error {
 }
 
 // Execute performs the core logic of the OpCallAsync by processing operands, evaluating the stack, and invoking a call.
-func (op *OpCallAsync) Execute(decoder *core.Decoder) {
+func (op *OpCallAsync) Execute(decoder *handler.Decoder) {
 	spread := decoder.Operand(0)
 	numArgs := decoder.Operand(1)
 	hasSpread := spread > 0
