@@ -149,17 +149,6 @@ func (st *StructTable) FieldsFromLiteral(structName string, eltS []ast.Expr) ([]
 	if len(eltS) > len(structFields) {
 		return nil, fmt.Errorf("too many values in positional struct literal for type '%st'", structName)
 	}
-	symbol, ok := st.scopes.SymbolResolve(structName)
-	if !ok {
-		var err error
-		if symbol, err = st.scopes.SymbolDefine(structName); err != nil {
-			return nil, err
-		}
-	}
-	symbol.SetReturnTypes([]string{structName})
-	symbol.SetObject(st.gk.NewString(objects.FrameStatic, structName+":"+symbol.Name()))
-	st.BindSymbol(symbol, structName)
-
 	isKeyed := false
 	if len(eltS) > 0 {
 		if _, ok := eltS[0].(*ast.KeyValueExpr); ok {

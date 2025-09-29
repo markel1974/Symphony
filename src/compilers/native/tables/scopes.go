@@ -109,6 +109,18 @@ func (c *Scopes) SymbolResolve(symbol string) (*Symbol, bool) {
 	return c.symbolTable.Resolve(symbol)
 }
 
+// SymbolResolveOrDefine resolves an existing symbol or defines a new one if it does not exist within the current scope.
+func (c *Scopes) SymbolResolveOrDefine(symbol string) (*Symbol, error) {
+	if s, ok := c.SymbolResolve(symbol); ok {
+		return s, nil
+	}
+	s, err := c.SymbolDefine(symbol)
+	if err != nil {
+		return nil, err
+	}
+	return s, nil
+}
+
 // SymbolCount returns the number of symbol definitions in the symbol table.
 func (c *Scopes) SymbolCount() int {
 	return c.symbolTable.Count()

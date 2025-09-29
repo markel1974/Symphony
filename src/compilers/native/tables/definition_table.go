@@ -95,12 +95,6 @@ func (f *DefinitionTable) StructAddField(name string, fieldName string, baseStru
 	f.structTable.AddField(name, fieldName, baseStruct, kind, node)
 }
 
-// StructFieldsFromLiteral retrieves struct fields from a given struct name and a slice of AST expressions.
-// It returns a slice of StructField pointers or an error if the operation fails.
-func (f *DefinitionTable) StructFieldsFromLiteral(structName string, eltS []ast.Expr) ([]*StructField, error) {
-	return f.structTable.FieldsFromLiteral(structName, eltS)
-}
-
 // StructImplements checks whether a struct implements a specific interface by delegating to the underlying struct table.
 func (f *DefinitionTable) StructImplements(structName string, interfaceName string) bool {
 	return f.structTable.Implements(structName, interfaceName)
@@ -124,6 +118,11 @@ func (f *DefinitionTable) StructSetImplementations(impls map[string][]string) {
 // StructReturnTypeFromSymbol retrieves the return type of a symbol as a string and a success flag based on its name.
 func (f *DefinitionTable) StructReturnTypeFromSymbol(name string) (string, bool) {
 	return f.structTable.ReturnTypeFromSymbol(name)
+}
+
+// StructFieldsFromLiteral extracts struct fields from a list of AST expressions for a given struct name, returning them or an error.
+func (f *DefinitionTable) StructFieldsFromLiteral(structName string, eltS []ast.Expr) ([]*StructField, error) {
+	return f.structTable.FieldsFromLiteral(structName, eltS)
 }
 
 // StructTypeNameFromSymbolField retrieves the type name of a field within a struct associated with a given symbol name.

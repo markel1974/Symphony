@@ -419,11 +419,12 @@ func (c *Declarations) CompositeLit(node *ast.CompositeLit) error {
 	switch val := node.Type.(type) {
 	case *ast.Ident:
 		// struct literal (es. MyStruct{...})
-		t, ok := node.Type.(*ast.Ident)
-		if !ok {
-			return tables.NewCompilerError(c.fileSet, node, "unsupported composite literal type: %T", node)
+		structName := val.Name
+		symbol, err := c.scopes.SymbolResolveOrDefine(structName)
+		if err != nil {
+			return tables.NewCompilerError(c.fileSet, node, fmt.Sprintf("can't resolve struct name %s: %s", structName, err.Error()))
 		}
-		structName := t.Name
+		c.definitionTable.SymbolTypeAssign(symbol, structName)
 		structFields, err := c.definitionTable.StructFieldsFromLiteral(structName, node.Elts)
 		if err != nil {
 			return err
