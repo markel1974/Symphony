@@ -12,13 +12,6 @@ const (
 	resetIp = 0 //
 )
 
-// stackSize specifies the size limit of the stack for function execution.
-// maxFrames indicates the maximum number of call frames allowed.
-const (
-	stackSize = 2048
-	maxFrames = 1024
-)
-
 // Core represents a virtual machine that executes bytecode instructions, handles stack, and manages execution frames.
 type Core struct {
 	gk               objects.IGateKeeper
@@ -34,16 +27,18 @@ type Core struct {
 	imports          *Imports
 	constants        *Constants
 	globals          *Globals
+	runningIndex     int
 }
 
 // NewCore initializes and returns a new virtual machine instance configured with the provided components and settings.
-func NewCore(gk objects.IGateKeeper, id uint, shutdownSignal func(id uint, err error), createCoreSignal func(id uint, callee *objects.Func, args []objects.IObject)) *Core {
+func NewCore(gk objects.IGateKeeper, maxFrames int, stackSize int, id uint, shutdownSignal func(id uint, err error), createCoreSignal func(id uint, callee *objects.Func, args []objects.IObject)) *Core {
 	v := &Core{
 		gk:               gk,
 		id:               id,
 		shutdownSignal:   shutdownSignal,
 		createCoreSignal: createCoreSignal,
 		ip:               resetIp,
+		runningIndex:     -1,
 	}
 	v.stack = NewStack(gk, stackSize, v.Shutdown)
 	startInterval := id * uint(maxFrames)
@@ -453,12 +448,13 @@ func (v *Core) GetReturnValues() []interface{} {
 }
 
 // Rewrite updates the global function mapping with the given JIT-compiled function for the specified identifier.
-func (v *Core) Rewrite(id uint, jit *objects.FuncJit) {
-	v.globals.Set(id, jit)
+func (v *Core) Rewrite(id uint, jit *objects.FuncJit) error {
+	return v.globals.Set(id, jit)
 }
 
 // Initialize sets up the initial state of the virtual machine and prepares it to execute the given main function.
-func (v *Core) Initialize(mainFn *objects.Func, args []objects.IObject) error {
+func (v *Core) Initialize(runningIndex int, mainFn *objects.Func, args []objects.IObject) error {
+	v.runningIndex = runningIndex
 	v.ip = resetIp
 	v.gk.Reset()
 	v.stack.Reset()
@@ -475,9 +471,17 @@ func (v *Core) Initialize(mainFn *objects.Func, args []objects.IObject) error {
 	return nil
 }
 
-// Finalize releases all resources held by the stack and prepares the Core for termination. Returns an error if unsuccessful.
-func (v *Core) Finalize() {
+// Update sets the running index of the Core instance to the provided value.
+func (v *Core) Update(runningIndex int) {
+	v.runningIndex = runningIndex
+}
+
+// Finalize cleans up resources by releasing all stack items and resetting the running index to its initial state.
+func (v *Core) Finalize() int {
 	v.stack.ReleaseAll()
+	runningIndex := v.runningIndex
+	v.runningIndex = -1
+	return runningIndex
 }
 
 // Execute processes the current instruction in the Core, updating the instruction pointer and executing the decoded operation.

@@ -12,6 +12,16 @@ import (
 
 const version = "0.1"
 
+// stackSize specifies the size limit of the stack for function execution.
+// maxFrames indicates the maximum number of call frames allowed.
+const (
+	stackSize = 1024
+	maxFrames = 512
+	maxCores  = 8
+)
+
+const mainCoreId = 0
+
 type Error struct {
 	error
 	id uint
@@ -35,10 +45,14 @@ type VM struct {
 	retValues         bool
 	error             *Error
 	shutdown          bool
-	mainCore          *Core
 	cores             []*Core
+	coresRunning      []*Core
+	coresFree         []*Core
 	counterIterations uint64
 	counterStart      uint64
+	maxCores          int
+	maxFrames         int
+	stackSize         int
 }
 
 func NewVM(gk objects.IGateKeeper, seq ISequencer, op opcodes.IOpcodes) *VM {
@@ -48,11 +62,29 @@ func NewVM(gk objects.IGateKeeper, seq ISequencer, op opcodes.IOpcodes) *VM {
 		op:        op,
 		error:     nil,
 		retValues: false,
+		maxCores:  maxCores,
+		maxFrames: maxFrames,
+		stackSize: stackSize,
 	}
 	v.imports = NewImports(gk)
 	v.constants = NewConstants(gk)
 	v.globals = NewGlobals(gk)
 	return v
+}
+
+// SetMaxCores sets the maximum number of cores that the virtual machine can utilize.
+func (v *VM) SetMaxCores(c int) {
+	v.maxCores = c
+}
+
+// SetMaxFrames sets the maximum number of stack frames allowed in the virtual machine.
+func (v *VM) SetMaxFrames(f int) {
+	v.maxFrames = f
+}
+
+// SetStackSize sets the maximum size of the stack for the virtual machine.
+func (v *VM) SetStackSize(s int) {
+	v.stackSize = s
 }
 
 // Version returns the version of the virtual machine.
@@ -90,17 +122,21 @@ func (v *VM) Setup(loader bytecode.ILoader, codes ...*bytecode.Bytecode) (map[st
 	if err != nil {
 		return nil, err
 	}
-	v.mainCore = NewCore(v.gk, 0, v.coreShutdown, v.coreCreate)
-	if err = v.mainCore.Setup(v.imports, v.constants, v.globals, v.seq); err != nil {
-		return nil, err
+	v.cores = make([]*Core, v.maxCores)
+	for idx := range v.cores {
+		core := NewCore(v.gk, v.maxFrames, v.stackSize, uint(idx), v.coreShutdown, v.coreCreate)
+		if err = core.Setup(v.imports, v.constants, v.globals, v.seq); err != nil {
+			return nil, err
+		}
+		v.cores[idx] = core
 	}
 	for _, fn := range v.constants.PreInitFuncs() {
-		if _, err = v.exec(v.mainCore, fn, false); err != nil {
+		if _, err = v.exec(fn, false); err != nil {
 			return nil, err
 		}
 	}
 	for _, fn := range v.constants.InitFuncs() {
-		if _, err = v.exec(v.mainCore, fn, false); err != nil {
+		if _, err = v.exec(fn, false); err != nil {
 			return nil, err
 		}
 	}
@@ -109,7 +145,7 @@ func (v *VM) Setup(loader bytecode.ILoader, codes ...*bytecode.Bytecode) (map[st
 
 // Statistics returns three uint64 values: start, allocated objects, and a counter from the Core instance.
 func (v *VM) Statistics() (uint64, uint64, uint64, uint64) {
-	framesMax := v.mainCore.FramesMax()
+	framesMax := v.cores[mainCoreId].FramesMax()
 	return v.counterStart, v.gk.AllocatedObjects(), v.counterIterations, framesMax
 }
 
@@ -120,17 +156,17 @@ func (v *VM) EnableRetValues(retValues bool) {
 
 // Print prints the current state of the virtual machine's stack to the console.'
 func (v *VM) Print(writer io.Writer) {
-	v.mainCore.Print(writer)
+	v.cores[mainCoreId].Print(writer)
 }
 
 // GetReturnValue returns the value from the top of the stack as an interface value.
 func (v *VM) GetReturnValue(idx int) interface{} {
-	return v.mainCore.GetReturnValue(idx)
+	return v.cores[mainCoreId].GetReturnValue(idx)
 }
 
 // GetReturnValues returns the values from the top of the stack as an array of interface values.
 func (v *VM) GetReturnValues() []interface{} {
-	return v.mainCore.GetReturnValues()
+	return v.cores[mainCoreId].GetReturnValues()
 }
 
 // Run executes the main function identified by mainId with the provided arguments in the virtual machine context.
@@ -143,34 +179,41 @@ func (v *VM) Run(mainId uint, args ...interface{}) ([]interface{}, error) {
 	if !ok {
 		return nil, fmt.Errorf("entry point not found: %d", mainId)
 	}
-	return v.exec(v.mainCore, mainFn, v.retValues, args...)
+	return v.exec(mainFn, v.retValues, args...)
 }
 
 // Run executes the virtual machine's bytecode, managing the stack, frames, and instruction pointer state.
-func (v *VM) exec(mainCore *Core, mainFn *objects.Func, ret bool, args ...interface{}) ([]interface{}, error) {
+func (v *VM) exec(mainFn *objects.Func, ret bool, args ...interface{}) ([]interface{}, error) {
 	v.shutdown = false
 	v.error = nil
 	v.counterIterations = 0
 	v.counterStart = uint64(time.Now().UnixMilli())
-	v.cores = []*Core{mainCore}
+	v.coresRunning = make([]*Core, 0, len(v.cores))
+	v.coresFree = make([]*Core, len(v.cores))
+	copy(v.coresFree, v.cores)
+	mainCore := v.coresFree[mainCoreId]
+	v.coresFree = v.coresFree[mainCoreId+1 : len(v.coresFree)]
+	runningIndex := len(v.coresRunning)
+	v.coresRunning = append(v.coresRunning, mainCore)
+
 	argsObj := v.gk.FromArrayInterfaces(objects.FrameStatic, args)
-	if err := mainCore.Initialize(mainFn, argsObj); err != nil {
+	if err := mainCore.Initialize(runningIndex, mainFn, argsObj); err != nil {
 		return nil, err
 	}
 	for v.shutdown == false {
-		for _, core := range v.cores {
+		for _, core := range v.coresRunning {
 			v.counterIterations++
 			core.Execute()
 		}
 	}
-	for _, core := range v.cores {
+	for _, core := range v.coresRunning {
 		core.Finalize()
 	}
 	if v.error != nil {
-		if v.error.id >= uint(len(v.cores)) {
+		if v.error.id >= uint(len(v.coresRunning)) {
 			return nil, fmt.Errorf("invalid core index: %d", v.error.id)
 		}
-		core := v.cores[v.error.id]
+		core := v.coresRunning[v.error.id]
 		filePos, _ := v.bc.Position(core.SourcePos())
 		err := fmt.Errorf("%w at %s", v.error, filePos)
 		for _, frame := range core.FramesUnroll() {
@@ -185,21 +228,28 @@ func (v *VM) exec(mainCore *Core, mainFn *objects.Func, ret bool, args ...interf
 	return nil, nil
 }
 
-// coreCreate initializes and adds a new Core instance to the VM, setting it up and handling errors during initialization.
+// coreCreate allocates a new core for execution, initializes it with the given function and arguments, and handles errors.
 func (v *VM) coreCreate(_ uint, callee *objects.Func, args []objects.IObject) {
-	core := NewCore(v.gk, uint(len(v.cores)), v.coreShutdown, v.coreCreate)
-	v.cores = append(v.cores, core)
-	if err := core.Setup(v.imports, v.constants, v.globals, v.seq); err != nil {
-		v.coreShutdown(core.Id(), err)
+	if len(v.coresFree) == 0 {
+		v.shutdown = true
+		v.error = NewError(fmt.Errorf("no cores available"), 0)
 		return
 	}
-	if err := core.Initialize(callee, args); err != nil {
+	lastIndex := len(v.coresFree) - 1
+	core := v.coresFree[lastIndex]
+	v.coresFree = v.coresFree[:lastIndex]
+
+	runningIndex := len(v.coresRunning)
+	v.coresRunning = append(v.coresRunning, core)
+	if err := core.Initialize(runningIndex, callee, args); err != nil {
 		v.coreShutdown(core.Id(), err)
-		return
 	}
 }
 
-// Shutdown sets the error state and marks the virtual machine as shut down.
+// coreShutdown handles shutting down a core by finalizing its state, removing it from the running list, and marking it as free.
+// If an error is provided, the VM is set to shutdown mode with the error stored for diagnostics.
+// If the ID is 0, the VM is also shut down to prevent invalid operations.
+// The method ensures proper reallocation of resources while maintaining consistency in the running cores list.
 func (v *VM) coreShutdown(id uint, err error) {
 	if err != nil {
 		v.shutdown = true
@@ -210,12 +260,17 @@ func (v *VM) coreShutdown(id uint, err error) {
 		v.shutdown = true
 		return
 	}
-	if id >= uint(len(v.cores)) {
-		v.shutdown = true
-		v.error = NewError(fmt.Errorf("invalid core index: %d", id), id)
+	core := v.cores[id]
+	runningIndex := core.Finalize()
+	if runningIndex < 0 {
 		return
 	}
-	core := v.cores[id]
-	core.Finalize()
-	v.cores = append(v.cores[:id], v.cores[id+1:]...)
+	lastIndex := len(v.coresRunning) - 1
+	lastCore := v.coresRunning[lastIndex]
+	v.coresRunning[runningIndex] = lastCore
+
+	lastCore.Update(runningIndex)
+	v.coresRunning = v.coresRunning[:lastIndex]
+
+	v.coresFree = append(v.coresFree, core)
 }
