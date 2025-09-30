@@ -19,7 +19,7 @@ type Frames struct {
 }
 
 // NewFrames initializes and returns a new Frames instance with the specified main function and maximum frame count.
-func NewFrames(gk objects.IGateKeeper, maxFrames int, shutdownSignal func(err error)) *Frames {
+func NewFrames(gk objects.IGateKeeper, maxFrames int, startInterval uint, shutdownSignal func(err error)) *Frames {
 	f := &Frames{
 		gk:             gk,
 		frames:         make([]*Frame, maxFrames),
@@ -28,7 +28,8 @@ func NewFrames(gk objects.IGateKeeper, maxFrames int, shutdownSignal func(err er
 		frameMax:       0,
 	}
 	for i := range f.frames {
-		f.frames[i] = NewFrame(gk, i, shutdownSignal)
+		frameId := startInterval + uint(i)
+		f.frames[i] = NewFrame(gk, frameId, shutdownSignal)
 	}
 	return f
 }

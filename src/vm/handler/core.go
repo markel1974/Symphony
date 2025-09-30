@@ -3,7 +3,6 @@ package handler
 import (
 	"fmt"
 	"io"
-	"time"
 
 	"github.com/markel1974/c64emu/src/vm/objects"
 )
@@ -22,21 +21,19 @@ const (
 
 // Core represents a virtual machine that executes bytecode instructions, handles stack, and manages execution frames.
 type Core struct {
-	gk                objects.IGateKeeper
-	id                uint
-	shutdownSignal    func(id uint, err error)
-	createCoreSignal  func(id uint, callee *objects.Func, args []objects.IObject)
-	stack             *Stack
-	frames            *Frames
-	currFrame         *Frame
-	ip                uint
-	sequencer         []*Decoder
-	sequencerMask     int
-	imports           *Imports
-	constants         *Constants
-	globals           *Globals
-	counterStart      uint64
-	counterIterations uint64
+	gk               objects.IGateKeeper
+	id               uint
+	shutdownSignal   func(id uint, err error)
+	createCoreSignal func(id uint, callee *objects.Func, args []objects.IObject)
+	stack            *Stack
+	frames           *Frames
+	currFrame        *Frame
+	ip               uint
+	sequencer        []*Decoder
+	sequencerMask    int
+	imports          *Imports
+	constants        *Constants
+	globals          *Globals
 }
 
 // NewCore initializes and returns a new virtual machine instance configured with the provided components and settings.
@@ -49,7 +46,8 @@ func NewCore(gk objects.IGateKeeper, id uint, shutdownSignal func(id uint, err e
 		ip:               resetIp,
 	}
 	v.stack = NewStack(gk, stackSize, v.Shutdown)
-	v.frames = NewFrames(gk, maxFrames, v.Shutdown)
+	startInterval := id * uint(maxFrames)
+	v.frames = NewFrames(gk, maxFrames, startInterval, v.Shutdown)
 	return v
 }
 
@@ -474,8 +472,6 @@ func (v *Core) Initialize(mainFn *objects.Func, args []objects.IObject) error {
 	for idx, arg := range args {
 		v.stack.SetAbsolute(uint(idx), arg)
 	}
-	v.counterIterations = 0
-	v.counterStart = uint64(time.Now().UnixMilli())
 	return nil
 }
 
@@ -486,7 +482,6 @@ func (v *Core) Finalize() {
 
 // Execute processes the current instruction in the Core, updating the instruction pointer and executing the decoded operation.
 func (v *Core) Execute() {
-	v.counterIterations++
 	opcode, headerSize := v.currFrame.Fetch(v.ip)
 	decoder := v.sequencer[opcode&v.sequencerMask]
 	v.ip += headerSize + decoder.OperandsSize() - 1 //zero-based index
@@ -530,9 +525,9 @@ func (v *Core) FramesUnroll() []*Frame {
 	return v.frames.Unroll()
 }
 
-// Statistics returns four uint64 values: the counter start, the number of allocated objects, iteration counter, and max frames.
-func (v *Core) Statistics() (uint64, uint64, uint64, uint64) {
-	return v.counterStart, v.gk.AllocatedObjects(), v.counterIterations, uint64(v.frames.Max())
+// FramesMax returns the maximum frame index accessed during execution as a uint64.
+func (v *Core) FramesMax() uint64 {
+	return uint64(v.frames.Max())
 }
 
 // Print writes the representation of the stack to the provided io.Writer.

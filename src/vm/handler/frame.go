@@ -11,7 +11,7 @@ import (
 // It encapsulates the execution state, free variables, instruction pointer, and base pointer of a function call.
 type Frame struct {
 	gk                   objects.IGateKeeper
-	id                   int
+	id                   uint
 	compiledFunction     *objects.Func
 	freeVars             []*objects.ObjectPointer
 	savedIp              uint
@@ -24,7 +24,7 @@ type Frame struct {
 }
 
 // NewFrame creates and returns a new Frame instance with its instruction pointer initialized to -1.
-func NewFrame(gk objects.IGateKeeper, id int, shutdownSignal func(err error)) *Frame {
+func NewFrame(gk objects.IGateKeeper, id uint, shutdownSignal func(err error)) *Frame {
 	return &Frame{
 		gk:                   gk,
 		id:                   id,
@@ -38,7 +38,7 @@ func NewFrame(gk objects.IGateKeeper, id int, shutdownSignal func(err error)) *F
 
 // Id returns the unique identifier of the frame.
 func (f *Frame) Id() int {
-	return f.id
+	return int(f.id)
 }
 
 // Bind initializes the frame with the given instruction pointer, compiled function, and base pointer values.

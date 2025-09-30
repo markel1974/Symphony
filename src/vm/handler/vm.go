@@ -3,6 +3,7 @@ package handler
 import (
 	"fmt"
 	"io"
+	"time"
 
 	"github.com/markel1974/c64emu/src/vm/bytecode"
 	"github.com/markel1974/c64emu/src/vm/objects"
@@ -24,18 +25,20 @@ func NewError(err error, id uint) *Error {
 }
 
 type VM struct {
-	gk        objects.IGateKeeper
-	seq       ISequencer
-	op        opcodes.IOpcodes
-	bc        *bytecode.Bytecode
-	imports   *Imports
-	constants *Constants
-	globals   *Globals
-	retValues bool
-	error     *Error
-	shutdown  bool
-	mainCore  *Core
-	cores     []*Core
+	gk                objects.IGateKeeper
+	seq               ISequencer
+	op                opcodes.IOpcodes
+	bc                *bytecode.Bytecode
+	imports           *Imports
+	constants         *Constants
+	globals           *Globals
+	retValues         bool
+	error             *Error
+	shutdown          bool
+	mainCore          *Core
+	cores             []*Core
+	counterIterations uint64
+	counterStart      uint64
 }
 
 func NewVM(gk objects.IGateKeeper, seq ISequencer, op opcodes.IOpcodes) *VM {
@@ -92,12 +95,12 @@ func (v *VM) Setup(loader bytecode.ILoader, codes ...*bytecode.Bytecode) (map[st
 		return nil, err
 	}
 	for _, fn := range v.constants.PreInitFuncs() {
-		if _, err = v.exec(fn, false); err != nil {
+		if _, err = v.exec(v.mainCore, fn, false); err != nil {
 			return nil, err
 		}
 	}
 	for _, fn := range v.constants.InitFuncs() {
-		if _, err = v.exec(fn, false); err != nil {
+		if _, err = v.exec(v.mainCore, fn, false); err != nil {
 			return nil, err
 		}
 	}
@@ -106,7 +109,8 @@ func (v *VM) Setup(loader bytecode.ILoader, codes ...*bytecode.Bytecode) (map[st
 
 // Statistics returns three uint64 values: start, allocated objects, and a counter from the Core instance.
 func (v *VM) Statistics() (uint64, uint64, uint64, uint64) {
-	return v.mainCore.Statistics()
+	framesMax := v.mainCore.FramesMax()
+	return v.counterStart, v.gk.AllocatedObjects(), v.counterIterations, framesMax
 }
 
 // EnableRetValues sets the flag to enable or disable returning multiple values from the virtual machine's execution.
@@ -139,20 +143,23 @@ func (v *VM) Run(mainId uint, args ...interface{}) ([]interface{}, error) {
 	if !ok {
 		return nil, fmt.Errorf("entry point not found: %d", mainId)
 	}
-	return v.exec(mainFn, v.retValues, args...)
+	return v.exec(v.mainCore, mainFn, v.retValues, args...)
 }
 
 // Run executes the virtual machine's bytecode, managing the stack, frames, and instruction pointer state.
-func (v *VM) exec(mainFn *objects.Func, ret bool, args ...interface{}) ([]interface{}, error) {
+func (v *VM) exec(mainCore *Core, mainFn *objects.Func, ret bool, args ...interface{}) ([]interface{}, error) {
 	v.shutdown = false
 	v.error = nil
-	v.cores = []*Core{v.mainCore}
+	v.counterIterations = 0
+	v.counterStart = uint64(time.Now().UnixMilli())
+	v.cores = []*Core{mainCore}
 	argsObj := v.gk.FromArrayInterfaces(objects.FrameStatic, args)
-	if err := v.mainCore.Initialize(mainFn, argsObj); err != nil {
+	if err := mainCore.Initialize(mainFn, argsObj); err != nil {
 		return nil, err
 	}
 	for v.shutdown == false {
 		for _, core := range v.cores {
+			v.counterIterations++
 			core.Execute()
 		}
 	}
