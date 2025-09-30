@@ -130,13 +130,13 @@ func (v *VM) Setup(loader bytecode.ILoader, codes ...*bytecode.Bytecode) (map[st
 		}
 		v.cores[idx] = core
 	}
-	for _, fn := range v.constants.PreInitFuncs() {
-		if _, err = v.exec(fn, false); err != nil {
+	for _, preInit := range v.constants.PreInitFuncs() {
+		if _, err = v.exec(preInit, false); err != nil {
 			return nil, err
 		}
 	}
-	for _, fn := range v.constants.InitFuncs() {
-		if _, err = v.exec(fn, false); err != nil {
+	for _, init := range v.constants.InitFuncs() {
+		if _, err = v.exec(init, false); err != nil {
 			return nil, err
 		}
 	}
@@ -156,7 +156,9 @@ func (v *VM) EnableRetValues(retValues bool) {
 
 // Print prints the current state of the virtual machine's stack to the console.'
 func (v *VM) Print(writer io.Writer) {
-	v.cores[mainCoreId].Print(writer)
+	for _, core := range v.cores {
+		core.Print(writer)
+	}
 }
 
 // GetReturnValue returns the value from the top of the stack as an interface value.
@@ -188,11 +190,14 @@ func (v *VM) exec(mainFn *objects.Func, ret bool, args ...interface{}) ([]interf
 	v.error = nil
 	v.counterIterations = 0
 	v.counterStart = uint64(time.Now().UnixMilli())
-	v.coresRunning = make([]*Core, 0, len(v.cores))
+
+	mainCore := v.cores[mainCoreId]
+
 	v.coresFree = make([]*Core, len(v.cores))
 	copy(v.coresFree, v.cores)
-	mainCore := v.coresFree[mainCoreId]
-	v.coresFree = v.coresFree[mainCoreId+1 : len(v.coresFree)]
+	v.coresFree = append(v.coresFree[:mainCoreId], v.coresFree[mainCoreId+1:]...)
+
+	v.coresRunning = make([]*Core, 0, len(v.cores))
 	runningIndex := len(v.coresRunning)
 	v.coresRunning = append(v.coresRunning, mainCore)
 

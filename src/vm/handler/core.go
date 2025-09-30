@@ -536,5 +536,6 @@ func (v *Core) FramesMax() uint64 {
 
 // Print writes the representation of the stack to the provided io.Writer.
 func (v *Core) Print(writer io.Writer) {
+	_, _ = fmt.Fprintf(writer, "------------- Stack Core: %d -------------\n", v.Id())
 	v.stack.Print(writer)
 }

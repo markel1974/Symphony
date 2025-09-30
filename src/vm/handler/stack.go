@@ -303,9 +303,7 @@ func (v *Stack) ReleaseObjects(frame int, start int, end int, preserve []objects
 
 // Print outputs each element in the stack from the bottom to the current stack pointer.
 func (v *Stack) Print(writer io.Writer) {
-	_, _ = fmt.Fprintln(writer, "------------- Stack -------------")
 	for x := uint(0); x < v.sp; x++ {
 		_, _ = fmt.Fprintf(writer, "%v\n", v.stack[x])
 	}
-	_, _ = fmt.Fprintln(writer, "--------------------------------")
 }
