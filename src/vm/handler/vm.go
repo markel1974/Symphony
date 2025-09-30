@@ -20,8 +20,6 @@ const (
 	maxCores  = 8
 )
 
-const mainCoreId = 0
-
 type Error struct {
 	error
 	id uint
@@ -45,6 +43,7 @@ type VM struct {
 	retValues         bool
 	error             *Error
 	shutdown          bool
+	coreMainId        int
 	cores             []*Core
 	coresRunning      []*Core
 	coresFree         []*Core
@@ -145,7 +144,10 @@ func (v *VM) Setup(loader bytecode.ILoader, codes ...*bytecode.Bytecode) (map[st
 
 // Statistics returns three uint64 values: start, allocated objects, and a counter from the Core instance.
 func (v *VM) Statistics() (uint64, uint64, uint64, uint64) {
-	framesMax := v.cores[mainCoreId].FramesMax()
+	framesMax := uint64(0)
+	for _, c := range v.cores {
+		framesMax += c.FramesMax()
+	}
 	return v.counterStart, v.gk.AllocatedObjects(), v.counterIterations, framesMax
 }
 
@@ -163,12 +165,18 @@ func (v *VM) Print(writer io.Writer) {
 
 // GetReturnValue returns the value from the top of the stack as an interface value.
 func (v *VM) GetReturnValue(idx int) interface{} {
-	return v.cores[mainCoreId].GetReturnValue(idx)
+	if v.coreMainId < 0 || v.coreMainId > len(v.cores) {
+		return nil
+	}
+	return v.cores[v.coreMainId].GetReturnValue(idx)
 }
 
 // GetReturnValues returns the values from the top of the stack as an array of interface values.
 func (v *VM) GetReturnValues() []interface{} {
-	return v.cores[mainCoreId].GetReturnValues()
+	if v.coreMainId < 0 || v.coreMainId > len(v.cores) {
+		return nil
+	}
+	return v.cores[v.coreMainId].GetReturnValues()
 }
 
 // Run executes the main function identified by mainId with the provided arguments in the virtual machine context.
@@ -191,45 +199,37 @@ func (v *VM) exec(mainFn *objects.Func, ret bool, args ...interface{}) ([]interf
 	v.counterIterations = 0
 	v.counterStart = uint64(time.Now().UnixMilli())
 
-	mainCore := v.cores[mainCoreId]
+	v.gk.Reset()
 
-	v.coresFree = make([]*Core, len(v.cores))
-	copy(v.coresFree, v.cores)
-	v.coresFree = append(v.coresFree[:mainCoreId], v.coresFree[mainCoreId+1:]...)
-
+	v.coreMainId = -1
 	v.coresRunning = make([]*Core, 0, len(v.cores))
-	runningIndex := len(v.coresRunning)
-	v.coresRunning = append(v.coresRunning, mainCore)
-
-	argsObj := v.gk.FromArrayInterfaces(objects.FrameStatic, args)
-	if err := mainCore.Initialize(runningIndex, mainFn, argsObj); err != nil {
-		return nil, err
+	v.coresFree = make([]*Core, len(v.cores))
+	for idx, core := range v.cores {
+		core.Reset()
+		v.coresFree[idx] = core
 	}
+
+	v.coreCreate(0, mainFn, v.gk.FromArrayInterfaces(objects.FrameStatic, args))
+
 	for v.shutdown == false {
 		for _, core := range v.coresRunning {
 			v.counterIterations++
 			core.Execute()
 		}
 	}
+
 	for _, core := range v.coresRunning {
 		core.Finalize()
 	}
+
 	if v.error != nil {
-		if v.error.id >= uint(len(v.coresRunning)) {
-			return nil, fmt.Errorf("invalid core index: %d", v.error.id)
-		}
-		core := v.coresRunning[v.error.id]
-		filePos, _ := v.bc.Position(core.SourcePos())
-		err := fmt.Errorf("%w at %s", v.error, filePos)
-		for _, frame := range core.FramesUnroll() {
-			filePos, _ = v.bc.Position(frame.SourcePos(int(frame.SavedIP()) - 1))
-			err = fmt.Errorf("%w at %s", err, filePos)
-		}
-		return nil, err
+		return nil, v.error
 	}
+
 	if ret {
 		return v.GetReturnValues(), nil
 	}
+
 	return nil, nil
 }
 
@@ -240,9 +240,12 @@ func (v *VM) coreCreate(_ uint, callee *objects.Func, args []objects.IObject) {
 		v.error = NewError(fmt.Errorf("no cores available"), 0)
 		return
 	}
-	lastIndex := len(v.coresFree) - 1
-	core := v.coresFree[lastIndex]
-	v.coresFree = v.coresFree[:lastIndex]
+	coreId := len(v.coresFree) - 1
+	if v.coreMainId < 0 {
+		v.coreMainId = coreId
+	}
+	core := v.coresFree[coreId]
+	v.coresFree = v.coresFree[:coreId]
 
 	runningIndex := len(v.coresRunning)
 	v.coresRunning = append(v.coresRunning, core)
@@ -256,16 +259,23 @@ func (v *VM) coreCreate(_ uint, callee *objects.Func, args []objects.IObject) {
 // If the ID is 0, the VM is also shut down to prevent invalid operations.
 // The method ensures proper reallocation of resources while maintaining consistency in the running cores list.
 func (v *VM) coreShutdown(id uint, err error) {
+	core := v.cores[id]
 	if err != nil {
+		filePos, _ := v.bc.Position(core.SourcePos())
+		err = fmt.Errorf("%w at %s", err, filePos)
+		for _, frame := range core.FramesUnroll() {
+			filePos, _ = v.bc.Position(frame.SourcePos(int(frame.SavedIP()) - 1))
+			err = fmt.Errorf("%w at %s", err, filePos)
+		}
 		v.shutdown = true
 		v.error = NewError(err, id)
 		return
 	}
-	if id == 0 {
+	if int(id) == v.coreMainId {
 		v.shutdown = true
 		return
 	}
-	core := v.cores[id]
+
 	runningIndex := core.Finalize()
 	if runningIndex < 0 {
 		return

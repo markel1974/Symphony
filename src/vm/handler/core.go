@@ -452,13 +452,17 @@ func (v *Core) Rewrite(id uint, jit *objects.FuncJit) error {
 	return v.globals.Set(id, jit)
 }
 
-// Initialize sets up the initial state of the virtual machine and prepares it to execute the given main function.
-func (v *Core) Initialize(runningIndex int, mainFn *objects.Func, args []objects.IObject) error {
-	v.runningIndex = runningIndex
+// Reset reinitializes the Core's state, including the instruction pointer, stack, and frame data.
+func (v *Core) Reset() {
 	v.ip = resetIp
-	v.gk.Reset()
 	v.stack.Reset()
 	v.frames.Reset()
+}
+
+// Initialize sets up the initial state of the virtual machine and prepares it to execute the given main function.
+func (v *Core) Initialize(runningIndex int, mainFn *objects.Func, args []objects.IObject) error {
+	v.Reset()
+	v.runningIndex = runningIndex
 	v.currFrame = v.frames.Head()
 	v.currFrame.Bind(v.ip, mainFn, 0)
 	v.stack.SetStackPointer(uint(v.currFrame.NumLocals()))

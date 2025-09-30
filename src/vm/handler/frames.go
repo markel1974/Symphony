@@ -37,6 +37,7 @@ func NewFrames(gk objects.IGateKeeper, maxFrames int, startInterval uint, shutdo
 // Reset resets the frame index to its initial position, effectively clearing the current frame context.
 func (f *Frames) Reset() {
 	f.framesIndex = RootFrame
+	f.frameMax = 0
 }
 
 // Max returns the maximum frame index accessed during execution. It is updated as new frames are added to the stack.
