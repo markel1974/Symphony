@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/gob"
+	"reflect"
 	"strconv"
 )
 
@@ -37,6 +38,11 @@ func (o *Int) setAllocator(allocator IAllocator) {
 // AsInterface converts the object into a generic interface{} type and returns the underlying data.
 func (o *Int) AsInterface() interface{} {
 	return o.data
+}
+
+// AsValue attempts to convert the object to a reflect.Value of the specified target type. Returns the result and success status.
+func (o *Int) AsValue(target reflect.Type) (reflect.Value, bool) {
+	return o.GateKeeper().Reflect(o, target)
 }
 
 // AsBool converts the integer Code to a boolean, returning true if the Code is non-zero, otherwise false.

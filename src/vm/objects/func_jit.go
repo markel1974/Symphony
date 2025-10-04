@@ -3,6 +3,7 @@ package objects
 import (
 	"bytes"
 	"encoding/gob"
+	"reflect"
 )
 
 func init() {
@@ -33,6 +34,11 @@ func (o *FuncJit) setAllocator(allocator IAllocator) {
 // AsInterface converts the object into a generic interface{} type and returns the underlying data.
 func (o *FuncJit) AsInterface() interface{} {
 	return nil
+}
+
+// AsValue attempts to convert the FuncJit object to a reflect.Value of the specified type and returns success or failure.
+func (o *FuncJit) AsValue(_ reflect.Type) (reflect.Value, bool) {
+	return reflect.Value{}, false
 }
 
 // AsBool returns a boolean representation of the object, always returning false for FuncJit.

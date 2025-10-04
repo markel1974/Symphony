@@ -1,6 +1,9 @@
 package objects
 
-import "encoding/gob"
+import (
+	"encoding/gob"
+	"reflect"
+)
 
 func init() {
 	gob.Register(&FuncImport{})
@@ -35,6 +38,11 @@ func (o *FuncImport) setAllocator(allocator IAllocator) {
 // AsInterface converts the object into a generic interface{} type and returns the underlying data.
 func (o *FuncImport) AsInterface() interface{} {
 	return nil
+}
+
+// AsValue attempts to convert the FuncImport object to a reflect.Value for the provided type. Always returns false.
+func (o *FuncImport) AsValue(_ reflect.Type) (reflect.Value, bool) {
+	return reflect.Value{}, false
 }
 
 // AsBool returns a boolean representation of the object, always returning false.

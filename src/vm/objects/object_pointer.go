@@ -3,6 +3,7 @@ package objects
 import (
 	"bytes"
 	"encoding/gob"
+	"reflect"
 )
 
 func init() {
@@ -39,6 +40,12 @@ func (o *ObjectPointer) setAllocator(allocator IAllocator) {
 // AsInterface converts the object into a generic interface{} type and returns the underlying data.
 func (o *ObjectPointer) AsInterface() interface{} {
 	return (*o.data).AsInterface()
+}
+
+// AsValue converts the underlying data of the ObjectPointer to a reflect.Value of the specified target type.
+// Returns the converted value and a boolean indicating success.
+func (o *ObjectPointer) AsValue(target reflect.Type) (reflect.Value, bool) {
+	return o.GateKeeper().Reflect(*o.data, target)
 }
 
 // AsBool returns the boolean representation of the ObjectPointer, defaulting to false.

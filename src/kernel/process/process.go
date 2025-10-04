@@ -498,8 +498,14 @@ func (t *Process) handleMessageTimer(msg interfaces.IMessage) {
 	if !ok {
 		return
 	}
-	if timerEvent := t.onTimer; timerEvent != nil {
-		timerEvent(mt.TID(), mt.Interval())
+	if t.cmd.HasScript() {
+		if _, err := t.script.Exec("onTimer", false); err != nil {
+			log.Printf("Process [%s]: onTimer script error: %s", t.cmd.Name(), err.Error())
+		}
+	} else {
+		if timerEvent := t.onTimer; timerEvent != nil {
+			timerEvent(mt.TID(), mt.Interval())
+		}
 	}
 }
 
@@ -529,7 +535,10 @@ func (t *Process) handleMessageProcessStart(msg interfaces.IMessage) {
 		t.kRouter.PostKernelRequest(messages.NewMessageMessageProcessExit(-1, -1))
 		return
 	}
+	daemon := false
 	if t.cmd.HasScript() {
+		//TRUE
+		daemon = true
 		if err := t.script.Setup(t); err != nil {
 			log.Printf("Process [%s]: error setting up script: %s", t.cmd.Name(), err.Error())
 			t.kRouter.PostKernelRequest(messages.NewMessageMessageProcessExit(-1, -1))
@@ -547,11 +556,12 @@ func (t *Process) handleMessageProcessStart(msg interfaces.IMessage) {
 		}
 	} else {
 		_ = t.cmd.Execute(t, mt.Args())
+		daemon = t.cmd.Daemon()
 	}
 	//if !t.cmd.Background() {
 	//	t.kRouter.PostKernelRequest(messages.NewMessageProcessSetForeground(t.PID()))
 	//}
-	if !t.cmd.Daemon() {
+	if !daemon {
 		t.kRouter.PostKernelRequest(messages.NewMessageMessageProcessExit(-1, -1))
 		return
 	}
@@ -583,12 +593,18 @@ func (t *Process) handleMessagePaintPrepare(msg interfaces.IMessage) {
 	if !ok {
 		return
 	}
-	if paintEvent := t.onPaint; paintEvent != nil {
-		mt.Surface().Begin()
-		paintEvent(mt.Surface())
-		mt.Surface().End()
 
-		ma := messages.NewMessagePaintApply(-1, -1, mt.Surface())
-		t.kRouter.PostKernelRequest(ma)
+	mt.Surface().Begin()
+	if t.cmd.HasScript() {
+		if _, err := t.script.Exec("onPaint", false, mt.Surface()); err != nil {
+			log.Printf("Process [%s]: onPaint script error: %s", t.cmd.Name(), err.Error())
+		}
+	} else {
+		if paintEvent := t.onPaint; paintEvent != nil {
+			paintEvent(mt.Surface())
+		}
 	}
+	mt.Surface().End()
+	ma := messages.NewMessagePaintApply(-1, -1, mt.Surface())
+	t.kRouter.PostKernelRequest(ma)
 }

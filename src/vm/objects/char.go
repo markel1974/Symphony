@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/gob"
+	"reflect"
 )
 
 const (
@@ -36,6 +37,11 @@ func (o *Char) setAllocator(allocator IAllocator) {
 // AsInterface converts the object into a generic interface{} type and returns the underlying data.
 func (o *Char) AsInterface() interface{} {
 	return o.data
+}
+
+// AsValue converts the Char object to a reflect.Value of the target type, returning a boolean indicating success or failure.
+func (o *Char) AsValue(target reflect.Type) (reflect.Value, bool) {
+	return o.GateKeeper().Reflect(o, target)
 }
 
 // AsBool returns true if the object is not empty, otherwise false.

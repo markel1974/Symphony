@@ -3,6 +3,7 @@ package objects
 import (
 	"bytes"
 	"encoding/gob"
+	"reflect"
 )
 
 const (
@@ -39,6 +40,14 @@ func (o *BytesIterator) setAllocator(allocator IAllocator) {
 // AsInterface converts the object into a generic interface{} type and returns the underlying data.
 func (o *BytesIterator) AsInterface() interface{} {
 	return o.data
+}
+
+// AsValue attempts to convert the BytesIterator data to a reflect.Value of the specified target type and returns it with a success flag.
+func (o *BytesIterator) AsValue(target reflect.Type) (reflect.Value, bool) {
+	if target.Kind() == reflect.ValueOf(o.data).Kind() {
+		return reflect.ValueOf(o.data), true
+	}
+	return reflect.Value{}, false
 }
 
 // AsBool returns true if the object is not empty, otherwise false.

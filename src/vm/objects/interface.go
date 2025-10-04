@@ -3,6 +3,7 @@ package objects
 import (
 	"bytes"
 	"encoding/gob"
+	"reflect"
 )
 
 // init registers the Interface type with the gob package for encoding and decoding operations.
@@ -34,6 +35,11 @@ func (o *Interface) setAllocator(allocator IAllocator) {
 // AsInterface converts the object into a generic interface{} type and returns the underlying data.
 func (o *Interface) AsInterface() interface{} {
 	return nil
+}
+
+// AsValue attempts to convert the object to a reflect.Value of the specified target type and returns it along with a success flag.
+func (o *Interface) AsValue(target reflect.Type) (reflect.Value, bool) {
+	return o.GateKeeper().Reflect(o.data, target)
 }
 
 // AsBool converts and returns the Interface's underlying Code as a boolean.

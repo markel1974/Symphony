@@ -1,6 +1,8 @@
 package objects
 
 import (
+	"fmt"
+	"reflect"
 	"strconv"
 	"time"
 )
@@ -346,4 +348,197 @@ func (gc *GateConverter) ToBoolArg(index int, in []IObject) (bool, error) {
 	o := in[index]
 	b1 := o.AsBool()
 	return b1, nil
+}
+
+func (gc *GateConverter) ReflectMap(data map[string]IObject, target reflect.Type) (reflect.Value, bool) {
+	//TODO
+	return reflect.Value{}, false
+}
+
+func (gc *GateConverter) ReflectArray(data []IObject, target reflect.Type) (reflect.Value, bool) {
+	elemType := target.Elem()
+	switch elemType.Name() {
+	case "bool":
+		out := make([]bool, len(data))
+		for i, val := range data {
+			out[i] = val.AsBool()
+		}
+		return reflect.ValueOf(out), true
+	case "byte":
+		out := make([]byte, len(data))
+		for i, val := range data {
+			out[i] = byte(val.AsInt64())
+		}
+		return reflect.ValueOf(out), true
+	case "rune":
+		out := make([]rune, len(data))
+		for i, val := range data {
+			out[i] = rune(val.AsInt64())
+		}
+		return reflect.ValueOf(out), true
+	case "int":
+		out := make([]int, len(data))
+		for i, val := range data {
+			out[i] = int(val.AsInt64())
+		}
+		return reflect.ValueOf(out), true
+	case "int8":
+		out := make([]int8, len(data))
+		for i, val := range data {
+			out[i] = int8(val.AsInt64())
+		}
+		return reflect.ValueOf(out), true
+	case "int32":
+		out := make([]int32, len(data))
+		for i, val := range data {
+			out[i] = int32(val.AsInt64())
+		}
+		return reflect.ValueOf(out), true
+	case "int64":
+		out := make([]int64, len(data))
+		for i, val := range data {
+			out[i] = val.AsInt64()
+		}
+		return reflect.ValueOf(out), true
+	case "uint":
+		out := make([]uint, len(data))
+		for i, val := range data {
+			out[i] = uint(val.AsInt64())
+		}
+		return reflect.ValueOf(out), true
+	case "uint8":
+		out := make([]uint8, len(data))
+		for i, val := range data {
+			out[i] = uint8(val.AsInt64())
+		}
+		return reflect.ValueOf(out), true
+	case "uint32":
+		out := make([]uint32, len(data))
+		for i, val := range data {
+			out[i] = uint32(val.AsInt64())
+		}
+		return reflect.ValueOf(out), true
+	case "uint64":
+		out := make([]uint64, len(data))
+		for i, val := range data {
+			out[i] = uint64(val.AsInt64())
+		}
+		return reflect.ValueOf(out), true
+	case "float32":
+		out := make([]float32, len(data))
+		for i, val := range data {
+			out[i] = float32(val.AsFloat64())
+		}
+		return reflect.ValueOf(out), true
+	case "float64":
+		out := make([]float64, len(data))
+		for i, val := range data {
+			out[i] = val.AsFloat64()
+		}
+		return reflect.ValueOf(out), true
+	case "string":
+		out := make([]string, len(data))
+		for i, val := range data {
+			out[i] = val.AsString()
+		}
+		return reflect.ValueOf(out), true
+	case "interface", "interface{}", "any":
+		out := make([]interface{}, len(data))
+		for i, val := range data {
+			out[i] = val.AsInterface()
+		}
+		return reflect.ValueOf(out), true
+	default:
+		return reflect.Value{}, false
+	}
+}
+
+func (gc *GateConverter) Reflect(data IObject, target reflect.Type) (reflect.Value, bool) {
+	//elemType := target.Elem()
+	//es elemType.Name => int
+	switch target.Kind() {
+	case reflect.Bool:
+		return reflect.ValueOf(data.AsBool()), true
+	case reflect.Int:
+		return reflect.ValueOf(int(data.AsInt64())), true
+	case reflect.Int8:
+		return reflect.ValueOf(int8(data.AsInt64())), true
+	case reflect.Int32:
+		return reflect.ValueOf(int32(data.AsInt64())), true
+	case reflect.Int64:
+		return reflect.ValueOf(data.AsInt64()), true
+	case reflect.Uint:
+		return reflect.ValueOf(uint(data.AsInt64())), true
+	case reflect.Uint8:
+		return reflect.ValueOf(uint8(data.AsInt64())), true
+	case reflect.Uint32:
+		return reflect.ValueOf(uint32(data.AsInt64())), true
+	case reflect.Uint64:
+		return reflect.ValueOf(uint64(data.AsInt64())), true
+	case reflect.Float32:
+		return reflect.ValueOf(float32(data.AsFloat64())), true
+	case reflect.Float64:
+		return reflect.ValueOf(data.AsFloat64()), true
+	case reflect.String:
+		return reflect.ValueOf(data.AsString()), true
+	case reflect.Interface:
+		return reflect.ValueOf(data.AsInterface()), true
+	default:
+		return reflect.Value{}, false
+	}
+}
+
+// ConvertArgument attempts to convert a given argument to the specified target type, returning the converted value and success status.
+func (gc *GateConverter) ConvertArgument(arg interface{}, targetType reflect.Type) (reflect.Value, bool) {
+	argValue := reflect.ValueOf(arg)
+	if argValue.Type().AssignableTo(targetType) {
+		return argValue, true
+	}
+	if argValue.Type().ConvertibleTo(targetType) {
+		return argValue.Convert(targetType), true
+	}
+	switch argValue.Kind() {
+	case reflect.String:
+		if v, err := gc.convertStringArgument(argValue.Interface().(string), targetType); err == nil {
+			return v, true
+		}
+	default:
+	}
+	return reflect.Value{}, false
+}
+
+// convertStringArgument converts a string argument to the specified target type using reflection.
+// It supports basic types like string, integers, unsigned integers, floats, and booleans.
+// Returns the converted value or an error if conversion fails or the type is unsupported.
+func (gc *GateConverter) convertStringArgument(arg string, targetType reflect.Type) (reflect.Value, error) {
+	switch targetType.Kind() {
+	case reflect.String:
+		return reflect.ValueOf(arg).Convert(targetType), nil
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		i, err := strconv.ParseInt(arg, 10, 64)
+		if err != nil {
+			return reflect.Value{}, fmt.Errorf("not a valid integer")
+		}
+		return reflect.ValueOf(i).Convert(targetType), nil
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		u, err := strconv.ParseUint(arg, 10, 64)
+		if err != nil {
+			return reflect.Value{}, fmt.Errorf("not a valid unsigned integer")
+		}
+		return reflect.ValueOf(u).Convert(targetType), nil
+	case reflect.Float32, reflect.Float64:
+		f, err := strconv.ParseFloat(arg, 64)
+		if err != nil {
+			return reflect.Value{}, fmt.Errorf("not a valid float")
+		}
+		return reflect.ValueOf(f).Convert(targetType), nil
+	case reflect.Bool:
+		b, err := strconv.ParseBool(arg)
+		if err != nil {
+			return reflect.Value{}, fmt.Errorf("not a valid boolean")
+		}
+		return reflect.ValueOf(b).Convert(targetType), nil
+	default:
+		return reflect.Value{}, fmt.Errorf("unsupported argument type: %s", targetType.Kind())
+	}
 }

@@ -1,0 +1,106 @@
+
+
+Implementation Plan for Channels
+The implementation is divided into three main areas: the object system (the channel itself),
+the compiler (for syntax), and the VM runtime (the scheduler that manages blocked cores).
+
+1. Object System: ChannelObject
+In the vm/objects package, you should introduce a new ChannelObject type that implements IObject.
+
+Internal Data Structure: This object would be a reference type.
+The actual channel state would be in a shared struct that all channel IObjects point to. This struct would contain:
+
+buffer: A FIFO queue (e.g. []IObject or list.List) to store values.
+
+capacity: The buffer capacity (0 for unbuffered channels).
+
+sendQueue: A queue of Cores waiting to send (ch <- val).
+
+recvQueue: A queue of Cores waiting to receive (<- ch).
+
+
+2. Compiler: New Syntax and Opcodes
+The compiler in native/compiler should be extended to recognize channel syntax.
+
+Creation: Recognize make(chan Type, capacity) and emit a new opcode, for example OpMakeChan.
+
+Operations: Recognize the <- operator:
+
+Send (ch <- value): Would emit an OpChanSend.
+
+Receive (<-ch or val := <-ch): Would emit an OpChanRecv.
+
+3. Sequencer and Opcodes: The Execution Logic
+The new opcodes in vm/sequencers/native would implement the main logic:
+
+OpMakeChan: Executed once, creates the ChannelObject and its shared internal data structure and puts it on the stack.
+
+OpChanSend:
+
+Extracts the channel and value from the stack.
+
+Send logic:
+
+If there's a Core waiting in recvQueue, sends the value directly to that core and "wakes" it (puts it back in runnable state).
+
+Otherwise, if buffer isn't full, adds the value to the buffer.
+
+Otherwise (buffer full), adds the current Core to sendQueue and puts the core in standby.
+
+OpChanRecv:
+
+Extracts the channel from the stack.
+
+Receive logic:
+
+If there's a Core waiting in sendQueue, receives the value directly from that core and wakes it.
+
+Otherwise, if buffer isn't empty, extracts a value from the buffer.
+
+Otherwise (buffer empty), adds the current Core to recvQueue and puts the core in standby.
+
+4. Modifying the VM Scheduler (the Core Mechanism)
+This is the most critical and interesting part, which integrates perfectly with your architecture. The execution loop in vm/handler/vm.go needs to be enhanced to handle cores in standby.
+
+Core State: A Core needs a state. You could add a status field to Core with values like:
+
+StatusReady (ready to be executed)
+
+StatusBlocked (waiting on a channel)
+
+StatusHalted (terminated)
+
+Blocking Mechanism:
+
+When an OpChanSend or OpChanRecv needs to put the core in standby, it can't just stop. It must signal to the scheduler that it's blocked.
+
+The cleanest solution is for the opcode to call a new function on the IVMFullAccess interface, like BlockCurrentCore().
+
+This function sets the Core's state to StatusBlocked and makes the Core.Execute() method return a special code to notify the scheduler it's blocked.
+
+New Scheduler Loop:
+The loop in VM.exec would change slightly. Instead of just having coresRunning and coresFree, you'd have:
+
+coresReady: A queue of cores ready for execution.
+
+coresBlocked: A map or list of cores in standby.
+
+coresFree: The available cores.
+
+The main loop:
+
+Takes a core from the coresReady queue.
+
+Executes it (core.Execute()).
+
+If execution returns "blocked", VM moves the core to coresBlocked.
+
+If execution terminates, VM moves the core to coresFree.
+
+Otherwise, puts it back in the coresReady queue for next cycle (cooperative multitasking).
+
+Unblocking Mechanism:
+
+When an OpChanSend wakes a Core that was waiting to receive (and vice versa), the operation must notify the scheduler.
+
+The scheduler will move the unblocked Core from coresBlocked to coresReady, making it eligible for execution again.

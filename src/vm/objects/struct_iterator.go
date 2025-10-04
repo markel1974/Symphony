@@ -3,6 +3,7 @@ package objects
 import (
 	"bytes"
 	"encoding/gob"
+	"reflect"
 )
 
 // StructIteratorType represents the type for a struct iterator, used as a constant string identifier.
@@ -59,6 +60,14 @@ func (o *StructIterator) AsInterface() interface{} {
 		res[key] = v.AsInterface()
 	}
 	return res
+}
+
+// AsValue attempts to convert the Struct's internal data to a reflect.Value of the specified map type. Returns success status.
+func (o *StructIterator) AsValue(target reflect.Type) (reflect.Value, bool) {
+	if target.Kind() != reflect.Map {
+		return reflect.Value{}, false
+	}
+	return o.GateKeeper().ReflectMap(o.data, target)
 }
 
 // AsBool returns true if the array is not empty, otherwise false.

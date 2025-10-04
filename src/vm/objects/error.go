@@ -5,6 +5,7 @@ import (
 	"encoding/gob"
 	"errors"
 	"fmt"
+	"reflect"
 )
 
 const (
@@ -44,6 +45,14 @@ func (o *Error) setAllocator(allocator IAllocator) {
 // AsInterface converts the object into a generic interface{} type and returns the underlying data.
 func (o *Error) AsInterface() interface{} {
 	return errors.New(o.data.AsString())
+}
+
+// AsValue attempts to convert the Error's underlying data into a reflect.Value of the target type. Returns success status as bool.
+func (o *Error) AsValue(target reflect.Type) (reflect.Value, bool) {
+	if target.Kind() == reflect.ValueOf(o.data).Kind() {
+		return reflect.ValueOf(o.data), true
+	}
+	return reflect.Value{}, false
 }
 
 // AsBool returns true if the object is not empty, otherwise false.

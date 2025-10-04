@@ -15,13 +15,15 @@ type Any struct {
 
 // newAny creates a new instance of Any, encapsulating the provided value and associating it with the specified allocator.
 func newAny(allocator IAllocator, value interface{}) IObject {
-	valueOf := reflect.ValueOf(value)
-	return &Any{
+	a := &Any{
 		IAllocator: allocator,
 		data:       value,
-		valueOf:    valueOf,
-		kind:       valueOf.Type(),
 	}
+	if value != nil {
+		a.valueOf = reflect.ValueOf(value)
+		a.kind = a.valueOf.Type()
+	}
+	return a
 }
 
 // setAllocator assigns the specified IAllocator to the Any instance for memory management and object lifecycle control.
@@ -37,6 +39,12 @@ func (o *Any) TypeName() string {
 // AsInterface converts the object into a generic interface{} type and returns the underlying data.
 func (o *Any) AsInterface() interface{} {
 	return o.data
+}
+
+// AsValue attempts to cast the underlying value of Any to the specified target type and checks if it is assignable.
+func (o *Any) AsValue(target reflect.Type) (reflect.Value, bool) {
+	ret := o.valueOf.Type().AssignableTo(target)
+	return o.valueOf, ret
 }
 
 // AsString returns the string representation of the wrapped data. If the data is nil, it returns "<nil>".
@@ -231,6 +239,42 @@ func (o *Any) Length() int {
 // Count returns a fixed integer value of 1, representing a single object.
 func (o *Any) Count() int {
 	return 1
+}
+
+func (o *Any) ToInterface(frameId int) IObject {
+	iTable := make(map[string]IObject)
+	for x := 0; x < o.valueOf.NumMethod(); x++ {
+		m := o.valueOf.Type().Method(x)
+
+		z := o.GateKeeper().NewFuncImport(frameId, m.Name, -1, func(gk IGateKeeper, f int, args ...IObject) (uint, IObject, error) {
+			if m.Func.Type().NumIn() != len(args) && !m.Func.Type().IsVariadic() {
+				return 0, nil, fmt.Errorf("wrong number of arguments for method %s: want %d, got %d", m.Name, m.Func.Type().NumIn(), len(args))
+			}
+			var in []reflect.Value
+			if len(args) > 0 {
+				for idx, arg := range args {
+					target := m.Func.Type().In(idx)
+					val, ok := arg.AsValue(target)
+					if !ok {
+						return 0, nil, fmt.Errorf("wrong type for argument %d: want %s, got %s", idx, target, arg.TypeName())
+					}
+					if !val.Type().AssignableTo(target) {
+						return 0, nil, fmt.Errorf("wrong type for argument %d: want %s, got %s", idx, target, val.Type())
+					}
+					in = append(in, val)
+				}
+			}
+			//kk := m.Func.Type().In(0)
+			//m.Func.Type().Out(0)
+			_ = m.Func.Call(in)
+
+			return 0, nil, nil
+		})
+		//m := o.valueOf.Method(x)
+		iTable[m.Name] = z
+	}
+	i := o.GateKeeper().NewInterface(frameId, o, iTable)
+	return i
 }
 
 // GobDecode implements the gob.GobDecoder interface, decoding the Allocator state from a byte slice representation.

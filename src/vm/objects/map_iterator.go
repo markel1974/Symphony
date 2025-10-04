@@ -3,6 +3,7 @@ package objects
 import (
 	"bytes"
 	"encoding/gob"
+	"reflect"
 )
 
 const (
@@ -52,6 +53,14 @@ func (o *MapIterator) AsInterface() interface{} {
 		res[key] = v.AsInterface()
 	}
 	return res
+}
+
+// AsValue attempts to convert the MapIterator into a reflect.Value of the specified map type, returning success status.
+func (o *MapIterator) AsValue(target reflect.Type) (reflect.Value, bool) {
+	if target.Kind() != reflect.Map {
+		return reflect.Value{}, false
+	}
+	return o.GateKeeper().ReflectMap(o.data, target)
 }
 
 // AsBool returns true if the map is not empty, otherwise false.

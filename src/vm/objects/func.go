@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/gob"
 	"fmt"
+	"reflect"
 
 	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
@@ -65,6 +66,11 @@ func (o *Func) setAllocator(allocator IAllocator) {
 // AsInterface converts the object into a generic interface{} type and returns the underlying data.
 func (o *Func) AsInterface() interface{} {
 	return nil
+}
+
+// AsValue attempts to convert the Func receiver into a reflect.Value of the provided type, returning the result and a success flag.
+func (o *Func) AsValue(_ reflect.Type) (reflect.Value, bool) {
+	return reflect.Value{}, false
 }
 
 // AsBool returns a boolean representation of the Func object, always returning false.

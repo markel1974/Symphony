@@ -93,8 +93,8 @@ func (plt *MemPlot) onTimer() {
 // It adjusts the minimum and maximum plot values if auto-scaling is disabled.
 // The method invokes the DrawSeries function of the provided ISurface to display the data.
 func (plt *MemPlot) onPaint(surface ISurface) {
-	var minPlot float64 = 0
-	var maxPlot float64 = 0
+	var minPlot float64 = 0.0
+	var maxPlot float64 = 0.0
 	if !plt.auto {
 		minPlot = plt.minVal
 		maxPlot = plt.maxVal
@@ -106,8 +106,10 @@ func (plt *MemPlot) onPaint(surface ISurface) {
 var _instance *MemPlot
 
 // onPaint handles the repaint event for the current graphical instance by delegating the operation to the _instance object.
-func onPaint() {
-	_instance.onPaint()
+func onPaint(s interface{}) {
+	z, _ := s.(ISurface)
+	//var z ISurface = s
+	_instance.onPaint(z)
 }
 
 // onTimer triggers the onTimer method of the _instance object, typically used for handling periodic actions or events.

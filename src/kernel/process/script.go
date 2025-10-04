@@ -29,6 +29,10 @@ func NewScript() *Script {
 	}
 }
 
+func (v *Script) IsInitialized() bool {
+	return v.initialized
+}
+
 // Setup initializes the Scripts with necessary components and binds the sequencer. Returns an error if setup fails.
 func (v *Script) Setup(p *Process) error {
 	if v.initialized {
@@ -77,7 +81,7 @@ func (v *Script) Compile(name string, code string) error {
 }
 
 // Exec runs the specified entry point in the virtual machine with the provided arguments and returns the result or an error.
-func (v *Script) Exec(entryPoint string, hasRet bool, args interface{}) ([]interface{}, error) {
+func (v *Script) Exec(entryPoint string, hasRet bool, args ...interface{}) ([]interface{}, error) {
 	if !v.initialized {
 		return nil, fmt.Errorf("vm not initialized")
 	}
@@ -86,7 +90,7 @@ func (v *Script) Exec(entryPoint string, hasRet bool, args interface{}) ([]inter
 		return nil, fmt.Errorf("entry point '%s' not found", entryPoint)
 	}
 	v.vm.EnableRetValues(hasRet)
-	ret, err := v.vm.Run(idx, args)
+	ret, err := v.vm.Run(idx, args...)
 	if err != nil {
 		return nil, err
 	}

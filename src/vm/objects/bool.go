@@ -3,6 +3,7 @@ package objects
 import (
 	"bytes"
 	"encoding/gob"
+	"reflect"
 )
 
 // BoolType defines the string representation of the boolean type. It is used as the type name for boolean objects.
@@ -37,6 +38,11 @@ func (o *Bool) setAllocator(allocator IAllocator) {
 // AsInterface converts the object into a generic interface{} type and returns the underlying data.
 func (o *Bool) AsInterface() interface{} {
 	return o == o.GateKeeper().TrueValue()
+}
+
+// AsValue attempts to convert the ArrayIterator's data into a reflect.Value of the specified type. Returns false if invalid.
+func (o *Bool) AsValue(target reflect.Type) (reflect.Value, bool) {
+	return o.GateKeeper().Reflect(o, target)
 }
 
 // AsBool returns the boolean value stored in the Bool object.

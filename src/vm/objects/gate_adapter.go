@@ -1,6 +1,8 @@
 package objects
 
-import "fmt"
+import (
+	"fmt"
+)
 
 // GateAdapter is a type that wraps a GateKeeper and provides functional adapters to map Go functions to Invocable.
 type GateAdapter struct {
@@ -97,6 +99,8 @@ func (ga *GateAdapter) Concrete(src IObject) IObject {
 		return io
 	case *Interface:
 		return ga.Concrete(io.Value())
+	case *Any:
+		return io
 	//case *ObjectPointer:
 	//	return ga.Concrete(*io.Value())
 	default:

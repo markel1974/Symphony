@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/gob"
 	"fmt"
+	"reflect"
 	"strings"
 )
 
@@ -49,6 +50,14 @@ func (o *Struct) AsInterface() interface{} {
 		res[key] = v.AsInterface()
 	}
 	return res
+}
+
+// AsValue attempts to convert the Struct's internal data to a reflect.Value of the specified map type. Returns success status.
+func (o *Struct) AsValue(target reflect.Type) (reflect.Value, bool) {
+	if target.Kind() != reflect.Map {
+		return reflect.Value{}, false
+	}
+	return o.GateKeeper().ReflectMap(o.data, target)
 }
 
 // AsBool converts the Struct to a boolean, returning true if the Struct contains at least one key-Code pair; otherwise false.

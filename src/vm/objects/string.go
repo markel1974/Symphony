@@ -3,6 +3,7 @@ package objects
 import (
 	"bytes"
 	"encoding/gob"
+	"reflect"
 )
 
 const (
@@ -40,6 +41,11 @@ func (o *String) setAllocator(allocator IAllocator) {
 // AsInterface converts the object into a generic interface{} type and returns the underlying data.
 func (o *String) AsInterface() interface{} {
 	return o.data
+}
+
+// AsValue attempts to convert the current object to a reflect.Value of the specified target type. Returns success status.
+func (o *String) AsValue(target reflect.Type) (reflect.Value, bool) {
+	return o.GateKeeper().Reflect(o, target)
 }
 
 // AsBool converts the String object to a boolean. Returns true if the string has non-zero len, otherwise false.

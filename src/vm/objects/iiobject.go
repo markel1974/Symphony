@@ -1,6 +1,7 @@
 package objects
 
 import (
+	"reflect"
 	"time"
 )
 
@@ -40,6 +41,7 @@ type IObject interface {
 	setAllocator(allocator IAllocator)
 	TypeName() string
 	AsInterface() interface{}
+	AsValue(p reflect.Type) (reflect.Value, bool)
 	AsBool() bool
 	AsInt64() int64
 	AsFloat64() float64
@@ -114,6 +116,10 @@ type IGateConverter interface {
 	StructFromMap(frame int, name string, v map[string]interface{}) IObject
 	ToAny(frame int, i interface{}) IObject
 	FromAny(obj IObject) (interface{}, error)
+
+	Reflect(data IObject, target reflect.Type) (reflect.Value, bool)
+	ReflectArray(data []IObject, target reflect.Type) (reflect.Value, bool)
+	ReflectMap(data map[string]IObject, target reflect.Type) (reflect.Value, bool)
 
 	AssignInt(val int64, dstObj IObject) error
 	AssignBool(val bool, dstObj IObject) error

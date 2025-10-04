@@ -3,6 +3,7 @@ package objects
 import (
 	"bytes"
 	"encoding/gob"
+	"reflect"
 )
 
 func init() {
@@ -36,14 +37,22 @@ func (o *Bytes) setAllocator(allocator IAllocator) {
 	o.IAllocator = allocator
 }
 
+// AsBool returns true if the object is not empty, otherwise false.
+func (o *Bytes) AsBool() bool {
+	return len(o.data) > 0
+}
+
 // AsInterface converts the object into a generic interface{} type and returns the underlying data.
 func (o *Bytes) AsInterface() interface{} {
 	return o.data
 }
 
-// AsBool returns true if the object is not empty, otherwise false.
-func (o *Bytes) AsBool() bool {
-	return len(o.data) > 0
+// AsValue attempts to convert the Bytes object into a reflect.Value matching the given target type. Returns success status.
+func (o *Bytes) AsValue(target reflect.Type) (reflect.Value, bool) {
+	if target.Kind() == reflect.ValueOf(o.data).Kind() {
+		return reflect.ValueOf(o.data), true
+	}
+	return reflect.Value{}, false
 }
 
 // AsInt64 returns the len of the array as an int64 data.

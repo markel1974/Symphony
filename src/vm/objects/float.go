@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"encoding/gob"
 	"math"
+	"reflect"
 	"strconv"
 )
 
@@ -40,6 +41,11 @@ func (o *Float) setAllocator(allocator IAllocator) {
 // AsInterface converts the object into a generic interface{} type and returns the underlying data.
 func (o *Float) AsInterface() interface{} {
 	return o.data
+}
+
+// AsValue converts the Float object into a reflect.Value of the specified target type and indicates success or failure.
+func (o *Float) AsValue(target reflect.Type) (reflect.Value, bool) {
+	return o.GateKeeper().Reflect(o, target)
 }
 
 // AsBool returns true if the object is not empty, otherwise false.

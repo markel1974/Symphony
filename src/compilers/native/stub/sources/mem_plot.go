@@ -1,12 +1,9 @@
-////go:build no_compile
-
 package sources
 
 import (
+	"fmt"
 	"math"
 	"runtime"
-
-	"fmt"
 	//"kernel"
 )
 
@@ -14,14 +11,6 @@ import (
 // DrawSeries renders a series of data points within specified boundaries and dimensions.
 type ISurface interface {
 	DrawSeries(data []float64, rows int, columns int, min float64, max float64)
-}
-
-type Surface struct {
-	k int
-}
-
-func (s *Surface) DrawSeries(data []float64, rows int, columns int, min float64, max float64) {
-	//fmt.Println("Surface", data, rows, columns, min, max)
 }
 
 // bToMb converts a given size in bytes (b) to megabytes as a float64.
@@ -71,7 +60,7 @@ func (plt *MemPlot) onKey(_ int, key rune) {
 // onTimer is a method that periodically collects memory statistics, updates the MemPlot data, and triggers a repaint.
 func (plt *MemPlot) onTimer() {
 	var m runtime.MemStats
-	//runtime.ReadMemStats(&m)
+	runtime.ReadMemStats(&m)
 	var val float64
 	switch plt.kind {
 	case 0:
@@ -95,7 +84,7 @@ func (plt *MemPlot) onTimer() {
 	if len(plt.data) > 10 {
 		plt.data = plt.data[1:]
 	}
-	//fmt.Println("onTimer - kernel.PaintRequest()", plt)
+	fmt.Println("PaintRequest")
 	//kernel.PaintRequest()
 }
 
@@ -113,66 +102,35 @@ func (plt *MemPlot) onPaint(surface ISurface) {
 }
 
 // _instance is a singleton instance of the MemPlot structure, used for memory plotting and rendering operations.
-var _instanceMemPlot *MemPlot
+var _instance *MemPlot
 
 // onPaint handles the repaint event for the current graphical instance by delegating the operation to the _instance object.
-func onPaint(surface ISurface) {
-	_instanceMemPlot.onPaint(surface)
+func onPaint(s interface{}) {
+	z := s.(ISurface)
+	_instance.onPaint(z)
 }
 
 // onTimer triggers the onTimer method of the _instance object, typically used for handling periodic actions or events.
 func onTimer() {
-	_instanceMemPlot.onTimer()
+	_instance.onTimer()
 }
 
 // main is the entry point of the program that initializes a MemPlot instance based on the first argument and sets up a timer.
 func main(args []string) {
-	//nok
-
-	/*
-		kind := 0
-		if len(args) > 0 {
-			switch args[0] {
-			case "alloc":
-				kind = 0
-			case "total":
-				kind = 1
-			case "os":
-				kind = 2
-			case "gc":
-				kind = 3
-			}
+	kind := 0
+	if len(args) > 0 {
+		switch args[0] {
+		case "alloc":
+			kind = 0
+		case "total":
+			kind = 1
+		case "os":
+			kind = 2
+		case "gc":
+			kind = 3
 		}
-
-	*/
-	_instanceMemPlot = NewMemPlot(0)
-
-	//for x := 0; x < 50; x++ {
-	//	onTimer()
-	//}
-
-	//nok
-	//surface := &Surface{k: 1000}
-	//for x := 0; x < 50; x++ {
-	//	onPaint(surface)
-	//}
-
-	//ok
-	//var iSurface ISurface
-	//iSurface = &Surface{k: 1000}
-	surface := &Surface{k: 500000}
-	var iSurface ISurface = surface
-	for x := 0; x < 500000; x++ {
-		onTimer()
-		onPaint(iSurface)
 	}
-	//onTimer()
-	//onPaint(surface)
-
-	go func(a int, b string, c int) {
-		fmt.Println("closure test", a, b, c)
-	}(1, "beta", 3)
-
-	fmt.Println("kernel.CreateTimer(0, 300, -1)", _instanceMemPlot)
+	_instance = NewMemPlot(kind)
+	fmt.Println("CreateTimer")
 	//kernel.CreateTimer(0, 300, -1)
 }

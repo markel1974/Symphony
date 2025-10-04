@@ -2,6 +2,7 @@ package objects
 
 import (
 	"encoding/gob"
+	"reflect"
 )
 
 // UndefinedIteratorType represents a type label for an undefined iterator.
@@ -34,6 +35,11 @@ func (o *UndefinedIterator) setAllocator(allocator IAllocator) {
 // AsInterface converts the object into a generic interface{} type and returns the underlying data.
 func (o *UndefinedIterator) AsInterface() interface{} {
 	return nil
+}
+
+// AsValue attempts to convert the Undefined object to a reflect.Value of the specified type and always returns a zero value and false.
+func (o *UndefinedIterator) AsValue(_ reflect.Type) (reflect.Value, bool) {
+	return reflect.Value{}, false
 }
 
 // AsBool returns a boolean representation of the object, always returning false.

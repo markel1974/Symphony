@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/gob"
+	"reflect"
 	"time"
 )
 
@@ -37,6 +38,14 @@ func (o *Time) setAllocator(allocator IAllocator) {
 // AsInterface converts the object into a generic interface{} type and returns the underlying data.
 func (o *Time) AsInterface() interface{} {
 	return o.data
+}
+
+// AsValue attempts to convert the BytesIterator data to a reflect.Value of the specified target type and returns it with a success flag.
+func (o *Time) AsValue(target reflect.Type) (reflect.Value, bool) {
+	if target.Kind() == reflect.ValueOf(o.data).Kind() {
+		return reflect.ValueOf(o.data), true
+	}
+	return reflect.Value{}, false
 }
 
 // AsBool returns the boolean representation of the Time object, which is true if the Code is not zero.

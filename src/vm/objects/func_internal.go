@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/gob"
 	"fmt"
+	"reflect"
 	"strconv"
 	"time"
 )
@@ -109,6 +110,11 @@ func (o *FuncInternal) setAllocator(allocator IAllocator) {
 // AsInterface converts the object into a generic interface{} type and returns the underlying data.
 func (o *FuncInternal) AsInterface() interface{} {
 	return nil
+}
+
+// AsValue attempts to convert the receiver into a reflect.Value of the given type and returns the value and success status.
+func (o *FuncInternal) AsValue(_ reflect.Type) (reflect.Value, bool) {
+	return reflect.Value{}, false
 }
 
 // AsBool converts the internal state of the FuncInternal instance into a boolean representation and returns it.

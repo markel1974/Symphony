@@ -2,6 +2,7 @@ package objects
 
 import (
 	"encoding/gob"
+	"reflect"
 )
 
 const (
@@ -31,6 +32,11 @@ func (o *Undefined) setAllocator(allocator IAllocator) {
 // AsInterface converts the object into a generic interface{} type and returns the underlying data.
 func (o *Undefined) AsInterface() interface{} {
 	return nil
+}
+
+// AsValue attempts to convert the Undefined object to a reflect.Value of the specified type and always returns a zero value and false.
+func (o *Undefined) AsValue(_ reflect.Type) (reflect.Value, bool) {
+	return reflect.Value{}, false
 }
 
 // AsBool returns the boolean representation of the Undefined object, which is always false.

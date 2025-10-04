@@ -130,13 +130,13 @@ func BuildDrives(d string) ([]*config.Drive, error) {
 
 func vmTest() {
 	//const prefix = "simple"
-	//const prefix = "rt"
+	args := []interface{}{[]string{"os"}}
+	const prefix = "mem_"
 	//const prefix = "simple3"
 	//const baseDir = "../src/compilers/native/stub/sources"
 	//const prefix = "test_"
 	//var args []interface{} = nil
-	args := []interface{}{[]string{"os"}}
-	const prefix = "mem_"
+
 	if err := stub.Launch(prefix, args, true); err != nil {
 		log.Fatal(err)
 	}
@@ -152,7 +152,7 @@ func (nw *NilWriter) Write(p []byte) (int, error) {
 
 func main() {
 	//benchmark.VIC(1000000, 20, 10, 1)
-	vmTest()
+	//vmTest()
 
 	var showHelp bool
 	var showVersion bool
