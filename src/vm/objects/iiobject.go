@@ -117,10 +117,6 @@ type IGateConverter interface {
 	ToAny(frame int, i interface{}) IObject
 	FromAny(obj IObject) (interface{}, error)
 
-	Reflect(data IObject, target reflect.Type) (reflect.Value, bool)
-	ReflectArray(data []IObject, target reflect.Type) (reflect.Value, bool)
-	ReflectMap(data map[string]IObject, target reflect.Type) (reflect.Value, bool)
-
 	AssignInt(val int64, dstObj IObject) error
 	AssignBool(val bool, dstObj IObject) error
 }

@@ -45,7 +45,7 @@ func (o *ObjectPointer) AsInterface() interface{} {
 // AsValue converts the underlying data of the ObjectPointer to a reflect.Value of the specified target type.
 // Returns the converted value and a boolean indicating success.
 func (o *ObjectPointer) AsValue(target reflect.Type) (reflect.Value, bool) {
-	return o.GateKeeper().Reflect(*o.data, target)
+	return _reflect(*o.data, target)
 }
 
 // AsBool returns the boolean representation of the ObjectPointer, defaulting to false.

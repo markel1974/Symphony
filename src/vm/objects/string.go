@@ -45,7 +45,7 @@ func (o *String) AsInterface() interface{} {
 
 // AsValue attempts to convert the current object to a reflect.Value of the specified target type. Returns success status.
 func (o *String) AsValue(target reflect.Type) (reflect.Value, bool) {
-	return o.GateKeeper().Reflect(o, target)
+	return _reflect(o, target)
 }
 
 // AsBool converts the String object to a boolean. Returns true if the string has non-zero len, otherwise false.

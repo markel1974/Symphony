@@ -45,7 +45,7 @@ func (o *Float) AsInterface() interface{} {
 
 // AsValue converts the Float object into a reflect.Value of the specified target type and indicates success or failure.
 func (o *Float) AsValue(target reflect.Type) (reflect.Value, bool) {
-	return o.GateKeeper().Reflect(o, target)
+	return _reflect(o, target)
 }
 
 // AsBool returns true if the object is not empty, otherwise false.

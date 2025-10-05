@@ -57,10 +57,7 @@ func (o *MapIterator) AsInterface() interface{} {
 
 // AsValue attempts to convert the MapIterator into a reflect.Value of the specified map type, returning success status.
 func (o *MapIterator) AsValue(target reflect.Type) (reflect.Value, bool) {
-	if target.Kind() != reflect.Map {
-		return reflect.Value{}, false
-	}
-	return o.GateKeeper().ReflectMap(o.data, target)
+	return _reflect(o, target)
 }
 
 // AsBool returns true if the map is not empty, otherwise false.

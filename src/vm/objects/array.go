@@ -48,10 +48,7 @@ func (o *Array) AsInterface() interface{} {
 
 // AsValue converts the Array's elements to a slice of reflect.Value and returns it as a reflect.Value.
 func (o *Array) AsValue(target reflect.Type) (reflect.Value, bool) {
-	if target.Kind() != reflect.Array && target.Kind() != reflect.Slice {
-		return reflect.Value{}, false
-	}
-	return o.GateKeeper().ReflectArray(o.data, target)
+	return _reflect(o, target)
 }
 
 // AsBool returns true if the array is not empty, otherwise false.

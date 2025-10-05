@@ -64,10 +64,7 @@ func (o *StructIterator) AsInterface() interface{} {
 
 // AsValue attempts to convert the Struct's internal data to a reflect.Value of the specified map type. Returns success status.
 func (o *StructIterator) AsValue(target reflect.Type) (reflect.Value, bool) {
-	if target.Kind() != reflect.Map {
-		return reflect.Value{}, false
-	}
-	return o.GateKeeper().ReflectMap(o.data, target)
+	return _reflectMap(o.data, target)
 }
 
 // AsBool returns true if the array is not empty, otherwise false.

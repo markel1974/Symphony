@@ -49,10 +49,7 @@ func (o *ArrayIterator) AsInterface() interface{} {
 
 // AsValue attempts to convert the ArrayIterator's data into a reflect.Value of the specified type. Returns false if invalid.
 func (o *ArrayIterator) AsValue(target reflect.Type) (reflect.Value, bool) {
-	if target.Kind() != reflect.Array && target.Kind() != reflect.Slice {
-		return reflect.Value{}, false
-	}
-	return o.GateKeeper().ReflectArray(o.data, target)
+	return _reflect(o, target)
 }
 
 // AsBool returns true if the array is not empty, otherwise false.

@@ -41,7 +41,7 @@ func (o *Char) AsInterface() interface{} {
 
 // AsValue converts the Char object to a reflect.Value of the target type, returning a boolean indicating success or failure.
 func (o *Char) AsValue(target reflect.Type) (reflect.Value, bool) {
-	return o.GateKeeper().Reflect(o, target)
+	return _reflect(o, target)
 }
 
 // AsBool returns true if the object is not empty, otherwise false.

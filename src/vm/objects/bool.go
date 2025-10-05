@@ -42,7 +42,7 @@ func (o *Bool) AsInterface() interface{} {
 
 // AsValue attempts to convert the ArrayIterator's data into a reflect.Value of the specified type. Returns false if invalid.
 func (o *Bool) AsValue(target reflect.Type) (reflect.Value, bool) {
-	return o.GateKeeper().Reflect(o, target)
+	return _reflect(o, target)
 }
 
 // AsBool returns the boolean value stored in the Bool object.

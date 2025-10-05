@@ -39,7 +39,7 @@ func (o *Interface) AsInterface() interface{} {
 
 // AsValue attempts to convert the object to a reflect.Value of the specified target type and returns it along with a success flag.
 func (o *Interface) AsValue(target reflect.Type) (reflect.Value, bool) {
-	return o.GateKeeper().Reflect(o.data, target)
+	return _reflect(o.data, target)
 }
 
 // AsBool converts and returns the Interface's underlying Code as a boolean.

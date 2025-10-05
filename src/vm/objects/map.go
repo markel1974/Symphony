@@ -56,10 +56,7 @@ func (o *Map) AsInterface() interface{} {
 
 // AsValue converts the Array's elements to a slice of reflect.Value and returns it as a reflect.Value.
 func (o *Map) AsValue(target reflect.Type) (reflect.Value, bool) {
-	if target.Kind() != reflect.Map {
-		return reflect.Value{}, false
-	}
-	return o.GateKeeper().ReflectMap(o.data, target)
+	return _reflectMap(o.data, target)
 }
 
 // AsBool converts the String object to a boolean. Returns true if the string has non-zero len, otherwise false.
