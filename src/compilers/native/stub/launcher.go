@@ -61,7 +61,7 @@ func walk(baseDir string, prefix string, files *[]string) error {
 // - debug: Boolean flag to enable debug logs when compiling and executing bytecode.
 // Returns:
 // - error: An error object if any compilation or execution step fails, otherwise nil.
-func Launch(prefix string, args []interface{}, debug bool) error {
+func Launch(prefix string, entry string, args []interface{}, debug bool) error {
 	var files []string
 	err := walk(".", prefix, &files)
 	if err != nil {
@@ -88,7 +88,7 @@ func Launch(prefix string, args []interface{}, debug bool) error {
 			_ = d.Disassemble(log.Writer())
 		}
 		start := time.Now()
-		vm, rv, err := Exec(gk, seq, loader, bc, args, debug)
+		vm, rv, err := Exec(gk, seq, loader, bc, entry, args, debug)
 		if err != nil {
 			return err
 		}
@@ -111,14 +111,14 @@ func Compile(gk objects.IGateKeeper, seq handler.ISequencer, loader bytecode.ILo
 		return nil, err
 	}
 	if len(sources) == 1 {
-		if err := c.Compile(sources[0].Name, sources[0].Data); err != nil {
+		if err = c.Compile(sources[0].Name, sources[0].Data); err != nil {
 			return nil, err
 		}
 		return bytecode.NewBytecode(gk, c.Constants(), c.Imports(), c.Globals(), c.FileSet()), nil
 	}
 	rel := bytecode.NewRelocator(gk, loader, seq, bytecode.PreInitFunction, bytecode.InitFunction)
 	for _, data := range sources {
-		if err := c.Compile(data.Name, data.Data); err != nil {
+		if err = c.Compile(data.Name, data.Data); err != nil {
 			return nil, err
 		}
 		bc := bytecode.NewBytecode(gk, c.Constants(), c.Imports(), c.Globals(), c.FileSet())
@@ -130,18 +130,21 @@ func Compile(gk objects.IGateKeeper, seq handler.ISequencer, loader bytecode.ILo
 // Exec initializes and runs a virtual machine instance with the given gatekeeper, sequencer, loader, bytecode, and debug mode.
 // It binds the sequencer to the virtual machine, sets up entry points, and executes the "main" entry point.
 // Returns an error if setup or execution fails, optionally logging debug information during runtime errors.
-func Exec(gk objects.IGateKeeper, seq handler.ISequencer, loader bytecode.ILoader, bc *bytecode.Bytecode, args []interface{}, debug bool) (*handler.VM, []interface{}, error) {
+func Exec(gk objects.IGateKeeper, seq handler.ISequencer, loader bytecode.ILoader, bc *bytecode.Bytecode, entry string, args []interface{}, debug bool) (*handler.VM, []interface{}, error) {
 	//var args []interface{} = nil
 	//args := []interface{}{1, 2}
 	vm := handler.NewVM(gk, seq, seq)
-
 	entries, err := vm.Setup(loader, bc)
 	if err != nil {
 		vm.Print(log.Writer())
 		return nil, nil, err
 	}
+	mainId, ok := entries[entry]
+	if !ok {
+		return nil, nil, fmt.Errorf("entry point not found: %s", entry)
+	}
 	vm.EnableRetValues(true)
-	rv, err := vm.Run(entries["main"], args...)
+	rv, err := vm.Run(mainId, args...)
 	if debug {
 		vm.Print(log.Writer())
 	}

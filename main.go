@@ -137,7 +137,7 @@ func vmTest() {
 	//const prefix = "test_"
 	//var args []interface{} = nil
 
-	if err := stub.Launch(prefix, args, true); err != nil {
+	if err := stub.Launch(prefix, "main", args, true); err != nil {
 		log.Fatal(err)
 	}
 	os.Exit(0)

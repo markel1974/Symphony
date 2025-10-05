@@ -1,10 +1,10 @@
 package sources
 
 import (
-	"fmt"
 	"math"
 	"runtime"
-	//"kernel"
+
+	"fmt"
 )
 
 // ISurface represents an abstraction for rendering data-driven graphical series onto a surface.
@@ -84,16 +84,15 @@ func (plt *MemPlot) onTimer() {
 	if len(plt.data) > 10 {
 		plt.data = plt.data[1:]
 	}
-	fmt.Println("PaintRequest")
-	//kernel.PaintRequest()
+	fmt.Println("kernel.PaintRequest()")
 }
 
 // onPaint handles the rendering of the plot on the given surface using the current data and value range.
 // It adjusts the minimum and maximum plot values if auto-scaling is disabled.
 // The method invokes the DrawSeries function of the provided ISurface to display the data.
 func (plt *MemPlot) onPaint(surface ISurface) {
-	var minPlot float64 = 0
-	var maxPlot float64 = 0
+	var minPlot float64 = 0.0
+	var maxPlot float64 = 0.0
 	if !plt.auto {
 		minPlot = plt.minVal
 		maxPlot = plt.maxVal
@@ -106,7 +105,8 @@ var _instance *MemPlot
 
 // onPaint handles the repaint event for the current graphical instance by delegating the operation to the _instance object.
 func onPaint(s interface{}) {
-	z := s.(ISurface)
+	z, _ := s.(ISurface)
+	//var z ISurface = s
 	_instance.onPaint(z)
 }
 
@@ -131,6 +131,5 @@ func main(args []string) {
 		}
 	}
 	_instance = NewMemPlot(kind)
-	fmt.Println("CreateTimer")
-	//kernel.CreateTimer(0, 300, -1)
+	fmt.Println("kernel.CreateTimer(0, 300, -1)")
 }
