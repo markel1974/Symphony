@@ -4,105 +4,133 @@ import (
 	"reflect"
 )
 
+// _reflectMap converts a map of string keys and IObject values into a Go reflect.Value of the specified map type.
+// It supports mapping to various types of map values such as bool, int64, float64, string, interface{}, etc.
+// Returns the constructed reflect.Value and a boolean indicating success or failure based on target type compatibility.
 func _reflectMap(data map[string]IObject, target reflect.Type) (reflect.Value, bool) {
-	//key := target.Key().Kind()
-	//val := target.Elem().Kind()
-	//fmt.Println(key, val)
-	//TODO
-	return reflect.Value{}, false
+	key := target.Key().Kind()
+	val := target.Elem().Kind()
+	switch key {
+	case reflect.String:
+		switch val {
+		case reflect.Bool:
+			out := make(map[string]bool)
+			for k, v := range data {
+				out[k] = v.AsBool()
+			}
+			return reflect.ValueOf(out), true
+		case reflect.Int64:
+			out := make(map[string]int64)
+			for k, v := range data {
+				out[k] = v.AsInt64()
+			}
+			return reflect.ValueOf(out), true
+		case reflect.Float64:
+			out := make(map[string]float64)
+			for k, v := range data {
+				out[k] = v.AsFloat64()
+			}
+			return reflect.ValueOf(out), true
+		case reflect.String:
+			out := make(map[string]string)
+			for k, v := range data {
+				out[k] = v.AsString()
+			}
+			return reflect.ValueOf(out), true
+		case reflect.Interface:
+			out := make(map[string]interface{})
+			for k, v := range data {
+				out[k] = v.AsInterface()
+			}
+			return reflect.ValueOf(out), true
+		default:
+			return reflect.Value{}, false
+		}
+	default:
+		return reflect.Value{}, false
+	}
 }
 
+// _reflectArray converts a slice of IObject to a slice of the specified reflect.Type and returns it as reflect.Value.
+// It supports various basic types (e.g., bool, int, float64, string), failing for unsupported types with a false return.
 func _reflectArray(data []IObject, target reflect.Type) (reflect.Value, bool) {
 	elemType := target.Elem()
-	name := elemType.Name()
-	//z := elemType.Kind().String()
-	//fmt.Println(z)
-	switch name {
-	case "bool":
+	//name := elemType.Name()
+	kind := elemType.Kind()
+	switch kind {
+	case reflect.Bool:
 		out := make([]bool, len(data))
 		for i, val := range data {
 			out[i] = val.AsBool()
 		}
 		return reflect.ValueOf(out), true
-	case "byte":
-		out := make([]byte, len(data))
-		for i, val := range data {
-			out[i] = byte(val.AsInt64())
-		}
-		return reflect.ValueOf(out), true
-	case "rune":
-		out := make([]rune, len(data))
-		for i, val := range data {
-			out[i] = rune(val.AsInt64())
-		}
-		return reflect.ValueOf(out), true
-	case "int":
+	case reflect.Int:
 		out := make([]int, len(data))
 		for i, val := range data {
 			out[i] = int(val.AsInt64())
 		}
 		return reflect.ValueOf(out), true
-	case "int8":
+	case reflect.Int8:
 		out := make([]int8, len(data))
 		for i, val := range data {
 			out[i] = int8(val.AsInt64())
 		}
 		return reflect.ValueOf(out), true
-	case "int32":
+	case reflect.Int32:
 		out := make([]int32, len(data))
 		for i, val := range data {
 			out[i] = int32(val.AsInt64())
 		}
 		return reflect.ValueOf(out), true
-	case "int64":
+	case reflect.Int64:
 		out := make([]int64, len(data))
 		for i, val := range data {
 			out[i] = val.AsInt64()
 		}
 		return reflect.ValueOf(out), true
-	case "uint":
+	case reflect.Uint:
 		out := make([]uint, len(data))
 		for i, val := range data {
 			out[i] = uint(val.AsInt64())
 		}
 		return reflect.ValueOf(out), true
-	case "uint8":
+	case reflect.Uint8:
 		out := make([]uint8, len(data))
 		for i, val := range data {
 			out[i] = uint8(val.AsInt64())
 		}
 		return reflect.ValueOf(out), true
-	case "uint32":
+	case reflect.Uint32:
 		out := make([]uint32, len(data))
 		for i, val := range data {
 			out[i] = uint32(val.AsInt64())
 		}
 		return reflect.ValueOf(out), true
-	case "uint64":
+	case reflect.Uint64:
 		out := make([]uint64, len(data))
 		for i, val := range data {
 			out[i] = uint64(val.AsInt64())
 		}
 		return reflect.ValueOf(out), true
-	case "float32":
+	case reflect.Float32:
 		out := make([]float32, len(data))
 		for i, val := range data {
 			out[i] = float32(val.AsFloat64())
 		}
 		return reflect.ValueOf(out), true
-	case "float64":
+	case reflect.Float64:
 		out := make([]float64, len(data))
 		for i, val := range data {
 			out[i] = val.AsFloat64()
 		}
 		return reflect.ValueOf(out), true
-	case "string":
+	case reflect.String:
 		out := make([]string, len(data))
 		for i, val := range data {
 			out[i] = val.AsString()
 		}
 		return reflect.ValueOf(out), true
-	case "interface", "interface{}", "any":
+	case reflect.Interface:
 		out := make([]interface{}, len(data))
 		for i, val := range data {
 			out[i] = val.AsInterface()
@@ -113,6 +141,8 @@ func _reflectArray(data []IObject, target reflect.Type) (reflect.Value, bool) {
 	}
 }
 
+// _reflect attempts to convert an IObject to a reflect.Value of the specified target type.
+// It returns the converted reflect.Value and a boolean indicating success or failure.
 func _reflect(data IObject, target reflect.Type) (reflect.Value, bool) {
 	//elemType := target.Elem()
 	//es elemType.Name => int

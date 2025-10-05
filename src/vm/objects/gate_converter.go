@@ -347,24 +347,3 @@ func (gc *GateConverter) ToBoolArg(index int, in []IObject) (bool, error) {
 	b1 := o.AsBool()
 	return b1, nil
 }
-
-/*
-// ConvertArgument attempts to convert a given argument to the specified target type, returning the converted value and success status.
-func (gc *GateConverter) ConvertArgument(arg interface{}, targetType reflect.Type) (reflect.Value, bool) {
-	argValue := reflect.ValueOf(arg)
-	if argValue.Type().AssignableTo(targetType) {
-		return argValue, true
-	}
-	if argValue.Type().ConvertibleTo(targetType) {
-		return argValue.Convert(targetType), true
-	}
-	switch argValue.Kind() {
-	case reflect.String:
-		if v, err := gc.convertStringArgument(argValue.Interface().(string), targetType); err == nil {
-			return v, true
-		}
-	default:
-	}
-	return reflect.Value{}, false
-}
-*/
