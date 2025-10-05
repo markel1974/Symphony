@@ -222,7 +222,10 @@ func (v *Stack) PeekInterval(start uint, end uint) []objects.IObject {
 		v.shutdownSignal(objects.ErrIndexOutOfBounds)
 		return []objects.IObject{}
 	}
-	return v.stack[start:end]
+	out := make([]objects.IObject, end-start)
+	copy(out, v.stack[start:end])
+	return out
+	//return v.stack[start:end]
 }
 
 // PeekArray retrieves a slice of IObject elements from the stack, based on the specified number of arguments.
@@ -232,8 +235,9 @@ func (v *Stack) PeekArray(numArgs uint) []objects.IObject {
 		return nil
 	}
 	start := v.sp - numArgs
-	z := v.stack[start:v.sp]
-	return z
+	out := make([]objects.IObject, numArgs)
+	copy(out, v.stack[start:v.sp])
+	return out
 }
 
 // CopyOffset copies a specified number of arguments from the source stack area to the designated frame in the stack.

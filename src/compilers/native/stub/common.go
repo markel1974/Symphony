@@ -10,7 +10,7 @@ type Plotter struct {
 }
 
 func (p *Plotter) DrawSeries(data []float64, rows int, columns int, min float64, max float64) {
-	fmt.Println("draw series", data, rows, columns, min, max)
+	fmt.Println("Plotter draw series", data, rows, columns, min, max)
 }
 
 func MemPlotTest(debug bool) error {
@@ -32,13 +32,22 @@ func MemPlotTest(debug bool) error {
 	if err != nil {
 		return err
 	}
-	for x := 0; x < 1; x++ {
-		var onTimerArgs []interface{} = nil
+	onPaintArgs := []interface{}{&Plotter{}}
+	var onTimerArgs []interface{} = nil
+
+	for x := 0; x < 15; x++ {
 		_, err = l.Exec("onTimer", onTimerArgs)
 		if err != nil {
 			return err
 		}
-		onPaintArgs := []interface{}{&Plotter{}}
+		_, err = l.Exec("onTimer", onTimerArgs)
+		if err != nil {
+			return err
+		}
+		_, err = l.Exec("onTimer", onTimerArgs)
+		if err != nil {
+			return err
+		}
 		_, err = l.Exec("onPaint", onPaintArgs)
 		if err != nil {
 			return err

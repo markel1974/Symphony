@@ -34,7 +34,7 @@ func (o *Interface) setAllocator(allocator IAllocator) {
 
 // AsInterface converts the object into a generic interface{} type and returns the underlying data.
 func (o *Interface) AsInterface() interface{} {
-	return nil
+	return o.data.AsInterface()
 }
 
 // AsValue attempts to convert the object to a reflect.Value of the specified target type and returns it along with a success flag.

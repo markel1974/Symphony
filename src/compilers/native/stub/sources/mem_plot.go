@@ -1,10 +1,9 @@
 package sources
 
 import (
+	"fmt"
 	"math"
 	"runtime"
-
-	"fmt"
 )
 
 // ISurface represents an abstraction for rendering data-driven graphical series onto a surface.
@@ -20,21 +19,21 @@ func bToMb(b uint64) float64 {
 
 // MemPlot is a structure that tracks memory statistics over time for visualization and analysis.
 type MemPlot struct {
-	data   []float64
-	kind   int
-	minVal float64
-	maxVal float64
-	auto   bool
+	container []float64
+	kind      int
+	minVal    float64
+	maxVal    float64
+	auto      bool
 }
 
 // NewMemPlot initializes a new MemPlot instance of the specified kind, with auto scaling enabled and empty data.
 func NewMemPlot(kind int) *MemPlot {
 	plt := &MemPlot{
-		kind:   kind,
-		auto:   true,
-		data:   nil,
-		minVal: math.Inf(1),
-		maxVal: math.Inf(-1),
+		kind:      kind,
+		auto:      true,
+		container: nil,
+		minVal:    math.Inf(1),
+		maxVal:    math.Inf(-1),
 	}
 	return plt
 }
@@ -80,24 +79,26 @@ func (plt *MemPlot) onTimer() {
 	if val > plt.maxVal {
 		plt.maxVal = val
 	}
-	plt.data = append(plt.data, val)
-	if len(plt.data) > 10 {
-		plt.data = plt.data[1:]
+	plt.container = append(plt.container, val)
+	if len(plt.container) > 10 {
+		plt.container = plt.container[1:]
 	}
-	fmt.Println("kernel.PaintRequest()")
+	fmt.Println("onTimer plt.container", plt.container)
+	//fmt.Println("kernel.PaintRequest()")
 }
 
 // onPaint handles the rendering of the plot on the given surface using the current data and value range.
 // It adjusts the minimum and maximum plot values if auto-scaling is disabled.
 // The method invokes the DrawSeries function of the provided ISurface to display the data.
 func (plt *MemPlot) onPaint(surface ISurface) {
-	var minPlot float64 = 0.0
-	var maxPlot float64 = 0.0
+	var minPlot = 0.0
+	var maxPlot = 0.0
 	if !plt.auto {
 		minPlot = plt.minVal
 		maxPlot = plt.maxVal
 	}
-	surface.DrawSeries(plt.data, -1, -1, minPlot, maxPlot)
+	fmt.Println("onPaint plt.container", surface, plt.container, minPlot, maxPlot)
+	//surface.DrawSeries(plt.container, -1, -1, minPlot, maxPlot)
 }
 
 // _instance is a singleton instance of the MemPlot structure, used for memory plotting and rendering operations.
@@ -107,7 +108,11 @@ var _instance *MemPlot
 func onPaint(s interface{}) {
 	z, _ := s.(ISurface)
 	//var z ISurface = s
+
+	fmt.Println("onPaint", z)
+
 	_instance.onPaint(z)
+	//_instance.onPaint(z)
 }
 
 // onTimer triggers the onTimer method of the _instance object, typically used for handling periodic actions or events.
