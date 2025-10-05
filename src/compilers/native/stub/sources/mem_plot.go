@@ -109,14 +109,16 @@ func onPaint(s interface{}) {
 	z, _ := s.(ISurface)
 	//var z ISurface = s
 
-	fmt.Println("onPaint", z)
+	//fmt.Println("onPaint", z)
 
 	_instance.onPaint(z)
+	fmt.Println("before onTimer plt.container", _instance.container)
 	//_instance.onPaint(z)
 }
 
 // onTimer triggers the onTimer method of the _instance object, typically used for handling periodic actions or events.
 func onTimer() {
+
 	_instance.onTimer()
 }
 

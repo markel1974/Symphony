@@ -380,7 +380,11 @@ func (o *FuncInternal) append(frame int, args []IObject) (IObject, error) {
 	}
 	switch arg := args[0].(type) {
 	case *Array:
-		return o.GateKeeper().NewArray(frame, append(arg.Values(), args[1:]...)), nil
+		//return o.GateKeeper().NewArray(frame, append(arg.Values(), args[1:]...)), nil
+		for _, v := range args[1:] {
+			arg.Append(v)
+		}
+		return arg, nil
 	default:
 		return o.GateKeeper().NewArray(frame, args[1:]), nil
 	}

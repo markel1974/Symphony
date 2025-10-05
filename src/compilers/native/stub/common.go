@@ -40,14 +40,6 @@ func MemPlotTest(debug bool) error {
 		if err != nil {
 			return err
 		}
-		_, err = l.Exec("onTimer", onTimerArgs)
-		if err != nil {
-			return err
-		}
-		_, err = l.Exec("onTimer", onTimerArgs)
-		if err != nil {
-			return err
-		}
 		_, err = l.Exec("onPaint", onPaintArgs)
 		if err != nil {
 			return err
