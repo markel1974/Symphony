@@ -16,7 +16,6 @@ type CallId int
 // CallIdCopy represents the operation identifier for copying data.
 // CallIdAppend represents the operation identifier for appending data.
 // CallIdDelete represents the operation identifier for deleting data.
-// CallIdSplice represents the operation identifier for splicing data.
 // CallIdPanic represents the operation identifier for triggering a panic.
 // CallIdRecover represents the operation identifier for recovering from a panic.
 // CallIdInt represents the operation identifier for integer operations.
@@ -33,7 +32,6 @@ const (
 	CallIdCopy
 	CallIdAppend
 	CallIdDelete
-	CallIdSplice
 	CallIdPanic
 	CallIdRecover
 	CallIdInt
@@ -49,11 +47,11 @@ const (
 
 // _callIdContainer maps string keys to their corresponding CallId constants for identifying various operations or types.
 var _callIdContainer = map[string]CallId{
-	"len":     CallIdLen,
-	"copy":    CallIdCopy,
-	"append":  CallIdAppend,
-	"delete":  CallIdDelete,
-	"splice":  CallIdSplice,
+	"len":    CallIdLen,
+	"copy":   CallIdCopy,
+	"append": CallIdAppend,
+	"delete": CallIdDelete,
+	//"splice":  CallIdSplice,
 	"panic":   CallIdPanic,
 	"recover": CallIdRecover,
 	"printf":  CallIdPrintf,
@@ -248,8 +246,6 @@ func (o *FuncInternal) prepare(id CallId) {
 		o.fn = o.copy
 	case CallIdAppend:
 		o.fn = o.append
-	case CallIdSplice:
-		o.fn = o.splice
 	case CallIdRecover:
 		o.fn = o.recover
 	case CallIdPanic:
@@ -402,49 +398,6 @@ func (o *FuncInternal) delete(_ int, args []IObject) (IObject, error) {
 	default:
 		return nil, NewInvalidArgumentError(0, "map", arg.TypeName())
 	}
-}
-
-// splice removes or replaces elements in an array, starting at a specified index, and optionally inserts new elements.
-func (o *FuncInternal) splice(frame int, args []IObject) (IObject, error) {
-	argsLen := len(args)
-	if argsLen == 0 {
-		return nil, ErrInvalidArgumentsNumber
-	}
-	array, ok := args[0].(*Array)
-	if !ok {
-		return nil, NewInvalidArgumentError(0, "array", args[0].TypeName())
-	}
-	arrayLen := array.Length()
-	var startIdx int
-	if argsLen > 1 {
-		startIdx = int(args[1].AsInt64())
-		if startIdx < 0 || startIdx > arrayLen {
-			return nil, ErrIndexOutOfBounds
-		}
-	}
-	delCount := array.Length()
-	if argsLen > 2 {
-		delCount = int(args[2].AsInt64())
-		if delCount < 0 {
-			return nil, ErrIndexOutOfBounds
-		}
-	}
-	if startIdx+delCount > arrayLen {
-		delCount = arrayLen - startIdx
-	}
-	endIdx := startIdx + delCount
-	deleted := append([]IObject{}, array.Values()[startIdx:endIdx]...)
-	head := array.Values()[:startIdx]
-	var items []IObject
-	if argsLen > 3 {
-		items = make([]IObject, 0, argsLen-3)
-		for i := 3; i < argsLen; i++ {
-			items = append(items, args[i])
-		}
-	}
-	items = append(items, array.Values()[endIdx:]...)
-	array.Assign(append(head, items...))
-	return o.GateKeeper().NewArray(frame, deleted), nil
 }
 
 // panic triggers a runtime panic by returning an error with the message from the first argument or a default "panic" message.

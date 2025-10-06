@@ -215,11 +215,6 @@ func (o *Map) Has(key string) bool {
 	return ok
 }
 
-// Values return the internal map of key-Code pairs stored in the Map object.
-//func (o *Map) Values() map[string]IObject {
-//	return o.data
-//}
-
 // ForEach iterates over all key-value pairs in the Map's data, applying the provided function to each pair.
 func (o *Map) ForEach(fn func(key string, obj IObject)) {
 	for k, v := range o.data {

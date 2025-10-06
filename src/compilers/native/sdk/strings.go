@@ -236,9 +236,9 @@ func (s *Strings) join(gk objects.IGateKeeper, frame int, args ...objects.IObjec
 	var elems []string
 	switch arg0 := args[0].(type) {
 	case *objects.Array:
-		for _, a := range arg0.Values() {
-			elems = append(elems, a.AsString())
-		}
+		arg0.ForEach(func(i int, v objects.IObject) {
+			elems = append(elems, v.AsString())
+		})
 	default:
 		return 0, nil, objects.NewInvalidArgumentError(0, "array", args[0].TypeName())
 	}

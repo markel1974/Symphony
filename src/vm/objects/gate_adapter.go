@@ -47,8 +47,7 @@ func (ga *GateAdapter) CreateSlice(frameId int, highIdx int, lowIdx int, target 
 
 	switch left := target.(type) {
 	case *Array:
-		slice := make([]IObject, highIdx-lowIdx)
-		copy(slice, left.Values()[lowIdx:highIdx])
+		slice := left.CopyRange(uint(lowIdx), uint(highIdx))
 		return ga.factory.NewArray(frameId, slice), nil
 	case *String:
 		slice := left.Value()[lowIdx:highIdx]

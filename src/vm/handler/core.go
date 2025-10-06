@@ -262,7 +262,9 @@ func (v *Core) Call(value objects.IObject, async bool, spread bool, numArgs int)
 		obj := v.stack.Pop()
 		switch z := obj.(type) {
 		case *objects.Array:
-			args = z.Values()
+			z.ForEach(func(i int, v objects.IObject) {
+				args = append(args, v)
+			})
 		default:
 			v.Shutdown(fmt.Errorf("unexpected type (array required): %s", obj.TypeName()))
 			return
@@ -329,9 +331,12 @@ func (v *Core) CallObject(value objects.IObject, numArgs int, args ...objects.IO
 			v.Shutdown(fmt.Errorf("invalid return count: %d", retCount))
 			return
 		}
-		for _, item := range container.Values() {
-			v.stack.Push(item)
-		}
+		container.ForEach(func(x int, obj objects.IObject) {
+			v.stack.Push(obj)
+		})
+		//for _, item := range container.Values() {
+		//	v.stack.Push(item)
+		//}
 		return
 	}
 }

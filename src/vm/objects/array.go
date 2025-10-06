@@ -109,9 +109,21 @@ func (o *Array) TypeName() string {
 	return ArrayType
 }
 
-// Values return the slice of IObject elements stored in the Array.
-func (o *Array) Values() []IObject {
-	return o.data
+// ForEach applies the provided function `fn` to each element of the array, passing the index and the object as arguments.
+func (o *Array) ForEach(fn func(x int, obj IObject)) {
+	for x, v := range o.data {
+		fn(x, v)
+	}
+}
+
+// CopyRange creates and returns a subset of the Array's data as a new slice from the specified start to end indices.
+func (o *Array) CopyRange(start uint, end uint) []IObject {
+	if start > end || end > uint(len(o.data)) {
+		return []IObject{}
+	}
+	ret := make([]IObject, end-start)
+	copy(ret, o.data[start:end])
+	return ret
 }
 
 // Index returns the element at the specified Index in the Array, or an error if the Index is out of bounds.
@@ -128,11 +140,12 @@ func (o *Array) Length() int {
 }
 
 // SetValue assigns a given IObject data to the specified Index in the Array if the Index is within bounds
-func (o *Array) SetValue(idx int, value IObject) {
+func (o *Array) SetValue(idx int, elem IObject) {
 	if idx < 0 || idx >= len(o.data) {
 		return
 	}
-	o.data[idx] = value
+	elem.AddRef()
+	o.data[idx] = elem
 }
 
 // Append adds an element to the end of the Array.
@@ -140,6 +153,7 @@ func (o *Array) Append(elem IObject) {
 	if len(o.data) >= MaxArrayLen {
 		return
 	}
+	elem.AddRef()
 	o.data = append(o.data, elem)
 }
 
@@ -229,23 +243,18 @@ func (o *Array) Equals(in IObject) bool {
 
 // IndexGet retrieves the element at the given Index from the Array. Returns an error if the Index type is invalid or out of bounds.
 func (o *Array) IndexGet(_ int, index IObject) (IObject, error) {
-	intIdx, ok := index.(*Int)
-	if !ok {
-		return o.GateKeeper().UndefinedValue(), ErrIndexInvalidType
+	idx := index.AsInt64()
+	if idx < 0 || idx >= int64(len(o.data)) {
+		return o.GateKeeper().UndefinedValue(), ErrIndexOutOfBounds
 	}
-	idxVal := int(intIdx.data)
-	if idxVal < 0 || idxVal >= len(o.data) {
-		return o.GateKeeper().UndefinedValue(), nil
-	}
-	return o.data[idxVal], nil
+	return o.data[idx], nil
 }
 
 // IndexSet assigns a given data to the specified Index in the array, returning an error if the operation is invalid.
-func (o *Array) IndexSet(index IObject, value IObject) (err error) {
+func (o *Array) IndexSet(index IObject, value IObject) error {
 	idx := index.AsInt64()
 	if idx < 0 || idx >= int64(len(o.data)) {
-		err = ErrIndexOutOfBounds
-		return
+		return ErrIndexOutOfBounds
 	}
 	o.data[idx] = value
 	return nil

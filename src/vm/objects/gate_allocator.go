@@ -384,11 +384,11 @@ func (f *GateAllocator) ReleaseObjects(frame int, objects []IObject) {
 				target.ReleaseRef()
 			}
 		case *Array:
-			for _, elem := range o.Values() {
-				if garbageCandidates[elem] {
-					elem.ReleaseRef()
+			o.ForEach(func(x int, v IObject) {
+				if garbageCandidates[v] {
+					v.ReleaseRef()
 				}
-			}
+			})
 		case *Map:
 			o.ForEach(func(k string, v IObject) {
 				if garbageCandidates[v] {
