@@ -66,8 +66,8 @@ const (
 	// OpTypeAssertId implements type assertion 'val, ok := i.(Type)'.
 	OpTypeAssertId
 
-	// OpIsTypeId is a helper for type switch, checks type, and pushes a boolean.
-	OpIsTypeId
+	// OpTypeCheckId is a helper for type switch, checks type, and pushes a boolean.
+	OpTypeCheckId
 
 	// OpAsTypeId is a helper for type switch, performs type casting without checks.
 	OpAsTypeId

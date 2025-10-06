@@ -131,14 +131,14 @@ func BuildDrives(d string) ([]*config.Drive, error) {
 func vmTest() {
 	//const prefix = "simple"
 	//const prefix = "simple3"
-	const prefix = "test_"
-	var args []interface{} = nil
-	if err := stub.Launch(prefix, "native", "main", args, true); err != nil {
-		log.Fatal(err)
-	}
-	//if err := stub.MemPlotTest(true); err != nil {
+	//const prefix = "test_"
+	//var args []interface{} = nil
+	//if err := stub.Launch(prefix, "native", "main", args, true); err != nil {
 	//	log.Fatal(err)
 	//}
+	if err := stub.MemPlotTest(true); err != nil {
+		log.Fatal(err)
+	}
 	os.Exit(0)
 }
 
@@ -151,7 +151,7 @@ func (nw *NilWriter) Write(p []byte) (int, error) {
 
 func main() {
 	//benchmark.VIC(1000000, 20, 10, 1)
-	//vmTest()
+	vmTest()
 
 	var showHelp bool
 	var showVersion bool
