@@ -171,28 +171,23 @@ func (c *Expression) SelectorExpr(node *ast.SelectorExpr) error {
 	if !ok {
 		return tables.NewCompilerError(c.fileSet, node, "[SelectorExpr] undefined variable: %s", receiverIdent.Name)
 	}
-	if receiverSymbol.IsStruct() { // struct
-		if err := c.compile(node.X); err != nil {
-			return err
-		}
-		fieldName := node.Sel.Name
-		keyConst := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, fieldName))
-		if _, err := c.scopes.Emit(node.Pos(), native.OpConstantId, keyConst); err != nil {
-			return err
-		}
-		if _, err := c.scopes.Emit(node.Pos(), native.OpIndexGetId); err != nil {
-			return err
-		}
-		return nil
-	}
-	//if receiverSymbol.IsInterface() {
 	if err := c.compile(node.X); err != nil {
 		return err
 	}
+	//interfaces
+	if receiverSymbol.IsInterface() {
+		return nil
+	}
+	//Symbols, imports etc...
+	fieldName := node.Sel.Name
+	keyConst := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, fieldName))
+	if _, err := c.scopes.Emit(node.Pos(), native.OpConstantId, keyConst); err != nil {
+		return err
+	}
+	if _, err := c.scopes.Emit(node.Pos(), native.OpIndexGetId); err != nil {
+		return err
+	}
 	return nil
-	//}
-
-	//return tables.NewCompilerError(c.fileSet, node, "[SelectorExpr] unsupported selector expression for symbol %s", receiverSymbol.Name())
 }
 
 // IncDecStmt handles increment and decrement statements for identifiers, updating the corresponding variables and cleaning the stack.

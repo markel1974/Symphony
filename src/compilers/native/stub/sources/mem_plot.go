@@ -58,20 +58,25 @@ func (plt *MemPlot) onKey(_ int, key rune) {
 
 // onTimer is a method that periodically collects memory statistics, updates the MemPlot data, and triggers a repaint.
 func (plt *MemPlot) onTimer() {
-	var m runtime.MemStats
-	runtime.ReadMemStats(&m)
+	var rtStats runtime.MemStats
+	runtime.ReadMemStats(&rtStats)
+
+	allocTest := rtStats.Alloc
+	pltTest := plt.auto
+	fmt.Println(allocTest, "MemPlot Alloc", pltTest)
+
 	var val float64
 	switch plt.kind {
 	case 0:
-		val = bToMb(m.Alloc)
+		val = bToMb(rtStats.Alloc)
 	case 1:
-		val = bToMb(m.TotalAlloc)
+		val = bToMb(rtStats.TotalAlloc)
 	case 2:
-		val = bToMb(m.Sys)
+		val = bToMb(rtStats.Sys)
 	case 3:
-		val = float64(m.NumGC)
+		val = float64(rtStats.NumGC)
 	default:
-		val = bToMb(m.Alloc)
+		val = bToMb(rtStats.Alloc)
 	}
 	if val < plt.minVal {
 		plt.minVal = val

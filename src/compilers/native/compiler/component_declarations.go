@@ -391,7 +391,12 @@ func (c *Declarations) AssignStmt(node *ast.AssignStmt) error {
 
 	// Handle multiple assignments (e.g. x, y := 1, 2)
 	for i := len(node.Lhs) - 1; i >= 0; i-- {
-		if err := c.handleVariableAssign(node.Pos(), node.Tok, rhsContainer[i].node, node.Lhs[i], rhsContainer[i].returnType); err != nil {
+		pos := node.Pos()
+		lhs := node.Lhs[i]
+		rhsNode := rhsContainer[i].node
+		rhsReturnType := rhsContainer[i].returnType
+		err := c.handleVariableAssign(pos, node.Tok, rhsNode, lhs, rhsReturnType)
+		if err != nil {
 			return tables.NewCompilerError(c.fileSet, node, err.Error())
 		}
 	}

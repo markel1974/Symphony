@@ -86,6 +86,8 @@ func (plt *MemPlot) onTimer() {
 	if len(plt.data) > 10 {
 		plt.data = plt.data[1:]
 	}
+	//test := m.Alloc
+	//fmt.Println("paintRequest", test, val)
 	kernel.PaintRequest()
 }
 
@@ -99,6 +101,7 @@ func (plt *MemPlot) onPaint(surface ISurface) {
 		minPlot = plt.minVal
 		maxPlot = plt.maxVal
 	}
+	//fmt.Println("DrawSeries", plt.data, minPlot, maxPlot)
 	surface.DrawSeries(plt.data, -1, -1, minPlot, maxPlot)
 }
 
