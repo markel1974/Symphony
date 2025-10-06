@@ -47,11 +47,10 @@ const (
 
 // _callIdContainer maps string keys to their corresponding CallId constants for identifying various operations or types.
 var _callIdContainer = map[string]CallId{
-	"len":    CallIdLen,
-	"copy":   CallIdCopy,
-	"append": CallIdAppend,
-	"delete": CallIdDelete,
-	//"splice":  CallIdSplice,
+	"len":     CallIdLen,
+	"copy":    CallIdCopy,
+	"append":  CallIdAppend,
+	"delete":  CallIdDelete,
 	"panic":   CallIdPanic,
 	"recover": CallIdRecover,
 	"printf":  CallIdPrintf,
@@ -62,6 +61,7 @@ var _callIdContainer = map[string]CallId{
 	"float": CallIdFloat, "float32": CallIdFloat, "float64": CallIdFloat,
 	"bool":   CallIdBool,
 	"char":   CallIdChar,
+	"rune":   CallIdInt,
 	"byte":   CallIdChar,
 	"string": CallIdString,
 	"time":   CallIdTime,

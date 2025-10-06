@@ -42,19 +42,20 @@ func NewMemPlot(kind int) *MemPlot {
 }
 
 // onKey handles keyboard input to modify the plot's value range or toggle the auto-scaling mode.
-func (plt *MemPlot) onKey(_ int, key rune) {
+func (plt *MemPlot) onKey(_ int, key byte) {
 	interval := math.Abs(plt.maxVal - plt.minVal)
 	scale := (interval * 10) / 100
+	//fmt.Println("KEY PRESSED", key)
 	switch key {
-	case 'a', '+':
+	case 43: //'+'
 		plt.auto = false
 		plt.maxVal += scale
 		plt.minVal -= scale
-	case 'z', '-':
+	case 45: //'-':
 		plt.auto = false
 		plt.maxVal -= scale
 		plt.minVal += scale
-	case 'r':
+	case 114: //'r':
 		plt.auto = !plt.auto
 	}
 }
@@ -86,8 +87,6 @@ func (plt *MemPlot) onTimer() {
 	if len(plt.data) > 10 {
 		plt.data = plt.data[1:]
 	}
-	//test := m.Alloc
-	//fmt.Println("paintRequest", test, val)
 	kernel.PaintRequest()
 }
 
@@ -101,7 +100,6 @@ func (plt *MemPlot) onPaint(surface ISurface) {
 		minPlot = plt.minVal
 		maxPlot = plt.maxVal
 	}
-	//fmt.Println("DrawSeries", plt.data, minPlot, maxPlot)
 	surface.DrawSeries(plt.data, -1, -1, minPlot, maxPlot)
 }
 
@@ -118,6 +116,11 @@ func onPaint(s interface{}) {
 // onTimer triggers the onTimer method of the _instance object, typically used for handling periodic actions or events.
 func onTimer() {
 	_instance.onTimer()
+}
+
+// onKey processes a key event by invoking the singleton instance's onKey method with the provided values.
+func onKey(kind int, key byte) {
+	_instance.onKey(kind, key)
 }
 
 // main is the entry point of the program that initializes a MemPlot instance based on the first argument and sets up a timer.

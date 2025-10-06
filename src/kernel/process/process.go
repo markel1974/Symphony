@@ -516,12 +516,24 @@ func (t *Process) handleMessageRead(msg interfaces.IMessage) {
 		return
 	}
 	if mt.Broadcast() {
-		if readBroadcastEvent := t.onKeyBroadcast; readBroadcastEvent != nil {
-			readBroadcastEvent(int(mt.Kind()), mt.Data())
+		if t.cmd.HasScript() {
+			if _, err := t.script.Exec("onKeyBroadcast", false, int(mt.Kind()), byte(mt.Data())); err != nil {
+				log.Printf("Process [%s]: onPaint script error: %s", t.cmd.Name(), err.Error())
+			}
+		} else {
+			if readBroadcastEvent := t.onKeyBroadcast; readBroadcastEvent != nil {
+				readBroadcastEvent(int(mt.Kind()), mt.Data())
+			}
 		}
 	} else {
-		if readEvent := t.onKey; readEvent != nil {
-			readEvent(int(mt.Kind()), mt.Data())
+		if t.cmd.HasScript() {
+			if _, err := t.script.Exec("onKey", false, int(mt.Kind()), byte(mt.Data())); err != nil {
+				log.Printf("Process [%s]: onKey script error: %s", t.cmd.Name(), err.Error())
+			}
+		} else {
+			if readEvent := t.onKey; readEvent != nil {
+				readEvent(int(mt.Kind()), mt.Data())
+			}
 		}
 	}
 }
