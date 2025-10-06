@@ -106,8 +106,8 @@ func (o *Bytes) Length() int {
 	return len(o.data)
 }
 
-// Value returns the underlying byte slice of the Bytes object.
-func (o *Bytes) Value() []byte {
+// GetValue returns the underlying byte slice of the Bytes object.
+func (o *Bytes) GetValue() []byte {
 	return o.data
 }
 

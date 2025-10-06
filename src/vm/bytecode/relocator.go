@@ -131,8 +131,9 @@ func (c *Relocator) processObjects(container []objects.IObject) ([]objects.IObje
 				chars[obj.Value()] = newIndex
 			}
 		case *objects.String:
-			if foundIndex, found = strings[obj.Value()]; !found {
-				strings[obj.Value()] = newIndex
+			value := obj.GetValue()
+			if foundIndex, found = strings[value]; !found {
+				strings[value] = newIndex
 			}
 		default:
 			return nil, nil, fmt.Errorf("unsupported top-level object type: %s", reflect.TypeOf(c).Elem().Name())

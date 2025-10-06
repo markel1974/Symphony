@@ -50,10 +50,12 @@ func (ga *GateAdapter) CreateSlice(frameId int, highIdx int, lowIdx int, target 
 		slice := left.CopyRange(uint(lowIdx), uint(highIdx))
 		return ga.factory.NewArray(frameId, slice), nil
 	case *String:
-		slice := left.Value()[lowIdx:highIdx]
+		data := left.GetValue()
+		slice := data[lowIdx:highIdx]
 		return ga.factory.NewString(frameId, slice), nil
 	case *Bytes:
-		slice := left.Value()[lowIdx:highIdx]
+		data := left.GetValue()
+		slice := data[lowIdx:highIdx]
 		return ga.factory.NewBytes(frameId, slice), nil
 	default:
 		return nil, fmt.Errorf("unsupported slice: %s", left.TypeName())

@@ -41,9 +41,9 @@ func (j *Json) unmarshal(gk objects.IGateKeeper, frame int, args ...objects.IObj
 	var data []byte
 	switch o := args[0].(type) {
 	case *objects.Bytes:
-		data = o.Value()
+		data = o.GetValue()
 	case *objects.String:
-		data = []byte(o.Value())
+		data = []byte(o.GetValue())
 	}
 	if data == nil {
 		return 0, nil, objects.ErrInvalidArgumentsNumber
@@ -81,13 +81,13 @@ func (j *Json) indent(gk objects.IGateKeeper, frame int, args ...objects.IObject
 	switch o := args[0].(type) {
 	case *objects.Bytes:
 		var dst bytes.Buffer
-		if err = json.Indent(&dst, o.Value(), prefix, indent); err != nil {
+		if err = json.Indent(&dst, o.GetValue(), prefix, indent); err != nil {
 			return 0, gk.NewError(frame, err.Error()), nil
 		}
 		return 1, gk.NewBytes(frame, dst.Bytes()), nil
 	case *objects.String:
 		var dst bytes.Buffer
-		if err = json.Indent(&dst, []byte(o.Value()), prefix, indent); err != nil {
+		if err = json.Indent(&dst, []byte(o.GetValue()), prefix, indent); err != nil {
 			return 0, gk.NewError(frame, err.Error()), nil
 		}
 		return 1, gk.NewBytes(frame, dst.Bytes()), nil
@@ -107,11 +107,11 @@ func (j *Json) htmlEscape(gk objects.IGateKeeper, frame int, args ...objects.IOb
 	switch o := args[0].(type) {
 	case *objects.Bytes:
 		var dst bytes.Buffer
-		json.HTMLEscape(&dst, o.Value())
+		json.HTMLEscape(&dst, o.GetValue())
 		return 1, gk.NewBytes(frame, dst.Bytes()), nil
 	case *objects.String:
 		var dst bytes.Buffer
-		json.HTMLEscape(&dst, []byte(o.Value()))
+		json.HTMLEscape(&dst, []byte(o.GetValue()))
 		return 1, gk.NewBytes(frame, dst.Bytes()), nil
 	default:
 		return 0, nil, objects.ErrInvalidArgumentsNumber

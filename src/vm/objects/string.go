@@ -102,8 +102,8 @@ func (o *String) Call(_ int, _ ...IObject) (retCount uint, ret IObject, err erro
 	return 0, nil, nil
 }
 
-// Value returns the string data of the String object.
-func (o *String) Value() string {
+// GetValue returns the string data of the String object.
+func (o *String) GetValue() string {
 	return o.data
 }
 
