@@ -277,8 +277,9 @@ func (c *ControlFlow) TypeSwitchStmt(node *ast.TypeSwitchStmt) error {
 			return err
 		}
 		targetTypeName := clause.List[0].(*ast.Ident).Name
+		hasOk := 1 //default emit hasOk
 		constIndex := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, targetTypeName))
-		if _, err = c.scopes.Emit(node.Pos(), native.OpTypeAssertId, constIndex); err != nil {
+		if _, err = c.scopes.Emit(node.Pos(), native.OpTypeAssertId, hasOk, constIndex); err != nil {
 			return err
 		}
 

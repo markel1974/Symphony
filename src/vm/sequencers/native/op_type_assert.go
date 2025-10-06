@@ -24,7 +24,7 @@ type OpTypeAssert struct {
 
 // NewOpTypeAssert creates a new instance of OpTypeAssert, ensuring the provided IVM implements IVMFullAccess.
 func NewOpTypeAssert() handler.IOpExecutor {
-	operands := []opcodes.OperandFeature{opcodes.Relocatable}
+	operands := []opcodes.OperandFeature{opcodes.SzUint8, opcodes.Relocatable}
 	return &OpTypeAssert{
 		opcode: opcodes.NewOpcode(OpTypeAssertId, operands, "OpTypeAssert"),
 		vm:     nil,
@@ -52,6 +52,7 @@ func (op *OpTypeAssert) Bind(vm handler.IVM) error {
 // On success, the concrete value and a boolean 'true' are pushed onto the stack. On failure, undefined and 'false' are pushed.
 func (op *OpTypeAssert) Execute(decoder *handler.Decoder) {
 	typeNameIndex := decoder.Operand(0)
+	hasOk := decoder.Operand(1)
 	interfaceObj := op.vm.StackPop()
 	concreteValue := op.vm.Factory().Concrete(interfaceObj)
 	valid := false
@@ -72,10 +73,14 @@ func (op *OpTypeAssert) Execute(decoder *handler.Decoder) {
 
 	if valid {
 		op.vm.StackPush(concreteValue)
-		op.vm.StackPush(op.vm.Factory().TrueValue())
+		if hasOk != 0 {
+			op.vm.StackPush(op.vm.Factory().TrueValue())
+		}
 	} else {
 		op.vm.StackPush(op.vm.Factory().UndefinedValue())
-		op.vm.StackPush(op.vm.Factory().FalseValue())
+		if hasOk != 0 {
+			op.vm.StackPush(op.vm.Factory().FalseValue())
+		}
 	}
 }
 

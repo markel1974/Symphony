@@ -355,7 +355,8 @@ func (c *Declarations) AssignStmt(node *ast.AssignStmt) error {
 	case *ast.TypeAssertExpr:
 		// handle type assertion like val, ok := i.(ConcreteType)
 		// the lhs values can be 1 or 2 (e.g. 'val' or 'val, ok')
-		if len(node.Lhs) < 1 || len(node.Lhs) > 2 {
+		argCount := len(node.Lhs)
+		if argCount < 1 || argCount > 2 {
 			return tables.NewCompilerError(c.fileSet, node, "invalid number of values to assign")
 		}
 		// Compile the interface object (e.g. 'i')
@@ -365,7 +366,11 @@ func (c *Declarations) AssignStmt(node *ast.AssignStmt) error {
 		// Extract the target type name (e.g. "User")
 		targetTypeName := rhsType.Type.(*ast.Ident).Name
 		constIndex := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, targetTypeName))
-		if _, err := c.scopes.Emit(node.Pos(), native.OpTypeAssertId, constIndex); err != nil {
+		hasOk := 0
+		if argCount > 1 {
+			hasOk = 1
+		}
+		if _, err := c.scopes.Emit(node.Pos(), native.OpTypeAssertId, hasOk, constIndex); err != nil {
 			return tables.NewCompilerError(c.fileSet, node, err.Error())
 		}
 		rhsContainer = make([]*rhs, len(node.Lhs))
