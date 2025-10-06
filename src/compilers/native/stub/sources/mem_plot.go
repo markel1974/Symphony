@@ -91,34 +91,49 @@ func (plt *MemPlot) onTimer() {
 // It adjusts the minimum and maximum plot values if auto-scaling is disabled.
 // The method invokes the DrawSeries function of the provided ISurface to display the data.
 func (plt *MemPlot) onPaint(surface ISurface) {
+	/*
+		var minPlot = 0.0
+		var maxPlot = 0.0
+		if !plt.auto {
+			minPlot = plt.minVal
+			maxPlot = plt.maxVal
+		}
+		fmt.Println("onPaint plt.container", i, plt.container, minPlot, maxPlot)
+		//surface.DrawSeries(plt.container, -1, -1, minPlot, maxPlot)
+
+	*/
+
 	var minPlot = 0.0
 	var maxPlot = 0.0
 	if !plt.auto {
 		minPlot = plt.minVal
 		maxPlot = plt.maxVal
 	}
+
+	//var i int = 1000
+	//plt.container = append(plt.container, 1.8)
+	//if len(plt.container) > 10 {
+	//	plt.container = plt.container[1:]
+	//}
+
 	fmt.Println("onPaint plt.container", surface, plt.container, minPlot, maxPlot)
-	//surface.DrawSeries(plt.container, -1, -1, minPlot, maxPlot)
 }
 
 // _instance is a singleton instance of the MemPlot structure, used for memory plotting and rendering operations.
-var _instance *MemPlot
+var _instance *MemPlot = NewMemPlot(0)
 
 // onPaint handles the repaint event for the current graphical instance by delegating the operation to the _instance object.
 func onPaint(s interface{}) {
 	z, _ := s.(ISurface)
 	//var z ISurface = s
-
 	//fmt.Println("onPaint", z)
-
 	_instance.onPaint(z)
-	fmt.Println("before onTimer plt.container", _instance.container)
 	//_instance.onPaint(z)
 }
 
 // onTimer triggers the onTimer method of the _instance object, typically used for handling periodic actions or events.
 func onTimer() {
-
+	//_instance.onKey(0, 'r')
 	_instance.onTimer()
 }
 
@@ -137,6 +152,6 @@ func main(args []string) {
 			kind = 3
 		}
 	}
-	_instance = NewMemPlot(kind)
-	fmt.Println("kernel.CreateTimer(0, 300, -1)")
+	//_instance =
+	fmt.Println("kernel.CreateTimer(0, 300, -1)", kind)
 }

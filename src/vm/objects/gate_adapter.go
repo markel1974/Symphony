@@ -44,13 +44,18 @@ func (ga *GateAdapter) CreateSlice(frameId int, highIdx int, lowIdx int, target 
 	} else if highIdx > numElem {
 		highIdx = numElem
 	}
+
 	switch left := target.(type) {
 	case *Array:
-		return ga.factory.NewArray(frameId, left.Values()[lowIdx:highIdx]), nil
+		slice := make([]IObject, highIdx-lowIdx)
+		copy(slice, left.Values()[lowIdx:highIdx])
+		return ga.factory.NewArray(frameId, slice), nil
 	case *String:
-		return ga.factory.NewString(frameId, left.Value()[lowIdx:highIdx]), nil
+		slice := left.Value()[lowIdx:highIdx]
+		return ga.factory.NewString(frameId, slice), nil
 	case *Bytes:
-		return ga.factory.NewBytes(frameId, left.Value()[lowIdx:highIdx]), nil
+		slice := left.Value()[lowIdx:highIdx]
+		return ga.factory.NewBytes(frameId, slice), nil
 	default:
 		return nil, fmt.Errorf("unsupported slice: %s", left.TypeName())
 	}

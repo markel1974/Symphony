@@ -390,17 +390,17 @@ func (f *GateAllocator) ReleaseObjects(frame int, objects []IObject) {
 				}
 			}
 		case *Map:
-			for _, val := range o.Values() {
-				if garbageCandidates[val] {
-					val.ReleaseRef()
+			o.ForEach(func(k string, v IObject) {
+				if garbageCandidates[v] {
+					v.ReleaseRef()
 				}
-			}
+			})
 		case *Struct:
-			for _, val := range o.Values() {
-				if garbageCandidates[val] {
-					val.ReleaseRef()
+			o.ForEach(func(k string, v IObject) {
+				if garbageCandidates[v] {
+					v.ReleaseRef()
 				}
-			}
+			})
 		case *Interface:
 			for _, val := range o.iTable {
 				if garbageCandidates[val] {

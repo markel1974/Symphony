@@ -133,28 +133,16 @@ func (o *Struct) Call(_ int, _ ...IObject) (retCount uint, ret IObject, err erro
 	return 0, nil, nil
 }
 
-// Values returns the underlying map of string keys to IObject Code contained within the Struct.
-func (o *Struct) Values() map[string]IObject {
-	return o.data
+// ForEach iterates over all key-value pairs in the Struct's data, applying the provided function to each pair.
+func (o *Struct) ForEach(fn func(key string, obj IObject)) {
+	for k, v := range o.data {
+		fn(k, v)
+	}
 }
 
 // Length returns the number of key-Code pairs stored in the Struct.
 func (o *Struct) Length() int {
 	return len(o.data)
-}
-
-// SetValue sets the specified key to the given Code in the Code map of the Struct.
-func (o *Struct) SetValue(k string, v IObject) {
-	if len(o.data) > MaxStructLen {
-		return
-	}
-	o.data[k] = v
-}
-
-// GetValue retrieves the Code associated with the given key in the Code map and a boolean indicating its presence.
-func (o *Struct) GetValue(k string) (IObject, bool) {
-	v, ok := o.data[k]
-	return v, ok
 }
 
 // TypeName returns the type name of the object as a string.
@@ -192,29 +180,31 @@ func (o *Struct) IndexGet(_ int, index IObject) (IObject, error) {
 // IndexSet updates or assigns a Code to the specified index within the Struct. Returns an error for invalid index types.
 func (o *Struct) IndexSet(index, value IObject) error {
 	strIdx := index.AsString()
+	if v, ok := o.data[strIdx]; ok {
+		v.ReleaseRef()
+	}
+	value.AddRef()
 	o.data[strIdx] = value
 	return nil
 }
 
 // Equals checks if the current Struct is equal to another IObject by comparing their key-Code pairs and lengths.
 func (o *Struct) Equals(in IObject) bool {
-	var xVal map[string]IObject
 	switch x := in.(type) {
 	case *Struct:
-		xVal = x.data
+		if len(o.data) != len(x.data) {
+			return false
+		}
+		for k, v := range o.data {
+			tv := x.data[k]
+			if !v.Equals(tv) {
+				return false
+			}
+		}
+		return true
 	default:
 		return false
 	}
-	if len(o.data) != len(xVal) {
-		return false
-	}
-	for k, v := range o.data {
-		tv := xVal[k]
-		if !v.Equals(tv) {
-			return false
-		}
-	}
-	return true
 }
 
 // Iterate returns an IIterator for traversing the key-Code pairs in the Struct's internal map.

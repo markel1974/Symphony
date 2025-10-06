@@ -131,35 +131,6 @@ func (o *Map) Call(_ int, _ ...IObject) (uint, IObject, error) {
 	return 0, nil, nil
 }
 
-// Get retrieves the Code associated with the specified key from the map. If the key is not found, it returns nil.
-func (o *Map) Get(key string) IObject {
-	return o.data[key]
-}
-
-// Set assigns the specified Code to the given key in the Map. Overrides the Code if the key already exists.
-func (o *Map) Set(key string, value IObject) {
-	if len(o.data) > MaxMapLen {
-		return
-	}
-	o.data[key] = value
-}
-
-// Delete removes the entry associated with the specified key from the map.
-func (o *Map) Delete(key string) {
-	delete(o.data, key)
-}
-
-// Has checks if the specified key exists in the Map and returns true if found, otherwise false.
-func (o *Map) Has(key string) bool {
-	_, ok := o.data[key]
-	return ok
-}
-
-// Values return the internal map of key-Code pairs stored in the Map object.
-func (o *Map) Values() map[string]IObject {
-	return o.data
-}
-
 // Length returns the number of key-Code pairs in the Map object.
 func (o *Map) Length() int {
 	return len(o.data)
@@ -189,23 +160,21 @@ func (o *Map) Falsy() bool {
 
 // Equals checks if the Map is equal to another IObject by comparing their key-Code pairs. Returns true if equal.
 func (o *Map) Equals(in IObject) bool {
-	var xVal map[string]IObject
-	switch x := in.(type) {
+	switch m := in.(type) {
 	case *Map:
-		xVal = x.data
+		if len(o.data) != len(m.data) {
+			return false
+		}
+		for k, v := range o.data {
+			tv := m.data[k]
+			if !v.Equals(tv) {
+				return false
+			}
+		}
+		return true
 	default:
 		return false
 	}
-	if len(o.data) != len(xVal) {
-		return false
-	}
-	for k, v := range o.data {
-		tv := xVal[k]
-		if !v.Equals(tv) {
-			return false
-		}
-	}
-	return true
 }
 
 // IndexGet retrieves the Code associated with the given index in the map. Returns UndefinedValue if the index does not exist.
@@ -220,10 +189,42 @@ func (o *Map) IndexGet(_ int, index IObject) (IObject, error) {
 }
 
 // IndexSet sets the specified Code at the given string-convertible index in the Map. Returns an error for invalid index types.
-func (o *Map) IndexSet(index, value IObject) error {
+func (o *Map) IndexSet(index IObject, value IObject) error {
 	strIdx := index.AsString()
+	if v, ok := o.data[strIdx]; ok {
+		v.ReleaseRef()
+	}
+	value.AddRef()
 	o.data[strIdx] = value
 	return nil
+}
+
+// Delete removes the entry associated with the specified key from the map.
+func (o *Map) Delete(key string) {
+	v, ok := o.data[key]
+	if !ok {
+		return
+	}
+	v.ReleaseRef()
+	delete(o.data, key)
+}
+
+// Has checks if the specified key exists in the Map and returns true if found, otherwise false.
+func (o *Map) Has(key string) bool {
+	_, ok := o.data[key]
+	return ok
+}
+
+// Values return the internal map of key-Code pairs stored in the Map object.
+//func (o *Map) Values() map[string]IObject {
+//	return o.data
+//}
+
+// ForEach iterates over all key-value pairs in the Map's data, applying the provided function to each pair.
+func (o *Map) ForEach(fn func(key string, obj IObject)) {
+	for k, v := range o.data {
+		fn(k, v)
+	}
 }
 
 // Count returns the total number of elements in the instance and its sub-elements.
