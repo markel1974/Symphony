@@ -520,6 +520,9 @@ func (c *Render) processSorter(selectionPid int, components map[int]*Component) 
 	running := make([]*Component, 0, len(components))
 	var selection *Component
 	for _, process := range c.running {
+		if !process.Available() {
+			continue
+		}
 		process.surface.SetSelectionMode(false)
 		if selectionPid == process.PID() {
 			selection = process
