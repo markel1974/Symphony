@@ -61,10 +61,6 @@ func (plt *MemPlot) onTimer() {
 	var rtStats runtime.MemStats
 	runtime.ReadMemStats(&rtStats)
 
-	allocTest := rtStats.Alloc
-	pltTest := plt.auto
-	fmt.Println(allocTest, "MemPlot Alloc", pltTest)
-
 	var val float64
 	switch plt.kind {
 	case 0:
