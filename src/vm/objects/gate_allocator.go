@@ -152,72 +152,53 @@ func (f *GateAllocator) NewBool(_ int, v bool) IObject {
 // NewInt retrieves an Int object from the pool, sets its frame and Code, and returns it as an IObject.
 func (f *GateAllocator) NewInt(frame int, v int64) IObject {
 	obj := f.poolInt.Get().(*Int)
-	obj.setFrame(frame)
-	obj.data = v
+	obj.Setup(frame, v)
 	return obj
 }
 
 // NewChar retrieves a Char object from the pool, sets its frame and Code, and returns it as an IObject instance.
 func (f *GateAllocator) NewChar(frame int, v rune) IObject {
 	obj := f.poolChar.Get().(*Char)
-	obj.setFrame(frame)
-	obj.data = v
+	obj.Setup(frame, v)
 	return obj
 }
 
 // NewFloat creates and initializes a new Float object with the specified frame and float64 Code. It returns the object.
 func (f *GateAllocator) NewFloat(frame int, v float64) IObject {
 	obj := f.poolFloat.Get().(*Float)
-	obj.setFrame(frame)
-	obj.data = v
+	obj.Setup(frame, v)
 	return obj
 }
 
-// NewString creates a new String object with the specified frame and string Code, truncating the Code if it exceeds MaxStringLen.
+// NewString returns a recycled or newly allocated String object from the pool, initialized with the given frame and value.
 func (f *GateAllocator) NewString(frame int, v string) IObject {
-	if len(v) > MaxStringLen {
-		v = v[0:MaxStringLen]
-	}
 	obj := f.poolString.Get().(*String)
-	obj.setFrame(frame)
-	obj.data = v
+	obj.Setup(frame, v)
 	return obj
 }
 
 // NewTime creates a new Time object from the object pool, initializes it with the given frame and time Code, and returns it.
 func (f *GateAllocator) NewTime(frame int, value time.Time) IObject {
 	obj := f.poolTime.Get().(*Time)
-	obj.setFrame(frame)
-	obj.data = value
+	obj.Setup(frame, value)
 	return obj
 }
 
-// NewBytes creates and returns a new Bytes object with the specified frame and byte slice, truncating if it exceeds maxBytesLen.
+// NewBytes allocates and returns a new Bytes object from the pool, initializing it with the given frame and byte slice.
 func (f *GateAllocator) NewBytes(frame int, v []byte) IObject {
-	if len(v) > MaxBytesLen {
-		v = v[0:MaxBytesLen]
-	}
 	obj := f.poolBytes.Get().(*Bytes)
-	obj.setFrame(frame)
-	obj.data = v
+	obj.Setup(frame, v)
 	return obj
 }
 
-// NewArray creates a new array IObject with the specified frame and elements, truncating elements if exceeding maxArrayLen.
+// NewArray creates a new Array object from the pool, initializes it with the given frame and objects, and returns it.
 func (f *GateAllocator) NewArray(frame int, v []IObject) IObject {
-	if len(v) > MaxArrayLen {
-		v = v[0:MaxArrayLen]
-	}
 	obj := f.poolArray.Get().(*Array)
-	obj.setFrame(frame)
-	obj.data = v
+	obj.Setup(frame, v)
 	return obj
 }
 
-// NewMap creates a new Map object from a provided frame and a map of string keys to IObject Code.
-// It reuses an object from the pool if available, setting its frame and Code.
-// If the provided map exceeds the maximum allowed len, it may truncate the map.
-// Returns the newly created IObject.
+// NewMap creates and initializes a new Map object from the pool using the given frame and map of IObject values.
 func (f *GateAllocator) NewMap(frame int, v map[string]IObject) IObject {
 	obj := f.poolMap.Get().(*Map)
 	obj.Setup(frame, v)
@@ -241,85 +222,56 @@ func (f *GateAllocator) NewAny(frame int, value interface{}) IObject {
 // NewError creates and returns a new Error object with the specified frame and error message.
 func (f *GateAllocator) NewError(frame int, e string) IObject {
 	obj := f.poolError.Get().(*Error)
-	obj.setFrame(frame)
-	obj.data = f.NewString(FrameStatic, e)
+	obj.Setup(frame, e)
 	return obj
 }
 
 // NewObjectPointer creates and initializes an ObjectPointer with the given frame and IObject reference, returning it.
 func (f *GateAllocator) NewObjectPointer(frame int, v *IObject) IObject {
 	obj := f.poolObjectPointer.Get().(*ObjectPointer)
-	obj.setFrame(frame)
-	obj.acquire(v)
+	obj.Setup(frame, v)
 	return obj
 }
 
 // NewInterface initializes and returns a new Interface object with the given frame, Code, and internal table.
 func (f *GateAllocator) NewInterface(frame int, value IObject, iTable map[string]IObject) IObject {
 	obj := f.poolInterface.Get().(*Interface)
-	obj.setFrame(frame)
-	obj.data = value
-	obj.iTable = iTable
+	obj.Setup(frame, value, iTable)
 	return obj
 }
 
 // NewArrayIterator creates and initializes a reusable ArrayIterator instance from the allocator pool for traversing an array.
 func (f *GateAllocator) NewArrayIterator(frame int, v []IObject, index int) IIterator {
 	obj := f.poolArrayIterator.Get().(*ArrayIterator)
-	obj.setFrame(frame)
-	obj.data = v
-	obj.index = index
-	obj.length = len(v)
+	obj.Setup(frame, v, index)
 	return obj
 }
 
 // NewBytesIterator allocates and initializes a BytesIterator instance for iterating over a provided byte slice.
 func (f *GateAllocator) NewBytesIterator(frame int, v []byte, index int) IIterator {
 	obj := f.poolBytesIterator.Get().(*BytesIterator)
-	obj.setFrame(frame)
-	obj.data = v
-	obj.index = index
-	obj.length = len(v)
+	obj.Setup(frame, v, index)
 	return obj
 }
 
 // NewStringIterator creates and initializes a new StringIterator instance from the pool with the given frame, rune slice, and index.
 func (f *GateAllocator) NewStringIterator(frame int, v []rune, index int) IIterator {
 	obj := f.poolStringIterator.Get().(*StringIterator)
-	obj.setFrame(frame)
-	obj.data = v
-	obj.index = index
-	obj.length = len(v)
+	obj.Setup(frame, v, index)
 	return obj
 }
 
 // NewMapIterator initializes and returns a new MapIterator instance with the given frame, map Code, and starting index.
 func (f *GateAllocator) NewMapIterator(frame int, v map[string]IObject, index int) IIterator {
 	obj := f.poolMapIterator.Get().(*MapIterator)
-	keys := make([]string, 0, len(v))
-	for k := range v {
-		keys = append(keys, k)
-	}
-	obj.setFrame(frame)
-	obj.data = v
-	obj.keys = keys
-	obj.index = index
-	obj.length = len(keys)
+	obj.Setup(frame, v, index)
 	return obj
 }
 
 // NewStructIterator initializes a StructIterator with the provided frame, Code map, and starting index for iteration.
 func (f *GateAllocator) NewStructIterator(frame int, v map[string]IObject, index int) IIterator {
 	obj := f.poolStructIterator.Get().(*StructIterator)
-	keys := make([]string, 0, len(v))
-	for k := range v {
-		keys = append(keys, k)
-	}
-	obj.setFrame(frame)
-	obj.data = v
-	obj.keys = keys
-	obj.index = index
-	obj.length = len(keys)
+	obj.Setup(frame, v, index)
 	return obj
 }
 

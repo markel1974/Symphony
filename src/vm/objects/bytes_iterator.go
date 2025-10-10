@@ -37,6 +37,14 @@ func (o *BytesIterator) setAllocator(allocator IAllocator) {
 	o.IAllocator = allocator
 }
 
+// Setup initializes the BytesIterator with the given frame, byte slice, index, and calculates its length.
+func (o *BytesIterator) Setup(frame int, v []byte, index int) {
+	o.setFrame(frame)
+	o.data = v
+	o.index = index
+	o.length = len(v)
+}
+
 // AsInterface converts the object into a generic interface{} type and returns the underlying data.
 func (o *BytesIterator) AsInterface() interface{} {
 	return o.data

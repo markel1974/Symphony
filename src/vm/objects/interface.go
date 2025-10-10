@@ -32,6 +32,13 @@ func (o *Interface) setAllocator(allocator IAllocator) {
 	o.IAllocator = allocator
 }
 
+// Setup initializes the Interface instance with the specified frame, data, and iTable configuration.
+func (o *Interface) Setup(frame int, value IObject, iTable map[string]IObject) {
+	o.setFrame(frame)
+	o.data = value
+	o.iTable = iTable
+}
+
 // AsInterface converts the object into a generic interface{} type and returns the underlying data.
 func (o *Interface) AsInterface() interface{} {
 	return o.data.AsInterface()

@@ -34,6 +34,12 @@ func (o *Char) setAllocator(allocator IAllocator) {
 	o.IAllocator = allocator
 }
 
+// Setup initializes the Char object by setting its frame and assigning a rune value to its data field.
+func (o *Char) Setup(frame int, v rune) {
+	o.setFrame(frame)
+	o.data = v
+}
+
 // AsInterface converts the object into a generic interface{} type and returns the underlying data.
 func (o *Char) AsInterface() interface{} {
 	return o.data

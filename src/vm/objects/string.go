@@ -38,6 +38,15 @@ func (o *String) setAllocator(allocator IAllocator) {
 	o.IAllocator = allocator
 }
 
+// Setup initializes the String object with a frame and a new string value, truncating the value if it exceeds MaxStringLen.
+func (o *String) Setup(frame int, v string) {
+	o.setFrame(frame)
+	if len(v) > MaxStringLen {
+		v = v[0:MaxStringLen]
+	}
+	o.data = v
+}
+
 // AsInterface converts the object into a generic interface{} type and returns the underlying data.
 func (o *String) AsInterface() interface{} {
 	return o.data

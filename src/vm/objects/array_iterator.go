@@ -38,6 +38,14 @@ func (o *ArrayIterator) setAllocator(allocator IAllocator) {
 	o.IAllocator = allocator
 }
 
+// Setup initializes the ArrayIterator with the given frame, data slice, starting index, and calculates its length.
+func (o *ArrayIterator) Setup(frame int, v []IObject, index int) {
+	o.setFrame(frame)
+	o.data = v
+	o.index = index
+	o.length = len(v)
+}
+
 // AsInterface converts the object into a generic interface{} type and returns the underlying data.
 func (o *ArrayIterator) AsInterface() interface{} {
 	res := make([]interface{}, len(o.data))

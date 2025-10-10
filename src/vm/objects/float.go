@@ -38,6 +38,12 @@ func (o *Float) setAllocator(allocator IAllocator) {
 	o.IAllocator = allocator
 }
 
+// Setup initializes the Float object by setting its frame and data values.
+func (o *Float) Setup(frame int, v float64) {
+	o.setFrame(frame)
+	o.data = v
+}
+
 // AsInterface converts the object into a generic interface{} type and returns the underlying data.
 func (o *Float) AsInterface() interface{} {
 	return o.data

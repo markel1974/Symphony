@@ -46,6 +46,19 @@ func (o *MapIterator) setAllocator(allocator IAllocator) {
 	o.IAllocator = allocator
 }
 
+// Setup initializes the MapIterator with a frame, map of key-value pairs, and an index, preparing it for iteration.
+func (o *MapIterator) Setup(frame int, v map[string]IObject, index int) {
+	o.setFrame(frame)
+	keys := make([]string, 0, len(v))
+	for k := range v {
+		keys = append(keys, k)
+	}
+	o.data = v
+	o.keys = keys
+	o.index = index
+	o.length = len(keys)
+}
+
 // AsInterface converts the object into a generic interface{} type and returns the underlying data.
 func (o *MapIterator) AsInterface() interface{} {
 	res := make(map[string]interface{})

@@ -35,6 +35,12 @@ func (o *Int) setAllocator(allocator IAllocator) {
 	o.IAllocator = allocator
 }
 
+// Setup initializes an Int object, setting its frame and int64 data.
+func (o *Int) Setup(frame int, v int64) {
+	o.setFrame(frame)
+	o.data = v
+}
+
 // AsInterface converts the object into a generic interface{} type and returns the underlying data.
 func (o *Int) AsInterface() interface{} {
 	return o.data

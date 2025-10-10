@@ -37,6 +37,14 @@ func (o *StringIterator) setAllocator(allocator IAllocator) {
 	o.IAllocator = allocator
 }
 
+// Setup initializes the StringIterator with the given frame, rune slice, starting index, and sets the length of the data.
+func (o *StringIterator) Setup(frame int, v []rune, index int) {
+	o.setFrame(frame)
+	o.data = v
+	o.index = index
+	o.length = len(v)
+}
+
 // AsInterface converts the object into a generic interface{} type and returns the underlying data.
 func (o *StringIterator) AsInterface() interface{} {
 	return o.data

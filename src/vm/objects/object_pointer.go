@@ -37,6 +37,12 @@ func (o *ObjectPointer) setAllocator(allocator IAllocator) {
 	o.IAllocator = allocator
 }
 
+// Setup initializes the ObjectPointer by setting its frame and acquiring the provided IObject reference.
+func (o *ObjectPointer) Setup(frame int, v *IObject) {
+	o.setFrame(frame)
+	o.acquire(v)
+}
+
 // AsInterface converts the object into a generic interface{} type and returns the underlying data.
 func (o *ObjectPointer) AsInterface() interface{} {
 	return (*o.data).AsInterface()

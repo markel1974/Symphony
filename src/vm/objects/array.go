@@ -37,6 +37,15 @@ func (o *Array) setAllocator(allocator IAllocator) {
 	o.IAllocator = allocator
 }
 
+// Setup initializes the Array with a specific frame and truncates the input slice if it exceeds MaxArrayLen.
+func (o *Array) Setup(frame int, v []IObject) {
+	o.setFrame(frame)
+	if len(v) > MaxArrayLen {
+		v = v[0:MaxArrayLen]
+	}
+	o.data = v
+}
+
 // AsInterface converts the object into a generic interface{} type and returns the underlying data.
 func (o *Array) AsInterface() interface{} {
 	res := make([]interface{}, len(o.data))

@@ -35,6 +35,13 @@ func (o *Time) setAllocator(allocator IAllocator) {
 	o.IAllocator = allocator
 }
 
+// Setup initializes the Time object by setting its frame and assigning a specified time.Time value.
+func (o *Time) Setup(frame int, value time.Time) {
+	o.setFrame(frame)
+	o.data = value
+	return
+}
+
 // AsInterface converts the object into a generic interface{} type and returns the underlying data.
 func (o *Time) AsInterface() interface{} {
 	return o.data

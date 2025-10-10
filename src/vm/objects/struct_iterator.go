@@ -48,6 +48,19 @@ func (o *StructIterator) setAllocator(allocator IAllocator) {
 	o.IAllocator = allocator
 }
 
+// Setup initializes the StructIterator with the given frame, map of IObjects, and starting index.
+func (o *StructIterator) Setup(frame int, v map[string]IObject, index int) {
+	keys := make([]string, 0, len(v))
+	for k := range v {
+		keys = append(keys, k)
+	}
+	o.setFrame(frame)
+	o.data = v
+	o.keys = keys
+	o.index = index
+	o.length = len(keys)
+}
+
 // GateKeeper returns a reference to the GateKeeper associated with the Object.
 func (o *StructIterator) GateKeeper() IGateKeeper {
 	return o.GateKeeper()

@@ -42,6 +42,12 @@ func (o *Error) setAllocator(allocator IAllocator) {
 	o.IAllocator = allocator
 }
 
+// Setup initializes the Error object by setting its frame and assigning a new string representation for its data.
+func (o *Error) Setup(frame int, e string) {
+	o.setFrame(frame)
+	o.data = o.GateKeeper().NewString(frame, e)
+}
+
 // AsInterface converts the object into a generic interface{} type and returns the underlying data.
 func (o *Error) AsInterface() interface{} {
 	return errors.New(o.data.AsString())

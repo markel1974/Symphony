@@ -37,6 +37,15 @@ func (o *Bytes) setAllocator(allocator IAllocator) {
 	o.IAllocator = allocator
 }
 
+// Setup initializes the Array with a specific frame and truncates the input slice if it exceeds MaxArrayLen.
+func (o *Bytes) Setup(frame int, v []byte) {
+	o.setFrame(frame)
+	if len(v) > MaxBytesLen {
+		v = v[0:MaxBytesLen]
+	}
+	o.data = v
+}
+
 // AsBool returns true if the object is not empty, otherwise false.
 func (o *Bytes) AsBool() bool {
 	return len(o.data) > 0
