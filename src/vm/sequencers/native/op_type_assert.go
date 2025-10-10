@@ -54,13 +54,12 @@ func (op *OpTypeAssert) Execute(decoder *handler.Decoder) {
 	typeNameIndex := decoder.Operand(0)
 	hasOk := decoder.Operand(1)
 	interfaceObj := op.vm.StackPop()
-	concreteValue := op.vm.Factory().Concrete(interfaceObj)
 	valid := false
-
-	if a, ok := concreteValue.(*objects.Any); ok {
-		concreteValue = a.ToInterface(op.vm.FrameId())
+	concreteValue := op.vm.Factory().Concrete(op.vm.FrameId(), interfaceObj)
+	switch concreteValue.(type) {
+	case *objects.Any:
 		valid = true
-	} else {
+	default:
 		targetTypeObj, err := op.vm.ConstantsGet(uint(typeNameIndex))
 		if err != nil {
 			op.vm.Shutdown(err)

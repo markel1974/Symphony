@@ -69,8 +69,8 @@ const (
 	// OpTypeCheckId is a helper for type switch, checks type, and pushes a boolean.
 	OpTypeCheckId
 
-	// OpAsTypeId is a helper for type switch, performs type casting without checks.
-	OpAsTypeId
+	// OpTypeAsId is a helper for type switch, performs type casting without checks.
+	OpTypeAsId
 
 	// OpIndexGetId represents an operation code for indexing operations on arrays, maps, or slices within the virtual machine.
 	OpIndexGetId

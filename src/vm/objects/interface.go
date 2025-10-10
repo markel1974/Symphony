@@ -154,6 +154,7 @@ func (o *Interface) Value() IObject {
 	return o.data
 }
 
+// Method retrieves an IObject by its name from the interface's iTable. Returns the object and a boolean indicating success.
 func (o *Interface) Method(name string) (IObject, bool) {
 	m, ok := o.iTable[name]
 	if !ok || m == nil {
@@ -162,9 +163,19 @@ func (o *Interface) Method(name string) (IObject, bool) {
 	return m, ok
 }
 
+// Concrete resolves the underlying object by unwrapping nested Interface instances, returning the first non-Interface object.
+func (o *Interface) Concrete() IObject {
+	switch o.data.(type) {
+	case *Interface:
+		return o.Concrete()
+	default:
+		return o
+	}
+}
+
 // Count returns the total number of elements in the instance and its sub-elements.
 func (o *Interface) Count() int {
-	return 1
+	return o.data.Count()
 }
 
 // GobEncode serializes the Interface's data into a byte slice using gob encoding and returns the result or an error.

@@ -116,8 +116,8 @@ func (plt *MemPlot) onPaint(surface ISurface) {
 	//if len(plt.container) > 10 {
 	//	plt.container = plt.container[1:]
 	//}
-
-	fmt.Println("onPaint plt.container", surface, plt.container, minPlot, maxPlot)
+	surface.DrawSeries(plt.container, -1, -1, minPlot, maxPlot)
+	//fmt.Println("onPaint plt.container", surface, plt.container, minPlot, maxPlot)
 }
 
 // _instance is a singleton instance of the MemPlot structure, used for memory plotting and rendering operations.

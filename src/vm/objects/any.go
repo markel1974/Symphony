@@ -11,6 +11,7 @@ type Any struct {
 	data    interface{}
 	valueOf reflect.Value
 	kind    reflect.Type
+	vTable  map[string]IObject
 }
 
 // newAny creates a new instance of Any, encapsulating the provided value and associating it with the specified allocator.
@@ -18,10 +19,7 @@ func newAny(allocator IAllocator, value interface{}) IObject {
 	a := &Any{
 		IAllocator: allocator,
 		data:       value,
-	}
-	if value != nil {
-		a.valueOf = reflect.ValueOf(value)
-		a.kind = a.valueOf.Type()
+		vTable:     make(map[string]IObject),
 	}
 	return a
 }
@@ -241,40 +239,13 @@ func (o *Any) Count() int {
 	return 1
 }
 
-func (o *Any) ToInterface(frameId int) IObject {
-	iTable := make(map[string]IObject)
-	for x := 0; x < o.valueOf.NumMethod(); x++ {
-		m := o.valueOf.Type().Method(x)
-
-		z := o.GateKeeper().NewFuncImport(frameId, m.Name, -1, func(gk IGateKeeper, f int, args ...IObject) (uint, IObject, error) {
-			if m.Func.Type().NumIn() != len(args) && !m.Func.Type().IsVariadic() {
-				return 0, nil, fmt.Errorf("wrong number of arguments for method %s: want %d, got %d", m.Name, m.Func.Type().NumIn(), len(args))
-			}
-			var in []reflect.Value
-			if len(args) > 0 {
-				for idx, arg := range args {
-					target := m.Func.Type().In(idx)
-					val, ok := arg.AsValue(target)
-					if !ok {
-						return 0, nil, fmt.Errorf("wrong type for argument %d: want %s, got %s", idx, target, arg.TypeName())
-					}
-					if !val.Type().AssignableTo(target) {
-						return 0, nil, fmt.Errorf("wrong type for argument %d: want %s, got %s", idx, target, val.Type())
-					}
-					in = append(in, val)
-				}
-			}
-			//kk := m.Func.Type().In(0)
-			//m.Func.Type().Out(0)
-			_ = m.Func.Call(in)
-
-			return 0, nil, nil
-		})
-		//m := o.valueOf.Method(x)
-		iTable[m.Name] = z
+// Method retrieves an object from the iTable by name, returning the object and a boolean indicating success or failure.
+func (o *Any) Method(name string) (IObject, bool) {
+	m, ok := o.vTable[name]
+	if !ok || m == nil {
+		return o.GateKeeper().UndefinedValue(), false
 	}
-	i := o.GateKeeper().NewInterface(frameId, o, iTable)
-	return i
+	return m, ok
 }
 
 // GobDecode implements the gob.GobDecoder interface, decoding the Allocator state from a byte slice representation.
@@ -339,4 +310,43 @@ func (o *Any) bool() bool {
 		return false
 	}
 	return true
+}
+
+// setup initializes the object with a frame ID and a value, setting up its metadata, methods, and virtual table.
+func (o *Any) setup(frameId int, value interface{}) {
+	o.setFrame(frameId)
+	o.data = value
+	o.valueOf = reflect.ValueOf(value)
+	o.kind = o.valueOf.Type()
+	o.vTable = make(map[string]IObject)
+	for x := 0; x < o.valueOf.NumMethod(); x++ {
+		m := o.valueOf.Type().Method(x)
+
+		z := o.GateKeeper().NewFuncImport(frameId, m.Name, -1, func(gk IGateKeeper, f int, args ...IObject) (uint, IObject, error) {
+			if m.Func.Type().NumIn() != len(args) && !m.Func.Type().IsVariadic() {
+				return 0, nil, fmt.Errorf("wrong number of arguments for method %s: want %d, got %d", m.Name, m.Func.Type().NumIn(), len(args))
+			}
+			var in []reflect.Value
+			if len(args) > 0 {
+				for idx, arg := range args {
+					target := m.Func.Type().In(idx)
+					val, ok := arg.AsValue(target)
+					if !ok {
+						return 0, nil, fmt.Errorf("wrong type for argument %d: want %s, got %s", idx, target, arg.TypeName())
+					}
+					if !val.Type().AssignableTo(target) {
+						return 0, nil, fmt.Errorf("wrong type for argument %d: want %s, got %s", idx, target, val.Type())
+					}
+					in = append(in, val)
+				}
+			}
+			//kk := m.Func.Type().In(0)
+			//m.Func.Type().Out(0)
+			_ = m.Func.Call(in)
+
+			return 0, nil, nil
+		})
+		//m := o.valueOf.Method(x)
+		o.vTable[m.Name] = z
+	}
 }

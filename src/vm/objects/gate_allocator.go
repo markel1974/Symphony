@@ -1,7 +1,6 @@
 package objects
 
 import (
-	"reflect"
 	"sync"
 	"time"
 )
@@ -244,10 +243,7 @@ func (f *GateAllocator) NewStruct(frame int, typeName string, v map[string]IObje
 // NewAny creates and initializes a new Any object from the pool using the given frame and value parameters.
 func (f *GateAllocator) NewAny(frame int, value interface{}) IObject {
 	obj := f.poolAny.Get().(*Any)
-	obj.setFrame(frame)
-	obj.data = value
-	obj.valueOf = reflect.ValueOf(value)
-	obj.kind = obj.valueOf.Type()
+	obj.setup(frame, value)
 	return obj
 }
 

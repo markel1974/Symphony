@@ -1,4 +1,4 @@
-// File: vm/sequencers/native/op_as_type.go
+// File: vm/sequencers/native/op_type_as.go
 
 package native
 
@@ -10,36 +10,36 @@ import (
 	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
 
-// init initializes the package by registering the NewOpAsType operation with the sequencer system.
+// init initializes the package by registering the NewOpTypeAs operation with the sequencer system.
 func init() {
-	SequencerRegister(NewOpAsType)
+	SequencerRegister(NewOpTypeAs)
 }
 
-// OpAsType represents an executor linked to the bytecode opcode OpAsType for handling unchecked casts in the Core.
+// OpTypeAs represents an executor linked to the bytecode opcode OpTypeAs for handling unchecked casts in the Core.
 // It embeds a bytecode.Opcode and uses handler.IVMFullAccess for full Core functionality.
-type OpAsType struct {
+type OpTypeAs struct {
 	opcode *opcodes.Opcode
 	vm     handler.IVMFullAccess
 }
 
-// NewOpAsType creates a new instance of OpAsType executor for the given virtual machine and opcode.
+// NewOpTypeAs creates a new instance of OpTypeAs executor for the given virtual machine and opcode.
 // Returns an error if the provided Core does not implement IVMFullAccess.
-func NewOpAsType() handler.IOpExecutor {
+func NewOpTypeAs() handler.IOpExecutor {
 	operands := []opcodes.OperandFeature{opcodes.SzUint16}
-	return &OpAsType{
-		opcode: opcodes.NewOpcode(OpAsTypeId, operands, "OpAsType"),
+	return &OpTypeAs{
+		opcode: opcodes.NewOpcode(OpTypeAsId, operands, "OpTypeAs"),
 		vm:     nil,
 	}
 }
 
 // Opcode returns the opcode associated with the instance.
-func (op *OpAsType) Opcode() *opcodes.Opcode {
+func (op *OpTypeAs) Opcode() *opcodes.Opcode {
 	return op.opcode
 }
 
-// Bind initializes the OpAsType instance by casting the provided Core to IVMFullAccess and storing it.
+// Bind initializes the OpTypeAs instance by casting the provided Core to IVMFullAccess and storing it.
 // Returns an error if the Core does not implement the required interface.
-func (op *OpAsType) Bind(vm handler.IVM) error {
+func (op *OpTypeAs) Bind(vm handler.IVM) error {
 	vmT, ok := vm.(handler.IVMFullAccess)
 	if !ok {
 		return fmt.Errorf("vm does not implement IVMFullAccess")
@@ -50,13 +50,13 @@ func (op *OpAsType) Bind(vm handler.IVM) error {
 
 // Execute performs the operation by popping an interface from the stack and pushing its concrete value back.
 // If the popped object is not an interface, it sets an error in the virtual machine.
-func (op *OpAsType) Execute(_ *handler.Decoder) {
+func (op *OpTypeAs) Execute(_ *handler.Decoder) {
 	interfaceObj := op.vm.StackPop()
-	concrete := op.vm.Factory().Concrete(interfaceObj)
+	concrete := op.vm.Factory().Concrete(op.vm.FrameId(), interfaceObj)
 	op.vm.StackPush(concrete)
 }
 
-// Compile generates the compiled representation of the OpAsType operation or returns an unimplemented error.
-func (op *OpAsType) Compile() ([]byte, error) {
+// Compile generates the compiled representation of the OpTypeAs operation or returns an unimplemented error.
+func (op *OpTypeAs) Compile() ([]byte, error) {
 	return nil, objects.ErrUnimplemented
 }

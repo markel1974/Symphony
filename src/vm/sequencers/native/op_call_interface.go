@@ -55,17 +55,25 @@ func (op *OpCallInterface) Execute(decoder *handler.Decoder) {
 	}
 	offset := numArgs + 1
 	interfaceObj := op.vm.StackPeekSP(uint(offset))
-	io, ok := interfaceObj.(*objects.Interface)
-	if !ok {
-		op.vm.Shutdown(fmt.Errorf("method call on non-interface object type: %s", interfaceObj.TypeName()))
-		return
+	var callee objects.IObject
+	var value objects.IObject
+	var ok bool
+
+	switch io := interfaceObj.(type) {
+	case *objects.Interface:
+		if callee, ok = io.Method(methodNameObj.AsString()); !ok {
+			op.vm.Shutdown(fmt.Errorf("undefined method '%s' for type '%s'", methodNameObj.AsString(), io.Value().TypeName()))
+			return
+		}
+		value = io.Value()
+	case *objects.Any:
+		if callee, ok = io.Method(methodNameObj.AsString()); !ok {
+			op.vm.Shutdown(fmt.Errorf("undefined method '%s' for any object", methodNameObj.AsString()))
+			return
+		}
+		value = io
 	}
-	callee, ok := io.Method(methodNameObj.AsString())
-	if !ok {
-		op.vm.Shutdown(fmt.Errorf("undefined method '%s' for type '%s'", methodNameObj.AsString(), io.Value().TypeName()))
-		return
-	}
-	op.vm.StackSetSP(uint(offset), io.Value())
+	op.vm.StackSetSP(uint(offset), value)
 	hasSpread := spread > 0
 	totalArgs := numArgs + 1 //receiver
 	op.vm.Call(callee, false, hasSpread, totalArgs)
