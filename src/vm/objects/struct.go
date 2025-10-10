@@ -43,6 +43,16 @@ func (o *Struct) setAllocator(allocator IAllocator) {
 	o.IAllocator = allocator
 }
 
+// Setup initializes the Struct instance with the given frame, type name, and a map of key-IObject pairs.
+func (o *Struct) Setup(frame int, typeName string, v map[string]IObject) {
+	o.setFrame(frame)
+	o.typeName = typeName
+	if len(v) > MaxStructLen {
+		// todo truncate struct
+	}
+	o.data = v
+}
+
 // AsInterface converts the object into a generic interface{} type and returns the underlying data.
 func (o *Struct) AsInterface() interface{} {
 	res := make(map[string]interface{})

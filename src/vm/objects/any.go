@@ -29,6 +29,21 @@ func (o *Any) setAllocator(allocator IAllocator) {
 	o.IAllocator = allocator
 }
 
+// Setup initializes the object with a frame ID and a value, setting up its metadata, methods, and virtual table.
+func (o *Any) Setup(frameId int, value interface{}) {
+	o.setFrame(frameId)
+	o.data = value
+	o.valueOf = reflect.ValueOf(value)
+	o.kind = o.valueOf.Type()
+	o.vTable = make(map[string]IObject)
+	for x := 0; x < o.valueOf.NumMethod(); x++ {
+		m := o.valueOf.Type().Method(x)
+		o.vTable[m.Name] = o.GateKeeper().NewFuncImport(frameId, m.Name, -1, func(gk IGateKeeper, f int, args ...IObject) (uint, IObject, error) {
+			return o.call(frameId, m.Func, args)
+		})
+	}
+}
+
 // TypeName returns the name of the underlying type as a string.
 func (o *Any) TypeName() string {
 	return o.kind.String()
@@ -273,21 +288,6 @@ func (o *Any) bool() bool {
 		return false
 	}
 	return true
-}
-
-// setup initializes the object with a frame ID and a value, setting up its metadata, methods, and virtual table.
-func (o *Any) setup(frameId int, value interface{}) {
-	o.setFrame(frameId)
-	o.data = value
-	o.valueOf = reflect.ValueOf(value)
-	o.kind = o.valueOf.Type()
-	o.vTable = make(map[string]IObject)
-	for x := 0; x < o.valueOf.NumMethod(); x++ {
-		m := o.valueOf.Type().Method(x)
-		o.vTable[m.Name] = o.GateKeeper().NewFuncImport(frameId, m.Name, -1, func(gk IGateKeeper, f int, args ...IObject) (uint, IObject, error) {
-			return o.call(frameId, m.Func, args)
-		})
-	}
 }
 
 // call invokes the provided function with specified arguments and ensures type compatibility for the invocation.

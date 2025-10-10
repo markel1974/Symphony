@@ -45,6 +45,15 @@ func (o *Map) setAllocator(allocator IAllocator) {
 	o.IAllocator = allocator
 }
 
+// Setup initializes the Map object by setting its frame and replacing its data with the provided key-value pairs map.
+func (o *Map) Setup(frame int, v map[string]IObject) {
+	o.setFrame(frame)
+	if len(v) > MaxMapLen {
+		// todo truncate map
+	}
+	o.data = v
+}
+
 // AsInterface converts the object into a generic interface{} type and returns the underlying data.
 func (o *Map) AsInterface() interface{} {
 	res := make(map[string]interface{})

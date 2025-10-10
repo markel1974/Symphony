@@ -219,31 +219,22 @@ func (f *GateAllocator) NewArray(frame int, v []IObject) IObject {
 // If the provided map exceeds the maximum allowed len, it may truncate the map.
 // Returns the newly created IObject.
 func (f *GateAllocator) NewMap(frame int, v map[string]IObject) IObject {
-	if len(v) > MaxMapLen {
-		// todo truncate map
-	}
 	obj := f.poolMap.Get().(*Map)
-	obj.setFrame(frame)
-	obj.data = v
+	obj.Setup(frame, v)
 	return obj
 }
 
 // NewStruct creates and initializes a new Struct object with a specified frame, type name, and key-Code pair map.
 func (f *GateAllocator) NewStruct(frame int, typeName string, v map[string]IObject) IObject {
-	if len(v) > MaxStructLen {
-		// todo truncate struct
-	}
 	obj := f.poolStruct.Get().(*Struct)
-	obj.setFrame(frame)
-	obj.typeName = typeName
-	obj.data = v
+	obj.Setup(frame, typeName, v)
 	return obj
 }
 
 // NewAny creates and initializes a new Any object from the pool using the given frame and value parameters.
 func (f *GateAllocator) NewAny(frame int, value interface{}) IObject {
 	obj := f.poolAny.Get().(*Any)
-	obj.setup(frame, value)
+	obj.Setup(frame, value)
 	return obj
 }
 
