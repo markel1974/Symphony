@@ -2,28 +2,22 @@ package pixels
 
 import "image/color"
 
-// RGBA represents an alpha-premultiplied RGBA color with components within range [0, 1].
-//
-// The difference between color.RGBA is that the value range is [0, 1] and the values are floats.
+// RGBA represents a color using red, green, blue, and alpha components, where each component is a float64.
 type RGBA struct {
 	R, G, B, A float64
 }
 
-// RGB returns a fully opaque RGBA color with the given RGB values.
-//
-// A common way to construct a transparent color is to create one with RGB constructor, then
-// multiply it by a color obtained from the Alpha constructor.
+// RGB creates an RGBA color with the specified red, green, and blue components, setting alpha to full opacity (1.0).
 func RGB(r, g, b float64) RGBA {
 	return RGBA{r, g, b, 1}
 }
 
-// Alpha returns a white RGBA color with the given alpha component.
+// Alpha returns an RGBA color with all channels set to the specified alpha value.
 func Alpha(a float64) RGBA {
 	return RGBA{a, a, a, a}
 }
 
-// Add adds color drawer to color c component-wise and returns the result (the components are not
-// clamped).
+// Add returns a new RGBA color whose components are the sum of the respective components of the two input colors.
 func (c RGBA) Add(d RGBA) RGBA {
 	return RGBA{
 		R: c.R + d.R,
@@ -33,8 +27,7 @@ func (c RGBA) Add(d RGBA) RGBA {
 	}
 }
 
-// Sub subtracts color drawer from color c component-wise and returns the result (the components
-// are not clamped).
+// Sub subtracts the RGBA values of another RGBA struct from the current struct and returns the resulting RGBA.
 func (c RGBA) Sub(d RGBA) RGBA {
 	return RGBA{
 		R: c.R - d.R,
@@ -44,7 +37,7 @@ func (c RGBA) Sub(d RGBA) RGBA {
 	}
 }
 
-// Mul multiplies color c by color drawer component-wise (the components are not clamped).
+// Mul multiplies the R, G, B, and A components of the receiver RGBA by the corresponding components of another RGBA and returns the result.
 func (c RGBA) Mul(d RGBA) RGBA {
 	return RGBA{
 		R: c.R * d.R,
@@ -54,8 +47,7 @@ func (c RGBA) Mul(d RGBA) RGBA {
 	}
 }
 
-// Scaled multiply each component of color c by scale and returns the result (the components
-// are not clamped).
+// Scaled returns a new RGBA where each component is scaled by the specified factor.
 func (c RGBA) Scaled(scale float64) RGBA {
 	return RGBA{
 		R: c.R * scale,
@@ -65,7 +57,7 @@ func (c RGBA) Scaled(scale float64) RGBA {
 	}
 }
 
-// RGBA returns alpha-premultiplied red, green, blue and alpha components of the RGBA color.
+// RGBA converts the RGBA struct values into 16-bit unsigned integers for r, g, b, and a, scaled by 0xffff multiplier.
 func (c RGBA) RGBA() (r, g, b, a uint32) {
 	r = uint32(0xffff * c.R)
 	g = uint32(0xffff * c.G)
@@ -74,9 +66,7 @@ func (c RGBA) RGBA() (r, g, b, a uint32) {
 	return
 }
 
-// ToRGBA converts a color to RGBA format.
-// Using this function is preferred to using RGBAModel for
-// performance (using RGBAModel introduces additional unnecessary allocations).
+// ToRGBA converts a color.Color to an RGBA instance, normalizing its components to the range [0.0, 1.0].
 func ToRGBA(c color.Color) RGBA {
 	if c, ok := c.(RGBA); ok {
 		return c
@@ -90,9 +80,10 @@ func ToRGBA(c color.Color) RGBA {
 	}
 }
 
-// RGBAModel converts colors to RGBA format.
+// RGBAModel is the color model for RGBA colors, converting any color.Color to an RGBA representation.
 var RGBAModel = color.ModelFunc(rgbaModel)
 
+// rgbaModel converts a color.Color to the RGBA format using the ToRGBA function.
 func rgbaModel(c color.Color) color.Color {
 	return ToRGBA(c)
 }

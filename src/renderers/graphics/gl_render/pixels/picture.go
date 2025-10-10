@@ -6,20 +6,6 @@ import (
 	"math"
 )
 
-// verticalFlip flips the pixel data of an image.RGBA vertically, modifying the input image in place.
-func verticalFlip(rgba *image.RGBA) {
-	bounds := rgba.Bounds()
-	width := bounds.Dx()
-	tmpRow := make([]uint8, width*4)
-	for i, j := 0, bounds.Dy()-1; i < j; i, j = i+1, j-1 {
-		iRow := rgba.Pix[i*rgba.Stride : i*rgba.Stride+width*4]
-		jRow := rgba.Pix[j*rgba.Stride : j*rgba.Stride+width*4]
-		copy(tmpRow, iRow)
-		copy(iRow, jRow)
-		copy(jRow, tmpRow)
-	}
-}
-
 // Picture represents an image with defined width, height, and a rectangular boundary.
 // It holds information about the image's pixel data, stride, and additional dimensions for processing.
 type Picture struct {
@@ -203,4 +189,18 @@ func (s *Picture) Image() *image.RGBA {
 	rgba := image.NewRGBA(bounds)
 	copy(rgba.Pix, s.pixels)
 	return rgba
+}
+
+// verticalFlip flips the pixel data of an image.RGBA vertically, modifying the input image in place.
+func verticalFlip(rgba *image.RGBA) {
+	bounds := rgba.Bounds()
+	width := bounds.Dx()
+	tmpRow := make([]uint8, width*4)
+	for i, j := 0, bounds.Dy()-1; i < j; i, j = i+1, j-1 {
+		iRow := rgba.Pix[i*rgba.Stride : i*rgba.Stride+width*4]
+		jRow := rgba.Pix[j*rgba.Stride : j*rgba.Stride+width*4]
+		copy(tmpRow, iRow)
+		copy(iRow, jRow)
+		copy(jRow, tmpRow)
+	}
 }

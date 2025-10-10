@@ -17,9 +17,9 @@ const (
 	RoundEndShape
 )
 
-// IMDraw is a structure used for immediate-mode 2D drawing, such as shapes or points, with customizable attributes.
+// ImmediateDraw is a structure used for immediate-mode 2D drawing, such as shapes or points, with customizable attributes.
 // The struct handles parameters like color, intensity, precision, and transformation matrices for rendering.
-type IMDraw struct {
+type ImmediateDraw struct {
 	Color     color.Color
 	Picture   Vector
 	Intensity float64
@@ -33,13 +33,13 @@ type IMDraw struct {
 	batch     *Batch
 }
 
-// _ is used to enforce that IMDraw implements the IBasicTarget interface at compile time.
-var _ IBasicTarget = (*IMDraw)(nil)
+// _ is used to enforce that ImmediateDraw implements the IBasicTarget interface at compile time.
+var _ IBasicTarget = (*ImmediateDraw)(nil)
 
-// NewIMDraw initializes and returns a new instance of IMDraw using the provided IPicture. It sets up default values and state.
-func NewIMDraw(pic IPicture) *IMDraw {
+// NewIMDraw initializes and returns a new instance of ImmediateDraw using the provided IPicture. It sets up default values and state.
+func NewIMDraw(pic IPicture) *ImmediateDraw {
 	tri := &TrianglesData{}
-	im := &IMDraw{
+	im := &ImmediateDraw{
 		tri:   tri,
 		batch: NewBatch(tri, pic),
 	}
@@ -49,14 +49,14 @@ func NewIMDraw(pic IPicture) *IMDraw {
 	return im
 }
 
-// Clear removes all points, shapes, and drawing data from the current IMDraw instance, resetting it for new drawing operations.
-func (imd *IMDraw) Clear() {
+// Clear removes all points, shapes, and drawing data from the current ImmediateDraw instance, resetting it for new drawing operations.
+func (imd *ImmediateDraw) Clear() {
 	imd.tri.SetLen(0)
 	imd.batch.Dirty()
 }
 
-// Reset resets the state of the IMDraw object to its default values, clearing points and restoring default properties.
-func (imd *IMDraw) Reset() {
+// Reset resets the state of the ImmediateDraw object to its default values, clearing points and restoring default properties.
+func (imd *ImmediateDraw) Reset() {
 	imd.points = imd.points[:0]
 	imd.Color = Alpha(1)
 	imd.Picture = ZeroVector
@@ -65,13 +65,13 @@ func (imd *IMDraw) Reset() {
 	imd.EndShape = NoEndShape
 }
 
-// Draw executes the rendering operations encapsulated in the IMDraw instance onto the specified target.
-func (imd *IMDraw) Draw(t ITarget) {
+// Draw executes the rendering operations encapsulated in the ImmediateDraw instance onto the specified target.
+func (imd *ImmediateDraw) Draw(t ITarget) {
 	imd.batch.Draw(t)
 }
 
 // Push adds one or more points to the current drawing state with associated options like color, precision, and shape end.
-func (imd *IMDraw) Push(pts ...Vector) {
+func (imd *ImmediateDraw) Push(pts ...Vector) {
 	// Assert that Color is of type pixel.RGBA,
 	if _, ok := imd.Color.(RGBA); !ok {
 		// otherwise cast it
@@ -89,42 +89,42 @@ func (imd *IMDraw) Push(pts ...Vector) {
 	}
 }
 
-// pushPt appends a Point with the given position and attributes to the IMDraw points slice.
-func (imd *IMDraw) pushPt(pos Vector, pt Point) {
+// pushPt appends a Point with the given position and attributes to the ImmediateDraw points slice.
+func (imd *ImmediateDraw) pushPt(pos Vector, pt Point) {
 	pt.pos = pos
 	imd.points = append(imd.points, pt)
 }
 
-// SetMatrix sets the transformation matrix for drawing operations in the IMDraw instance.
-func (imd *IMDraw) SetMatrix(m Matrix) {
+// SetMatrix sets the transformation matrix for drawing operations in the ImmediateDraw instance.
+func (imd *ImmediateDraw) SetMatrix(m Matrix) {
 	imd.matrix = m
 	imd.batch.SetMatrix(imd.matrix)
 }
 
 // SetColorMask sets the color mask for rendering, converting the input color to RGBA and applying it to the batch.
-func (imd *IMDraw) SetColorMask(color color.Color) {
+func (imd *ImmediateDraw) SetColorMask(color color.Color) {
 	imd.mask = ToRGBA(color)
 	imd.batch.SetColorMask(imd.mask)
 }
 
 // MakeTriangles creates a new ITargetTriangles by passing the given ITriangles to the batch's MakeTriangles method.
-func (imd *IMDraw) MakeTriangles(t ITriangles) ITargetTriangles {
+func (imd *ImmediateDraw) MakeTriangles(t ITriangles) ITargetTriangles {
 	return imd.batch.MakeTriangles(t)
 }
 
 // MakePicture creates an ITargetPicture from the provided IPicture. The resulting ITargetPicture can be drawn.
-func (imd *IMDraw) MakePicture(p IPicture) ITargetPicture {
+func (imd *ImmediateDraw) MakePicture(p IPicture) ITargetPicture {
 	return imd.batch.MakePicture(p)
 }
 
 // Line draws a line connecting the points added via Push with the specified thickness.
 // If less than two points exist, no line will be drawn.
-func (imd *IMDraw) Line(thickness float64) {
+func (imd *ImmediateDraw) Line(thickness float64) {
 	imd.polyline(thickness, false)
 }
 
 // Rectangle draws a rectangle with the given thickness. A thickness of 0 fills the rectangle; otherwise, it outlines it.
-func (imd *IMDraw) Rectangle(thickness float64) {
+func (imd *ImmediateDraw) Rectangle(thickness float64) {
 	if thickness == 0 {
 		imd.fillRectangle()
 	} else {
@@ -133,7 +133,7 @@ func (imd *IMDraw) Rectangle(thickness float64) {
 }
 
 // Polygon draws a polygon using the specified thickness. A thickness of 0 fills the polygon; otherwise, it outlines it.
-func (imd *IMDraw) Polygon(thickness float64) {
+func (imd *ImmediateDraw) Polygon(thickness float64) {
 	if thickness == 0 {
 		imd.fillPolygon()
 	} else {
@@ -143,7 +143,7 @@ func (imd *IMDraw) Polygon(thickness float64) {
 
 // Circle draws a circle with the specified radius and thickness.
 // If thickness is zero, the circle is filled; otherwise, it is outlined.
-func (imd *IMDraw) Circle(radius, thickness float64) {
+func (imd *ImmediateDraw) Circle(radius, thickness float64) {
 	if thickness == 0 {
 		imd.fillEllipseArc(NewVec(radius, radius), 0, 2*math.Pi)
 	} else {
@@ -153,7 +153,7 @@ func (imd *IMDraw) Circle(radius, thickness float64) {
 
 // CircleArc draws a circular arc with the specified radius, angle range (low to high), and optional thickness.
 // A thickness of 0 fills the arc, while a positive thickness outlines it.
-func (imd *IMDraw) CircleArc(radius, low, high, thickness float64) {
+func (imd *ImmediateDraw) CircleArc(radius, low, high, thickness float64) {
 	if thickness == 0 {
 		imd.fillEllipseArc(NewVec(radius, radius), low, high)
 	} else {
@@ -163,7 +163,7 @@ func (imd *IMDraw) CircleArc(radius, low, high, thickness float64) {
 
 // Ellipse draws an ellipse with the specified radius and thickness centered at the current position.
 // If thickness is 0, the ellipse is filled; otherwise, it is outlined.
-func (imd *IMDraw) Ellipse(radius Vector, thickness float64) {
+func (imd *ImmediateDraw) Ellipse(radius Vector, thickness float64) {
 	if thickness == 0 {
 		imd.fillEllipseArc(radius, 0, 2*math.Pi)
 	} else {
@@ -173,7 +173,7 @@ func (imd *IMDraw) Ellipse(radius Vector, thickness float64) {
 
 // EllipseArc draws an elliptical arc with the specified radius, angular range (low to high), and thickness.
 // If thickness is zero, the arc is filled; otherwise, it is outlined.
-func (imd *IMDraw) EllipseArc(radius Vector, low, high, thickness float64) {
+func (imd *ImmediateDraw) EllipseArc(radius Vector, low, high, thickness float64) {
 	if thickness == 0 {
 		imd.fillEllipseArc(radius, low, high)
 	} else {
@@ -182,7 +182,7 @@ func (imd *IMDraw) EllipseArc(radius Vector, low, high, thickness float64) {
 }
 
 // getAndClearPoints retrieves and clears the current list of points, reusing allocated memory where possible to reduce reallocation.
-func (imd *IMDraw) getAndClearPoints() []Point {
+func (imd *ImmediateDraw) getAndClearPoints() []Point {
 	points := imd.points
 	// use one of the existing pools so we don't reallocate as often
 	if len(imd.pool) > 0 {
@@ -196,13 +196,13 @@ func (imd *IMDraw) getAndClearPoints() []Point {
 }
 
 // restorePoints moves the current set of points into the pool and sets the points slice to the provided empty slice.
-func (imd *IMDraw) restorePoints(points []Point) {
+func (imd *ImmediateDraw) restorePoints(points []Point) {
 	imd.pool = append(imd.pool, imd.points)
 	imd.points = points[:0]
 }
 
 // applyMatrixAndMask applies the transformation matrix and color mask to the TrianglesData starting at the given offset.
-func (imd *IMDraw) applyMatrixAndMask(off int) {
+func (imd *ImmediateDraw) applyMatrixAndMask(off int) {
 	for i := range (*imd.tri)[off:] {
 		(*imd.tri)[off+i].Position = imd.matrix.Project((*imd.tri)[off+i].Position)
 		(*imd.tri)[off+i].Color = imd.mask.Mul((*imd.tri)[off+i].Color)
@@ -210,7 +210,7 @@ func (imd *IMDraw) applyMatrixAndMask(off int) {
 }
 
 // fillRectangle creates and fills rectangles based on input points and color blending. Handles matrix and mask transformations.
-func (imd *IMDraw) fillRectangle() {
+func (imd *ImmediateDraw) fillRectangle() {
 	points := imd.getAndClearPoints()
 
 	if len(points) < 2 {
@@ -251,7 +251,7 @@ func (imd *IMDraw) fillRectangle() {
 
 // outlineRectangle draws an outlined rectangle using the given thickness.
 // It processes the stored points, determines rectangle boundaries, and creates a polyline around them.
-func (imd *IMDraw) outlineRectangle(thickness float64) {
+func (imd *ImmediateDraw) outlineRectangle(thickness float64) {
 	points := imd.getAndClearPoints()
 
 	if len(points) < 2 {
@@ -276,7 +276,7 @@ func (imd *IMDraw) outlineRectangle(thickness float64) {
 }
 
 // fillPolygon fills a polygon from a set of points, assuming at least three points are provided to define the shape.
-func (imd *IMDraw) fillPolygon() {
+func (imd *ImmediateDraw) fillPolygon() {
 	points := imd.getAndClearPoints()
 
 	if len(points) < 3 {
@@ -304,7 +304,7 @@ func (imd *IMDraw) fillPolygon() {
 }
 
 // fillEllipseArc fills an elliptical arc defined by the specified radius, start angle (low), and end angle (high).
-func (imd *IMDraw) fillEllipseArc(radius Vector, low, high float64) {
+func (imd *ImmediateDraw) fillEllipseArc(radius Vector, low, high float64) {
 	points := imd.getAndClearPoints()
 
 	for _, pt := range points {
@@ -352,7 +352,7 @@ func (imd *IMDraw) fillEllipseArc(radius Vector, low, high float64) {
 // low and high define the starting and ending angles (in radians) of the arc.
 // thickness determines the width of the outlined arc.
 // doEndShape specifies whether to draw end caps for the arc.
-func (imd *IMDraw) outlineEllipseArc(radius Vector, low, high, thickness float64, doEndShape bool) {
+func (imd *ImmediateDraw) outlineEllipseArc(radius Vector, low, high, thickness float64, doEndShape bool) {
 	points := imd.getAndClearPoints()
 
 	for _, pt := range points {
@@ -454,7 +454,7 @@ func (imd *IMDraw) outlineEllipseArc(radius Vector, low, high, thickness float64
 
 // polyline draws a series of connected line segments with a specified thickness.
 // closed determines whether the start and end points are connected to form a loop.
-func (imd *IMDraw) polyline(thickness float64, closed bool) {
+func (imd *ImmediateDraw) polyline(thickness float64, closed bool) {
 	points := imd.getAndClearPoints()
 
 	if len(points) == 0 {

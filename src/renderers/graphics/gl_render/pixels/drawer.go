@@ -1,27 +1,19 @@
 package pixels
 
-// CacheMode defines the mode for managing caching behavior in rendering systems.
+// CacheMode represents the cache behavior used for managing rendering resources internally.
 type CacheMode int
 
-// CacheModeUpdate represents the cache mode for updating purposes.
-// CacheModePicture represents the cache mode for picture storage.
-// CacheModePictureUpdate represents the cache mode for updating and storing pictures.
+// CacheModeUpdate represents the cache mode for updates only.
+// CacheModePicture represents the cache mode for pictures only.
+// CacheModePictureUpdate represents the cache mode for both pictures and updates.
 const (
 	CacheModeUpdate        CacheMode = 1
 	CacheModePicture       CacheMode = 2
 	CacheModePictureUpdate CacheMode = 3
 )
 
-// Drawer is a structure responsible for managing rendering operations using triangles, pictures, and cache modes.
-type Drawer struct {
-	triangles ITriangles
-	picture   IPicture
-	cacheMode CacheMode
-	targets   map[ITarget]*drawerTarget
-}
-
-// drawerTarget is a struct that encapsulates target-specific representations of triangles and pictures for drawing.
-// It includes an ITargetTriangles instance, an ITargetPicture instance, a map for cached ITargetPictures by IPicture keys, and a clean flag.
+// drawerTarget is a struct that associates ITargetTriangles and ITargetPictures for rendering on a specific ITarget.
+// It maintains state for efficient drawing, including caching of pictures and tracking updates with a clean flag.
 type drawerTarget struct {
 	tris  ITargetTriangles
 	pic   ITargetPicture
@@ -29,7 +21,16 @@ type drawerTarget struct {
 	clean bool
 }
 
-// NewDrawer creates a new Drawer instance with the provided triangles, picture, and cache mode settings.
+// Drawer is responsible for managing the rendering state using ITriangles and IPicture objects.
+// It supports various cache modes and manages drawing operations for multiple ITargets.
+type Drawer struct {
+	triangles ITriangles
+	picture   IPicture
+	cacheMode CacheMode
+	targets   map[ITarget]*drawerTarget
+}
+
+// NewDrawer initializes and returns a new Drawer with the specified ITriangles, IPicture, and CacheMode.
 func NewDrawer(triangles ITriangles, picture IPicture, cacheMode CacheMode) *Drawer {
 	return &Drawer{
 		triangles: triangles,
@@ -39,44 +40,44 @@ func NewDrawer(triangles ITriangles, picture IPicture, cacheMode CacheMode) *Dra
 	}
 }
 
-// Triangles retrieves the current ITriangles instance associated with the Drawer.
+// Triangles returns the ITriangles instance associated with the Drawer.
 func (d *Drawer) Triangles() ITriangles {
 	return d.triangles
 }
 
-// SetTriangles assigns the provided ITriangles instance to the Drawer for use in rendering operations.
+// SetTriangles sets the ITriangles instance for the Drawer. This determines the triangles to be drawn.
 func (d *Drawer) SetTriangles(triangles ITriangles) {
 	d.triangles = triangles
 }
 
-// Picture returns the IPicture associated with the Drawer. It represents the current drawable image context.
+// Picture returns the IPicture instance currently stored in the Drawer.
 func (d *Drawer) Picture() IPicture {
 	return d.picture
 }
 
-// SetPicture sets the IPicture instance to be used by the Drawer for rendering operations.
+// SetPicture assigns a new IPicture to the Drawer, replacing the current picture.
 func (d *Drawer) SetPicture(picture IPicture) {
 	d.picture = picture
 }
 
-// CacheMode returns the current cache mode used by the Drawer.
+// CacheMode returns the current caching mode used by the Drawer.
 func (d *Drawer) CacheMode() CacheMode {
 	return d.cacheMode
 }
 
-// SetCacheMode sets the cache mode for the Drawer, determining how resources are managed during rendering.
+// SetCacheMode sets the cache mode for the Drawer, determining how cached resources like pictures are managed.
 func (d *Drawer) SetCacheMode(cacheMode CacheMode) {
 	d.cacheMode = cacheMode
 }
 
-// Dirty marks all targets in the Drawer as needing an update by setting their clean state to false.
+// Dirty marks all drawer targets as not clean, indicating they need to be updated before being drawn.
 func (d *Drawer) Dirty() {
 	for _, dt := range d.targets {
 		dt.clean = false
 	}
 }
 
-// Draw renders the stored triangles and picture onto the given ITarget, adapting behavior based on the cache mode.
+// Draw renders the triangles and picture onto the specified target using the current cache mode of the Drawer.
 func (d *Drawer) Draw(t ITarget) {
 	if d.triangles == nil {
 		return
@@ -116,7 +117,7 @@ func (d *Drawer) Draw(t ITarget) {
 	}
 }
 
-// drawUpdate manages the update and drawing process of a cached picture for the specified drawer target on the given target.
+// drawUpdate updates or creates a cached ITargetPicture for the given ITarget and draws it using the supplied triangles.
 func (d *Drawer) drawUpdate(dt *drawerTarget, t ITarget) {
 	if dt.pic == nil {
 		dt.pic = t.MakePicture(d.picture)
@@ -126,7 +127,9 @@ func (d *Drawer) drawUpdate(dt *drawerTarget, t ITarget) {
 	dt.pic.Draw(dt.tris)
 }
 
-// drawPicture initializes or updates a cached picture for the given drawer target and draws it with specified triangles.
+// drawPicture handles drawing operations when the `CacheModePicture` caching mode is enabled.
+// It ensures that an `ITargetPicture` is retrieved or created for the current `IPicture` and updates it if necessary.
+// The `ITargetPicture` is then used to draw the associated `ITargetTriangles` on the provided `ITarget`.
 func (d *Drawer) drawPicture(dt *drawerTarget, t ITarget) {
 	pic := dt.pics[d.picture]
 	if pic == nil {
@@ -138,7 +141,7 @@ func (d *Drawer) drawPicture(dt *drawerTarget, t ITarget) {
 	pic.Draw(dt.tris)
 }
 
-// drawPictureUpdate ensures an ITargetPicture is created or reused from the cache and draws it with the given triangles.
+// drawPictureUpdate ensures the picture is retrieved from or added to the cache and draws it with the given triangles.
 func (d *Drawer) drawPictureUpdate(dt *drawerTarget, t ITarget) {
 	pic := dt.pics[d.picture]
 	if pic == nil {
@@ -148,7 +151,7 @@ func (d *Drawer) drawPictureUpdate(dt *drawerTarget, t ITarget) {
 	pic.Draw(dt.tris)
 }
 
-// drawDefault creates a picture from the provided IPicture and draws it using the associated target triangles.
+// drawDefault draws the supplied ITargetTriangles directly using a newly created ITargetPicture.
 func (d *Drawer) drawDefault(dt *drawerTarget, t ITarget) {
 	pic := t.MakePicture(d.picture)
 	pic.Draw(dt.tris)

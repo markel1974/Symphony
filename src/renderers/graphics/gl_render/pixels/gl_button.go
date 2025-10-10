@@ -6,10 +6,10 @@ import (
 
 // Pressed returns whether the Button is currently pressed down.
 
-// Button is a keyboard or mouse button. Why distinguish?
+// Button represents an input button, such as a mouse or keyboard button.
 type Button int
 
-// String returns a human-readable string describing the Button.
+// String returns the string representation of the Button value or "Invalid" if the value is not recognized.
 func (b Button) String() string {
 	name, ok := buttonNames[b]
 	if !ok {
@@ -18,7 +18,6 @@ func (b Button) String() string {
 	return name
 }
 
-// List of all mouse buttons.
 const (
 	MouseButton1      = Button(glfw.MouseButton1)
 	MouseButton2      = Button(glfw.MouseButton2)
@@ -34,7 +33,6 @@ const (
 	MouseButtonMiddle = Button(glfw.MouseButtonMiddle)
 )
 
-// List of all keyboard buttons.
 const (
 	KeyUnknown      = Button(glfw.KeyUnknown)
 	KeySpace        = Button(glfw.KeySpace)
@@ -160,6 +158,7 @@ const (
 	KeyLast         = Button(glfw.KeyLast)
 )
 
+// buttonNames maps Button constants to their string representations for descriptive identification.
 var buttonNames = map[Button]string{
 	MouseButton4:      "MouseButton4",
 	MouseButton5:      "MouseButton5",

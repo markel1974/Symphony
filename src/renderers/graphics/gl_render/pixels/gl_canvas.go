@@ -2,8 +2,9 @@ package pixels
 
 import (
 	"errors"
-	"github.com/markel1974/c64emu/src/renderers/graphics/gl_render/pixels/executor"
 	"image/color"
+
+	"github.com/markel1974/c64emu/src/renderers/graphics/gl_render/pixels/executor"
 
 	"github.com/go-gl/mathgl/mgl32"
 )
