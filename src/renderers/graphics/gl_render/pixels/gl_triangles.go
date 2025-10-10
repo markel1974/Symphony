@@ -222,14 +222,14 @@ func (gt *GLTriangles) index(i, idx int) int {
 }
 
 // Position returns the Position property of the i-th vertex.
-func (gt *GLTriangles) Position(i int) Vec {
+func (gt *GLTriangles) Position(i int) Vector {
 	px := gt.data[gt.index(i, triPosX)]
 	py := gt.data[gt.index(i, triPosY)]
 	return NewVec(float64(px), float64(py))
 }
 
 // SetPosition sets the position property of the i-th vertex.
-func (gt *GLTriangles) SetPosition(i int, p Vec) {
+func (gt *GLTriangles) SetPosition(i int, p Vector) {
 	gt.data[gt.index(i, triPosX)] = float32(p.X)
 	gt.data[gt.index(i, triPosY)] = float32(p.Y)
 }
@@ -257,7 +257,7 @@ func (gt *GLTriangles) SetColor(i int, c RGBA) {
 }
 
 // Picture returns the IPicture property of the i-th vertex.
-func (gt *GLTriangles) Picture(i int) (pic Vec, intensity float64) {
+func (gt *GLTriangles) Picture(i int) (pic Vector, intensity float64) {
 	tx := gt.data[gt.index(i, triPicX)]
 	ty := gt.data[gt.index(i, triPicY)]
 	intensity = float64(gt.data[gt.index(i, triIntensity)])
@@ -265,7 +265,7 @@ func (gt *GLTriangles) Picture(i int) (pic Vec, intensity float64) {
 }
 
 // SetPicture sets the picture property of the i-th vertex.
-func (gt *GLTriangles) SetPicture(i int, pic Vec, intensity float64) {
+func (gt *GLTriangles) SetPicture(i int, pic Vector, intensity float64) {
 	gt.data[gt.index(i, triPicX)] = float32(pic.X)
 	gt.data[gt.index(i, triPicY)] = float32(pic.Y)
 	gt.data[gt.index(i, triIntensity)] = float32(intensity)

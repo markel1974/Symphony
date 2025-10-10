@@ -10,7 +10,7 @@ import (
 // Matrix has a handful of useful methods, each of which adds a transformation to the matrix. For
 // example:
 //
-//	pixel.IM.Moved(pixel.V(100, 200)).Rotated(pixel.ZV, math.Pi/2)
+//	pixel.IM.Moved(pixel.V(100, 200)).Rotated(pixel.ZeroVector, math.Pi/2)
 //
 // This code creates a Matrix that first moves everything by 100 units horizontally and 200 units
 // vertically and then rotates everything by 90 degrees around the origin.
@@ -35,13 +35,13 @@ func (m Matrix) String() string {
 }
 
 // Moved moves everything by the delta vector.
-func (m Matrix) Moved(delta Vec) Matrix {
+func (m Matrix) Moved(delta Vector) Matrix {
 	m[4], m[5] = m[4]+delta.X, m[5]+delta.Y
 	return m
 }
 
-// ScaledXY scales everything around a given point by the scale factor in each axis respectively.
-func (m Matrix) ScaledXY(around Vec, scale Vec) Matrix {
+// ScaledXY scales everything around a given Point by the scale factor in each axis respectively.
+func (m Matrix) ScaledXY(around Vector, scale Vector) Matrix {
 	m[4], m[5] = m[4]-around.X, m[5]-around.Y
 	m[0], m[2], m[4] = m[0]*scale.X, m[2]*scale.X, m[4]*scale.X
 	m[1], m[3], m[5] = m[1]*scale.Y, m[3]*scale.Y, m[5]*scale.Y
@@ -49,13 +49,13 @@ func (m Matrix) ScaledXY(around Vec, scale Vec) Matrix {
 	return m
 }
 
-// Scaled scales everything around a given point by the scale factor.
-func (m Matrix) Scaled(around Vec, scale float64) Matrix {
+// Scaled scales everything around a given Point by the scale factor.
+func (m Matrix) Scaled(around Vector, scale float64) Matrix {
 	return m.ScaledXY(around, NewVec(scale, scale))
 }
 
-// Rotated rotates everything around a given point by the given angle in radians.
-func (m Matrix) Rotated(around Vec, angle float64) Matrix {
+// Rotated rotates everything around a given Point by the given angle in radians.
+func (m Matrix) Rotated(around Vector, angle float64) Matrix {
 	sinT, cosT := math.Sincos(angle)
 	m[4], m[5] = m[4]-around.X, m[5]-around.Y
 	m2 := m.Chained(Matrix{cosT, sinT, -sinT, cosT, 0, 0})
@@ -78,18 +78,18 @@ func (m Matrix) Chained(next Matrix) Matrix {
 
 // Project applies all transformations added to the Matrix to a vector u and returns the result.
 // Time complexity is O(1).
-func (m Matrix) Project(u Vec) Vec {
-	return Vec{m[0]*u.X + m[2]*u.Y + m[4], m[1]*u.X + m[3]*u.Y + m[5]}
+func (m Matrix) Project(u Vector) Vector {
+	return Vector{m[0]*u.X + m[2]*u.Y + m[4], m[1]*u.X + m[3]*u.Y + m[5]}
 }
 
 // Unproject does the inverse operation to Project.
 // Time complexity is O(1).
-func (m Matrix) Unproject(u Vec) Vec {
+func (m Matrix) Unproject(u Vector) Vector {
 	det := m[0]*m[3] - m[2]*m[1]
 	if det == 0 {
-		return Vec{}
+		return Vector{}
 	}
-	return Vec{
+	return Vector{
 		(m[3]*(u.X-m[4]) - m[2]*(u.Y-m[5])) / det,
 		(-m[1]*(u.X-m[4]) + m[0]*(u.Y-m[5])) / det,
 	}

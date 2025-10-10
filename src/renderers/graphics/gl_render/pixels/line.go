@@ -7,12 +7,12 @@ import (
 
 // Line is a 2D line segment, between points A and B.
 type Line struct {
-	A Vec
-	B Vec
+	A Vector
+	B Vector
 }
 
 // NewLine creates and returns a new Line.
-func NewLine(from, to Vec) Line {
+func NewLine(from, to Vector) Line {
 	return Line{
 		A: from,
 		B: to,
@@ -24,21 +24,21 @@ func (l Line) Bounds() Rect {
 	return NewRect(l.A.X, l.A.Y, l.B.X, l.B.Y).Norm()
 }
 
-// Center will return the point at the center of the line; that is, the point equidistant from either end.
-func (l Line) Center() Vec {
+// Center will return the Point at the center of the line; that is, the Point equidistant from either end.
+func (l Line) Center() Vector {
 	return l.A.Add(l.A.To(l.B).Scaled(0.5))
 }
 
-// Closest will return the point on the line which is closest to the Vec provided.
-func (l Line) Closest(v Vec) Vec {
+// Closest will return the Point on the line which is closest to the Vector provided.
+func (l Line) Closest(v Vector) Vector {
 	// between is a helper function which determines whether x is greater than min(a, b) and less than max(a, b)
 	between := func(a, b, x float64) bool {
-		min := math.Min(a, b)
-		max := math.Max(a, b)
-		return min < x && x < max
+		minV := math.Min(a, b)
+		maxV := math.Max(a, b)
+		return minV < x && x < maxV
 	}
 
-	// The closest point will be on a line which perpendicular to this line.
+	// The closest Point will be on a line which perpendicular to this line.
 	// If and only if the infinite perpendicular line intersects the segment.
 	m, b := l.Formula()
 
@@ -83,7 +83,7 @@ func (l Line) Closest(v Vec) Vec {
 	x := (perpendicularB - b) / (m - perpendicularM)
 	y := m*x + b
 
-	// Check if the point lies between the x and y bounds of the segment
+	// Check if the Point lies between the x and y bounds of the segment
 	if !between(l.A.X, l.B.X, x) && !between(l.A.Y, l.B.Y, y) {
 		// Not within bounding box
 		toStart := v.To(l.A)
@@ -98,8 +98,8 @@ func (l Line) Closest(v Vec) Vec {
 	return NewVec(x, y)
 }
 
-// Contains returns whether the provided Vec lies on the line.
-func (l Line) Contains(v Vec) bool {
+// Contains returns whether the provided Vector lies on the line.
+func (l Line) Contains(v Vector) bool {
 	return l.Closest(v).Eq(v)
 }
 
@@ -117,18 +117,18 @@ func (l Line) Formula() (m, b float64) {
 	return m, b
 }
 
-// Intersect will return the point of intersection for the two-line segments.
+// Intersect will return the Point of intersection for the two-line segments.
 // If the line segments do not intersect, this function will return the zero-vector and false.
-func (l Line) Intersect(k Line) (Vec, bool) {
+func (l Line) Intersect(k Line) (Vector, bool) {
 	// Check if the lines are parallel
 	lDir := l.A.To(l.B)
 	kDir := k.A.To(k.B)
 	if lDir.X == kDir.X && lDir.Y == kDir.Y {
-		return ZV, false
+		return ZeroVector, false
 	}
 
 	// The lines intersect - but potentially not within the line segments.
-	// Get the intersection point for the lines if they were infinitely long, check if the point exists on both of the
+	// Get the intersection Point for the lines if they were infinitely long, check if the Point exists on both of the
 	// segments
 	lm, lb := l.Formula()
 	km, kb := k.Formula()
@@ -136,7 +136,7 @@ func (l Line) Intersect(k Line) (Vec, bool) {
 	// Account for vertical lines
 	if math.IsInf(math.Abs(lm), 1) && math.IsInf(math.Abs(km), 1) {
 		// Both vertical, therefore, parallel
-		return ZV, false
+		return ZeroVector, false
 	}
 
 	var x, y float64
@@ -162,32 +162,32 @@ func (l Line) Intersect(k Line) (Vec, bool) {
 	}
 
 	if l.Contains(NewVec(x, y)) && k.Contains(NewVec(x, y)) {
-		// The intersected point is on both line segments, they intersect.
+		// The intersected Point is on both line segments, they intersect.
 		return NewVec(x, y), true
 	}
 
-	return ZV, false
+	return ZeroVector, false
 }
 
-// IntersectCircle will return the shortest Vec such that moving the Line by that Vec will cause the Line and Circle
+// IntersectCircle will return the shortest Vector such that moving the Line by that Vector will cause the Line and Circle
 // to no longer intersect.
 // If they do not intersect at all, this function will return a zero-vector.
-func (l Line) IntersectCircle(c Circle) Vec {
-	// Get the point on the line closest to the center of the circle.
+func (l Line) IntersectCircle(c Circle) Vector {
+	// Get the Point on the line closest to the center of the circle.
 	closest := l.Closest(c.Center)
 	cirToClosest := c.Center.To(closest)
 
 	if cirToClosest.Len() >= c.Radius {
-		return ZV
+		return ZeroVector
 	}
 
 	return cirToClosest.Scaled(cirToClosest.Len() - c.Radius)
 }
 
-// IntersectRect will return the shortest Vec such that moving the Line by that Vec will cause the Line and Rect to
+// IntersectRect will return the shortest Vector such that moving the Line by that Vector will cause the Line and Rect to
 // no longer intersect.
 // If they do not intersect at all, this function will return a zero-vector.
-func (l Line) IntersectRect(r Rect) Vec {
+func (l Line) IntersectRect(r Rect) Vector {
 	// Check if either end of the line segment are within the rectangle
 	if r.Contains(l.A) || r.Contains(l.B) {
 		// Use the Rect.Intersect to get minimal return value
@@ -203,10 +203,10 @@ func (l Line) IntersectRect(r Rect) Vec {
 	for _, edge := range r.Edges() {
 		if _, ok := l.Intersect(edge); ok {
 			// Get the closest points on the line to each corner, where:
-			//  - the point is contained by the rectangle
-			//  - the point is not the corner itself
+			//  - the Point is contained by the rectangle
+			//  - the Point is not the corner itself
 			corners := r.Vertices()
-			var closest *Vec
+			var closest *Vector
 			closestCorner := corners[0]
 			for _, c := range corners {
 				cc := l.Closest(c)
@@ -222,7 +222,7 @@ func (l Line) IntersectRect(r Rect) Vec {
 	}
 
 	// No intersect
-	return ZV
+	return ZeroVector
 }
 
 // Len returns the length of the line segment.
@@ -230,17 +230,17 @@ func (l Line) Len() float64 {
 	return l.A.To(l.B).Len()
 }
 
-// Moved will return a line moved by the delta Vec provided.
-func (l Line) Moved(delta Vec) Line {
+// Moved will return a line moved by the delta Vector provided.
+func (l Line) Moved(delta Vector) Line {
 	return Line{
 		A: l.A.Add(delta),
 		B: l.B.Add(delta),
 	}
 }
 
-// Rotated will rotate the line around the provided Vec.
-func (l Line) Rotated(around Vec, angle float64) Line {
-	// Move the line so we can use `Vec.Rotated`
+// Rotated will rotate the line around the provided Vector.
+func (l Line) Rotated(around Vector, angle float64) Line {
+	// Move the line so we can use `Vector.Rotated`
 	lineShifted := l.Moved(around.Scaled(-1))
 
 	lineRotated := Line{
@@ -251,13 +251,13 @@ func (l Line) Rotated(around Vec, angle float64) Line {
 	return lineRotated.Moved(around)
 }
 
-// Scaled will return the line scaled around the center point.
+// Scaled will return the line scaled around the center Point.
 func (l Line) Scaled(scale float64) Line {
 	return l.ScaledXY(l.Center(), scale)
 }
 
-// ScaledXY will return the line scaled around the Vec provided.
-func (l Line) ScaledXY(around Vec, scale float64) Line {
+// ScaledXY will return the line scaled around the Vector provided.
+func (l Line) ScaledXY(around Vector, scale float64) Line {
 	toA := around.To(l.A).Scaled(scale)
 	toB := around.To(l.B).Scaled(scale)
 

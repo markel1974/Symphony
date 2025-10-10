@@ -5,176 +5,146 @@ import (
 	"math"
 )
 
-// Vec is a 2D vector type with X and Y coordinates.
-//
-// Create vectors with the V constructor:
-//
-//	u := pixel.V(1, 2)
-//	v := pixel.V(8, -3)
-//
-// Use various methods to manipulate them:
-//
-//	  w := u.add(v)
-//	  fmt.Println(w)        // Vec(9, -1)
-//	  fmt.Println(u.Sub(v)) // Vec(-7, 5)
-//	  u = pixel.V(2, 3)
-//	  v = pixel.V(8, 1)
-//	  if u.X < 0 {
-//		     fmt.Println("this won't happen")
-//	  }
-//	  x := u.Unit().Dot(v.Unit())
-type Vec struct {
+// Vector represents a 2D vector with float64 components X and Y.
+type Vector struct {
 	X float64
 	Y float64
 }
 
-// ZV is a zero vector.
-var ZV = Vec{0, 0}
+// ZeroVector represents the zero vector (0, 0) of type Vector.
+var ZeroVector = Vector{0, 0}
 
-// NewVec returns a new 2D vector with the given coordinates.
-func NewVec(x float64, y float64) Vec {
-	return Vec{x, y}
+// NewVec creates a new Vector with the specified x and y components.
+func NewVec(x float64, y float64) Vector {
+	return Vector{x, y}
 }
 
-// Eq will compare two vectors and return whether they are equal accounting for rounding errors.
-// At worst, the result is correct to seven significant digits.
-func (u Vec) Eq(v Vec) bool {
+// Eq checks whether two vectors are approximately equal by comparing their components with a tolerance for rounding errors.
+func (u Vector) Eq(v Vector) bool {
 	return nearlyEqual(u.X, v.X) && nearlyEqual(u.Y, v.Y)
 }
 
-// Unit returns a vector of length 1 facing the given angle.
-func Unit(angle float64) Vec {
-	return Vec{1, 0}.Rotated(angle)
+// Unit returns a unit vector rotated by the specified angle in radians.
+func Unit(angle float64) Vector {
+	return Vector{1, 0}.Rotated(angle)
 }
 
-// String returns the string representation of the vector u.
-//
-//	u := pixel.V(4.5, -1.3)
-//	u.AsString()     // returns "Vec(4.5, -1.3)"
-//	fmt.Println(u) // Vec(4.5, -1.3)
-func (u Vec) String() string {
-	return fmt.Sprintf("Vec(%v, %v)", u.X, u.Y)
+// String returns a string representation of the Vector in the format "Vector(X, Y)".
+func (u Vector) String() string {
+	return fmt.Sprintf("Vector(%v, %v)", u.X, u.Y)
 }
 
-// XY returns the components of the vector in two return values.
-func (u Vec) XY() (float64, float64) {
+// XY returns the X and Y components of the Vector as two float64 values.
+func (u Vector) XY() (float64, float64) {
 	return u.X, u.Y
 }
 
-// Add returns the sum of vectors u and v.
-func (u Vec) Add(v Vec) Vec {
-	return Vec{
+// Add adds the components of two vectors and returns the resulting vector.
+func (u Vector) Add(v Vector) Vector {
+	return Vector{
 		u.X + v.X,
 		u.Y + v.Y,
 	}
 }
 
-// Sub returns the difference between vectors u and v.
-func (u Vec) Sub(v Vec) Vec {
-	return Vec{
+// Sub subtracts the components of vector v from the components of vector u and returns the resulting vector.
+func (u Vector) Sub(v Vector) Vector {
+	return Vector{
 		u.X - v.X,
 		u.Y - v.Y,
 	}
 }
 
-// Floor converts x and y to their integer equivalents.
-func (u Vec) Floor() Vec {
-	return Vec{
+// Floor returns a new Vector with both components rounded down to the nearest integer using math.Floor.
+func (u Vector) Floor() Vector {
+	return Vector{
 		math.Floor(u.X),
 		math.Floor(u.Y),
 	}
 }
 
-// To returns the vector from u to v. Equivalent to v.Sub(u).
-func (u Vec) To(v Vec) Vec {
-	return Vec{
+// To returns a new Vector that represents the difference between the given Vector v and the current Vector u.
+func (u Vector) To(v Vector) Vector {
+	return Vector{
 		v.X - u.X,
 		v.Y - u.Y,
 	}
 }
 
-// Scaled returns the vector u multiplied by c.
-func (u Vec) Scaled(c float64) Vec {
-	return Vec{u.X * c, u.Y * c}
+// Scaled returns a new vector by scaling the current vector by a given constant multiplier.
+func (u Vector) Scaled(c float64) Vector {
+	return Vector{u.X * c, u.Y * c}
 }
 
-// ScaledXY returns the vector u multiplied by the vector v component-wise.
-func (u Vec) ScaledXY(v Vec) Vec {
-	return Vec{u.X * v.X, u.Y * v.Y}
+// ScaledXY returns a new Vector resulting from element-wise multiplication of the current vector with another vector.
+func (u Vector) ScaledXY(v Vector) Vector {
+	return Vector{u.X * v.X, u.Y * v.Y}
 }
 
-// Len returns the length of the vector u.
-func (u Vec) Len() float64 {
+// Len calculates and returns the Euclidean length (magnitude) of the vector.
+func (u Vector) Len() float64 {
 	return math.Hypot(u.X, u.Y)
 }
 
-// Angle returns the angle between the vector u and the x-axis. The result is in range [-Pi, Pi].
-func (u Vec) Angle() float64 {
+// Angle computes and returns the angle of the vector in radians, measured counterclockwise from the positive X-axis.
+func (u Vector) Angle() float64 {
 	return math.Atan2(u.Y, u.X)
 }
 
-// Unit returns a vector of length 1 facing the direction of u (has the same angle).
-func (u Vec) Unit() Vec {
+// Unit returns the unit (normalized) vector of the current vector. Defaults to Vector{1, 0} if the vector's length is zero.
+func (u Vector) Unit() Vector {
 	if u.X == 0 && u.Y == 0 {
-		return Vec{1, 0}
+		return Vector{1, 0}
 	}
 	return u.Scaled(1 / u.Len())
 }
 
-// Rotated returns the vector u rotated by the given angle in radians.
-func (u Vec) Rotated(angle float64) Vec {
+// Rotated returns a new Vector that is the result of rotating the original vector by the specified angle in radians.
+func (u Vector) Rotated(angle float64) Vector {
 	sin, cos := math.Sincos(angle)
-	return Vec{
+	return Vector{
 		u.X*cos - u.Y*sin,
 		u.X*sin + u.Y*cos,
 	}
 }
 
-// Normal returns a vector normal to u. Equivalent to u.Rotated(math.Pi / 2), but faster.
-func (u Vec) Normal() Vec {
-	return Vec{-u.Y, u.X}
+// Normal returns a new Vector that is the 90-degree clockwise rotation (normal vector) of the current Vector.
+func (u Vector) Normal() Vector {
+	return Vector{-u.Y, u.X}
 }
 
-// Dot returns the dot product of vectors u and v.
-func (u Vec) Dot(v Vec) float64 {
+// Dot computes the dot product of the current vector and another vector, returning a scalar value.
+func (u Vector) Dot(v Vector) float64 {
 	return u.X*v.X + u.Y*v.Y
 }
 
-// Cross return the cross-product of vectors u and v.
-func (u Vec) Cross(v Vec) float64 {
+// Cross calculates the 2D cross product (determinant) of two vectors, returning a scalar result.
+func (u Vector) Cross(v Vector) float64 {
 	return u.X*v.Y - v.X*u.Y
 }
 
-// Project returns a projection (or component) of vector u in the direction of vector v.
-// Behavior is undefined if v is a zero vector.
-func (u Vec) Project(v Vec) Vec {
+// Project returns the projection of the vector u onto the vector v.
+func (u Vector) Project(v Vector) Vector {
 	length := u.Dot(v) / v.Len()
 	return v.Unit().Scaled(length)
 }
 
-// Map applies the function f to both x and y components of the vector u and returns the modified
-// vector.
-//
-//	u := pixel.V(10.5, -1.5)
-//	v := u.Map(math.Floor)   // v is Vec(10, -2), both components of u floored
-func (u Vec) Map(f func(float64) float64) Vec {
-	return Vec{
+// Map applies the given function to each component of the vector and returns a new Vector with the results.
+func (u Vector) Map(f func(float64) float64) Vector {
+	return Vector{
 		f(u.X),
 		f(u.Y),
 	}
 }
 
-// LinearInterpolation returns a linear interpolation between vectors a and b.
-// This function basically returns a point along the line between a and b and t chooses which one.
-// If t is 0, then a will be returned.
-// If t is 1, b will be returned.
-// Anything between 0 and 1 will return the appropriate point between a and b and so on.
-func LinearInterpolation(a Vec, b Vec, t float64) Vec {
+// LinearInterpolation calculates a Point at a given ratio `t` between two vectors `a` and `b`.
+// `t` is a value between 0 and 1, where 0 returns `a` and 1 returns `b`.
+func LinearInterpolation(a Vector, b Vector, t float64) Vector {
 	return a.Scaled(1 - t).Add(b.Scaled(t))
 }
 
-// nearlyEqual compares two float64s and returns whether they are equal, accounting for rounding errors.At worst, the
-// result is correct to seven significant digits.
+// nearlyEqual compares two float64 values for near equality within a small epsilon threshold.
+// Returns true if the difference between the values is within the acceptable range.
 func nearlyEqual(a float64, b float64) bool {
 	epsilon := 0.000001
 	if a == b {

@@ -17,7 +17,7 @@ import (
 // Title specifies the title of the window.
 // Icon is a slice of IPicture used for the window's icon images.
 // Bounds defines the initial size of the window as a Rect.
-// Position specifies the initial position of the window using a Vec.
+// Position specifies the initial position of the window using a Vector.
 // Monitor specifies the monitor for full-screen mode, if applicable.
 // Smooth determines whether rendering is smoothed.
 // Resizable indicates if the window can be resized by the user.
@@ -36,7 +36,7 @@ type WindowConfig struct {
 
 	Bounds Rect
 
-	Position Vec
+	Position Vector
 
 	Monitor *GLMonitor
 
@@ -76,10 +76,10 @@ type GLWindow struct {
 	}
 
 	prevInp, currInp, tempInp struct {
-		mouse   Vec
+		mouse   Vector
 		buttons [KeyLast + 1]bool
 		repeat  [KeyLast + 1]bool
-		scroll  Vec
+		scroll  Vector
 		typed   string
 	}
 
@@ -262,17 +262,17 @@ func (w *GLWindow) SetBounds(bounds Rect) {
 	})
 }
 
-// SetPos sets the position of the window to the specified coordinates using the Vec type on the graphic thread.
-func (w *GLWindow) SetPos(pos Vec) {
+// SetPos sets the position of the window to the specified coordinates using the Vector type on the graphic thread.
+func (w *GLWindow) SetPos(pos Vector) {
 	executor2.GraphicThread.Call(func() {
 		left, top := int(pos.X), int(pos.Y)
 		w.window.SetPos(left, top)
 	})
 }
 
-// GetPos retrieves the position of the GLWindow as a Vec, making a thread-safe call to the graphic thread.
-func (w *GLWindow) GetPos() Vec {
-	var v Vec
+// GetPos retrieves the position of the GLWindow as a Vector, making a thread-safe call to the graphic thread.
+func (w *GLWindow) GetPos() Vector {
+	var v Vector
 	executor2.GraphicThread.Call(func() {
 		x, y := w.window.GetPos()
 		v = NewVec(float64(x), float64(y))
@@ -447,8 +447,8 @@ func (w *GLWindow) Clear(c color.Color) {
 	w.canvas.Clear(c)
 }
 
-// Color returns the RGBA color at the specified Vec position on the GLWindow's canvas.
-func (w *GLWindow) Color(at Vec) RGBA {
+// Color returns the RGBA color at the specified Vector position on the GLWindow's canvas.
+func (w *GLWindow) Color(at Vector) RGBA {
 	return w.canvas.Color(at)
 }
 
@@ -515,8 +515,8 @@ func (w *GLWindow) Repeated(button Button) bool {
 	return w.currInp.repeat[button]
 }
 
-// MousePosition returns the current position of the mouse relative to the window as a Vec.
-func (w *GLWindow) MousePosition() Vec {
+// MousePosition returns the current position of the mouse relative to the window as a Vector.
+func (w *GLWindow) MousePosition() Vector {
 	return w.currInp.mouse
 }
 
@@ -535,13 +535,13 @@ func (w *GLWindow) MousePositionXY() (float64, float64) {
 	return w.currInp.mouse.X, w.currInp.mouse.Y
 }
 
-// MousePreviousPosition returns the previous position of the mouse as a Vec.
-func (w *GLWindow) MousePreviousPosition() Vec {
+// MousePreviousPosition returns the previous position of the mouse as a Vector.
+func (w *GLWindow) MousePreviousPosition() Vector {
 	return w.prevInp.mouse
 }
 
 // SetMousePosition sets the mouse position to the specified vector coordinates within the window bounds on the graphics thread.
-func (w *GLWindow) SetMousePosition(v Vec) {
+func (w *GLWindow) SetMousePosition(v Vector) {
 	executor2.GraphicThread.Call(func() {
 		if (v.X >= 0 && v.X <= w.bounds.W()) &&
 			(v.Y >= 0 && v.Y <= w.bounds.H()) {
@@ -558,8 +558,8 @@ func (w *GLWindow) MouseInsideWindow() bool {
 	return w.cursorInsideWindow
 }
 
-// MouseScroll returns the current scroll offset as a 2D vector (Vec) representing the x and y scroll components.
-func (w *GLWindow) MouseScroll() Vec {
+// MouseScroll returns the current scroll offset as a 2D vector (Vector) representing the x and y scroll components.
+func (w *GLWindow) MouseScroll() Vector {
 	return w.currInp.scroll
 }
 
@@ -657,7 +657,7 @@ func (w *GLWindow) doUpdateInput() {
 	w.tempPressEvents = [KeyLast + 1]bool{}
 	w.tempReleaseEvents = [KeyLast + 1]bool{}
 	w.tempInp.repeat = [KeyLast + 1]bool{}
-	w.tempInp.scroll = ZV
+	w.tempInp.scroll = ZeroVector
 	w.tempInp.typed = ""
 
 	w.updateJoystickInput()

@@ -50,9 +50,9 @@ func (gp *GLPicture) Texture() *executor.Texture {
 	return gp.texture
 }
 
-// Color returns the RGBA color at the specified Vec position within the GLPicture bounds.
+// Color returns the RGBA color at the specified Vector position within the GLPicture bounds.
 // If the position is outside bounds, it returns fully transparent (Alpha 0).
-func (gp *GLPicture) Color(at Vec) RGBA {
+func (gp *GLPicture) Color(at Vector) RGBA {
 	if !gp.bounds.Contains(at) {
 		return Alpha(0)
 	}

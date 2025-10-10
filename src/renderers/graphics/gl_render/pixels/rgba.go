@@ -22,7 +22,7 @@ func Alpha(a float64) RGBA {
 	return RGBA{a, a, a, a}
 }
 
-// Add adds color d to color c component-wise and returns the result (the components are not
+// Add adds color drawer to color c component-wise and returns the result (the components are not
 // clamped).
 func (c RGBA) Add(d RGBA) RGBA {
 	return RGBA{
@@ -33,7 +33,7 @@ func (c RGBA) Add(d RGBA) RGBA {
 	}
 }
 
-// Sub subtracts color d from color c component-wise and returns the result (the components
+// Sub subtracts color drawer from color c component-wise and returns the result (the components
 // are not clamped).
 func (c RGBA) Sub(d RGBA) RGBA {
 	return RGBA{
@@ -44,7 +44,7 @@ func (c RGBA) Sub(d RGBA) RGBA {
 	}
 }
 
-// Mul multiplies color c by color d component-wise (the components are not clamped).
+// Mul multiplies color c by color drawer component-wise (the components are not clamped).
 func (c RGBA) Mul(d RGBA) RGBA {
 	return RGBA{
 		R: c.R * d.R,

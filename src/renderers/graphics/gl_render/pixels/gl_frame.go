@@ -59,10 +59,10 @@ func (gf *GLFrame) Bounds() Rect {
 	return gf.bounds
 }
 
-// Color returns the RGBA color at the specified Vec position in the GLFrame.
+// Color returns the RGBA color at the specified Vector position in the GLFrame.
 // If the position is out of bounds, it returns an RGBA with zero alpha.
 // Updates pixel data if the GLFrame is marked as dirty.
-func (gf *GLFrame) Color(at Vec) RGBA {
+func (gf *GLFrame) Color(at Vector) RGBA {
 	if gf.dirty {
 		executor.GraphicThread.Call(func() {
 			tex := gf.frame.Texture()

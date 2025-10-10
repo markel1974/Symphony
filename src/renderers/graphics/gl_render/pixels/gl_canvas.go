@@ -77,7 +77,7 @@ func (c *GLCanvas) MakePicture(p IPicture) ITargetPicture {
 	return NewGLCanvasPicture(NewGLPicture(p), c)
 }
 
-// SetMatrix sets a Matrix that every point will be projected by.
+// SetMatrix sets a Matrix that every Point will be projected by.
 func (c *GLCanvas) SetMatrix(m Matrix) {
 	// Pixel.Matrix is 3x2 with an implicit 0, 0, 1 row after it.
 	// [0] [2] [4]    [0] [3] [6]
@@ -198,7 +198,7 @@ func (c *GLCanvas) Clear(color color.Color) {
 }
 
 // Color returns the color of the pixel over the given position inside the GLCanvas.
-func (c *GLCanvas) Color(at Vec) RGBA {
+func (c *GLCanvas) Color(at Vector) RGBA {
 	return c.gf.Color(at)
 }
 

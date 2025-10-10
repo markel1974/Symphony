@@ -32,7 +32,7 @@ type ITarget interface {
 type IBasicTarget interface {
 	ITarget
 
-	// SetMatrix sets a Matrix that every point will be projected by.
+	// SetMatrix sets a Matrix that every Point will be projected by.
 	SetMatrix(Matrix)
 
 	// SetColorMask sets a color that will be multiplied with the ITrianglesColor property of all
@@ -86,7 +86,7 @@ type ITargetTriangles interface {
 type ITrianglesPosition interface {
 	ITriangles
 
-	Position(i int) Vec
+	Position(i int) Vector
 }
 
 // ITrianglesColor specifies ITriangles with Color property.
@@ -104,7 +104,7 @@ type ITrianglesColor interface {
 type ITrianglesPicture interface {
 	ITriangles
 
-	Picture(i int) (pic Vec, intensity float64)
+	Picture(i int) (pic Vector, intensity float64)
 }
 
 // ITrianglesClipped specifies ITriangles with Clipping Rectangle property.
@@ -148,7 +148,7 @@ type ITargetPicture interface {
 type IPictureColor interface {
 	IPicture
 
-	Color(at Vec) RGBA
+	Color(at Vector) RGBA
 }
 
 type IPicturePixels interface {

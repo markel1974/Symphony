@@ -6,11 +6,11 @@ import (
 )
 
 type Circle struct {
-	Center Vec
+	Center Vector
 	Radius float64
 }
 
-func NewCircle(center Vec, radius float64) Circle {
+func NewCircle(center Vector, radius float64) Circle {
 	return Circle{
 		Center: center,
 		Radius: radius,
@@ -32,7 +32,7 @@ func (c Circle) Area() float64 {
 	return math.Pi * math.Pow(c.Radius, 2)
 }
 
-func (c Circle) Moved(delta Vec) Circle {
+func (c Circle) Moved(delta Vector) Circle {
 	return Circle{
 		Center: c.Center.Add(delta),
 		Radius: c.Radius,
@@ -46,7 +46,7 @@ func (c Circle) Resized(radiusDelta float64) Circle {
 	}
 }
 
-func (c Circle) Contains(u Vec) bool {
+func (c Circle) Contains(u Vector) bool {
 	toCenter := c.Center.To(u)
 	return c.Radius >= toCenter.Len()
 }
@@ -76,9 +76,9 @@ func (c Circle) Union(d Circle) Circle {
 	}
 }
 
-// Intersect returns the maximal Circle which is covered by both `c` and `d`.
+// Intersect returns the maximal Circle which is covered by both `c` and `drawer`.
 //
-// If `c` and `d` don't overlap, this function returns a zero-sized circle at the center-point between the two Circle's
+// If `c` and `drawer` don't overlap, this function returns a zero-sized circle at the center-Point between the two Circle's
 // centers.
 func (c Circle) Intersect(d Circle) Circle {
 	// Check if one of the circles encompasses the other; if so, return that one
@@ -112,9 +112,9 @@ func (c Circle) Intersect(d Circle) Circle {
 	}
 }
 
-// IntersectLine will return the shortest Vec such that if the Circle is moved by the Vec returned, the Line and Rect no
+// IntersectLine will return the shortest Vector such that if the Circle is moved by the Vector returned, the Line and Rect no
 // longer intersect.
-func (c Circle) IntersectLine(l Line) Vec {
+func (c Circle) IntersectLine(l Line) Vector {
 	return l.IntersectCircle(c).Scaled(-1)
 }
 
@@ -125,14 +125,14 @@ func (c Circle) IntersectLine(l Line) Vec {
 // This function will return a non-zero vector if:
 //   - The Rect contains the Circle, partially or fully
 //   - The Circle contains the Rect, partially fully
-func (c Circle) IntersectRect(r Rect) Vec {
+func (c Circle) IntersectRect(r Rect) Vector {
 	// Checks if the c.Center is not in the diagonal quadrants of the rectangle
 	if (r.Min.X <= c.Center.X && c.Center.X <= r.Max.X) || (r.Min.Y <= c.Center.Y && c.Center.Y <= r.Max.Y) {
 		// 'grow' the Rect by c.Radius in each orthogonal
 		grown := Rect{Min: r.Min.Sub(NewVec(c.Radius, c.Radius)), Max: r.Max.Add(NewVec(c.Radius, c.Radius))}
 		if !grown.Contains(c.Center) {
 			// c.Center doesn't close enough to overlap, return zero-vector
-			return ZV
+			return ZeroVector
 		}
 
 		// Get minimum distance to travel out of Rect
@@ -149,7 +149,7 @@ func (c Circle) IntersectRect(r Rect) Vec {
 
 		// No intersect
 		if h == 0 && v == 0 {
-			return ZV
+			return ZeroVector
 		}
 
 		if math.Abs(h) > math.Abs(v) {
@@ -168,10 +168,10 @@ func (c Circle) IntersectRect(r Rect) Vec {
 		// Check for overlap.
 		if !(c.Contains(r.Min) || c.Contains(r.Max) || c.Contains(rectTopLeft) || c.Contains(rectBottomRight)) {
 			// No overlap.
-			return ZV
+			return ZeroVector
 		}
 
-		var centerToCorner Vec
+		var centerToCorner Vector
 		if c.Center.To(r.Min).Len() <= c.Radius {
 			// Closest to bottom-left
 			centerToCorner = c.Center.To(r.Min)
@@ -198,27 +198,27 @@ func (c Circle) IntersectRect(r Rect) Vec {
 // IntersectionPoints returns all the points where the Circle intersects with the line provided.  This can be zero, one or
 // two points, depending on the location of the shapes.  The points of intersection will be returned in order of
 // closest-to-l.A to closest-to-l.B.
-func (c Circle) IntersectionPoints(l Line) []Vec {
+func (c Circle) IntersectionPoints(l Line) []Vector {
 	cContainsA := c.Contains(l.A)
 	cContainsB := c.Contains(l.B)
 
 	// Special case for both endpoints being contained within the circle
 	if cContainsA && cContainsB {
-		return []Vec{}
+		return []Vector{}
 	}
 
-	// Get the closest point on the line to this circles' center
+	// Get the closest Point on the line to this circles' center
 	closestToCenter := l.Closest(c.Center)
 
-	// If the distance to the closest point is greater than the radius, there are no points of intersection
+	// If the distance to the closest Point is greater than the radius, there are no points of intersection
 	if closestToCenter.To(c.Center).Len() > c.Radius {
-		return []Vec{}
+		return []Vector{}
 	}
 
-	// If the distance to the closest point is equal to the radius, the line is tangent and the closest point is the
-	// point at which it touches the circle.
+	// If the distance to the closest Point is equal to the radius, the line is tangent and the closest Point is the
+	// Point at which it touches the circle.
 	if closestToCenter.To(c.Center).Len() == c.Radius {
-		return []Vec{closestToCenter}
+		return []Vector{closestToCenter}
 	}
 
 	// Special case for endpoint being on the circles' center
@@ -228,10 +228,10 @@ func (c Circle) IntersectionPoints(l Line) []Vec {
 			otherEnd = l.A
 		}
 		intersect := c.Center.Add(c.Center.To(otherEnd).Unit().Scaled(c.Radius))
-		return []Vec{intersect}
+		return []Vector{intersect}
 	}
 
-	// This means the distance to the closest point is less than the radius, so there is at least one intersection,
+	// This means the distance to the closest Point is less than the radius, so there is at least one intersection,
 	// possibly two.
 
 	// If one of the end points exists within the circle, there is only one intersection
@@ -243,11 +243,11 @@ func (c Circle) IntersectionPoints(l Line) []Vec {
 			otherEnd = l.A
 		}
 
-		// Use trigonometry to get the length of the line between the contained point and the intersection point.
+		// Use trigonometry to get the length of the line between the contained Point and the intersection Point.
 		// The following is used to describe the triangle formed:
-		//  A) Is the side between contained point and circle center.
-		//  B) is the side between the center and the intersection point (radius).
-		//  C) Is the side between the contained point and the intersection point.
+		//  A) Is the side between contained Point and circle center.
+		//  B) is the side between the center and the intersection Point (radius).
+		//  C) Is the side between the contained Point and the intersection Point.
 		// The capitals of these letters are used as the angles opposite the respective sides.
 		// A and b are known
 		a := containedPoint.To(c.Center).Len()
@@ -266,26 +266,26 @@ func (c Circle) IntersectionPoints(l Line) []Vec {
 			// Using the Sine rule again, we can now get cz
 			cz = (a * math.Sin(C)) / math.Sin(A)
 		}
-		// Traveling from the contained point to the other end by length of a will provide the intersection point.
-		return []Vec{
+		// Traveling from the contained Point to the other end by length of a will provide the intersection Point.
+		return []Vector{
 			containedPoint.Add(containedPoint.To(otherEnd).Unit().Scaled(cz)),
 		}
 	}
 
 	// Otherwise, the endpoints exist outside the circle, and the line segment intersects in two locations.
-	// The vector formed by going from the closest point to the center of the circle will be perpendicular to the line;
+	// The vector formed by going from the closest Point to the center of the circle will be perpendicular to the line;
 	// this forms a right-angled triangle with the intersection points, with the radius as the hypotenuse.
 	// Calculate the other triangles' sides' length.
 	a := math.Sqrt(math.Pow(c.Radius, 2) - math.Pow(closestToCenter.To(c.Center).Len(), 2))
 
-	// Traveling in both directions from the closest point by length of a will provide the two intersection points.
+	// Traveling in both directions from the closest Point by length of a will provide the two intersection points.
 	first := closestToCenter.Add(closestToCenter.To(l.A).Unit().Scaled(a))
 	second := closestToCenter.Add(closestToCenter.To(l.B).Unit().Scaled(a))
 
 	if first.To(l.A).Len() < second.To(l.A).Len() {
-		return []Vec{first, second}
+		return []Vector{first, second}
 	}
-	return []Vec{second, first}
+	return []Vector{second, first}
 }
 
 func maxCircle(c Circle, d Circle) Circle {

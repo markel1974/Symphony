@@ -12,7 +12,7 @@ import (
 
 // Glyph describes one glyph in an Atlas.
 type Glyph struct {
-	Dot     Vec
+	Dot     Vector
 	Frame   Rect
 	Advance float64
 }
@@ -134,7 +134,7 @@ func (a *Atlas) LineHeight() float64 {
 //
 // Rect is a rectangle where the glyph should be positioned. Frame is the glyph frame inside the
 // Atlas's IPicture. NewDot is the new position of the dot.
-func (a *Atlas) DrawRune(prevR, r rune, dot Vec) (rect, frame, bounds Rect, newDot Vec) {
+func (a *Atlas) DrawRune(prevR, r rune, dot Vector) (rect, frame, bounds Rect, newDot Vector) {
 	if !a.Contains(r) {
 		r = unicode.ReplacementChar
 	}

@@ -9,12 +9,13 @@ import (
 	"golang.org/x/image/font/basicfont"
 )
 
-// ASCII is a set of all ASCII runes. These runes are codepoints from 32 to 127 inclusive.
+// ASCII is a slice of runes representing printable ASCII characters starting from 32 to unicode.MaxASCII.
 var ASCII []rune
 
-// Atlas7x13 is an Atlas using basic-font Face 7x13 with the ASCII rune set
+// Atlas7x13 is a predefined *Atlas instance created with a fixed font face and a set of ASCII characters.
 var Atlas7x13 *Atlas
 
+// init initializes the ASCII slice with printable ASCII characters and creates the Atlas7x13 Atlas using a basic font.
 func init() {
 	ASCII = make([]rune, unicode.MaxASCII-32)
 	for i := range ASCII {
@@ -23,7 +24,7 @@ func init() {
 	Atlas7x13 = NewAtlas(basicfont.Face7x13, ASCII)
 }
 
-// RangeTable takes a *unicode.RangeTable and generates a set of runes contained within that RangeTable.
+// RangeTable converts a given unicode.RangeTable into a slice of runes representing all characters in the table.
 func RangeTable(table *unicode.RangeTable) []rune {
 	var runes []rune
 	for _, rng := range table.R16 {
@@ -39,43 +40,15 @@ func RangeTable(table *unicode.RangeTable) []rune {
 	return runes
 }
 
-// Text allows for efficient and convenient text drawing.
-//
-// To create a Text object, use the New constructor:
-//
-//	txt := text.New(pixel.ZV, text.NewAtlas(face, text.ASCII))
-//
-// As suggested by the constructor, a Text object is always associated with one font face and a
-// fixed set of runes. For example, the Text we created above can draw text using the font face
-// contained in the face variable and is capable of drawing ASCII characters.
-//
-// Here we create a Text object which can draw ASCII and Katakana characters:
-//
-//	txt := text.New(0, text.NewAtlas(face, text.ASCII, text.RangeTable(unicode.Katakana)))
-//
-// Similarly to IMDraw, Text functions as a buffer. It implements io.Writer interface, so writing
-// text to it is really simple:
-//
-//	fmt.Print(txt, "Hello, world!")
-//
-// Newlines, tabs and carriage returns are supported.
-//
-// Finally, if we want the written text to show up on some other ITarget, we can draw it:
-//
-//	txt.Draw(target)
-//
-// Text exports two important fields: Orig and Dot. Dot is the position where the next character
-// will be written. Dot is automatically moved when writing to a Text object, but you can also
-// manipulate it manually. Orig specifies the text origin, usually the top-left dot position. Dot is
-// always aligned to Orig when writing newlines. The Clear method resets the Dot to Orig.
+// Text is a struct that represents a formatted text object for manipulation and rendering.
 type Text struct {
 	// Orig specifies the text origin, usually the top-left dot position. Dot is always aligned
 	// to Orig when writing newlines.
-	Orig Vec
+	Orig Vector
 
 	// Dot is the position where the next character will be written. Dot is automatically moved
 	// when writing to a Text object, but you can also manipulate it manually
-	Dot Vec
+	Dot Vector
 
 	// Color is the color of the text that is to be written. Defaults to white.
 	Color color.Color
@@ -109,19 +82,8 @@ type Text struct {
 	anchor Anchor
 }
 
-// NewText creates a new Text capable of drawing runes contained in the provided Atlas. Orig and Dot
-// will be initially set to orig.
-// Here we create a Text capable of drawing ASCII characters using the Go Regular font.
-//
-//	ttf, err := truetype.Parse(goregular.TTF)
-//	if err != nil {
-//	    panic(err)
-//	}
-//	face := truetype.NewFace(ttf, &truetype.Options{
-//	    Size: 14,
-//	})
-//	txt := text.New(orig, text.NewAtlas(face, text.ASCII))
-func NewText(orig Vec, atlas *Atlas) *Text {
+// NewText creates a new Text object initialized with the provided origin vector and font atlas.
+func NewText(orig Vector, atlas *Atlas) *Text {
 	txt := &Text{
 		Orig:       orig,
 		Dot:        orig,
@@ -148,20 +110,17 @@ func NewText(orig Vec, atlas *Atlas) *Text {
 	return txt
 }
 
-// Atlas returns the underlying Text's Atlas containing all the pre-drawn glyphs.
-// The Atlas is also useful for getting values such as the recommended line height.
+// Atlas returns the *Atlas associated with the Text object, which contains pre-drawn glyphs for efficient text rendering.
 func (txt *Text) Atlas() *Atlas {
 	return txt.atlas
 }
 
-// Bounds returns the bounding box of the text currently written to the Text excluding whitespace.
-//
-// If the Text is empty, a zero rectangle is returned.
+// Bounds returns the rectangular boundary of the text drawn so far.
 func (txt *Text) Bounds() Rect {
 	return txt.bounds
 }
 
-// BoundsOf returns the bounding box of s if it was to be written to the Text right now.
+// BoundsOf calculates and returns the bounding rectangle that encompasses the given string when drawn with the current text settings.
 func (txt *Text) BoundsOf(s string) Rect {
 	dot := txt.Dot
 	prevR := txt.prevR
@@ -189,13 +148,13 @@ func (txt *Text) BoundsOf(s string) Rect {
 	return bounds
 }
 
-// AlignedTo returns the text moved by the given anchor.
+// AlignedTo sets the alignment anchor for the text and returns the modified Text object.
 func (txt *Text) AlignedTo(anchor Anchor) *Text {
 	txt.anchor = anchor
 	return txt
 }
 
-// Clear removes all written text from the Text. The Dot field is reset to Orig.
+// Clear resets the Text object by clearing its bounds, glyphs, and previous rune, marking it as dirty, and aligning Dot to Orig.
 func (txt *Text) Clear() {
 	txt.prevR = -1
 	txt.bounds = Rect{}
@@ -204,30 +163,30 @@ func (txt *Text) Clear() {
 	txt.Dot = txt.Orig
 }
 
-// Write writes a slice of bytes to the Text. This method never fails, always returns len(p), nil.
+// Write appends the provided byte slice to the internal buffer and updates the rendered text. Returns the number of bytes written.
 func (txt *Text) Write(p []byte) (n int, err error) {
 	txt.buf = append(txt.buf, p...)
 	txt.drawBuf()
 	return len(p), nil
 }
 
-// WriteString writes a string to the Text. This method never fails, always returns len(s), nil.
+// WriteString appends the provided string to the internal buffer and updates the text display.
+// It returns the number of bytes written and an error, if any.
 func (txt *Text) WriteString(s string) (n int, err error) {
 	txt.buf = append(txt.buf, s...)
 	txt.drawBuf()
 	return len(s), nil
 }
 
-// WriteByte writes a byte to the Text. This method never fails, always returns nil.
-//
-// Writing a multibyte rune byte-by-byte is perfectly supported.
+// WriteByte appends a single byte to the Text buffer and updates the rendering. Returns an error if writing fails.
 func (txt *Text) WriteByte(c byte) error {
 	txt.buf = append(txt.buf, c)
 	txt.drawBuf()
 	return nil
 }
 
-// WriteRune writes a rune to the Text. This method never fails, always returns utf8.RuneLen(r), nil.
+// WriteRune appends the UTF-8 encoding of the given rune to the text buffer and updates the drawing state.
+// It returns the number of bytes written and an error (always nil).
 func (txt *Text) WriteRune(r rune) (n int, err error) {
 	var b [4]byte
 	n = utf8.EncodeRune(b[:], r)
@@ -236,22 +195,12 @@ func (txt *Text) WriteRune(r rune) (n int, err error) {
 	return n, nil
 }
 
-// Draw draws all text written to the Text to the provided ITarget. The text is transformed by the
-// provided Matrix.
-//
-// This method is equivalent to calling DrawColorMask with nil color mask.
-//
-// If there's a lot of text written to the Text, changing a matrix or a color mask often might hurt
-// performance. Consider using your ITarget's SetMatrix or SetColorMask methods if available.
+// Draw renders the text object onto the specified target using the given transformation matrix.
 func (txt *Text) Draw(t ITarget, matrix Matrix) {
 	txt.DrawColorMask(t, matrix, nil)
 }
 
-// DrawColorMask draws all text written to the Text to the provided ITarget. The text is transformed
-// by the provided Matrix and masked by the provided color mask.
-//
-// If there's a lot of text written to the Text, changing a matrix or a color mask often might hurt
-// performance. Consider using your ITarget's SetMatrix or SetColorMask methods if available.
+// DrawColorMask renders the text onto the specified target using the given transformation matrix and color mask.
 func (txt *Text) DrawColorMask(t ITarget, matrix Matrix, mask color.Color) {
 	if matrix != txt.mat {
 		txt.mat = matrix
@@ -286,9 +235,9 @@ func (txt *Text) DrawColorMask(t ITarget, matrix Matrix, mask color.Color) {
 	txt.transD.Draw(t)
 }
 
-// controlRune checks if r is a control rune (newline, tab, ...). If it is, a new dot position and
-// true is returned. If r is not a control rune, the original dot and false is returned.
-func (txt *Text) controlRune(r rune, dot Vec) (newDot Vec, control bool) {
+// controlRune processes special control runes like newline, carriage return, or tab, adjusting the text position accordingly.
+// It returns the updated dot position and a boolean indicating if the rune was a control character.
+func (txt *Text) controlRune(r rune, dot Vector) (newDot Vector, control bool) {
 	switch r {
 	case '\n':
 		dot.X = txt.Orig.X
@@ -308,6 +257,7 @@ func (txt *Text) controlRune(r rune, dot Vec) (newDot Vec, control bool) {
 	return dot, true
 }
 
+// drawBuf processes the text buffer to decode runes, handle control characters, and generate drawing data for glyphs.
 func (txt *Text) drawBuf() {
 	if !utf8.FullRune(txt.buf) {
 		return
@@ -333,14 +283,14 @@ func (txt *Text) drawBuf() {
 
 		txt.prevR = r
 
-		rv := [...]Vec{
+		rv := [...]Vector{
 			{X: rect.Min.X, Y: rect.Min.Y},
 			{X: rect.Max.X, Y: rect.Min.Y},
 			{X: rect.Max.X, Y: rect.Max.Y},
 			{X: rect.Min.X, Y: rect.Max.Y},
 		}
 
-		fv := [...]Vec{
+		fv := [...]Vector{
 			{X: frame.Min.X, Y: frame.Min.Y},
 			{X: frame.Max.X, Y: frame.Min.Y},
 			{X: frame.Max.X, Y: frame.Max.Y},

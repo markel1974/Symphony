@@ -52,7 +52,7 @@ func (b *Batch) Draw(t ITarget) {
 	b.cont.Draw(t)
 }
 
-// SetMatrix sets a Matrix that every point will be projected by.
+// SetMatrix sets a Matrix that every Point will be projected by.
 func (b *Batch) SetMatrix(m Matrix) {
 	b.mat = m
 }

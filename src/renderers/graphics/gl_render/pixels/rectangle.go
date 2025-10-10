@@ -11,20 +11,20 @@ import (
 // The invariant should hold that Max's components are greater or equal than Min's components
 // respectively.
 type Rect struct {
-	Min Vec
-	Max Vec
+	Min Vector
+	Max Vector
 }
 
 // ZR is a zero rectangle.
-var ZR = Rect{Min: ZV, Max: ZV}
+var ZR = Rect{Min: ZeroVector, Max: ZeroVector}
 
 // NewRect returns a new Rect with given the Min and Max coordinates.
 //
 // Note that the returned rectangle is not automatically normalized.
 func NewRect(minX float64, minY float64, maxX float64, maxY float64) Rect {
 	return Rect{
-		Min: Vec{minX, minY},
-		Max: Vec{maxX, maxY},
+		Min: Vector{minX, minY},
+		Max: Vector{maxX, maxY},
 	}
 }
 
@@ -36,11 +36,11 @@ func (r Rect) String() string {
 // Norm returns the Rect in normal form, such that Max is component-wise greater or equal than Min.
 func (r Rect) Norm() Rect {
 	return Rect{
-		Min: Vec{
+		Min: Vector{
 			math.Min(r.Min.X, r.Max.X),
 			math.Min(r.Min.Y, r.Max.Y),
 		},
-		Max: Vec{
+		Max: Vector{
 			math.Max(r.Min.X, r.Max.X),
 			math.Max(r.Min.Y, r.Max.Y),
 		},
@@ -58,7 +58,7 @@ func (r Rect) H() float64 {
 }
 
 // Size returns the vector of width and height of the Rect.
-func (r Rect) Size() Vec {
+func (r Rect) Size() Vector {
 	return NewVec(r.W(), r.H())
 }
 
@@ -80,7 +80,7 @@ func (r Rect) Edges() [4]Line {
 }
 
 // Anchor is a vector used to define anchors, such as `Center`, `Top`, `TopRight`, etc.
-type Anchor Vec
+type Anchor Vector
 
 var (
 	Center      = Anchor{0.5, 0.5}
@@ -129,8 +129,8 @@ func (anchor Anchor) Opposite() Anchor {
 }
 
 // AnchorPos returns the relative position of the given anchor.
-func (r Rect) AnchorPos(anchor Anchor) Vec {
-	return r.Size().ScaledXY(NewVec(0, 0).Sub(Vec(anchor)))
+func (r Rect) AnchorPos(anchor Anchor) Vector {
+	return r.Size().ScaledXY(NewVec(0, 0).Sub(Vector(anchor)))
 }
 
 // AlignedTo returns the rect moved by the given anchor.
@@ -140,12 +140,12 @@ func (r Rect) AlignedTo(anchor Anchor) Rect {
 
 // Center returns the position of the center of the Rect.
 // `rect.Center()` is equivalent to `rect.Anchor(pixel.Anchor.Center)`
-func (r Rect) Center() Vec {
+func (r Rect) Center() Vector {
 	return LinearInterpolation(r.Min, r.Max, 0.5)
 }
 
 // Moved returns the Rect moved (both Min and Max) by the given vector delta.
-func (r Rect) Moved(delta Vec) Rect {
+func (r Rect) Moved(delta Vector) Rect {
 	return Rect{
 		Min: r.Min.Add(delta),
 		Max: r.Max.Add(delta),
@@ -161,11 +161,11 @@ func (r Rect) Moved(delta Vec) Rect {
 //
 // This function does not make sense for resizing a rectangle of zero area and will panic. Use
 // ResizedMin in the case of zero areas.
-func (r Rect) Resized(anchor, size Vec) Rect {
+func (r Rect) Resized(anchor, size Vector) Rect {
 	if r.W()*r.H() == 0 {
 		panic(fmt.Errorf("(%T).Resize: zero area", r))
 	}
-	fraction := Vec{size.X / r.W(), size.Y / r.H()}
+	fraction := Vector{size.X / r.W(), size.Y / r.H()}
 	return Rect{
 		Min: anchor.Add(r.Min.Sub(anchor).ScaledXY(fraction)),
 		Max: anchor.Add(r.Max.Sub(anchor).ScaledXY(fraction)),
@@ -174,7 +174,7 @@ func (r Rect) Resized(anchor, size Vec) Rect {
 
 // ResizedMin returns the Rect resized to the given size while keeping the position of the Rest's Min.
 // Sizes of zero areas are safe here.
-func (r Rect) ResizedMin(size Vec) Rect {
+func (r Rect) ResizedMin(size Vector) Rect {
 	return Rect{
 		Min: r.Min,
 		Max: r.Min.Add(size),
@@ -182,7 +182,7 @@ func (r Rect) ResizedMin(size Vec) Rect {
 }
 
 // Contains checks whether a vector u is contained within this Rect (including its borders).
-func (r Rect) Contains(u Vec) bool {
+func (r Rect) Contains(u Vector) bool {
 	return r.Min.X <= u.X && u.X <= r.Max.X && r.Min.Y <= u.Y && u.Y <= r.Max.Y
 }
 
@@ -212,7 +212,7 @@ func (r Rect) Intersect(s Rect) Rect {
 	return t
 }
 
-// Intersects returns whether the given Rect intersects at any point with this Rect.
+// Intersects returns whether the given Rect intersects at any Point with this Rect.
 // This function is overall about 5x faster than Intersect, so it is better
 // to use if you have no need for the returned Rect from Intersect.
 func (r Rect) Intersects(s Rect) bool {
@@ -229,43 +229,43 @@ func (r Rect) Intersects(s Rect) bool {
 // This function will return a non-zero vector if:
 //   - The Rect contains the Circle, partially or fully
 //   - The Circle contains the Rect, partially/fully
-func (r Rect) IntersectCircle(c Circle) Vec {
+func (r Rect) IntersectCircle(c Circle) Vector {
 	return c.IntersectRect(r).Scaled(-1)
 }
 
-// IntersectLine will return the shortest Vec such that if the Rect is moved by the Vec returned, the Line and Rect no
+// IntersectLine will return the shortest Vector such that if the Rect is moved by the Vector returned, the Line and Rect no
 // longer intersect.
-func (r Rect) IntersectLine(l Line) Vec {
+func (r Rect) IntersectLine(l Line) Vector {
 	return l.IntersectRect(r).Scaled(-1)
 }
 
 // IntersectionPoints returns all the points where the Rect intersects with the line provided.  This can be zero, one or
 // two points, depending on the location of the shapes.  The points of intersection will be returned in order of
 // closest-to-l.A to closest-to-l.B.
-func (r Rect) IntersectionPoints(l Line) []Vec {
+func (r Rect) IntersectionPoints(l Line) []Vector {
 	// Use map keys to ensure unique points
-	pointMap := make(map[Vec]struct{})
+	pointMap := make(map[Vector]struct{})
 	for _, edge := range r.Edges() {
 		if intersect, ok := l.Intersect(edge); ok {
 			pointMap[intersect] = struct{}{}
 		}
 	}
-	points := make([]Vec, 0, len(pointMap))
+	points := make([]Vector, 0, len(pointMap))
 	for pt := range pointMap {
 		points = append(points, pt)
 	}
 	// Order the points
 	if len(points) == 2 {
 		if points[1].To(l.A).Len() < points[0].To(l.A).Len() {
-			return []Vec{points[1], points[0]}
+			return []Vector{points[1], points[0]}
 		}
 	}
 	return points
 }
 
 // Vertices return a slice of the four corners which make up the rectangle.
-func (r Rect) Vertices() [4]Vec {
-	return [4]Vec{
+func (r Rect) Vertices() [4]Vector {
+	return [4]Vector{
 		r.Min,
 		NewVec(r.Min.X, r.Max.Y),
 		r.Max,
