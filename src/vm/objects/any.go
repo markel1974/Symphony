@@ -112,10 +112,7 @@ func (o *Any) IndexGet(frame int, index IObject) (IObject, error) {
 	}
 	if method := o.valueOf.MethodByName(key); method.IsValid() {
 		return o.GateKeeper().NewFuncImport(frame, key, -1, func(gk IGateKeeper, f int, args ...IObject) (uint, IObject, error) {
-			if method.Type().NumIn() != len(args) && !method.Type().IsVariadic() {
-				return 0, nil, fmt.Errorf("wrong number of arguments for method %s: want %d, got %d", key, method.Type().NumIn(), len(args))
-			}
-			return o.call(gk, f, method, args)
+			return o.call(f, method, args)
 		}), nil
 	}
 	return nil, fmt.Errorf("field or method '%s' not found on type '%s'", key, o.TypeName())
@@ -201,10 +198,7 @@ func (o *Any) Iterable() bool {
 // Call invokes a function or a method on the object with the provided arguments and returns the result or an error.
 func (o *Any) Call(frame int, args ...IObject) (uint, IObject, error) {
 	if o.valueOf.Kind() == reflect.Func {
-		if o.kind.NumIn() != len(args) && !o.kind.IsVariadic() {
-			return 0, nil, fmt.Errorf("wrong number of arguments for %s: want %d, got %d", o.TypeName(), o.kind.NumIn(), len(args))
-		}
-		return o.call(o.GateKeeper(), frame, o.valueOf, args)
+		return o.call(frame, o.valueOf, args)
 	}
 	s1, err := o.GateKeeper().ToStringArg(0, args)
 	if err != nil {
@@ -218,10 +212,7 @@ func (o *Any) Call(frame int, args ...IObject) (uint, IObject, error) {
 	if len(args) > 1 {
 		methodArgs = args[1:]
 	}
-	if method.Type().NumIn() != len(methodArgs) && !method.Type().IsVariadic() {
-		return 0, nil, fmt.Errorf("wrong number of arguments for method %s: want %d, got %d", s1, method.Type().NumIn(), len(methodArgs))
-	}
-	return o.call(o.GateKeeper(), frame, method, methodArgs)
+	return o.call(frame, method, methodArgs)
 }
 
 // Length returns the length of the underlying value if it is an array, channel, map, slice, or string; otherwise, 0.
@@ -256,34 +247,6 @@ func (o *Any) GobDecode(_ []byte) (err error) {
 // GobEncode encodes the Allocator instance into a byte slice for use with the gob package and returns it along with any error.
 func (o *Any) GobEncode() ([]byte, error) {
 	return nil, nil
-}
-
-// call invokes a reflect.Value method with arguments, handles results, and converts to/from IObject representation.
-func (o *Any) call(gk IGateKeeper, frame int, method reflect.Value, args []IObject) (uint, IObject, error) {
-	in := make([]reflect.Value, len(args))
-	for i, arg := range args {
-		in[i] = reflect.ValueOf(arg.AsInterface())
-	}
-	results := method.Call(in)
-	switch len(results) {
-	case 0:
-		return 0, gk.UndefinedValue(), nil
-	case 1:
-		if err, isErr := results[0].Interface().(error); isErr {
-			if err != nil {
-				return 1, gk.NewError(frame, err.Error()), nil
-			}
-			return 1, gk.UndefinedValue(), nil
-		}
-		return 1, gk.FromInterface(frame, results[0].Interface()), nil
-	default:
-		// Handle multiple return values by packing them into an Array
-		retArray := make([]IObject, len(results))
-		for i, res := range results {
-			retArray[i] = gk.FromInterface(frame, res.Interface())
-		}
-		return 1, gk.NewArray(frame, retArray), nil
-	}
 }
 
 // int64 attempts to convert the underlying value of Any to int64 and returns the result along with a success flag.
@@ -321,32 +284,53 @@ func (o *Any) setup(frameId int, value interface{}) {
 	o.vTable = make(map[string]IObject)
 	for x := 0; x < o.valueOf.NumMethod(); x++ {
 		m := o.valueOf.Type().Method(x)
-
-		z := o.GateKeeper().NewFuncImport(frameId, m.Name, -1, func(gk IGateKeeper, f int, args ...IObject) (uint, IObject, error) {
-			if m.Func.Type().NumIn() != len(args) && !m.Func.Type().IsVariadic() {
-				return 0, nil, fmt.Errorf("wrong number of arguments for method %s: want %d, got %d", m.Name, m.Func.Type().NumIn(), len(args))
-			}
-			var in []reflect.Value
-			if len(args) > 0 {
-				for idx, arg := range args {
-					target := m.Func.Type().In(idx)
-					val, ok := arg.AsValue(target)
-					if !ok {
-						return 0, nil, fmt.Errorf("wrong type for argument %d: want %s, got %s", idx, target, arg.TypeName())
-					}
-					if !val.Type().AssignableTo(target) {
-						return 0, nil, fmt.Errorf("wrong type for argument %d: want %s, got %s", idx, target, val.Type())
-					}
-					in = append(in, val)
-				}
-			}
-			//kk := m.Func.Type().In(0)
-			//m.Func.Type().Out(0)
-			_ = m.Func.Call(in)
-
-			return 0, nil, nil
+		o.vTable[m.Name] = o.GateKeeper().NewFuncImport(frameId, m.Name, -1, func(gk IGateKeeper, f int, args ...IObject) (uint, IObject, error) {
+			return o.call(frameId, m.Func, args)
 		})
-		//m := o.valueOf.Method(x)
-		o.vTable[m.Name] = z
+	}
+}
+
+// call invokes the provided function with specified arguments and ensures type compatibility for the invocation.
+// It validates argument count and type, supports variadic functions, and handles return values, including errors.
+// Returns a status code, the result of the call, or an error in case of a failure.
+func (o *Any) call(frameId int, mFunc reflect.Value, args []IObject) (uint, IObject, error) {
+	if mFunc.Type().NumIn() != len(args) && !mFunc.Type().IsVariadic() {
+		return 0, nil, fmt.Errorf("wrong number of arguments: want %d, got %d", mFunc.Type().NumIn(), len(args))
+	}
+	var in []reflect.Value
+	if len(args) > 0 {
+		for idx, arg := range args {
+			target := mFunc.Type().In(idx)
+			val, ok := arg.AsValue(target)
+			if !ok {
+				return 0, nil, fmt.Errorf("wrong type for argument %d: want %s, got %s", idx, target, arg.TypeName())
+			}
+			if !val.Type().AssignableTo(target) {
+				return 0, nil, fmt.Errorf("wrong type for argument %d: want %s, got %s", idx, target, val.Type())
+			}
+			in = append(in, val)
+		}
+	}
+	//kk := m.Func.Type().In(0)
+	//m.Func.Type().Out(0)
+	results := mFunc.Call(in)
+	switch len(results) {
+	case 0:
+		return 0, o.GateKeeper().UndefinedValue(), nil
+	case 1:
+		if err, isErr := results[0].Interface().(error); isErr {
+			if err != nil {
+				return 1, o.GateKeeper().NewError(frameId, err.Error()), nil
+			}
+			return 1, o.GateKeeper().UndefinedValue(), nil
+		}
+		return 1, o.GateKeeper().FromInterface(frameId, results[0].Interface()), nil
+	default:
+		// Handle multiple return values by packing them into an Array
+		retArray := make([]IObject, len(results))
+		for i, res := range results {
+			retArray[i] = o.GateKeeper().FromInterface(frameId, res.Interface())
+		}
+		return 1, o.GateKeeper().NewArray(frameId, retArray), nil
 	}
 }
