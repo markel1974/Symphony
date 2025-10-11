@@ -165,11 +165,11 @@ const (
 	// OpImportId represents an opcode for handling imports, typically operating with two associated operands.
 	OpImportId
 
-	// OpIntLogicalId performs integer-specific logical operations such as AND, OR, or XOR for the appropriate operands.
-	OpIntLogicalId
+	// OpLogicalIntId performs integer-specific logical operations such as AND, OR, or XOR for the appropriate operands.
+	OpLogicalIntId
 
-	// OpIntArithmeticId represents an operation code for performing integer arithmetic instructions.
-	OpIntArithmeticId
+	// OpArithmeticIntId represents an operation code for performing integer arithmetic instructions.
+	OpArithmeticIntId
 
 	// OpDerefGetId is an opcode that dereferences a pointer or reference to retrieve its value.
 	OpDerefGetId

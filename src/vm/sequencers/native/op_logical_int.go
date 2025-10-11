@@ -8,35 +8,35 @@ import (
 	"github.com/markel1974/c64emu/src/vm/opcodes"
 )
 
-// init registers the NewOpIntLogical function with the sequencer system by appending it to the internal registry.
+// init registers the NewOpLogicalInt function with the sequencer system by appending it to the internal registry.
 func init() {
-	SequencerRegister(NewOpIntLogical)
+	SequencerRegister(NewOpLogicalInt)
 }
 
-// OpIntLogical represents an executor for performing logical operations on integer operands within a virtual machine.
+// OpLogicalInt represents an executor for performing logical operations on integer operands within a virtual machine.
 // It extends bytecode.Opcode to utilize its opcode properties and depends on the IVMFullAccess interface for Core interactions.
-type OpIntLogical struct {
+type OpLogicalInt struct {
 	opcode *opcodes.Opcode
 	vm     handler.IVMFullAccess
 }
 
-// NewOpIntLogical creates a new instance of OpIntLogical, validating the provided virtual machine and opcode inputs.
-func NewOpIntLogical() handler.IOpExecutor {
+// NewOpLogicalInt creates a new instance of OpLogicalInt, validating the provided virtual machine and opcode inputs.
+func NewOpLogicalInt() handler.IOpExecutor {
 	operands := []opcodes.OperandFeature{opcodes.SzUint16, opcodes.SzUint16, opcodes.SzUint16, opcodes.SzUint8}
-	return &OpIntLogical{
-		opcode: opcodes.NewOpcode(OpIntLogicalId, operands, "OpIntLogical"),
+	return &OpLogicalInt{
+		opcode: opcodes.NewOpcode(OpLogicalIntId, operands, "OpLogicalInt"),
 		vm:     nil,
 	}
 }
 
 // Opcode returns the opcode associated with the instance.
-func (op *OpIntLogical) Opcode() *opcodes.Opcode {
+func (op *OpLogicalInt) Opcode() *opcodes.Opcode {
 	return op.opcode
 }
 
 // Bind initializes the instance by casting the provided Core to IVMFullAccess and storing it.
 // Returns an error if the Core does not implement the required interface.
-func (op *OpIntLogical) Bind(vm handler.IVM) error {
+func (op *OpLogicalInt) Bind(vm handler.IVM) error {
 	vmT, ok := vm.(handler.IVMFullAccess)
 	if !ok {
 		return fmt.Errorf("vm does not implement IVMFullAccess")
@@ -46,7 +46,7 @@ func (op *OpIntLogical) Bind(vm handler.IVM) error {
 }
 
 // Execute performs the logical operation between two integers on the stack and stores the result in the destination object.
-func (op *OpIntLogical) Execute(decoder *handler.Decoder) {
+func (op *OpLogicalInt) Execute(decoder *handler.Decoder) {
 	logicalOp := objects.LogicalOperator(decoder.Operand(0))
 	lhsIndex := decoder.Operand(1)
 	rhsIndex := decoder.Operand(2)
@@ -65,7 +65,7 @@ func (op *OpIntLogical) Execute(decoder *handler.Decoder) {
 	}
 }
 
-// Compile generates the compiled representation of the OpIntLogical operation or returns an unimplemented error.
-func (op *OpIntLogical) Compile() ([]byte, error) {
+// Compile generates the compiled representation of the OpLogicalInt operation or returns an unimplemented error.
+func (op *OpLogicalInt) Compile() ([]byte, error) {
 	return nil, objects.ErrUnimplemented
 }

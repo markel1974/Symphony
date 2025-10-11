@@ -3,6 +3,7 @@
 package scripts
 
 import (
+	"fmt"
 	"math"
 	"runtime"
 
@@ -45,18 +46,22 @@ func NewMemPlot(kind int) *MemPlot {
 func (plt *MemPlot) onKey(_ int, key byte) {
 	interval := math.Abs(plt.maxVal - plt.minVal)
 	scale := (interval * 10) / 100
-	//fmt.Println("KEY PRESSED", key)
+	fmt.Printf("scale: %f, interval: %f\n", scale, interval)
+	fmt.Printf("BEFORE maxVal: %f, minVal: %f\n", plt.maxVal, plt.minVal)
 	switch key {
-	case 43: //'+'
+	case 'a', '+':
 		plt.auto = false
 		plt.maxVal += scale
 		plt.minVal -= scale
-	case 45: //'-':
+		fmt.Printf("AFTER PLUS maxVal: %f, minVal: %f\n", plt.maxVal, plt.minVal)
+	case 'z', '-':
 		plt.auto = false
 		plt.maxVal -= scale
 		plt.minVal += scale
-	case 114: //'r':
+		fmt.Printf("AFTER MINUS maxVal: %f, minVal: %f\n", plt.maxVal, plt.minVal)
+	case 'r':
 		plt.auto = !plt.auto
+		fmt.Printf("AFTER RESET maxVal: %f, minVal: %f\n", plt.maxVal, plt.minVal)
 	}
 }
 
@@ -64,7 +69,7 @@ func (plt *MemPlot) onKey(_ int, key byte) {
 func (plt *MemPlot) onTimer() {
 	var m runtime.MemStats
 	runtime.ReadMemStats(&m)
-	var val float64
+	val := 0.0
 	switch plt.kind {
 	case 0:
 		val = bToMb(m.Alloc)

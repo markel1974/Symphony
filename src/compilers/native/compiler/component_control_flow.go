@@ -168,57 +168,56 @@ func (c *ControlFlow) SwitchStmt(node *ast.SwitchStmt) error {
 	// 2. Iterate over all 'case' statements (except 'default', which we handle at the end)
 	for _, clauseStmt := range node.Body.List {
 		clause := clauseStmt.(*ast.CaseClause)
-		// Save the default clause for later
-		if clause.List == nil {
-			defaultClause = clause
-			continue
-		}
-		// Back-patch: connect previous case jumps to this one
-		afterPreviousCasePos := scope.InstructionsLen()
-		for _, pos := range jumpsToNextCase {
-			if err := c.scopes.ChangeOperand(node.Pos(), pos, afterPreviousCasePos); err != nil {
+		for _, clauseEntry := range clause.List {
+			// Save the default clause for later
+			if clause.List == nil {
+				defaultClause = clause
+				continue
+			}
+			// Back-patch: connect previous case jumps to this one
+			afterPreviousCasePos := scope.InstructionsLen()
+			for _, pos := range jumpsToNextCase {
+				if err = c.scopes.ChangeOperand(node.Pos(), pos, afterPreviousCasePos); err != nil {
+					return err
+				}
+			}
+			jumpsToNextCase = []int{}
+			// 3. Compile case condition (e.g. tag == val1)
+			if tagSymbol != nil {
+				if err = c.scopes.EmitSymbolGet(node.Pos(), tagSymbol); err != nil {
+					return err
+				}
+			}
+			if err = c.compile(clauseEntry); err != nil {
 				return err
 			}
-		}
-		jumpsToNextCase = []int{} // Reset list for current-case
-		// 3. Compile case condition (e.g. tag == val1)
-		if tagSymbol != nil {
-			if err := c.scopes.EmitSymbolGet(node.Pos(), tagSymbol); err != nil {
+			eql, ok := BinaryAdapterFor(token.EQL)
+			if !ok {
+				return tables.NewCompilerError(c.fileSet, node, "unhandled binary op: %s", token.EQL)
+			}
+			if _, err := c.scopes.Emit(node.Pos(), eql.op, eql.arguments...); err != nil {
 				return err
 			}
-		}
-		if err := c.compile(clause.List[0]); err != nil { // Simplified: assumes one value per case
-			return err
-		}
-		eql, ok := BinaryAdapterFor(token.EQL)
-		if !ok {
-			return tables.NewCompilerError(c.fileSet, node, "unhandled binary op: %s", token.EQL)
-		}
-		if _, err := c.scopes.Emit(node.Pos(), eql.op, eql.arguments...); err != nil {
-			return err
-		}
-		//if _, err := c.scopes.Emit(bytecode.OpLogical, int(objects.OperatorLogicalEq)); err != nil {
-		//	return err
-		//}
-		// 4. Jump to the next-case if the condition is false
-		jumpPos, err := c.scopes.Emit(node.Pos(), native.OpJumpFalsyId, 9999)
-		if err != nil {
-			return err
-		}
-		jumpsToNextCase = append(jumpsToNextCase, jumpPos)
-		// 5. Compile case body
-		for _, stmt := range clause.Body {
-			if err := c.compile(stmt); err != nil {
+			// 4. Jump to the next-case if the condition is false
+			jumpPos, err := c.scopes.Emit(node.Pos(), native.OpJumpFalsyId, 9999)
+			if err != nil {
 				return err
 			}
-		}
-		// 6. add jump to end of switch (Go has no fall-through)
-		endJumpPos, err := c.scopes.Emit(node.Pos(), native.OpJumpId, 9999)
-		if err != nil {
-			return err
-		}
-		if err := scope.AddEndJump(endJumpPos); err != nil {
-			return err
+			jumpsToNextCase = append(jumpsToNextCase, jumpPos)
+			// 5. Compile case body
+			for _, stmt := range clause.Body {
+				if err := c.compile(stmt); err != nil {
+					return err
+				}
+			}
+			// 6. add jump to end of switch (Go has no fall-through)
+			endJumpPos, err := c.scopes.Emit(node.Pos(), native.OpJumpId, 9999)
+			if err != nil {
+				return err
+			}
+			if err := scope.AddEndJump(endJumpPos); err != nil {
+				return err
+			}
 		}
 	}
 	// 7. Compile 'default' if it exists

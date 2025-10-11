@@ -45,14 +45,17 @@ func (plt *MemPlot) onKey(_ int, key rune) {
 	fmt.Println("Current KEY", key)
 	switch key {
 	case 'a', '+':
+		fmt.Println("PLUS PRESSED")
 		plt.auto = false
 		plt.maxVal += scale
 		plt.minVal -= scale
 	case 'z', '-':
+		fmt.Println("MINUS PRESSED")
 		plt.auto = false
 		plt.maxVal -= scale
 		plt.minVal += scale
 	case 'r':
+		fmt.Println("RESET PRESSED")
 		plt.auto = !plt.auto
 	}
 }
