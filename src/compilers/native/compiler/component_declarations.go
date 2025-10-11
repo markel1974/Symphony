@@ -681,6 +681,7 @@ func (c *Declarations) handleVariableAssign(pos token.Pos, tok token.Token, rhsI
 			}
 			return nil
 		default:
+			// TODO see BinaryAdapterFor token.AND_ASSIGN, token.OR_ASSIGN, etc.
 			return fmt.Errorf("[handleVariableAssign] invalid token %s for variable assignment", tok)
 		}
 	case *ast.IndexExpr:
