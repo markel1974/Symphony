@@ -642,8 +642,8 @@ func (c *Declarations) handleVariableAssign(pos token.Pos, tok token.Token, rhsI
 			}
 			return nil
 		}
-		if tok == token.DEFINE {
-			// Specific case for ':='
+		switch tok {
+		case token.DEFINE:
 			symbol, err := c.scopes.SymbolDefine(lhs.Name)
 			if err != nil {
 				return err
@@ -653,11 +653,12 @@ func (c *Declarations) handleVariableAssign(pos token.Pos, tok token.Token, rhsI
 			if err = c.scopes.EmitSymbolDefineAndPop(pos, symbol); err != nil {
 				return err
 			}
-		} else {
+			return nil
+		case token.ASSIGN:
 			// Case for normal assignment '='
 			symbol, ok := c.scopes.SymbolResolve(lhs.Name)
 			if !ok {
-				return fmt.Errorf("[AssignStmt] undefined variable: %s", lhs.Name)
+				return fmt.Errorf("[handleVariableAssign] undefined variable: %s", lhs.Name)
 			}
 			if symbol.IsInterface() {
 				var rhsName string
@@ -665,7 +666,7 @@ func (c *Declarations) handleVariableAssign(pos token.Pos, tok token.Token, rhsI
 					rhsName = ident.Name
 				}
 				if len(rhsName) == 0 {
-					return fmt.Errorf("cannot assign interface to interface")
+					return fmt.Errorf("[handleVariableAssign] cannot assign interface to interface")
 				}
 				if assignedStructSymbol, ok := c.scopes.SymbolResolve(rhsName); ok && assignedStructSymbol.IsStruct() {
 					if err := c.handleInterfaceAssign(pos, symbol, assignedStructSymbol); err != nil {
@@ -678,12 +679,14 @@ func (c *Declarations) handleVariableAssign(pos token.Pos, tok token.Token, rhsI
 			if err := c.scopes.EmitSymbolSetAndPop(pos, symbol); err != nil {
 				return err
 			}
+			return nil
+		default:
+			return fmt.Errorf("[handleVariableAssign] invalid token %s for variable assignment", tok)
 		}
-		return nil
 	case *ast.IndexExpr:
 		// Handles cases like 'myMap[key] = value' or 'mySlice[index] = value'
 		if tok == token.DEFINE {
-			return fmt.Errorf("cannot define variable with index assignment using :=")
+			return fmt.Errorf("[handleVariableAssign] cannot define variable with index assignment using :=")
 		}
 		tempSymbol, err := c.scopes.SymbolDefineUnique("__temp_assign_rhs")
 		if err != nil {
@@ -707,7 +710,7 @@ func (c *Declarations) handleVariableAssign(pos token.Pos, tok token.Token, rhsI
 		return nil
 	case *ast.SelectorExpr:
 		if tok == token.DEFINE {
-			return fmt.Errorf("cannot define a field with :=")
+			return fmt.Errorf("[handleVariableAssign] cannot define a field with :=")
 		}
 		// Try to use the fast path for simple receivers (e.g. myVar.Field)
 		if receiverIdent, ok := lhs.X.(*ast.Ident); ok {
@@ -758,7 +761,7 @@ func (c *Declarations) handleVariableAssign(pos token.Pos, tok token.Token, rhsI
 	case *ast.StarExpr:
 		// Handles cases like '*myVar = ...'
 		if tok == token.DEFINE {
-			return fmt.Errorf("cannot define a variable with dereference")
+			return fmt.Errorf("[handleVariableAssign] cannot define a variable with dereference")
 		}
 		if err := c.compile(lhs.X); err != nil {
 			return err
@@ -768,6 +771,6 @@ func (c *Declarations) handleVariableAssign(pos token.Pos, tok token.Token, rhsI
 		}
 		return nil
 	default:
-		return fmt.Errorf("unsupported left-hand side in assignment: %T", lhs)
+		return fmt.Errorf("[handleVariableAssign] unsupported left-hand side in assignment: %T", lhs)
 	}
 }
