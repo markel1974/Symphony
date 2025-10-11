@@ -42,6 +42,7 @@ func NewMemPlot(kind int) *MemPlot {
 func (plt *MemPlot) onKey(_ int, key rune) {
 	interval := math.Abs(plt.maxVal - plt.minVal)
 	scale := (interval * 10) / 100
+	fmt.Println("Current KEY", key)
 	switch key {
 	case 'a', '+':
 		plt.auto = false
@@ -122,6 +123,11 @@ func (plt *MemPlot) onPaint(surface ISurface) {
 
 // _instance is a singleton instance of the MemPlot structure, used for memory plotting and rendering operations.
 var _instance *MemPlot = NewMemPlot(0)
+
+// onTimer triggers the onTimer method of the _instance object, typically used for handling periodic actions or events.
+func onKey(v int, key rune) {
+	_instance.onKey(v, key)
+}
 
 // onPaint handles the repaint event for the current graphical instance by delegating the operation to the _instance object.
 func onPaint(s interface{}) {

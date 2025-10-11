@@ -264,14 +264,20 @@ func (c *Declarations) BasicLit(node *ast.BasicLit) error {
 		val, _ := strconv.ParseFloat(node.Value, 64)
 		obj = c.gk.NewFloat(objects.FrameStatic, val)
 	case token.CHAR:
-		var val rune
-		for _, v := range node.Value {
-			val = v
-			break
+		unquoted, err := strconv.Unquote(node.Value)
+		if err != nil {
+			return tables.NewCompilerError(c.fileSet, node, "malformed character literal %s: %w", node.Value, err)
 		}
-		obj = c.gk.NewChar(objects.FrameStatic, val)
+		runes := []rune(unquoted)
+		if len(runes) != 1 {
+			return tables.NewCompilerError(c.fileSet, node, "character literal %s must contain exactly one character", node.Value)
+		}
+		obj = c.gk.NewChar(objects.FrameStatic, runes[0])
 	case token.STRING:
-		val, _ := strconv.Unquote(node.Value)
+		val, err := strconv.Unquote(node.Value)
+		if err != nil {
+			return tables.NewCompilerError(c.fileSet, node, "malformed string literal %s: %w", node.Value, err)
+		}
 		obj = c.gk.NewString(objects.FrameStatic, val)
 	default:
 		return tables.NewCompilerError(c.fileSet, node, "unhandled literal: %s", node.Kind)

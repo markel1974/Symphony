@@ -181,15 +181,11 @@ func (v *VM) GetReturnValues() []interface{} {
 
 // Run executes the main function identified by mainId with the provided arguments in the virtual machine context.
 func (v *VM) Run(mainId uint, args ...interface{}) ([]interface{}, error) {
-	obj, err := v.constants.Retrieve(mainId)
+	entryFn, err := v.constants.RetrieveFunc(mainId)
 	if err != nil {
 		return nil, err
 	}
-	mainFn, ok := obj.(*objects.Func)
-	if !ok {
-		return nil, fmt.Errorf("entry point not found: %d", mainId)
-	}
-	return v.exec(mainFn, v.retValues, args...)
+	return v.exec(entryFn, v.retValues, args...)
 }
 
 // Run executes the virtual machine's bytecode, managing the stack, frames, and instruction pointer state.

@@ -6,7 +6,7 @@ import (
 	"github.com/markel1974/c64emu/src/vm/objects"
 )
 
-// Constants is a structure that manages global objects and handles error signaling through a callback function.
+// Constants represents a structure that encapsulates gatekeeping, a container of objects, and functions for initialization.
 type Constants struct {
 	gk           objects.IGateKeeper
 	container    []objects.IObject
@@ -14,7 +14,7 @@ type Constants struct {
 	init         []*objects.Func
 }
 
-// NewConstants initializes and returns a new Constants instance with provided global objects and error signaling function.
+// NewConstants initializes and returns a new Constants object with the provided gatekeeper and empty configurations.
 func NewConstants(gk objects.IGateKeeper) *Constants {
 	return &Constants{
 		gk:           gk,
@@ -24,7 +24,8 @@ func NewConstants(gk objects.IGateKeeper) *Constants {
 	}
 }
 
-// Setup updates the constant pool with the provided values.
+// Setup initializes the Constants object with given constants and identifies preInit, init, and other entry points.
+// It returns a map of entry point names and their indices, or an error if initialization fails.
 func (g *Constants) Setup(constants []objects.IObject, preInit string, init string) (map[string]uint, error) {
 	g.container = constants
 	entryPoints := make(map[string]uint)
@@ -43,16 +44,17 @@ func (g *Constants) Setup(constants []objects.IObject, preInit string, init stri
 	return entryPoints, nil
 }
 
-// PreInitFuncs returns a slice of pre-initialization compiled functions associated with the Globals instance.
+// PreInitFuncs returns the list of functions marked as pre-initialization functions for the Constants instance.
 func (g *Constants) PreInitFuncs() []*objects.Func {
 	return g.preInitFuncs
 }
 
-// InitFuncs returns the slice of compiled functions designated to run during the initialization phase.
+// InitFuncs returns a slice of *objects.Func that were initialized during the setup phase.
 func (g *Constants) InitFuncs() []*objects.Func {
 	return g.init
 }
 
+// Retrieve fetches the object at the specified index in the constants container or returns an error if the index is invalid.
 func (g *Constants) Retrieve(index uint) (objects.IObject, error) {
 	if index >= uint(len(g.container)) {
 		return g.gk.UndefinedValue(), fmt.Errorf("invalid constant index: %d", index)
@@ -60,7 +62,20 @@ func (g *Constants) Retrieve(index uint) (objects.IObject, error) {
 	return g.container[index], nil
 }
 
-// Get retrieves a constant object by its index and returns a copy adjusted for the specified frame and maximum depth.
+// RetrieveFunc retrieves a function from the constants container at the specified index and returns an error if not found.
+func (g *Constants) RetrieveFunc(index uint) (*objects.Func, error) {
+	obj, err := g.Retrieve(index)
+	if err != nil {
+		return nil, err
+	}
+	entryFn, ok := obj.(*objects.Func)
+	if !ok {
+		return nil, fmt.Errorf("entry point not found: %d", index)
+	}
+	return entryFn, nil
+}
+
+// Get retrieves a constant at the specified index, creates a copy with the given frameId and predefined depth, and returns it.
 func (g *Constants) Get(frameId int, index uint) (objects.IObject, error) {
 	if index >= uint(len(g.container)) {
 		return g.gk.UndefinedValue(), fmt.Errorf("invalid constant index: %d", index)

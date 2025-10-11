@@ -28,14 +28,20 @@ func MemPlotTest(debug bool) error {
 		return err
 	}
 	mainArgs := []interface{}{[]string{"os"}}
+	onKeyArgs := []interface{}{byte(0), rune('+')}
+	onPaintArgs := []interface{}{&Plotter{}}
+	var onTimerArgs []interface{} = nil
+
 	_, err = l.Exec("main", mainArgs)
 	if err != nil {
 		return err
 	}
-	onPaintArgs := []interface{}{&Plotter{}}
-	var onTimerArgs []interface{} = nil
 
 	for x := 0; x < 15; x++ {
+		_, err = l.Exec("onKey", onKeyArgs)
+		if err != nil {
+			return err
+		}
 		_, err = l.Exec("onTimer", onTimerArgs)
 		if err != nil {
 			return err
