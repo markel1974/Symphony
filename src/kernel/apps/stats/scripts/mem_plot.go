@@ -3,7 +3,6 @@
 package scripts
 
 import (
-	"fmt"
 	"math"
 	"runtime"
 
@@ -45,23 +44,23 @@ func NewMemPlot(kind int) *MemPlot {
 // onKey handles keyboard input to modify the plot's value range or toggle the auto-scaling mode.
 func (plt *MemPlot) onKey(_ int, key byte) {
 	interval := math.Abs(plt.maxVal - plt.minVal)
-	scale := (interval * 10) / 100
-	fmt.Printf("scale: %f, interval: %f\n", scale, interval)
-	fmt.Printf("BEFORE maxVal: %f, minVal: %f\n", plt.maxVal, plt.minVal)
+	scale := (interval * 10.0) / 100.0
+	//fmt.Printf("scale: %f, interval: %f\n", scale, interval)
+	//fmt.Printf("BEFORE maxVal: %f, minVal: %f\n", plt.maxVal, plt.minVal)
 	switch key {
 	case 'a', '+':
 		plt.auto = false
-		plt.maxVal += scale
-		plt.minVal -= scale
-		fmt.Printf("AFTER PLUS maxVal: %f, minVal: %f\n", plt.maxVal, plt.minVal)
+		plt.maxVal = plt.maxVal + scale
+		plt.minVal = plt.minVal - scale
+		//fmt.Printf("AFTER PLUS maxVal: %f, minVal: %f\n", plt.maxVal, plt.minVal)
 	case 'z', '-':
 		plt.auto = false
-		plt.maxVal -= scale
-		plt.minVal += scale
-		fmt.Printf("AFTER MINUS maxVal: %f, minVal: %f\n", plt.maxVal, plt.minVal)
+		plt.maxVal = plt.maxVal - scale
+		plt.minVal = plt.minVal + scale
+		//fmt.Printf("AFTER MINUS maxVal: %f, minVal: %f\n", plt.maxVal, plt.minVal)
 	case 'r':
 		plt.auto = !plt.auto
-		fmt.Printf("AFTER RESET maxVal: %f, minVal: %f\n", plt.maxVal, plt.minVal)
+		//fmt.Printf("AFTER RESET maxVal: %f, minVal: %f\n", plt.maxVal, plt.minVal)
 	}
 }
 
@@ -144,5 +143,8 @@ func main(args []string) {
 		}
 	}
 	_instance = NewMemPlot(kind)
+	//_instance.maxVal = 22.00
+	//_instance.minVal = 2.00
+
 	kernel.CreateTimer(0, 300, -1)
 }
