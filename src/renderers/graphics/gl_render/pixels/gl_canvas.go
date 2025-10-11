@@ -38,7 +38,7 @@ func NewGLCanvas(bounds Rect, smooth bool) *GLCanvas {
 		col:    mgl32.Vec4{1, 1, 1, 1},
 		smooth: smooth,
 	}
-	c.shader = NewGLShader(baseCanvasFragmentShader)
+	c.shader = NewGLShader(_baseCanvasFragmentShader)
 	c.SetBounds(bounds)
 	return c
 }

@@ -10,14 +10,14 @@ import (
 	"golang.org/x/image/math/fixed"
 )
 
-// Glyph describes one glyph in an Atlas.
+// Glyph represents a graphical character or symbol with its position, bounds, and spacing in 2D space.
 type Glyph struct {
 	Dot     Vector
 	Frame   Rect
 	Advance float64
 }
 
-// Atlas is a set of pre-drawn glyphs of a fixed set of runes. This allows for efficient text drawing.
+// Atlas represents a font atlas that maps runes to glyphs with their metrics and images.
 type Atlas struct {
 	face       font.Face
 	pic        IPicture
@@ -27,10 +27,7 @@ type Atlas struct {
 	lineHeight float64
 }
 
-// NewAtlas creates a new Atlas containing glyphs of the union of the given sets of runes
-// (plus unicode.ReplacementChar) from the given font face.
-// Creating an Atlas is rather expensive, does not create a new Atlas each frame.
-// Do not destroy or close the font.Face after creating the Atlas. Atlas still uses it.
+// NewAtlas creates and returns a new Atlas using the provided font face and rune sets for glyph mapping and rendering.
 func NewAtlas(face font.Face, runeSets ...[]rune) *Atlas {
 	seen := make(map[rune]bool)
 	runes := []rune{unicode.ReplacementChar}
@@ -92,48 +89,45 @@ func NewAtlas(face font.Face, runeSets ...[]rune) *Atlas {
 	}
 }
 
-// Picture returns the underlying IPicture containing an arrangement of all the glyphs contained
-// within the Atlas.
+// Picture returns the IPicture associated with the Atlas.
 func (a *Atlas) Picture() IPicture {
 	return a.pic
 }
 
-// Contains reports whether r in contained within the Atlas.
+// Contains checks if the atlas contains a glyph mapping for the specified rune. Returns true if the rune is present.
 func (a *Atlas) Contains(r rune) bool {
 	_, ok := a.mapping[r]
 	return ok
 }
 
-// Glyph returns the description of r within the Atlas.
+// Glyph returns the Glyph associated with the given rune from the Atlas's mapping.
 func (a *Atlas) Glyph(r rune) Glyph {
 	return a.mapping[r]
 }
 
-// Kern returns the kerning distance between runes r0 and r1. Positive distance means that the
-// glyphs should be further apart.
+// Kern calculates the kerning adjustment between two runes r0 and r1 in the font, returning the spacing offset as a float64.
 func (a *Atlas) Kern(r0, r1 rune) float64 {
 	return i2f(a.face.Kern(r0, r1))
 }
 
-// Ascent returns the distance from the top of the line to the baseline.
+// Ascent returns the ascent of the font represented by the Atlas as a float64 value.
 func (a *Atlas) Ascent() float64 {
 	return a.ascent
 }
 
-// Descent returns the distance from the baseline to the bottom of the line.
+// Descent returns the descent value of the font in the atlas, representing the vertical distance below the baseline.
 func (a *Atlas) Descent() float64 {
 	return a.descent
 }
 
-// LineHeight returns the recommended vertical distance between two lines of text.
+// LineHeight returns the line height of the font in the atlas as a float64.
 func (a *Atlas) LineHeight() float64 {
 	return a.lineHeight
 }
 
-// DrawRune returns parameters necessary for drawing a rune glyph.
-//
-// Rect is a rectangle where the glyph should be positioned. Frame is the glyph frame inside the
-// Atlas's IPicture. NewDot is the new position of the dot.
+// DrawRune draws the rune `r` at the specified position `dot`, applying kerning relative to `prevR`.
+// It returns the rectangle where the rune is drawn, the glyph's frame, its bounding box, and the updated position `newDot`.
+// If the rune is not found in the atlas, the replacement character is used.
 func (a *Atlas) DrawRune(prevR, r rune, dot Vector) (rect, frame, bounds Rect, newDot Vector) {
 	if !a.Contains(r) {
 		r = unicode.ReplacementChar
@@ -168,14 +162,17 @@ func (a *Atlas) DrawRune(prevR, r rune, dot Vector) (rect, frame, bounds Rect, n
 	return rect, glyph.Frame, bounds, dot
 }
 
+// fixedGlyph represents a single glyph with its associated properties for rendering in fixed-point coordinates.
 type fixedGlyph struct {
 	dot     fixed.Point26_6
 	frame   fixed.Rectangle26_6
 	advance fixed.Int26_6
 }
 
-// makeSquareMapping finds an optimal glyph arrangement of the given runes, so that their common
-// bounding box is as square as possible.
+// makeSquareMapping generates a mapping of runes to their fixedGlyph representation ensuring square bounds.
+// It adjusts the width dynamically to maintain a square aspect ratio of the overall bounding rectangle.
+// Accepts a font.Face, a slice of runes, and padding as parameters.
+// Returns a map of runes to fixedGlyphs and the overall bounding rectangle as fixed.Rectangle26_6.
 func makeSquareMapping(face font.Face, runes []rune, padding fixed.Int26_6) (map[rune]fixedGlyph, fixed.Rectangle26_6) {
 	width := sort.Search(int(fixed.I(1024*1024)), func(i int) bool {
 		width := fixed.Int26_6(i)
@@ -185,9 +182,12 @@ func makeSquareMapping(face font.Face, runes []rune, padding fixed.Int26_6) (map
 	return makeMapping(face, runes, padding, fixed.Int26_6(width))
 }
 
-// makeMapping arranges glyphs of the given runes into rows in such a way that no glyph is located
-// fully to the right of the specified width.
-// Specifically, it places glyphs in a row one by one, and once it reaches the specified width, it starts a new row.
+// makeMapping generates a mapping of runes to glyph data and computes the bounding rectangle for all glyphs.
+// face specifies the font face used for glyph metrics.
+// runes is the set of unicode characters to include in the mapping.
+// padding adds spacing between glyphs.
+// width sets the maximum line width before wrapping to a new row.
+// Returns a map where each rune links to its fixedGlyph and the overall bounding rectangle.
 func makeMapping(face font.Face, runes []rune, padding, width fixed.Int26_6) (map[rune]fixedGlyph, fixed.Rectangle26_6) {
 	mapping := make(map[rune]fixedGlyph)
 	bounds := fixed.Rectangle26_6{}
@@ -236,6 +236,7 @@ func makeMapping(face font.Face, runes []rune, padding, width fixed.Int26_6) (ma
 	return mapping, bounds
 }
 
+// i2f converts a fixed.Int26_6 value to a float64 by dividing it by 64.
 func i2f(i fixed.Int26_6) float64 {
 	return float64(i) / (1 << 6)
 }

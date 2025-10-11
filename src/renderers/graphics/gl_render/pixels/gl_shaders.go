@@ -1,6 +1,6 @@
 package pixels
 
-var baseCanvasVertexShader = `
+const _baseCanvasVertexShader = `
 #version 330 core
 
 in vec2  aPosition;
@@ -32,7 +32,7 @@ void main() {
 }
 `
 
-var baseCanvasFragmentShader = `
+const _baseCanvasFragmentShader = `
 #version 330 core
 
 in vec4  vColor;

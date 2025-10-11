@@ -2,10 +2,14 @@ package executor
 
 import (
 	"errors"
-	"github.com/go-gl/gl/v3.3-core/gl"
 	"runtime"
+
+	"github.com/go-gl/gl/v3.3-core/gl"
 )
 
+// VertexArray represents an OpenGL Vertex Array Object (VAO) that manages vertex data and its binding state.
+// It encapsulates a VAO, Vertex Buffer Object (VBO), data capacity, attribute format, stride, offsets, and shader reference.
+// Used for efficient rendering of vertex data with OpenGL.
 type VertexArray struct {
 	vao, vbo Binder
 	cap      int
@@ -15,8 +19,12 @@ type VertexArray struct {
 	shader   *Shader
 }
 
+// vertexArrayMinCap defines the minimum capacity for a vertex array, ensuring sufficient memory allocation for attributes.
 const vertexArrayMinCap = 4
 
+// NewVertexArray creates and initializes a new VertexArray with the provided shader and capacity.
+// Ensures a minimum capacity is respected and sets up attribute pointers based on the shader's vertex format.
+// Returns a pointer to the created VertexArray.
 func NewVertexArray(shader *Shader, cap int) *VertexArray {
 	if cap < vertexArrayMinCap {
 		cap = vertexArrayMinCap
@@ -98,6 +106,7 @@ func NewVertexArray(shader *Shader, cap int) *VertexArray {
 	return va
 }
 
+// Delete releases the GPU resources associated with the VertexArray, including vertex array and buffer objects.
 func (va *VertexArray) Delete() {
 	GraphicThread.Post(func() {
 		gl.DeleteVertexArrays(1, &va.vao.obj)
@@ -105,20 +114,24 @@ func (va *VertexArray) Delete() {
 	})
 }
 
+// Begin binds the vertex array object (VAO) and vertex buffer object (VBO) for subsequent OpenGL operations.
 func (va *VertexArray) Begin() {
 	va.vao.Bind()
 	va.vbo.Bind()
 }
 
+// End restores the previous state of the vertex array and vertex buffer by calling their respective Restore methods.
 func (va *VertexArray) End() {
 	va.vbo.Restore()
 	va.vao.Restore()
 }
 
+// Draw renders a portion of the vertex array as triangles, using indices i and j to define the range of vertices.
 func (va *VertexArray) Draw(i int, j int) {
 	gl.DrawArrays(gl.TRIANGLES, int32(i), int32(j-i))
 }
 
+// SetVertexData updates a subset of vertex buffer data between indices i and j with the provided float32 data slice.
 func (va *VertexArray) SetVertexData(i int, j int, data []float32) {
 	if j-i == 0 {
 		// avoid setting 0 bytes of buffer data
@@ -127,6 +140,7 @@ func (va *VertexArray) SetVertexData(i int, j int, data []float32) {
 	gl.BufferSubData(gl.ARRAY_BUFFER, i*va.stride, len(data)*4, gl.Ptr(data))
 }
 
+// VertexData retrieves a slice of vertex data from the buffer between indices i and j. Returns nil if the range is invalid.
 func (va *VertexArray) VertexData(i int, j int) []float32 {
 	if j-i == 0 {
 		// avoid getting 0 bytes of buffer data

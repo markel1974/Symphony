@@ -9,7 +9,7 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 )
 
-// Shader represents a compiled, linked, and usable GPU shader program with associated vertex and uniform attribute formats.
+// Shader represents a compiled and linked OpenGL shader program with its associated attributes and uniform locations.
 type Shader struct {
 	program    Binder
 	vertexFmt  AttrFormat
@@ -17,9 +17,10 @@ type Shader struct {
 	uniformLoc []int32
 }
 
-// NewShader creates a new Shader object using specified vertex and uniform formats and given GLSL shader code.
-// It compiles the vertex and fragment shaders, links them into a shader program, and initializes uniform locations.
-// Returns a pointer to the created Shader and an error if shader compilation or linking fails.
+// NewShader creates, compiles, and links a vertex and fragment shader program.
+// vertexFmt and uniformFmt define the attribute and uniform formats.
+// vertexShader and fragmentShader are the GLSL source codes for the shaders.
+// Returns a Shader instance or an error if compilation or linking fails.
 func NewShader(vertexFmt, uniformFmt AttrFormat, vertexShader, fragmentShader string) (*Shader, error) {
 	shader := &Shader{
 		program: Binder{
@@ -107,31 +108,30 @@ func NewShader(vertexFmt, uniformFmt AttrFormat, vertexShader, fragmentShader st
 	return shader, nil
 }
 
-// delete releases the OpenGL shader program associated with the shader object using the graphic thread.
+// delete removes the associated OpenGL shader program by scheduling its deletion on the graphics thread.
 func (s *Shader) delete() {
 	GraphicThread.Post(func() {
 		gl.DeleteProgram(s.program.obj)
 	})
 }
 
-// ID returns the OpenGL program ID associated with the Shader.
+// ID returns the unique identifier of the shader's underlying OpenGL program object.
 func (s *Shader) ID() uint32 {
 	return s.program.obj
 }
 
-// VertexFormat returns the vertex attribute format (AttrFormat) used by the Shader.
+// VertexFormat returns the attribute format of the vertices in the shader.
 func (s *Shader) VertexFormat() AttrFormat {
 	return s.vertexFmt
 }
 
-// UniformFormat returns the format of the uniform attributes used by the shader.
+// UniformFormat returns the attribute format of the uniforms used in the shader.
 func (s *Shader) UniformFormat() AttrFormat {
 	return s.uniformFmt
 }
 
-// SetUniformAttr assigns a value to a specified uniform attribute in the shader program.
-// It accepts the uniform index and a value of the appropriate type.
-// Returns true if the uniform was successfully set, or false and an error if it fails.
+// SetUniformAttr sets the value of a uniform attribute in the shader based on its type and the provided value.
+// Returns true if the uniform was set successfully, otherwise false with an error indicating the issue.
 func (s *Shader) SetUniformAttr(uniform int, value interface{}) (bool, error) {
 	if s.uniformLoc[uniform] < 0 {
 		return false, nil
@@ -186,12 +186,12 @@ func (s *Shader) SetUniformAttr(uniform int, value interface{}) (bool, error) {
 	return true, nil
 }
 
-// Begin activates the shader program by binding it to the current OpenGL context.
+// Begin initializes the shader program by binding it for use in subsequent OpenGL rendering operations.
 func (s *Shader) Begin() {
 	s.program.Bind()
 }
 
-// End restores the previous OpenGL state that was active before the shader was bound.
+// End restores the previously bound OpenGL program state from the shader's program stack.
 func (s *Shader) End() {
 	s.program.Restore()
 }

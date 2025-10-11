@@ -5,11 +5,13 @@ import (
 	"math"
 )
 
+// Circle represents a geometric circle defined by a center point and a radius.
 type Circle struct {
 	Center Vector
 	Radius float64
 }
 
+// NewCircle creates a new Circle with the specified center point and radius.
 func NewCircle(center Vector, radius float64) Circle {
 	return Circle{
 		Center: center,
@@ -17,10 +19,12 @@ func NewCircle(center Vector, radius float64) Circle {
 	}
 }
 
+// String returns a string representation of the Circle in the format "Circle(Center, Radius)".
 func (c Circle) String() string {
 	return fmt.Sprintf("Circle(%s, %.2f)", c.Center, c.Radius)
 }
 
+// Norm returns a new Circle with the same center but ensures the radius is always a non-negative value.
 func (c Circle) Norm() Circle {
 	return Circle{
 		Center: c.Center,
@@ -28,10 +32,12 @@ func (c Circle) Norm() Circle {
 	}
 }
 
+// Area calculates and returns the area of the circle using the formula π * r^2, where r is the radius of the circle.
 func (c Circle) Area() float64 {
 	return math.Pi * math.Pow(c.Radius, 2)
 }
 
+// Moved returns a new Circle translated by the specified delta Vector without modifying the original Circle.
 func (c Circle) Moved(delta Vector) Circle {
 	return Circle{
 		Center: c.Center.Add(delta),
@@ -39,6 +45,7 @@ func (c Circle) Moved(delta Vector) Circle {
 	}
 }
 
+// Resized returns a new Circle with the same center and a radius incremented by the specified radiusDelta.
 func (c Circle) Resized(radiusDelta float64) Circle {
 	return Circle{
 		Center: c.Center,
@@ -46,15 +53,18 @@ func (c Circle) Resized(radiusDelta float64) Circle {
 	}
 }
 
+// Contains checks whether the given Vector u is located within or on the boundary of the Circle.
 func (c Circle) Contains(u Vector) bool {
 	toCenter := c.Center.To(u)
 	return c.Radius >= toCenter.Len()
 }
 
+// Formula returns the X and Y coordinates of the Circle's center as two float64 values.
 func (c Circle) Formula() (h, k float64) {
 	return c.Center.X, c.Center.Y
 }
 
+// Union computes the smallest circle that can fully encompass two given circles. Returns the resulting enclosing circle.
 func (c Circle) Union(d Circle) Circle {
 	biggerC := maxCircle(c.Norm(), d.Norm())
 	smallerC := minCircle(c.Norm(), d.Norm())
@@ -76,10 +86,10 @@ func (c Circle) Union(d Circle) Circle {
 	}
 }
 
-// Intersect returns the maximal Circle which is covered by both `c` and `drawer`.
-//
-// If `c` and `drawer` don't overlap, this function returns a zero-sized circle at the center-Point between the two Circle's
-// centers.
+// Intersect calculates the intersection of two circles and returns the resulting Circle.
+// If one circle fully encompasses the other, the larger circle is returned.
+// If the circles do not overlap, a Circle with zero radius is returned at the calculated midpoint.
+// Otherwise, it computes a Circle based on the overlapping region.
 func (c Circle) Intersect(d Circle) Circle {
 	// Check if one of the circles encompasses the other; if so, return that one
 	biggerC := maxCircle(c.Norm(), d.Norm())
@@ -112,19 +122,12 @@ func (c Circle) Intersect(d Circle) Circle {
 	}
 }
 
-// IntersectLine will return the shortest Vector such that if the Circle is moved by the Vector returned, the Line and Rect no
-// longer intersect.
+// IntersectLine calculates a vector adjustment needed to separate a line and a circle when they intersect.
 func (c Circle) IntersectLine(l Line) Vector {
 	return l.IntersectCircle(c).Scaled(-1)
 }
 
-// IntersectRect returns a minimal required Vector, such that moving the circle by that vector would stop the Circle
-// and the Rect intersecting.  This function returns a zero-vector if the Circle and Rect do not overlap, and if only
-// the perimeters touch.
-//
-// This function will return a non-zero vector if:
-//   - The Rect contains the Circle, partially or fully
-//   - The Circle contains the Rect, partially fully
+// IntersectRect computes the intersection vector between a circle and a rectangle, indicating overlap or displacement.
 func (c Circle) IntersectRect(r Rect) Vector {
 	// Checks if the c.Center is not in the diagonal quadrants of the rectangle
 	if (r.Min.X <= c.Center.X && c.Center.X <= r.Max.X) || (r.Min.Y <= c.Center.Y && c.Center.Y <= r.Max.Y) {
@@ -195,9 +198,8 @@ func (c Circle) IntersectRect(r Rect) Vector {
 	}
 }
 
-// IntersectionPoints returns all the points where the Circle intersects with the line provided.  This can be zero, one or
-// two points, depending on the location of the shapes.  The points of intersection will be returned in order of
-// closest-to-l.A to closest-to-l.B.
+// IntersectionPoints calculates the points where a line intersects with the circle.
+// Returns an empty slice if no intersection exists, a slice with one point if tangent, and two points if it fully intersects.
 func (c Circle) IntersectionPoints(l Line) []Vector {
 	cContainsA := c.Contains(l.A)
 	cContainsB := c.Contains(l.B)
@@ -288,6 +290,7 @@ func (c Circle) IntersectionPoints(l Line) []Vector {
 	return []Vector{second, first}
 }
 
+// maxCircle returns the Circle with the larger radius between two given Circles. If radii are equal, the first Circle is returned.
 func maxCircle(c Circle, d Circle) Circle {
 	if c.Radius < d.Radius {
 		return d
@@ -295,6 +298,8 @@ func maxCircle(c Circle, d Circle) Circle {
 	return c
 }
 
+// minCircle returns the smallest Circle by radius between two given Circle instances.
+// If both Circles have the same radius, the first Circle is returned.
 func minCircle(c Circle, d Circle) Circle {
 	if c.Radius < d.Radius {
 		return c

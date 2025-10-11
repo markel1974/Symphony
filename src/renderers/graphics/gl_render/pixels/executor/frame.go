@@ -6,8 +6,7 @@ import (
 	"github.com/go-gl/gl/v3.3-core/gl"
 )
 
-// Frame represents an OpenGL framebuffer for rendering operations and texture management.
-// It encapsulates bindings for framebuffer, read framebuffer, and draw framebuffer with an associated texture.
+// Frame represents a rendering target that encapsulates an OpenGL framebuffer and an associated texture.
 type Frame struct {
 	fb  Binder
 	rf  Binder
@@ -15,8 +14,7 @@ type Frame struct {
 	tex *Texture
 }
 
-// NewFrame creates a new Frame object with a framebuffer and associated texture of the specified width and height.
-// The smooth parameter determines whether the texture uses linear or nearest filtering for scaling.
+// NewFrame creates a new Frame object with specified width, height, and smoothing option, and initializes its resources.
 func NewFrame(width, height int, smooth bool) *Frame {
 	f := &Frame{
 		fb: Binder{
@@ -51,30 +49,29 @@ func NewFrame(width, height int, smooth bool) *Frame {
 	return f
 }
 
-// delete releases the framebuffer associated with the Frame by posting a deletion task to the GraphicThread.
+// delete releases the framebuffer associated with the Frame instance in the context of the GraphicThread.
 func (f *Frame) delete() {
 	GraphicThread.Post(func() {
 		gl.DeleteFramebuffers(1, &f.fb.obj)
 	})
 }
 
-// ID returns the unique identifier of the Frame's framebuffer object.
+// ID returns the OpenGL ID of the framebuffer associated with the Frame.
 func (f *Frame) ID() uint32 {
 	return f.fb.obj
 }
 
-// Begin binds the framebuffer associated with the Frame, setting it as the current render target.
+// Begin binds the framebuffer, making it the active rendering target.
 func (f *Frame) Begin() {
 	f.fb.Bind()
 }
 
-// End restores the previous framebuffer binding state stored by the Binder.
+// End restores the framebuffer to the previously bound state by calling the Binder's Restore method.
 func (f *Frame) End() {
 	f.fb.Restore()
 }
 
-// Blit copies a portion of the current Frame to another Frame (or to the default framebuffer if dst is nil).
-// The source region is defined by (sx0, sy0, sx1, sy1) and is copied to the destination region (dx0, dy0, dx1, dy1).
+// Blit performs a framebuffer copy operation, transferring a region from the source to the destination framebuffer.
 func (f *Frame) Blit(dst *Frame, sx0, sy0, sx1, sy1, dx0, dy0, dx1, dy1 int) {
 	f.rf.obj = f.fb.obj
 	if dst != nil {
@@ -100,7 +97,7 @@ func (f *Frame) Blit(dst *Frame, sx0, sy0, sx1, sy1, dx0, dy0, dx1, dy1 int) {
 	f.df.Restore()
 }
 
-// Texture returns the texture associated with the Frame.
+// Texture returns the Texture instance associated with the Frame.
 func (f *Frame) Texture() *Texture {
 	return f.tex
 }

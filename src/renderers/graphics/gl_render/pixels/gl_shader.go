@@ -52,7 +52,7 @@ type GLShader struct {
 func NewGLShader(fragmentShader string) *GLShader {
 	gs := &GLShader{
 		vf: defaultCanvasVertexFormat,
-		vs: baseCanvasVertexShader,
+		vs: _baseCanvasVertexShader,
 		fs: fragmentShader,
 	}
 

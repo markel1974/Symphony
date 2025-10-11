@@ -1,9 +1,9 @@
 package executor
 
-// AttrFormat represents a slice of Attr, defining the format of attributes for a vertex or uniform in a shader.
+// AttrFormat represents a collection of attributes defining the format of vertex or uniform data.
 type AttrFormat []Attr
 
-// Size calculates and returns the total size in bytes required by the AttrFormat based on the sizes of its attributes.
+// Size calculates the total size (in bytes) of all attributes in the AttrFormat by summing their individual sizes.
 func (af AttrFormat) Size() int {
 	total := 0
 	for _, attr := range af {
@@ -12,29 +12,29 @@ func (af AttrFormat) Size() int {
 	return total
 }
 
-// Attr represents a vertex attribute in a shader, including its name and type.
+// Attr represents a vertex attribute with a name and type used in shader programs.
 type Attr struct {
 	Name string
 	Type AttrType
 }
 
-// AttrType is an enumerated type used to represent various attribute types in a graphics or shader context.
+// AttrType represents the type of an attribute, such as a scalar, vector, or matrix, in a graphics or shader context.
 type AttrType int
 
-// Int represents a single integer attribute type.
-// Float represents a single floating-point attribute type.
-// Vec2 represents a 2D vector attribute type.
-// Vec3 represents a 3D vector attribute type.
-// Vec4 represents a 4D vector attribute type.
-// Mat2 represents a 2x2 matrix attribute type.
-// Mat23 represents a 2x3 matrix attribute type.
-// Mat24 represents a 2x4 matrix attribute type.
-// Mat3 represents a 3x3 matrix attribute type.
-// Mat32 represents a 3x2 matrix attribute type.
-// Mat34 represents a 3x4 matrix attribute type.
-// Mat4 represents a 4x4 matrix attribute type.
-// Mat42 represents a 4x2 matrix attribute type.
-// Mat43 represents a 4x3 matrix attribute type.
+// Int defines a single integer attribute type.
+// Float defines a single floating-point attribute type.
+// Vec2 defines a 2D vector attribute type.
+// Vec3 defines a 3D vector attribute type.
+// Vec4 defines a 4D vector attribute type.
+// Mat2 defines a 2x2 matrix attribute type.
+// Mat23 defines a 2x3 matrix attribute type.
+// Mat24 defines a 2x4 matrix attribute type.
+// Mat3 defines a 3x3 matrix attribute type.
+// Mat32 defines a 3x2 matrix attribute type.
+// Mat34 defines a 3x4 matrix attribute type.
+// Mat4 defines a 4x4 matrix attribute type.
+// Mat42 defines a 4x2 matrix attribute type.
+// Mat43 defines a 4x3 matrix attribute type.
 const (
 	Int AttrType = iota
 	Float
@@ -52,7 +52,7 @@ const (
 	Mat43
 )
 
-// Size returns the size in bytes of the AttrType based on its definition, panicking if the type is invalid.
+// Size returns the memory size in bytes for the given AttrType. Panics if the type is invalid.
 func (at AttrType) Size() int {
 	switch at {
 	case Int:
