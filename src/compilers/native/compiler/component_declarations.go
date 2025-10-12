@@ -967,12 +967,12 @@ func (c *Declarations) handleVariableAssign(pos token.Pos, tok token.Token, rhsI
 				if symbol, ok := c.scopes.SymbolResolve(receiverIdent.Name); ok {
 					// It's a known symbol, use specific Op...SelSet opcodes
 					// RHS value is already on stack, leave it there push the field name as key.
-					fieldName := lhs.Sel.Name
-					keyConst := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, fieldName))
+					lhsFieldName := lhs.Sel.Name
+					keyConst := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, lhsFieldName))
 					if _, err := c.scopes.Emit(pos, native.OpConstantId, keyConst); err != nil {
 						return err
 					}
-					// Stack is now: [..., value, "fieldName"]
+					// Stack is now: [..., value, "lhsFieldName"]
 					const numSelectors = 1
 					op := native.OpLocalIndexId
 					if symbol.Scope() == tables.GlobalScope {
@@ -985,23 +985,22 @@ func (c *Declarations) handleVariableAssign(pos token.Pos, tok token.Token, rhsI
 				}
 			}
 			// fallback to a general path for complex receivers (e.g. mySlice[0].Field)
-			tempSymbol, err := c.scopes.SymbolDefineUnique("__tmp_selector_assign_rhs_")
-
+			tmpSymbol, err := c.scopes.SymbolDefineUnique("__tmp_selector_assign_rhs_")
 			if err != nil {
 				return err
 			}
-			if err = c.scopes.EmitSymbolSet(pos, tempSymbol); err != nil {
+			if err = c.scopes.EmitSymbolSet(pos, tmpSymbol); err != nil {
 				return err
 			}
 			if err = c.compile(lhs.X); err != nil {
 				return err
 			}
-			fieldName := lhs.Sel.Name
-			keyConst := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, fieldName))
+			lshFieldName := lhs.Sel.Name
+			keyConst := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, lshFieldName))
 			if _, err = c.scopes.Emit(pos, native.OpConstantId, keyConst); err != nil {
 				return err
 			}
-			if err = c.scopes.EmitSymbolGet(pos, tempSymbol); err != nil {
+			if err = c.scopes.EmitSymbolGet(pos, tmpSymbol); err != nil {
 				return err
 			}
 			if err = c.scopes.EmitAndPop(pos, native.OpIndexSetId); err != nil {
@@ -1014,8 +1013,8 @@ func (c *Declarations) handleVariableAssign(pos token.Pos, tok token.Token, rhsI
 			if err := c.compile(lhs.X); err != nil { // s
 				return err
 			}
-			fieldName := lhs.Sel.Name
-			keyConst := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, fieldName))
+			lshFieldName := lhs.Sel.Name
+			keyConst := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, lshFieldName))
 			if _, err := c.scopes.Emit(pos, native.OpConstantId, keyConst); err != nil {
 				return err
 			}

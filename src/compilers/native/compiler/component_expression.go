@@ -122,7 +122,7 @@ func (c *Expression) BinaryExpr(node *ast.BinaryExpr) error {
 		if err := c.compile(node.Y); err != nil {
 			return err
 		}
-		tempSymbol, err := c.scopes.SymbolDefineUnique("__temp_rhs")
+		tempSymbol, err := c.scopes.SymbolDefineUnique("__tmp_binary_rhs_")
 		if err != nil {
 			return err
 		}
