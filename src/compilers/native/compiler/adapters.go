@@ -46,6 +46,19 @@ var _binaryAdapter = map[token.Token]*TokenAdapter{
 	token.REM:     NewTokenAdapter(native.OpArithmeticId, []int{int(objects.OperatorRem)}),
 	token.SHL:     NewTokenAdapter(native.OpArithmeticId, []int{int(objects.OperatorShl)}),
 	token.SHR:     NewTokenAdapter(native.OpArithmeticId, []int{int(objects.OperatorShr)}),
+
+	// compound assignment operators
+	token.ADD_ASSIGN:     NewTokenAdapter(native.OpArithmeticId, []int{int(objects.OperatorAdd)}),
+	token.SUB_ASSIGN:     NewTokenAdapter(native.OpArithmeticId, []int{int(objects.OperatorSub)}),
+	token.MUL_ASSIGN:     NewTokenAdapter(native.OpArithmeticId, []int{int(objects.OperatorMul)}),
+	token.QUO_ASSIGN:     NewTokenAdapter(native.OpArithmeticId, []int{int(objects.OperatorQuo)}),
+	token.REM_ASSIGN:     NewTokenAdapter(native.OpArithmeticId, []int{int(objects.OperatorRem)}),
+	token.AND_ASSIGN:     NewTokenAdapter(native.OpArithmeticId, []int{int(objects.OperatorAnd)}),
+	token.OR_ASSIGN:      NewTokenAdapter(native.OpArithmeticId, []int{int(objects.OperatorOr)}),
+	token.XOR_ASSIGN:     NewTokenAdapter(native.OpArithmeticId, []int{int(objects.OperatorXor)}),
+	token.SHL_ASSIGN:     NewTokenAdapter(native.OpArithmeticId, []int{int(objects.OperatorShl)}),
+	token.SHR_ASSIGN:     NewTokenAdapter(native.OpArithmeticId, []int{int(objects.OperatorShr)}),
+	token.AND_NOT_ASSIGN: NewTokenAdapter(native.OpArithmeticId, []int{int(objects.OperatorAndNot)}),
 }
 
 // _unaryAdapter maps unary token types to their corresponding TokenAdapter configurations for bytecode operations.

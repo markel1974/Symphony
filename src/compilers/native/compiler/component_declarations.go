@@ -629,33 +629,31 @@ func (c *Declarations) handleInterfaceAssign(pos token.Pos, iSymbol *tables.Symb
 	return nil
 }
 
-// handleVariableAssign processes variable declarations and assignments, handling various cases like ':=' and '='.
-// It resolves symbols, infers types, and manages scope and structure assignments based on the given token and expressions.
-// Returns an error if the operation fails or if invalid assignments are attempted.
-func (c *Declarations) handleVariableAssign(pos token.Pos, tok token.Token, rhsIn ast.Expr, lhsIn ast.Expr, inferredTypeName string) error {
+// handleVariableAssign processes variable assignments, including definitions, updates, and complex assignments.
+// It handles identifiers, indexed expressions, selector expressions, and pointer dereferences as the left-hand side.
+// The method supports different assignment operators and validates compatibility with defined scopes and symbols.
+func (c *Declarations) handleVariableAssignNew(pos token.Pos, tok token.Token, rhsIn ast.Expr, lhsIn ast.Expr, inferredTypeName string) error {
 	switch lhs := lhsIn.(type) {
 	case *ast.Ident:
 		if lhs.Name == tables.UndefinedSymbol {
-			// if is '_', we don't create a symbol, simply discard the corresponding value from the top of the stack.
 			if _, err := c.scopes.Emit(pos, native.OpPopId); err != nil {
 				return err
 			}
 			return nil
 		}
+
 		switch tok {
 		case token.DEFINE:
 			symbol, err := c.scopes.SymbolDefine(lhs.Name)
 			if err != nil {
 				return err
 			}
-			//must be a concrete value
 			c.definitionTable.InferAssign(symbol, inferredTypeName, rhsIn)
 			if err = c.scopes.EmitSymbolDefineAndPop(pos, symbol); err != nil {
 				return err
 			}
 			return nil
 		case token.ASSIGN:
-			// Case for normal assignment '='
 			symbol, ok := c.scopes.SymbolResolve(lhs.Name)
 			if !ok {
 				return fmt.Errorf("[handleVariableAssign] undefined variable: %s", lhs.Name)
@@ -681,96 +679,388 @@ func (c *Declarations) handleVariableAssign(pos token.Pos, tok token.Token, rhsI
 			}
 			return nil
 		default:
-			// TODO see BinaryAdapterFor token.AND_ASSIGN, token.OR_ASSIGN, etc.
-			return fmt.Errorf("[handleVariableAssign] invalid token %s for variable assignment", tok)
+			symbol, ok := c.scopes.SymbolResolve(lhs.Name)
+			if !ok {
+				return fmt.Errorf("[handleVariableAssign] undefined variable: %s", lhs.Name)
+			}
+			if err := c.scopes.EmitSymbolGet(pos, symbol); err != nil {
+				return err
+			}
+			if err := c.compile(rhsIn); err != nil {
+				return err
+			}
+			adapter, ok := BinaryAdapterFor(tok)
+			if !ok {
+				return fmt.Errorf("[handleVariableAssign] unsupported assignment operator: %s", tok)
+			}
+			if _, err := c.scopes.Emit(pos, adapter.op, adapter.arguments...); err != nil {
+				return err
+			}
+			if err := c.scopes.EmitSymbolSetAndPop(pos, symbol); err != nil {
+				return err
+			}
+			return nil
+		}
+
+	case *ast.IndexExpr:
+		switch tok {
+		case token.DEFINE:
+			return fmt.Errorf("[handleVariableAssign] cannot define variable with index assignment using :=")
+		case token.ASSIGN:
+			if err := c.compile(rhsIn); err != nil {
+				return err
+			}
+			if err := c.compile(lhs.X); err != nil {
+				return err
+			}
+			if err := c.compile(lhs.Index); err != nil {
+				return err
+			}
+			if _, err := c.scopes.Emit(pos, native.OpIndexSetId); err != nil {
+				return err
+			}
+			return nil
+		default:
+			if err := c.compile(lhs.X); err != nil {
+				return err
+			}
+			if err := c.compile(lhs.Index); err != nil {
+				return err
+			}
+			if _, err := c.scopes.Emit(pos, native.OpIndexGetId); err != nil {
+				return err
+			}
+			if err := c.compile(rhsIn); err != nil {
+				return err
+			}
+			adapter, ok := BinaryAdapterFor(tok)
+			if !ok {
+				return fmt.Errorf("[handleVariableAssign] unsupported assignment operator: %s", tok)
+			}
+			if _, err := c.scopes.Emit(pos, adapter.op, adapter.arguments...); err != nil {
+				return err
+			}
+			if err := c.compile(lhs.X); err != nil {
+				return err
+			}
+			if err := c.compile(lhs.Index); err != nil {
+				return err
+			}
+			if _, err := c.scopes.Emit(pos, native.OpIndexSetId); err != nil {
+				return err
+			}
+			return nil
+		}
+
+	case *ast.SelectorExpr:
+		switch tok {
+		case token.DEFINE:
+			return fmt.Errorf("[handleVariableAssign] cannot define a field with :=")
+		case token.ASSIGN:
+			if err := c.compile(rhsIn); err != nil {
+				return err
+			}
+			if err := c.compile(lhs.X); err != nil {
+				return err
+			}
+			fieldName := lhs.Sel.Name
+			keyConst := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, fieldName))
+			if _, err := c.scopes.Emit(pos, native.OpConstantId, keyConst); err != nil {
+				return err
+			}
+			if _, err := c.scopes.Emit(pos, native.OpIndexSetId); err != nil {
+				return err
+			}
+			return nil
+		default:
+			if err := c.compile(lhs.X); err != nil {
+				return err
+			}
+			fieldName := lhs.Sel.Name
+			keyConst := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, fieldName))
+			if _, err := c.scopes.Emit(pos, native.OpConstantId, keyConst); err != nil {
+				return err
+			}
+			if _, err := c.scopes.Emit(pos, native.OpIndexGetId); err != nil {
+				return err
+			}
+			if err := c.compile(rhsIn); err != nil {
+				return err
+			}
+			adapter, ok := BinaryAdapterFor(tok)
+			if !ok {
+				return fmt.Errorf("[handleVariableAssign] unsupported assignment operator: %s", tok)
+			}
+			if _, err := c.scopes.Emit(pos, adapter.op, adapter.arguments...); err != nil {
+				return err
+			}
+			if err := c.compile(lhs.X); err != nil {
+				return err
+			}
+			if _, err := c.scopes.Emit(pos, native.OpConstantId, keyConst); err != nil { // Field (di nuovo)
+				return err
+			}
+			if _, err := c.scopes.Emit(pos, native.OpIndexSetId); err != nil {
+				return err
+			}
+			return nil
+		}
+
+	case *ast.StarExpr:
+		switch tok {
+		case token.DEFINE:
+			return fmt.Errorf("[handleVariableAssign] cannot define a variable with dereference")
+		default:
+			if err := c.compile(rhsIn); err != nil {
+				return err
+			}
+			if err := c.compile(lhs.X); err != nil {
+				return err
+			}
+			if err := c.scopes.EmitAndPop(pos, native.OpDerefSetId); err != nil {
+				return err
+			}
+			return nil
+		}
+	default:
+		return fmt.Errorf("[handleVariableAssign] unsupported left-hand side in assignment: %T", lhs)
+	}
+}
+
+func (c *Declarations) handleVariableAssign(pos token.Pos, tok token.Token, rhsIn ast.Expr, lhsIn ast.Expr, inferredTypeName string) error {
+	switch lhs := lhsIn.(type) {
+	case *ast.Ident:
+		if lhs.Name == tables.UndefinedSymbol {
+			// if is '_', we don't create a symbol, simply discard the corresponding value from the top of the stack.
+			if _, err := c.scopes.Emit(pos, native.OpPopId); err != nil {
+				return err
+			}
+			return nil
+		}
+		switch tok {
+		case token.DEFINE:
+			symbol, err := c.scopes.SymbolDefine(lhs.Name)
+			if err != nil {
+				return err
+			}
+			c.definitionTable.InferAssign(symbol, inferredTypeName, rhsIn)
+			if err = c.scopes.EmitSymbolDefineAndPop(pos, symbol); err != nil {
+				return err
+			}
+			return nil
+		case token.ASSIGN:
+			symbol, ok := c.scopes.SymbolResolve(lhs.Name)
+			if !ok {
+				return fmt.Errorf("[handleVariableAssign] undefined variable: %s", lhs.Name)
+			}
+			if symbol.IsInterface() {
+				var rhsName string
+				if ident := tables.GetIdent(rhsIn); ident != nil {
+					rhsName = ident.Name
+				}
+				if len(rhsName) == 0 {
+					return fmt.Errorf("[handleVariableAssign] cannot assign interface to interface")
+				}
+				if assignedStructSymbol, ok := c.scopes.SymbolResolve(rhsName); ok && assignedStructSymbol.IsStruct() {
+					if err := c.handleInterfaceAssign(pos, symbol, assignedStructSymbol); err != nil {
+						return err
+					}
+				}
+			} else {
+				c.definitionTable.InferAssign(symbol, inferredTypeName, rhsIn)
+			}
+			if err := c.scopes.EmitSymbolSetAndPop(pos, symbol); err != nil {
+				return err
+			}
+			return nil
+		default:
+			symbol, ok := c.scopes.SymbolResolve(lhs.Name)
+			if !ok {
+				return fmt.Errorf("[handleVariableAssign] undefined variable: %s", lhs.Name)
+			}
+			if err := c.scopes.EmitSymbolGet(pos, symbol); err != nil {
+				return err
+			}
+			if err := c.compile(rhsIn); err != nil {
+				return err
+			}
+			adapter, ok := BinaryAdapterFor(tok)
+			if !ok {
+				return fmt.Errorf("[handleVariableAssign] unsupported assignment operator: %s", tok)
+			}
+			if _, err := c.scopes.Emit(pos, adapter.op, adapter.arguments...); err != nil {
+				return err
+			}
+			if err := c.scopes.EmitSymbolSetAndPop(pos, symbol); err != nil {
+				return err
+			}
+			return nil
 		}
 	case *ast.IndexExpr:
 		// Handles cases like 'myMap[key] = value' or 'mySlice[index] = value'
-		if tok == token.DEFINE {
+		switch tok {
+		case token.DEFINE:
 			return fmt.Errorf("[handleVariableAssign] cannot define variable with index assignment using :=")
-		}
-		tempSymbol, err := c.scopes.SymbolDefineUnique("__temp_assign_rhs")
-		if err != nil {
-			return err
-		}
-		if err = c.scopes.EmitSymbolSetAndPop(pos, tempSymbol); err != nil {
-			return err
-		}
-		if err = c.compile(lhs.X); err != nil { // Compiles 'm'
-			return err
-		}
-		if err = c.compile(lhs.Index); err != nil { // Compiles "three"
-			return err
-		}
-		if err = c.scopes.EmitSymbolGet(pos, tempSymbol); err != nil {
-			return err
-		}
-		if _, err = c.scopes.Emit(pos, native.OpIndexSetId); err != nil {
-			return err
-		}
-		return nil
-	case *ast.SelectorExpr:
-		if tok == token.DEFINE {
-			return fmt.Errorf("[handleVariableAssign] cannot define a field with :=")
-		}
-		// Try to use the fast path for simple receivers (e.g. myVar.Field)
-		if receiverIdent, ok := lhs.X.(*ast.Ident); ok {
-			if symbol, ok := c.scopes.SymbolResolve(receiverIdent.Name); ok {
-				// It's a known symbol, use specific Op...SelSet opcodes
-				// RHS value is already on stack, leave it there
-				// Push the field name as key.
-				fieldName := lhs.Sel.Name
-				keyConst := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, fieldName))
-				if _, err := c.scopes.Emit(pos, native.OpConstantId, keyConst); err != nil {
-					return err
-				}
-				// Stack is now: [..., value, "fieldName"]
-				const numSelectors = 1
-				op := native.OpLocalIndexId
-				if symbol.Scope() == tables.GlobalScope {
-					op = native.OpGlobalIndexId
-				}
-				if _, err := c.scopes.Emit(pos, op, numSelectors, symbol.Index()); err != nil {
-					return err
-				}
-				return nil
+		case token.ASSIGN:
+			tempSymbol, err := c.scopes.SymbolDefineUnique("__temp_assign_rhs")
+			if err != nil {
+				return err
 			}
+			if err = c.scopes.EmitSymbolSetAndPop(pos, tempSymbol); err != nil {
+				return err
+			}
+			if err = c.compile(lhs.X); err != nil { // Compiles 'm'
+				return err
+			}
+			if err = c.compile(lhs.Index); err != nil { // Compiles "three"
+				return err
+			}
+			if err = c.scopes.EmitSymbolGet(pos, tempSymbol); err != nil {
+				return err
+			}
+			if _, err = c.scopes.Emit(pos, native.OpIndexSetId); err != nil {
+				return err
+			}
+			return nil
+		default:
+			// Handles a[i] += v
+			// 1. Get
+			if err := c.compile(lhs.X); err != nil { // a
+				return err
+			}
+			if err := c.compile(lhs.Index); err != nil { // i
+				return err
+			}
+			if _, err := c.scopes.Emit(pos, native.OpIndexGetId); err != nil {
+				return err
+			}
+			// 2. Operate
+			if err := c.compile(rhsIn); err != nil { // v
+				return err
+			}
+			adapter, ok := BinaryAdapterFor(tok)
+			if !ok {
+				return fmt.Errorf("[handleVariableAssign] unsupported assignment operator: %s", tok)
+			}
+			if _, err := c.scopes.Emit(pos, adapter.op, adapter.arguments...); err != nil {
+				return err
+			}
+			// 3. Set
+			if err := c.compile(lhs.X); err != nil { // a
+				return err
+			}
+			if err := c.compile(lhs.Index); err != nil { // i
+				return err
+			}
+			if _, err := c.scopes.Emit(pos, native.OpIndexSetId); err != nil {
+				return err
+			}
+			return nil
 		}
-		// fallback to a general path for complex receivers (e.g. mySlice[0].Field)
-		tempSymbol, err := c.scopes.SymbolDefineUnique("__temp_assign_rhs")
-		if err != nil {
-			return err
+	case *ast.SelectorExpr:
+		switch tok {
+		case token.DEFINE:
+			return fmt.Errorf("[handleVariableAssign] cannot define a field with :=")
+		case token.ASSIGN:
+			// Try to use the fast path for simple receivers (e.g. myVar.Field)
+			if receiverIdent, ok := lhs.X.(*ast.Ident); ok {
+				if symbol, ok := c.scopes.SymbolResolve(receiverIdent.Name); ok {
+					// It's a known symbol, use specific Op...SelSet opcodes
+					// RHS value is already on stack, leave it there push the field name as key.
+					fieldName := lhs.Sel.Name
+					keyConst := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, fieldName))
+					if _, err := c.scopes.Emit(pos, native.OpConstantId, keyConst); err != nil {
+						return err
+					}
+					// Stack is now: [..., value, "fieldName"]
+					const numSelectors = 1
+					op := native.OpLocalIndexId
+					if symbol.Scope() == tables.GlobalScope {
+						op = native.OpGlobalIndexId
+					}
+					if _, err := c.scopes.Emit(pos, op, numSelectors, symbol.Index()); err != nil {
+						return err
+					}
+					return nil
+				}
+			}
+			// fallback to a general path for complex receivers (e.g. mySlice[0].Field)
+			tempSymbol, err := c.scopes.SymbolDefineUnique("__temp_assign_rhs")
+			if err != nil {
+				return err
+			}
+			if err = c.scopes.EmitSymbolSet(pos, tempSymbol); err != nil {
+				return err
+			}
+			if err = c.compile(lhs.X); err != nil {
+				return err
+			}
+			fieldName := lhs.Sel.Name
+			keyConst := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, fieldName))
+			if _, err = c.scopes.Emit(pos, native.OpConstantId, keyConst); err != nil {
+				return err
+			}
+			if err = c.scopes.EmitSymbolGet(pos, tempSymbol); err != nil {
+				return err
+			}
+			if err = c.scopes.EmitAndPop(pos, native.OpIndexSetId); err != nil {
+				return err
+			}
+			return nil
+		default:
+			// Handles s.Field += v
+			// 1. Get
+			if err := c.compile(lhs.X); err != nil { // s
+				return err
+			}
+			fieldName := lhs.Sel.Name
+			keyConst := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, fieldName))
+			if _, err := c.scopes.Emit(pos, native.OpConstantId, keyConst); err != nil {
+				return err
+			}
+			if _, err := c.scopes.Emit(pos, native.OpIndexGetId); err != nil {
+				return err
+			}
+			// 2. Operate
+			if err := c.compile(rhsIn); err != nil { // v
+				return err
+			}
+			adapter, ok := BinaryAdapterFor(tok)
+			if !ok {
+				return fmt.Errorf("[handleVariableAssign] unsupported assignment operator: %s", tok)
+			}
+			if _, err := c.scopes.Emit(pos, adapter.op, adapter.arguments...); err != nil {
+				return err
+			}
+			// 3. Set
+			if err := c.compile(lhs.X); err != nil { // s
+				return err
+			}
+			if _, err := c.scopes.Emit(pos, native.OpConstantId, keyConst); err != nil { // Field
+				return err
+			}
+			if _, err := c.scopes.Emit(pos, native.OpIndexSetId); err != nil {
+				return err
+			}
+			return nil
 		}
-		if err = c.scopes.EmitSymbolSet(pos, tempSymbol); err != nil {
-			return err
-		}
-		if err = c.compile(lhs.X); err != nil {
-			return err
-		}
-		fieldName := lhs.Sel.Name
-		keyConst := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, fieldName))
-		if _, err = c.scopes.Emit(pos, native.OpConstantId, keyConst); err != nil {
-			return err
-		}
-		if err = c.scopes.EmitSymbolGet(pos, tempSymbol); err != nil {
-			return err
-		}
-		if err = c.scopes.EmitAndPop(pos, native.OpIndexSetId); err != nil {
-			return err
-		}
-		return nil
 	case *ast.StarExpr:
 		// Handles cases like '*myVar = ...'
-		if tok == token.DEFINE {
+		switch tok {
+		case token.DEFINE:
 			return fmt.Errorf("[handleVariableAssign] cannot define a variable with dereference")
+		case token.ASSIGN:
+			if err := c.compile(lhs.X); err != nil {
+				return err
+			}
+			if err := c.scopes.EmitAndPop(pos, native.OpDerefSetId); err != nil {
+				return err
+			}
+			return nil
+		default:
+			return fmt.Errorf("[handleVariableAssign] unsupported left-hand side in assignment: %s -> %T", tok, lhs)
 		}
-		if err := c.compile(lhs.X); err != nil {
-			return err
-		}
-		if err := c.scopes.EmitAndPop(pos, native.OpDerefSetId); err != nil {
-			return err
-		}
-		return nil
+
 	default:
 		return fmt.Errorf("[handleVariableAssign] unsupported left-hand side in assignment: %T", lhs)
 	}
