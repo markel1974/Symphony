@@ -50,45 +50,45 @@ func (c *ControlFlow) Compile() error {
 // IfStmt compiles an if statement, handling both 'then' and optional 'else' blocks with associated bytecode instructions.
 func (c *ControlFlow) IfStmt(node *ast.IfStmt) error {
 	if err := c.compile(node.Cond); err != nil {
-		return err
+		return tables.NewCompilerError(c.fileSet, node, err.Error())
 	}
 	// emit conditional jump with temporary address
 	jumpNotTruthyPos, err := c.scopes.Emit(node.Pos(), native.OpJumpFalsyId, 9999)
 	if err != nil {
-		return err
+		return tables.NewCompilerError(c.fileSet, node, err.Error())
 	}
 	// compile 'then' block
 	if err = c.compile(node.Body); err != nil {
-		return err
+		return tables.NewCompilerError(c.fileSet, node, err.Error())
 	}
 	// if there's an 'else' block, emit jump to skip it
 	jumpToEndPos := 0
 	if node.Else != nil {
 		jumpToEndPos, err = c.scopes.Emit(node.Pos(), native.OpJumpId, 9999)
 		if err != nil {
-			return err
+			return tables.NewCompilerError(c.fileSet, node, err.Error())
 		}
 	}
 	scope, err := c.scopes.Current()
 	if err != nil {
-		return err
+		return tables.NewCompilerError(c.fileSet, node, err.Error())
 	}
 	// update conditional jump address
 	if err = c.scopes.ChangeOperand(node.Pos(), jumpNotTruthyPos, scope.InstructionsLen()); err != nil {
-		return err
+		return tables.NewCompilerError(c.fileSet, node, err.Error())
 	}
 	// compile 'else' block if it exists
 	if node.Else != nil {
 		if err = c.compile(node.Else); err != nil {
-			return err
+			return tables.NewCompilerError(c.fileSet, node, err.Error())
 		}
 		scope, err = c.scopes.Current()
 		if err != nil {
-			return err
+			return tables.NewCompilerError(c.fileSet, node, err.Error())
 		}
 		// update jump address to skip else
 		if err = c.scopes.ChangeOperand(node.Pos(), jumpToEndPos, scope.InstructionsLen()); err != nil {
-			return err
+			return tables.NewCompilerError(c.fileSet, node, err.Error())
 		}
 	}
 	return nil
@@ -98,13 +98,13 @@ func (c *ControlFlow) IfStmt(node *ast.IfStmt) error {
 func (c *ControlFlow) BranchStmt(node *ast.BranchStmt) error {
 	scope, scopeErr := c.scopes.Current()
 	if scopeErr != nil {
-		return scopeErr
+		return tables.NewCompilerError(c.fileSet, node, scopeErr.Error())
 	}
 	if node.Tok == token.BREAK {
 		if scope.CurrentSwitch() != nil {
 			breakJumpPos, err := c.scopes.Emit(node.Pos(), native.OpJumpId, 9999)
 			if err != nil {
-				return err
+				return tables.NewCompilerError(c.fileSet, node, err.Error())
 			}
 			if err = scope.AddEndJump(breakJumpPos); err != nil {
 				return tables.NewCompilerError(c.fileSet, node, err.Error())
@@ -112,7 +112,7 @@ func (c *ControlFlow) BranchStmt(node *ast.BranchStmt) error {
 		} else if scope.CurrentLoop() != nil { // Otherwise, check if we're in a loop
 			breakJumpPos, err := c.scopes.Emit(node.Pos(), native.OpJumpId, 9999)
 			if err != nil {
-				return err
+				return tables.NewCompilerError(c.fileSet, node, err.Error())
 			}
 			if err = scope.AddBreak(breakJumpPos); err != nil {
 				return tables.NewCompilerError(c.fileSet, node, err.Error())
@@ -127,10 +127,10 @@ func (c *ControlFlow) BranchStmt(node *ast.BranchStmt) error {
 		// Emit an unconditional jump with a temporary address
 		continueJumpPos, err := c.scopes.Emit(node.Pos(), native.OpJumpId, 9999)
 		if err != nil {
-			return err
+			return tables.NewCompilerError(c.fileSet, node, err.Error())
 		}
 		// add the position of this 'continue' to the loop context
-		if err := scope.AddContinue(continueJumpPos); err != nil {
+		if err = scope.AddContinue(continueJumpPos); err != nil {
 			return tables.NewCompilerError(c.fileSet, node, err.Error())
 		}
 		return nil
@@ -142,24 +142,25 @@ func (c *ControlFlow) BranchStmt(node *ast.BranchStmt) error {
 // SwitchStmt processes a given *ast.SwitchStmt node, handles scopes, and generates bytecode for a switch statement.
 // It manages compilation of the switch tag, case clauses, default clause, and handles necessary jump instructions.
 func (c *ControlFlow) SwitchStmt(node *ast.SwitchStmt) error {
-	scope, err := c.scopes.Current()
-	if err != nil {
-		return err
+	scope, scopeErr := c.scopes.Current()
+	if scopeErr != nil {
+		return tables.NewCompilerError(c.fileSet, node, scopeErr.Error())
 	}
 	scope.EnterSwitch()
 
 	// 1. Compile the expression (tag) and store it in a temporary variable to avoid recalculation.
 	var tagSymbol *tables.Symbol
 	if node.Tag != nil {
-		if err := c.compile(node.Tag); err != nil {
-			return err
-		}
-		tagSymbol, err = c.scopes.SymbolDefineUnique("__switch_tag")
+		err := c.compile(node.Tag)
 		if err != nil {
-			return err
+			return tables.NewCompilerError(c.fileSet, node, err.Error())
+		}
+		tagSymbol, err = c.scopes.SymbolDefineUnique("__switch_tag_")
+		if err != nil {
+			return tables.NewCompilerError(c.fileSet, node, err.Error())
 		}
 		if err = c.scopes.EmitSymbolDefineAndPop(node.Pos(), tagSymbol); err != nil {
-			return err
+			return tables.NewCompilerError(c.fileSet, node, err.Error())
 		}
 	}
 
@@ -177,46 +178,46 @@ func (c *ControlFlow) SwitchStmt(node *ast.SwitchStmt) error {
 			// Back-patch: connect previous case jumps to this one
 			afterPreviousCasePos := scope.InstructionsLen()
 			for _, pos := range jumpsToNextCase {
-				if err = c.scopes.ChangeOperand(node.Pos(), pos, afterPreviousCasePos); err != nil {
-					return err
+				if err := c.scopes.ChangeOperand(node.Pos(), pos, afterPreviousCasePos); err != nil {
+					return tables.NewCompilerError(c.fileSet, node, err.Error())
 				}
 			}
 			jumpsToNextCase = []int{}
 			// 3. Compile case condition (e.g. tag == val1)
 			if tagSymbol != nil {
-				if err = c.scopes.EmitSymbolGet(node.Pos(), tagSymbol); err != nil {
-					return err
+				if err := c.scopes.EmitSymbolGet(node.Pos(), tagSymbol); err != nil {
+					return tables.NewCompilerError(c.fileSet, node, err.Error())
 				}
 			}
-			if err = c.compile(clauseEntry); err != nil {
-				return err
+			if err := c.compile(clauseEntry); err != nil {
+				return tables.NewCompilerError(c.fileSet, node, err.Error())
 			}
 			eql, ok := BinaryAdapterFor(token.EQL)
 			if !ok {
 				return tables.NewCompilerError(c.fileSet, node, "unhandled binary op: %s", token.EQL)
 			}
 			if _, err := c.scopes.Emit(node.Pos(), eql.op, eql.arguments...); err != nil {
-				return err
+				return tables.NewCompilerError(c.fileSet, node, err.Error())
 			}
 			// 4. Jump to the next-case if the condition is false
 			jumpPos, err := c.scopes.Emit(node.Pos(), native.OpJumpFalsyId, 9999)
 			if err != nil {
-				return err
+				return tables.NewCompilerError(c.fileSet, node, err.Error())
 			}
 			jumpsToNextCase = append(jumpsToNextCase, jumpPos)
 			// 5. Compile case body
 			for _, stmt := range clause.Body {
-				if err := c.compile(stmt); err != nil {
-					return err
+				if err = c.compile(stmt); err != nil {
+					return tables.NewCompilerError(c.fileSet, node, err.Error())
 				}
 			}
 			// 6. add jump to end of switch (Go has no fall-through)
 			endJumpPos, err := c.scopes.Emit(node.Pos(), native.OpJumpId, 9999)
 			if err != nil {
-				return err
+				return tables.NewCompilerError(c.fileSet, node, err.Error())
 			}
-			if err := scope.AddEndJump(endJumpPos); err != nil {
-				return err
+			if err = scope.AddEndJump(endJumpPos); err != nil {
+				return tables.NewCompilerError(c.fileSet, node, err.Error())
 			}
 		}
 	}
@@ -224,13 +225,13 @@ func (c *ControlFlow) SwitchStmt(node *ast.SwitchStmt) error {
 	afterLastCasePos := scope.InstructionsLen()
 	for _, pos := range jumpsToNextCase {
 		if err := c.scopes.ChangeOperand(node.Pos(), pos, afterLastCasePos); err != nil {
-			return err
+			return tables.NewCompilerError(c.fileSet, node, err.Error())
 		}
 	}
 	if defaultClause != nil {
 		for _, stmt := range defaultClause.Body {
 			if err := c.compile(stmt); err != nil {
-				return err
+				return tables.NewCompilerError(c.fileSet, node, err.Error())
 			}
 		}
 	}
@@ -238,7 +239,7 @@ func (c *ControlFlow) SwitchStmt(node *ast.SwitchStmt) error {
 	afterSwitchPos := scope.InstructionsLen()
 	for _, pos := range scope.CurrentSwitch().EndJumps {
 		if err := c.scopes.ChangeOperand(node.Pos(), pos, afterSwitchPos); err != nil {
-			return err
+			return tables.NewCompilerError(c.fileSet, node, err.Error())
 		}
 	}
 	scope.LeaveSwitch()
@@ -247,21 +248,21 @@ func (c *ControlFlow) SwitchStmt(node *ast.SwitchStmt) error {
 
 // TypeSwitchStmt processes a type switch statement, handling case clauses, default clause, and generating necessary bytecode.
 func (c *ControlFlow) TypeSwitchStmt(node *ast.TypeSwitchStmt) error {
-	scope, err := c.scopes.Current()
-	if err != nil {
-		return err
+	scope, scopeErr := c.scopes.Current()
+	if scopeErr != nil {
+		return tables.NewCompilerError(c.fileSet, node, scopeErr.Error())
 	}
 	scope.EnterSwitch()
 
-	assignStmt, ok := node.Assign.(*ast.AssignStmt)
-	if !ok {
+	assignStmt, assignStmtOk := node.Assign.(*ast.AssignStmt)
+	if !assignStmtOk {
 		return tables.NewCompilerError(c.fileSet, node, "unexpected assign statement for type switch %w", node.Assign)
 	}
 	if len(assignStmt.Rhs) == 0 {
 		return tables.NewCompilerError(c.fileSet, node, "empty right hand side for type switch")
 	}
-	typeAssertExpr, ok := assignStmt.Rhs[0].(*ast.TypeAssertExpr)
-	if !ok {
+	typeAssertExpr, typeAssertExprOk := assignStmt.Rhs[0].(*ast.TypeAssertExpr)
+	if !typeAssertExprOk {
 		return tables.NewCompilerError(c.fileSet, node, "unexpected assign statement for type switch %w", assignStmt.Rhs[0])
 	}
 	interfaceExpr := typeAssertExpr.X
@@ -277,61 +278,61 @@ func (c *ControlFlow) TypeSwitchStmt(node *ast.TypeSwitchStmt) error {
 		}
 
 		if jumpToNextCasePos != -1 {
-			if err = c.scopes.ChangeOperand(node.Pos(), jumpToNextCasePos, scope.InstructionsLen()); err != nil {
-				return err
+			if err := c.scopes.ChangeOperand(node.Pos(), jumpToNextCasePos, scope.InstructionsLen()); err != nil {
+				return tables.NewCompilerError(c.fileSet, node, err.Error())
 			}
 		}
 
-		if err = c.compile(interfaceExpr); err != nil {
-			return err
+		if err := c.compile(interfaceExpr); err != nil {
+			return tables.NewCompilerError(c.fileSet, node, err.Error())
 		}
 		targetTypeName := clause.List[0].(*ast.Ident).Name
 		hasOk := 1 //default emit hasOk
 		constIndex := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, targetTypeName))
-		if _, err = c.scopes.Emit(node.Pos(), native.OpTypeAssertId, hasOk, constIndex); err != nil {
-			return err
+		if _, err := c.scopes.Emit(node.Pos(), native.OpTypeAssertId, hasOk, constIndex); err != nil {
+			return tables.NewCompilerError(c.fileSet, node, err.Error())
 		}
-
+		var err error
 		jumpToNextCasePos, err = c.scopes.Emit(node.Pos(), native.OpJumpFalsyId, 9999)
 		if err != nil {
-			return err
+			return tables.NewCompilerError(c.fileSet, node, err.Error())
 		}
 
 		// success path
 		if err = c.scopes.Enter(tables.LocalScope, ""); err != nil {
-			return err
+			return tables.NewCompilerError(c.fileSet, node, err.Error())
 		}
 		variableName := assignStmt.Lhs[0].(*ast.Ident).Name
 		caseVarSymbol, err := c.scopes.SymbolDefine(variableName)
 		if err != nil {
-			return err
+			return tables.NewCompilerError(c.fileSet, node, err.Error())
 		}
 		c.definitionTable.TypeAssign(caseVarSymbol, targetTypeName)
 
 		if err = c.scopes.EmitSymbolSetAndPop(node.Pos(), caseVarSymbol); err != nil {
-			return err
+			return tables.NewCompilerError(c.fileSet, node, err.Error())
 		}
 		for _, stmt := range clause.Body {
 			if err = c.compile(stmt); err != nil {
-				return err
+				return tables.NewCompilerError(c.fileSet, node, err.Error())
 			}
 		}
 		// 1. Before leaving the scope, save the last instruction generated within it.
 		innerScope, err := c.scopes.Current()
 		if err != nil {
-			return err
+			return tables.NewCompilerError(c.fileSet, node, err.Error())
 		}
 		lastInstructionInCase := innerScope.LastInstruction()
 
 		// 2. Now leave the scope and get the generated bytecode.
 		caseBytecode, source, err := c.scopes.Leave()
 		if err != nil {
-			return err
+			return tables.NewCompilerError(c.fileSet, node, err.Error())
 		}
 
 		// 3. add case bytecode to outer scope.
 		if _, err = c.scopes.InstructionsAppend(caseBytecode, source); err != nil {
-			return err
+			return tables.NewCompilerError(c.fileSet, node, err.Error())
 		}
 
 		// 4. Now, in the outer scope, check the instruction we saved.
@@ -339,7 +340,7 @@ func (c *ControlFlow) TypeSwitchStmt(node *ast.TypeSwitchStmt) error {
 		if lastInstructionInCase == nil || lastInstructionInCase.Opcode() != native.OpReturnId {
 			jumpPos, err := c.scopes.Emit(node.Pos(), native.OpJumpId, 9999)
 			if err != nil {
-				return err
+				return tables.NewCompilerError(c.fileSet, node, err.Error())
 			}
 			jumpsToEnd = append(jumpsToEnd, jumpPos)
 		}
@@ -348,14 +349,14 @@ func (c *ControlFlow) TypeSwitchStmt(node *ast.TypeSwitchStmt) error {
 	// Final landing for last failed case
 	if jumpToNextCasePos != -1 {
 		if err := c.scopes.ChangeOperand(node.Pos(), jumpToNextCasePos, scope.InstructionsLen()); err != nil {
-			return err
+			return tables.NewCompilerError(c.fileSet, node, err.Error())
 		}
 	}
 
 	// Clean the stack from last remaining 'result' (undefined)
 	if len(node.Body.List) > 0 {
 		if _, err := c.scopes.Emit(node.Pos(), native.OpPopId); err != nil {
-			return err
+			return tables.NewCompilerError(c.fileSet, node, err.Error())
 		}
 	}
 
@@ -363,7 +364,7 @@ func (c *ControlFlow) TypeSwitchStmt(node *ast.TypeSwitchStmt) error {
 	if defaultClause := c.findDefault(node.Body); defaultClause != nil {
 		for _, stmt := range defaultClause.Body {
 			if err := c.compile(stmt); err != nil {
-				return err
+				return tables.NewCompilerError(c.fileSet, node, err.Error())
 			}
 		}
 	}
@@ -372,12 +373,12 @@ func (c *ControlFlow) TypeSwitchStmt(node *ast.TypeSwitchStmt) error {
 	endPos := scope.InstructionsLen()
 	for _, pos := range jumpsToEnd {
 		if err := c.scopes.ChangeOperand(node.Pos(), pos, endPos); err != nil {
-			return err
+			return tables.NewCompilerError(c.fileSet, node, err.Error())
 		}
 	}
 	for _, pos := range scope.CurrentSwitch().EndJumps {
 		if err := c.scopes.ChangeOperand(node.Pos(), pos, endPos); err != nil {
-			return err
+			return tables.NewCompilerError(c.fileSet, node, err.Error())
 		}
 	}
 
