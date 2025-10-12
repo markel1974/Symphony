@@ -705,7 +705,7 @@ func (c *Declarations) handleVariableAssignNew(pos token.Pos, tok token.Token, r
 	case *ast.IndexExpr:
 		switch tok {
 		case token.DEFINE:
-			return fmt.Errorf("[handleVariableAssign] cannot define variable with index assignment using :=")
+			return fmt.Errorf("[handleVariableAssign] cannot define variable with index assignment using %s", tok)
 		case token.ASSIGN:
 			if err := c.compile(rhsIn); err != nil {
 				return err
@@ -755,7 +755,7 @@ func (c *Declarations) handleVariableAssignNew(pos token.Pos, tok token.Token, r
 	case *ast.SelectorExpr:
 		switch tok {
 		case token.DEFINE:
-			return fmt.Errorf("[handleVariableAssign] cannot define a field with :=")
+			return fmt.Errorf("[handleVariableAssign] cannot define a field using %s", tok)
 		case token.ASSIGN:
 			if err := c.compile(rhsIn); err != nil {
 				return err
@@ -809,7 +809,7 @@ func (c *Declarations) handleVariableAssignNew(pos token.Pos, tok token.Token, r
 	case *ast.StarExpr:
 		switch tok {
 		case token.DEFINE:
-			return fmt.Errorf("[handleVariableAssign] cannot define a variable with dereference")
+			return fmt.Errorf("[handleVariableAssign] cannot define a dereferenced variable using %s", tok)
 		default:
 			if err := c.compile(rhsIn); err != nil {
 				return err
@@ -902,7 +902,7 @@ func (c *Declarations) handleVariableAssign(pos token.Pos, tok token.Token, rhsI
 		case token.DEFINE:
 			return fmt.Errorf("[handleVariableAssign] cannot define variable with index assignment using :=")
 		case token.ASSIGN:
-			tempSymbol, err := c.scopes.SymbolDefineUnique("__temp_assign_rhs")
+			tempSymbol, err := c.scopes.SymbolDefineUnique("__tmp_index_assign_rhs_")
 			if err != nil {
 				return err
 			}
@@ -985,7 +985,8 @@ func (c *Declarations) handleVariableAssign(pos token.Pos, tok token.Token, rhsI
 				}
 			}
 			// fallback to a general path for complex receivers (e.g. mySlice[0].Field)
-			tempSymbol, err := c.scopes.SymbolDefineUnique("__temp_assign_rhs")
+			tempSymbol, err := c.scopes.SymbolDefineUnique("__tmp_selector_assign_rhs_")
+
 			if err != nil {
 				return err
 			}
@@ -1049,7 +1050,7 @@ func (c *Declarations) handleVariableAssign(pos token.Pos, tok token.Token, rhsI
 		switch tok {
 		case token.DEFINE:
 			return fmt.Errorf("[handleVariableAssign] cannot define a variable with dereference")
-		case token.ASSIGN:
+		default:
 			if err := c.compile(lhs.X); err != nil {
 				return err
 			}
@@ -1057,10 +1058,7 @@ func (c *Declarations) handleVariableAssign(pos token.Pos, tok token.Token, rhsI
 				return err
 			}
 			return nil
-		default:
-			return fmt.Errorf("[handleVariableAssign] unsupported left-hand side in assignment: %s -> %T", tok, lhs)
 		}
-
 	default:
 		return fmt.Errorf("[handleVariableAssign] unsupported left-hand side in assignment: %T", lhs)
 	}
