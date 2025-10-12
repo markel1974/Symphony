@@ -253,8 +253,18 @@ func (c *ControlFlow) TypeSwitchStmt(node *ast.TypeSwitchStmt) error {
 	}
 	scope.EnterSwitch()
 
-	assignStmt := node.Assign.(*ast.AssignStmt)
-	interfaceExpr := assignStmt.Rhs[0].(*ast.TypeAssertExpr).X
+	assignStmt, ok := node.Assign.(*ast.AssignStmt)
+	if !ok {
+		return tables.NewCompilerError(c.fileSet, node, "unexpected assign statement for type switch %w", node.Assign)
+	}
+	if len(assignStmt.Rhs) == 0 {
+		return tables.NewCompilerError(c.fileSet, node, "empty right hand side for type switch")
+	}
+	typeAssertExpr, ok := assignStmt.Rhs[0].(*ast.TypeAssertExpr)
+	if !ok {
+		return tables.NewCompilerError(c.fileSet, node, "unexpected assign statement for type switch %w", assignStmt.Rhs[0])
+	}
+	interfaceExpr := typeAssertExpr.X
 
 	var jumpsToEnd []int
 	var jumpToNextCasePos = -1
