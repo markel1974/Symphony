@@ -199,7 +199,7 @@ func (c *Declarations) ValueSpec(node *ast.ValueSpec) error {
 			} else {
 				symbol.SetObject(c.gk.NewString(objects.FrameStatic, symbol.Name()))
 			}
-			if err = c.scopes.EmitSymbolDefineAndPop(node.Pos(), symbol); err != nil {
+			if err = c.scopes.SymbolEmitDefineAndPop(node.Pos(), symbol); err != nil {
 				return err
 			}
 		}
@@ -213,10 +213,10 @@ func (c *Declarations) ValueSpec(node *ast.ValueSpec) error {
 			return err
 		}
 		if node.Type == nil {
-			if _, err = c.scopes.Emit(node.Pos(), native.OpNullId); err != nil {
+			if _, err = c.scopes.SymbolEmit(node.Pos(), native.OpNullId); err != nil {
 				return err
 			}
-			if err = c.scopes.EmitSymbolDefineAndPop(node.Pos(), symbol); err != nil {
+			if err = c.scopes.SymbolEmitDefineAndPop(node.Pos(), symbol); err != nil {
 				return err
 			}
 			continue
@@ -225,7 +225,7 @@ func (c *Declarations) ValueSpec(node *ast.ValueSpec) error {
 		// Check if the node type is a selector expression and extract its data
 		if selName, selId, ok := tables.GetSelectorData(node.Type); ok {
 			if ok = c.imports.EmitPackage(node.Pos(), selName, selId); ok {
-				if err = c.scopes.EmitSymbolDefineAndPop(node.Pos(), symbol); err != nil {
+				if err = c.scopes.SymbolEmitDefineAndPop(node.Pos(), symbol); err != nil {
 					return err
 				}
 				continue
@@ -242,11 +242,11 @@ func (c *Declarations) ValueSpec(node *ast.ValueSpec) error {
 			}
 		}
 
-		// Emit zero value for the type. For interfaces, pointers, slices and maps, the zero value is 'nil'
-		if _, err = c.scopes.Emit(node.Pos(), native.OpNullId); err != nil {
+		// SymbolEmit zero value for the type. For interfaces, pointers, slices and maps, the zero value is 'nil'
+		if _, err = c.scopes.SymbolEmit(node.Pos(), native.OpNullId); err != nil {
 			return err
 		}
-		if err = c.scopes.EmitSymbolDefineAndPop(node.Pos(), symbol); err != nil {
+		if err = c.scopes.SymbolEmitDefineAndPop(node.Pos(), symbol); err != nil {
 			return err
 		}
 	}
@@ -283,7 +283,7 @@ func (c *Declarations) BasicLit(node *ast.BasicLit) error {
 		return tables.NewCompilerError(c.fileSet, node, "unhandled literal: %s", node.Kind)
 	}
 	id := c.constants.Add("", obj)
-	if _, err := c.scopes.Emit(node.Pos(), native.OpConstantId, id); err != nil {
+	if _, err := c.scopes.SymbolEmit(node.Pos(), native.OpConstantId, id); err != nil {
 		return err
 	}
 	return nil
@@ -293,17 +293,17 @@ func (c *Declarations) BasicLit(node *ast.BasicLit) error {
 func (c *Declarations) Ident(node *ast.Ident) error {
 	switch node.Name {
 	case "true":
-		if _, err := c.scopes.Emit(node.Pos(), native.OpTrueId); err != nil {
+		if _, err := c.scopes.SymbolEmit(node.Pos(), native.OpTrueId); err != nil {
 			return err
 		}
 		return nil
 	case "false":
-		if _, err := c.scopes.Emit(node.Pos(), native.OpFalseId); err != nil {
+		if _, err := c.scopes.SymbolEmit(node.Pos(), native.OpFalseId); err != nil {
 			return err
 		}
 		return nil
 	case "nil":
-		if _, err := c.scopes.Emit(node.Pos(), native.OpNullId); err != nil {
+		if _, err := c.scopes.SymbolEmit(node.Pos(), native.OpNullId); err != nil {
 			return err
 		}
 	}
@@ -316,7 +316,7 @@ func (c *Declarations) Ident(node *ast.Ident) error {
 		return nil
 		//return NewCompilerError(c.FileSet, node,"[Ident] undefined variable: %s", node.Name)
 	}
-	if err := c.scopes.EmitSymbolGet(node.Pos(), symbol); err != nil {
+	if err := c.scopes.SymbolEmitGet(node.Pos(), symbol); err != nil {
 		return err
 	}
 	return nil
@@ -376,7 +376,7 @@ func (c *Declarations) AssignStmt(node *ast.AssignStmt) error {
 		if argCount > 1 {
 			hasOk = 1
 		}
-		if _, err := c.scopes.Emit(node.Pos(), native.OpTypeAssertId, hasOk, constIndex); err != nil {
+		if _, err := c.scopes.SymbolEmit(node.Pos(), native.OpTypeAssertId, hasOk, constIndex); err != nil {
 			return tables.NewCompilerError(c.fileSet, node, err.Error())
 		}
 		rhsContainer = make([]*rhs, len(node.Lhs))
@@ -427,7 +427,7 @@ func (c *Declarations) CompositeLit(node *ast.CompositeLit) error {
 				return err
 			}
 		}
-		if _, err := c.scopes.Emit(node.Pos(), native.OpCreateArrayId, len(node.Elts)); err != nil {
+		if _, err := c.scopes.SymbolEmit(node.Pos(), native.OpCreateArrayId, len(node.Elts)); err != nil {
 			return err
 		}
 		return nil
@@ -447,7 +447,7 @@ func (c *Declarations) CompositeLit(node *ast.CompositeLit) error {
 		}
 		for _, field := range structFields {
 			keyIdx := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, field.Name()))
-			if _, err = c.scopes.Emit(node.Pos(), native.OpConstantId, keyIdx); err != nil {
+			if _, err = c.scopes.SymbolEmit(node.Pos(), native.OpConstantId, keyIdx); err != nil {
 				return err
 			}
 			if field.Node() != nil {
@@ -457,22 +457,22 @@ func (c *Declarations) CompositeLit(node *ast.CompositeLit) error {
 			} else {
 				ref := strings.TrimSpace(strings.ToLower(field.Kind()))
 				if valIdx, ok := c.initRef[ref]; ok {
-					if _, err = c.scopes.Emit(node.Pos(), native.OpConstantId, valIdx); err != nil {
+					if _, err = c.scopes.SymbolEmit(node.Pos(), native.OpConstantId, valIdx); err != nil {
 						return err
 					}
 				} else {
-					if _, err = c.scopes.Emit(node.Pos(), native.OpNullId); err != nil {
+					if _, err = c.scopes.SymbolEmit(node.Pos(), native.OpNullId); err != nil {
 						return err
 					}
 				}
 			}
 		}
 		structNameIdx := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, structName))
-		if _, err = c.scopes.Emit(node.Pos(), native.OpConstantId, structNameIdx); err != nil {
+		if _, err = c.scopes.SymbolEmit(node.Pos(), native.OpConstantId, structNameIdx); err != nil {
 			return tables.NewCompilerError(c.fileSet, node, err.Error())
 		}
 		structLen := len(structFields) * 2
-		if _, err = c.scopes.Emit(node.Pos(), native.OpCreateStructId, structLen); err != nil {
+		if _, err = c.scopes.SymbolEmit(node.Pos(), native.OpCreateStructId, structLen); err != nil {
 			return err
 		}
 		return nil
@@ -482,7 +482,7 @@ func (c *Declarations) CompositeLit(node *ast.CompositeLit) error {
 				return err
 			}
 		}
-		if _, err := c.scopes.Emit(node.Pos(), native.OpCreateArrayId, len(node.Elts)); err != nil {
+		if _, err := c.scopes.SymbolEmit(node.Pos(), native.OpCreateArrayId, len(node.Elts)); err != nil {
 			return err
 		}
 		return nil
@@ -496,7 +496,7 @@ func (c *Declarations) CompositeLit(node *ast.CompositeLit) error {
 				return err
 			}
 		}
-		if _, err := c.scopes.Emit(node.Pos(), native.OpCreateMapId, len(node.Elts)*2); err != nil {
+		if _, err := c.scopes.SymbolEmit(node.Pos(), native.OpCreateMapId, len(node.Elts)*2); err != nil {
 			return err
 		}
 		return nil
@@ -526,7 +526,7 @@ func (c *Declarations) StarExpr(node *ast.StarExpr) error {
 	if err := c.compile(node.X); err != nil {
 		return err
 	}
-	_, err := c.scopes.Emit(node.Pos(), native.OpDerefGetId)
+	_, err := c.scopes.SymbolEmit(node.Pos(), native.OpDerefGetId)
 	return err
 }
 
@@ -540,8 +540,8 @@ func (c *Declarations) IndexExpr(node *ast.IndexExpr) error {
 	if err := c.compile(node.Index); err != nil {
 		return err
 	}
-	// Emit OpIndexGet instruction. The VM will take the index and container from the stack and perform the access.
-	_, err := c.scopes.Emit(node.Pos(), native.OpIndexGetId)
+	// SymbolEmit OpIndexGet instruction. The VM will take the index and container from the stack and perform the access.
+	_, err := c.scopes.SymbolEmit(node.Pos(), native.OpIndexGetId)
 	return err
 }
 
@@ -554,9 +554,9 @@ func (c *Declarations) MapType(node *ast.MapType) error {
 	mapPrototype := c.gk.NewMap(objects.FrameStatic, make(map[string]objects.IObject))
 	constIndex := c.constants.AddOrGet("", mapPrototype)
 
-	// Emit the opcode to push this constant prototype onto the stack.
+	// SymbolEmit the opcode to push this constant prototype onto the stack.
 	// The 'make' function at runtime will inspect its TypeName.
-	if _, err := c.scopes.Emit(node.Pos(), native.OpConstantId, constIndex); err != nil {
+	if _, err := c.scopes.SymbolEmit(node.Pos(), native.OpConstantId, constIndex); err != nil {
 		return err
 	}
 	return nil
@@ -571,9 +571,9 @@ func (c *Declarations) ArrayType(node *ast.ArrayType) error {
 	arrayProtoType := c.gk.NewArray(objects.FrameStatic, []objects.IObject{})
 	constIndex := c.constants.AddOrGet("", arrayProtoType)
 
-	// Emit the opcode to push this constant prototype onto the stack.
+	// SymbolEmit the opcode to push this constant prototype onto the stack.
 	// The 'make' function at runtime will inspect its TypeName.
-	if _, err := c.scopes.Emit(node.Pos(), native.OpConstantId, constIndex); err != nil {
+	if _, err := c.scopes.SymbolEmit(node.Pos(), native.OpConstantId, constIndex); err != nil {
 		return err
 	}
 	return nil
@@ -581,7 +581,7 @@ func (c *Declarations) ArrayType(node *ast.ArrayType) error {
 
 // handleInterfaceDefine handles the process of defining an interface, ensuring proper symbol emission and assignment.
 func (c *Declarations) handleInterfaceDefine(pos token.Pos, iSymbol *tables.Symbol, concreteSymbol *tables.Symbol) error {
-	if err := c.scopes.EmitSymbolGet(pos, concreteSymbol); err != nil {
+	if err := c.scopes.SymbolEmitGet(pos, concreteSymbol); err != nil {
 		return err
 	}
 	if err := c.handleInterfaceAssign(pos, iSymbol, concreteSymbol); err != nil {
@@ -609,7 +609,7 @@ func (c *Declarations) handleInterfaceAssign(pos token.Pos, iSymbol *tables.Symb
 	for _, requiredMethod := range interfaceDesc.Methods {
 		// Push method name as string constant
 		methodNameConst := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, requiredMethod.Name))
-		if _, err := c.scopes.Emit(pos, native.OpConstantId, methodNameConst); err != nil {
+		if _, err := c.scopes.SymbolEmit(pos, native.OpConstantId, methodNameConst); err != nil {
 			return err
 		}
 		// Push method function
@@ -618,12 +618,12 @@ func (c *Declarations) handleInterfaceAssign(pos token.Pos, iSymbol *tables.Symb
 		if !ok {
 			return fmt.Errorf("internal compiler error: could not resolve method %s for struct %s", requiredMethod.Name, structName)
 		}
-		if err := c.scopes.EmitSymbolGet(pos, methodSymbol); err != nil {
+		if err := c.scopes.SymbolEmitGet(pos, methodSymbol); err != nil {
 			return err
 		}
 	}
-	// Emit OpCreateInterface opcode to create the object
-	if _, err := c.scopes.Emit(pos, native.OpCreateInterfaceId, len(interfaceDesc.Methods)); err != nil {
+	// SymbolEmit OpCreateInterface opcode to create the object
+	if _, err := c.scopes.SymbolEmit(pos, native.OpCreateInterfaceId, len(interfaceDesc.Methods)); err != nil {
 		return err
 	}
 	return nil
@@ -636,7 +636,7 @@ func (c *Declarations) handleVariableAssignNew(pos token.Pos, tok token.Token, r
 	switch lhs := lhsIn.(type) {
 	case *ast.Ident:
 		if lhs.Name == tables.UndefinedSymbol {
-			if _, err := c.scopes.Emit(pos, native.OpPopId); err != nil {
+			if _, err := c.scopes.SymbolEmit(pos, native.OpPopId); err != nil {
 				return err
 			}
 			return nil
@@ -649,7 +649,7 @@ func (c *Declarations) handleVariableAssignNew(pos token.Pos, tok token.Token, r
 				return err
 			}
 			c.definitionTable.InferAssign(symbol, inferredTypeName, rhsIn)
-			if err = c.scopes.EmitSymbolDefineAndPop(pos, symbol); err != nil {
+			if err = c.scopes.SymbolEmitDefineAndPop(pos, symbol); err != nil {
 				return err
 			}
 			return nil
@@ -674,7 +674,7 @@ func (c *Declarations) handleVariableAssignNew(pos token.Pos, tok token.Token, r
 			} else {
 				c.definitionTable.InferAssign(symbol, inferredTypeName, rhsIn)
 			}
-			if err := c.scopes.EmitSymbolSetAndPop(pos, symbol); err != nil {
+			if err := c.scopes.SymbolEmitSetAndPop(pos, symbol); err != nil {
 				return err
 			}
 			return nil
@@ -683,7 +683,7 @@ func (c *Declarations) handleVariableAssignNew(pos token.Pos, tok token.Token, r
 			if !ok {
 				return fmt.Errorf("[handleVariableAssign] undefined variable: %s", lhs.Name)
 			}
-			if err := c.scopes.EmitSymbolGet(pos, symbol); err != nil {
+			if err := c.scopes.SymbolEmitGet(pos, symbol); err != nil {
 				return err
 			}
 			if err := c.compile(rhsIn); err != nil {
@@ -693,10 +693,10 @@ func (c *Declarations) handleVariableAssignNew(pos token.Pos, tok token.Token, r
 			if !ok {
 				return fmt.Errorf("[handleVariableAssign] unsupported assignment operator: %s", tok)
 			}
-			if _, err := c.scopes.Emit(pos, adapter.op, adapter.arguments...); err != nil {
+			if _, err := c.scopes.SymbolEmit(pos, adapter.op, adapter.arguments...); err != nil {
 				return err
 			}
-			if err := c.scopes.EmitSymbolSetAndPop(pos, symbol); err != nil {
+			if err := c.scopes.SymbolEmitSetAndPop(pos, symbol); err != nil {
 				return err
 			}
 			return nil
@@ -716,7 +716,7 @@ func (c *Declarations) handleVariableAssignNew(pos token.Pos, tok token.Token, r
 			if err := c.compile(lhs.Index); err != nil {
 				return err
 			}
-			if _, err := c.scopes.Emit(pos, native.OpIndexSetId); err != nil {
+			if _, err := c.scopes.SymbolEmit(pos, native.OpIndexSetId); err != nil {
 				return err
 			}
 			return nil
@@ -727,7 +727,7 @@ func (c *Declarations) handleVariableAssignNew(pos token.Pos, tok token.Token, r
 			if err := c.compile(lhs.Index); err != nil {
 				return err
 			}
-			if _, err := c.scopes.Emit(pos, native.OpIndexGetId); err != nil {
+			if _, err := c.scopes.SymbolEmit(pos, native.OpIndexGetId); err != nil {
 				return err
 			}
 			if err := c.compile(rhsIn); err != nil {
@@ -737,7 +737,7 @@ func (c *Declarations) handleVariableAssignNew(pos token.Pos, tok token.Token, r
 			if !ok {
 				return fmt.Errorf("[handleVariableAssign] unsupported assignment operator: %s", tok)
 			}
-			if _, err := c.scopes.Emit(pos, adapter.op, adapter.arguments...); err != nil {
+			if _, err := c.scopes.SymbolEmit(pos, adapter.op, adapter.arguments...); err != nil {
 				return err
 			}
 			if err := c.compile(lhs.X); err != nil {
@@ -746,7 +746,7 @@ func (c *Declarations) handleVariableAssignNew(pos token.Pos, tok token.Token, r
 			if err := c.compile(lhs.Index); err != nil {
 				return err
 			}
-			if _, err := c.scopes.Emit(pos, native.OpIndexSetId); err != nil {
+			if _, err := c.scopes.SymbolEmit(pos, native.OpIndexSetId); err != nil {
 				return err
 			}
 			return nil
@@ -765,10 +765,10 @@ func (c *Declarations) handleVariableAssignNew(pos token.Pos, tok token.Token, r
 			}
 			fieldName := lhs.Sel.Name
 			keyConst := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, fieldName))
-			if _, err := c.scopes.Emit(pos, native.OpConstantId, keyConst); err != nil {
+			if _, err := c.scopes.SymbolEmit(pos, native.OpConstantId, keyConst); err != nil {
 				return err
 			}
-			if _, err := c.scopes.Emit(pos, native.OpIndexSetId); err != nil {
+			if _, err := c.scopes.SymbolEmit(pos, native.OpIndexSetId); err != nil {
 				return err
 			}
 			return nil
@@ -778,10 +778,10 @@ func (c *Declarations) handleVariableAssignNew(pos token.Pos, tok token.Token, r
 			}
 			fieldName := lhs.Sel.Name
 			keyConst := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, fieldName))
-			if _, err := c.scopes.Emit(pos, native.OpConstantId, keyConst); err != nil {
+			if _, err := c.scopes.SymbolEmit(pos, native.OpConstantId, keyConst); err != nil {
 				return err
 			}
-			if _, err := c.scopes.Emit(pos, native.OpIndexGetId); err != nil {
+			if _, err := c.scopes.SymbolEmit(pos, native.OpIndexGetId); err != nil {
 				return err
 			}
 			if err := c.compile(rhsIn); err != nil {
@@ -791,16 +791,16 @@ func (c *Declarations) handleVariableAssignNew(pos token.Pos, tok token.Token, r
 			if !ok {
 				return fmt.Errorf("[handleVariableAssign] unsupported assignment operator: %s", tok)
 			}
-			if _, err := c.scopes.Emit(pos, adapter.op, adapter.arguments...); err != nil {
+			if _, err := c.scopes.SymbolEmit(pos, adapter.op, adapter.arguments...); err != nil {
 				return err
 			}
 			if err := c.compile(lhs.X); err != nil {
 				return err
 			}
-			if _, err := c.scopes.Emit(pos, native.OpConstantId, keyConst); err != nil { // Field (di nuovo)
+			if _, err := c.scopes.SymbolEmit(pos, native.OpConstantId, keyConst); err != nil { // Field (di nuovo)
 				return err
 			}
-			if _, err := c.scopes.Emit(pos, native.OpIndexSetId); err != nil {
+			if _, err := c.scopes.SymbolEmit(pos, native.OpIndexSetId); err != nil {
 				return err
 			}
 			return nil
@@ -817,7 +817,7 @@ func (c *Declarations) handleVariableAssignNew(pos token.Pos, tok token.Token, r
 			if err := c.compile(lhs.X); err != nil {
 				return err
 			}
-			if err := c.scopes.EmitAndPop(pos, native.OpDerefSetId); err != nil {
+			if err := c.scopes.SymbolEmitAndPop(pos, native.OpDerefSetId); err != nil {
 				return err
 			}
 			return nil
@@ -832,7 +832,7 @@ func (c *Declarations) handleVariableAssign(pos token.Pos, tok token.Token, rhsI
 	case *ast.Ident:
 		if lhs.Name == tables.UndefinedSymbol {
 			// if is '_', we don't create a symbol, simply discard the corresponding value from the top of the stack.
-			if _, err := c.scopes.Emit(pos, native.OpPopId); err != nil {
+			if _, err := c.scopes.SymbolEmit(pos, native.OpPopId); err != nil {
 				return err
 			}
 			return nil
@@ -844,7 +844,7 @@ func (c *Declarations) handleVariableAssign(pos token.Pos, tok token.Token, rhsI
 				return err
 			}
 			c.definitionTable.InferAssign(symbol, inferredTypeName, rhsIn)
-			if err = c.scopes.EmitSymbolDefineAndPop(pos, symbol); err != nil {
+			if err = c.scopes.SymbolEmitDefineAndPop(pos, symbol); err != nil {
 				return err
 			}
 			return nil
@@ -869,7 +869,7 @@ func (c *Declarations) handleVariableAssign(pos token.Pos, tok token.Token, rhsI
 			} else {
 				c.definitionTable.InferAssign(symbol, inferredTypeName, rhsIn)
 			}
-			if err := c.scopes.EmitSymbolSetAndPop(pos, symbol); err != nil {
+			if err := c.scopes.SymbolEmitSetAndPop(pos, symbol); err != nil {
 				return err
 			}
 			return nil
@@ -878,7 +878,7 @@ func (c *Declarations) handleVariableAssign(pos token.Pos, tok token.Token, rhsI
 			if !ok {
 				return fmt.Errorf("[handleVariableAssign] undefined variable: %s", lhs.Name)
 			}
-			if err := c.scopes.EmitSymbolGet(pos, symbol); err != nil {
+			if err := c.scopes.SymbolEmitGet(pos, symbol); err != nil {
 				return err
 			}
 			if err := c.compile(rhsIn); err != nil {
@@ -888,10 +888,10 @@ func (c *Declarations) handleVariableAssign(pos token.Pos, tok token.Token, rhsI
 			if !ok {
 				return fmt.Errorf("[handleVariableAssign] unsupported assignment operator: %s", tok)
 			}
-			if _, err := c.scopes.Emit(pos, adapter.op, adapter.arguments...); err != nil {
+			if _, err := c.scopes.SymbolEmit(pos, adapter.op, adapter.arguments...); err != nil {
 				return err
 			}
-			if err := c.scopes.EmitSymbolSetAndPop(pos, symbol); err != nil {
+			if err := c.scopes.SymbolEmitSetAndPop(pos, symbol); err != nil {
 				return err
 			}
 			return nil
@@ -906,7 +906,7 @@ func (c *Declarations) handleVariableAssign(pos token.Pos, tok token.Token, rhsI
 			if err != nil {
 				return err
 			}
-			if err = c.scopes.EmitSymbolSetAndPop(pos, tempSymbol); err != nil {
+			if err = c.scopes.SymbolEmitSetAndPop(pos, tempSymbol); err != nil {
 				return err
 			}
 			if err = c.compile(lhs.X); err != nil { // Compiles 'm'
@@ -915,10 +915,10 @@ func (c *Declarations) handleVariableAssign(pos token.Pos, tok token.Token, rhsI
 			if err = c.compile(lhs.Index); err != nil { // Compiles "three"
 				return err
 			}
-			if err = c.scopes.EmitSymbolGet(pos, tempSymbol); err != nil {
+			if err = c.scopes.SymbolEmitGet(pos, tempSymbol); err != nil {
 				return err
 			}
-			if _, err = c.scopes.Emit(pos, native.OpIndexSetId); err != nil {
+			if _, err = c.scopes.SymbolEmit(pos, native.OpIndexSetId); err != nil {
 				return err
 			}
 			return nil
@@ -931,7 +931,7 @@ func (c *Declarations) handleVariableAssign(pos token.Pos, tok token.Token, rhsI
 			if err := c.compile(lhs.Index); err != nil { // i
 				return err
 			}
-			if _, err := c.scopes.Emit(pos, native.OpIndexGetId); err != nil {
+			if _, err := c.scopes.SymbolEmit(pos, native.OpIndexGetId); err != nil {
 				return err
 			}
 			// 2. Operate
@@ -942,7 +942,7 @@ func (c *Declarations) handleVariableAssign(pos token.Pos, tok token.Token, rhsI
 			if !ok {
 				return fmt.Errorf("[handleVariableAssign] unsupported assignment operator: %s", tok)
 			}
-			if _, err := c.scopes.Emit(pos, adapter.op, adapter.arguments...); err != nil {
+			if _, err := c.scopes.SymbolEmit(pos, adapter.op, adapter.arguments...); err != nil {
 				return err
 			}
 			// 3. Set
@@ -952,7 +952,7 @@ func (c *Declarations) handleVariableAssign(pos token.Pos, tok token.Token, rhsI
 			if err := c.compile(lhs.Index); err != nil { // i
 				return err
 			}
-			if _, err := c.scopes.Emit(pos, native.OpIndexSetId); err != nil {
+			if _, err := c.scopes.SymbolEmit(pos, native.OpIndexSetId); err != nil {
 				return err
 			}
 			return nil
@@ -969,7 +969,7 @@ func (c *Declarations) handleVariableAssign(pos token.Pos, tok token.Token, rhsI
 					// RHS value is already on stack, leave it there push the field name as key.
 					lhsFieldName := lhs.Sel.Name
 					keyConst := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, lhsFieldName))
-					if _, err := c.scopes.Emit(pos, native.OpConstantId, keyConst); err != nil {
+					if _, err := c.scopes.SymbolEmit(pos, native.OpConstantId, keyConst); err != nil {
 						return err
 					}
 					// Stack is now: [..., value, "lhsFieldName"]
@@ -978,7 +978,7 @@ func (c *Declarations) handleVariableAssign(pos token.Pos, tok token.Token, rhsI
 					if symbol.Scope() == tables.GlobalScope {
 						op = native.OpGlobalIndexId
 					}
-					if _, err := c.scopes.Emit(pos, op, numSelectors, symbol.Index()); err != nil {
+					if _, err := c.scopes.SymbolEmit(pos, op, numSelectors, symbol.Index()); err != nil {
 						return err
 					}
 					return nil
@@ -989,7 +989,7 @@ func (c *Declarations) handleVariableAssign(pos token.Pos, tok token.Token, rhsI
 			if err != nil {
 				return err
 			}
-			if err = c.scopes.EmitSymbolSet(pos, tmpSymbol); err != nil {
+			if err = c.scopes.SymbolEmitSet(pos, tmpSymbol); err != nil {
 				return err
 			}
 			if err = c.compile(lhs.X); err != nil {
@@ -997,13 +997,13 @@ func (c *Declarations) handleVariableAssign(pos token.Pos, tok token.Token, rhsI
 			}
 			lshFieldName := lhs.Sel.Name
 			keyConst := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, lshFieldName))
-			if _, err = c.scopes.Emit(pos, native.OpConstantId, keyConst); err != nil {
+			if _, err = c.scopes.SymbolEmit(pos, native.OpConstantId, keyConst); err != nil {
 				return err
 			}
-			if err = c.scopes.EmitSymbolGet(pos, tmpSymbol); err != nil {
+			if err = c.scopes.SymbolEmitGet(pos, tmpSymbol); err != nil {
 				return err
 			}
-			if err = c.scopes.EmitAndPop(pos, native.OpIndexSetId); err != nil {
+			if err = c.scopes.SymbolEmitAndPop(pos, native.OpIndexSetId); err != nil {
 				return err
 			}
 			return nil
@@ -1015,10 +1015,10 @@ func (c *Declarations) handleVariableAssign(pos token.Pos, tok token.Token, rhsI
 			}
 			lshFieldName := lhs.Sel.Name
 			keyConst := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, lshFieldName))
-			if _, err := c.scopes.Emit(pos, native.OpConstantId, keyConst); err != nil {
+			if _, err := c.scopes.SymbolEmit(pos, native.OpConstantId, keyConst); err != nil {
 				return err
 			}
-			if _, err := c.scopes.Emit(pos, native.OpIndexGetId); err != nil {
+			if _, err := c.scopes.SymbolEmit(pos, native.OpIndexGetId); err != nil {
 				return err
 			}
 			// 2. Operate
@@ -1029,17 +1029,17 @@ func (c *Declarations) handleVariableAssign(pos token.Pos, tok token.Token, rhsI
 			if !ok {
 				return fmt.Errorf("[handleVariableAssign] unsupported assignment operator: %s", tok)
 			}
-			if _, err := c.scopes.Emit(pos, adapter.op, adapter.arguments...); err != nil {
+			if _, err := c.scopes.SymbolEmit(pos, adapter.op, adapter.arguments...); err != nil {
 				return err
 			}
 			// 3. Set
 			if err := c.compile(lhs.X); err != nil { // s
 				return err
 			}
-			if _, err := c.scopes.Emit(pos, native.OpConstantId, keyConst); err != nil { // Field
+			if _, err := c.scopes.SymbolEmit(pos, native.OpConstantId, keyConst); err != nil { // Field
 				return err
 			}
-			if _, err := c.scopes.Emit(pos, native.OpIndexSetId); err != nil {
+			if _, err := c.scopes.SymbolEmit(pos, native.OpIndexSetId); err != nil {
 				return err
 			}
 			return nil
@@ -1053,7 +1053,7 @@ func (c *Declarations) handleVariableAssign(pos token.Pos, tok token.Token, rhsI
 			if err := c.compile(lhs.X); err != nil {
 				return err
 			}
-			if err := c.scopes.EmitAndPop(pos, native.OpDerefSetId); err != nil {
+			if err := c.scopes.SymbolEmitAndPop(pos, native.OpDerefSetId); err != nil {
 				return err
 			}
 			return nil

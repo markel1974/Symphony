@@ -32,7 +32,7 @@ func NewInterruptsReflect(r *Interrupts, factory references.IComponentFactory, p
 
 	r.PropertyAdd(reflectIrqRasterId, "Interrupt raster line", false, reflector.getIrqRaster, reflector.setIrqRaster)
 
-	_ = r.CommandAdd("Emit", "Emit(irq) - Emit handles triggering of an interrupt by setting the IRQ latch and activating the IRQ if it matches the mask.", r.Emit)
+	_ = r.CommandAdd("SymbolEmit", "SymbolEmit(irq) - SymbolEmit handles triggering of an interrupt by setting the IRQ latch and activating the IRQ if it matches the mask.", r.Emit)
 	_ = r.CommandAdd("WriteLatch", "WriteLatch(data) - WriteLatch updates the IRQ latch by clearing specific bits based on the provided data and verifies IRQ conditions.", r.WriteLatch)
 	_ = r.CommandAdd("WriteRasterLow", "WriteRasterLow(rasterY, data) - WriteRasterLow updates the low byte of the IRQ raster line with the given 8-bit data and triggers raster settings.", r.WriteRasterLow)
 	_ = r.CommandAdd("Reset", "Reset() - Reset clears the internal state, ensuring all interrupt-related settings are reset to their default values.", r.Reset)

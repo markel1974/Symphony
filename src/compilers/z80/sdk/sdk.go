@@ -175,12 +175,12 @@ func (z *Z80Package) alu(gk objects.IGateKeeper, frame int, args ...objects.IObj
 // Esempio nel transpiler Z80
 // ...
 // Prepara i parametri per la chiamata a z80.push16
-h.scopes.EmitSymbolGet(symbolDellIndirizzoDiRitorno) // Arg 0: valueToPush
-h.scopes.EmitSymbolGet(simboloDelRegistroSP)        // Arg 1: sp
-h.scopes.EmitSymbolGet(simboloDellaMemoria)         // Arg 2: memoryArray
+h.scopes.SymbolEmitGet(symbolDellIndirizzoDiRitorno) // Arg 0: valueToPush
+h.scopes.SymbolEmitGet(simboloDelRegistroSP)        // Arg 1: sp
+h.scopes.SymbolEmitGet(simboloDellaMemoria)         // Arg 2: memoryArray
 
 // Chiama la funzione della libreria
-h.imports.Emit("z80", "push16")
+h.imports.SymbolEmit("z80", "push16")
 // ...
 
 */

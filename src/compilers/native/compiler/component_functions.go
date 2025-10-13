@@ -156,7 +156,7 @@ func (c *Functions) funcBodyCompile(fd *tables.FunctionDescription) error {
 		return err
 	}
 	if scope.LastInstruction() == nil || scope.LastInstruction().Opcode() != native.OpReturnId {
-		if _, err = c.scopes.Emit(node.Pos(), native.OpReturnId, 0); err != nil {
+		if _, err = c.scopes.SymbolEmit(node.Pos(), native.OpReturnId, 0); err != nil {
 			return err
 		}
 	}
@@ -183,11 +183,11 @@ func (c *Functions) funcBodyCompile(fd *tables.FunctionDescription) error {
 	fnSymbol.SetReturnTypes(fd.ReturnTypes)
 
 	if node.Recv == nil && !c.scopes.IsRootScope() {
-		if _, err = c.scopes.Emit(node.Pos(), native.OpCreateClosureId, constIndex); err != nil {
+		if _, err = c.scopes.SymbolEmit(node.Pos(), native.OpCreateClosureId, constIndex); err != nil {
 			return err
 		}
 		symbol, _ := c.scopes.SymbolResolve(node.Name.Name)
-		if err = c.scopes.EmitSymbolSet(node.Pos(), symbol); err != nil {
+		if err = c.scopes.SymbolEmitSet(node.Pos(), symbol); err != nil {
 			return err
 		}
 	}
@@ -202,7 +202,7 @@ func (c *Functions) CallExpr(node *ast.CallExpr) error {
 	emitArgs := func(args []ast.Expr, definedSymbols map[ast.Expr]*tables.Symbol) error {
 		for _, arg := range args {
 			if tempSymbol, ok := definedSymbols[arg]; ok {
-				if err := c.scopes.EmitSymbolGet(node.Pos(), tempSymbol); err != nil {
+				if err := c.scopes.SymbolEmitGet(node.Pos(), tempSymbol); err != nil {
 					return err
 				}
 			} else {
@@ -220,7 +220,7 @@ func (c *Functions) CallExpr(node *ast.CallExpr) error {
 			return err
 		}
 		definedSymbols[expr] = tmpSymbol
-		if err = c.scopes.EmitSymbolSetAndPop(node.Pos(), tmpSymbol); err != nil {
+		if err = c.scopes.SymbolEmitSetAndPop(node.Pos(), tmpSymbol); err != nil {
 			return err
 		}
 		return nil
@@ -273,19 +273,19 @@ func (c *Functions) CallExpr(node *ast.CallExpr) error {
 				return err
 			}
 			spread := 0
-			if _, err := c.scopes.Emit(node.Pos(), native.OpCallId, len(node.Args), spread); err != nil {
+			if _, err := c.scopes.SymbolEmit(node.Pos(), native.OpCallId, len(node.Args), spread); err != nil {
 				return err
 			}
 			return nil
 		}
-		if err := c.scopes.EmitSymbolGet(node.Pos(), funcSymbol); err != nil {
+		if err := c.scopes.SymbolEmitGet(node.Pos(), funcSymbol); err != nil {
 			return err
 		}
 		if err := emitArgs(node.Args, tmpSymbolMap); err != nil {
 			return err
 		}
 		spread := 0
-		if _, err := c.scopes.Emit(node.Pos(), native.OpCallId, len(node.Args), spread); err != nil {
+		if _, err := c.scopes.SymbolEmit(node.Pos(), native.OpCallId, len(node.Args), spread); err != nil {
 			return err
 		}
 		return nil
@@ -301,7 +301,7 @@ func (c *Functions) CallExpr(node *ast.CallExpr) error {
 					return err
 				}
 				spread := 0
-				if _, err := c.scopes.Emit(node.Pos(), native.OpCallId, len(node.Args), spread); err != nil {
+				if _, err := c.scopes.SymbolEmit(node.Pos(), native.OpCallId, len(node.Args), spread); err != nil {
 					return err
 				}
 				return nil
@@ -326,7 +326,7 @@ func (c *Functions) CallExpr(node *ast.CallExpr) error {
 			}
 			selIdx := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, fun.Sel.Name))
 			spread := 0
-			if _, err := c.scopes.Emit(node.Pos(), native.OpCallInterfaceId, len(node.Args), spread, selIdx); err != nil {
+			if _, err := c.scopes.SymbolEmit(node.Pos(), native.OpCallInterfaceId, len(node.Args), spread, selIdx); err != nil {
 				return err
 			}
 			return nil
@@ -339,7 +339,7 @@ func (c *Functions) CallExpr(node *ast.CallExpr) error {
 			if !ok {
 				return tables.NewCompilerError(c.fileSet, node, "undefined method '%s' for type '%s'", fun.Sel.Name, receiverSymbol.StructName())
 			}
-			if err := c.scopes.EmitSymbolGet(node.Pos(), methodSymbol); err != nil {
+			if err := c.scopes.SymbolEmitGet(node.Pos(), methodSymbol); err != nil {
 				return err
 			}
 			finalArgs := append([]ast.Expr{fun.X}, node.Args...)
@@ -347,7 +347,7 @@ func (c *Functions) CallExpr(node *ast.CallExpr) error {
 				return err
 			}
 			spread := 0
-			if _, err := c.scopes.Emit(node.Pos(), native.OpCallId, len(finalArgs), spread); err != nil {
+			if _, err := c.scopes.SymbolEmit(node.Pos(), native.OpCallId, len(finalArgs), spread); err != nil {
 				return err
 			}
 			return nil
@@ -373,7 +373,7 @@ func (c *Functions) ExprStmt(node *ast.ExprStmt) error {
 	if err := c.compile(node.X); err != nil {
 		return err
 	}
-	if _, err := c.scopes.Emit(node.Pos(), native.OpPopId); err != nil {
+	if _, err := c.scopes.SymbolEmit(node.Pos(), native.OpPopId); err != nil {
 		return err
 	}
 	return nil
@@ -382,7 +382,7 @@ func (c *Functions) ExprStmt(node *ast.ExprStmt) error {
 // ReturnStmt compiles a return statement, handling cases for both void and value returns, and emits corresponding bytecode.
 func (c *Functions) ReturnStmt(node *ast.ReturnStmt) error {
 	if len(node.Results) == 0 {
-		if _, err := c.scopes.Emit(node.Pos(), native.OpReturnId, 0); err != nil {
+		if _, err := c.scopes.SymbolEmit(node.Pos(), native.OpReturnId, 0); err != nil {
 			return err
 		}
 		return nil
@@ -392,7 +392,7 @@ func (c *Functions) ReturnStmt(node *ast.ReturnStmt) error {
 			return err
 		}
 	}
-	if _, err := c.scopes.Emit(node.Pos(), native.OpReturnId, len(node.Results)); err != nil {
+	if _, err := c.scopes.SymbolEmit(node.Pos(), native.OpReturnId, len(node.Results)); err != nil {
 		return err
 	}
 	return nil
@@ -419,7 +419,7 @@ func (c *Functions) GoStmt(node *ast.GoStmt) error {
 		if err != nil {
 			return err
 		}
-		if _, err = c.scopes.Emit(node.Pos(), native.OpConstantId, closureIdx); err != nil {
+		if _, err = c.scopes.SymbolEmit(node.Pos(), native.OpConstantId, closureIdx); err != nil {
 			return err
 		}
 		for _, arg := range node.Call.Args {
@@ -429,7 +429,7 @@ func (c *Functions) GoStmt(node *ast.GoStmt) error {
 		}
 		spread := 0
 		args := len(node.Call.Args)
-		if _, err = c.scopes.Emit(node.Pos(), native.OpCallAsyncId, args, spread); err != nil {
+		if _, err = c.scopes.SymbolEmit(node.Pos(), native.OpCallAsyncId, args, spread); err != nil {
 			return err
 		}
 	default:
@@ -456,7 +456,7 @@ func (c *Functions) DeferStmt(node *ast.DeferStmt) error {
 	if _, err := c.handleClosure(closure); err != nil {
 		return err
 	}
-	if _, err := c.scopes.Emit(node.Pos(), native.OpDeferId); err != nil {
+	if _, err := c.scopes.SymbolEmit(node.Pos(), native.OpDeferId); err != nil {
 		return err
 	}
 	return nil
@@ -465,13 +465,13 @@ func (c *Functions) DeferStmt(node *ast.DeferStmt) error {
 // handleBuiltinInterface emits bytecode to handle the invocation of a method on a built-in interface symbol.
 // It resolves the receiver, method name, passes arguments, and emits a method call instruction.
 func (c *Functions) handleBuiltinInterface(pos token.Pos, receiverSymbol *tables.Symbol, methodName string, args []ast.Expr) error {
-	if err := c.scopes.EmitSymbolGet(pos, receiverSymbol); err != nil {
+	if err := c.scopes.SymbolEmitGet(pos, receiverSymbol); err != nil {
 		return err
 	}
 
 	//arguments must be passed as operands after method name
 	methodIdx := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, methodName))
-	if _, err := c.scopes.Emit(pos, native.OpConstantId, methodIdx); err != nil {
+	if _, err := c.scopes.SymbolEmit(pos, native.OpConstantId, methodIdx); err != nil {
 		return err
 	}
 	//for _, arg := range args {
@@ -481,7 +481,7 @@ func (c *Functions) handleBuiltinInterface(pos token.Pos, receiverSymbol *tables
 	//}
 	spread := 0
 	numArgs := 1
-	if _, err := c.scopes.Emit(pos, native.OpCallId, numArgs, spread); err != nil {
+	if _, err := c.scopes.SymbolEmit(pos, native.OpCallId, numArgs, spread); err != nil {
 		return err
 	}
 	return nil
@@ -506,7 +506,7 @@ func (c *Functions) handleClosure(node *ast.FuncLit) (int, error) {
 		return -1, err
 	}
 	if scope.LastInstruction() == nil || scope.LastInstruction().Opcode() != native.OpReturnId {
-		if _, err = c.scopes.Emit(node.Pos(), native.OpReturnId, 0); err != nil {
+		if _, err = c.scopes.SymbolEmit(node.Pos(), native.OpReturnId, 0); err != nil {
 			return -1, err
 		}
 	}
@@ -525,7 +525,7 @@ func (c *Functions) handleClosure(node *ast.FuncLit) (int, error) {
 	}
 	fn.FreeInitialize(freeSymbols)
 	constIndex := c.constants.Add("", compiledFn)
-	if _, err = c.scopes.Emit(node.Pos(), native.OpCreateClosureId, constIndex); err != nil {
+	if _, err = c.scopes.SymbolEmit(node.Pos(), native.OpCreateClosureId, constIndex); err != nil {
 		return -1, err
 	}
 	return constIndex, nil

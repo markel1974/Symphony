@@ -122,7 +122,7 @@ func (c *Compiler) Imports() []objects.IObject {
 
 // Globals retrieves and returns all global objects from the root scope and any objects tracked by references.
 func (c *Compiler) Globals() []objects.IObject {
-	ret := c.scopes.CreateGlobals()
+	ret := c.scopes.SymbolGlobalsCreate()
 	return ret
 }
 
@@ -279,7 +279,7 @@ func (c *Compiler) createInit() error {
 	if scope.InstructionsLen() == 0 {
 		return nil
 	}
-	if _, err = c.scopes.Emit(token.Pos(0), native.OpReturnId, 0); err != nil {
+	if _, err = c.scopes.SymbolEmit(token.Pos(0), native.OpReturnId, 0); err != nil {
 		return err
 	}
 	initFuncCode := scope.Instructions()

@@ -51,7 +51,7 @@ func (c *Compiler) createInit() error {
 	}
 
 	// Aggiungiamo un OpReturn alla fine del nostro bytecode
-	if _, err := c.scopes.Emit(opcodes.OpReturn, 0); err != nil {
+	if _, err := c.scopes.SymbolEmit(opcodes.OpReturn, 0); err != nil {
 		return err
 	}
 
@@ -120,7 +120,7 @@ func (c *Compiler) compileInstruction(pc int, opcode byte, operands []byte) (int
 
 		// Emettiamo la nuova istruzione 'OpGlobalCopy' con due operandi: destinazione e sorgente.
 		// Questo raggiunge l'obiettivo 1:1.
-		if _, err := c.scopes.Emit(opcodes.OpGlobalCopy, c.z80.Register(destRegName), c.z80.Register(srcRegName)); err != nil {
+		if _, err := c.scopes.SymbolEmit(opcodes.OpGlobalCopy, c.z80.Register(destRegName), c.z80.Register(srcRegName)); err != nil {
 			return 0, err
 		}
 
@@ -128,10 +128,10 @@ func (c *Compiler) compileInstruction(pc int, opcode byte, operands []byte) (int
 	case (opcode & 0xC7) == 0x06:
 		destReg := c.z80.GetRegisterNameFromIndex(int((opcode >> 3) & 0x07))
 		constIndex := c.constants.AddOrGet("", c.gk.NewInt(objects.FrameStatic, int64(operands[0])))
-		if _, err := c.scopes.Emit(opcodes.OpConstant, constIndex); err != nil {
+		if _, err := c.scopes.SymbolEmit(opcodes.OpConstant, constIndex); err != nil {
 			return 0, err
 		}
-		if _, err := c.scopes.Emit(opcodes.OpGlobalSet, c.z80.Register(destReg)); err != nil {
+		if _, err := c.scopes.SymbolEmit(opcodes.OpGlobalSet, c.z80.Register(destReg)); err != nil {
 			return 0, err
 		}
 		pcIncrement = 2
@@ -226,8 +226,8 @@ func (c *Compiler) compileInstruction(pc int, opcode byte, operands []byte) (int
 		// 1. Save return address on stack
 		retAddrSymbol, _ := c.scopes.SymbolDefineUnique("__ret_addr")
 		constRetAddr := c.constants.AddOrGet("", c.gk.NewInt(objects.FrameStatic, int64(returnAddr)))
-		c.scopes.Emit(opcodes.OpConstant, constRetAddr)
-		c.scopes.EmitSymbolSetAndPop(retAddrSymbol)
+		c.scopes.SymbolEmit(opcodes.OpConstant, constRetAddr)
+		c.scopes.SymbolEmitSetAndPop(retAddrSymbol)
 		if err := c.helper.emitPush16(retAddrSymbol); err != nil {
 			return 0, err
 		}
@@ -247,12 +247,12 @@ func (c *Compiler) compileInstruction(pc int, opcode byte, operands []byte) (int
 		}
 
 		// 2. Put retrieved address on top of VM stack
-		if err := c.scopes.EmitSymbolGet(retAddrSymbol); err != nil {
+		if err := c.scopes.SymbolEmitGet(retAddrSymbol); err != nil {
 			return 0, err
 		}
 
 		// 3. Perform indirect jump - VM will take address from stack
-		if _, err := c.scopes.Emit(opcodes.OpJumpIndirect); err != nil {
+		if _, err := c.scopes.SymbolEmit(opcodes.OpJumpIndirect); err != nil {
 			return 0, err
 		}
 		// Conditional Calls

@@ -71,12 +71,12 @@ func (c *Loops) ForStmt(node *ast.ForStmt) error {
 		}
 	} else {
 		// If there's no condition, it's an infinite loop -> emit 'true'
-		if _, err = c.scopes.Emit(node.Pos(), native.OpTrueId); err != nil {
+		if _, err = c.scopes.SymbolEmit(node.Pos(), native.OpTrueId); err != nil {
 			return err
 		}
 	}
-	// Emit a conditional jump to exit the loop if the condition is false
-	jumpNotTruthyPos, err := c.scopes.Emit(node.Pos(), native.OpJumpFalsyId, 9999)
+	// SymbolEmit a conditional jump to exit the loop if the condition is false
+	jumpNotTruthyPos, err := c.scopes.SymbolEmit(node.Pos(), native.OpJumpFalsyId, 9999)
 	if err != nil {
 		return err
 	}
@@ -97,8 +97,8 @@ func (c *Loops) ForStmt(node *ast.ForStmt) error {
 		}
 	}
 
-	// Emit an unconditional jump back to the start of the condition
-	if _, err = c.scopes.Emit(node.Pos(), native.OpJumpId, loopStartPos); err != nil {
+	// SymbolEmit an unconditional jump back to the start of the condition
+	if _, err = c.scopes.SymbolEmit(node.Pos(), native.OpJumpId, loopStartPos); err != nil {
 		return err
 	}
 
@@ -109,20 +109,20 @@ func (c *Loops) ForStmt(node *ast.ForStmt) error {
 
 	// Back-patching: update the conditional jump (OpJumpFalsy)
 	afterLoopPos := scope.InstructionsLen()
-	if err = c.scopes.ChangeOperand(node.Pos(), jumpNotTruthyPos, afterLoopPos); err != nil {
+	if err = c.scopes.InstructionsChangeOperand(node.Pos(), jumpNotTruthyPos, afterLoopPos); err != nil {
 		return err
 	}
 
 	// Update all 'break' instructions
 	for _, pos := range scope.CurrentLoop().BreakPositions {
-		if err = c.scopes.ChangeOperand(node.Pos(), pos, afterLoopPos); err != nil {
+		if err = c.scopes.InstructionsChangeOperand(node.Pos(), pos, afterLoopPos); err != nil {
 			return err
 		}
 	}
 
 	// Update all 'continue' instructions
 	for _, pos := range scope.CurrentLoop().ContinuePositions {
-		if err = c.scopes.ChangeOperand(node.Pos(), pos, scope.CurrentLoop().ContinueTargetPosition); err != nil {
+		if err = c.scopes.InstructionsChangeOperand(node.Pos(), pos, scope.CurrentLoop().ContinueTargetPosition); err != nil {
 			return err
 		}
 	}
@@ -150,7 +150,7 @@ func (c *Loops) RangeStmt(node *ast.RangeStmt) error {
 	if err != nil {
 		return err
 	}
-	if _, err = c.scopes.Emit(node.Pos(), native.OpIteratorInitId, iteratorSymbol.Index()); err != nil {
+	if _, err = c.scopes.SymbolEmit(node.Pos(), native.OpIteratorInitId, iteratorSymbol.Index()); err != nil {
 		return err
 	}
 	var returnTypeName string
@@ -188,49 +188,49 @@ func (c *Loops) RangeStmt(node *ast.RangeStmt) error {
 
 	scope.CurrentLoop().ContinueTargetPosition = loopStartPos // <-- MODIFICATION
 
-	if _, err = c.scopes.Emit(node.Pos(), native.OpIteratorNextId, iteratorSymbol.Index()); err != nil {
+	if _, err = c.scopes.SymbolEmit(node.Pos(), native.OpIteratorNextId, iteratorSymbol.Index()); err != nil {
 		return err
 	}
-	jumpNotTruthyPos, err := c.scopes.Emit(node.Pos(), native.OpJumpFalsyId, 9999)
+	jumpNotTruthyPos, err := c.scopes.SymbolEmit(node.Pos(), native.OpJumpFalsyId, 9999)
 	if err != nil {
 		return err
 	}
 	if valueSymbol != nil {
-		if _, err = c.scopes.Emit(node.Pos(), native.OpIteratorValueId, iteratorSymbol.Index()); err != nil {
+		if _, err = c.scopes.SymbolEmit(node.Pos(), native.OpIteratorValueId, iteratorSymbol.Index()); err != nil {
 			return err
 		}
-		if err = c.scopes.EmitSymbolSetAndPop(node.Pos(), valueSymbol); err != nil {
+		if err = c.scopes.SymbolEmitSetAndPop(node.Pos(), valueSymbol); err != nil {
 			return err
 		}
 	}
 	if keySymbol != nil {
-		if _, err = c.scopes.Emit(node.Pos(), native.OpIteratorKeyId, iteratorSymbol.Index()); err != nil {
+		if _, err = c.scopes.SymbolEmit(node.Pos(), native.OpIteratorKeyId, iteratorSymbol.Index()); err != nil {
 			return err
 		}
-		if err = c.scopes.EmitSymbolSetAndPop(node.Pos(), keySymbol); err != nil {
+		if err = c.scopes.SymbolEmitSetAndPop(node.Pos(), keySymbol); err != nil {
 			return err
 		}
 	}
 	if err = c.compile(node.Body); err != nil {
 		return err
 	}
-	if _, err = c.scopes.Emit(node.Pos(), native.OpJumpId, loopStartPos); err != nil {
+	if _, err = c.scopes.SymbolEmit(node.Pos(), native.OpJumpId, loopStartPos); err != nil {
 		return err
 	}
 
 	afterLoopPos := scope.InstructionsLen()
 
 	// Back-Patching
-	if err = c.scopes.ChangeOperand(node.Pos(), jumpNotTruthyPos, afterLoopPos); err != nil {
+	if err = c.scopes.InstructionsChangeOperand(node.Pos(), jumpNotTruthyPos, afterLoopPos); err != nil {
 		return err
 	}
 	for _, pos := range scope.CurrentLoop().BreakPositions {
-		if err = c.scopes.ChangeOperand(node.Pos(), pos, afterLoopPos); err != nil {
+		if err = c.scopes.InstructionsChangeOperand(node.Pos(), pos, afterLoopPos); err != nil {
 			return err
 		}
 	}
 	for _, pos := range scope.CurrentLoop().ContinuePositions {
-		if err = c.scopes.ChangeOperand(node.Pos(), pos, scope.CurrentLoop().ContinueTargetPosition); err != nil {
+		if err = c.scopes.InstructionsChangeOperand(node.Pos(), pos, scope.CurrentLoop().ContinueTargetPosition); err != nil {
 			return err
 		}
 	}

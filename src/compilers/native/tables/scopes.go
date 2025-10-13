@@ -1,7 +1,6 @@
 package tables
 
 import (
-	"errors"
 	"fmt"
 	"go/token"
 	"io"
@@ -9,16 +8,15 @@ import (
 
 	"github.com/markel1974/c64emu/src/vm/objects"
 	"github.com/markel1974/c64emu/src/vm/opcodes"
-
 	"github.com/markel1974/c64emu/src/vm/sequencers/native"
 )
 
-// maxScope defines the maximum allowable depth for compilation scopes to prevent excessive recursion or memory use.
+// maxScope defines the maximum allowable depth of nested compilation scopes to prevent excessive recursion or overflow.
 const (
 	maxScope = 1024
 )
 
-// Scopes manages a collection of compilation scopes and the associated symbol table for nested compilation contexts.
+// Scopes is a structure for managing compilation contexts, symbol resolution, and constant storage in program execution.
 type Scopes struct {
 	gk                   objects.IGateKeeper
 	op                   opcodes.IOpcodes
@@ -31,7 +29,7 @@ type Scopes struct {
 	uniqueCounter        int
 }
 
-// NewScopes initializes and returns a Scopes structure with a new symbol table, main compilation scope, and scope index set to 0.
+// NewScopes initializes and returns a new Scopes instance configured with the provided IGateKeeper, IOpcodes, and Constants.
 func NewScopes(gk objects.IGateKeeper, op opcodes.IOpcodes, constants *Constants) *Scopes {
 	c := &Scopes{
 		gk:                   gk,
@@ -49,21 +47,43 @@ func NewScopes(gk objects.IGateKeeper, op opcodes.IOpcodes, constants *Constants
 	return c
 }
 
-func (c *Scopes) CreateGlobals() []objects.IObject {
-	ret := make([]objects.IObject, len(c.initSymbolTable.definitions))
-	for _, obj := range c.initSymbolTable.definitions {
-		target := obj.GetObject()
-		if target != nil {
-			ret[obj.index] = target
-		} else {
-			ret[obj.index] = c.gk.NewString(objects.FrameStatic, obj.Name()+"_placeHolder")
-			//ret[obj.index] = c.factory.UndefinedValue()
-		}
+// Enter creates a new compilation scope, updates the symbol table, and increments the scope index.
+func (c *Scopes) Enter(defaultScope SymbolScope, funcName string) error {
+	if c.scopeIndex > maxScope {
+		return fmt.Errorf("maximum scope depth exceeded: %d", maxScope)
 	}
-	return ret
+	scope := NewCompilationScope()
+	c.symbolTable = NewEnclosedSymbolTable(c.symbolTable, defaultScope, funcName)
+	c.compilations = append(c.compilations, scope)
+	c.scopeIndex++
+	return nil
 }
 
-// SetRootIndex resets the scope index to 0, designating it as the root index for the current Scopes instance.
+// Leave exits the current compilation scope, restoring the previous symbol table and returning scope data.
+func (c *Scopes) Leave() ([]byte, map[int]int, error) {
+	scopesLen := len(c.compilations)
+	if scopesLen <= 0 {
+		return nil, nil, fmt.Errorf("no scopes to leave")
+	}
+	scope, err := c.Current()
+	if err != nil {
+		return nil, nil, err
+	}
+	c.symbolTable = c.symbolTable.Outer()
+	c.compilations = c.compilations[:scopesLen-1]
+	c.scopeIndex--
+	return scope.Instructions(), scope.Source(), nil
+}
+
+// Current returns the current CompilationScope based on the current scope index or an error if the index is invalid.
+func (c *Scopes) Current() (*CompilationScope, error) {
+	if c.scopeIndex < 0 || c.scopeIndex >= len(c.compilations) {
+		return nil, fmt.Errorf("invalid scope index: %d", c.scopeIndex)
+	}
+	return c.compilations[c.scopeIndex], nil
+}
+
+// SetRootIndex resets the scope index of the Scopes object to its root (0).
 func (c *Scopes) SetRootIndex() {
 	c.scopeIndex = 0
 }
@@ -73,77 +93,12 @@ func (c *Scopes) IsRootScope() bool {
 	return c.scopeIndex == 0
 }
 
-// SymbolDefine defines a new symbol within the symbol table and returns the created symbol or an error if it fails.
-func (c *Scopes) SymbolDefine(name string) (*Symbol, error) {
-	return c.symbolTable.Define(name)
-}
-
-// SymbolDefineUnique ensures the given symbol is uniquely defined and returns it or an error if the operation fails.
-func (c *Scopes) SymbolDefineUnique(name string) (*Symbol, error) {
-	uniqueName := name + strconv.Itoa(c.uniqueCounter)
-	c.uniqueCounter++
-	return c.symbolTable.Define(uniqueName)
-}
-
-// SymbolDefineType defines a new type symbol with the given name in the symbol table and returns the created symbol or an error.
-func (c *Scopes) SymbolDefineType(name string) (*Symbol, error) {
-	return c.symbolTable.DefineType(name)
-}
-
-// SymbolDefineConst defines a constant in the symbol table with the given index and symbol name. Returns the defined symbol or an error.
-func (c *Scopes) SymbolDefineConst(name string, object objects.IObject) (*Symbol, error) {
-	constIdx := c.constants.Add(name, object)
-	return c.symbolTable.DefineConst(constIdx, name)
-}
-
-// SymbolRebuildScope rebuilds and updates the specified symbol with a new scope in the symbol table, returning the updated symbol.
-func (c *Scopes) SymbolRebuildScope(symbol string, scope SymbolScope) (*Symbol, bool) {
-	return c.symbolTable.RebuildScope(symbol, scope)
-}
-
-// SymbolResolve attempts to find a symbol in the current scope and returns it along with a boolean indicating success.
-func (c *Scopes) SymbolResolve(symbol string) (*Symbol, bool) {
-	if obj, ok := c.initSymbolTable.Resolve(symbol); ok {
-		return obj, true
-	}
-	return c.symbolTable.Resolve(symbol)
-}
-
-// SymbolResolveOrDefine resolves an existing symbol or defines a new one if it does not exist within the current scope.
-func (c *Scopes) SymbolResolveOrDefine(symbol string) (*Symbol, error) {
-	if s, ok := c.SymbolResolve(symbol); ok {
-		return s, nil
-	}
-	s, err := c.SymbolDefine(symbol)
-	if err != nil {
-		return nil, err
-	}
-	return s, nil
-}
-
-// SymbolCount returns the number of symbol definitions in the symbol table.
-func (c *Scopes) SymbolCount() int {
-	return c.symbolTable.Count()
-}
-
-// SymbolFree retrieves a slice of integers representing free symbols from the internal symbol table within Scopes.
-func (c *Scopes) SymbolFree() []int {
-	return c.symbolTable.FreeSymbols()
-}
-
-// Current returns the current CompilationScope based on the internal scope index. Returns an error if the index is invalid.
-func (c *Scopes) Current() (*CompilationScope, error) {
-	if c.scopeIndex < 0 || c.scopeIndex >= len(c.compilations) {
-		return nil, fmt.Errorf("invalid scope index: %d", c.scopeIndex)
-	}
-	return c.compilations[c.scopeIndex], nil
-}
-
+// InstructionsInit retrieves the instructions from the initial compilation scope and the count of symbols in the initial symbol table.
 func (c *Scopes) InstructionsInit() ([]byte, int) {
 	return c.initCompilationScope.Instructions(), c.initSymbolTable.Count()
 }
 
-// InstructionsAppend appends the given byte slice to the current scope's instructions and returns the starting position or an error.
+// InstructionsAppend appends given instructions to the current scope and updates source mappings. Returns the position of the new instruction or an error if appending fails.
 func (c *Scopes) InstructionsAppend(ins []byte, source map[int]int) (int, error) {
 	scope, err := c.Current()
 	if err != nil {
@@ -159,7 +114,7 @@ func (c *Scopes) InstructionsAppend(ins []byte, source map[int]int) (int, error)
 	return posNewInstruction, nil
 }
 
-// InstructionGet retrieves an instruction from the current scope at the specified position. Returns the instruction or an error.
+// InstructionGet retrieves the OpcodeId at the specified position within the current compilation scope. Returns an error if unsuccessful.
 func (c *Scopes) InstructionGet(opPos int) (opcodes.OpcodeId, error) {
 	scope, err := c.Current()
 	if err != nil {
@@ -172,36 +127,8 @@ func (c *Scopes) InstructionGet(opPos int) (opcodes.OpcodeId, error) {
 	return data, nil
 }
 
-// Enter creates a new compilation scope, updates the symbol table to be enclosed, and increments the scope index.
-func (c *Scopes) Enter(defaultScope SymbolScope, funcName string) error {
-	if c.scopeIndex > maxScope {
-		return fmt.Errorf("maximum scope depth exceeded: %d", maxScope)
-	}
-	scope := NewCompilationScope()
-	c.symbolTable = NewEnclosedSymbolTable(c.symbolTable, defaultScope, funcName)
-	c.compilations = append(c.compilations, scope)
-	c.scopeIndex++
-	return nil
-}
-
-// Leave removes the current scope and reverts to the previous one, returning the instructions of the removed scope.
-func (c *Scopes) Leave() ([]byte, map[int]int, error) {
-	scopesLen := len(c.compilations)
-	if scopesLen <= 0 {
-		return nil, nil, errors.New("no scopes to leave")
-	}
-	scope, err := c.Current()
-	if err != nil {
-		return nil, nil, err
-	}
-	c.symbolTable = c.symbolTable.Outer()
-	c.compilations = c.compilations[:scopesLen-1]
-	c.scopeIndex--
-	return scope.Instructions(), scope.Source(), nil
-}
-
-// ChangeOperand modifies the operand of an instruction at the specified position within the current scope.
-func (c *Scopes) ChangeOperand(p token.Pos, opPos int, operand int) error {
+// InstructionsChangeOperand modifies a specific instruction's operand at the given position in the current compilation scope.
+func (c *Scopes) InstructionsChangeOperand(p token.Pos, opPos int, operand int) error {
 	scope, err := c.Current()
 	if err != nil {
 		return err
@@ -221,8 +148,84 @@ func (c *Scopes) ChangeOperand(p token.Pos, opPos int, operand int) error {
 	return nil
 }
 
-// Emit generates and adds a new instruction to the current scope and updates the last emitted instruction info.
-func (c *Scopes) Emit(p token.Pos, op opcodes.OpcodeId, operands ...int) (int, error) {
+// SymbolDefine defines a new symbol in the current symbol table and returns it along with any error encountered.
+func (c *Scopes) SymbolDefine(name string) (*Symbol, error) {
+	return c.symbolTable.Define(name)
+}
+
+// SymbolDefineUnique creates a uniquely named symbol by appending a counter to the given name and defines it in the symbol table.
+// It increments the unique counter to ensure uniqueness for subsequent definitions. Returns the newly defined symbol or an error.
+func (c *Scopes) SymbolDefineUnique(name string) (*Symbol, error) {
+	uniqueName := name + strconv.Itoa(c.uniqueCounter)
+	c.uniqueCounter++
+	return c.symbolTable.Define(uniqueName)
+}
+
+// SymbolDefineType defines a new type symbol with the specified name and returns the symbol or an error if it fails.
+func (c *Scopes) SymbolDefineType(name string) (*Symbol, error) {
+	return c.symbolTable.DefineType(name)
+}
+
+// SymbolDefineConst defines a constant symbol with the specified name and object, returning the created symbol or an error.
+func (c *Scopes) SymbolDefineConst(name string, object objects.IObject) (*Symbol, error) {
+	constIdx := c.constants.Add(name, object)
+	return c.symbolTable.DefineConst(constIdx, name)
+}
+
+// SymbolRebuildScope updates the scope of the given symbol and returns the updated Symbol and a success flag.
+func (c *Scopes) SymbolRebuildScope(symbol string, scope SymbolScope) (*Symbol, bool) {
+	return c.symbolTable.RebuildScope(symbol, scope)
+}
+
+// SymbolResolve attempts to resolve the given symbol in the current or initial symbol table and returns it if found.
+func (c *Scopes) SymbolResolve(symbol string) (*Symbol, bool) {
+	if obj, ok := c.initSymbolTable.Resolve(symbol); ok {
+		return obj, true
+	}
+	return c.symbolTable.Resolve(symbol)
+}
+
+// SymbolResolveOrDefine resolves a symbol by name or defines it if not found, returning the symbol or an error if defining fails.
+func (c *Scopes) SymbolResolveOrDefine(symbol string) (*Symbol, error) {
+	if s, ok := c.SymbolResolve(symbol); ok {
+		return s, nil
+	}
+	s, err := c.SymbolDefine(symbol)
+	if err != nil {
+		return nil, err
+	}
+	return s, nil
+}
+
+// SymbolCount returns the total number of symbols currently defined in the symbol table of the Scopes instance.
+func (c *Scopes) SymbolCount() int {
+	return c.symbolTable.Count()
+}
+
+// SymbolFree returns a slice of indices representing the free symbols defined in the current symbol table.
+func (c *Scopes) SymbolFree() []int {
+	return c.symbolTable.FreeSymbols()
+}
+
+// SymbolGlobalsCreate creates global symbols by initializing a slice with objects from the initial symbol table definitions.
+func (c *Scopes) SymbolGlobalsCreate() []objects.IObject {
+	ret := make([]objects.IObject, len(c.initSymbolTable.definitions))
+	for _, obj := range c.initSymbolTable.definitions {
+		target := obj.GetObject()
+		if target != nil {
+			ret[obj.index] = target
+		} else {
+			ret[obj.index] = c.gk.NewString(objects.FrameStatic, obj.Name()+"_placeHolder")
+			//ret[obj.index] = c.factory.UndefinedValue()
+		}
+	}
+	return ret
+}
+
+// SymbolEmit generates bytecode instructions for the specified opcode and operands, appends them to the current scope,
+// and associates the instruction position with the given source position. Returns the position of the new instruction
+// or an error if the operation fails.
+func (c *Scopes) SymbolEmit(p token.Pos, op opcodes.OpcodeId, operands ...int) (int, error) {
 	scope, err := c.Current()
 	if err != nil {
 		return 0, err
@@ -245,30 +248,30 @@ func (c *Scopes) Emit(p token.Pos, op opcodes.OpcodeId, operands ...int) (int, e
 	return opPos, nil
 }
 
-// EmitAndPop emits the given opcode with operands, followed by a pop operation, and returns an error if either fails.
-func (c *Scopes) EmitAndPop(p token.Pos, op opcodes.OpcodeId, operands ...int) error {
-	if _, err := c.Emit(p, op, operands...); err != nil {
+// SymbolEmitAndPop emits a given opcode and operands and immediately emits a pop operation, returning any encountered error.
+func (c *Scopes) SymbolEmitAndPop(p token.Pos, op opcodes.OpcodeId, operands ...int) error {
+	if _, err := c.SymbolEmit(p, op, operands...); err != nil {
 		return err
 	}
-	if _, err := c.Emit(p, native.OpPopId); err != nil {
-		return err
-	}
-	return nil
-}
-
-// EmitSymbolDefineAndPop defines a symbol within the current scope, emits its bytecode, and pops it off the stack.
-func (c *Scopes) EmitSymbolDefineAndPop(p token.Pos, s *Symbol) error {
-	if err := c.EmitSymbolDefine(p, s); err != nil {
-		return err
-	}
-	if _, err := c.Emit(p, native.OpPopId); err != nil {
+	if _, err := c.SymbolEmit(p, native.OpPopId); err != nil {
 		return err
 	}
 	return nil
 }
 
-// EmitSymbolDefine emits the opcode for *defining* a variable.
-func (c *Scopes) EmitSymbolDefine(p token.Pos, s *Symbol) error {
+// SymbolEmitDefineAndPop defines a symbol in the current scope, emits the associated bytecode, and pops it from the stack.
+func (c *Scopes) SymbolEmitDefineAndPop(p token.Pos, s *Symbol) error {
+	if err := c.SymbolEmitDefine(p, s); err != nil {
+		return err
+	}
+	if _, err := c.SymbolEmit(p, native.OpPopId); err != nil {
+		return err
+	}
+	return nil
+}
+
+// SymbolEmitDefine emits bytecode to define a symbol within the current scope. Returns an error for unsupported scopes.
+func (c *Scopes) SymbolEmitDefine(p token.Pos, s *Symbol) error {
 	if s.Constant() {
 		return fmt.Errorf("cannot define constant symbol: %s", s.Name())
 	}
@@ -281,14 +284,14 @@ func (c *Scopes) EmitSymbolDefine(p token.Pos, s *Symbol) error {
 	default:
 		return fmt.Errorf("unsupported symbol scope: %v", s.Scope())
 	}
-	if _, err := c.Emit(p, op, s.Index()); err != nil {
+	if _, err := c.SymbolEmit(p, op, s.Index()); err != nil {
 		return err
 	}
 	return nil
 }
 
-// EmitSymbolSet generates bytecode instructions to set the value of a symbol in its appropriate scope (global, local, or free).
-func (c *Scopes) EmitSymbolSet(p token.Pos, s *Symbol) error {
+// SymbolEmitSet emits the opcode to set the value of a given symbol, returning an error if the symbol is a constant or unsupported.
+func (c *Scopes) SymbolEmitSet(p token.Pos, s *Symbol) error {
 	if s.Constant() {
 		return fmt.Errorf("cannot set constant symbol: %s", s.Name())
 	}
@@ -303,16 +306,16 @@ func (c *Scopes) EmitSymbolSet(p token.Pos, s *Symbol) error {
 	default:
 		return fmt.Errorf("unsupported symbol scope: %v", s.Scope())
 	}
-	if _, err := c.Emit(p, op, s.Index()); err != nil {
+	if _, err := c.SymbolEmit(p, op, s.Index()); err != nil {
 		return err
 	}
 	return nil
 }
 
-// EmitSymbolGet generates bytecode instructions to retrieve a symbol's value based on its scope and index.
-func (c *Scopes) EmitSymbolGet(p token.Pos, s *Symbol) error {
+// SymbolEmitGet emits bytecode for retrieving the value of the given symbol based on its scope and type.
+func (c *Scopes) SymbolEmitGet(p token.Pos, s *Symbol) error {
 	if s.Constant() {
-		_, err := c.Emit(p, native.OpConstantId, s.Index())
+		_, err := c.SymbolEmit(p, native.OpConstantId, s.Index())
 		return err
 	}
 	var op opcodes.OpcodeId
@@ -326,24 +329,24 @@ func (c *Scopes) EmitSymbolGet(p token.Pos, s *Symbol) error {
 	default:
 		return fmt.Errorf("unsupported symbol scope: %v", s.Scope())
 	}
-	if _, err := c.Emit(p, op, s.Index()); err != nil {
+	if _, err := c.SymbolEmit(p, op, s.Index()); err != nil {
 		return err
 	}
 	return nil
 }
 
-// EmitSymbolSetAndPop sets a symbol and then emits a pop operation, returning an error if either fails.
-func (c *Scopes) EmitSymbolSetAndPop(p token.Pos, s *Symbol) error {
-	if err := c.EmitSymbolSet(p, s); err != nil {
+// SymbolEmitSetAndPop emits the instructions to set a symbol and then pops it from the stack. Returns an error if any step fails.
+func (c *Scopes) SymbolEmitSetAndPop(p token.Pos, s *Symbol) error {
+	if err := c.SymbolEmitSet(p, s); err != nil {
 		return err
 	}
-	if _, err := c.Emit(p, native.OpPopId); err != nil {
+	if _, err := c.SymbolEmit(p, native.OpPopId); err != nil {
 		return err
 	}
 	return nil
 }
 
-// Print prints the contents of the Scopes structure to the console.
+// Print writes the current state of the symbols and their table to the provided writer, formatted for readability.
 func (c *Scopes) Print(writer io.Writer) {
 	_, _ = fmt.Fprintf(writer, "----- Symbols -----")
 	c.symbolTable.Print(writer)

@@ -80,7 +80,7 @@ func (i *Imports) EmitInternal(pos token.Pos, name string) error {
 		index = i.imports.Add(name, i.gk.NewString(objects.FrameStatic, name))
 		i.helper[name] = index
 	}
-	if _, err := i.scopes.Emit(pos, native.OpImportId, index); err != nil {
+	if _, err := i.scopes.SymbolEmit(pos, native.OpImportId, index); err != nil {
 		return err
 	}
 	return nil
@@ -109,7 +109,7 @@ func (i *Imports) EmitPackage(pos token.Pos, name string, selName string) bool {
 		index = i.imports.Add(target, i.gk.NewString(objects.FrameStatic, target))
 		i.helper[target] = index
 	}
-	if _, err := i.scopes.Emit(pos, native.OpImportId, index); err != nil {
+	if _, err := i.scopes.SymbolEmit(pos, native.OpImportId, index); err != nil {
 		return false
 	}
 	return true
