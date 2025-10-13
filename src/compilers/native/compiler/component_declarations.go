@@ -963,6 +963,7 @@ func (c *Declarations) handleVariableAssign(pos token.Pos, tok token.Token, rhsI
 			return fmt.Errorf("[handleVariableAssign] cannot define a field with :=")
 		case token.ASSIGN:
 			// Try to use the fast path for simple receivers (e.g. myVar.Field)
+
 			if receiverIdent, ok := lhs.X.(*ast.Ident); ok {
 				if symbol, ok := c.scopes.SymbolResolve(receiverIdent.Name); ok {
 					// It's a known symbol, use specific Op...SelSet opcodes
@@ -984,6 +985,7 @@ func (c *Declarations) handleVariableAssign(pos token.Pos, tok token.Token, rhsI
 					return nil
 				}
 			}
+
 			// fallback to a general path for complex receivers (e.g. mySlice[0].Field)
 			tmpSymbol, err := c.scopes.SymbolDefineUnique("__tmp_selector_assign_rhs_")
 			if err != nil {
@@ -1032,11 +1034,21 @@ func (c *Declarations) handleVariableAssign(pos token.Pos, tok token.Token, rhsI
 			if _, err := c.scopes.SymbolEmit(pos, adapter.op, adapter.arguments...); err != nil {
 				return err
 			}
-			// 3. Set
-			if err := c.compile(lhs.X); err != nil { // s
+			tmpResultSymbol, err := c.scopes.SymbolDefineUnique("__tmp_selector_assign_rhs_")
+			if err != nil {
 				return err
 			}
-			if _, err := c.scopes.SymbolEmit(pos, native.OpConstantId, keyConst); err != nil { // Field
+			if err = c.scopes.SymbolEmitSet(pos, tmpResultSymbol); err != nil {
+				return err
+			}
+			// 3. Set
+			if err = c.compile(lhs.X); err != nil { // s
+				return err
+			}
+			if _, err = c.scopes.SymbolEmit(pos, native.OpConstantId, keyConst); err != nil { // Field
+				return err
+			}
+			if err = c.scopes.SymbolEmitGet(pos, tmpResultSymbol); err != nil {
 				return err
 			}
 			if _, err := c.scopes.SymbolEmit(pos, native.OpIndexSetId); err != nil {
