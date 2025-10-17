@@ -7,6 +7,11 @@ import (
 	"github.com/markel1974/c64emu/src/vm/objects"
 )
 
+type IWalker interface {
+	Name() string
+	Walk(segments []string) (IWalker, bool)
+}
+
 // StructTable is a collection that manages mappings of struct names to their associated properties.
 type StructTable struct {
 	container       map[string]*Struct
@@ -26,9 +31,7 @@ func NewStructTable(gk objects.IGateKeeper, scopes *Scopes) *StructTable {
 	builtins := []string{"error"}
 	for _, builtin := range builtins {
 		//z := NewStructField(internal, "", internal, nil)
-		sd := NewStruct(builtin, StructTypeBuiltin)
-		//sd.Add(z)
-		st.container[sd.name] = sd
+		st.AddStructBuiltin(builtin)
 	}
 	return st
 }
@@ -59,34 +62,58 @@ func (st *StructTable) Implements(structName, interfaceName string) bool {
 	return false
 }
 
+// AddStructBuiltin retrieves or creates a new Struct with the given name in the StructTable and returns it.
+func (st *StructTable) AddStructBuiltin(name string) *Struct {
+	return st.tryAddStruct(name, StructTypeBuiltin)
+}
+
 // AddExternal adds a new package with the given name to the StructTable if it does not already exist.
-func (st *StructTable) AddExternal(name string) {
-	if _, ok := st.container[name]; !ok {
-		sd := NewStruct(name, StructTypePackage)
-		st.container[name] = sd
-	}
+func (st *StructTable) AddExternal(name string) *Struct {
+	return st.tryAddStruct(name, StructTypePackage)
 }
 
 // AddStruct retrieves or creates a new Struct with the given name in the StructTable and returns it.
 func (st *StructTable) AddStruct(name string) *Struct {
+	return st.tryAddStruct(name, StructTypeDefined)
+}
+
+// tryAddStruct retrieves an existing Struct or creates a new one with the given name and type classification.
+func (st *StructTable) tryAddStruct(name string, kind StructType) *Struct {
 	sd, ok := st.container[name]
 	if !ok {
-		sd = NewStruct(name, StructTypeDefined)
+		sd = NewStruct(name, kind)
 		st.container[name] = sd
 	}
 	return sd
-}
-
-// AddField adds a new field description to a struct in the StructTable. If the struct does not exist, it creates it.
-func (st *StructTable) AddField(name string, fieldName string, baseStruct string, kind string, node ast.Node) {
-	sd := st.AddStruct(name)
-	sd.AddField(fieldName, baseStruct, kind, node)
 }
 
 // Has checks if a struct definition with the given name exists in the container map.
 func (st *StructTable) Has(name string) bool {
 	if _, ok := st.container[name]; ok {
 		return true
+	}
+	return false
+}
+
+// Walk traverses through the nested structure of the specified name using the given path, returning true if valid.
+func (st *StructTable) Walk(name string, path []string) bool {
+	root, ok := st.container[name]
+	if !ok {
+		return false
+	}
+	if len(path) == 0 {
+		return true
+	}
+	v, ok := root.fieldsHelper[path[0]]
+	if !ok {
+		return false
+	}
+	walker := v.st
+	if walker == nil {
+		return false
+	}
+	if _, ok = walker.Walk(path[1:]); ok {
+		return ok
 	}
 	return false
 }
@@ -169,4 +196,10 @@ func (st *StructTable) IsBuiltin(name string) bool {
 		return false
 	}
 	return fd.IsBuiltin()
+}
+
+// Walker retrieves an IWalker associated with the given name from the StructTable container and returns it with a success flag.
+func (st *StructTable) Walker(name string) (IWalker, bool) {
+	w, ok := st.container[name]
+	return w, ok
 }

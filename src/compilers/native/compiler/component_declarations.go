@@ -964,7 +964,7 @@ func (c *Declarations) handleVariableAssign(pos token.Pos, tok token.Token, rhsI
 		case token.ASSIGN:
 			// Try to use the fast path for simple receivers (e.g. myVar.Field)
 
-			if receiverIdent, ok := lhs.X.(*ast.Ident); ok {
+			if receiverIdent := tables.GetIdent(lhs.X); receiverIdent != nil {
 				if symbol, ok := c.scopes.SymbolResolve(receiverIdent.Name); ok {
 					// It's a known symbol, use specific Op...SelSet opcodes
 					// RHS value is already on stack, leave it there push the field name as key.
@@ -1011,7 +1011,6 @@ func (c *Declarations) handleVariableAssign(pos token.Pos, tok token.Token, rhsI
 			return nil
 		default:
 			// Handles s.Field += v
-			// 1. Get
 			if err := c.compile(lhs.X); err != nil { // s
 				return err
 			}
@@ -1023,7 +1022,6 @@ func (c *Declarations) handleVariableAssign(pos token.Pos, tok token.Token, rhsI
 			if _, err := c.scopes.SymbolEmit(pos, native.OpIndexGetId); err != nil {
 				return err
 			}
-			// 2. Operate
 			if err := c.compile(rhsIn); err != nil { // v
 				return err
 			}
@@ -1041,7 +1039,6 @@ func (c *Declarations) handleVariableAssign(pos token.Pos, tok token.Token, rhsI
 			if err = c.scopes.SymbolEmitSet(pos, tmpResultSymbol); err != nil {
 				return err
 			}
-			// 3. Set
 			if err = c.compile(lhs.X); err != nil { // s
 				return err
 			}
@@ -1051,7 +1048,7 @@ func (c *Declarations) handleVariableAssign(pos token.Pos, tok token.Token, rhsI
 			if err = c.scopes.SymbolEmitGet(pos, tmpResultSymbol); err != nil {
 				return err
 			}
-			if _, err := c.scopes.SymbolEmit(pos, native.OpIndexSetId); err != nil {
+			if _, err = c.scopes.SymbolEmit(pos, native.OpIndexSetId); err != nil {
 				return err
 			}
 			return nil

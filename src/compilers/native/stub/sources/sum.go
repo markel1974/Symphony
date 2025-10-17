@@ -2,9 +2,18 @@ package sources
 
 import "fmt"
 
-type Root struct {
+type Inner struct {
+	Internal int
+}
+
+type Center struct {
+	Central string
+	I       Inner
+}
+type Outer struct {
 	Name  string
 	Value int64
+	C     Center
 }
 
 func main() {
@@ -14,8 +23,9 @@ func main() {
 	//fmt.Println(a)
 
 	const c = 31
-	r := &Root{Name: "Alfa", Value: 100}
+	r := &Outer{Name: "Alfa", Value: 100, C: Center{Central: "Beta", I: Inner{Internal: 21}}}
 	//r.Value += c
-	r.Value = r.Value + c
-	fmt.Println(r.Value)
+	//r.Value = r.Value + c
+	r.C.I.Internal = c
+	fmt.Println(r.C.I.Internal)
 }

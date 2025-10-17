@@ -1,6 +1,7 @@
 package compiler
 
 import (
+	"fmt"
 	"go/ast"
 	"go/token"
 
@@ -10,20 +11,22 @@ import (
 )
 
 type Expression struct {
-	gk        objects.IGateKeeper
-	fileSet   *token.FileSet
-	constants *tables.Constants
-	scopes    *tables.Scopes
-	imports   *Imports
-	compile   func(node ast.Node) error
+	gk          objects.IGateKeeper
+	fileSet     *token.FileSet
+	constants   *tables.Constants
+	scopes      *tables.Scopes
+	imports     *Imports
+	definitions *tables.DefinitionTable
+	compile     func(node ast.Node) error
 }
 
-func NewExpression(gk objects.IGateKeeper, constants *tables.Constants, scopes *tables.Scopes, imports *Imports) *Expression {
+func NewExpression(gk objects.IGateKeeper, constants *tables.Constants, scopes *tables.Scopes, imports *Imports, definitions *tables.DefinitionTable) *Expression {
 	return &Expression{
-		gk:        gk,
-		constants: constants,
-		imports:   imports,
-		scopes:    scopes,
+		gk:          gk,
+		constants:   constants,
+		imports:     imports,
+		scopes:      scopes,
+		definitions: definitions,
 	}
 }
 
@@ -159,35 +162,74 @@ func (c *Expression) BinaryExpr(node *ast.BinaryExpr) error {
 // Emits appropriate bytecode instructions for each case or returns an error if unsupported.
 func (c *Expression) SelectorExpr(node *ast.SelectorExpr) error {
 	// analyze the left-hand side of the dot to determine if it's a variable or a package.
-	receiverIdent, ok := node.X.(*ast.Ident)
-	if !ok {
-		// currently not handling complex cases like a[0].field
+
+	//receiverIdent, ok := node.X.(*ast.Ident)
+	//if !ok {
+	// currently not handling complex cases like a[0].field
+	//	return tables.NewCompilerError(c.fileSet, node, "[SelectorExpr] unsupported receiver for selector expression: %T", node.X)
+	//}
+
+	switch receiverIdent := node.X.(type) {
+	case *ast.Ident:
+		if c.imports.EmitPackage(node.Pos(), receiverIdent.Name, node.Sel.Name) {
+			return nil
+		}
+		receiverSymbol, ok := c.scopes.SymbolResolve(receiverIdent.Name)
+		if !ok {
+			return tables.NewCompilerError(c.fileSet, node, "[SelectorExpr] undefined variable: %s", receiverIdent.Name)
+		}
+		if err := c.compile(node.X); err != nil {
+			return err
+		}
+		//interfaces
+		if receiverSymbol.IsInterface() {
+			return nil
+		}
+		//Symbols, imports etc...
+		fieldName := node.Sel.Name
+		keyConst := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, fieldName))
+		if _, err := c.scopes.SymbolEmit(node.Pos(), native.OpConstantId, keyConst); err != nil {
+			return err
+		}
+		if _, err := c.scopes.SymbolEmit(node.Pos(), native.OpIndexGetId); err != nil {
+			return err
+		}
+		return nil
+	case *ast.SelectorExpr:
+		ident := tables.GetIdent(receiverIdent.X)
+		fmt.Println("TODO IMPLEMENT!!!!", ident.Name, receiverIdent)
+		rootSymbol, ok := c.scopes.SymbolResolve(ident.Name)
+		if !ok {
+			return tables.NewCompilerError(c.fileSet, node, "[SelectorExpr] undefined variable: %s", receiverIdent.Sel.Name)
+		}
+
+		fullPath := receiverIdent.Sel.Name + "." + node.Sel.Name
+		fmt.Println(fullPath)
+
+		if c.definitions.StructHas(rootSymbol.StructName()) {
+			fmt.Println("FOUND!")
+		}
+
+		//interfaces
+		if rootSymbol.IsInterface() {
+			return nil
+		}
+		if err := c.compile(node.X); err != nil {
+			return err
+		}
+		fieldName := node.Sel.Name
+		keyConst := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, fieldName))
+		if _, err := c.scopes.SymbolEmit(node.Pos(), native.OpConstantId, keyConst); err != nil {
+			return err
+		}
+		if _, err := c.scopes.SymbolEmit(node.Pos(), native.OpIndexGetId); err != nil {
+			return err
+		}
+		return nil
+
+	default:
 		return tables.NewCompilerError(c.fileSet, node, "[SelectorExpr] unsupported receiver for selector expression: %T", node.X)
 	}
-	if c.imports.EmitPackage(node.Pos(), receiverIdent.Name, node.Sel.Name) {
-		return nil
-	}
-	receiverSymbol, ok := c.scopes.SymbolResolve(receiverIdent.Name)
-	if !ok {
-		return tables.NewCompilerError(c.fileSet, node, "[SelectorExpr] undefined variable: %s", receiverIdent.Name)
-	}
-	if err := c.compile(node.X); err != nil {
-		return err
-	}
-	//interfaces
-	if receiverSymbol.IsInterface() {
-		return nil
-	}
-	//Symbols, imports etc...
-	fieldName := node.Sel.Name
-	keyConst := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, fieldName))
-	if _, err := c.scopes.SymbolEmit(node.Pos(), native.OpConstantId, keyConst); err != nil {
-		return err
-	}
-	if _, err := c.scopes.SymbolEmit(node.Pos(), native.OpIndexGetId); err != nil {
-		return err
-	}
-	return nil
 }
 
 // IncDecStmt handles increment and decrement statements for identifiers, updating the corresponding variables and cleaning the stack.

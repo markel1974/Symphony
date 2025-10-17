@@ -16,8 +16,23 @@ type MethodDescription struct {
 
 // InterfaceDescription represents the structure of an interface with its name and associated method descriptions.
 type InterfaceDescription struct {
-	Name    string
+	name    string
 	Methods []*MethodDescription
+}
+
+func NewInterfaceDescription(id string, methods []*MethodDescription) *InterfaceDescription {
+	v := &InterfaceDescription{name: id, Methods: methods}
+	return v
+}
+
+func (id *InterfaceDescription) Name() string {
+	return id.name
+}
+
+func (id *InterfaceDescription) Walk(segments []string) (IWalker, bool) {
+	//TODO implement me
+	fmt.Println("TODO implement me")
+	return nil, false
 }
 
 // InterfaceTable provides a data structure for managing a collection of InterfaceDescription objects indexed by name.
@@ -41,7 +56,7 @@ func NewInterfaceTable(gk objects.IGateKeeper, scopes *Scopes) *InterfaceTable {
 
 // CreateInterface creates a new InterfaceDescription and adds it to the container map.
 func (it *InterfaceTable) CreateInterface(id string, methods []*MethodDescription) *InterfaceDescription {
-	v := &InterfaceDescription{Name: id, Methods: methods}
+	v := NewInterfaceDescription(id, methods)
 	it.container[id] = v
 	return v
 }
@@ -91,12 +106,7 @@ func (it *InterfaceTable) Add(name string, node *ast.InterfaceType) error {
 			}
 		}
 	}
-
-	it.container[name] = &InterfaceDescription{
-		Name:    name,
-		Methods: methods,
-	}
-
+	it.container[name] = NewInterfaceDescription(name, methods)
 	return nil
 }
 
@@ -110,4 +120,10 @@ func (it *InterfaceTable) Get(name string) (*InterfaceDescription, bool) {
 func (it *InterfaceTable) Has(name string) bool {
 	_, ok := it.container[name]
 	return ok
+}
+
+// Walker retrieves an IWalker implementation from the container map using the provided name. Returns IWalker and a boolean.
+func (it *InterfaceTable) Walker(name string) (IWalker, bool) {
+	w, ok := it.container[name]
+	return w, ok
 }

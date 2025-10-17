@@ -7,15 +7,17 @@ type StructField struct {
 	name string
 	base string
 	kind string
+	st   IWalker
 	node ast.Node
 }
 
 // NewStructField creates and returns a new instance of StructField with the specified name, base, kind, and node.
-func NewStructField(name string, base string, kind string, node ast.Node) *StructField {
+func NewStructField(name string, base string, kind string, st IWalker, node ast.Node) *StructField {
 	return &StructField{
 		name: name,
 		base: base,
 		kind: kind,
+		st:   st,
 		node: node,
 	}
 }

@@ -49,7 +49,7 @@ func New(gk objects.IGateKeeper, loader bytecode.ILoader, opcodes opcodes.IOpcod
 	components = append(components, imports)
 	declarations := NewDeclarations(gk, importConstants, constants, scopes, imports, definitionTable, functionTable)
 	components = append(components, declarations)
-	expressions := NewExpression(gk, constants, scopes, imports)
+	expressions := NewExpression(gk, constants, scopes, imports, definitionTable)
 	components = append(components, expressions)
 	functions := NewFunctions(gk, constants, scopes, imports, declarations, definitionTable, functionTable)
 	components = append(components, functions)

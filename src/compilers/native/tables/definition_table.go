@@ -88,7 +88,15 @@ func (f *DefinitionTable) StructAdd(name string) {
 
 // StructAddField adds a new field to a struct, specifying the struct name, field name, base struct, type, and AST node.
 func (f *DefinitionTable) StructAddField(name string, fieldName string, baseStruct string, kind string, node ast.Node) {
-	f.structTable.AddField(name, fieldName, baseStruct, kind, node)
+	sd := f.structTable.AddStruct(name)
+	var walker IWalker = nil
+	if w, ok := f.structTable.Walker(baseStruct); ok {
+		walker = w
+	} else if w, ok = f.interfaceTable.Walker(baseStruct); ok {
+		walker = w
+	}
+	sf := NewStructField(fieldName, baseStruct, kind, walker, node)
+	sd.AddField(sf)
 }
 
 // StructKeys retrieves the list of struct names from the StructTable associated with the DefinitionTable.
