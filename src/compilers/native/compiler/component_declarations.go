@@ -1,10 +1,8 @@
 package compiler
 
 import (
-	"bytes"
 	"fmt"
 	"go/ast"
-	"go/printer"
 	"go/token"
 	"strconv"
 	"strings"
@@ -102,17 +100,17 @@ func (c *Declarations) TypeSpec(node *ast.TypeSpec) error {
 		c.definitionTable.StructAdd(typeName)
 		if t.Fields != nil {
 			for _, field := range t.Fields.List {
-				var typeNameBuf bytes.Buffer
+				//var typeNameBuf bytes.Buffer
 				var base string
 				if ident := tables.GetIdent(field.Type); ident != nil {
 					base = ident.Name
 				}
-				if err := printer.Fprint(&typeNameBuf, c.fileSet, field.Type); err != nil {
-					return tables.NewCompilerError(c.fileSet, node, "failed to resolve type for field in struct '%s'", typeName)
-				}
-				fieldType := typeNameBuf.String()
+				//if err := printer.Fprint(&typeNameBuf, c.fileSet, field.Type); err != nil {
+				//	return tables.NewCompilerError(c.fileSet, node, "failed to resolve type for field in struct '%s'", typeName)
+				//}
+				//fieldType := typeNameBuf.String()
 				for _, name := range field.Names {
-					c.definitionTable.StructAddField(typeName, name.Name, base, fieldType, field)
+					c.definitionTable.StructAddField(typeName, name.Name, base, field)
 				}
 			}
 		}
@@ -446,16 +444,16 @@ func (c *Declarations) CompositeLit(node *ast.CompositeLit) error {
 			return err
 		}
 		for _, field := range structFields {
-			keyIdx := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, field.Name()))
+			keyIdx := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, field.FieldName()))
 			if _, err = c.scopes.SymbolEmit(node.Pos(), native.OpConstantId, keyIdx); err != nil {
 				return err
 			}
-			if field.Node() != nil {
-				if err = c.compile(field.Node()); err != nil {
+			if field.FieldNode() != nil {
+				if err = c.compile(field.FieldNode()); err != nil {
 					return err
 				}
 			} else {
-				ref := strings.TrimSpace(strings.ToLower(field.Kind()))
+				ref := strings.TrimSpace(strings.ToLower(field.FieldBase())) //field.FieldKind()))
 				if valIdx, ok := c.initRef[ref]; ok {
 					if _, err = c.scopes.SymbolEmit(node.Pos(), native.OpConstantId, valIdx); err != nil {
 						return err

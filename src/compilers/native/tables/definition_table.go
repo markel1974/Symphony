@@ -87,16 +87,19 @@ func (f *DefinitionTable) StructAdd(name string) {
 }
 
 // StructAddField adds a new field to a struct, specifying the struct name, field name, base struct, type, and AST node.
-func (f *DefinitionTable) StructAddField(name string, fieldName string, baseStruct string, kind string, node ast.Node) {
+func (f *DefinitionTable) StructAddField(name string, fieldName string, baseStruct string, node ast.Node) {
 	sd := f.structTable.AddStruct(name)
-	var walker IWalker = nil
-	if w, ok := f.structTable.Walker(baseStruct); ok {
-		walker = w
-	} else if w, ok = f.interfaceTable.Walker(baseStruct); ok {
-		walker = w
+	var field IStructField = nil
+	if s, ok := f.structTable.Get(baseStruct); ok {
+		field = s.FieldClone()
+	} else if i, ok := f.interfaceTable.Get(baseStruct); ok {
+		field = i.FieldClone()
+	} else {
+		field = NewStructField(baseStruct)
 	}
-	sf := NewStructField(fieldName, baseStruct, kind, walker, node)
-	sd.AddField(sf)
+	field.SetFieldName(fieldName)
+	field.SetFieldNode(node)
+	sd.AddField(field)
 }
 
 // StructKeys retrieves the list of struct names from the StructTable associated with the DefinitionTable.
@@ -110,7 +113,7 @@ func (f *DefinitionTable) StructSetImplementations(impls map[string][]string) {
 }
 
 // StructFieldsFromLiteral extracts struct fields from a list of AST expressions for a given struct name, returning them or an error.
-func (f *DefinitionTable) StructFieldsFromLiteral(structName string, eltS []ast.Expr) ([]*StructField, error) {
+func (f *DefinitionTable) StructFieldsFromLiteral(structName string, eltS []ast.Expr) ([]IStructField, error) {
 	return f.structTable.FieldsFromLiteral(structName, eltS)
 }
 

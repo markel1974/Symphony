@@ -7,32 +7,69 @@ import (
 	"github.com/markel1974/c64emu/src/vm/objects"
 )
 
-// MethodDescription represents metadata about a method, including its name, input parameters, and return types.
+// MethodDescription represents a method with its name, input parameters, and return types in an interface definition.
 type MethodDescription struct {
 	Name        string
 	InputParams []string
 	ReturnTypes []string
 }
 
-// InterfaceDescription represents the structure of an interface with its name and associated method descriptions.
+// InterfaceDescription represents metadata for an interface, including its name and associated methods.
+// It also includes fields for managing related AST node and custom field name.
 type InterfaceDescription struct {
 	name    string
 	Methods []*MethodDescription
+
+	fieldName string
+	fieldNode ast.Node
 }
 
+// NewInterfaceDescription creates a new InterfaceDescription with the specified name and list of method descriptions.
 func NewInterfaceDescription(id string, methods []*MethodDescription) *InterfaceDescription {
 	v := &InterfaceDescription{name: id, Methods: methods}
 	return v
 }
 
+// Name returns the name of the InterfaceDescription.
 func (id *InterfaceDescription) Name() string {
 	return id.name
 }
 
-func (id *InterfaceDescription) Walk(segments []string) (IWalker, bool) {
-	//TODO implement me
-	fmt.Println("TODO implement me")
-	return nil, false
+// FieldName returns the fieldName property of the InterfaceDescription.
+func (id *InterfaceDescription) FieldName() string {
+	return id.fieldName
+}
+
+// SetFieldName sets the name of the field in the InterfaceDescription instance.
+func (id *InterfaceDescription) SetFieldName(name string) {
+	id.fieldName = name
+}
+
+// FieldBase returns the name associated with the InterfaceDescription.
+func (id *InterfaceDescription) FieldBase() string {
+	return id.name
+}
+
+// FieldClone creates and returns a deep copy of the struct field, preserving its properties and associated data.
+func (id *InterfaceDescription) FieldClone() IStructField {
+	methods := make([]*MethodDescription, len(id.Methods))
+	for idx, v := range id.Methods {
+		md := &MethodDescription{Name: id.name, InputParams: make([]string, len(v.InputParams)), ReturnTypes: make([]string, len(v.ReturnTypes))}
+		copy(md.InputParams, v.InputParams)
+		copy(md.ReturnTypes, v.ReturnTypes)
+		methods[idx] = md
+	}
+	return NewInterfaceDescription(id.name, methods)
+}
+
+// FieldNode returns the AST node associated with the field in the InterfaceDescription.
+func (id *InterfaceDescription) FieldNode() ast.Node {
+	return id.fieldNode
+}
+
+// SetFieldNode sets the fieldNode property of the InterfaceDescription to the provided ast.Node instance.
+func (id *InterfaceDescription) SetFieldNode(node ast.Node) {
+	id.fieldNode = node
 }
 
 // InterfaceTable provides a data structure for managing a collection of InterfaceDescription objects indexed by name.
@@ -120,10 +157,4 @@ func (it *InterfaceTable) Get(name string) (*InterfaceDescription, bool) {
 func (it *InterfaceTable) Has(name string) bool {
 	_, ok := it.container[name]
 	return ok
-}
-
-// Walker retrieves an IWalker implementation from the container map using the provided name. Returns IWalker and a boolean.
-func (it *InterfaceTable) Walker(name string) (IWalker, bool) {
-	w, ok := it.container[name]
-	return w, ok
 }

@@ -2,42 +2,49 @@ package tables
 
 import "go/ast"
 
-// StructField represents a single field of a struct, capturing its name, base type, kind, and corresponding AST node.
+// StructField represents a field within a structure with associated metadata.
 type StructField struct {
-	name string
 	base string
-	kind string
-	st   IWalker
-	node ast.Node
+
+	fieldName string
+	fieldNode ast.Node
 }
 
-// NewStructField creates and returns a new instance of StructField with the specified name, base, kind, and node.
-func NewStructField(name string, base string, kind string, st IWalker, node ast.Node) *StructField {
+// NewStructField creates and returns a new instance of StructField with the specified name, base, kind, and AST node.
+func NewStructField(base string) *StructField {
 	return &StructField{
-		name: name,
 		base: base,
-		kind: kind,
-		st:   st,
-		node: node,
 	}
 }
 
-// Name returns the name of the struct field.
-func (fd *StructField) Name() string {
-	return fd.name
-}
-
-// Base retrieves the base representation of the StructField.
-func (fd *StructField) Base() string {
+// FieldBase returns the base type of the struct field as a string.
+func (fd *StructField) FieldBase() string {
 	return fd.base
 }
 
-// Kind returns the string representing the kind of the StructField.
-func (fd *StructField) Kind() string {
-	return fd.kind
+// FieldName returns the name of the field as a string.
+func (fd *StructField) FieldName() string {
+	return fd.fieldName
 }
 
-// Node returns the associated ast.Node of the StructField instance.
-func (fd *StructField) Node() ast.Node {
-	return fd.node
+// SetFieldName assigns a new name to the StructField instance.
+func (fd *StructField) SetFieldName(fieldName string) {
+	fd.fieldName = fieldName
+}
+
+// FieldNode retrieves the associated AST node of the StructField instance.
+func (fd *StructField) FieldNode() ast.Node {
+	return fd.fieldNode
+}
+
+// SetFieldNode assigns the given AST node to the StructField's node property.
+func (fd *StructField) SetFieldNode(node ast.Node) {
+	fd.fieldNode = node
+}
+
+// FieldClone creates a new instance of StructField with the same name, base, and kind but without a node value.
+func (fd *StructField) FieldClone() IStructField {
+	out := NewStructField(fd.base)
+	out.fieldName = fd.fieldName
+	return out
 }

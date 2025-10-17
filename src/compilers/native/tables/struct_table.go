@@ -7,9 +7,23 @@ import (
 	"github.com/markel1974/c64emu/src/vm/objects"
 )
 
-type IWalker interface {
-	Name() string
-	Walk(segments []string) (IWalker, bool)
+//type IWalker interface {
+//	Name() string
+//	Walk(segments []string) (IWalker, bool)
+//}
+
+type IStructField interface {
+	FieldName() string
+
+	SetFieldName(name string)
+
+	FieldBase() string
+
+	FieldClone() IStructField
+
+	FieldNode() ast.Node
+
+	SetFieldNode(node ast.Node)
 }
 
 // StructTable is a collection that manages mappings of struct names to their associated properties.
@@ -95,6 +109,13 @@ func (st *StructTable) Has(name string) bool {
 	return false
 }
 
+// Get retrieves the Struct associated with the provided name and a boolean indicating its existence in the container.
+func (st *StructTable) Get(name string) (*Struct, bool) {
+	w, ok := st.container[name]
+	return w, ok
+}
+
+/*
 // Walk traverses through the nested structure of the specified name using the given path, returning true if valid.
 func (st *StructTable) Walk(name string, path []string) bool {
 	root, ok := st.container[name]
@@ -117,9 +138,10 @@ func (st *StructTable) Walk(name string, path []string) bool {
 	}
 	return false
 }
+*/
 
 // FieldsFromLiteral extracts and assigns struct fields from a given composite literal node, handling both keyed and positional formats.
-func (st *StructTable) FieldsFromLiteral(structName string, eltS []ast.Expr) ([]*StructField, error) {
+func (st *StructTable) FieldsFromLiteral(structName string, eltS []ast.Expr) ([]IStructField, error) {
 	sd, ok := st.container[structName]
 	if !ok {
 		return nil, fmt.Errorf("unknown composite literal type: %st", structName)
@@ -149,14 +171,14 @@ func (st *StructTable) FieldsFromLiteral(structName string, eltS []ast.Expr) ([]
 			providedFields[keyIdent.Name] = kvExpr.Value
 		}
 		for idx := range structFields {
-			if valueExpr, ok := providedFields[structFields[idx].name]; ok {
-				structFields[idx].node = valueExpr
+			if valueExpr, ok := providedFields[structFields[idx].FieldName()]; ok {
+				structFields[idx].SetFieldNode(valueExpr)
 			}
 		}
 	} else {
 		// positional literal (es. Home{"Alfa", 20, "Shanghai"}) ---
 		for i, elt := range eltS {
-			structFields[i].node = elt
+			structFields[i].SetFieldNode(elt)
 		}
 	}
 	return structFields, nil
@@ -173,8 +195,8 @@ func (st *StructTable) TypeNameFromSymbolField(name string, fieldName string) (s
 		return "", false
 	}
 	for _, receiverField := range sd.Fields() {
-		if receiverField.name == fieldName {
-			return receiverField.base, true
+		if receiverField.FieldName() == fieldName {
+			return receiverField.FieldBase(), true
 		}
 	}
 	return "", false
@@ -196,10 +218,4 @@ func (st *StructTable) IsBuiltin(name string) bool {
 		return false
 	}
 	return fd.IsBuiltin()
-}
-
-// Walker retrieves an IWalker associated with the given name from the StructTable container and returns it with a success flag.
-func (st *StructTable) Walker(name string) (IWalker, bool) {
-	w, ok := st.container[name]
-	return w, ok
 }

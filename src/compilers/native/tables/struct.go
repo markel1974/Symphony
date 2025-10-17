@@ -1,5 +1,7 @@
 package tables
 
+import "go/ast"
+
 type StructType int
 
 const (
@@ -11,32 +13,36 @@ const (
 // Struct represents a structured data type containing a name, type classification, and a collection of field descriptions.
 type Struct struct {
 	name         string
-	kind         StructType
-	fields       []*StructField
-	fieldsHelper map[string]*StructField
+	sType        StructType
+	fields       []IStructField
+	fieldsHelper map[string]IStructField
+
+	fieldName string
+	fieldNode ast.Node
 }
 
 // NewStruct creates and returns a pointer to a StructData instance, initializing its fields and type.
-func NewStruct(name string, kind StructType) *Struct {
+func NewStruct(name string, sType StructType) *Struct {
 	return &Struct{
-		kind:         kind,
+		sType:        sType,
 		name:         name,
-		fields:       []*StructField{},
-		fieldsHelper: make(map[string]*StructField),
+		fields:       []IStructField{},
+		fieldsHelper: make(map[string]IStructField),
+		fieldNode:    nil,
 	}
 }
 
 // AddField appends a new field with the specified name, base type, kind, and associated AST node to the Struct.
-func (sd *Struct) AddField(sf *StructField) {
+func (sd *Struct) AddField(sf IStructField) {
 	sd.fields = append(sd.fields, sf)
-	sd.fieldsHelper[sf.Name()] = sf
+	sd.fieldsHelper[sf.FieldName()] = sf
 }
 
 // Fields returns a slice of StructField pointers representing the fields of the struct.
-func (sd *Struct) Fields() []*StructField {
-	out := make([]*StructField, len(sd.fields))
+func (sd *Struct) Fields() []IStructField {
+	out := make([]IStructField, len(sd.fields))
 	for idx, v := range sd.fields {
-		out[idx] = NewStructField(v.name, v.base, v.kind, v.st, nil)
+		out[idx] = v.FieldClone()
 	}
 	return out
 }
@@ -45,7 +51,7 @@ func (sd *Struct) Fields() []*StructField {
 func (sd *Struct) FieldsName() []string {
 	names := make([]string, len(sd.fields))
 	for x, field := range sd.fields {
-		names[x] = field.name
+		names[x] = field.FieldName()
 	}
 	return names
 }
@@ -55,16 +61,49 @@ func (sd *Struct) Name() string {
 	return sd.name
 }
 
-// Kind returns the StructType representing the kind or classification of the Struct instance.
-func (sd *Struct) Kind() StructType {
-	return sd.kind
+// Type returns the StructType representing the kind or classification of the Struct instance.
+func (sd *Struct) Type() StructType {
+	return sd.sType
+}
+
+func (sd *Struct) FieldBase() string {
+	return sd.name
+}
+
+func (sd *Struct) FieldName() string {
+	return sd.fieldName
+}
+
+// SetFieldName assigns the provided AST node to the Struct instance.
+func (sd *Struct) SetFieldName(name string) {
+	sd.fieldName = name
+}
+
+// SetFieldNode assigns the provided AST node to the Struct instance.
+func (sd *Struct) SetFieldNode(node ast.Node) {
+	sd.fieldNode = node
+}
+
+// FieldNode returns the associated AST node of the Struct instance.
+func (sd *Struct) FieldNode() ast.Node {
+	return sd.fieldNode
+}
+
+// FieldClone creates and returns a deep copy of the Struct, including its fields, maintaining the original structure and properties.
+func (sd *Struct) FieldClone() IStructField {
+	out := NewStruct(sd.name, sd.sType)
+	for _, field := range sd.fields {
+		out.AddField(field.FieldClone())
+	}
+	return out
 }
 
 // IsBuiltin determines if the Struct instance represents a built-in type by comparing its kind to StructTypeBuiltin.
 func (sd *Struct) IsBuiltin() bool {
-	return sd.kind == StructTypeBuiltin
+	return sd.sType == StructTypeBuiltin
 }
 
+/*
 func (sd *Struct) Walk(segments []string) (IWalker, bool) {
 	if len(segments) == 0 {
 		return nil, false
@@ -79,3 +118,4 @@ func (sd *Struct) Walk(segments []string) (IWalker, bool) {
 	}
 	return sf.st.Walk(segments)
 }
+*/
