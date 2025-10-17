@@ -7,11 +7,6 @@ import (
 	"github.com/markel1974/c64emu/src/vm/objects"
 )
 
-//type IWalker interface {
-//	Name() string
-//	Walk(segments []string) (IWalker, bool)
-//}
-
 type IStructField interface {
 	FieldName() string
 
@@ -115,31 +110,6 @@ func (st *StructTable) Get(name string) (*Struct, bool) {
 	return w, ok
 }
 
-/*
-// Walk traverses through the nested structure of the specified name using the given path, returning true if valid.
-func (st *StructTable) Walk(name string, path []string) bool {
-	root, ok := st.container[name]
-	if !ok {
-		return false
-	}
-	if len(path) == 0 {
-		return true
-	}
-	v, ok := root.fieldsHelper[path[0]]
-	if !ok {
-		return false
-	}
-	walker := v.st
-	if walker == nil {
-		return false
-	}
-	if _, ok = walker.Walk(path[1:]); ok {
-		return ok
-	}
-	return false
-}
-*/
-
 // FieldsFromLiteral extracts and assigns struct fields from a given composite literal node, handling both keyed and positional formats.
 func (st *StructTable) FieldsFromLiteral(structName string, eltS []ast.Expr) ([]IStructField, error) {
 	sd, ok := st.container[structName]
@@ -219,3 +189,28 @@ func (st *StructTable) IsBuiltin(name string) bool {
 	}
 	return fd.IsBuiltin()
 }
+
+/*
+// Walk traverses through the nested structure of the specified name using the given path, returning true if valid.
+func (st *StructTable) Walk(name string, path []string) bool {
+	root, ok := st.container[name]
+	if !ok {
+		return false
+	}
+	if len(path) == 0 {
+		return true
+	}
+	v, ok := root.fieldsHelper[path[0]]
+	if !ok {
+		return false
+	}
+	walker := v.st
+	if walker == nil {
+		return false
+	}
+	if _, ok = walker.Walk(path[1:]); ok {
+		return ok
+	}
+	return false
+}
+*/
