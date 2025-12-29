@@ -79,6 +79,11 @@ func (c *Functions) Compile() error {
 	return nil
 }
 
+// Finalize finalizes the Functions structure by performing necessary cleanup or concluding operations. Returns an error if it fails.
+func (c *Functions) Finalize() error {
+	return nil
+}
+
 // funcBodyPrepare prepares the function body by processing its declaration and receiver, and defining its symbol in the scope.
 // It returns an error if the receiver type is unsupported or if symbol definition fails.
 func (c *Functions) funcBodyPrepare(fd *tables.FunctionDescription) error {
@@ -125,7 +130,7 @@ func (c *Functions) funcBodyPrepare(fd *tables.FunctionDescription) error {
 	placeHolder.SetReturnTypes(fd.ReturnTypes)
 	if len(fd.StructName) > 0 {
 		c.definitionTable.StructBindSymbol(placeHolder, fd.StructName)
-		c.definitionTable.StructAddField(fd.StructName, node.Name.Name, "func", node)
+		c.definitionTable.StructAddField(fd.StructName, node.Name.Name, "func", false, node)
 	}
 	return nil
 }

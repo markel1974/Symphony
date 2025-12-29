@@ -3,12 +3,13 @@ package ascii_render
 import (
 	"bytes"
 	"fmt"
-	"github.com/markel1974/c64emu/src/config"
-	"github.com/markel1974/c64emu/src/references"
 	"log"
 	"os"
 	"os/signal"
 	"syscall"
+
+	"github.com/markel1974/c64emu/src/config"
+	"github.com/markel1974/c64emu/src/references"
 )
 
 type Render struct {

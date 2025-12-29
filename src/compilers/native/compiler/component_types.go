@@ -47,3 +47,8 @@ func (o *Types) Compile() error {
 	}
 	return nil
 }
+
+// Finalize finalizes the Types structure by performing necessary cleanup or concluding operations. Returns an error if it fails.
+func (c *Types) Finalize() error {
+	return nil
+}

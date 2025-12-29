@@ -11,4 +11,6 @@ type IComponent interface {
 	Prepare() error
 
 	Compile() error
+
+	Finalize() error
 }

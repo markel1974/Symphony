@@ -47,6 +47,11 @@ func (c *ControlFlow) Compile() error {
 	return nil
 }
 
+// Finalize finalizes the ControlFlow structure by performing necessary cleanup or concluding operations. Returns an error if it fails.
+func (c *ControlFlow) Finalize() error {
+	return nil
+}
+
 // IfStmt compiles an if statement, handling both 'then' and optional 'else' blocks with associated bytecode instructions.
 func (c *ControlFlow) IfStmt(node *ast.IfStmt) error {
 	if err := c.compile(node.Cond); err != nil {

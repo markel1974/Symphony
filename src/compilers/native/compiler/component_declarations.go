@@ -69,6 +69,15 @@ func (c *Declarations) Compile() error {
 	return nil
 }
 
+// Finalize finalizes the Declarations structure by performing necessary cleanup or concluding operations. Returns an error if it fails.
+func (c *Declarations) Finalize() error {
+	//return nil
+	if err := c.definitionTable.Finalize(); err != nil {
+		return err
+	}
+	return nil
+}
+
 // DeclStmt processes an AST declaration statement node and compiles its declaration, returning any encountered error.
 func (c *Declarations) DeclStmt(node *ast.DeclStmt) error {
 	if err := c.compile(node.Decl); err != nil {
@@ -100,18 +109,38 @@ func (c *Declarations) TypeSpec(node *ast.TypeSpec) error {
 		c.definitionTable.StructAdd(typeName)
 		if t.Fields != nil {
 			for _, field := range t.Fields.List {
-				//var typeNameBuf bytes.Buffer
-				var base string
+				// POINTER DETECTION (Surface Check)
+				isPointer := false
+				if _, ok := field.Type.(*ast.StarExpr); ok {
+					isPointer = true
+				}
+
+				// NAME RESOLUTION (Deep Search)
+				var baseStructName string
 				if ident := tables.GetIdent(field.Type); ident != nil {
-					base = ident.Name
+					baseStructName = ident.Name
+				} else {
+					return fmt.Errorf("unsupported type: %v", field.Type)
 				}
-				//if err := printer.Fprint(&typeNameBuf, c.fileSet, field.Type); err != nil {
-				//	return tables.NewCompilerError(c.fileSet, node, "failed to resolve type for field in struct '%s'", typeName)
+
+				// REGISTRATION
+				if len(field.Names) == 0 {
+					// Embedding (uses the base struct name as field name)
+					c.definitionTable.StructAddField(typeName, baseStructName, baseStructName, isPointer, field)
+				} else {
+					// Normal fields
+					for _, name := range field.Names {
+						c.definitionTable.StructAddField(typeName, name.Name, baseStructName, isPointer, field)
+					}
+				}
+
+				//var base string
+				//if ident := tables.GetIdent(field.Type); ident != nil {
+				//	base = ident.Name
 				//}
-				//fieldType := typeNameBuf.String()
-				for _, name := range field.Names {
-					c.definitionTable.StructAddField(typeName, name.Name, base, field)
-				}
+				//for _, name := range field.Names {
+				//	c.definitionTable.StructAddField(typeName, name.Name, base, field)
+				//}
 			}
 		}
 		symbol, err := c.scopes.SymbolDefineType(typeName)

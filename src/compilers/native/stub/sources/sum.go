@@ -7,13 +7,13 @@ type Inner struct {
 }
 
 type Center struct {
-	Central string
 	I       Inner
+	Central string
 }
 type Outer struct {
+	C     Center
 	Name  string
 	Value int64
-	C     Center
 }
 
 func main() {

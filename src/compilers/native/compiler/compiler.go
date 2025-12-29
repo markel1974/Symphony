@@ -107,6 +107,12 @@ func (c *Compiler) Compile(filename string, source any) error {
 	if err = c.compile(astFile); err != nil {
 		return err
 	}
+
+	for _, component := range c.components {
+		if err = component.Finalize(); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 

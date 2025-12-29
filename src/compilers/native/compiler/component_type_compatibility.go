@@ -61,6 +61,11 @@ func (tc *TypeCompatibility) Compile() error {
 	return nil
 }
 
+// Finalize finalizes the TypeCompatibility structure by performing necessary cleanup or concluding operations. Returns an error if it fails.
+func (tc *TypeCompatibility) Finalize() error {
+	return nil
+}
+
 // checkStructImplementsInterface determines if a struct implements all methods defined by a given interface description.
 func (tc *TypeCompatibility) checkStructImplementsInterface(structName string, interfaceDesc *tables.InterfaceDescription) (bool, error) {
 	for _, requiredMethod := range interfaceDesc.Methods {

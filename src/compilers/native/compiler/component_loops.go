@@ -49,6 +49,11 @@ func (c *Loops) Compile() error {
 	return nil
 }
 
+// Finalize finalizes the Loops structure by performing necessary cleanup or concluding operations. Returns an error if it fails.
+func (c *Loops) Finalize() error {
+	return nil
+}
+
 // ForStmt compiles an AST for-loop statement by handling initialization, condition, body, post-iteration step, and loop structure.
 func (c *Loops) ForStmt(node *ast.ForStmt) error {
 	if node.Init != nil {

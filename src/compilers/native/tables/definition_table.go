@@ -1,6 +1,7 @@
 package tables
 
 import (
+	"fmt"
 	"go/ast"
 	"go/token"
 
@@ -87,7 +88,7 @@ func (f *DefinitionTable) StructAdd(name string) {
 }
 
 // StructAddField adds a new field to a struct, specifying the struct name, field name, base struct, type, and AST node.
-func (f *DefinitionTable) StructAddField(name string, fieldName string, baseStruct string, node ast.Node) {
+func (f *DefinitionTable) StructAddField(name string, fieldName string, baseStruct string, isPointer bool, node ast.Node) {
 	sd := f.structTable.AddStruct(name)
 	var field IStructField = nil
 	if s, ok := f.structTable.Get(baseStruct); ok {
@@ -99,6 +100,7 @@ func (f *DefinitionTable) StructAddField(name string, fieldName string, baseStru
 	}
 	field.SetFieldName(fieldName)
 	field.SetFieldNode(node)
+	field.SetIsPointer(isPointer)
 	sd.AddField(field)
 }
 
@@ -189,4 +191,94 @@ func (f *DefinitionTable) TypeInference(expr ast.Expr) (string, bool) {
 	}
 	return ret, true
 	//return "", nil, false
+}
+
+func (f *DefinitionTable) Finalize() error {
+	// PHASE 1: Linker (Reference Resolution)
+	keys := f.structTable.Keys() // Assume it returns []string
+	for _, structName := range keys {
+		structDef, _ := f.structTable.Get(structName)
+
+		// Note: structDef must expose Fields() as []IStructField
+		for _, field := range structDef.Fields() {
+			// If the field is not yet linked to a real definition...
+			if field.IsPlaceholder() {
+				baseName := field.FieldBase()
+				// Look for the definition in the tables
+				if baseDef, ok := f.structTable.Get(baseName); ok {
+					field.BindDefinition(baseDef)
+				} else if interfaceDef, ok := f.interfaceTable.Get(baseName); ok {
+					// If you support interfaces as fields
+					field.BindDefinition(interfaceDef)
+				} else {
+					//check if embedded type or undefined
+					continue
+					//return fmt.Errorf("type '%s' undefined in struct '%s'", baseName, structName)
+				}
+			}
+		}
+	}
+
+	// PHASE 2: Layout Engine (Size Calculation)
+	visiting := make(map[string]bool)
+	for _, structName := range keys {
+		if err := f.computeLayout(structName, visiting); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (f *DefinitionTable) computeLayout(structName string, visiting map[string]bool) error {
+	structDef, _ := f.structTable.Get(structName)
+
+	// If the struct already has a calculated size, exit
+	// (Assume StructDefinition has an IsFinalized method or check size > 0)
+	if structDef.IsFinalized() {
+		return nil
+	}
+
+	if visiting[structName] {
+		return fmt.Errorf("recursive value type detected: %s (use a pointer instead)", structName)
+	}
+	visiting[structName] = true
+
+	currentOffset := 0
+	for _, field := range structDef.Fields() {
+		field.SetOffset(currentOffset)
+
+		if field.IsPointer() {
+			currentOffset += 8 // Pointer (64-bit)
+		} else {
+			// It's an embedded value. We need to know how large the base type is.
+
+			// Retrieve the linked definition (guaranteed to exist thanks to PHASE 1)
+			def := field.Definition()
+
+			// Cast to *StructDefinition (you need to handle the Interface case separately if needed)
+			if baseDef, ok := def.(interface {
+				TotalSize() int
+				IsFinalized() bool
+				Name() string
+			}); ok {
+				// Recursion: calculate the child's layout if not ready
+				if !baseDef.IsFinalized() {
+					if err := f.computeLayout(baseDef.Name(), visiting); err != nil {
+						return err
+					}
+				}
+				currentOffset += baseDef.TotalSize()
+			} else {
+				// Fallback for primitive or unhandled types?
+				// If 'baseDef' is nil or not struct, how large is it?
+				// Here you should handle base types (int, string) if they are treated as structFields
+				// or assume a default size.
+			}
+		}
+	}
+
+	structDef.SetTotalSize(currentOffset)
+	structDef.SetFinalized(true)
+	delete(visiting, structName)
+	return nil
 }

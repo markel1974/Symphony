@@ -63,6 +63,11 @@ func (i *Imports) Compile() error {
 	return nil
 }
 
+// Finalize finalizes the Imports structure by performing necessary cleanup or concluding operations. Returns an error if it fails.
+func (i *Imports) Finalize() error {
+	return nil
+}
+
 // Declare appends the provided declaration to the container slice of the Imports structure.
 func (i *Imports) Declare(decls ast.Decl) {
 	i.container = append(i.container, decls)

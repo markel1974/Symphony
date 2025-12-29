@@ -19,6 +19,22 @@ type IStructField interface {
 	FieldNode() ast.Node
 
 	SetFieldNode(node ast.Node)
+
+	SetIsPointer(bool)
+
+	IsPointer() bool
+
+	Definition() interface{}
+
+	BindDefinition(def interface{})
+
+	IsPlaceholder() bool
+
+	IsFinalized() bool
+
+	SetFinalized(finalized bool)
+
+	SetOffset(offset int)
 }
 
 // StructTable is a collection that manages mappings of struct names to their associated properties.

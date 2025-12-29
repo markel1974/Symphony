@@ -46,3 +46,8 @@ func (o *Others) Compile() error {
 	}
 	return nil
 }
+
+// Finalize finalizes the Others structure by performing necessary cleanup or concluding operations. Returns an error if it fails.
+func (o *Others) Finalize() error {
+	return nil
+}

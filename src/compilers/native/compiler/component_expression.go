@@ -47,6 +47,11 @@ func (c *Expression) Compile() error {
 	return nil
 }
 
+// Finalize finalizes the Expression structure by performing necessary cleanup or concluding operations. Returns an error if it fails.
+func (e *Expression) Finalize() error {
+	return nil
+}
+
 // UnaryExpr compiles a unary expression by evaluating the operand and applying the specified unary operator.
 // It handles special cases for the address-of operator '&', ensuring correct pointer behavior based on operand type.
 // Emits appropriate bytecode instructions for each unary operation or returns an error on unsupported cases.

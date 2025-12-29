@@ -16,9 +16,11 @@ type Struct struct {
 	sType        StructType
 	fields       []IStructField
 	fieldsHelper map[string]IStructField
-
-	fieldName string
-	fieldNode ast.Node
+	isPointer    bool
+	fieldName    string
+	fieldNode    ast.Node
+	totalSize    int
+	finalized    bool
 }
 
 // NewStruct creates and returns a pointer to a StructData instance, initializing its fields and type.
@@ -89,9 +91,22 @@ func (sd *Struct) FieldNode() ast.Node {
 	return sd.fieldNode
 }
 
+// SetIsPointer sets whether the Struct instance is a pointer type based on the provided boolean value.
+func (sd *Struct) SetIsPointer(isPointer bool) {
+	sd.isPointer = isPointer
+}
+
+// IsPointer indicates whether the Struct instance is a pointer by returning the value of the isPointer field.
+func (sd *Struct) IsPointer() bool {
+	return sd.isPointer
+}
+
 // FieldClone creates and returns a deep copy of the Struct, including its fields, maintaining the original structure and properties.
 func (sd *Struct) FieldClone() IStructField {
 	out := NewStruct(sd.name, sd.sType)
+	out.isPointer = sd.isPointer
+	out.totalSize = sd.totalSize
+	out.finalized = sd.finalized
 	for _, field := range sd.fields {
 		out.AddField(field.FieldClone())
 	}
@@ -101,6 +116,42 @@ func (sd *Struct) FieldClone() IStructField {
 // IsBuiltin determines if the Struct instance represents a built-in type by comparing its kind to StructTypeBuiltin.
 func (sd *Struct) IsBuiltin() bool {
 	return sd.sType == StructTypeBuiltin
+}
+
+func (sd *Struct) Offset() int {
+	return 0
+}
+
+func (sd *Struct) SetOffset(offset int) {
+	// No-op for top-level
+}
+
+func (sd *Struct) Definition() interface{} {
+	return sd
+}
+
+func (sd *Struct) BindDefinition(def interface{}) {
+	// No-op: non puoi ribindare una definizione a qualcos'altro
+}
+
+func (sd *Struct) IsPlaceholder() bool {
+	return false // Una struct definita non è mai un placeholder
+}
+
+func (sd *Struct) IsFinalized() bool {
+	return sd.finalized
+}
+
+func (sd *Struct) SetFinalized(finalized bool) {
+	sd.finalized = finalized
+}
+
+func (sd *Struct) TotalSize() int {
+	return sd.totalSize
+}
+
+func (sd *Struct) SetTotalSize(size int) {
+	sd.totalSize = size
 }
 
 /*
