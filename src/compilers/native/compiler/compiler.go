@@ -230,8 +230,11 @@ func (c *Compiler) defaultPipeline() []func() error {
 		c.types.Compile,
 		c.functions.Prepare,
 		c.typeCompatibility.Prepare,
+		c.typeCompatibility.Compile,
 		c.others.Prepare,
 		c.others.Compile,
+		c.declarations.Prepare,
+		c.declarations.Compile,
 		c.functions.Compile,
 		c.createInit,
 	}

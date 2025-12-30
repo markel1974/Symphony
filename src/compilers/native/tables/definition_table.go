@@ -8,9 +8,7 @@ import (
 	"github.com/markel1974/c64emu/src/vm/objects"
 )
 
-// DefinitionTable represents a container for managing the scopes, structures, and interfaces in a type system.
-// It uses a gatekeeper interface to handle object-related operations such as creation, conversion, and adaptation.
-// The struct facilitates the organization and resolution of types within a given context or environment.
+// DefinitionTable is a composite structure for managing scopes, structs, interfaces, and access control through an IGateKeeper.
 type DefinitionTable struct {
 	gk             objects.IGateKeeper
 	scopes         *Scopes
@@ -18,7 +16,7 @@ type DefinitionTable struct {
 	interfaceTable *InterfaceTable
 }
 
-// NewDefinitionTable initializes and returns a pointer to a new DefinitionTable with the provided gatekeeper, scopes, and tables.
+// NewDefinitionTable initializes and returns a pointer to a DefinitionTable with the provided IGateKeeper and Scopes instances.
 func NewDefinitionTable(gk objects.IGateKeeper, scopes *Scopes) *DefinitionTable {
 	structTable := NewStructTable(gk, scopes)
 	interfaceTable := NewInterfaceTable(gk, scopes)
@@ -30,7 +28,7 @@ func NewDefinitionTable(gk objects.IGateKeeper, scopes *Scopes) *DefinitionTable
 	}
 }
 
-// Assign assigns a type or interface to the given symbol based on its presence in the interface or struct table.
+// Assign assigns a type to the given symbol based on whether the type is an interface or not.
 func (f *DefinitionTable) Assign(symbol *Symbol, typeName string) error {
 	isInterface := f.interfaceTable.Has(typeName)
 	if isInterface {
@@ -41,7 +39,7 @@ func (f *DefinitionTable) Assign(symbol *Symbol, typeName string) error {
 	return nil
 }
 
-// InferAssign assigns a type to a symbol by inferring the type from the provided expression or using the given type name.
+// InferAssign assigns a type to the given symbol by inferring the type from an expression if not explicitly provided.
 func (f *DefinitionTable) InferAssign(symbol *Symbol, inferredTypeName string, rhsIn ast.Expr) {
 	if len(inferredTypeName) == 0 {
 		if inferredTypeName, _ = f.TypeInference(rhsIn); len(inferredTypeName) == 0 {
@@ -51,14 +49,14 @@ func (f *DefinitionTable) InferAssign(symbol *Symbol, inferredTypeName string, r
 	f.TypeAssign(symbol, inferredTypeName)
 }
 
-// InterfaceAssign assigns an interface to the given symbol and configures its return types and related object.
+// InterfaceAssign assigns an interface type to the given symbol, updating its return types, interface, and object representation.
 func (f *DefinitionTable) InterfaceAssign(symbol *Symbol, interfaceName string) {
 	symbol.SetReturnTypes([]string{interfaceName})
 	symbol.SetInterface(interfaceName)
 	symbol.SetObject(f.gk.NewString(objects.FrameStatic, interfaceName+":"+symbol.Name()))
 }
 
-// TypeAssign assigns a type to the provided symbol, sets its return types, and binds it to a struct if applicable.
+// TypeAssign assigns a type to a symbol by setting its return types and object, and binds it to a struct if applicable.
 func (f *DefinitionTable) TypeAssign(symbol *Symbol, typeName string) {
 	symbol.SetReturnTypes([]string{typeName})
 	symbol.SetObject(f.gk.NewString(objects.FrameStatic, typeName+":"+symbol.Name()))
@@ -66,13 +64,13 @@ func (f *DefinitionTable) TypeAssign(symbol *Symbol, typeName string) {
 	f.structTable.BindSymbol(symbol, typeName)
 }
 
-// StructBindSymbol binds a given symbol to a struct type by setting its object and registering it in the struct table.
+// StructBindSymbol binds a given struct symbol to its corresponding type name in the struct table.
 func (f *DefinitionTable) StructBindSymbol(symbol *Symbol, typeName string) {
 	symbol.SetObject(f.gk.NewString(objects.FrameStatic, typeName+":"+symbol.Name()))
 	f.structTable.BindSymbol(symbol, typeName)
 }
 
-// StructHas checks if a struct definition with the provided name exists in the struct table and returns a boolean.
+// StructHas checks if a struct with the given name exists in the struct table.
 func (f *DefinitionTable) StructHas(name string) bool {
 	return f.structTable.Has(name)
 }
@@ -82,13 +80,28 @@ func (f *DefinitionTable) StructIsBuiltin(name string) bool {
 	return f.structTable.IsBuiltin(name)
 }
 
-// StructAdd defines a new struct by its name and adds it to the struct table if it doesn't already exist.
+// StructAdd adds a new struct with the given name to the struct table.
 func (f *DefinitionTable) StructAdd(name string) {
 	f.structTable.AddStruct(name)
 }
 
-// StructAddField adds a new field to a struct, specifying the struct name, field name, base struct, type, and AST node.
-func (f *DefinitionTable) StructAddField(name string, fieldName string, baseStruct string, isPointer bool, node ast.Node) {
+// StructAddField adds a new field to a struct definition in the struct table using the provided field details and base type.
+func (f *DefinitionTable) StructAddField(name string, fieldName string, baseStruct string, node ast.Node, kind ast.Expr) {
+	// Surface Check
+	isPointer := false
+	//isMap := false
+	//isArray := false
+	switch kind.(type) {
+	case *ast.StarExpr:
+		isPointer = true
+	case *ast.MapType:
+		//isMap = true
+		//fmt.Println("Is MapType")
+	case *ast.ArrayType:
+		//isArray = true
+		//fmt.Println("Is ArrayType")
+	}
+
 	sd := f.structTable.AddStruct(name)
 	var field IStructField = nil
 	if s, ok := f.structTable.Get(baseStruct); ok {
@@ -104,49 +117,48 @@ func (f *DefinitionTable) StructAddField(name string, fieldName string, baseStru
 	sd.AddField(field)
 }
 
-// StructKeys retrieves the list of struct names from the StructTable associated with the DefinitionTable.
+// StructKeys returns a list of all the keys present in the struct table.
 func (f *DefinitionTable) StructKeys() []string {
 	return f.structTable.Keys()
 }
 
-// StructSetImplementations sets the implementation mappings for structs to interfaces in the DefinitionTable.
+// StructSetImplementations sets the struct implementations mapping in the struct table.
 func (f *DefinitionTable) StructSetImplementations(impls map[string][]string) {
 	f.structTable.SetImplementations(impls)
 }
 
-// StructFieldsFromLiteral extracts struct fields from a list of AST expressions for a given struct name, returning them or an error.
+// StructFieldsFromLiteral retrieves the fields of a struct from its literal representation using provided expressions.
 func (f *DefinitionTable) StructFieldsFromLiteral(structName string, eltS []ast.Expr) ([]IStructField, error) {
 	return f.structTable.FieldsFromLiteral(structName, eltS)
 }
 
-// StructTypeNameFromSymbolField retrieves the type name of a field within a struct associated with a given symbol name.
-// Returns the type as a string and a boolean indicating success.
+// StructTypeNameFromSymbolField retrieves the type name of a struct field by its symbol and field name.
+// Returns the type name and a boolean indicating success.
 func (f *DefinitionTable) StructTypeNameFromSymbolField(name string, fieldName string) (string, bool) {
 	return f.structTable.TypeNameFromSymbolField(name, fieldName)
 }
 
-// StructImplements checks whether a struct implements a specific interface by delegating to the underlying struct table.
+// StructImplements checks if a given struct implements a specified interface and returns a boolean result.
 func (f *DefinitionTable) StructImplements(structName string, interfaceName string) bool {
 	return f.structTable.Implements(structName, interfaceName)
 }
 
-// InterfaceAdd registers a new interface in the interface table using its name and ast.InterfaceType node, returning an error if the addition fails.
+// InterfaceAdd adds a new interface with the specified name and AST node to the interface table. Returns an error if it fails.
 func (f *DefinitionTable) InterfaceAdd(name string, node *ast.InterfaceType) error {
 	return f.interfaceTable.Add(name, node)
 }
 
-// InterfaceGet retrieves an InterfaceDescription by name from the interface table. Returns the description and a boolean indicating existence.
+// InterfaceGet retrieves the interface definition by name from the interface table and indicates its existence.
 func (f *DefinitionTable) InterfaceGet(name string) (*InterfaceDescription, bool) {
 	return f.interfaceTable.Get(name)
 }
 
-// InterfaceContainer retrieves the map of all interface descriptions indexed by their names from the interface table.
+// InterfaceContainer retrieves the internal container that maps interface names to their descriptions.
 func (f *DefinitionTable) InterfaceContainer() map[string]*InterfaceDescription {
 	return f.interfaceTable.Container()
 }
 
-// TypeInference infers struct type information from the given AST expression and scope context.
-// It returns a generated struct name, a list of associated base type names, and a boolean indicating success.
+// TypeInference determines the type of the given expression and returns the type name and a boolean indicating success.
 func (f *DefinitionTable) TypeInference(expr ast.Expr) (string, bool) {
 	var ret string
 	switch rhs := expr.(type) {
@@ -193,6 +205,7 @@ func (f *DefinitionTable) TypeInference(expr ast.Expr) (string, bool) {
 	//return "", nil, false
 }
 
+// Finalize performs the final resolution and layout of all struct and interface definitions. It resolves references and computes sizes.
 func (f *DefinitionTable) Finalize() error {
 	// PHASE 1: Linker (Reference Resolution)
 	keys := f.structTable.Keys() // Assume it returns []string
@@ -229,6 +242,8 @@ func (f *DefinitionTable) Finalize() error {
 	return nil
 }
 
+// computeLayout calculates the memory layout of a struct by determining field offsets and total size recursively.
+// It checks for recursive value types and handles both primitive and embedded value fields.
 func (f *DefinitionTable) computeLayout(structName string, visiting map[string]bool) error {
 	structDef, _ := f.structTable.Get(structName)
 
@@ -282,3 +297,75 @@ func (f *DefinitionTable) computeLayout(structName string, visiting map[string]b
 	delete(visiting, structName)
 	return nil
 }
+
+/*
+// JsonSchemaEncoder trasforma la definizione gerarchica dei campi in JSON.
+type JsonSchemaEncoder struct{}
+
+// Encode parte dalla lista radice di campi (lo schema della Struct principale)
+func (e *JsonSchemaEncoder) Encode(fields []IStructField) ([]byte, error) {
+	// 1. Costruiamo la mappa radice
+	rootMap := make(map[string]interface{})
+
+	// 2. Popoliamo ricorsivamente
+	// Nota: Un campo struct è definito dai suoi campi, quindi la "mappa" JSON
+	// rappresenta i valori di default o la struttura stessa.
+	for _, field := range fields {
+		//rootMap[field.Name()] = e.buildValue(field.Value())
+		////rootMap[field.FieldName()] = e.buildValue(field.FieldName())
+	}
+
+	// 3. Serializziamo
+	return json.Marshal(rootMap)
+}
+
+// buildValue è la funzione ricorsiva che "non conosce IObjects"
+// Gestisce tipi primitivi, mappe, slice e soprattutto strutture annidate ([]IStructField)
+func (e *JsonSchemaEncoder) buildValue(val interface{}) interface{} {
+	if val == nil {
+		return nil
+	}
+
+	switch v := val.(type) {
+
+	// --- Caso Chiave: Struct Annidata ---
+	// Se il valore è una lista di campi, significa che è una struct annidata.
+	// Dobbiamo trasformarla in una mappa JSON.
+	case []IStructField:
+		subMap := make(map[string]interface{})
+		for _, f := range v {
+			subMap[f.Name()] = e.buildValue(f.Value()) // <--- Ricorsione
+		}
+		return subMap
+
+	// --- Container Generici ---
+	case map[string]interface{}:
+		// Mappa generica: ricorsione sui valori
+		out := make(map[string]interface{}, len(v))
+		for k, subVal := range v {
+			out[k] = e.buildValue(subVal)
+		}
+		return out
+
+	case []interface{}:
+		// Array generico: ricorsione sugli elementi
+		out := make([]interface{}, len(v))
+		for i, subVal := range v {
+			out[i] = e.buildValue(subVal)
+		}
+		return out
+
+	// --- Primitivi ---
+	// Passano direttamente al JSON
+	case int, int64, float64, string, bool:
+		return v
+
+	default:
+		// Fallback per tipi custom o imprevisti (es. Stringer)
+		if s, ok := v.(fmt.Stringer); ok {
+			return s.String()
+		}
+		return v
+	}
+}
+*/

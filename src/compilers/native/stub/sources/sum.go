@@ -4,6 +4,7 @@ import "fmt"
 
 type Inner struct {
 	Internal int
+	TEST     []float64
 }
 
 type Center struct {

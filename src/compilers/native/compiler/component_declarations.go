@@ -66,15 +66,17 @@ func (c *Declarations) Prepare() error {
 
 // Compile compiles the AST nodes using the configured compile function and returns an error if the process fails.
 func (c *Declarations) Compile() error {
+	if err := c.definitionTable.Finalize(); err != nil {
+		return err
+	}
 	return nil
 }
 
 // Finalize finalizes the Declarations structure by performing necessary cleanup or concluding operations. Returns an error if it fails.
 func (c *Declarations) Finalize() error {
-	//return nil
-	if err := c.definitionTable.Finalize(); err != nil {
-		return err
-	}
+	//if err := c.definitionTable.Finalize(); err != nil {
+	//	return err
+	//}
 	return nil
 }
 
@@ -109,12 +111,6 @@ func (c *Declarations) TypeSpec(node *ast.TypeSpec) error {
 		c.definitionTable.StructAdd(typeName)
 		if t.Fields != nil {
 			for _, field := range t.Fields.List {
-				// POINTER DETECTION (Surface Check)
-				isPointer := false
-				if _, ok := field.Type.(*ast.StarExpr); ok {
-					isPointer = true
-				}
-
 				// NAME RESOLUTION (Deep Search)
 				var baseStructName string
 				if ident := tables.GetIdent(field.Type); ident != nil {
@@ -126,11 +122,11 @@ func (c *Declarations) TypeSpec(node *ast.TypeSpec) error {
 				// REGISTRATION
 				if len(field.Names) == 0 {
 					// Embedding (uses the base struct name as field name)
-					c.definitionTable.StructAddField(typeName, baseStructName, baseStructName, isPointer, field)
+					c.definitionTable.StructAddField(typeName, baseStructName, baseStructName, field, field.Type)
 				} else {
 					// Normal fields
 					for _, name := range field.Names {
-						c.definitionTable.StructAddField(typeName, name.Name, baseStructName, isPointer, field)
+						c.definitionTable.StructAddField(typeName, name.Name, baseStructName, field, field.Type)
 					}
 				}
 

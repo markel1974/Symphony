@@ -130,7 +130,7 @@ func (c *Functions) funcBodyPrepare(fd *tables.FunctionDescription) error {
 	placeHolder.SetReturnTypes(fd.ReturnTypes)
 	if len(fd.StructName) > 0 {
 		c.definitionTable.StructBindSymbol(placeHolder, fd.StructName)
-		c.definitionTable.StructAddField(fd.StructName, node.Name.Name, "func", false, node)
+		c.definitionTable.StructAddField(fd.StructName, node.Name.Name, "func", node, node.Type)
 	}
 	return nil
 }

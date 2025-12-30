@@ -92,7 +92,7 @@ func (fd *StructField) IsPlaceholder() bool {
 // IsFinalized checks if the field's definition is finalized. Returns true if finalized, otherwise false.
 func (fd *StructField) IsFinalized() bool {
 	if fd.definition != nil {
-		// Opzionale: controlla se la definizione è finalizzata
+		// Optional: check if the definition is finalized
 		if def, ok := fd.definition.(IStructField); ok {
 			return def.IsFinalized()
 		}
@@ -102,6 +102,6 @@ func (fd *StructField) IsFinalized() bool {
 
 // SetFinalized sets the finalized state for the field. This is typically managed at the struct level, not field level.
 func (fd *StructField) SetFinalized(finalized bool) {
-	// No-op per un campo semplice, o potresti volerlo propagare.
-	// Generalmente è la Struct che mantiene lo stato "Finalized".
+	// No-op for a simple field, or you might want to propagate it.
+	// Generally, it is the Struct that maintains the "Finalized" state.
 }
