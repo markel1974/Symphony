@@ -204,7 +204,6 @@ func (f *DefinitionTable) TypeInference(expr ast.Expr) (string, bool) {
 		return "", false
 	}
 	return ret, true
-	//return "", nil, false
 }
 
 // Finalize performs the final resolution and layout of all struct and interface definitions. It resolves references and computes sizes.
@@ -263,30 +262,20 @@ func (f *DefinitionTable) computeLayout(structName string, visiting map[string]b
 	currentOffset := 0
 	for _, field := range structDef.Fields() {
 		field.SetOffset(currentOffset)
-
 		if pointer, _, _ := field.Options(); pointer {
 			currentOffset += 8 // Pointer (64-bit)
 		} else {
 			// It's an embedded value. We need to know how large the base type is.
 			def := field.Definition()
 			// Cast to *StructDefinition (you need to handle the Interface case separately if needed)
-			if baseDef, ok := def.(interface {
-				TotalSize() int
-				IsFinalized() bool
-				Name() string
-			}); ok {
+			if sDef, ok := def.(*Struct); ok {
 				// Recursion: calculate the child's layout if not ready
-				if !baseDef.IsFinalized() {
-					if err := f.computeLayout(baseDef.Name(), visiting); err != nil {
+				if !sDef.IsFinalized() {
+					if err := f.computeLayout(sDef.Name(), visiting); err != nil {
 						return err
 					}
 				}
-				currentOffset += baseDef.TotalSize()
-			} else {
-				// Fallback for primitive or unhandled types?
-				// If 'baseDef' is nil or not struct, how large is it?
-				// Here you should handle base types (int, string) if they are treated as structFields
-				// or assume a default size.
+				currentOffset += sDef.TotalSize()
 			}
 		}
 	}
@@ -294,77 +283,10 @@ func (f *DefinitionTable) computeLayout(structName string, visiting map[string]b
 	structDef.SetTotalSize(currentOffset)
 	structDef.SetFinalized(true)
 	delete(visiting, structName)
+
+	//fmt.Println("------ ENCODING ----", structDef.Name())
+	//encoder := JsonSchemaEncoder{}
+	//testResult, _ := encoder.Encode(structDef.Fields())
+	//fmt.Println(string(testResult))
 	return nil
 }
-
-/*
-// JsonSchemaEncoder trasforma la definizione gerarchica dei campi in JSON.
-type JsonSchemaEncoder struct{}
-
-// Encode parte dalla lista radice di campi (lo schema della Struct principale)
-func (e *JsonSchemaEncoder) Encode(fields []IStructField) ([]byte, error) {
-	// 1. Costruiamo la mappa radice
-	rootMap := make(map[string]interface{})
-
-	// 2. Popoliamo ricorsivamente
-	// Nota: Un campo struct è definito dai suoi campi, quindi la "mappa" JSON
-	// rappresenta i valori di default o la struttura stessa.
-	for _, field := range fields {
-		//rootMap[field.Name()] = e.buildValue(field.Value())
-		////rootMap[field.FieldName()] = e.buildValue(field.FieldName())
-	}
-
-	// 3. Serializziamo
-	return json.Marshal(rootMap)
-}
-
-// buildValue è la funzione ricorsiva che "non conosce IObjects"
-// Gestisce tipi primitivi, mappe, slice e soprattutto strutture annidate ([]IStructField)
-func (e *JsonSchemaEncoder) buildValue(val interface{}) interface{} {
-	if val == nil {
-		return nil
-	}
-
-	switch v := val.(type) {
-
-	// --- Caso Chiave: Struct Annidata ---
-	// Se il valore è una lista di campi, significa che è una struct annidata.
-	// Dobbiamo trasformarla in una mappa JSON.
-	case []IStructField:
-		subMap := make(map[string]interface{})
-		for _, f := range v {
-			subMap[f.Name()] = e.buildValue(f.Value()) // <--- Ricorsione
-		}
-		return subMap
-
-	// --- Container Generici ---
-	case map[string]interface{}:
-		// Mappa generica: ricorsione sui valori
-		out := make(map[string]interface{}, len(v))
-		for k, subVal := range v {
-			out[k] = e.buildValue(subVal)
-		}
-		return out
-
-	case []interface{}:
-		// Array generico: ricorsione sugli elementi
-		out := make([]interface{}, len(v))
-		for i, subVal := range v {
-			out[i] = e.buildValue(subVal)
-		}
-		return out
-
-	// --- Primitivi ---
-	// Passano direttamente al JSON
-	case int, int64, float64, string, bool:
-		return v
-
-	default:
-		// Fallback per tipi custom o imprevisti (es. Stringer)
-		if s, ok := v.(fmt.Stringer); ok {
-			return s.String()
-		}
-		return v
-	}
-}
-*/

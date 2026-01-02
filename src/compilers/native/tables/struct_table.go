@@ -24,9 +24,9 @@ type IStructField interface {
 
 	Options() (bool, string, string)
 
-	Definition() interface{}
+	Definition() IStructField
 
-	BindDefinition(def interface{})
+	BindDefinition(def IStructField)
 
 	IsPlaceholder() bool
 

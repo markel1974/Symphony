@@ -111,12 +111,12 @@ func (id *InterfaceDescription) SetOffset(offset int) {
 }
 
 // Definition returns the InterfaceDescription instance as an empty interface.
-func (id *InterfaceDescription) Definition() interface{} {
+func (id *InterfaceDescription) Definition() IStructField {
 	return id
 }
 
 // BindDefinition associates an external definition with the interface; this method is currently a no-operation (No-op).
-func (id *InterfaceDescription) BindDefinition(def interface{}) {
+func (id *InterfaceDescription) BindDefinition(def IStructField) {
 	// No-op
 }
 

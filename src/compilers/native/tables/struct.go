@@ -108,6 +108,8 @@ func (sd *Struct) Options() (bool, string, string) {
 // FieldClone creates and returns a deep copy of the Struct, including its fields, maintaining the original structure and properties.
 func (sd *Struct) FieldClone() IStructField {
 	out := NewStruct(sd.name, sd.sType)
+	out.fieldName = sd.fieldName
+	out.fieldNode = sd.fieldNode
 	out.pointer = sd.pointer
 	out.container = sd.container
 	out.kind = sd.kind
@@ -135,12 +137,12 @@ func (sd *Struct) SetOffset(offset int) {
 }
 
 // Definition returns the Struct instance itself as an interface{} type.
-func (sd *Struct) Definition() interface{} {
+func (sd *Struct) Definition() IStructField {
 	return sd
 }
 
 // BindDefinition associates an external definition with the Struct instance. This method is currently a no-op.
-func (sd *Struct) BindDefinition(def interface{}) {
+func (sd *Struct) BindDefinition(_ IStructField) {
 	// No-op
 }
 

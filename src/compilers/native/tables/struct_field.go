@@ -12,8 +12,8 @@ type StructField struct {
 	container string
 	kind      string
 
-	offset     int         // Byte offset from the beginning of the struct
-	definition interface{} // Reference to the actual definition (Struct or Interface)
+	offset     int          // Byte offset from the beginning of the struct
+	definition IStructField // Reference to the actual definition (Struct or Interface)
 }
 
 // NewStructField creates and returns a pointer to a new StructField with the specified base string.
@@ -83,12 +83,12 @@ func (fd *StructField) Offset() int {
 }
 
 // BindDefinition assigns a definition, such as a struct or interface, to the field for reference or further processing.
-func (fd *StructField) BindDefinition(def interface{}) {
+func (fd *StructField) BindDefinition(def IStructField) {
 	fd.definition = def
 }
 
 // Definition returns the definition associated with the struct field. It may reference a struct or interface definition.
-func (fd *StructField) Definition() interface{} {
+func (fd *StructField) Definition() IStructField {
 	return fd.definition
 }
 
