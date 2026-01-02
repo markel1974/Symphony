@@ -1,5 +1,6 @@
 package tables
 
+/*
 import "encoding/json"
 
 // JsonSchemaEncoder is a type responsible for encoding structs into JSON schemas by processing field definitions recursively.
@@ -45,3 +46,4 @@ func (e *JsonSchemaEncoder) buildPrototype(field IStructField) interface{} {
 	}
 	return nil
 }
+*/

@@ -118,9 +118,9 @@ func (c *Compiler) Compile(filename string, source any) error {
 }
 
 // Templates retrieves a list of defined templates from the compiler's definition tables.
-func (c *Compiler) Templates() []objects.IObject {
-	return c.definitionTables.Retrieve()
-}
+//func (c *Compiler) Templates() []objects.IObject {
+//	return c.definitionTables.Retrieve()
+//}
 
 // Constants retrieves a slice of IObject containing all constants stored in the current compiler scopes.
 func (c *Compiler) Constants() []objects.IObject {
@@ -172,6 +172,8 @@ func (c *Compiler) compile(in ast.Node) error {
 		err = c.declarations.BasicLit(node)
 	case *ast.CompositeLit:
 		err = c.declarations.CompositeLit(node)
+	case *ast.Field:
+		err = c.declarations.Field(node)
 	case *ast.KeyValueExpr:
 		err = c.declarations.KeyValueExpr(node)
 	case *ast.StarExpr:

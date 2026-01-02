@@ -291,6 +291,7 @@ func (f *DefinitionTable) computeLayout(structName string, visiting map[string]b
 	return nil
 }
 
+/*
 // Retrieve retrieves encoded definitions from the struct table and returns them as a slice of IObject instances.
 func (f *DefinitionTable) Retrieve() []objects.IObject {
 	var out []objects.IObject
@@ -303,3 +304,4 @@ func (f *DefinitionTable) Retrieve() []objects.IObject {
 	}
 	return out
 }
+*/
