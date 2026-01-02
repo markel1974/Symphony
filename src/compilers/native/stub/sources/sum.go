@@ -24,9 +24,10 @@ func main() {
 	//fmt.Println(a)
 
 	const c = 31
-	r := &Outer{Name: "Alfa", Value: 100, C: Center{Central: "Beta", I: Inner{Internal: 21}}}
+	r := &Outer{Name: "Alfa", Value: 100, C: Center{Central: "Beta", I: Inner{Internal: 21, TEST: []float64{1.1, 2.1, 3.1}}}}
 	//r.Value += c
 	//r.Value = r.Value + c
 	r.C.I.Internal = c
-	fmt.Println(r.C.I.Internal)
+	fmt.Println(r.C.I.Internal, r.C.Central, r.Value, r.C.I.TEST)
+	fmt.Println(r.C.Central)
 }

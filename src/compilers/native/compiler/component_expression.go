@@ -1,7 +1,6 @@
 package compiler
 
 import (
-	"fmt"
 	"go/ast"
 	"go/token"
 
@@ -10,6 +9,7 @@ import (
 	"github.com/markel1974/c64emu/src/vm/sequencers/native"
 )
 
+// Expression represents a structure for handling and compiling abstract syntax trees using related tables and utilities.
 type Expression struct {
 	gk          objects.IGateKeeper
 	fileSet     *token.FileSet
@@ -20,6 +20,7 @@ type Expression struct {
 	compile     func(node ast.Node) error
 }
 
+// NewExpression creates a new Expression instance using the provided gatekeeper, constants, scopes, imports, and definitions.
 func NewExpression(gk objects.IGateKeeper, constants *tables.Constants, scopes *tables.Scopes, imports *Imports, definitions *tables.DefinitionTable) *Expression {
 	return &Expression{
 		gk:          gk,
@@ -30,31 +31,29 @@ func NewExpression(gk objects.IGateKeeper, constants *tables.Constants, scopes *
 	}
 }
 
-// Setup initializes the Declarations object with a file set and a compile function, returning an error if any occur.
+// Setup initializes the Expression instance with a file set and a compile function to process AST nodes.
 func (c *Expression) Setup(fileSet *token.FileSet, compile func(node ast.Node) error) error {
 	c.fileSet = fileSet
 	c.compile = compile
 	return nil
 }
 
-// Prepare initializes the ControlFlow structure, ensuring it is ready for subsequent compilation tasks and operations.
+// Prepare initializes or validates the state of the Expression before compilation.
 func (c *Expression) Prepare() error {
 	return nil
 }
 
-// Compile compiles the AST nodes using the configured compile function and returns an error if the process fails.
+// Compile performs the main compilation process for the expression, executing the provided compile function on AST nodes.
 func (c *Expression) Compile() error {
 	return nil
 }
 
-// Finalize finalizes the Expression structure by performing necessary cleanup or concluding operations. Returns an error if it fails.
-func (e *Expression) Finalize() error {
+// Finalize completes final processing of the Expression and performs any necessary cleanup operations.
+func (c *Expression) Finalize() error {
 	return nil
 }
 
-// UnaryExpr compiles a unary expression by evaluating the operand and applying the specified unary operator.
-// It handles special cases for the address-of operator '&', ensuring correct pointer behavior based on operand type.
-// Emits appropriate bytecode instructions for each unary operation or returns an error on unsupported cases.
+// UnaryExpr processes a unary expression node, emits appropriate bytecode, and handles errors for unhandled operators or scopes.
 func (c *Expression) UnaryExpr(node *ast.UnaryExpr) error {
 	if node.Op == token.AND {
 		switch operand := node.X.(type) {
@@ -124,7 +123,7 @@ func (c *Expression) UnaryExpr(node *ast.UnaryExpr) error {
 	return nil
 }
 
-// BinaryExpr processes a binary expression node, compiling both operands and emitting the corresponding binary operation.
+// BinaryExpr compiles a binary expression by evaluating both operands and applying the specified binary operator.
 func (c *Expression) BinaryExpr(node *ast.BinaryExpr) error {
 	if _, isCall := node.Y.(*ast.CallExpr); isCall {
 		if err := c.compile(node.Y); err != nil {
@@ -162,18 +161,9 @@ func (c *Expression) BinaryExpr(node *ast.BinaryExpr) error {
 	return nil
 }
 
-// SelectorExpr processes a selector expression, resolving fields, methods, or package attributes.
-// It distinguishes between struct field accesses and package-level selectors.
-// Emits appropriate bytecode instructions for each case or returns an error if unsupported.
+// SelectorExpr processes a selector expression (e.g., obj.field or pkg.Member) and emits necessary instructions.
 func (c *Expression) SelectorExpr(node *ast.SelectorExpr) error {
-	// analyze the left-hand side of the dot to determine if it's a variable or a package.
-
-	//receiverIdent, ok := node.X.(*ast.Ident)
-	//if !ok {
-	// currently not handling complex cases like a[0].field
-	//	return tables.NewCompilerError(c.fileSet, node, "[SelectorExpr] unsupported receiver for selector expression: %T", node.X)
-	//}
-
+	// Analyze the left-hand side of the dot to determine if it's a variable or a package.
 	switch receiverIdent := node.X.(type) {
 	case *ast.Ident:
 		if c.imports.EmitPackage(node.Pos(), receiverIdent.Name, node.Sel.Name) {
@@ -186,11 +176,11 @@ func (c *Expression) SelectorExpr(node *ast.SelectorExpr) error {
 		if err := c.compile(node.X); err != nil {
 			return err
 		}
-		//interfaces
+		// Interfaces
 		if receiverSymbol.IsInterface() {
 			return nil
 		}
-		//Symbols, imports etc...
+		// Symbols, imports etc...
 		fieldName := node.Sel.Name
 		keyConst := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, fieldName))
 		if _, err := c.scopes.SymbolEmit(node.Pos(), native.OpConstantId, keyConst); err != nil {
@@ -201,34 +191,39 @@ func (c *Expression) SelectorExpr(node *ast.SelectorExpr) error {
 		}
 		return nil
 	case *ast.SelectorExpr:
-		ident := tables.GetIdent(receiverIdent.X)
-		fmt.Println("TODO IMPLEMENT!!!!", ident.Name, receiverIdent)
-		rootSymbol, ok := c.scopes.SymbolResolve(ident.Name)
-		if !ok {
-			return tables.NewCompilerError(c.fileSet, node, "[SelectorExpr] undefined variable: %s", receiverIdent.Sel.Name)
+		rootExpr, selectors := c.flattenSelector(node)
+		// 1. Root Analysis
+		// We need to distinguish whether the root is a variable (Ident) or a computed expression
+		if rootIdent, ok := rootExpr.(*ast.Ident); ok {
+			// A. The root is an identifier (e.g. "user.name") - verify it exists in scope
+			rootSymbol, ok := c.scopes.SymbolResolve(rootIdent.Name)
+			if !ok {
+				return tables.NewCompilerError(c.fileSet, node, "[SelectorExpr] undefined variable: %s", rootIdent.Name)
+			}
+			// Interface handling (as in the *ast.Ident case)
+			if rootSymbol.IsInterface() {
+				return nil
+			}
 		}
+		// B. If it's not an Ident (e.g. "getFn().name"), we trust that c.compile(rootExpr)
+		// will place the correct object on the stack.
 
-		fullPath := receiverIdent.Sel.Name + "." + node.Sel.Name
-		fmt.Println(fullPath)
-
-		if c.definitions.StructHas(rootSymbol.StructName()) {
-			fmt.Println("FOUND!")
-		}
-
-		//interfaces
-		if rootSymbol.IsInterface() {
-			return nil
-		}
-		if err := c.compile(node.X); err != nil {
+		// 2. Root Compilation - this emits the LOAD of the variable or the Call/IndexExpr instructions
+		if err := c.compile(rootExpr); err != nil {
 			return err
 		}
-		fieldName := node.Sel.Name
-		keyConst := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, fieldName))
-		if _, err := c.scopes.SymbolEmit(node.Pos(), native.OpConstantId, keyConst); err != nil {
-			return err
-		}
-		if _, err := c.scopes.SymbolEmit(node.Pos(), native.OpIndexGetId); err != nil {
-			return err
+
+		// 3. Selector Chain Emission - perform the lookup of each field in sequence
+		for _, fieldName := range selectors {
+			keyConst := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, fieldName))
+			// Push the field name
+			if _, err := c.scopes.SymbolEmit(node.Pos(), native.OpConstantId, keyConst); err != nil {
+				return err
+			}
+			// Field access (Stack: [Obj, "Key"] -> [Val])
+			if _, err := c.scopes.SymbolEmit(node.Pos(), native.OpIndexGetId); err != nil {
+				return err
+			}
 		}
 		return nil
 
@@ -237,7 +232,7 @@ func (c *Expression) SelectorExpr(node *ast.SelectorExpr) error {
 	}
 }
 
-// IncDecStmt handles increment and decrement statements for identifiers, updating the corresponding variables and cleaning the stack.
+// IncDecStmt processes increment and decrement statements, validating variables and emitting corresponding operations.
 func (c *Expression) IncDecStmt(node *ast.IncDecStmt) error {
 	ident, ok := node.X.(*ast.Ident)
 	if !ok {
@@ -272,13 +267,13 @@ func (c *Expression) IncDecStmt(node *ast.IncDecStmt) error {
 	return nil
 }
 
-// ParenExpr processes a parenthesized expression and delegates the compilation to the contained sub-expression.
+// ParenExpr processes a parenthesized expression by compiling its inner expression.
 func (c *Expression) ParenExpr(node *ast.ParenExpr) error {
 	//panic("not implemented")
 	return c.compile(node.X)
 }
 
-// SliceExpr compiles a slice expression, processing the target, low, and high indices, and emits the slice bytecode.
+// SliceExpr compiles a slice expression, handling the base object and optional low/high index expressions.
 func (c *Expression) SliceExpr(node *ast.SliceExpr) error {
 	// 1. Compile the object to slice from (e.g. array)
 	if err := c.compile(node.X); err != nil {
@@ -310,4 +305,22 @@ func (c *Expression) SliceExpr(node *ast.SliceExpr) error {
 		return err
 	}
 	return nil
+}
+
+// flattenSelector traverses a SelectorExpr recursively and extracts its base expression and all selector names.
+func (c *Expression) flattenSelector(node *ast.SelectorExpr) (ast.Expr, []string) {
+	var selectors []string
+	curr := node
+	for {
+		selectors = append(selectors, curr.Sel.Name)
+		if nested, ok := curr.X.(*ast.SelectorExpr); ok {
+			curr = nested
+		} else {
+			break
+		}
+	}
+	for i, j := 0, len(selectors)-1; i < j; i, j = i+1, j-1 {
+		selectors[i], selectors[j] = selectors[j], selectors[i]
+	}
+	return curr.X, selectors
 }

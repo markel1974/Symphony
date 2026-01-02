@@ -290,3 +290,16 @@ func (f *DefinitionTable) computeLayout(structName string, visiting map[string]b
 	//fmt.Println(string(testResult))
 	return nil
 }
+
+// Retrieve retrieves encoded definitions from the struct table and returns them as a slice of IObject instances.
+func (f *DefinitionTable) Retrieve() []objects.IObject {
+	var out []objects.IObject
+	encoder := JsonSchemaEncoder{}
+	for _, structName := range f.structTable.Keys() {
+		structDef, _ := f.structTable.Get(structName)
+		data, _ := encoder.Encode(structDef.Fields())
+		result := f.gk.NewString(objects.FrameStatic, string(data))
+		out = append(out, result)
+	}
+	return out
+}

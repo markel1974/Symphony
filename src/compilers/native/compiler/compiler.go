@@ -107,13 +107,19 @@ func (c *Compiler) Compile(filename string, source any) error {
 	if err = c.compile(astFile); err != nil {
 		return err
 	}
-
 	for _, component := range c.components {
 		if err = component.Finalize(); err != nil {
 			return err
 		}
 	}
+	//z := c.Templates()
+	//fmt.Println(z)
 	return nil
+}
+
+// Templates retrieves a list of defined templates from the compiler's definition tables.
+func (c *Compiler) Templates() []objects.IObject {
+	return c.definitionTables.Retrieve()
 }
 
 // Constants retrieves a slice of IObject containing all constants stored in the current compiler scopes.
