@@ -465,21 +465,14 @@ func (c *Declarations) CompositeLit(node *ast.CompositeLit) error {
 			if _, err = c.scopes.SymbolEmit(node.Pos(), native.OpConstantId, keyIdx); err != nil {
 				return err
 			}
-
-			if field.FieldNode() != nil {
-				if err = c.compile(field.FieldNode()); err != nil {
+			if fieldNode := field.FieldNode(); fieldNode != nil {
+				//ast.CompositLit (defined) - ast.Field (empty)
+				if err = c.compile(fieldNode); err != nil {
 					return err
 				}
 			} else {
-				ref := strings.TrimSpace(strings.ToLower(field.FieldBase())) //field.FieldKind()))
-				if valIdx, ok := c.initRef[ref]; ok {
-					if _, err = c.scopes.SymbolEmit(node.Pos(), native.OpConstantId, valIdx); err != nil {
-						return err
-					}
-				} else {
-					if _, err = c.scopes.SymbolEmit(node.Pos(), native.OpNullId); err != nil {
-						return err
-					}
+				if err = c.emitEmbedded(node.Pos(), field.FieldBase()); err != nil {
+					return err
 				}
 			}
 		}
@@ -528,7 +521,7 @@ func (c *Declarations) CompositeLit(node *ast.CompositeLit) error {
 
 // Field processes the given AST field node and emits the appropriate bytecode based on the field's type.
 func (c *Declarations) Field(node *ast.Field) error {
-	// Analizziamo il tipo del campo per decidere cosa emettere
+	// Analyze the field type to decide what to emit
 
 	switch typeNode := node.Type.(type) {
 	case *ast.StarExpr:
@@ -542,36 +535,31 @@ func (c *Declarations) Field(node *ast.Field) error {
 		// make([]T, 0)
 		_, err := c.scopes.SymbolEmit(node.Pos(), native.OpCreateArrayId, 0)
 		return err
-	// 4. IDENTIFICATORE (Struct o Primitivo)
+	// 4. IDENTIFIER (Struct or Primitive)
 	case *ast.Ident:
 		typeName := typeNode.Name
 
-		// Verifichiamo se è una Struct (User Defined Type)
-		// Nota: Qui dovresti usare la tua TypeTable/SymbolTable per sapere cos'è "typeName"
+		// Check if it's a Struct (User Defined Type)
+		// Note: Here you should use your TypeTable/SymbolTable to know what "typeName" is
 		symbol, ok := c.scopes.SymbolResolve(typeName)
 
-		// Se è una STRUCT (e non è un puntatore, siamo nel case Ident diretto)
-		// Dobbiamo generarla ricorsivamente!
+		// If it's a STRUCT (and not a pointer, we're in the direct Ident case)
+		// We need to generate it recursively!
 		if ok && symbol.IsStruct() {
 			return c.compileZeroStruct(node.Pos(), typeName)
 		}
 
-		// Altrimenti è un Primitivo (int, string, bool) o un alias
-		// Cerchiamo il valore zero nei riferimenti initRef
-		ref := strings.TrimSpace(strings.ToLower(typeName))
-		if valIdx, ok := c.initRef[ref]; ok {
-			_, err := c.scopes.SymbolEmit(node.Pos(), native.OpConstantId, valIdx)
+		// Otherwise it's a Primitive (int, string, bool) or an alias
+		// Look for the zero value in the initRef references
+		if err := c.emitEmbedded(node.Pos(), typeName); err != nil {
 			return err
 		}
+		return nil
 
-		// Fallback se non riconosciamo il tipo (es. Interface)
-		_, err := c.scopes.SymbolEmit(node.Pos(), native.OpNullId)
-		return err
-
-	// 5. SELECTOR (es. pkg.MyType)
+	// 5. SELECTOR (e.g. pkg.MyType)
 	case *ast.SelectorExpr:
-		// Gestione simile a Ident, ma risolvendo il package
-		// Per semplicità qui emettiamo Null o gestiamo la struct remota se hai accesso
+		// Similar handling to Ident, but resolving the package
+		// For simplicity here we emit Null or handle the remote struct if you have access
 		_, err := c.scopes.SymbolEmit(node.Pos(), native.OpNullId)
 		return err
 
@@ -1160,23 +1148,16 @@ func (c *Declarations) compileZeroStruct(pos token.Pos, structName string) error
 
 		// Emit Value (Recursion!)
 		// Here too we need to decide if it's a nested struct or a primitive
-		isPtr, cont, k := field.Options()
-		if !isPtr && cont == "" && k == "struct" {
+		isPtr, container, kind := field.Options()
+		if !isPtr && container == "" && kind == "struct" {
 			// RECURSION: A struct inside a struct
 			if err = c.compileZeroStruct(pos, field.FieldBase()); err != nil {
 				return err
 			}
 		} else {
 			// Primitive / Container / Pointer -> Zero Value
-			ref := strings.TrimSpace(strings.ToLower(field.FieldBase()))
-			if valIdx, ok := c.initRef[ref]; ok {
-				if _, err = c.scopes.SymbolEmit(pos, native.OpConstantId, valIdx); err != nil {
-					return err
-				}
-			} else {
-				if _, err = c.scopes.SymbolEmit(pos, native.OpNullId); err != nil {
-					return err
-				}
+			if err = c.emitEmbedded(pos, field.FieldBase()); err != nil {
+				return err
 			}
 		}
 	}
@@ -1194,4 +1175,15 @@ func (c *Declarations) compileZeroStruct(pos token.Pos, structName string) error
 	}
 
 	return nil
+}
+
+// emitEmbedded attempts to emit an embedded reference at the specified position and returns success status and possible error.
+func (c *Declarations) emitEmbedded(pos token.Pos, id string) error {
+	ref := strings.TrimSpace(strings.ToLower(id))
+	if valIdx, ok := c.initRef[ref]; ok {
+		_, err := c.scopes.SymbolEmit(pos, native.OpConstantId, valIdx)
+		return err
+	}
+	_, err := c.scopes.SymbolEmit(pos, native.OpNullId)
+	return err
 }
