@@ -86,34 +86,36 @@ func (f *DefinitionTable) StructAdd(name string) {
 }
 
 // StructAddField adds a new field to a struct definition in the struct table using the provided field details and base type.
-func (f *DefinitionTable) StructAddField(name string, fieldName string, baseStruct string, node ast.Node, kind ast.Expr) {
+func (f *DefinitionTable) StructAddField(name string, fieldName string, baseStruct string, node ast.Node, nodeType ast.Expr) {
 	// Surface Check
 	isPointer := false
-	//isMap := false
-	//isArray := false
-	switch kind.(type) {
+	container := ""
+	kind := ""
+
+	switch nodeType.(type) {
 	case *ast.StarExpr:
 		isPointer = true
 	case *ast.MapType:
-		//isMap = true
-		//fmt.Println("Is MapType")
+		container = "map"
 	case *ast.ArrayType:
-		//isArray = true
-		//fmt.Println("Is ArrayType")
+		container = "array"
 	}
 
 	sd := f.structTable.AddStruct(name)
 	var field IStructField = nil
 	if s, ok := f.structTable.Get(baseStruct); ok {
 		field = s.FieldClone()
+		kind = "struct"
 	} else if i, ok := f.interfaceTable.Get(baseStruct); ok {
 		field = i.FieldClone()
+		kind = "interface"
 	} else {
 		field = NewStructField(baseStruct)
+		kind = baseStruct
 	}
 	field.SetFieldName(fieldName)
 	field.SetFieldNode(node)
-	field.SetIsPointer(isPointer)
+	field.SetOptions(isPointer, container, kind)
 	sd.AddField(field)
 }
 
@@ -262,14 +264,11 @@ func (f *DefinitionTable) computeLayout(structName string, visiting map[string]b
 	for _, field := range structDef.Fields() {
 		field.SetOffset(currentOffset)
 
-		if field.IsPointer() {
+		if pointer, _, _ := field.Options(); pointer {
 			currentOffset += 8 // Pointer (64-bit)
 		} else {
 			// It's an embedded value. We need to know how large the base type is.
-
-			// Retrieve the linked definition (guaranteed to exist thanks to PHASE 1)
 			def := field.Definition()
-
 			// Cast to *StructDefinition (you need to handle the Interface case separately if needed)
 			if baseDef, ok := def.(interface {
 				TotalSize() int

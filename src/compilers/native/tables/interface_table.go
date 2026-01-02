@@ -20,6 +20,8 @@ type InterfaceDescription struct {
 	Methods   []*MethodDescription
 	fieldName string
 	fieldNode ast.Node
+	container string
+	kind      string
 	offset    int // Offset in bytes if used as a field in a struct
 	totalSize int // Fixed size of the interface (e.g. 16 bytes: type + ptr)
 }
@@ -69,20 +71,23 @@ func (id *InterfaceDescription) FieldClone() IStructField {
 		methods[idx] = md
 	}
 	out := NewInterfaceDescription(id.name, methods)
+	out.container = id.container
+	out.kind = id.kind
 	out.fieldName = id.fieldName
 	out.fieldNode = id.fieldNode
 	out.offset = id.offset
 	return out
 }
 
-// SetIsPointer sets whether the interface description represents a pointer type.
-func (id *InterfaceDescription) SetIsPointer(bool) {
-
+// SetOptions updates the container and kind of the interface description, optionally indicating if it's a pointer.
+func (id *InterfaceDescription) SetOptions(_ bool, container string, kind string) {
+	id.container = container
+	id.kind = kind
 }
 
-// IsPointer checks if the underlying interface is represented as a pointer type.
-func (id *InterfaceDescription) IsPointer() bool {
-	return false
+// Options retrieves the pointer flag, container name, and kind associated with the interface description instance.
+func (id *InterfaceDescription) Options() (bool, string, string) {
+	return false, id.container, id.kind
 }
 
 // FieldNode returns the underlying abstract syntax tree (AST) node associated with the interface description.

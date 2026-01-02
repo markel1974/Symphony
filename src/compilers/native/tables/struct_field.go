@@ -4,10 +4,14 @@ import "go/ast"
 
 // StructField represents a field within a struct, containing metadata and other attributes about the field.
 type StructField struct {
-	base       string
-	fieldName  string
-	fieldNode  ast.Node
-	isPointer  bool
+	base      string
+	fieldName string
+	fieldNode ast.Node
+
+	pointer   bool
+	container string
+	kind      string
+
 	offset     int         // Byte offset from the beginning of the struct
 	definition interface{} // Reference to the actual definition (Struct or Interface)
 }
@@ -44,21 +48,25 @@ func (fd *StructField) SetFieldNode(node ast.Node) {
 	fd.fieldNode = node
 }
 
-// SetIsPointer sets whether the StructField represents a pointer type.
-func (fd *StructField) SetIsPointer(isPointer bool) {
-	fd.isPointer = isPointer
+// SetOptions updates the pointer, container, and kind attributes of the StructField.
+func (fd *StructField) SetOptions(pointer bool, container string, kind string) {
+	fd.pointer = pointer
+	fd.container = container
+	fd.kind = kind
 }
 
-// IsPointer returns true if the struct field is a pointer, otherwise false.
-func (fd *StructField) IsPointer() bool {
-	return fd.isPointer
+// Options retrieves the pointer state, container type, and kind type of the StructField.
+func (fd *StructField) Options() (bool, string, string) {
+	return fd.pointer, fd.container, fd.kind
 }
 
 // FieldClone creates a deep copy of the current StructField, preserving all its attributes and returning it as IStructField.
 func (fd *StructField) FieldClone() IStructField {
 	out := NewStructField(fd.base)
 	out.fieldName = fd.fieldName
-	out.isPointer = fd.isPointer
+	out.pointer = fd.pointer
+	out.container = fd.container
+	out.kind = fd.kind
 	out.offset = fd.offset
 	out.definition = fd.definition
 	return out

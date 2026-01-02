@@ -20,9 +20,9 @@ type IStructField interface {
 
 	SetFieldNode(node ast.Node)
 
-	SetIsPointer(bool)
+	SetOptions(isPointer bool, container string, kind string)
 
-	IsPointer() bool
+	Options() (bool, string, string)
 
 	Definition() interface{}
 

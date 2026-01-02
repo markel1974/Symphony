@@ -16,7 +16,9 @@ type Struct struct {
 	sType        StructType
 	fields       []IStructField
 	fieldsHelper map[string]IStructField
-	isPointer    bool
+	pointer      bool
+	container    string
+	kind         string
 	fieldName    string
 	fieldNode    ast.Node
 	totalSize    int
@@ -91,20 +93,24 @@ func (sd *Struct) FieldNode() ast.Node {
 	return sd.fieldNode
 }
 
-// SetIsPointer sets whether the Struct instance is a pointer type based on the provided boolean value.
-func (sd *Struct) SetIsPointer(isPointer bool) {
-	sd.isPointer = isPointer
+// SetOptions updates the pointer status, container type, and kind classification of the Struct instance.
+func (sd *Struct) SetOptions(pointer bool, container string, kind string) {
+	sd.pointer = pointer
+	sd.container = container
+	sd.kind = kind
 }
 
-// IsPointer indicates whether the Struct instance is a pointer by returning the value of the isPointer field.
-func (sd *Struct) IsPointer() bool {
-	return sd.isPointer
+// Options returns the pointer status, container type, and kind of the Struct instance as a tuple.
+func (sd *Struct) Options() (bool, string, string) {
+	return sd.pointer, sd.container, sd.kind
 }
 
 // FieldClone creates and returns a deep copy of the Struct, including its fields, maintaining the original structure and properties.
 func (sd *Struct) FieldClone() IStructField {
 	out := NewStruct(sd.name, sd.sType)
-	out.isPointer = sd.isPointer
+	out.pointer = sd.pointer
+	out.container = sd.container
+	out.kind = sd.kind
 	out.totalSize = sd.totalSize
 	out.finalized = sd.finalized
 	for _, field := range sd.fields {
@@ -113,43 +119,52 @@ func (sd *Struct) FieldClone() IStructField {
 	return out
 }
 
-// IsBuiltin determines if the Struct instance represents a built-in type by comparing its kind to StructTypeBuiltin.
+// IsBuiltin indicates whether the Struct is of the built-in type StructTypeBuiltin.
 func (sd *Struct) IsBuiltin() bool {
 	return sd.sType == StructTypeBuiltin
 }
 
+// Offset returns the offset value for the Struct instance, typically used for memory or layout calculations.
 func (sd *Struct) Offset() int {
 	return 0
 }
 
+// SetOffset sets the offset value for the struct, but does not perform any operation for top-level structs.
 func (sd *Struct) SetOffset(offset int) {
 	// No-op for top-level
 }
 
+// Definition returns the Struct instance itself as an interface{} type.
 func (sd *Struct) Definition() interface{} {
 	return sd
 }
 
+// BindDefinition associates an external definition with the Struct instance. This method is currently a no-op.
 func (sd *Struct) BindDefinition(def interface{}) {
-	// No-op: non puoi ribindare una definizione a qualcos'altro
+	// No-op
 }
 
+// IsPlaceholder determines if the Struct instance acts as a placeholder and always returns false.
 func (sd *Struct) IsPlaceholder() bool {
 	return false // Una struct definita non è mai un placeholder
 }
 
+// IsFinalized returns true if the Struct instance has completed initialization and its metadata is finalized.
 func (sd *Struct) IsFinalized() bool {
 	return sd.finalized
 }
 
+// SetFinalized sets the finalized status of the Struct to the specified boolean value.
 func (sd *Struct) SetFinalized(finalized bool) {
 	sd.finalized = finalized
 }
 
+// TotalSize returns the total computed size of the Struct.
 func (sd *Struct) TotalSize() int {
 	return sd.totalSize
 }
 
+// SetTotalSize updates the total size of the struct instance with the provided size value.
 func (sd *Struct) SetTotalSize(size int) {
 	sd.totalSize = size
 }
