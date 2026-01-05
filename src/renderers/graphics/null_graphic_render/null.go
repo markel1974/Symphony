@@ -14,19 +14,7 @@ func NewDisplayBuffer() *DisplayBuffer {
 	return &DisplayBuffer{}
 }
 
-// Set updates the DisplayBuffer at the specified index with the provided 8-bit data value.
-func (d *DisplayBuffer) Set(idx int, data uint8) {
-
-}
-
-// SetMulti8 sets multiple display buffer values starting at the specified index using an 8-bit data input.
-func (d *DisplayBuffer) SetMulti8(idx int, data uint8) {
-
-}
-
-// Set8 updates a sequence of 8 buffer positions starting from the specified index with the provided 8-byte data array.
-func (d *DisplayBuffer) Set8(idx int, data *[8]uint8) {
-
+func (d *DisplayBuffer) SetArray(idx int, data *[]uint8, width int) {
 }
 
 // Render manages display-related operations and rendering workflows in the system.
