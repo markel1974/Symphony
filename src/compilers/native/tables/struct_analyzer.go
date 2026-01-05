@@ -1,23 +1,27 @@
 package tables
 
-/*
 import "encoding/json"
 
-// JsonSchemaEncoder is a type responsible for encoding structs into JSON schemas by processing field definitions recursively.
-type JsonSchemaEncoder struct{}
+// StructAnalyzer provides utilities for analyzing and processing structured types and their associated metadata.
+type StructAnalyzer struct{}
 
-// Encode serializes a list of IStructField objects into formatted JSON representing their default values or prototypes.
-func (e *JsonSchemaEncoder) Encode(fields []IStructField) ([]byte, error) {
+// NewStructAnalyzer creates and returns a new instance of StructAnalyzer.
+func NewStructAnalyzer() *StructAnalyzer {
+	return &StructAnalyzer{}
+}
+
+// Dump generates a JSON representation of the provided fields' default values, structured by their configurations.
+func (e *StructAnalyzer) Dump(fields []IStructField) ([]byte, error) {
 	defaults := make(map[string]interface{})
 	for _, field := range fields {
 		defaults[field.FieldName()] = e.buildPrototype(field)
 	}
-	//return json.MarshalIndent(defaults, "", " ")
-	return json.Marshal(defaults)
+	return json.MarshalIndent(defaults, "", " ")
+	//return json.Marshal(defaults)
 }
 
-// buildPrototype recursively constructs a default prototype value based on the container and kind of the given field.
-func (e *JsonSchemaEncoder) buildPrototype(field IStructField) interface{} {
+// buildPrototype generates a prototype value for a given IStructField based on its options and kind recursively.
+func (e *StructAnalyzer) buildPrototype(field IStructField) interface{} {
 	_, container, kind := field.Options()
 	if container == "array" {
 		return []interface{}{}
@@ -46,4 +50,3 @@ func (e *JsonSchemaEncoder) buildPrototype(field IStructField) interface{} {
 	}
 	return nil
 }
-*/

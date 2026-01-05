@@ -291,6 +291,16 @@ func (f *DefinitionTable) computeLayout(structName string, visiting map[string]b
 	return nil
 }
 
+// Dump prints the definitions of all structs in the struct table by analyzing their fields and formatting them as output.
+func (f *DefinitionTable) Dump() {
+	structAnalyzer := NewStructAnalyzer()
+	for _, structName := range f.structTable.Keys() {
+		structDef, _ := f.structTable.Get(structName)
+		data, _ := structAnalyzer.Dump(structDef.Fields())
+		fmt.Println(structName, string(data))
+	}
+}
+
 /*
 // Retrieve retrieves encoded definitions from the struct table and returns them as a slice of IObject instances.
 func (f *DefinitionTable) Retrieve() []objects.IObject {
