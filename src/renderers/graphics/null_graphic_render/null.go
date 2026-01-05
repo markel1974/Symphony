@@ -14,6 +14,7 @@ func NewDisplayBuffer() *DisplayBuffer {
 	return &DisplayBuffer{}
 }
 
+// SetArray updates the display buffer starting at the specified index with the given pixel data and defined width.
 func (d *DisplayBuffer) SetArray(idx int, data *[]uint8, width int) {
 }
 
