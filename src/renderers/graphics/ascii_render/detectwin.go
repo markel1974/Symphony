@@ -4,28 +4,42 @@
 package ascii_render
 
 import (
+	"os"
 	"syscall"
 	"unsafe"
+
+	"golang.org/x/sys/windows"
 )
 
 const (
 	EnableVirtualTerminalProcessingMode uint32 = 0x4
 )
 
-var kernel32 *syscall.LazyDLL
-var procGetConsoleMode *syscall.LazyProc
-var procSetConsoleMode *syscall.LazyProc
-var winVersion, _, buildNumber = windows.RtlGetNtVersionNumbers()
+var _kernel32 *syscall.LazyDLL
+var _procGetConsoleMode *syscall.LazyProc
+var _procSetConsoleMode *syscall.LazyProc
+var _winVersion, _, _buildNumber = windows.RtlGetNtVersionNumbers()
+
+var _isLikeInCmd bool
+var _needVTP bool
+var _enableWin bool
 
 func init() {
+	_isLikeInCmd = true
+	_needVTP = false
+	_enableWin = true
 	if !SupportColor() {
-		isLikeInCmd = true
+		_isLikeInCmd = true
 		return
 	}
-	if !Enable {
+	if !_enableWin {
 		return
 	}
-	tryEnableVTP(needVTP)
+	tryEnableVTP(_needVTP)
+}
+
+func SupportColor() bool {
+	return true
 }
 
 func tryEnableVTP(enable bool) bool {
@@ -40,12 +54,12 @@ func tryEnableVTP(enable bool) bool {
 }
 
 func initKernel32Proc() {
-	if kernel32 != nil {
+	if _kernel32 != nil {
 		return
 	}
-	kernel32 = syscall.NewLazyDLL("kernel32.dll")
-	procGetConsoleMode = kernel32.NewProc("GetConsoleMode")
-	procSetConsoleMode = kernel32.NewProc("SetConsoleMode")
+	_kernel32 = syscall.NewLazyDLL("kernel32.dll")
+	_procGetConsoleMode = _kernel32.NewProc("GetConsoleMode")
+	_procSetConsoleMode = _kernel32.NewProc("SetConsoleMode")
 }
 
 func tryEnableOnCONOUT() bool {
@@ -72,7 +86,7 @@ func detectSpecialTermColor(termVal string) (tl Level, needVTP bool) {
 	if os.Getenv("ConEmuANSI") == "ON" {
 		return ColorLevelMillions, false
 	}
-	if buildNumber < 10586 || winVersion < 10 {
+	if _buildNumber < 10586 || _winVersion < 10 {
 		if os.Getenv("ANSICON") != "" {
 			conVersion := os.Getenv("ANSICON_VER")
 			if conVersion >= "181" {
@@ -82,7 +96,7 @@ func detectSpecialTermColor(termVal string) (tl Level, needVTP bool) {
 		}
 		return ColorLevelNone, false
 	}
-	if buildNumber < 14931 {
+	if _buildNumber < 14931 {
 		return ColorLevelHundreds, true
 	}
 	return ColorLevelMillions, true
@@ -108,13 +122,17 @@ func EnableVirtualTerminalProcessing(stream syscall.Handle, enable bool) error {
 func IsTty(fd uintptr) bool {
 	initKernel32Proc()
 	var st uint32
-	r, _, e := syscall.Syscall(procGetConsoleMode.Addr(), 2, fd, uintptr(unsafe.Pointer(&st)), 0)
+	r, _, e := syscall.Syscall(_procGetConsoleMode.Addr(), 2, fd, uintptr(unsafe.Pointer(&st)), 0)
 	return r != 0 && e == 0
 }
 
 func IsTerminal(fd uintptr) bool {
 	initKernel32Proc()
 	var st uint32
-	r, _, e := syscall.Syscall(procGetConsoleMode.Addr(), 2, fd, uintptr(unsafe.Pointer(&st)), 0)
+	r, _, e := syscall.Syscall(_procGetConsoleMode.Addr(), 2, fd, uintptr(unsafe.Pointer(&st)), 0)
 	return r != 0 && e == 0
+}
+
+func MakeStdInRaw() error {
+	return EnableVirtualTerminalProcessing(syscall.Stdin, true)
 }
