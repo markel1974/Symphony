@@ -14,11 +14,14 @@ type KV struct {
 
 // KeyVal parses a semicolon-separated string into a slice of KV structs, splitting each entry into key and value pairs.
 func KeyVal(data string) []KV {
+	const sep = ";"
+	const def = "=>"
+
 	var kvs []KV
-	for _, c := range strings.Split(data, ";") {
+	for _, c := range strings.Split(data, sep) {
 		k := ""
 		v := c
-		if opts := strings.Split(c, ":"); len(opts) > 1 {
+		if opts := strings.Split(c, def); len(opts) > 1 {
 			k = strings.TrimSpace(opts[0])
 			v = strings.TrimSpace(opts[1])
 		}
