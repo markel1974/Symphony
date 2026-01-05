@@ -1,10 +1,11 @@
 package graphics
 
 import (
+	"strings"
+
 	"github.com/markel1974/c64emu/src/references"
 	"github.com/markel1974/c64emu/src/renderers/graphics/ascii_render"
 	"github.com/markel1974/c64emu/src/renderers/graphics/gl_render"
-	"strings"
 )
 
 // Factory is a type responsible for creating instances of IDisplayRender based on specified identifiers.

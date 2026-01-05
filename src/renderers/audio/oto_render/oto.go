@@ -1,8 +1,9 @@
 package oto_render
 
 import (
-	"github.com/markel1974/c64emu/src/config"
 	"log"
+
+	"github.com/markel1974/c64emu/src/config"
 )
 
 // Audio represents a structure for managing audio playback and configuration in a continuous stream setup.
