@@ -2,9 +2,10 @@ package oto_render
 
 import (
 	"fmt"
-	"github.com/hajimehoshi/oto/v2"
 	"sync"
 	"time"
+
+	"github.com/hajimehoshi/oto/v2"
 )
 
 const (

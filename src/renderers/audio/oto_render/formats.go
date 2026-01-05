@@ -1,8 +1,9 @@
 package oto_render
 
 import (
-	"github.com/hajimehoshi/oto/v2"
 	"math"
+
+	"github.com/hajimehoshi/oto/v2"
 )
 
 // offset16 represents a constant value of 2, potentially used as an offset for 16-bit operations.
