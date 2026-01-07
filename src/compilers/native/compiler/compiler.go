@@ -222,6 +222,8 @@ func (c *Compiler) compile(in ast.Node) error {
 		err = c.controlFlow.SwitchStmt(node)
 	case *ast.TypeSwitchStmt:
 		err = c.controlFlow.TypeSwitchStmt(node)
+	case *ast.TypeAssertExpr:
+		err = c.declarations.TypeAssertExpr(node)
 	default:
 		err = tables.NewCompilerError(c.fileSet, node, "unsupported expression type: %T", node)
 	}

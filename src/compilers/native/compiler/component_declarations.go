@@ -383,18 +383,11 @@ func (c *Declarations) AssignStmt(node *ast.AssignStmt) error {
 		if argCount < 1 || argCount > 2 {
 			return tables.NewCompilerError(c.fileSet, node, "invalid number of values to assign")
 		}
-		// Compile the interface object (e.g. 'i')
-		if err := c.compile(rhsType.X); err != nil {
-			return err
-		}
-		// Extract the target type name (e.g. "User")
-		targetTypeName := rhsType.Type.(*ast.Ident).Name
-		constIndex := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, targetTypeName))
 		hasOk := 0
 		if argCount > 1 {
 			hasOk = 1
 		}
-		if _, err := c.scopes.SymbolEmit(node.Pos(), native.OpTypeAssertId, hasOk, constIndex); err != nil {
+		if err := c.handleTypeAssertExpr(node, rhsType, hasOk); err != nil {
 			return tables.NewCompilerError(c.fileSet, node, err.Error())
 		}
 		rhsContainer = make([]*rhs, len(node.Lhs))
@@ -601,6 +594,47 @@ func (c *Declarations) IndexExpr(node *ast.IndexExpr) error {
 	// SymbolEmit OpIndexGet instruction. The VM will take the index and container from the stack and perform the access.
 	_, err := c.scopes.SymbolEmit(node.Pos(), native.OpIndexGetId)
 	return err
+}
+
+func (c *Declarations) TypeAssertExpr(node *ast.TypeAssertExpr) error {
+	// hasOk = 0: Single value return, panic if assertion fails.
+	// hasOk = 1: Two values return (value, ok), used in comma-ok assignments (handled by AssignStmt context or special opcode args).
+	// Since this visitor handles the expression in isolation, we default to standard 1-value behavior.
+	if err := c.handleTypeAssertExpr(node, node, 0); err != nil {
+		return tables.NewCompilerError(c.fileSet, node, err.Error())
+	}
+	return nil
+}
+
+// TypeAssertExpr processes an *ast.TypeAssertExpr node, handling type assertion operations and generating required bytecode.
+func (c *Declarations) handleTypeAssertExpr(node ast.Node, assertExpr *ast.TypeAssertExpr, hasOk int) error {
+	// "x.(type)" is only valid in type switches, which are handled by TypeSwitchStmt.
+	// If Type is nil here, it is a semantic error.
+
+	if assertExpr.Type == nil {
+		return fmt.Errorf("use of .(type) outside type switch")
+	}
+
+	// 1. Compile the expression 'x' (the interface to be asserted)
+	if err := c.compile(assertExpr.X); err != nil {
+		return err
+	}
+
+	// 2. Resolve the target type name
+	targetTypeName, err := tables.GetReceiverType(assertExpr.Type, true)
+	if err != nil {
+		return err
+	}
+
+	// 3. Register the type name in constants
+	constIndex := c.constants.AddOrGet("", c.gk.NewString(objects.FrameStatic, targetTypeName))
+
+	// 4. Emit OpTypeAssert
+	if _, err = c.scopes.SymbolEmit(node.Pos(), native.OpTypeAssertId, hasOk, constIndex); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // MapType compiles an AST representation of a map type, emitting its prototype as a constant to the bytecode stack.

@@ -24,11 +24,39 @@ func main() {
 	//fmt.Println(a)
 
 	const c = 31
-	//r := &Outer{}
-	r := &Outer{Name: "Alfa", Value: 100, C: Center{Central: "Beta", I: Inner{Internal: 21, TEST: []float64{1.1, 2.1, 3.1}}}}
-	//r.Value += c
-	//r.Value = r.Value + c
-	r.C.I.Internal = c
-	fmt.Println(r.C.I.Internal, r.C.Central, r.Value, r.C.I.TEST)
-	fmt.Println(r.C.Central)
+
+	m := make(map[string]int)
+	m["TEST"] = 1234
+
+	m1 := map[string]interface{}{
+		"TEST": map[string]interface{}{
+			"INNER1": map[string]interface{}{
+				"INNER2": 30,
+			},
+		},
+	}
+
+	x := &Outer{Name: "Alfa", Value: 100, C: Center{Central: "Beta", I: Inner{Internal: 21, TEST: []float64{1.1, 2.1, 3.1}}}}
+	y := &Outer{}
+	y.Value += c * 2
+	y.C.I.Internal = c * 2
+	y.C.Central = "Y"
+
+	x.C.I.Internal = c
+
+	fmt.Println("-------- X")
+	fmt.Println(x.C.I.Internal, x.C.Central, x.Value, x.C.I.TEST)
+	fmt.Println(x.C.Central)
+
+	fmt.Println("-------- Y")
+	fmt.Println(y.C.I.Internal, y.C.Central, y.Value, y.C.I.TEST)
+	fmt.Println(y.C.Central)
+
+	fmt.Println("-------- M")
+	fmt.Println(m)
+
+	fmt.Println("-------- M1")
+	fmt.Println(m1)
+	fmt.Println(m1["TEST"])
+	fmt.Println(m1["TEST"].(map[string]interface{})["INNER1"].(map[string]interface{})["INNER2"])
 }

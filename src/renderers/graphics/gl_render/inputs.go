@@ -38,11 +38,11 @@ func NewInputs() *Inputs {
 
 // Setup initializes the `Inputs` instance by binding keyboard keys to their respective actions on an IC64 board.
 func (g *Inputs) Setup(b references.IC64Board, cfg *config.Config) error {
-	const max = int(pixels.KeyLast + 1)
+	const maxVal = int(pixels.KeyLast + 1)
 	g.board = b
 	g.cfg = cfg
-	g.keyMapper = make([]func(bool), max)
-	for x := 0; x < max; x++ {
+	g.keyMapper = make([]func(bool), maxVal)
+	for x := 0; x < maxVal; x++ {
 		g.keyMapper[x] = func(b bool) {}
 	}
 

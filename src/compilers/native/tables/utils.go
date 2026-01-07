@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"go/ast"
 	"go/token"
+
+	"github.com/markel1974/c64emu/src/vm/objects"
 )
 
 // CharDefinition represents the keyword for character data type.
@@ -138,9 +140,14 @@ func GetIdent(expr ast.Expr) *ast.Ident {
 	}
 }
 
-// GetReceiver determines the string representation of a receiver type based on its AST expression node.
-// It returns the type name as a string or an error for unsupported types.
+// GetReceiver extracts the string representation of a type from an ast.Expr. Returns the type name or an error.
 func GetReceiver(expr ast.Expr) (string, error) {
+	return GetReceiverType(expr, false)
+}
+
+// GetReceiverType determines the string representation of a receiver type based on its AST expression node.
+// It returns the type name as a string or an error for unsupported types.
+func GetReceiverType(expr ast.Expr, useObjects bool) (string, error) {
 	switch v := expr.(type) {
 	case *ast.Ident:
 		return v.Name, nil
@@ -159,12 +166,18 @@ func GetReceiver(expr ast.Expr) (string, error) {
 			return "", fmt.Errorf("unsupported non-empty interface return type")
 		}
 	case *ast.ArrayType:
+		if useObjects {
+			return objects.ArrayType, nil
+		}
 		z := GetIdent(v.Elt)
 		if z == nil {
 			return "", fmt.Errorf("unsupported array return type: %T", v.Elt)
 		}
 		return ArrayDefinition + z.Name, nil
 	case *ast.MapType:
+		if useObjects {
+			return objects.MapType, nil
+		}
 		key := GetIdent(v.Key)
 		value := GetIdent(v.Value)
 		if key == nil || value == nil {
