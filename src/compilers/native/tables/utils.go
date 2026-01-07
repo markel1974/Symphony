@@ -162,9 +162,8 @@ func GetReceiverType(expr ast.Expr, useObjects bool) (string, error) {
 	case *ast.InterfaceType:
 		if len(v.Methods.List) == 0 {
 			return InterfaceDefinition, nil
-		} else {
-			return "", fmt.Errorf("unsupported non-empty interface return type")
 		}
+		return "", fmt.Errorf("unsupported non-empty interface return type")
 	case *ast.ArrayType:
 		if useObjects {
 			return objects.ArrayType, nil
