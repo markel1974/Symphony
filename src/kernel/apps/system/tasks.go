@@ -17,8 +17,8 @@ package system
 /*
 
 import (
-	"github.com/markel1974/c64emu/src/kernel/interfaces"
-	"github.com/markel1974/c64emu/src/kernel/process"
+	"github.com/markel1974/symphony/src/kernel/interfaces"
+	"github.com/markel1974/symphony/src/kernel/process"
 	"strings"
 )
 

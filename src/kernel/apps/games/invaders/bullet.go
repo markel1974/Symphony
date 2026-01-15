@@ -1,8 +1,8 @@
 package invaders
 
 import (
-	"github.com/markel1974/c64emu/src/kernel/interfaces"
-	"github.com/markel1974/c64emu/src/kernel/servers/render/matrix"
+	"github.com/markel1974/symphony/src/kernel/interfaces"
+	"github.com/markel1974/symphony/src/kernel/servers/render/matrix"
 )
 
 // bulletSprite defines the visual representation of a bullet as a slice of strings, where each string corresponds to a sprite frame.

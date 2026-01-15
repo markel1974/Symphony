@@ -1,12 +1,12 @@
 package compilers
 
 import (
-	"github.com/markel1974/c64emu/src/vm/bytecode"
-	"github.com/markel1974/c64emu/src/vm/objects"
-	"github.com/markel1974/c64emu/src/vm/opcodes"
+	"github.com/markel1974/symphony/src/vm/bytecode"
+	"github.com/markel1974/symphony/src/vm/objects"
+	"github.com/markel1974/symphony/src/vm/opcodes"
 
-	_nativeCompiler "github.com/markel1974/c64emu/src/compilers/native/compiler"
-	_nativeLoader "github.com/markel1974/c64emu/src/compilers/native/sdk"
+	_nativeCompiler "github.com/markel1974/symphony/src/compilers/native/compiler"
+	_nativeLoader "github.com/markel1974/symphony/src/compilers/native/sdk"
 )
 
 // NewCompiler creates and initializes a new compiler instance, loading native packages and configuring compilation tools.

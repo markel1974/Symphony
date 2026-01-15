@@ -7,9 +7,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/markel1974/c64emu/src/compilers/native/tables"
-	"github.com/markel1974/c64emu/src/vm/objects"
-	"github.com/markel1974/c64emu/src/vm/sequencers/native"
+	"github.com/markel1974/symphony/src/compilers/native/tables"
+	"github.com/markel1974/symphony/src/vm/objects"
+	"github.com/markel1974/symphony/src/vm/sequencers/native"
 )
 
 // Declarations is a structure that manages compilation-related components such as scopes, constants, and imports.

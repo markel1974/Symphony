@@ -1,8 +1,8 @@
 package sdk
 
 import (
-	"github.com/markel1974/c64emu/src/vm/bytecode"
-	"github.com/markel1974/c64emu/src/vm/objects"
+	"github.com/markel1974/symphony/src/vm/bytecode"
+	"github.com/markel1974/symphony/src/vm/objects"
 )
 
 // registerPackageFn is a function type defining a method that registers a package using IGateKeeper and returns an IPackage.

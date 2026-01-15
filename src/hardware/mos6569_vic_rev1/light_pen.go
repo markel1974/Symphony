@@ -1,8 +1,8 @@
 package mos6569
 
 import (
-	"github.com/markel1974/c64emu/src/kernel/component"
-	"github.com/markel1974/c64emu/src/references"
+	"github.com/markel1974/symphony/src/kernel/component"
+	"github.com/markel1974/symphony/src/references"
 )
 
 // LightPen represents a programmable light pen interface for graphical systems, capturing X and Y coordinates on trigger.

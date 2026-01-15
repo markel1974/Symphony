@@ -1,6 +1,6 @@
 package messages
 
-import "github.com/markel1974/c64emu/src/kernel/interfaces"
+import "github.com/markel1974/symphony/src/kernel/interfaces"
 
 // MessageTimer represents a timer message in the system, encapsulating process Id, timer Id, and interval details.
 type MessageTimer struct {

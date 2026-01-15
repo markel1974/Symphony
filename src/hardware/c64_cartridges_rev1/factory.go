@@ -1,8 +1,8 @@
 package c64_cartridges_rev1
 
 import (
-	"github.com/markel1974/c64emu/src/references"
-	"github.com/markel1974/c64emu/src/registry"
+	"github.com/markel1974/symphony/src/references"
+	"github.com/markel1974/symphony/src/registry"
 )
 
 // Identifier returns a string that serves as a unique identifier for a specific component or entity.

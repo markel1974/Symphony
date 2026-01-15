@@ -3,9 +3,9 @@ package mos6526
 import (
 	"log"
 
-	"github.com/markel1974/c64emu/src/common/signals"
-	"github.com/markel1974/c64emu/src/kernel/component"
-	"github.com/markel1974/c64emu/src/references"
+	"github.com/markel1974/symphony/src/common/signals"
+	"github.com/markel1974/symphony/src/kernel/component"
+	"github.com/markel1974/symphony/src/references"
 )
 
 // timerStop represents a state where the timer is stopped.

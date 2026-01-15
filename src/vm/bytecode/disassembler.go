@@ -5,8 +5,8 @@ import (
 	"io"
 	"strings"
 
-	"github.com/markel1974/c64emu/src/vm/objects"
-	"github.com/markel1974/c64emu/src/vm/opcodes"
+	"github.com/markel1974/symphony/src/vm/objects"
+	"github.com/markel1974/symphony/src/vm/opcodes"
 )
 
 // DisassemblerOpcode represents a single opcode with its name, start index, and associated operands.

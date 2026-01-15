@@ -5,8 +5,8 @@ package wasm_render
 import (
 	"syscall/js"
 
-	"github.com/markel1974/c64emu/src/config"
-	"github.com/markel1974/c64emu/src/references"
+	"github.com/markel1974/symphony/src/config"
+	"github.com/markel1974/symphony/src/references"
 )
 
 //TODO 5000 cicli max per emulate e creare callback per vblank

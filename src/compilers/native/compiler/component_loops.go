@@ -4,9 +4,9 @@ import (
 	"go/ast"
 	"go/token"
 
-	"github.com/markel1974/c64emu/src/compilers/native/tables"
-	"github.com/markel1974/c64emu/src/vm/objects"
-	"github.com/markel1974/c64emu/src/vm/sequencers/native"
+	"github.com/markel1974/symphony/src/compilers/native/tables"
+	"github.com/markel1974/symphony/src/vm/objects"
+	"github.com/markel1974/symphony/src/vm/sequencers/native"
 )
 
 // Loops represents a compilation unit that processes AST nodes and maintains scope and function information.

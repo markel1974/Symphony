@@ -5,7 +5,7 @@ import (
 	"log"
 	"unicode"
 
-	"github.com/markel1974/c64emu/src/kernel/interfaces"
+	"github.com/markel1974/symphony/src/kernel/interfaces"
 )
 
 // XShell defines a command-line interface entity with support for input management, authentication, rendering, and history.

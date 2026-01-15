@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/markel1974/c64emu/src/vm/objects"
+	"github.com/markel1974/symphony/src/vm/objects"
 )
 
 // Loader manages the registration and resolution of packages and their symbols within a runtime environment.

@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/markel1974/c64emu/src/compilers"
-	"github.com/markel1974/c64emu/src/vm/bytecode"
-	"github.com/markel1974/c64emu/src/vm/handler"
-	"github.com/markel1974/c64emu/src/vm/objects"
-	"github.com/markel1974/c64emu/src/vm/sequencers"
+	"github.com/markel1974/symphony/src/compilers"
+	"github.com/markel1974/symphony/src/vm/bytecode"
+	"github.com/markel1974/symphony/src/vm/handler"
+	"github.com/markel1974/symphony/src/vm/objects"
+	"github.com/markel1974/symphony/src/vm/sequencers"
 )
 
 // Launcher represents a system that facilitates compilation, setup, and execution of bytecode through a virtual machine.

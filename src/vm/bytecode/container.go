@@ -3,7 +3,7 @@ package bytecode
 import (
 	"encoding/gob"
 
-	"github.com/markel1974/c64emu/src/vm/objects"
+	"github.com/markel1974/symphony/src/vm/objects"
 )
 
 // ContainerType represents an index type used to access and manipulate containers within a Bytecode structure.

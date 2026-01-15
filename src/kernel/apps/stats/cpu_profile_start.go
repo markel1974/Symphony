@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"runtime/pprof"
 
-	"github.com/markel1974/c64emu/src/kernel/interfaces"
-	"github.com/markel1974/c64emu/src/kernel/process"
+	"github.com/markel1974/symphony/src/kernel/interfaces"
+	"github.com/markel1974/symphony/src/kernel/process"
 )
 
 // CreateCPUProfileStart initializes and returns a shell command to start CPU profiling and save it to a specified file.

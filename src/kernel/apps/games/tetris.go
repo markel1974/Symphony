@@ -1,9 +1,9 @@
 package games
 
 import (
-	"github.com/markel1974/c64emu/src/kernel/apps/games/tetris"
-	"github.com/markel1974/c64emu/src/kernel/interfaces"
-	"github.com/markel1974/c64emu/src/kernel/process"
+	"github.com/markel1974/symphony/src/kernel/apps/games/tetris"
+	"github.com/markel1974/symphony/src/kernel/interfaces"
+	"github.com/markel1974/symphony/src/kernel/process"
 )
 
 // CreateTetris initializes and returns a Tetris game command process with input, timer, and paint event handlers.

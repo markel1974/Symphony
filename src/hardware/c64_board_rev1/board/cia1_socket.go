@@ -1,8 +1,8 @@
 package board
 
 import (
-	"github.com/markel1974/c64emu/src/common/bits"
-	"github.com/markel1974/c64emu/src/references"
+	"github.com/markel1974/symphony/src/common/bits"
+	"github.com/markel1974/symphony/src/references"
 )
 
 // defaultLPState represents the default state value for Launchpad.

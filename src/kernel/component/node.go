@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/markel1974/c64emu/src/references"
+	"github.com/markel1974/symphony/src/references"
 )
 
 // createPathFromKey splits a dot-separated string key into a slice of strings representing the path components.

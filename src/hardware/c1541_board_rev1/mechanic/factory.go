@@ -1,6 +1,6 @@
 package mechanic
 
-import "github.com/markel1974/c64emu/src/references"
+import "github.com/markel1974/symphony/src/references"
 
 type Factory struct {
 }

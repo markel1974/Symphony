@@ -1,7 +1,7 @@
 package tables
 
 import (
-	"github.com/markel1974/c64emu/src/vm/objects"
+	"github.com/markel1974/symphony/src/vm/objects"
 )
 
 // Symbol represents a named entity with a defined scope, associated with specific attributes and metadata.

@@ -6,8 +6,8 @@ import (
 	"sort"
 	"unicode"
 
-	"github.com/markel1974/c64emu/src/kernel/interfaces"
-	"github.com/markel1974/c64emu/src/kernel/process"
+	"github.com/markel1974/symphony/src/kernel/interfaces"
+	"github.com/markel1974/symphony/src/kernel/process"
 )
 
 // PropertyInfo represents metadata and behavior for a property, including its Id, type details, description, and functionality.

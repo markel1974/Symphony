@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"math"
 
-	"github.com/markel1974/c64emu/src/kernel/interfaces"
-	"github.com/markel1974/c64emu/src/kernel/servers/render/plotter"
+	"github.com/markel1974/symphony/src/kernel/interfaces"
+	"github.com/markel1974/symphony/src/kernel/servers/render/plotter"
 )
 
 // Surface represents a two-dimensional grid-based rendering surface for text-based terminal output.

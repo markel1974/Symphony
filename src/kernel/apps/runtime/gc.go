@@ -3,8 +3,8 @@ package runtime
 import (
 	"runtime"
 
-	"github.com/markel1974/c64emu/src/kernel/interfaces"
-	"github.com/markel1974/c64emu/src/kernel/process"
+	"github.com/markel1974/symphony/src/kernel/interfaces"
+	"github.com/markel1974/symphony/src/kernel/process"
 )
 
 // CreateGC initializes and returns a command that triggers garbage collection when executed.

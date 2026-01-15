@@ -1,8 +1,8 @@
 package c1541_pla_rev1
 
 import (
-	"github.com/markel1974/c64emu/src/references"
-	"github.com/markel1974/c64emu/src/registry"
+	"github.com/markel1974/symphony/src/references"
+	"github.com/markel1974/symphony/src/registry"
 )
 
 // Identifier returns a static string "c1541_pla", representing the unique identifier of the component.

@@ -3,7 +3,7 @@ package pixels
 import (
 	"errors"
 
-	"github.com/markel1974/c64emu/src/renderers/graphics/gl_render/pixels/executor"
+	"github.com/markel1974/symphony/src/renderers/graphics/gl_render/pixels/executor"
 
 	"github.com/go-gl/mathgl/mgl32"
 )

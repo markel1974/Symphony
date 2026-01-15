@@ -3,7 +3,7 @@ package quartz_rev1
 import (
 	"container/list"
 	"fmt"
-	"github.com/markel1974/c64emu/src/references"
+	"github.com/markel1974/symphony/src/references"
 )
 
 // AlarmCallback defines a function that is triggered by an alarm and receives the main CPU clock and an offset as parameters.

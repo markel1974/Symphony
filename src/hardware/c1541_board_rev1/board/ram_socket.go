@@ -1,7 +1,7 @@
 package board
 
 import (
-	"github.com/markel1974/c64emu/src/references"
+	"github.com/markel1974/symphony/src/references"
 )
 
 // RamSocket provides a structure for managing a socket interface bound to a RAM module compliant with IC1541Ram.

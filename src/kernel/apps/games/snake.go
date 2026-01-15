@@ -1,9 +1,9 @@
 package games
 
 import (
-	"github.com/markel1974/c64emu/src/kernel/apps/games/snake"
-	"github.com/markel1974/c64emu/src/kernel/interfaces"
-	"github.com/markel1974/c64emu/src/kernel/process"
+	"github.com/markel1974/symphony/src/kernel/apps/games/snake"
+	"github.com/markel1974/symphony/src/kernel/interfaces"
+	"github.com/markel1974/symphony/src/kernel/process"
 )
 
 // CreateSnake initializes a new command for the Snake game and sets up event handlers for input, painting, timers, and creation.

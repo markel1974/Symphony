@@ -3,9 +3,9 @@ package compiler
 import (
 	"go/token"
 
-	"github.com/markel1974/c64emu/src/vm/objects"
-	"github.com/markel1974/c64emu/src/vm/opcodes"
-	"github.com/markel1974/c64emu/src/vm/sequencers/native"
+	"github.com/markel1974/symphony/src/vm/objects"
+	"github.com/markel1974/symphony/src/vm/opcodes"
+	"github.com/markel1974/symphony/src/vm/sequencers/native"
 )
 
 // TokenAdapter represents a mapping between a token and its corresponding bytecode operation with optional arguments.

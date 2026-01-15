@@ -1,7 +1,7 @@
 package disk
 
 import (
-	"github.com/markel1974/c64emu/src/hardware/c1541_board_rev1/disk/gcr"
+	"github.com/markel1974/symphony/src/hardware/c1541_board_rev1/disk/gcr"
 )
 
 // Factory represents an abstract factory used to create and manage disk instances based on provided image data.

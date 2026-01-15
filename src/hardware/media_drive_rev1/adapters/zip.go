@@ -4,7 +4,7 @@ import (
 	"archive/zip"
 	"bytes"
 	"fmt"
-	"github.com/markel1974/c64emu/src/config"
+	"github.com/markel1974/symphony/src/config"
 	"hash/crc32"
 	"io"
 	"io/fs"

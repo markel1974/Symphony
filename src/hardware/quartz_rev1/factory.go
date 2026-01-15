@@ -1,8 +1,8 @@
 package quartz_rev1
 
 import (
-	"github.com/markel1974/c64emu/src/references"
-	"github.com/markel1974/c64emu/src/registry"
+	"github.com/markel1974/symphony/src/references"
+	"github.com/markel1974/symphony/src/registry"
 )
 
 // Factory provides methods to identify and create new component instances within a system. It acts as a component factory.

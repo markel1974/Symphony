@@ -1,11 +1,11 @@
 package external_cpu
 
 import (
-	"github.com/markel1974/c64emu/src/config"
-	"github.com/markel1974/c64emu/src/hardware/mos6510_rev1"
-	"github.com/markel1974/c64emu/src/hardware/quartz_rev1"
-	"github.com/markel1974/c64emu/src/kernel/component"
-	"github.com/markel1974/c64emu/src/references"
+	"github.com/markel1974/symphony/src/config"
+	"github.com/markel1974/symphony/src/hardware/mos6510_rev1"
+	"github.com/markel1974/symphony/src/hardware/quartz_rev1"
+	"github.com/markel1974/symphony/src/kernel/component"
+	"github.com/markel1974/symphony/src/references"
 )
 
 // Id is a constant representing the identifier "SCPU" for a specific hardware type or component registration.

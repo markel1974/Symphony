@@ -3,9 +3,9 @@ package iec_rev1
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/config"
-	"github.com/markel1974/c64emu/src/kernel/component"
-	"github.com/markel1974/c64emu/src/references"
+	"github.com/markel1974/symphony/src/config"
+	"github.com/markel1974/symphony/src/kernel/component"
+	"github.com/markel1974/symphony/src/references"
 )
 
 // cpuClkIn represents the IEC signal for CPU clock input (Bit 7).

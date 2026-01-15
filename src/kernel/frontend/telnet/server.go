@@ -5,12 +5,12 @@ import (
 	"log"
 	"net"
 
-	"github.com/markel1974/c64emu/src/kernel/adaptiveticker"
-	"github.com/markel1974/c64emu/src/kernel/core"
-	"github.com/markel1974/c64emu/src/kernel/frontend/telnet/session"
-	"github.com/markel1974/c64emu/src/kernel/interfaces"
-	"github.com/markel1974/c64emu/src/kernel/process"
-	"github.com/markel1974/c64emu/src/kernel/terminal"
+	"github.com/markel1974/symphony/src/kernel/adaptiveticker"
+	"github.com/markel1974/symphony/src/kernel/core"
+	"github.com/markel1974/symphony/src/kernel/frontend/telnet/session"
+	"github.com/markel1974/symphony/src/kernel/interfaces"
+	"github.com/markel1974/symphony/src/kernel/process"
+	"github.com/markel1974/symphony/src/kernel/terminal"
 )
 
 type Server struct {

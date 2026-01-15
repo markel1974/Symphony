@@ -1,8 +1,8 @@
 package c1541_ram_rev1
 
 import (
-	"github.com/markel1974/c64emu/src/references"
-	"github.com/markel1974/c64emu/src/registry"
+	"github.com/markel1974/symphony/src/references"
+	"github.com/markel1974/symphony/src/registry"
 )
 
 // Identifier returns a string identifier for the component, typically used for registration or reference purposes.

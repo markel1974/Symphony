@@ -1,8 +1,8 @@
 package mos6526
 
 import (
-	"github.com/markel1974/c64emu/src/kernel/component"
-	"github.com/markel1974/c64emu/src/references"
+	"github.com/markel1974/symphony/src/kernel/component"
+	"github.com/markel1974/symphony/src/references"
 )
 
 // ShiftRegister represents an 8-bit shift register component with bit counter and custom socket signaling logic.

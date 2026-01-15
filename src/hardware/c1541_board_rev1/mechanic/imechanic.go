@@ -1,6 +1,6 @@
 package mechanic
 
-import "github.com/markel1974/c64emu/src/hardware/c1541_board_rev1/disk"
+import "github.com/markel1974/symphony/src/hardware/c1541_board_rev1/disk"
 
 //see
 //http://www.baltissen.org/newhtm/1541c.htm

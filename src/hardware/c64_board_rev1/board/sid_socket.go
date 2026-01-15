@@ -1,7 +1,7 @@
 package board
 
 import (
-	"github.com/markel1974/c64emu/src/references"
+	"github.com/markel1974/symphony/src/references"
 )
 
 // SIDSocket represents a socket connected to a Board for managing or interacting with its state or functionality.

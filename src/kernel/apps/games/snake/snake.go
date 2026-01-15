@@ -4,7 +4,7 @@ import (
 	"math/rand"
 	"strconv"
 
-	"github.com/markel1974/c64emu/src/kernel/interfaces"
+	"github.com/markel1974/symphony/src/kernel/interfaces"
 )
 
 // direction represents an enumerated type used to define possible movement or orientation values.

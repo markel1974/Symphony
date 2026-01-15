@@ -3,13 +3,13 @@ package core
 import (
 	"io"
 
-	"github.com/markel1974/c64emu/src/kernel/adaptiveticker"
-	"github.com/markel1974/c64emu/src/kernel/apps"
-	"github.com/markel1974/c64emu/src/kernel/drivers"
-	"github.com/markel1974/c64emu/src/kernel/interfaces"
-	"github.com/markel1974/c64emu/src/kernel/process"
-	"github.com/markel1974/c64emu/src/kernel/servers/file_system"
-	"github.com/markel1974/c64emu/src/kernel/servers/render"
+	"github.com/markel1974/symphony/src/kernel/adaptiveticker"
+	"github.com/markel1974/symphony/src/kernel/apps"
+	"github.com/markel1974/symphony/src/kernel/drivers"
+	"github.com/markel1974/symphony/src/kernel/interfaces"
+	"github.com/markel1974/symphony/src/kernel/process"
+	"github.com/markel1974/symphony/src/kernel/servers/file_system"
+	"github.com/markel1974/symphony/src/kernel/servers/render"
 )
 
 // Context is a container for managing and coordinating various dependencies and resources needed for application execution.

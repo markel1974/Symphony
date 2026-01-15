@@ -1,7 +1,7 @@
 package bytecode
 
 import (
-	"github.com/markel1974/c64emu/src/vm/objects"
+	"github.com/markel1974/symphony/src/vm/objects"
 )
 
 // ICompiler defines an interface for compiling source code and managing constants, imports, and globals objects.

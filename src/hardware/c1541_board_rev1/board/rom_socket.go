@@ -1,7 +1,7 @@
 package board
 
 import (
-	"github.com/markel1974/c64emu/src/references"
+	"github.com/markel1974/symphony/src/references"
 )
 
 // RomLoaderSocket represents a ROM loader socket for facilitating loading and management of ROMs in the system.

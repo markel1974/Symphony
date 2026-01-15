@@ -1,7 +1,7 @@
 package pixels
 
 import (
-	"github.com/markel1974/c64emu/src/renderers/graphics/gl_render/pixels/executor"
+	"github.com/markel1974/symphony/src/renderers/graphics/gl_render/pixels/executor"
 )
 
 // GLFrame represents a graphical frame used for rendering operations and managing pixel data efficiently.

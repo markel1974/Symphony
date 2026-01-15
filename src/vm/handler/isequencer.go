@@ -1,7 +1,7 @@
 package handler
 
 import (
-	"github.com/markel1974/c64emu/src/vm/opcodes"
+	"github.com/markel1974/symphony/src/vm/opcodes"
 )
 
 // ISequencer defines behavior for binding execution contexts and managing operation execution sequences.

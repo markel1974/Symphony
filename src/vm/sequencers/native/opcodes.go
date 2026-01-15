@@ -1,6 +1,6 @@
 package native
 
-import "github.com/markel1974/c64emu/src/vm/opcodes"
+import "github.com/markel1974/symphony/src/vm/opcodes"
 
 const (
 	// OpConstantId represents an operation that loads a constant value onto the stack.

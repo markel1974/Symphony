@@ -3,8 +3,8 @@ package c64_pla_rev1
 import (
 	"log"
 
-	"github.com/markel1974/c64emu/src/kernel/component"
-	"github.com/markel1974/c64emu/src/references"
+	"github.com/markel1974/symphony/src/kernel/component"
+	"github.com/markel1974/symphony/src/references"
 )
 
 // see C64 Bank Switching

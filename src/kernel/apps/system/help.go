@@ -17,8 +17,8 @@ package system
 import (
 	"strings"
 
-	"github.com/markel1974/c64emu/src/kernel/interfaces"
-	"github.com/markel1974/c64emu/src/kernel/process"
+	"github.com/markel1974/symphony/src/kernel/interfaces"
+	"github.com/markel1974/symphony/src/kernel/process"
 )
 
 func CreateHelp() interfaces.ICommand {

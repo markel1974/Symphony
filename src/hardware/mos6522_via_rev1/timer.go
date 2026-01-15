@@ -1,8 +1,8 @@
 package mos6522
 
 import (
-	"github.com/markel1974/c64emu/src/kernel/component"
-	"github.com/markel1974/c64emu/src/references"
+	"github.com/markel1974/symphony/src/kernel/component"
+	"github.com/markel1974/symphony/src/references"
 )
 
 // defaultViaTimeout is a constant representing the default timeout value used to initialize or reset a Timer's counter.

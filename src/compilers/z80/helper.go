@@ -1,9 +1,9 @@
 package compiler
 
 import (
-	"github.com/markel1974/c64emu/src/compilers/native/tables"
-	"github.com/markel1974/c64emu/src/vm/objects"
-	"github.com/markel1974/c64emu/src/vm/opcodes"
+	"github.com/markel1974/symphony/src/compilers/native/tables"
+	"github.com/markel1974/symphony/src/vm/objects"
+	"github.com/markel1974/symphony/src/vm/opcodes"
 )
 
 // Helper provides utilities for managing CPU emulation, constants, and scope operations within the system.

@@ -1,7 +1,7 @@
 package gl_render
 
 import (
-	"github.com/markel1974/c64emu/src/renderers/graphics/gl_render/pixels"
+	"github.com/markel1974/symphony/src/renderers/graphics/gl_render/pixels"
 )
 
 // DisplayBuffer is a structure used for managing a buffer of display pixels with an associated Picture and bitmask.

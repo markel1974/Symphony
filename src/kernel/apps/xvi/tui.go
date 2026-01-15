@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/markel1974/c64emu/src/kernel/interfaces"
+	"github.com/markel1974/symphony/src/kernel/interfaces"
 )
 
 // Tui represents a text-based user interface for interacting with a Buffer and managing viewport rendering and modes.

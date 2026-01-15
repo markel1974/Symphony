@@ -6,9 +6,9 @@ import (
 	"io"
 	"strconv"
 
-	"github.com/markel1974/c64emu/src/vm/objects"
-	"github.com/markel1974/c64emu/src/vm/opcodes"
-	"github.com/markel1974/c64emu/src/vm/sequencers/native"
+	"github.com/markel1974/symphony/src/vm/objects"
+	"github.com/markel1974/symphony/src/vm/opcodes"
+	"github.com/markel1974/symphony/src/vm/sequencers/native"
 )
 
 // maxScope defines the maximum allowable depth of nested compilation scopes to prevent excessive recursion or overflow.

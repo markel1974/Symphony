@@ -5,18 +5,18 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/markel1974/c64emu/src/config"
-	"github.com/markel1974/c64emu/src/hardware/c64_cartridges_rev1/catalog"
-	"github.com/markel1974/c64emu/src/kernel/component"
-	"github.com/markel1974/c64emu/src/references"
+	"github.com/markel1974/symphony/src/config"
+	"github.com/markel1974/symphony/src/hardware/c64_cartridges_rev1/catalog"
+	"github.com/markel1974/symphony/src/kernel/component"
+	"github.com/markel1974/symphony/src/references"
 
-	_ "github.com/markel1974/c64emu/src/hardware/c64_cartridges_rev1/easyflash"
-	_ "github.com/markel1974/c64emu/src/hardware/c64_cartridges_rev1/external_cpu"
-	_ "github.com/markel1974/c64emu/src/hardware/c64_cartridges_rev1/final_cartridge_iii"
-	_ "github.com/markel1974/c64emu/src/hardware/c64_cartridges_rev1/generic"
-	_ "github.com/markel1974/c64emu/src/hardware/c64_cartridges_rev1/magicdesk"
-	_ "github.com/markel1974/c64emu/src/hardware/c64_cartridges_rev1/ocean"
-	_ "github.com/markel1974/c64emu/src/hardware/c64_cartridges_rev1/reu"
+	_ "github.com/markel1974/symphony/src/hardware/c64_cartridges_rev1/easyflash"
+	_ "github.com/markel1974/symphony/src/hardware/c64_cartridges_rev1/external_cpu"
+	_ "github.com/markel1974/symphony/src/hardware/c64_cartridges_rev1/final_cartridge_iii"
+	_ "github.com/markel1974/symphony/src/hardware/c64_cartridges_rev1/generic"
+	_ "github.com/markel1974/symphony/src/hardware/c64_cartridges_rev1/magicdesk"
+	_ "github.com/markel1974/symphony/src/hardware/c64_cartridges_rev1/ocean"
+	_ "github.com/markel1974/symphony/src/hardware/c64_cartridges_rev1/reu"
 )
 
 //https://www.c64-wiki.com/wiki/Bank_Switching

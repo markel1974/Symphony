@@ -3,8 +3,8 @@
 package main
 
 import (
-	"github.com/markel1974/c64emu/src/references"
-	"github.com/markel1974/c64emu/src/renderers/graphics/wasm_render"
+	"github.com/markel1974/symphony/src/references"
+	"github.com/markel1974/symphony/src/renderers/graphics/wasm_render"
 )
 
 type AudioFactory struct {

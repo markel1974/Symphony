@@ -1,8 +1,8 @@
 package references
 
 import (
-	"github.com/markel1974/c64emu/src/config"
-	"github.com/markel1974/c64emu/src/kernel/interfaces"
+	"github.com/markel1974/symphony/src/config"
+	"github.com/markel1974/symphony/src/kernel/interfaces"
 	"io"
 	"log"
 	"reflect"

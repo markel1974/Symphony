@@ -7,11 +7,11 @@ import (
 	"go/token"
 	"io"
 
-	"github.com/markel1974/c64emu/src/compilers/native/tables"
-	"github.com/markel1974/c64emu/src/vm/bytecode"
-	"github.com/markel1974/c64emu/src/vm/objects"
-	"github.com/markel1974/c64emu/src/vm/opcodes"
-	"github.com/markel1974/c64emu/src/vm/sequencers/native"
+	"github.com/markel1974/symphony/src/compilers/native/tables"
+	"github.com/markel1974/symphony/src/vm/bytecode"
+	"github.com/markel1974/symphony/src/vm/objects"
+	"github.com/markel1974/symphony/src/vm/opcodes"
+	"github.com/markel1974/symphony/src/vm/sequencers/native"
 )
 
 // Compiler represents a structure to manage the compilation process, including scopes and associated token file sets.

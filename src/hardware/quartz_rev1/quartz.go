@@ -4,8 +4,8 @@ import (
 	"container/list"
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/kernel/component"
-	"github.com/markel1974/c64emu/src/references"
+	"github.com/markel1974/symphony/src/kernel/component"
+	"github.com/markel1974/symphony/src/references"
 )
 
 // Quartz represents a timing system with configurable frequency, alarms, and a processing cycle mechanism.

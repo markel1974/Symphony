@@ -1,7 +1,7 @@
 package board
 
 import (
-	"github.com/markel1974/c64emu/src/references"
+	"github.com/markel1974/symphony/src/references"
 )
 
 // RamSocket represents a memory socket for the C64 system, managing its connection, binding, and hardware Id functionality.

@@ -1,7 +1,7 @@
 package board
 
 import (
-	"github.com/markel1974/c64emu/src/references"
+	"github.com/markel1974/symphony/src/references"
 )
 
 // RomSocket represents a component that interfaces with IC64Roms for managing and loading C64 ROM data.

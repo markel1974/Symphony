@@ -1,7 +1,7 @@
 package render
 
 import (
-	"github.com/markel1974/c64emu/src/kernel/adaptiveticker"
+	"github.com/markel1974/symphony/src/kernel/adaptiveticker"
 )
 
 // WindowSelector is a type that manages available task identifiers and tracks the current one for selection and navigation.

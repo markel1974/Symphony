@@ -1,7 +1,7 @@
 package media_drive_rev1
 
 import (
-	"github.com/markel1974/c64emu/src/hardware/media_drive_rev1/adapters"
+	"github.com/markel1974/symphony/src/hardware/media_drive_rev1/adapters"
 	"strconv"
 	"strings"
 )

@@ -1,7 +1,7 @@
 package xvi
 
 import (
-	"github.com/markel1974/c64emu/src/kernel/interfaces"
+	"github.com/markel1974/symphony/src/kernel/interfaces"
 )
 
 // XVI is a text editor type that integrates a text user interface (Tui), a text buffer, and a user process manager.

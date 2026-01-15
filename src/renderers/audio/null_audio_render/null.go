@@ -1,6 +1,6 @@
 package null_audio_render
 
-import "github.com/markel1974/c64emu/src/config"
+import "github.com/markel1974/symphony/src/config"
 
 // NullAudio is a no-op audio implementation that fulfills audio-related interfaces without performing any real operations.
 type NullAudio struct {

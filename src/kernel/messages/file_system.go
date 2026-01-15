@@ -1,6 +1,6 @@
 package messages
 
-import "github.com/markel1974/c64emu/src/kernel/interfaces"
+import "github.com/markel1974/symphony/src/kernel/interfaces"
 
 // MessageFileSystemFindRequest represents a request to find a file system entry based on the provided query parameters.
 // It embeds IMessage and includes specific properties like requestor PID, requested line, and a protected flag.

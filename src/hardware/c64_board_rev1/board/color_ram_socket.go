@@ -1,7 +1,7 @@
 package board
 
 import (
-	"github.com/markel1974/c64emu/src/references"
+	"github.com/markel1974/symphony/src/references"
 )
 
 // ColorRamSocket represents a hardware socket for the Color RAM in the C64 system, capable of interfacing with IC64ColorRam.

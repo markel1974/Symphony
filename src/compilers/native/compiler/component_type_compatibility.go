@@ -5,7 +5,7 @@ import (
 	"go/token"
 	"reflect"
 
-	"github.com/markel1974/c64emu/src/compilers/native/tables"
+	"github.com/markel1974/symphony/src/compilers/native/tables"
 )
 
 // TypeCompatibility is a structure used to manage type-checking, compatibility, and implementation relationships.

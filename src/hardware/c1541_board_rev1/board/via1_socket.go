@@ -1,7 +1,7 @@
 package board
 
 import (
-	"github.com/markel1974/c64emu/src/references"
+	"github.com/markel1974/symphony/src/references"
 )
 
 // IVIA1SocketConnections defines an interface for managing socket-specific connections for a VIA1 adapter.

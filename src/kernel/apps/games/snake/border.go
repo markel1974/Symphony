@@ -1,6 +1,6 @@
 package snake
 
-import "github.com/markel1974/c64emu/src/kernel/interfaces"
+import "github.com/markel1974/symphony/src/kernel/interfaces"
 
 // Border represents a rectangular boundary for a two-dimensional plane, defined by its width, height, and coordinate map.
 type Border struct {

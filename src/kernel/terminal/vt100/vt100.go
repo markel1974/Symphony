@@ -3,7 +3,7 @@ package vt100
 import (
 	"strconv"
 
-	"github.com/markel1974/c64emu/src/kernel/interfaces"
+	"github.com/markel1974/symphony/src/kernel/interfaces"
 )
 
 //var controlSequenceIntroducer = []byte{ 27, 91 }

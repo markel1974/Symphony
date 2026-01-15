@@ -1,7 +1,7 @@
 package handler
 
 import (
-	"github.com/markel1974/c64emu/src/vm/objects"
+	"github.com/markel1974/symphony/src/vm/objects"
 )
 
 // IVM defines an interface for managing a virtual machine with functionalities for version retrieval.

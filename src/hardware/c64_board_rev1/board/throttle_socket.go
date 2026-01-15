@@ -1,7 +1,7 @@
 package board
 
 import (
-	"github.com/markel1974/c64emu/src/references"
+	"github.com/markel1974/symphony/src/references"
 )
 
 // ThrottleSocket wraps an IThrottle implementation for managing execution rate with a specific frame interval setting.

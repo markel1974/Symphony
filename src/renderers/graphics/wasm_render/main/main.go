@@ -5,8 +5,8 @@ package main
 import (
 	"syscall/js"
 
-	symphony "github.com/markel1974/c64emu/src"
-	"github.com/markel1974/c64emu/src/config"
+	symphony "github.com/markel1974/symphony/src"
+	"github.com/markel1974/symphony/src/config"
 	"log"
 )
 

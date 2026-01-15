@@ -6,7 +6,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/markel1974/c64emu/src/kernel/interfaces"
+	"github.com/markel1974/symphony/src/kernel/interfaces"
 )
 
 // Command represents a structured command with metadata, associated functions, and subcommands in a CLI application.

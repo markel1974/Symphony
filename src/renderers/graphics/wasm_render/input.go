@@ -3,9 +3,9 @@ package wasm_render
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/config"
-	"github.com/markel1974/c64emu/src/kernel/component"
-	"github.com/markel1974/c64emu/src/references"
+	"github.com/markel1974/symphony/src/config"
+	"github.com/markel1974/symphony/src/kernel/component"
+	"github.com/markel1974/symphony/src/references"
 )
 
 // Inputs encapsulates input configurations, mappings, and state for joystick, keyboard, and clipboard interactions.

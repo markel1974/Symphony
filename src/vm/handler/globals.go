@@ -3,7 +3,7 @@ package handler
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/vm/objects"
+	"github.com/markel1974/symphony/src/vm/objects"
 )
 
 // Globals encapsulates shared system-wide data like objects, kind, and error signals for centralized management.

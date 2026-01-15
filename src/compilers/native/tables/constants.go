@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/markel1974/c64emu/src/vm/objects"
+	"github.com/markel1974/symphony/src/vm/objects"
 )
 
 // Constants is a structure that manages a collection of objects and provides indexing functionality for efficient retrieval.

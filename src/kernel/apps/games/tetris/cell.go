@@ -1,7 +1,7 @@
 package tetris
 
 import (
-	"github.com/markel1974/c64emu/src/kernel/interfaces"
+	"github.com/markel1974/symphony/src/kernel/interfaces"
 )
 
 // Cell represents a unit on a grid with two-dimensional coordinates (x, y) and an associated color.

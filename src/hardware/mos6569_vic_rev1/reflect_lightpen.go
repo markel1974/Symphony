@@ -4,7 +4,7 @@ package mos6569
 
 import (
 	"errors"
-	"github.com/markel1974/c64emu/src/references"
+	"github.com/markel1974/symphony/src/references"
 )
 
 const (

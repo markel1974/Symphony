@@ -1,7 +1,7 @@
 package messages
 
 import (
-	"github.com/markel1974/c64emu/src/kernel/interfaces"
+	"github.com/markel1974/symphony/src/kernel/interfaces"
 )
 
 // MessagePaintRequest represents a message used to trigger a paint operation. It embeds the Message struct.

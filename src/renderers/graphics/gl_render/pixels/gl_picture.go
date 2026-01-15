@@ -3,7 +3,7 @@ package pixels
 import (
 	"math"
 
-	"github.com/markel1974/c64emu/src/renderers/graphics/gl_render/pixels/executor"
+	"github.com/markel1974/symphony/src/renderers/graphics/gl_render/pixels/executor"
 )
 
 // GLPicture represents a graphical picture with texture, pixel data, and its bounding rectangle.

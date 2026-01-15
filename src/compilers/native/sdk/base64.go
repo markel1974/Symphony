@@ -3,8 +3,8 @@ package sdk
 import (
 	"encoding/base64"
 
-	"github.com/markel1974/c64emu/src/vm/bytecode"
-	"github.com/markel1974/c64emu/src/vm/objects"
+	"github.com/markel1974/symphony/src/vm/bytecode"
+	"github.com/markel1974/symphony/src/vm/objects"
 )
 
 // init initializes the package by registering the Base64 package using the register function.

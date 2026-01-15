@@ -5,9 +5,9 @@ import (
 	"io"
 	"strconv"
 
-	"github.com/markel1974/c64emu/src/kernel/interfaces"
-	"github.com/markel1974/c64emu/src/kernel/process"
-	"github.com/markel1974/c64emu/src/references"
+	"github.com/markel1974/symphony/src/kernel/interfaces"
+	"github.com/markel1974/symphony/src/kernel/process"
+	"github.com/markel1974/symphony/src/references"
 )
 
 // propertiesId is a constant string used as a key to reference component properties in state maps.

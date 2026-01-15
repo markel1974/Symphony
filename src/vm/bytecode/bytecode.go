@@ -5,7 +5,7 @@ import (
 	"go/token"
 	"io"
 
-	"github.com/markel1974/c64emu/src/vm/objects"
+	"github.com/markel1974/symphony/src/vm/objects"
 )
 
 // PreInitFunction represents the name of the pre-initialization function in the application.

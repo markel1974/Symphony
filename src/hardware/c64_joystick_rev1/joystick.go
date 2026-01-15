@@ -1,9 +1,9 @@
 package c64_joystick_rev1
 
 import (
-	"github.com/markel1974/c64emu/src/common/fifo"
-	component2 "github.com/markel1974/c64emu/src/kernel/component"
-	"github.com/markel1974/c64emu/src/references"
+	"github.com/markel1974/symphony/src/common/fifo"
+	component2 "github.com/markel1974/symphony/src/kernel/component"
+	"github.com/markel1974/symphony/src/references"
 )
 
 // Joystick represents an input device for handling directional and button presses with customizable sensitivity settings.

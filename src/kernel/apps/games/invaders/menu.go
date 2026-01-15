@@ -3,7 +3,7 @@ package invaders
 import (
 	"strings"
 
-	"github.com/markel1974/c64emu/src/kernel/interfaces"
+	"github.com/markel1974/symphony/src/kernel/interfaces"
 )
 
 // menuPad defines the padding value for the menu layout.

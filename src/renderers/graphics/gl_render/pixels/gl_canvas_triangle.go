@@ -2,7 +2,7 @@ package pixels
 
 import (
 	"github.com/go-gl/mathgl/mgl32"
-	"github.com/markel1974/c64emu/src/renderers/graphics/gl_render/pixels/executor"
+	"github.com/markel1974/symphony/src/renderers/graphics/gl_render/pixels/executor"
 )
 
 // GLCanvasTriangles represents a drawable set of triangles specific to a GLCanvas context.

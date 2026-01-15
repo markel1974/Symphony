@@ -1,7 +1,7 @@
 package mos6510_rev1
 
 import (
-	"github.com/markel1974/c64emu/src/kernel/component"
+	"github.com/markel1974/symphony/src/kernel/component"
 )
 
 // Costanti per i nomi delle proprietà della CPU (per l'introspezione).

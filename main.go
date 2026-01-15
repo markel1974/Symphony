@@ -8,17 +8,17 @@ import (
 	"path"
 	"strings"
 
-	"github.com/markel1974/c64emu/src"
-	"github.com/markel1974/c64emu/src/compilers/native/stub"
-	"github.com/markel1974/c64emu/src/config"
-	"github.com/markel1974/c64emu/src/kernel/component"
-	"github.com/markel1974/c64emu/src/kernel/frontend"
-	"github.com/markel1974/c64emu/src/kernel/frontend/authenticator"
-	"github.com/markel1974/c64emu/src/kernel/interfaces"
-	"github.com/markel1974/c64emu/src/kernel/process"
-	"github.com/markel1974/c64emu/src/renderers/audio"
-	"github.com/markel1974/c64emu/src/renderers/graphics"
-	"github.com/markel1974/c64emu/src/version"
+	"github.com/markel1974/symphony/src"
+	"github.com/markel1974/symphony/src/compilers/native/stub"
+	"github.com/markel1974/symphony/src/config"
+	"github.com/markel1974/symphony/src/kernel/component"
+	"github.com/markel1974/symphony/src/kernel/frontend"
+	"github.com/markel1974/symphony/src/kernel/frontend/authenticator"
+	"github.com/markel1974/symphony/src/kernel/interfaces"
+	"github.com/markel1974/symphony/src/kernel/process"
+	"github.com/markel1974/symphony/src/renderers/audio"
+	"github.com/markel1974/symphony/src/renderers/graphics"
+	"github.com/markel1974/symphony/src/version"
 )
 
 /*
@@ -131,8 +131,8 @@ func BuildDrives(d string) ([]*config.Drive, error) {
 func vmTest() {
 	//const prefix = "simple"
 	//const prefix = "simple3"
-	const prefix = "test_"
-	//const prefix = "sum"
+	//const prefix = "test_"
+	const prefix = "sum"
 	var args []interface{} = nil
 	if err := stub.Launch(prefix, "native", "main", args, true); err != nil {
 		log.Fatal(err)

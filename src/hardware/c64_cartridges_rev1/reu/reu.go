@@ -1,8 +1,8 @@
 package reu
 
 import (
-	"github.com/markel1974/c64emu/src/kernel/component"
-	"github.com/markel1974/c64emu/src/references"
+	"github.com/markel1974/symphony/src/kernel/component"
+	"github.com/markel1974/symphony/src/references"
 )
 
 // Predefined constants representing memory sizes in bytes.

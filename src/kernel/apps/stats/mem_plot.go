@@ -4,8 +4,8 @@ import (
 	"math"
 	"runtime"
 
-	"github.com/markel1974/c64emu/src/kernel/interfaces"
-	"github.com/markel1974/c64emu/src/kernel/process"
+	"github.com/markel1974/symphony/src/kernel/interfaces"
+	"github.com/markel1974/symphony/src/kernel/process"
 )
 
 // bToMb converts a byte value (uint64) to megabytes (float64) by dividing the input by 1024 twice.

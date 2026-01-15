@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"go/token"
 
-	"github.com/markel1974/c64emu/src/vm/opcodes"
+	"github.com/markel1974/symphony/src/vm/opcodes"
 )
 
 // SwitchScope represents the scope of a switch statement during compilation, storing positions for end jump instructions.

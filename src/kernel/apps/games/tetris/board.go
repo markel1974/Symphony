@@ -1,7 +1,7 @@
 package tetris
 
 import (
-	"github.com/markel1974/c64emu/src/kernel/interfaces"
+	"github.com/markel1974/symphony/src/kernel/interfaces"
 )
 
 // Board represents a grid-based game board with a specific width and height.

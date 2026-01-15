@@ -1,7 +1,7 @@
 package board
 
 import (
-	"github.com/markel1974/c64emu/src/references"
+	"github.com/markel1974/symphony/src/references"
 )
 
 // KeyboardSocket represents a concrete implementation of IC64Keyboard, facilitating keyboard interactions in a system.

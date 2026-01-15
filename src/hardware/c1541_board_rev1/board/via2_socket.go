@@ -1,8 +1,8 @@
 package board
 
 import (
-	"github.com/markel1974/c64emu/src/hardware/c1541_board_rev1/mechanic"
-	"github.com/markel1974/c64emu/src/references"
+	"github.com/markel1974/symphony/src/hardware/c1541_board_rev1/mechanic"
+	"github.com/markel1974/symphony/src/references"
 )
 
 // headControl defines bitmask [0,1] used for head step direction management; controls upward or downward movement.

@@ -1,6 +1,6 @@
 package references
 
-import "github.com/markel1974/c64emu/src/config"
+import "github.com/markel1974/symphony/src/config"
 
 // IAudioRender is an interface for managing player-related operations in a game or multimedia context.
 // GetCurrentPosition returns the current position of the player.

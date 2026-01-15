@@ -3,8 +3,8 @@ package stats
 import (
 	"runtime/pprof"
 
-	"github.com/markel1974/c64emu/src/kernel/interfaces"
-	"github.com/markel1974/c64emu/src/kernel/process"
+	"github.com/markel1974/symphony/src/kernel/interfaces"
+	"github.com/markel1974/symphony/src/kernel/process"
 )
 
 // CreateCPUProfileStop creates and returns a shell command to stop CPU profiling.

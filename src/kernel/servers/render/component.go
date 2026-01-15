@@ -3,7 +3,7 @@ package render
 import (
 	"strconv"
 
-	"github.com/markel1974/c64emu/src/kernel/interfaces"
+	"github.com/markel1974/symphony/src/kernel/interfaces"
 )
 
 // Component represents a UI or system entity combining process details with associated rendering surfaces.

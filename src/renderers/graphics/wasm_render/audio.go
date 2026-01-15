@@ -7,7 +7,7 @@ import (
 	"syscall/js"
 	"unsafe"
 
-	"github.com/markel1974/c64emu/src/config"
+	"github.com/markel1974/symphony/src/config"
 )
 
 // Audio represents a structure handling audio virtualization and integration with JavaScript AudioContext.

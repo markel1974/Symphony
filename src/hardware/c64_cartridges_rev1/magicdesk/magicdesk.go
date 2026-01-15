@@ -3,9 +3,9 @@ package magicdesk
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/hardware/c64_cartridges_rev1/catalog"
-	"github.com/markel1974/c64emu/src/kernel/component"
-	"github.com/markel1974/c64emu/src/references"
+	"github.com/markel1974/symphony/src/hardware/c64_cartridges_rev1/catalog"
+	"github.com/markel1974/symphony/src/kernel/component"
+	"github.com/markel1974/symphony/src/references"
 )
 
 // CartridgeMagicDesk represents a software-implemented version of a Magic Desk cartridge for system emulation.

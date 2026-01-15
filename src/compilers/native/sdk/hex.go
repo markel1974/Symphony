@@ -3,8 +3,8 @@ package sdk
 import (
 	"encoding/hex"
 
-	"github.com/markel1974/c64emu/src/vm/bytecode"
-	"github.com/markel1974/c64emu/src/vm/objects"
+	"github.com/markel1974/symphony/src/vm/bytecode"
+	"github.com/markel1974/symphony/src/vm/objects"
 )
 
 // init registers the "Hex" package by appending its registration function to the internal package list.

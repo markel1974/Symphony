@@ -1,14 +1,14 @@
 package apps
 
 import (
-	"github.com/markel1974/c64emu/src/kernel/apps/games"
-	"github.com/markel1974/c64emu/src/kernel/apps/runtime"
-	"github.com/markel1974/c64emu/src/kernel/apps/stats"
-	"github.com/markel1974/c64emu/src/kernel/apps/system"
-	"github.com/markel1974/c64emu/src/kernel/apps/xshell"
-	"github.com/markel1974/c64emu/src/kernel/apps/xvi"
-	"github.com/markel1974/c64emu/src/kernel/interfaces"
-	"github.com/markel1974/c64emu/src/kernel/process"
+	"github.com/markel1974/symphony/src/kernel/apps/games"
+	"github.com/markel1974/symphony/src/kernel/apps/runtime"
+	"github.com/markel1974/symphony/src/kernel/apps/stats"
+	"github.com/markel1974/symphony/src/kernel/apps/system"
+	"github.com/markel1974/symphony/src/kernel/apps/xshell"
+	"github.com/markel1974/symphony/src/kernel/apps/xvi"
+	"github.com/markel1974/symphony/src/kernel/interfaces"
+	"github.com/markel1974/symphony/src/kernel/process"
 )
 
 // Root represents the top-level structure used to build and organize CLI command hierarchies.

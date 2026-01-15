@@ -1,8 +1,8 @@
 package render
 
 import (
-	"github.com/markel1974/c64emu/src/kernel/interfaces"
-	"github.com/markel1974/c64emu/src/kernel/servers/render/plotter"
+	"github.com/markel1974/symphony/src/kernel/interfaces"
+	"github.com/markel1974/symphony/src/kernel/servers/render/plotter"
 )
 
 // maxCommands defines the maximum number of commands that can be stored in the command buffer before further additions are ignored.

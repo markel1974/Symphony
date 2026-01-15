@@ -1,9 +1,9 @@
 package c64_keyboard_rev1
 
 import (
-	"github.com/markel1974/c64emu/src/common/fifo"
-	"github.com/markel1974/c64emu/src/kernel/component"
-	"github.com/markel1974/c64emu/src/references"
+	"github.com/markel1974/symphony/src/common/fifo"
+	"github.com/markel1974/symphony/src/kernel/component"
+	"github.com/markel1974/symphony/src/references"
 )
 
 // matrix computes and returns a combined integer value by shifting `a` to the left by 3 bits and performing a bitwise OR with `b`.

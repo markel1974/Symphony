@@ -1,11 +1,11 @@
 package benchmark
 
 import (
-	"github.com/markel1974/c64emu/src/config"
-	"github.com/markel1974/c64emu/src/hardware"
-	"github.com/markel1974/c64emu/src/hardware/mos6569_vic_rev1"
-	"github.com/markel1974/c64emu/src/renderers/audio/null_audio_render"
-	"github.com/markel1974/c64emu/src/renderers/graphics/null_graphic_render"
+	"github.com/markel1974/symphony/src/config"
+	"github.com/markel1974/symphony/src/hardware"
+	"github.com/markel1974/symphony/src/hardware/mos6569_vic_rev1"
+	"github.com/markel1974/symphony/src/renderers/audio/null_audio_render"
+	"github.com/markel1974/symphony/src/renderers/graphics/null_graphic_render"
 	"log"
 	"os"
 )

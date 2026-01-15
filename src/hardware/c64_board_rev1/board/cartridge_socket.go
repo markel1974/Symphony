@@ -1,7 +1,7 @@
 package board
 
 import (
-	"github.com/markel1974/c64emu/src/references"
+	"github.com/markel1974/symphony/src/references"
 )
 
 // ICartridgeManagerConnections defines the interface for managing hardware connection signals for a cartridge system.

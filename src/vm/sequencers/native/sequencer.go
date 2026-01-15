@@ -3,8 +3,8 @@ package native
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/vm/handler"
-	"github.com/markel1974/c64emu/src/vm/opcodes"
+	"github.com/markel1974/symphony/src/vm/handler"
+	"github.com/markel1974/symphony/src/vm/opcodes"
 )
 
 // _noOperands is a predefined empty slice of OperandFeature used for opcodes that do not require any operands.

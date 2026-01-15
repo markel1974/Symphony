@@ -2,9 +2,9 @@ package symphony
 
 import (
 	"fmt"
-	"github.com/markel1974/c64emu/src/config"
-	"github.com/markel1974/c64emu/src/hardware"
-	"github.com/markel1974/c64emu/src/references"
+	"github.com/markel1974/symphony/src/config"
+	"github.com/markel1974/symphony/src/hardware"
+	"github.com/markel1974/symphony/src/references"
 	"log"
 )
 

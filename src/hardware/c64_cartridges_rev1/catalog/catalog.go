@@ -1,7 +1,7 @@
 package catalog
 
 import (
-	"github.com/markel1974/c64emu/src/references"
+	"github.com/markel1974/symphony/src/references"
 )
 
 // Constants representing various cartridges without a rom image used in Commodore 64 systems.

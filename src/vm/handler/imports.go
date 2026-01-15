@@ -3,8 +3,8 @@ package handler
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/vm/bytecode"
-	"github.com/markel1974/c64emu/src/vm/objects"
+	"github.com/markel1974/symphony/src/vm/bytecode"
+	"github.com/markel1974/symphony/src/vm/objects"
 )
 
 // Imports represent a structure for managing object imports in a container, utilizing a factory and error signaling.

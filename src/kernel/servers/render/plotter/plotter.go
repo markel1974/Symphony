@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/markel1974/c64emu/src/kernel/interfaces"
+	"github.com/markel1974/symphony/src/kernel/interfaces"
 )
 
 // Plotter is responsible for rendering graph-like plots based on given series and configuration parameters.

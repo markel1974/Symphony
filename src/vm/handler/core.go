@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/markel1974/c64emu/src/vm/objects"
+	"github.com/markel1974/symphony/src/vm/objects"
 )
 
 // resetIp is the instruction pointer value used to reset the Core's instruction pointer to the beginning of the main function.'

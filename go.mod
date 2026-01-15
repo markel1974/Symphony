@@ -1,4 +1,4 @@
-module github.com/markel1974/c64emu
+module github.com/markel1974/symphony
 
 go 1.23.0
 

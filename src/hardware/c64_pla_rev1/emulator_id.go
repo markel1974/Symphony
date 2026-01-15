@@ -1,7 +1,7 @@
 package c64_pla_rev1
 
 import (
-	"github.com/markel1974/c64emu/src/version"
+	"github.com/markel1974/symphony/src/version"
 	"strconv"
 )
 

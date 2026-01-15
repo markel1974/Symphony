@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/markel1974/c64emu/src/vm/objects"
+	"github.com/markel1974/symphony/src/vm/objects"
 )
 
 // Stack represents a data structure that operates on a LIFO (Last In, First Out) principle.

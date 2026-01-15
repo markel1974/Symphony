@@ -6,8 +6,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/markel1974/c64emu/src/kernel/interfaces"
-	"github.com/markel1974/c64emu/src/kernel/process"
+	"github.com/markel1974/symphony/src/kernel/interfaces"
+	"github.com/markel1974/symphony/src/kernel/process"
 )
 
 // Command represents a structure that encapsulates an executable command, its metadata, and its expected inputs and outputs.

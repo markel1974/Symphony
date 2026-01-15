@@ -3,7 +3,7 @@ package drivers
 import (
 	"io"
 
-	"github.com/markel1974/c64emu/src/kernel/interfaces"
+	"github.com/markel1974/symphony/src/kernel/interfaces"
 )
 
 // DisplayTerminal is a struct that wraps an ITerminal interface and an io.Writer for managing terminal outputs.

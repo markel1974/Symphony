@@ -1,9 +1,9 @@
 package c1541_roms_rev1
 
 import (
-	"github.com/markel1974/c64emu/src/config"
-	"github.com/markel1974/c64emu/src/kernel/component"
-	"github.com/markel1974/c64emu/src/references"
+	"github.com/markel1974/symphony/src/config"
+	"github.com/markel1974/symphony/src/kernel/component"
+	"github.com/markel1974/symphony/src/references"
 )
 
 // Roms represents a component that incorporates base functionality and manages system configurations and data.

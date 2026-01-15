@@ -5,9 +5,9 @@ import (
 	"go/ast"
 	"go/token"
 
-	"github.com/markel1974/c64emu/src/compilers/native/tables"
-	"github.com/markel1974/c64emu/src/vm/objects"
-	"github.com/markel1974/c64emu/src/vm/sequencers/native"
+	"github.com/markel1974/symphony/src/compilers/native/tables"
+	"github.com/markel1974/symphony/src/vm/objects"
+	"github.com/markel1974/symphony/src/vm/sequencers/native"
 )
 
 // Functions is a collection that manages a list of function descriptions.

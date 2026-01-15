@@ -3,9 +3,9 @@ package audio
 import (
 	"strings"
 
-	"github.com/markel1974/c64emu/src/references"
-	"github.com/markel1974/c64emu/src/renderers/audio/null_audio_render"
-	"github.com/markel1974/c64emu/src/renderers/audio/oto_render"
+	"github.com/markel1974/symphony/src/references"
+	"github.com/markel1974/symphony/src/renderers/audio/null_audio_render"
+	"github.com/markel1974/symphony/src/renderers/audio/oto_render"
 )
 
 // Factory is a type responsible for creating instances of IAudioRender implementations based on provided identifiers.

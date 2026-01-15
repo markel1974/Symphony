@@ -1,8 +1,8 @@
 package mos6526
 
 import (
-	"github.com/markel1974/c64emu/src/references"
-	"github.com/markel1974/c64emu/src/registry"
+	"github.com/markel1974/symphony/src/references"
+	"github.com/markel1974/symphony/src/registry"
 )
 
 // Identifier returns the identifier string for the component, which in this case is "mos6526".

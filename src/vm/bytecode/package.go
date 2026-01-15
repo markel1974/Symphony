@@ -1,6 +1,6 @@
 package bytecode
 
-import "github.com/markel1974/c64emu/src/vm/objects"
+import "github.com/markel1974/symphony/src/vm/objects"
 
 // Package represents a container for storing and managing named objects implementing the IObject interface.
 type Package struct {

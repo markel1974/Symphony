@@ -5,7 +5,7 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/markel1974/c64emu/src/kernel/interfaces"
+	"github.com/markel1974/symphony/src/kernel/interfaces"
 )
 
 // levelMax defines the maximum level a player can reach in the game.

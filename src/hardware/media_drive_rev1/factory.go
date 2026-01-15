@@ -1,8 +1,8 @@
 package media_drive_rev1
 
 import (
-	"github.com/markel1974/c64emu/src/references"
-	"github.com/markel1974/c64emu/src/registry"
+	"github.com/markel1974/symphony/src/references"
+	"github.com/markel1974/symphony/src/registry"
 )
 
 // Identifier returns the string identifier for a specific component or factory, in this case, "media".

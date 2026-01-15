@@ -3,11 +3,11 @@ package process
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/compilers"
-	"github.com/markel1974/c64emu/src/vm/bytecode"
-	"github.com/markel1974/c64emu/src/vm/handler"
-	"github.com/markel1974/c64emu/src/vm/objects"
-	"github.com/markel1974/c64emu/src/vm/sequencers/native"
+	"github.com/markel1974/symphony/src/compilers"
+	"github.com/markel1974/symphony/src/vm/bytecode"
+	"github.com/markel1974/symphony/src/vm/handler"
+	"github.com/markel1974/symphony/src/vm/objects"
+	"github.com/markel1974/symphony/src/vm/sequencers/native"
 )
 
 // Script represents a virtual machine capable of managing and executing bytecode, with components for compilation and execution.

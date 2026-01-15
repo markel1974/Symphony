@@ -1,8 +1,8 @@
 package mos6522
 
 import (
-	"github.com/markel1974/c64emu/src/kernel/component"
-	"github.com/markel1974/c64emu/src/references"
+	"github.com/markel1974/symphony/src/kernel/component"
+	"github.com/markel1974/symphony/src/references"
 )
 
 // ShiftRegister represents a shift register utilizing CB2 (Control Bus 2) for read and write operations.

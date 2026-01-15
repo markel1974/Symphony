@@ -3,9 +3,9 @@ package generic
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/hardware/c64_cartridges_rev1/catalog"
-	"github.com/markel1974/c64emu/src/kernel/component"
-	"github.com/markel1974/c64emu/src/references"
+	"github.com/markel1974/symphony/src/hardware/c64_cartridges_rev1/catalog"
+	"github.com/markel1974/symphony/src/kernel/component"
+	"github.com/markel1974/symphony/src/references"
 )
 
 // cSize16K defines the constant value for 16KB, equivalent to 0x4000 in hex.

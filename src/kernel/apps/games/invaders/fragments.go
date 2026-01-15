@@ -3,8 +3,8 @@ package invaders
 import (
 	"math/rand"
 
-	"github.com/markel1974/c64emu/src/kernel/interfaces"
-	"github.com/markel1974/c64emu/src/kernel/servers/render/matrix"
+	"github.com/markel1974/symphony/src/kernel/interfaces"
+	"github.com/markel1974/symphony/src/kernel/servers/render/matrix"
 )
 
 // fragmentLifetime defines the lifespan of a fragment in an arbitrary unit of time.

@@ -1,7 +1,7 @@
 package bytecode
 
 import (
-	"github.com/markel1974/c64emu/src/vm/objects"
+	"github.com/markel1974/symphony/src/vm/objects"
 )
 
 // IPackage represents a package interface that provides access to package-level functionality or resources.

@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/markel1974/c64emu/src/hardware/c64_board_rev1/prg"
-	"github.com/markel1974/c64emu/src/kernel/component"
-	"github.com/markel1974/c64emu/src/references"
+	"github.com/markel1974/symphony/src/hardware/c64_board_rev1/prg"
+	"github.com/markel1974/symphony/src/kernel/component"
+	"github.com/markel1974/symphony/src/references"
 )
 
 // intrIrqVicBit represents the bit position for the VIC IRQ interrupt.

@@ -5,7 +5,7 @@ import (
 	"go/ast"
 	"go/token"
 
-	"github.com/markel1974/c64emu/src/vm/objects"
+	"github.com/markel1974/symphony/src/vm/objects"
 )
 
 // DefinitionTable is a composite structure for managing scopes, structs, interfaces, and access control through an IGateKeeper.

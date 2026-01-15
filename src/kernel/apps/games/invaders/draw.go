@@ -1,7 +1,7 @@
 package invaders
 
 import (
-	"github.com/markel1974/c64emu/src/kernel/interfaces"
+	"github.com/markel1974/symphony/src/kernel/interfaces"
 )
 
 // drawColor renders a string onto the given surface at specified coordinates with foreground and background colors.

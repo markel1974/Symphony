@@ -1,6 +1,6 @@
 package messages
 
-import "github.com/markel1974/c64emu/src/kernel/interfaces"
+import "github.com/markel1974/symphony/src/kernel/interfaces"
 
 // MessageGetScreenSizeRequest represents a request message to retrieve the screen size. It implements the IMessage interface.
 type MessageGetScreenSizeRequest struct {

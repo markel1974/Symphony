@@ -1,6 +1,6 @@
 package references
 
-import "github.com/markel1974/c64emu/src/config"
+import "github.com/markel1974/symphony/src/config"
 
 // IDisplayBuffer defines an interface for managing and setting data in a display buffer.
 // SetArray sets a section of the buffer at a specified index with provided data and properties like width.

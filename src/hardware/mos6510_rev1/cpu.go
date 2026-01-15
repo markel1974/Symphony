@@ -3,8 +3,8 @@ package mos6510_rev1
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/kernel/component"
-	"github.com/markel1974/c64emu/src/references"
+	"github.com/markel1974/symphony/src/kernel/component"
+	"github.com/markel1974/symphony/src/references"
 )
 
 // IControlUnit defines the interface for managing and configuring operations and modes within a CPU control unit.

@@ -2,7 +2,7 @@ package config
 
 import (
 	"fmt"
-	"github.com/markel1974/c64emu/src/common/signals"
+	"github.com/markel1974/symphony/src/common/signals"
 	"io"
 	"io/fs"
 	"os"
