@@ -99,3 +99,6 @@ Run in completely headless mode (perfect for SSH exploration):
 ```
 
 *(Note: SSH credentials and port configuration are managed via the OS configuration files. Check the `src/kernel` documentation for connection details).*
+
+🚀 Try Symphony Live in Your Browser! 🚀
+https://markel1974.itch.io/symphony
