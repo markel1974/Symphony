@@ -99,6 +99,3 @@ Run in completely headless mode (perfect for SSH exploration):
 ```
 
 *(Note: SSH credentials and port configuration are managed via the OS configuration files. Check the `src/kernel` documentation for connection details).*
-
----
-*Module Author: Marcello (born 1974)*
