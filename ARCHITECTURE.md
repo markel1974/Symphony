@@ -1,194 +1,83 @@
-# symphony - Commodore 64 Emulator in Go
+# Symphony - Architectural Overview
 
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-
-# symphony - Commodore 64 Emulator - Architectural Overview
+[![License](https://img.shields.io/badge/License-LGPL_v2.1-blue.svg)](https://www.gnu.org/licenses/old-licenses/lgpl-2.1.en.html)
 
 ## 1. Introduction
 
-symphony is a Commodore 64 emulator written in Go. It aims for high accuracy, including cycle-accurate emulation of the VIC-II video chip and the 6510 CPU. The emulator is designed to be modular, with distinct components responsible for different aspects of the C64 hardware. It does not rely on external emulation libraries (apart from `github.com/go-gl/gl/v3.2-core/gl` for the graphic renderer and  `github.com/go-gl/glfw/v3.3/glfw` for the window), and most of the code is written from scratch.
+Symphony is a highly configurable, deeply introspectable emulation framework written entirely in Go. Initially designed as a highly accurate Commodore 64 and 1541 emulator, it has evolved into a fully-fledged, system-agnostic framework for the dynamic exploration of computer systems.
+
+It relies on a micro-kernel architecture, separating the core execution engine (Virtual Machine) from the hardware implementations (Component Tree) and using a message-based system for asynchronous operations. The framework is designed for deep runtime introspection and dynamic state management without CGo dependencies for its core logic.
 
 ## 2. High-Level Architecture
 
-The symphony emulator can be conceptually divided into the following major components:
+The Symphony ecosystem is built upon a modular separation of concerns. The primary domains are:
 
-*   **CPU (6510):** Emulates the MOS 6510 CPU, including instruction execution, register management, flag manipulation, and interrupt handling.
-*   **VIC-II (Video Interface Chip):** Emulates the VIC-II graphics chip, responsible for generating the video output.
-*   **SID (Sound Interface Device):** Emulates the SID sound chip, responsible for generating audio.
-*   **CIA 1 & 2 (Complex Interface Adapter):** Emulates the two CIA chips, which handle various I/O tasks, including timers, keyboard input, and serial communication.
-*   **PLA (Programmable Logic Array):** Manages the C64's memory map, including RAM, ROM, and I/O regions. Handles bank switching, memory access, I/O ports, cartridge access, color management, and emulator identification.
-*   **Memory:** Provides an interface for memory access.
-*   **Cartridge:** Emulates different types of cartridges (ROM, RAM expansions, and more complex cartridges like the EasyFlash).
-*   **Disk Drive (1541):** Provides a full emulation of the 1541 disk drive, including its own 6502 CPU, VIA chips, and the drive mechanics.
-*   **Input:** Handles keyboard and joystick input.
-*   **Renderer:** Provides different rendering options (currently ASCII and OpenGL).
-*   **Board:** Acts as the "motherboard," connecting all the components.
+*   **Virtual Machine (VM):** An abstract execution platform capable of interpreting a Pluggable Instruction Set Architecture (ISA). It acts as the execution core for both hardware simulation and high-level scripting logic.
+*   **Symphony Kernel:** Acts as the host system, managing processes, asynchronous inter-component messaging, process life-cycles, and terminal interfaces.
+*   **Component Tree (Hardware):** A deeply hierarchical representation of simulated hardware. Everything is an `IComponent`. State and configuration are unified through dynamic tree loading and Snapshot restoration.
+*   **Compilers:** A Go-native compiler infrastructure to translate a subset of the Go language into the VM's bytecode for dynamic scripting and advanced user-space processes.
+*   **Renderers:** Independent modules responsible for the display output (e.g., OpenGL, text-mode).
 
-## 3. Component Details
+## 3. Directory Structure and Modules (`src/`)
 
-### 3.1. CPU (src/components/mos6510)
+### 3.1. Kernel (`src/kernel`)
 
-*   **Implementation Approach:** Micro-operation based. Each 6502/6510 instruction is broken down into a sequence of smaller operations, each corresponding (approximately) to a CPU clock cycle.
-*   **Dispatch Tables:** Uses dispatch tables (`opcodes.go`) to map opcodes to the corresponding instruction implementation functions and addressing mode functions.
-*   **Files:**
-    *   `cpu.go`: Main CPU struct, execution loop (`Emulate`), interrupt handling, register access, memory access (via the `IBanks` interface).
-    *   `instructions.go`: Declarations of all instruction implementation functions.
-    *   `inst_*.go`: Implementation of individual instructions, grouped by category (e.g., `inst_load_store.go`, `inst_arithmetic.go`, etc.).
-    *   `opcodes.go`: Dispatch tables (opTable, modeTable).
-    *   `stack.go`: Stack-related operations.
-    *   `utils.go`: Utility functions.
-*   **Interfaces:**
-    *   `IBanks`: Used to access memory.
-    *   `IPic`: Used to interact with the interrupt controller.
+The kernel coordinates the execution environment:
+*   **Processes (`process`):** Manages the VM instances as isolated userspace processes.
+*   **Messages (`messages`):** Implements an asynchronous messaging API used for system calls, hardware interrupts, and inter-component signaling.
+*   **Terminal (`terminal`):** Provides a built-in, ssh-accessible console to introspect the running state of the machine.
 
-### 3.2. VIC-II (src/components/vic)
+### 3.2. Virtual Machine (`src/vm`)
 
-*   **Implementation Approach:** Cycle-accurate (or very close to it) emulation of the VIC-II. The `Emulate` function drives the emulation, stepping through each clock cycle of each raster line.
-*   **Raster Timing:** Accurate emulation of raster timing, including badlines (where the VIC-II steals memory cycles from the CPU) and raster interrupts.
-*   **Graphics Modes:** Supports standard text mode, multicolor text mode, standard bitmap mode, multicolor bitmap mode, and extended background color mode.
-*   **Sprites:** Supports all 8 hardware sprites, including collision detection, priority, and expansion.
-*   **Files:**
-    *   `vic.go`: Main VIC struct, `Emulate` method, register access, interrupt handling.
-    *   `graphics.go`: Functions for rendering the different graphics modes.
-    *   `sprites.go`: Functions for managing and rendering sprites.
-    *   `borders.go`: Functions for rendering the border.
-    *   `pal.go`: Constants for PAL timing. Defines a series of functions, one for each cycle of a scanline (`palCycle1` to `palCycle63`), which are called sequentially by `Emulate`.
-    *   `tables.go`: Lookup tables.
+Symphony's execution engine is built around architectural symmetry:
+*   **Bytecode & Opcodes (`bytecode`, `opcodes`):** Each instruction is a self-contained entity (`IOpExecutor`) containing definition, interpretation, and compilation logic.
+*   **Sequencers (`sequencers`):** Pluggable execution cores (e.g. 6502/6510 instructions, high-level VM bytecode) that drive the state of the machine forward.
 
-### 3.3. SID (src/components/sid)
+### 3.3. Compilers (`src/compilers`)
 
-*   **Implementation:** Emulation of the SID sound chip, with support for multiple voices, waveforms, filters, and envelopes.
-*   **Files:**
-    *   `sid.go`: Main SID struct, methods for managing sound generation and register access.
-    *   `envelope.go`: Manages the amplitude of the voices.
-    *   `filter.go`: Manages the filter.
-    *   `oscillator.go`: Creates the waveforms.
-    *   `voice.go`: Structure of the SID voices.
-    *   `wave.go`: Implements the different waveforms.
+Contains tools and AST parsing to translate a significant subset of Go (interfaces, closures, structs) into the VM's native bytecode, enabling complex runtime scripting.
 
-### 3.4. CIA (src/components/cia)
+### 3.4. Hardware Components (`src/hardware`)
 
-*   **Implementation:** Emulates the two 6526 CIA chips.
-*   **Functionality:** Handles timers, time-of-day clock, serial port, and keyboard/joystick input (CIA1).
-*   **Files:**
-    *   `mos6526.go`: Main CIA struct and methods.
-    *   `timer.go`: Timer implementation.
-    *   `tod.go`: Time-of-Day clock implementation.
+This directory houses the actual implementations of specific machines and architectures. All components conform to the `IComponent` interface and are instantiated via a central registry.
 
-### 3.5. PLA (src/c64/pla)
+*   **`mos6510_rev1` (CPU):** Micro-operation based emulation of the 6510 CPU. Uses dispatch tables for cycle-accurate execution mapping.
+*   **`mos6569_vic_rev1` (VIC-II):** Cycle-accurate emulation of the video chip, mapping raster timing, badlines, and sprites precisely.
+*   **`mos6581_sid_rev1` (SID):** Sound chip emulation with waveforms, envelopes, and filters.
+*   **`mos6526_cia_rev1` (CIA):** Handles I/O, timers, TOD, and keyboard/joystick scanning.
+*   **`mos6522_via_rev1` (VIA):** Used in the 1541 disk drive.
+*   **`c64_pla_rev1` (PLA):** Manages the complex memory mapping, bank switching, and cartridge access for the C64.
+*   **Boards (`c64_board_rev1`, `c1541_board_rev1`):** The "motherboards" that orchestrate the connection between components (sockets mapping).
+*   **Inputs & Storage:** Implementations for keyboards (`c64_keyboard_rev1`), joysticks (`c64_joystick_rev1`), disks and roms.
 
-*   **Functionality:** Manages the C64's memory map, including RAM, ROM, and I/O regions. Handles bank switching, memory access, I/O ports, cartridge access, color management, and emulator identification.
-*   **Files:**
-    *   `pla.go`: Main PLA struct, memory access methods, port handling.
-    *   `memorymap.go`: Defines the different memory configurations (bank layouts) possible on the C64.
-    *   `ports.go`: Handles the 6510's I/O ports (primarily for controlling memory banking).
-    * `socket.go`: Defines the interfaces for external connection.
-    * `emulatorid.go`: Manages the emulator id information.
-    * `writetrigger.go`: Manages the triggers to the memory.
-* **Interfaces:**
-    *   `IExpansionSocket`: Used to access to the cartridges.
-    *	`ISocket`: Used to access to the registers.
-    * `IRomSocket`: Used to access the system roms.
+### 3.5. Registry (`src/registry`)
 
-### 3.6. Memory (src/memory)
+Provides a dynamic component factory. Components self-register via `init()` functions, allowing the framework to dynamically construct an entire machine from a JSON-like configuration snapshot.
 
-*   **Functionality:** Provides the interface `Memory` for accessing memory. The `pla` component handles the memory mapping.
-*   **Files:**
-    *   `memory.go`: Defines the `Memory` interface, providing a generic way to access memory.
-    *   `memory_c64.go`: Implements the `Memory` interface for the C64, including the specific memory map.
+### 3.6. Renderers (`src/renderers`)
 
-### 3.7. Cartridges (src/c64/cartridges)
+Handles video output:
+*   `gl`: OpenGL renderer for standard graphics.
+*   `none`: Headless renderer for background tasks, server deployment, or testing.
+*   `ascii`: Text-based fallback renderer.
 
-*   **Functionality:** Manages the loading and switching of different cartridge types.
-*   **Files:**
-    *   `manager.go`: Manages the cartridges.
-    *   `icartridge/icartridge.go`: Defines the `ICartridge` interface, which all cartridge implementations must satisfy.
-    *   Subdirectories: Contains implementations for specific cartridge types (e.g., `easyflash/`, `reu/`).
+## 4. Initialization and Data Flow
 
-### 3.8. Input (src/c64/inputs)
+1.  **Snapshot Loading (`RestoreAll`):** The initialization starts by feeding a snapshot (`map[string]interface{}`) to the static factory. This recursively builds the Component Tree and restores the specific state/configuration of every component.
+2.  **3-Phase Connection:**
+    *   **Phase 1:** `RestoreAll` builds the components and their tree hierarchy.
+    *   **Phase 2:** `Board.Setup` orchestrates `socket.Mount`, establishing structural dependencies dynamically across the tree.
+    *   **Phase 3:** Final interface bindings (`Wire`) to establish communication lines between dependent modules.
+3.  **Kernel Execution:** The kernel schedules VM processes. Processes run sequentially or concurrently depending on their sequencers.
+4.  **Emulation Cycle:** For hardware like the C64, a clock-driven `Emulate()` cascade happens:
+    *   VIC-II, CIA, SID, and CPU progress cycle-by-cycle based on micro-operations.
+    *   Memory accesses go through the PLA mapping interface.
+    *   Asynchronous kernel messages dispatch interrupts and hardware events.
+5.  **Output:** Frame buffers are sent to the active renderer for display.
 
-*   **Keyboard (keyboard.go):**
-    *   Buffers keyboard events (key presses and releases) in a FIFO queue.
-    *   Converts keyboard input (virtual keys, ASCII characters) into a C64-compatible format.
-    *   Provides methods for polling the next keyboard event from the queue.
-*   **Joystick (joystick.go):** Manages the joysticks state.
+## 5. Key Design Decisions
 
-### 3.9. Board (src/c64/board)
-
-*   **board.go:** Represents the C64 motherboard. Connects all the components together (CPU, VIC-II, SID, CIA, memory, expansion port).
-*   **Sockets:** Uses "socket" structs (`CPUSocket`, `VicSocket`, `CIA1Socket`, `CIA2Socket`, `SidSocket`) to provide an abstraction layer between the Board and the individual components, this implement the `ISocket` interface.
-*   **Clock:** The `Board` uses a `Quartz` component to manage the clock cycles.
-
-### 3.10. Disk Drive 1541 (src/c1541)
-
-*   **Functionality:** Emulates the Commodore 1541 disk drive completely, including its own 6502 CPU, two VIA 6522 chips, RAM, ROM, and the drive mechanics.
-*   **Files:**
-    *   `c1541.go`: Main file.
-    *   `board/board.go`: Main `C1541Board` struct.
-    *   `board/cpusocket.go`: The socket for the cpu.
-    *   `board/via1socket.go`: The socket for the first VIA.
-    *   `board/via2socket.go`: The socket for the second VIA.
-    *   `mechanic/mechanic.go`: Manages the drive mechanic.
-    *   `mechanic/factory.go`: Manages the disk images.
-    *   `disk/void/void.go`: Empty disk.
-    *   `disk/gcr/tracks.go`: Implements gcr management.
-    *   `disk/disk.go`: Handles disk file.
-    *   `disk/track.go`: Handles disk tracks.
-    *   `disk/conv.go`: Contains conversion function.
-    *   `banks/banks.go`: Manages banks.
-    *   `banks/jiffy.go`: Implements jiffy dos.
-    *   `banks/loader.go`: Load the disk roms.
-    *   `banks/builtin.go`: load the builtin rom.
-
-### 3.11. Renderers (src/asciirender, src/glrender, src/pixels)
-
-*   **asciirender (src/asciirender):** Renderer for text mode.
-*   **glrender (src/glrender):** Renderer for openGL graphic mode.
-*   **pixels (src/pixels):** used for managing pixels.
-
-### 3.12. Utils
-
-*   **fifo (src/fifo):** implement the fifo queue.
-*   **filler (src/filler):** implement the filler functions.
-*   **signals (src/signals):** implement signals for inter components management.
-
-### 4. Data Flow (Simplified)
-
-1.  **Initialization:** The `main.go` file initializes the system, creating instances of the `Board`, the renderer, and other core components.
-2.  **Main Loop:** The main loop (typically within the renderer) runs continuously.
-3.  **Input:** Keyboard and joystick input are captured by the `input` component.
-4.  **Event Transmission:** The keyboard events are stored in the `keyboard` component into a FIFO queue.
-5.  **Event Read:** The `CIA` reads the events from the `keyboard` component.
-6.  **Clock:** the `Board` use `Quartz` component to manage the cycles.
-7.  **Emulation Cycle:** The `Board.Emulate()` method is called. This triggers a cascade of calls:
-    *   The VIC-II `Emulate` method is called (multiple times, once per cycle). The VIC-II performs its operations for the current cycle, including accessing memory, updating its internal state, and generating video output. The `pal.go` file defines the sequence of operations for each cycle.
-    *   The CIA `Emulate` methods are called.
-    *   The SID `Emulate` method is called.
-    *   The CPU `Emulate` method is called (or, more accurately, the appropriate micro-operation for the current instruction is executed).
-    * The `PLA` component handles the memory and ports management.
-    * The `Board` component interconnects all the other components.
-8.  **Output:** The renderer draws the current frame to the screen, using the data provided by the VIC-II.
-9.  **Repeat:** The loop continues, emulating the next frame.
-10. **Interrupts**: The PIC manages the interrupts for the various components.
-11. **Matrice tastiera:** La matrice della tastiera è gestita dal CIA.
-
-### 5. Key Design Decisions
-
-*   **Micro-operations (CPU):** The CPU emulation is based on micro-operations, which allows for cycle-accurate emulation.
-*   **Cycle-Accurate VIC-II:** The VIC-II emulation aims for cycle accuracy, using separate functions for each clock cycle of a scanline.
-*   **Interfaces:** Extensive use of interfaces for decoupling.
-*   **No External Emulation Libraries:** The emulator is written from scratch, giving the developer complete control over the implementation.
-* **PLA:** The PLA component handles the memory map management.
-
-### 6. Error Handling
-
-The emulator handle the error by the function `log.Printf`. In the future an appropriate error handling will be added.
-
-### 7. Configuration
-
-The emulator use the `config.Config` to manage the configuration. The configuration can be changed by cli parameters or by file.
-
-### 8. External Dependencies
-
-*   `github.com/go-gl/gl/v3.2-core/gl`
-*   `github.com/go-gl/glfw/v3.3/glfw`
+*   **Snapshot = Configuration = State:** A single file determines everything.
+*   **Decoupled Execution (Microkernel):** Emulated processors run as isolated processes making "syscalls" to the kernel.
+*   **Pure Go (No CGo):** Ensures portability, simplicity of cross-compilation, and memory safety.
+*   **Deep Introspection:** Built-in SSH server provides a window into the runtime state of any `IComponent`.

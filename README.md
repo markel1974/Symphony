@@ -1,80 +1,104 @@
-# Symphony: A Configurable Emulation Framework
-
-> Symphony is one of the first open-source, highly configurable, and deeply introspectable emulation frameworks written entirely in Go, designed for accuracy, extensibility, and the dynamic exploration of computer systems.
+# Symphony: The Transparent Systems Framework
 
 [![Go](https://img.shields.io/badge/Go-00ADD8?style=for-the-badge&logo=go&logoColor=white)](https://go.dev/)
 [![License](https://img.shields.io/badge/License-LGPL_v2.1-blue.svg)](https://www.gnu.org/licenses/old-licenses/lgpl-2.1.en.html)
-[![Go Report Card](https://goreportcard.com/badge/github.com/markel1974/symphony)](https://goreportcard.com/report/github.com/markel1974/symphony) ---
+[![Go Report Card](https://goreportcard.com/badge/github.com/markel1974/symphony)](https://goreportcard.com/report/github.com/markel1974/symphony)
 
-**Symphony is not just another emulator. It's an exploration.**
+**Symphony is not just an emulator. It is a complete ecosystem for exploring, building, and introspecting computing systems.**
 
-Born from decades of low-level development experience and a frustration with the limitations of traditional, static emulator designs, Symphony was built with a different philosophy. It's a **framework** designed for those who don't just want to *run* old software, but want to *understand*, *modify*, and *experiment* with the underlying hardware architecture itself.
+Born from a frustration with "black box" emulator designs and opaque backend services, Symphony is a highly modular, open-source framework written purely in Go. It allows you to build complex software and hardware architectures that are transparent, inspectable, and manipulable in real-time by design.
 
-Imagine dynamically rewiring components, inspecting CPU registers mid-flight, saving the *entire* state and *configuration* of a complex machine into a single file, and doing it all through a powerful, scriptable console accessible from anywhere via SSH. **That's the core idea of Symphony.**
+---
 
-While it currently boasts a highly accurate Commodore 64 and 1541 disk drive implementation as a proof-of-concept, Symphony's modular architecture is inherently **system-agnostic**, ready to be extended to emulate a wide variety of machines.
+## 🏛️ The Three Pillars of Symphony
 
-## What Makes Symphony Unique?
+Symphony is built upon three distinct but perfectly integrated architectural pillars:
 
-* **Deep Dynamic Introspection:** Inspect and modify the state of *any* component at **runtime** via a powerful built-in console (accessible via SSH!). Change registers, memory, or custom properties on the fly.
-* **Snapshot = Configuration = State:** A single snapshot defines the **entire hardware configuration** *and* runtime state. Build, save, load, and share complex machine setups easily.
-* **Truly Modular Architecture:** Built entirely around the `IComponent` interface. Components communicate *only* through well-defined interfaces. Easily add new hardware, swap implementations (e.g., different SID versions), or even build entirely new systems.
-* **Advanced Integrated Console:** Access via **SSH**, featuring **multiple windows**, **concurrent processes**, custom commands per component, and even basic **text-mode graphing**. It's a complete debugging and experimentation environment.
-* **Fully Headless Operation:** The core Symphony emulation engine runs **completely headless**, without requiring any graphical or audio output. Ideal for automated testing, server-side emulation processes, or integration with custom frontends.
-* **Accuracy-Focused:** Where implemented (like the C64 VIC-II), aims for **cycle-level accuracy**.
-* **Pure Go Core:** Ensures **portability** and **memory safety** with **no CGo dependencies** for the core logic.
-* **Extensibility First:** Designed as a framework from the ground up.
+### 1. The Microkernel OS
+At its core, Symphony is a **microkernel operating system**. It features an asynchronous message router that manages isolated user-space processes. It comes with a built-in SSH server, a VT100 retained-mode window manager, and a virtual filesystem. You can SSH into the running kernel and perform "open-heart surgery" on running processes without stopping the system.
 
-## Architecture Highlights
+### 2. The Universal VM & Native Compiler
+Symphony includes a robust **multi-pass compiler** that translates a large subset of the Go language into a custom intermediate bytecode. This bytecode is executed by a high-performance **Virtual Machine**. 
+The VM uses an "Interchangeable Instruction Disk" architecture: it relies on the Strategy Pattern (via `ISequencer` and `IOpExecutor`) rather than a monolithic switch-case. This means the VM can seamlessly transition from running high-level Go scripts to acting as a cycle-accurate Z80 or MOS6510 CPU emulator, simply by swapping the instruction set module. 
 
-Symphony's power stems from its carefully designed architecture:
+### 3. Topological Hardware Emulation
+Hardware is not simulated via high-level traps or software hacks. Symphony models hardware topologically—like a software breadboard. Components (like the VIC-II, SID, PLA, and CPU) are isolated "black boxes" that communicate exclusively through standardized `ISocket` interfaces via electrical signals (e.g., pulling the DMA line low to trigger High-Z states on the bus).
+Currently, Symphony implements a full **Commodore 64** and an independent **1541 Floppy Drive** (which runs as a completely separate parallel computer over a simulated IEC serial bus).
 
-1.  **The Component Tree (`IComponent`, `BaseComponent`, `Node`):** Everything is a component implementing `IComponent` and embedding `BaseComponent`. These are organized hierarchically in a tree managed by `Node` objects, providing universal methods for identification, navigation, properties, commands, and state management.
-2.  **Snapshot-Driven Initialization (`RestoreAll`/`_restore`):** The static `component.RestoreAll` function recursively builds the component tree *and* restores component state directly from a snapshot map (`map[string]interface{}`). It uses the `ComponentFactory` to instantiate components based on "type" information within the snapshot (unless marked "internal").
-3.  **Component Factory (`hardware.Factory`, `IFactory`, `registry`):** A central factory uses a dynamic registry (populated via package `init()` functions) to delegate creation to specific component factories (`IFactory` implementations). The factory also serves as a provider for global services (`IDisplayBuffer`, `IAudioRender`).
-4.  **Sockets (`ISocket` & Implementations):** Lightweight structs that act as typed intermediaries, primarily used during the connection phase. They implement `ISocket`'s `Wire` method.
-5.  **3-Phase Connection (`RestoreAll` -> `Board.Setup` -> `Board.Connect` -> Socket `Wire`):** Initialization occurs in distinct phases after `RestoreAll` builds the tree: `Board.Setup` orchestrates the `socket.Wire()` call for all relevant sockets. Inside `Mount`, the socket finds its dependencies by navigating the tree via its parent (`IComponent`) reference, stores the required interfaces, and calls the component's final `Setup` (`IHardware.Setup`) or `Bind` method to establish the connection. *(Self-correction on phases needed here)* -> *Correction*: **Revised 3-Phase:** 1. `RestoreAll` (Create Tree + Restore State). 2. `Board.Setup` orchestrates `socket.Mount` (which finds dependencies AND likely calls component `Setup`/`Bind`). 3. `Board.Connect` (if still needed, maybe just calls component `Connect`?). [**TODO:** Re-verify exact final sequence of Setup/Connect/Mount calls based on latest code].
+---
 
-#### The Virtual Machine: An Abstract Execution Platform
+## 🗺️ Architecture Overview
 
-Symphony's VM is not a simple bytecode interpreter but an abstract execution engine, designed for maximum flexibility and performance. Its architecture is driven by pragmatic academic principles:
+### The Ecosystem
+```mermaid
+graph TD
+    Client[SSH Client / Terminal] <-->|SSH / VT100| Kernel[Symphony Microkernel]
+    
+    subgraph Symphony OS
+        Kernel -->|Asynchronous Messages| VFS[Virtual File System]
+        Kernel -->|Process Isolation| Shell[xshell VT100]
+        Kernel -->|Spawns| VM[Universal Virtual Machine]
+    end
+    
+    subgraph VM Execution Engine
+        VM -->|Bytecode| Sequencer[Sequencer / Dispatcher]
+        Sequencer -->|Execute / Compile| GoApp[Go Script Process]
+        Sequencer -->|Interchangeable ISA| Z80[Z80 Emulator Core]
+    end
+```
 
-* **Pluggable Instruction Set Architecture (ISA)**: The core of the design is the complete separation of the execution engine from the instruction set. Through the `ISequencer` interface, the VM can dynamically load different execution "cores". This allows Symphony to act as both a high-fidelity hardware emulator (by loading a sequencer for the 6502 CPU) and a runtime for high-level userspace processes.
+### The Topological Component Tree (C64 Example)
+```mermaid
+graph TD
+    Board[c64_board_rev1] --> CPU[CPUSocket]
+    Board --> VIC[VICSocket]
+    Board --> SID[SIDSocket]
+    Board --> PLA[PLASocket]
+    Board --> CIA1[CIA1Socket]
+    
+    CPU -.->|AEC, RDY, BA Pins| PLA
+    VIC -.->|DMA Request| CPU
+    PLA -.->|Memory Mapping| Board
+```
 
-* **Architectural Symmetry (`IOpExecutor`)**: Every single instruction is a self-contained, complete entity. The logic for its **definition** (opcode, operands), **interpretation** (`Execute`), and potential **JIT/AOT compilation** (`Compile`) resides in a single, cohesive object. This elegant design eliminates redundancy and makes the system incredibly robust and easy to extend.
+---
 
-* **Microkernel Model**: Each instance of the VM operates as an **isolated userspace process**. It communicates with the outside world (the Symphony "kernel") exclusively through an asynchronous messaging API, effectively performing "system calls" for privileged operations like timer management or I/O.
+## ✨ Key Features
 
-#### The Go-Native Compiler: A Bridge to High-Level Scripting
+* **Live Introspection (WYSIWYG)**: Connect via SSH to the running kernel and inspect or modify the state of *any* component (CPU registers, variables, audio channels) at runtime using the `xshell`.
+* **Snapshot = State + Configuration**: A single snapshot defines the entire hardware topology and its exact runtime state. Build, save, load, and share complex machine setups easily.
+* **Cycle-Accurate Timing**: Hardware components (like the VIC-II and SID) respect the strict physical timing constraints of the original silicon.
+* **100% Pure Go**: No CGo dependencies, ensuring memory safety, immediate cross-compilation, and high portability.
+* **Headless by Default**: Designed to run cleanly on servers without requiring a GPU or Audio interface, making it perfect for automated testing and CI/CD.
 
-To provide a powerful and familiar scripting environment, Symphony includes a compiler that translates a large and complex subset of the Go language into the VM's native bytecode.
+---
 
-* **Fidelity to Go's Semantics**: The compiler does not just parse a "Go-like" syntax. Through a multi-pass analysis and a robust type management system, it correctly understands and compiles the most powerful and distinctive features of Go, including:
-    * **Interfaces and Type Switching**: With compile-time compatibility checking and handling of implicit conversions.
-    * **Pointers, Methods, and Receivers**: Correctly handles `&` and `*` syntax and method calls on both structs and pointers to structs.
-    * **Closures and `defer`**: Properly implements the capture of free variables and the semantics of `defer` statements.
+## 🚀 Getting Started
 
-* **Standard Library (SDK)**: To make scripts immediately useful, the compiler integrates with an SDK that safely exposes the functionality of Go's native packages to the code running inside the VM.
+Symphony requires **Go 1.21+** to build.
 
-This VM+Compiler ecosystem is what enables Symphony to fulfill its vision: not just to emulate machines of the past, but to provide the tools to **create, inspect, and interact with them** in new and powerful ways.
-
-
-
-## Current Implementation: Commodore 64 / 1541
-
-[... as before ...]
-
-## Getting Started
-
-[**TODO:** Add detailed build and run instructions. Mention headless execution.]
-
-
-🚀 Try Symphony Live in Your Browser! 🚀
-https://markel1974.itch.io/symphony
+### Building from Source
+Clone the repository and build the binary:
 
 ```bash
-# Example: Run default C64 config with OpenGL renderer
-./symphony -r gl -m c64
+git clone https://github.com/markel1974/symphony.git
+cd symphony
+go build -o symphony main.go
+```
 
-# Example: Run headless (no graphics/audio)
+### Running Symphony
+
+Run the default Commodore 64 configuration with an OpenGL renderer:
+```bash
+./symphony -r gl -m c64
+```
+
+Run in completely headless mode (perfect for SSH exploration):
+```bash
 ./symphony -r none -a none -m c64
+```
+
+*(Note: SSH credentials and port configuration are managed via the OS configuration files. Check the `src/kernel` documentation for connection details).*
+
+---
+*Module Author: Marcello (born 1974)*
