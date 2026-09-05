@@ -36,7 +36,16 @@ To realize this dream, a traditional design was not an option. Symphony's archit
 
 ## Current Implementation: The Commodore 64
 
-As its first and primary proof-of-concept, Symphony includes a highly accurate Commodore 64 implementation. This is not just a demo; it is a testament to the framework's power, capable of handling the most demanding software and hardware interactions with a level of fidelity rarely seen in other emulators.
+As its first and primary proof-of-concept, Symphony includes a fully **cycle-exact** Commodore 64 and an independent 1541 Floppy Drive implementation. This is not just a demo; it is a testament to the framework's power, capable of handling the most demanding software and hardware interactions with a level of fidelity rarely seen in other emulators.
+
+The framework's component factory already registers a massive, production-ready library of topological building blocks, including:
+* **Microprocessors & I/O:** MOS6510, MOS6522 (VIA), MOS6526 (CIA), External CPU
+* **Custom Chips:** MOS6581 (SID), MOS6569 (VIC-II)
+* **Logic & Motherboards:** C64 Board, C64 PLA, C1541 PLA, Quartz, Dynamic Throttle
+* **Memory & Media:** C64 RAM, C64 Color RAM, C64 ROMs, C1541 RAM, C1541 ROMs, Generic Media
+* **Peripherals & Buses:** C64 Keyboard, C64 Joystick, IEC Bus
+* **RAM Expansions (REU):** 128K, 256K, 512K, 1MB, 2MB, 4MB, 8MB, and 16MB variants
+* **Cartridge Formats:** Standard C64 Cartridges, Magic Desk, Ocean, EasyFlash, Final Cartridge III
 
 ## The Future: An Invitation to Build
 
