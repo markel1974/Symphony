@@ -475,6 +475,27 @@ func (c *Functions) GoStmt(node *ast.GoStmt) error {
 		if _, err = c.scopes.SymbolEmit(node.Pos(), native.OpCallAsyncId, args, spread); err != nil {
 			return err
 		}
+	case *ast.Ident:
+		funcSymbol, ok := c.scopes.SymbolResolve(t.Name)
+		if !ok {
+			if err := c.imports.EmitInternal(node.Pos(), t.Name); err != nil {
+				return tables.NewCompilerError(c.fileSet, node, "can't emit internal %s: ", t.Name, err.Error())
+			}
+		} else {
+			if err := c.scopes.SymbolEmitGet(node.Pos(), funcSymbol); err != nil {
+				return err
+			}
+		}
+		for _, arg := range node.Call.Args {
+			if err := c.compile(arg); err != nil {
+				return err
+			}
+		}
+		spread := 0
+		args := len(node.Call.Args)
+		if _, err := c.scopes.SymbolEmit(node.Pos(), native.OpCallAsyncId, args, spread); err != nil {
+			return err
+		}
 	default:
 		return tables.NewCompilerError(c.fileSet, node, "unsupported function call type: %T", node.Call.Fun)
 	}

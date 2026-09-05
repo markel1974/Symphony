@@ -5,6 +5,7 @@ import (
 )
 
 func worker(c chan int, val int) {
+	// fmt.Println("Worker processing value:", val)
 	c <- val * 2
 }
 

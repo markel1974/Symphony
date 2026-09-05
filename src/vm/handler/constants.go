@@ -57,7 +57,7 @@ func (g *Constants) InitFuncs() []*objects.Func {
 // Retrieve fetches the object at the specified index in the constants container or returns an error if the index is invalid.
 func (g *Constants) Retrieve(index uint) (objects.IObject, error) {
 	if index >= uint(len(g.container)) {
-		return g.gk.UndefinedValue(), fmt.Errorf("invalid constant index: %d", index)
+		return g.gk.UndefinedValue(), fmt.Errorf("retrieve: invalid constant index: %d", index)
 	}
 	return g.container[index], nil
 }
@@ -78,7 +78,7 @@ func (g *Constants) RetrieveFunc(index uint) (*objects.Func, error) {
 // Get retrieves a constant at the specified index, creates a copy with the given frameId and predefined depth, and returns it.
 func (g *Constants) Get(frameId int, index uint) (objects.IObject, error) {
 	if index >= uint(len(g.container)) {
-		return g.gk.UndefinedValue(), fmt.Errorf("invalid constant index: %d", index)
+		return g.gk.UndefinedValue(), fmt.Errorf("get: invalid constant index: %d", index)
 	}
 	obj := g.container[index]
 	return obj.Copy(frameId, objects.MaxDepth), nil
