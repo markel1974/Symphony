@@ -70,7 +70,7 @@ func (op *OpChanSend) Execute(decoder *handler.Decoder) {
 	op.vm.StackPush(val)
 	op.vm.SetIp(op.vm.GetIp() - 1)
 	op.vm.BlockCurrentCore()
-	data.AddRecv(op.vm.CoreId())
+	data.AddSend(op.vm.CoreId())
 }
 
 // Compile generates bytecode for the operation, returning an error if the functionality is unimplemented.

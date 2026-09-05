@@ -62,6 +62,11 @@ func (data *ChanData) AddRecv(id uint) {
 	data.recvQueue = append(data.recvQueue, id)
 }
 
+// AddSend appends the given core ID to the sendQueue, indicating it is waiting to send to the channel.
+func (data *ChanData) AddSend(id uint) {
+	data.sendQueue = append(data.sendQueue, id)
+}
+
 // Chan represents a memory-managed channel structure with send/receive queues and a buffer for object storage.
 type Chan struct {
 	IAllocator
