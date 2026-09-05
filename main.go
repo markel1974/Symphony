@@ -128,11 +128,11 @@ func BuildDrives(d string) ([]*config.Drive, error) {
 	return drives, nil
 }
 
-func vmTest() {
+func vmTestRunner() {
 	//const prefix = "simple"
 	//const prefix = "simple3"
-	//const prefix = "test_"
-	const prefix = "sum"
+	const prefix = "test_"
+	//const prefix = "sum"
 	var args []interface{} = nil
 	if err := stub.Launch(prefix, "native", "main", args, true); err != nil {
 		log.Fatal(err)
@@ -165,6 +165,7 @@ func main() {
 	var renderId string
 	var noShell bool
 	var reflector string
+	var vmTest bool
 
 	flag.BoolVar(&showHelp, "h", false, "show this help")
 	flag.BoolVar(&showVersion, "v", false, "show version")
@@ -177,6 +178,7 @@ func main() {
 	flag.BoolVar(&noJiffy, "j", false, "disable jiffy")
 	flag.BoolVar(&noShell, "k", false, "disable shell")
 	flag.StringVar(&reflector, "g", "", "generate reflect file")
+	flag.BoolVar(&vmTest, "z", false, "launch vm tests")
 	flag.Parse()
 
 	if showHelp {
@@ -186,6 +188,11 @@ func main() {
 
 	if showVersion {
 		fmt.Println(version.AppName, version.AppVersion)
+		return
+	}
+
+	if vmTest {
+		vmTestRunner()
 		return
 	}
 

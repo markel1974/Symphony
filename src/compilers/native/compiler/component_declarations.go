@@ -667,6 +667,16 @@ func (c *Declarations) ArrayType(node *ast.ArrayType) error {
 	return nil
 }
 
+func (c *Declarations) ChanType(node *ast.ChanType) error {
+	chanProtoType := c.gk.NewChan(objects.FrameStatic, 0)
+	constIndex := c.constants.AddOrGet("", chanProtoType)
+
+	if _, err := c.scopes.SymbolEmit(node.Pos(), native.OpConstantId, constIndex); err != nil {
+		return err
+	}
+	return nil
+}
+
 // handleInterfaceDefine binds a concrete symbol to an interface symbol, ensuring the concrete type satisfies the interface.
 // It emits the concrete symbol into the current scope and performs the assignment operation.
 func (c *Declarations) handleInterfaceDefine(pos token.Pos, iSymbol *tables.Symbol, concreteSymbol *tables.Symbol) error {

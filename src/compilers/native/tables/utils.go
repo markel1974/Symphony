@@ -183,6 +183,15 @@ func GetReceiverType(expr ast.Expr, useObjects bool) (string, error) {
 			return "", fmt.Errorf("unsupported map return type: %T", v)
 		}
 		return MapDefinition + "[" + key.Name + "]" + value.Name, nil
+	case *ast.ChanType:
+		if useObjects {
+			return objects.ChanType, nil
+		}
+		z := GetIdent(v.Value)
+		if z == nil {
+			return "", fmt.Errorf("unsupported chan return type: %T", v.Value)
+		}
+		return "chan " + z.Name, nil
 	default:
 		return "", fmt.Errorf("unsupported return type %T", v)
 	}

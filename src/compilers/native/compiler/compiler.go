@@ -184,6 +184,8 @@ func (c *Compiler) compile(in ast.Node) error {
 		err = c.declarations.MapType(node)
 	case *ast.ArrayType:
 		err = c.declarations.ArrayType(node)
+	case *ast.ChanType:
+		err = c.declarations.ChanType(node)
 	case *ast.BlockStmt:
 		err = c.functions.BlockStmt(node)
 	case *ast.ExprStmt:
