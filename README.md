@@ -87,6 +87,11 @@ go build -o symphony main.go
 ```
 
 ### Running Symphony
+Run a cartridge-based configuration:
+```bash
+./symphony -c [path/to/cartridge]
+```
+
 
 Run the default Commodore 64 configuration with an OpenGL renderer:
 ```bash
