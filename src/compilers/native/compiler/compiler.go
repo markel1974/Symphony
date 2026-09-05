@@ -188,6 +188,8 @@ func (c *Compiler) compile(in ast.Node) error {
 		err = c.functions.BlockStmt(node)
 	case *ast.ExprStmt:
 		err = c.functions.ExprStmt(node)
+	case *ast.SendStmt:
+		err = c.functions.SendStmt(node)
 	case *ast.RangeStmt:
 		err = c.loops.RangeStmt(node)
 	case *ast.ForStmt:

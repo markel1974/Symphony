@@ -18,6 +18,8 @@ type Core struct {
 	id               uint
 	shutdownSignal   func(id uint, err error)
 	createCoreSignal func(id uint, callee *objects.Func, args []objects.IObject)
+	blockSignal      func(id uint)
+	wakeSignal       func(id uint)
 	stack            *Stack
 	frames           *Frames
 	currFrame        *Frame
@@ -31,12 +33,14 @@ type Core struct {
 }
 
 // NewCore initializes and returns a new virtual machine instance configured with the provided components and settings.
-func NewCore(gk objects.IGateKeeper, maxFrames int, stackSize int, id uint, shutdownSignal func(id uint, err error), createCoreSignal func(id uint, callee *objects.Func, args []objects.IObject)) *Core {
+func NewCore(gk objects.IGateKeeper, maxFrames int, stackSize int, id uint, shutdownSignal func(id uint, err error), createCoreSignal func(id uint, callee *objects.Func, args []objects.IObject), blockSignal func(id uint), wakeSignal func(id uint)) *Core {
 	v := &Core{
 		gk:               gk,
 		id:               id,
 		shutdownSignal:   shutdownSignal,
 		createCoreSignal: createCoreSignal,
+		blockSignal:      blockSignal,
+		wakeSignal:       wakeSignal,
 		ip:               resetIp,
 		runningIndex:     -1,
 	}
@@ -53,6 +57,11 @@ func (v *Core) Version() int {
 
 // Id returns the unique identifier of the Core instance.
 func (v *Core) Id() uint {
+	return v.id
+}
+
+// CoreId returns the unique identifier of the Core instance (satisfies IVM).
+func (v *Core) CoreId() uint {
 	return v.id
 }
 
@@ -547,4 +556,18 @@ func (v *Core) FramesMax() uint64 {
 func (v *Core) Print(writer io.Writer) {
 	_, _ = fmt.Fprintf(writer, "------------- Stack Core: %d -------------\n", v.Id())
 	v.stack.Print(writer)
+}
+
+// BlockCurrentCore suspends the execution of the current core and moves it to the blocked queue.
+func (v *Core) BlockCurrentCore() {
+	if v.blockSignal != nil {
+		v.blockSignal(v.id)
+	}
+}
+
+// WakeCore resumes a previously blocked core, adding it back to the running queue.
+func (v *Core) WakeCore(id uint) {
+	if v.wakeSignal != nil {
+		v.wakeSignal(id)
+	}
 }

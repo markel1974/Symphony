@@ -129,6 +129,11 @@ func (f *AllocatedObjects) NewInterface() any {
 	return f.add(newInterface(NewAllocator(f.gk, FrameStatic), f.gk.UndefinedValue(), make(map[string]IObject)))
 }
 
+// NewChan allocates and returns a new chan object.
+func (f *AllocatedObjects) NewChan() any {
+	return f.add(newChan(NewAllocator(f.gk, FrameStatic), 0))
+}
+
 // NewArrayIterator initializes and returns a new ArrayIterator for iterating over a given slice of IObject elements.
 func (f *AllocatedObjects) NewArrayIterator() any {
 	return f.add(newArrayIterator(NewAllocator(f.gk, FrameStatic), []IObject{}, 0))

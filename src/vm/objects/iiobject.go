@@ -93,6 +93,7 @@ type IGateAllocator interface {
 	NewString(frame int, value string) IObject
 	NewStruct(frame int, name string, value map[string]IObject) IObject
 	NewAny(frame int, value interface{}) IObject
+	NewChan(frame int, capacity int) IObject
 	NewTime(frame int, value time.Time) IObject
 	NewMapIterator(frame int, v map[string]IObject, index int) IIterator
 	NewStructIterator(frame int, v map[string]IObject, index int) IIterator

@@ -267,6 +267,28 @@ func (c *Functions) CallExpr(node *ast.CallExpr) error {
 
 	switch fun := node.Fun.(type) {
 	case *ast.Ident:
+		// Handle make(chan Type, cap)
+		if fun.Name == "make" {
+			if len(node.Args) > 0 {
+				if _, isChan := node.Args[0].(*ast.ChanType); isChan {
+					if len(node.Args) > 1 {
+						if err := c.compile(node.Args[1]); err != nil {
+							return err
+						}
+					} else {
+						idx := c.constants.AddOrGet("", c.gk.NewInt(objects.FrameStatic, 0))
+						if _, err := c.scopes.SymbolEmit(node.Pos(), native.OpConstantId, idx); err != nil {
+							return err
+						}
+					}
+					if _, err := c.scopes.SymbolEmit(node.Pos(), native.OpMakeChanId); err != nil {
+						return err
+					}
+					return nil
+				}
+			}
+		}
+
 		// Handle a simple function call
 		funcSymbol, ok := c.scopes.SymbolResolve(fun.Name)
 		if !ok {
@@ -379,6 +401,22 @@ func (c *Functions) ExprStmt(node *ast.ExprStmt) error {
 		return err
 	}
 	if _, err := c.scopes.SymbolEmit(node.Pos(), native.OpPopId); err != nil {
+		return err
+	}
+	return nil
+}
+
+// SendStmt compiles a send statement to a channel.
+func (c *Functions) SendStmt(node *ast.SendStmt) error {
+	// First push the channel
+	if err := c.compile(node.Chan); err != nil {
+		return err
+	}
+	// Then push the value to send
+	if err := c.compile(node.Value); err != nil {
+		return err
+	}
+	if _, err := c.scopes.SymbolEmit(node.Pos(), native.OpChanSendId); err != nil {
 		return err
 	}
 	return nil

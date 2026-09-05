@@ -30,6 +30,7 @@ type GateAllocator struct {
 	poolArray  sync.Pool
 	poolMap    sync.Pool
 	poolStruct sync.Pool
+	poolChan   sync.Pool
 
 	// Pools for iterators
 	poolArrayIterator  sync.Pool
@@ -70,6 +71,7 @@ func NewGateAllocator(gk *GateKeeper) *GateAllocator {
 	ga.poolArray.New = ga.allocatedObjects.NewArray
 	ga.poolMap.New = ga.allocatedObjects.NewMap
 	ga.poolStruct.New = ga.allocatedObjects.NewStruct
+	ga.poolChan.New = ga.allocatedObjects.NewChan
 	ga.poolAny.New = ga.allocatedObjects.NewAny
 
 	// Iterators
@@ -216,6 +218,13 @@ func (f *GateAllocator) NewStruct(frame int, typeName string, v map[string]IObje
 func (f *GateAllocator) NewAny(frame int, value interface{}) IObject {
 	obj := f.poolAny.Get().(*Any)
 	obj.Setup(frame, value)
+	return obj
+}
+
+// NewChan creates and initializes a new Chan object from the pool using the given frame and capacity.
+func (f *GateAllocator) NewChan(frame int, capacity int) IObject {
+	obj := f.poolChan.Get().(*Chan)
+	obj.Setup(frame, capacity)
 	return obj
 }
 
@@ -411,6 +420,14 @@ func (f *GateAllocator) releaseObject(frame int, obj IObject) {
 			delete(o.data, k)
 		}
 		f.poolStruct.Put(o)
+	case *Chan:
+		for _, v := range o.data.buffer {
+			f.releaseObject(frame, v)
+		}
+		o.data.buffer = o.data.buffer[:0]
+		o.data.sendQueue = o.data.sendQueue[:0]
+		o.data.recvQueue = o.data.recvQueue[:0]
+		f.poolChan.Put(o)
 	case *ArrayIterator:
 		f.poolArrayIterator.Put(o)
 	case *BytesIterator:

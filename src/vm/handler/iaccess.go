@@ -7,6 +7,7 @@ import (
 // IVM defines an interface for managing a virtual machine with functionalities for version retrieval.
 type IVM interface {
 	Version() int
+	CoreId() uint
 }
 
 type IVMFrameOnly interface {
@@ -82,4 +83,6 @@ type IVMFullAccess interface {
 	CallObject(value objects.IObject, numArgs int, args ...objects.IObject)
 	Return(returnValues []objects.IObject)
 	Shutdown(err error)
+	BlockCurrentCore()
+	WakeCore(id uint)
 }

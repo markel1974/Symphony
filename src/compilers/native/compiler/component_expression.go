@@ -109,6 +109,15 @@ func (c *Expression) UnaryExpr(node *ast.UnaryExpr) error {
 		}
 		return nil
 	}
+	if node.Op == token.ARROW {
+		if err := c.compile(node.X); err != nil {
+			return err
+		}
+		if _, err := c.scopes.SymbolEmit(node.Pos(), native.OpChanRecvId); err != nil {
+			return err
+		}
+		return nil
+	}
 	// logic for other unary operators (e.g. '!', '-', '^')
 	if err := c.compile(node.X); err != nil {
 		return err

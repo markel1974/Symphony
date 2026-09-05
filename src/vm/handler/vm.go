@@ -47,6 +47,7 @@ type VM struct {
 	cores             []*Core
 	coresRunning      []*Core
 	coresFree         []*Core
+	coresBlocked      []*Core
 	counterIterations uint64
 	counterStart      uint64
 	maxCores          int
@@ -123,7 +124,7 @@ func (v *VM) Setup(loader bytecode.ILoader, codes ...*bytecode.Bytecode) (map[st
 	}
 	v.cores = make([]*Core, v.maxCores)
 	for idx := range v.cores {
-		core := NewCore(v.gk, v.maxFrames, v.stackSize, uint(idx), v.coreShutdown, v.coreCreate)
+		core := NewCore(v.gk, v.maxFrames, v.stackSize, uint(idx), v.coreShutdown, v.coreCreate, v.coreBlock, v.coreWake)
 		if err = core.Setup(v.imports, v.constants, v.globals, v.seq); err != nil {
 			return nil, err
 		}
@@ -200,6 +201,7 @@ func (v *VM) exec(mainFn *objects.Func, ret bool, args ...interface{}) ([]interf
 	v.coreMainId = -1
 	v.coresRunning = make([]*Core, 0, len(v.cores))
 	v.coresFree = make([]*Core, len(v.cores))
+	v.coresBlocked = make([]*Core, 0, len(v.cores))
 	for idx, core := range v.cores {
 		core.Reset()
 		v.coresFree[idx] = core
@@ -284,4 +286,46 @@ func (v *VM) coreShutdown(id uint, err error) {
 	v.coresRunning = v.coresRunning[:lastIndex]
 
 	v.coresFree = append(v.coresFree, core)
+}
+
+// coreBlock moves a core from the running queue to the blocked queue.
+func (v *VM) coreBlock(id uint) {
+	core := v.cores[id]
+	runningIndex := core.runningIndex
+	if runningIndex < 0 {
+		return
+	}
+
+	lastIndex := len(v.coresRunning) - 1
+	lastCore := v.coresRunning[lastIndex]
+	v.coresRunning[runningIndex] = lastCore
+	lastCore.Update(runningIndex)
+	v.coresRunning = v.coresRunning[:lastIndex]
+
+	core.Update(-1)
+	v.coresBlocked = append(v.coresBlocked, core)
+}
+
+// coreWake moves a core from the blocked queue to the running queue.
+func (v *VM) coreWake(id uint) {
+	core := v.cores[id]
+	blockedIdx := -1
+	for i, c := range v.coresBlocked {
+		if c.id == id {
+			blockedIdx = i
+			break
+		}
+	}
+	if blockedIdx < 0 {
+		return // not in blocked queue
+	}
+
+	lastIndex := len(v.coresBlocked) - 1
+	lastCore := v.coresBlocked[lastIndex]
+	v.coresBlocked[blockedIdx] = lastCore
+	v.coresBlocked = v.coresBlocked[:lastIndex]
+
+	runningIndex := len(v.coresRunning)
+	v.coresRunning = append(v.coresRunning, core)
+	core.Update(runningIndex)
 }
