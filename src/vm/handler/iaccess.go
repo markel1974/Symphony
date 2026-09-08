@@ -10,6 +10,7 @@ type IVM interface {
 	CoreId() uint
 }
 
+// IVMFrameOnly extends IVM with frame-specific operations for handling objects and variables in execution frames.
 type IVMFrameOnly interface {
 	IVM
 	FrameId() int
