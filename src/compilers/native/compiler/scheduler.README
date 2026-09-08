@@ -22,7 +22,7 @@ recvQueue: A queue of Cores waiting to receive (<- ch).
 2. Compiler: New Syntax and Opcodes
 The compiler in native/compiler should be extended to recognize channel syntax.
 
-Creation: Recognize make(chan Type, capacity) and emit a new opcode, for example OpMakeChan.
+Creation: Recognize make(chan Type, capacity) and emit a new opcode, for example OpCreateChan.
 
 Operations: Recognize the <- operator:
 
@@ -33,7 +33,7 @@ Receive (<-ch or val := <-ch): Would emit an OpChanRecv.
 3. Sequencer and Opcodes: The Execution Logic
 The new opcodes in vm/sequencers/native would implement the main logic:
 
-OpMakeChan: Executed once, creates the ChannelObject and its shared internal data structure and puts it on the stack.
+OpCreateChan: Executed once, creates the ChannelObject and its shared internal data structure and puts it on the stack.
 
 OpChanSend:
 
