@@ -281,7 +281,7 @@ func (c *Functions) CallExpr(node *ast.CallExpr) error {
 							return err
 						}
 					}
-					if _, err := c.scopes.SymbolEmit(node.Pos(), native.OpMakeChanId); err != nil {
+					if _, err := c.scopes.SymbolEmit(node.Pos(), native.OpCreateChanId); err != nil {
 						return err
 					}
 					return nil

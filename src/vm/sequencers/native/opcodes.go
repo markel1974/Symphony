@@ -183,8 +183,8 @@ const (
 	// OpNoOpId represents a no-operation opcode, often used as a placeholder or for instruction alignment.
 	OpNoOpId
 
-	// OpMakeChanId creates a new channel with a given capacity popped from the stack.
-	OpMakeChanId
+	// OpCreateChanId creates a new channel with a given capacity popped from the stack.
+	OpCreateChanId
 
 	// OpChanSendId sends a value to a channel.
 	OpChanSendId

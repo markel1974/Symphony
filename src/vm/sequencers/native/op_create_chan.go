@@ -9,28 +9,28 @@ import (
 )
 
 func init() {
-	SequencerRegister(NewOpMakeChan)
+	SequencerRegister(NewOpCreateChan)
 }
 
-// OpMakeChan represents a bytecode operation for creating a channel in the virtual machine.
-type OpMakeChan struct {
+// OpCreateChan represents a bytecode operation for creating a channel in the virtual machine.
+type OpCreateChan struct {
 	opcode *opcodes.Opcode
 	vm     handler.IVMFullAccess
 }
 
-// NewOpMakeChan creates and returns a new instance of OpMakeChan.
-func NewOpMakeChan() handler.IOpExecutor {
-	return &OpMakeChan{
-		opcode: opcodes.NewOpcode(OpMakeChanId, _noOperands, "OpMakeChan"),
+// NewOpCreateChan creates and returns a new instance of OpCreateChan.
+func NewOpCreateChan() handler.IOpExecutor {
+	return &OpCreateChan{
+		opcode: opcodes.NewOpcode(OpCreateChanId, _noOperands, "OpMakeChan"),
 		vm:     nil,
 	}
 }
 
-func (op *OpMakeChan) Opcode() *opcodes.Opcode {
+func (op *OpCreateChan) Opcode() *opcodes.Opcode {
 	return op.opcode
 }
 
-func (op *OpMakeChan) Bind(vm handler.IVM) error {
+func (op *OpCreateChan) Bind(vm handler.IVM) error {
 	vmT, ok := vm.(handler.IVMFullAccess)
 	if !ok {
 		return fmt.Errorf("vm does not implement IVMFullAccess")
@@ -39,7 +39,7 @@ func (op *OpMakeChan) Bind(vm handler.IVM) error {
 	return nil
 }
 
-func (op *OpMakeChan) Execute(decoder *handler.Decoder) {
+func (op *OpCreateChan) Execute(decoder *handler.Decoder) {
 	capObj := op.vm.StackPop()
 	capacity := int(capObj.AsInt64())
 	if capacity < 0 {
@@ -50,6 +50,6 @@ func (op *OpMakeChan) Execute(decoder *handler.Decoder) {
 	op.vm.StackPush(chObj)
 }
 
-func (op *OpMakeChan) Compile() ([]byte, error) {
+func (op *OpCreateChan) Compile() ([]byte, error) {
 	return nil, objects.ErrUnimplemented
 }

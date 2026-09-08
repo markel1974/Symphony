@@ -250,8 +250,12 @@ func (c *CartridgeFinalCartridgeIII) doFreeze() {
 	c.board.GameExRomConfigChanged()
 	c.board.NMITrigger()
 
-	t := c.board.CycleAlarm("Freezer", func(mainCpuClk uint64, offset uint64) {
+	var t references.IQuartzAlarm
+	t = c.board.CycleAlarm("Freezer", func(mainCpuClk uint64, offset uint64) {
 		c.freezeCounter = 0
+		if t != nil {
+			t.Destroy()
+		}
 	})
 	_ = t.Set(5000000)
 }
