@@ -15,10 +15,10 @@ Born from a frustration with "black box" emulator designs and opaque backend ser
 Symphony is built upon three distinct but perfectly integrated architectural pillars:
 
 ### 1. The Microkernel OS
-At its core, Symphony is a **microkernel operating system**. It features an asynchronous message router that manages isolated user-space processes. It comes with a built-in SSH server, a VT100 retained-mode window manager, and a virtual filesystem. You can SSH into the running kernel and perform "open-heart surgery" on running processes without stopping the system.
+At its core, Symphony is a simulated **microkernel operating system**. It features an asynchronous message router that manages isolated user-space processes. It comes with a built-in SSH server, a VT100 retained-mode window manager, and a virtual filesystem. You can SSH into the running kernel and perform "open-heart surgery" on running processes without stopping the system.
 
 ### 2. The Universal VM & Native Compiler
-Symphony includes a robust **multi-pass compiler** that translates a comprehensive subset of the Go language into a custom intermediate bytecode. This bytecode is executed by a high-performance, microkernel-style **Virtual Machine**. 
+Symphony includes a **multi-pass compiler** that translates a comprehensive subset of the Go language into a custom intermediate bytecode. This bytecode is executed by a microkernel-style **Virtual Machine**. 
 
 **Compiler Specifications:**
 * **Language Support:** Compiles a massive subset of Go, including structs, methods, anonymous functions (closures), `defer`, interfaces, dynamic type assertions, slices, and maps.
@@ -26,8 +26,8 @@ Symphony includes a robust **multi-pass compiler** that translates a comprehensi
 * **Memory Layout:** Built-in calculation of memory offsets and fixed sizes for interfaces and dynamic types, closely mirroring Go's internal `iface` implementation.
 
 **VM Specifications:**
-* **Cooperative Scheduler:** Implements a lock-free, cooperative scheduler for goroutines and channels. It handles blocking via Instruction Pointer (IP) manipulation rather than blocking OS-level threads.
-* **No Zero Branch (NZB) Pattern:** Instruction dispatch is handled via a function pointer array (`ISequencer` and `IOpExecutor`), entirely eliminating the branch prediction penalties of monolithic switch-case interpreters.
+* **Cooperative Scheduler:** Implements a lock-free, cooperative scheduler for goroutines and channels. It handles blocking via IP manipulation rather than blocking OS-level threads.
+* **Near Zero Branch (NZB) Pattern:** Instruction dispatch is handled via a function pointer array, entirely eliminating the branch prediction penalties.
 * **Interchangeable ISA:** The VM can seamlessly transition from executing high-level Go scripts to acting as a cycle-accurate Z80 or MOS6510 CPU emulator, simply by swapping the instruction set module.
 
 ### 3. Topological Hardware Emulation
