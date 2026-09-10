@@ -1,9 +1,9 @@
-# The Symphony Framework: A Microkernel for "Transparent" Systems
+# The Symphony Framework: A virtual Microkernel for "Transparent" Systems
 
 [![Go](https://img.shields.io/badge/Go-00ADD8?style=for-the-badge&logo=go&logoColor=white)](https://go.dev/)
 [![License](https://img.shields.io/badge/License-LGPL_v2.1-blue.svg)](https://www.gnu.org/licenses/old-licenses/lgpl-2.1.en.html)
 
-This is not just another kernel. It is an **advanced, Go-based microkernel framework for building complex systems that are transparent, inspectable, and manipulable in real-time by design.**
+This is not just another kernel. It is a **virtual Go-based microkernel framework for building complex systems that are transparent, inspectable, and manipulable in real-time by design.**
 
 Its core philosophy is an answer to one of the most critical challenges in modern software engineering: what do you do when a complex service in production begins to misbehave, and your logs and telemetry fall silent?
 
