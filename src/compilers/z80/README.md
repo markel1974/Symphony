@@ -42,7 +42,7 @@ This approach offers the best of both worlds:
 
 ## Implementation Highlights
 
-* **Helper Abstraction**: The `z80/helper.go` module provides a clean abstraction layer that encapsulates the logic for emitting the correct bytecode for different Z80 instructions. This keeps the main transpiler loop in `z80/compiler.go` clean and focused on dispatching opcodes.
+* **Helper Abstraction**: The `helper.go` module provides a clean abstraction layer that encapsulates the logic for emitting the correct bytecode for different Z80 instructions. This keeps the main transpiler loop in `z80/compiler.go` clean and focused on dispatching opcodes.
 
 * **Control Flow Mapping**: Z80 control flow instructions like `JP`, `CALL`, and `RET` (both conditional and unconditional) are intelligently mapped to the VM's own powerful control flow opcodes, such as `OpJump`, `OpJumpTruthy`, and `OpJumpIndirect`.
 
