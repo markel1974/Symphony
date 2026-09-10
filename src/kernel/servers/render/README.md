@@ -8,7 +8,7 @@ Instead of allowing user processes to write directly to the standard output (whi
 
 ### 1. Asynchronous Compositing
 The Render server behaves similarly to modern graphical compositors (like Wayland or X11), but adapted for text grids. 
-User processes (like the `xsh` shell, the `xvi` text editor, or the C64 emulator) do not draw to the screen. Instead, they send rendering requests (e.g., `MessageTypePaintRequest`, `MessageTypeWriteColor`) over the asynchronous kernel bus. The Render server buffers these requests into independent virtual `Surface` objects.
+User processes (like the `xsh` shell or the `xvi` text editor) do not draw to the screen. Instead, they send rendering requests (e.g., `MessageTypePaintRequest`, `MessageTypeWriteColor`) over the asynchronous kernel bus. The Render server buffers these requests into independent virtual `Surface` objects.
 
 ### 2. Z-Index and Window Management
 Because the TUI is composited, the Render server supports true window management:
