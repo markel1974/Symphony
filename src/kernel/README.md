@@ -34,7 +34,7 @@ The included **MOS 6581 SID chip emulator** is the perfect example of this philo
 
 ---
 
-## 3. An Educational Laboratory for Operating Systems 🎓
+## 3. An Educational Laboratory for Operating Systems
 
 Beyond its professional applications, Symphony is an **outstanding educational tool**. Its clean, modern implementation in Go makes it the perfect bridge between textbook theory and the complexity of real-world kernels like MINIX.
 
@@ -48,6 +48,14 @@ Beyond its professional applications, Symphony is an **outstanding educational t
 * **Multitasking TUI**: A responsive and efficient "retained-mode" TUI window manager.
 * **Secure Remote Access**: A built-in SSH server with support for both password and public-key authentication.
 * **Filesystem-like Command Hierarchy**: A virtual filesystem for commands, with navigation (`cd`, `ls`) and rich autocompletion.
+
+---
+
+## 5. Origin Story: From C++ POC to Pure Go
+
+*It’s worth noting the historical origin of this module. Initially, this Go implementation was meant to be a rapid Proof of Concept (POC). The goal was to validate the asynchronous message-routing architecture before rewriting the "real" microkernel in C++.* 
+
+*However, I was enjoying the Go environment so much that I just kept adding elements to make it usable directly within Symphony. The scheduled date for the C++ port just kept getting pushed back indefinitely, until I eventually realized that the "temporary" Go POC had evolved into a fully capable, production-grade engine.*
 
 ---
 *Module Author: Marcello (born 1974)*
