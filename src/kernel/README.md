@@ -56,6 +56,3 @@ Beyond its professional applications, Symphony is an **outstanding educational t
 *It’s worth noting the historical origin of this module. Initially, this Go implementation was meant to be a rapid Proof of Concept (POC). The goal was to validate the asynchronous message-routing architecture before rewriting the "real" microkernel in C++.* 
 
 *However, I was enjoying the Go environment so much that I just kept adding elements to make it usable directly within Symphony. The scheduled date for the C++ port just kept getting pushed back indefinitely, until I eventually realized that the "temporary" Go POC had evolved into a fully capable, production-grade engine.*
-
----
-*Module Author: Marcello (born 1974)*
