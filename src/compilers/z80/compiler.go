@@ -1,4 +1,5 @@
-// file: compilers/z80/compiler/compiler.go
+//go:build ignore
+
 package compiler
 
 import (
