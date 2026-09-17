@@ -1,9 +1,5 @@
 # C64 PLA (Programmable Logic Array) Emulator in Go
 
-[![Go](https://img.shields.io/badge/Go-00ADD8?style=for-the-badge&logo=go&logoColor=white)](https://go.dev/)
-[![License](https://img.shields.io/badge/License-LGPL_v2.1-blue.svg)](https://www.gnu.org/licenses/old-licenses/lgpl-2.1.en.html)
-[![Go Report Card](https://goreportcard.com/badge/github.com/markel1974/symphony)](https://goreportcard.com/report/github.com/markel1974/symphony)
-
 This project provides a high-performance, high-fidelity emulation of the Programmable Logic Array (PLA) chip logic for the Commodore 64, written entirely in Go. The PLA acts as the central "traffic cop" of the C64's memory map, arbitrating access between the CPU, RAM, ROM, and I/O chips. This implementation is designed for accuracy, performance, and modular integration into emulation frameworks like Symphony.
 
 ## Key Features

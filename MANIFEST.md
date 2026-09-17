@@ -3,10 +3,6 @@
 
 > Symphony is not just another emulator. It is a high-fidelity, interactive hardware laboratory designed from the ground up to do more than just run old software—it's built to deconstruct, understand, and compose virtual machines.
 
-[![Go](https://img.shields.io/badge/Go-00ADD8?style=for-the-badge&logo=go&logoColor=white)](https://go.dev/)
-[![License](https://img.shields.io/badge/License-LGPL_v2.1-blue.svg)](https://www.gnu.org/licenses/old-licenses/lgpl-2.1.en.html)
-[![Go Report Card](https://goreportcard.com/badge/github.com/markel1974/symphony)](https://goreportcard.com/report/github.com/markel1974/symphony)
-
 ---
 
 ## The Guiding Vision: A Hardware Sandbox

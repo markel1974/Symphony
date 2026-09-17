@@ -1,7 +1,5 @@
 # Symphony - Architectural Overview
 
-[![License](https://img.shields.io/badge/License-LGPL_v2.1-blue.svg)](https://www.gnu.org/licenses/old-licenses/lgpl-2.1.en.html)
-
 ## 1. Introduction
 
 Symphony is a highly configurable, deeply introspectable emulation framework written entirely in Go. Initially designed as a highly accurate Commodore 64 and 1541 emulator, it has evolved into a fully-fledged, system-agnostic framework for the dynamic exploration of computer systems.

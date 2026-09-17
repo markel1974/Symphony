@@ -1,9 +1,5 @@
 # MOS 6581 SID Chip Emulator in Go
 
-[![Go](https://img.shields.io/badge/Go-00ADD8?style=for-the-badge&logo=go&logoColor=white)](https://go.dev/)
-[![License](https://img.shields.io/badge/License-LGPL_v2.1-blue.svg)](https://www.gnu.org/licenses/old-licenses/lgpl-2.1.en.html)
-[![Go Report Card](https://goreportcard.com/badge/github.com/markel1974/symphony)](https://goreportcard.com/report/github.com/markel1974/symphony)
-
 This project is a high-fidelity emulation of the **MOS Technology 6581 Sound Interface Device (SID)**, the iconic sound chip from the Commodore 64, written entirely in Go. It aims to accurately replicate the behavior and sonic nuances of the original chip by modeling the physical processes of sound generation, providing a robust and performant component for integration into larger emulation frameworks.
 
 ## Key Features
